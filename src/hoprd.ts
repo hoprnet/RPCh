@@ -82,7 +82,7 @@ export const sendMessage = async (
     apiToken
   );
 
-  const body = {
+  const body: { body: string, recipient: string, path?: string[] } = {
       body: message,
       recipient: destination,
       path: []
