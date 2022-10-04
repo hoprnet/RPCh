@@ -26,8 +26,6 @@ WORKDIR /app
 
 COPY . /app
 
-RUN ls -la
-
 # install dev dependencies and build the app
 RUN  yarn install \
   && yarn run clean \
