@@ -1,4 +1,4 @@
-# Run HOPR RPC Relay within a single container
+# Run RPCh within a single container
 
 # use slim version of node on Debian bullseye for smaller image sizes
 FROM node:16-bullseye-slim@sha256:8265ac132f720998222008355e11535caf53d6bccecbb562a055605138975b4e as build

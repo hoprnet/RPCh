@@ -45,7 +45,7 @@ export const fetchPeerId = async (
 
 /**
  * Fetch peers which can be used as exit nodes.
- * @warn Assumes all peers run a hopr-rpc-relay node.
+ * @warn Assumes all peers run a RPCh node.
  * @param apiEndpoint
  * @param apiToken
  * @returns

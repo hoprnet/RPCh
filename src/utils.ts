@@ -19,7 +19,7 @@ export const createLogger = (
   logVerbose: Debugger;
   logError: Debugger;
 } => {
-  const log = Debug(["hopr-rpc-relay", ...args].join(":"));
+  const log = Debug(["rpch", ...args].join(":"));
   const logVerbose = log.extend("verbose");
   const logError = log.extend("error");
 

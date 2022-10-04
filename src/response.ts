@@ -3,7 +3,7 @@ import Message from "./message";
 const SEPERATOR = "|";
 
 /**
- * Represents a response made by a hopr-rpc-relay.
+ * Represents a response made by a RPCh.
  * To be send over the HOPR network via Response.toMessage().
  */
 export default class Response {
