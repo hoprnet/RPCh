@@ -98,7 +98,6 @@ export const sendMessage = async (
     method: "POST",
     headers,
     body: JSON.stringify(body),
-    }),
   });
 
   if (response.status !== 202) {
