@@ -1,6 +1,6 @@
 {
   "name": "hopr-rpc-relay",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "An RPC node that sends traffic into the HOPR network and then relays requests to an RPC provider.",
   "scripts": {
     "start": "node build/index.js",
