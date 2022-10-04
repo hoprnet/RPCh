@@ -5,7 +5,7 @@ import { generateRandomNumber } from "./utils";
 const SEPERATOR = "|";
 
 /**
- * Represents a request made by the hopr-rpc-relay.
+ * Represents a request made by the RPCh.
  * To be send over the HOPR network via Request.toMessage().
  */
 export default class Request {

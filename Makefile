@@ -20,7 +20,7 @@ endif
 	  gcr.io/hoprassociation/hopr-rpc-relay:latest
 	docker push gcr.io/hoprassociation/hopr-rpc-relay:latest
 
-devkit-run: ## run local docker-compose based HOPR RPC Relay devkit
+devkit-run: ## run local docker-compose based RPCh devkit
 	cd devkit && docker-compose pull
 	docker-compose -p hopr-rpc-relay-devkit -f devkit/docker-compose.yml \
 		up --build --abort-on-container-exit --remove-orphans
