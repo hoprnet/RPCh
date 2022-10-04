@@ -3,22 +3,14 @@ volumes:
   # peer ids all the time
   pluto-data:
 
-x-shared-config: &shared-config
-  environment:
-    - HOPRD_API_TOKEN=^^awesomeHOPRr3l4y^^
-
 x-relay-service: &relay
   image: gcr.io/hoprassociation/hopr-rpc-relay:${RELAY_VERSION:-latest}
   restart: unless-stopped
-  environment:
-    - ENTRY_PORT=8080
-    - DEBUG=hopr*
   depends_on:
     - pluto
 
 services:
   pluto:
-    <<: *shared-config
     image: gcr.io/hoprassociation/hopr-pluto:valencia
     restart: unless-stopped
     volumes:
@@ -28,38 +20,51 @@ services:
       # the admin UI more easily
       - "13301-13305:13301-13305"
       - "19501-19505:19501-19505"
+    environment:
+      - DEBUG="${DEBUG}"
+      - HOPRD_API_TOKEN="${HOPRD_API_TOKEN}"
   relay-1:
-    <<: *shared-config
     <<: *relay
     environment:
+      - DEBUG="${DEBUG}"
+      - ENTRY_PORT=${RELAY_ENTRY_PORT}
       - HOPRD_API_ENDPOINT="http://pluto:13301"
+      - HOPRD_API_TOKEN="${HOPRD_API_TOKEN}"
     ports:
-      - "9001:8080" # mapping port to localhost for easier recognition
+      - "9001:8081" # mapping port to localhost for easier recognition
   relay-2:
-    <<: *shared-config
     <<: *relay
     environment:
+      - DEBUG="${DEBUG}"
+      - ENTRY_PORT=${RELAY_ENTRY_PORT}
       - HOPRD_API_ENDPOINT="http://pluto:13302"
+      - HOPRD_API_TOKEN="${HOPRD_API_TOKEN}"
     ports:
-      - "9002:8080" # mapping port to localhost for easier recognition
+      - "9002:8081" # mapping port to localhost for easier recognition
   relay-3:
-    <<: *shared-config
     <<: *relay
     environment:
+      - DEBUG="${DEBUG}"
+      - ENTRY_PORT=${RELAY_ENTRY_PORT}
       - HOPRD_API_ENDPOINT="http://pluto:13303"
+      - HOPRD_API_TOKEN="${HOPRD_API_TOKEN}"
     ports:
-      - "9003:8080" # mapping port to localhost for easier recognition
+      - "9003:8081" # mapping port to localhost for easier recognition
   relay-4:
-    <<: *shared-config
     <<: *relay
     environment:
+      - DEBUG="${DEBUG}"
+      - ENTRY_PORT=${RELAY_ENTRY_PORT}
       - HOPRD_API_ENDPOINT="http://pluto:13304"
+      - HOPRD_API_TOKEN="${HOPRD_API_TOKEN}"
     ports:
-      - "9004:8080" # mapping port to localhost for easier recognition
+      - "9004:8081" # mapping port to localhost for easier recognition
   relay-5:
-    <<: *shared-config
     <<: *relay
     environment:
+      - DEBUG="${DEBUG}"
+      - ENTRY_PORT=${RELAY_ENTRY_PORT}
       - HOPRD_API_ENDPOINT="http://pluto:13305"
+      - HOPRD_API_TOKEN="${HOPRD_API_TOKEN}"
     ports:
-      - "9005:8080" # mapping port to localhost for easier recognition
+      - "9005:8081" # mapping port to localhost for easier recognition
