@@ -82,13 +82,22 @@ export const sendMessage = async (
     apiToken
   );
 
+  let body = {
+      body: message,
+      recipient: destination
+  }
+
+  if (process.env.USE_AUTO_PATHFINDING !== 'true') {
+    body = {
+      ...body,
+      path: []
+    }
+  }
+
   const response = await fetch(url, {
     method: "POST",
     headers,
-    body: JSON.stringify({
-      body: message,
-      recipient: destination,
-      path: [],
+    body: JSON.stringify(body),
     }),
   });
 

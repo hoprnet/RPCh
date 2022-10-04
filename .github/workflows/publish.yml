@@ -2,7 +2,7 @@ name: Build and publish Docker image
 
 on:
   push:
-    branches: ['main']
+    branches: ['main', 'debug-publish/*']
 
 concurrency:
   # limit invocations of this workflow to one at a time to prevent race

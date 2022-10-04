@@ -28,6 +28,7 @@ services:
     environment:
       - DEBUG="${DEBUG}"
       - ENTRY_PORT=${RELAY_ENTRY_PORT}
+      - USE_AUTO_PATHFINDING=${RELAY_USE_AUTO_PATHFINDING:-false}
       - HOPRD_API_ENDPOINT="http://pluto:13301"
       - HOPRD_API_TOKEN="${HOPRD_API_TOKEN}"
     ports:
@@ -37,6 +38,7 @@ services:
     environment:
       - DEBUG="${DEBUG}"
       - ENTRY_PORT=${RELAY_ENTRY_PORT}
+      - USE_AUTO_PATHFINDING=${RELAY_USE_AUTO_PATHFINDING:-false}
       - HOPRD_API_ENDPOINT="http://pluto:13302"
       - HOPRD_API_TOKEN="${HOPRD_API_TOKEN}"
     ports:
@@ -46,6 +48,7 @@ services:
     environment:
       - DEBUG="${DEBUG}"
       - ENTRY_PORT=${RELAY_ENTRY_PORT}
+      - USE_AUTO_PATHFINDING=${RELAY_USE_AUTO_PATHFINDING:-false}
       - HOPRD_API_ENDPOINT="http://pluto:13303"
       - HOPRD_API_TOKEN="${HOPRD_API_TOKEN}"
     ports:
@@ -55,6 +58,7 @@ services:
     environment:
       - DEBUG="${DEBUG}"
       - ENTRY_PORT=${RELAY_ENTRY_PORT}
+      - USE_AUTO_PATHFINDING=${RELAY_USE_AUTO_PATHFINDING:-false}
       - HOPRD_API_ENDPOINT="http://pluto:13304"
       - HOPRD_API_TOKEN="${HOPRD_API_TOKEN}"
     ports:
@@ -64,6 +68,7 @@ services:
     environment:
       - DEBUG="${DEBUG}"
       - ENTRY_PORT=${RELAY_ENTRY_PORT}
+      - USE_AUTO_PATHFINDING=${RELAY_USE_AUTO_PATHFINDING:-false}
       - HOPRD_API_ENDPOINT="http://pluto:13305"
       - HOPRD_API_TOKEN="${HOPRD_API_TOKEN}"
     ports:
