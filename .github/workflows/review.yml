@@ -34,5 +34,11 @@ jobs:
       - name: Build
         run: yarn build
 
-      - name: Test
+      - name: Review linting
+        run: yarn lint
+
+      - name: Review formatting
+        run: yarn format:check
+
+      - name: Run Tests
         run: yarn test
