@@ -1,8 +1,8 @@
 ---
-name: Feature Template
-about: Create a feature request
+name: Enhancement Template
+about: Create a enhancement request
 title: ''
-labels: 'feature, new issue'
+labels: 'enhancement, new issue'
 assignees: ''
 ---
 

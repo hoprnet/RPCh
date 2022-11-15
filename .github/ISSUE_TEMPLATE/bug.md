@@ -1,8 +1,8 @@
 ---
 name: Bug Template
-about: Create a bug report to help us improve
+about: Create a bug report
 title: ''
-labels: 'bug, new issue'
+labels: 'bug'
 assignees: ''
 ---
 
