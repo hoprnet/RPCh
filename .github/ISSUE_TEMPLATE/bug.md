@@ -1,9 +1,9 @@
 ---
 name: Bug Template
 about: Create a bug report
-title: ''
-labels: 'bug'
-assignees: ''
+title: ""
+labels: "bug"
+assignees: ""
 ---
 
 <!--- Please DO NOT remove the automatically added 'new issue' label -->
@@ -37,7 +37,7 @@ assignees: ''
 3.
 4.
 
-*Were you able to reproduce the bug using the above steps consistently each time?* **YES**/**NO**
+_Were you able to reproduce the bug using the above steps consistently each time?_ **YES**/**NO**
 
 ## Context (Environment)
 

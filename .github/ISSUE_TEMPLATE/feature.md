@@ -1,9 +1,9 @@
 ---
 name: Enhancement Template
 about: Create a enhancement request
-title: ''
-labels: 'enhancement, new issue'
-assignees: ''
+title: ""
+labels: "enhancement, new issue"
+assignees: ""
 ---
 
 <!--- Please DO NOT remove the automatically added 'new issue' label -->

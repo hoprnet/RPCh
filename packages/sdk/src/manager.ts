@@ -6,7 +6,7 @@ import {
   Response,
   utils,
   validateSegments,
-} from "common";
+} from "rpch-commons";
 
 const { log, logVerbose, logError } = utils.createLogger("manager");
 

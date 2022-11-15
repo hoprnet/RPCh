@@ -1,5 +1,5 @@
 {
-  "extends": "config/tsconfig/nodejs-library.json",
+  "extends": "rpch-configs-typescript/nodejs-library.json",
   "include": ["."],
   "exclude": ["dist", "build", "node_modules"]
 }

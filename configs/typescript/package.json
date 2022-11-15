@@ -1,10 +1,12 @@
 {
-  "name": "tsconfig",
+  "name": "rpch-configs-typescript",
   "version": "0.0.0",
   "private": true,
   "files": [
     "base.json",
     "nextjs.json",
+    "nodejs-library.json",
+    "nodejs.json",
     "react-library.json"
   ]
 }
