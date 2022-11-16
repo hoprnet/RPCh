@@ -2,9 +2,8 @@
 name: Custom Template
 about: Create a custom issue
 title: ""
-labels: "new issue"
+labels: ""
 assignees: ""
 ---
 
-<!--- Please DO NOT remove the automatically added 'new issue' label -->
 <!--- Provide a general summary of the issue in the Title above -->
