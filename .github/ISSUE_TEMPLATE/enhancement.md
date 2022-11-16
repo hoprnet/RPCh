@@ -2,11 +2,10 @@
 name: Enhancement Template
 about: Create a enhancement request
 title: ""
-labels: "enhancement, new issue"
+labels: "enhancement"
 assignees: ""
 ---
 
-<!--- Please DO NOT remove the automatically added 'new issue' label -->
 <!--- Provide a general summary of the issue in the Title above -->
 
 ### Is your feature related to a problem?

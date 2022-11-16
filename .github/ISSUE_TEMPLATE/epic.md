@@ -6,7 +6,7 @@ labels: "epic"
 assignees: ""
 ---
 
-<!--- Please DO NOT remove the automatically added 'new issue' label -->
+<!--- Please DO NOT remove the automatically added 'epic' label -->
 <!--- Provide a general summary of the issue in the Title above -->
 
 <!--
