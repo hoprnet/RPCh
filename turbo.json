@@ -3,7 +3,9 @@
   "pipeline": {
     "build": {
       "dependsOn": [
-        "^build"
+        "^build",
+        "$HOPRD_API_ENDPOINT",
+        "$HOPRD_API_TOKEN"
       ],
       "outputs": [
         "dist/**",
