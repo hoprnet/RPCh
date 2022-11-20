@@ -4,12 +4,12 @@
 
 import WebSocket from "ws";
 import fetch from "node-fetch";
-import {utils as ethersUtils} from "ethers"
+import { utils as ethersUtils } from "ethers";
 import { utils } from "rpch-commons";
-const {createLogger, createApiUrl} = utils;
+import Message from "../../../packages/common/src/message";
+const { createLogger, createApiUrl } = utils;
 
-
-const {log, logVerbose} = createLogger("exit")
+const { log, logVerbose } = createLogger("exit");
 
 /**
  * Send a segment to a HOPRd node.
@@ -73,10 +73,7 @@ export const createMessageListener = (
   const ws = new WebSocket(url);
 
   ws.on("upgrade", () => {
-    log(
-      "HORP RPC Relay is listening for messages coming from HOPRd at",
-      url
-    );
+    log("HORP RPC Relay is listening for messages coming from HOPRd at", url);
   });
 
   ws.on("message", (data: { toString: () => string }) => {
@@ -101,7 +98,7 @@ export const createMessageListener = (
  * @param body
  * @returns decoded message
  */
- const decodeIncomingBody = (body: string): string | undefined => {
+const decodeIncomingBody = (body: string): string | undefined => {
   try {
     return ethersUtils.toUtf8String(
       ethersUtils.RLP.decode(new Uint8Array(JSON.parse(`[${body}]`)))[0]

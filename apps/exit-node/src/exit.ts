@@ -3,9 +3,9 @@
  */
 import fetch from "node-fetch";
 import { utils } from "rpch-commons";
-const {createLogger} = utils;
+const { createLogger } = utils;
 
-const {log, logVerbose} = createLogger("exit")
+const { log, logVerbose } = createLogger("exit");
 
 /**
  * Creates a request to the given provider and returns response.
@@ -13,11 +13,10 @@ const {log, logVerbose} = createLogger("exit")
  * @param provider exiting provider (infure, etc)
  * @returns response from provider
  */
-export const sendRequest = async (
+export const sendRpcRequest = async (
   body: string,
   provider: string
 ): Promise<string> => {
-
   log("sending request to provider");
   logVerbose("sending request to provider", body, provider);
   return fetch(provider, {
