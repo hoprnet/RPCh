@@ -5,6 +5,9 @@
   "types": "./src/index.ts",
   "license": "MIT",
   "scripts": {
+    "start": "node build/index.js",
+    "build": "tsc",
+    "clean": "rm -rf ./build",
     "test": "jest || exit 0",
     "lint": "TIMING=1 eslint \"src/**/*.ts*\""
   },

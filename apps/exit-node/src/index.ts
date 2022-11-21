@@ -1,5 +1,7 @@
+/**
+ * Responsible for managing the whole functionality of the exit-node.
+ */
 // createMessageListener() -> cache (commons) -> onRequest() -> updateRequestTracker(), sendRpcRequest() -> sendMesage(), updateRequestTracker() <<remove old request>>
-import * as exit from "./exit";
 import { Cache, Message, Request, Segment } from "rpch-commons";
 import { createMessageListener, sendMessage } from "./hoprd";
 import { sendRpcRequest } from "./exit";

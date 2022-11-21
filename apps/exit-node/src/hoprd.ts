@@ -6,7 +6,6 @@ import WebSocket from "ws";
 import fetch from "node-fetch";
 import { utils as ethersUtils } from "ethers";
 import { utils } from "rpch-commons";
-import Message from "../../../packages/common/src/message";
 const { createLogger, createApiUrl } = utils;
 
 const { log, logVerbose } = createLogger("exit");

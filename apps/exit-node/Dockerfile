@@ -1,6 +1,6 @@
 # Create exit node container
 
-FROM node:16-bullseye-slim@sha256:2e42e0aab9c9fd2d914417659ebedb4f995dfde79f3f7127cbc7e57ae6485dd9
+FROM node:16-bullseye-slim@sha256:2e42e0aab9c9fd2d914417659ebedb4f995dfde79f3f7127cbc7e57ae6485dd9 as build
 
 SHELL ["/bin/bash", "-lc"]
 
@@ -21,12 +21,14 @@ ENV npm_config_build_from_source false
 
 WORKDIR /app
 
-COPY . /app/
+COPY apps/exit-node/ /app
+COPY packages /app/packages
 
 # Install dev dependencies and build the app
+# RUN yarn add rpch-commons
 RUN yarn install \
   && yarn run clean \
-  yarn build
+  && yarn build
 
 RUN rm -rf node_modules \
   && NODE_ENV=production yarn install
@@ -47,12 +49,15 @@ RUN curl https://raw.githubusercontent.com/eficode/wait-for/v2.2.3/wait-for > /b
 
 WORKDIR /app
 
+# copy over built artifacts
+COPY --from=build /app/ .
+
 # Allow configuration of enviroment variables as build arg or runtime env
 ARG HOPRD_API_ENDPOINT
 ARG HOPR_API_TOKEN
 
 ENV HOPRD_API_ENDPOINT=${HOPR_API_TOKEN:-}
-ENV HOPR_API_TOKEN=${HOPR_API_TOKEN}
+ENV HOPR_API_TOKEN=${HOPR_API_TOKEN:-}
 
 CMD ["yarn", "run", "start"]
 
