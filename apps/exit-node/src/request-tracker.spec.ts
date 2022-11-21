@@ -19,6 +19,6 @@ describe("Test RequestTracker class", function () {
     requestTracker.onRequest(
       new Request(1, "origin", "infura", "Test request not expired")
     );
-    requestTracker.removeExpired();
+    requestTracker.setInterval();
   });
 });

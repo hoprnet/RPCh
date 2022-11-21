@@ -2,14 +2,13 @@
  * Responsible for managing the whole functionality of the exit-node.
  */
 // createMessageListener() -> cache (commons) -> onRequest() -> updateRequestTracker(), sendRpcRequest() -> sendMesage(), updateRequestTracker() <<remove old request>>
-import { Cache, Message, Request, Segment } from "rpch-commons";
-import { createMessageListener, sendMessage } from "./hoprd";
-import { sendRpcRequest } from "./exit";
-import { utils } from "rpch-commons";
+import { Cache, utils } from "rpch-commons/src/index.js";
+import { createMessageListener, sendMessage } from "./hoprd.js";
+import { sendRpcRequest } from "./exit.js";
+import RequestTracker from "./request-tracker.js";
 const { createLogger } = utils;
 
 const { log } = createLogger("exit");
-import RequestTracker from "./request-tracker";
 
 const {
   HOPRD_API_ENDPOINT,
@@ -61,10 +60,9 @@ const start = async (ops: {
         log("Rejected received data from HOPRd: not a valid message", message);
       }
 
-      const interval = setInterval(() => requestTracker.removeExpired(), 1e3);
+      const interval = requestTracker.setInterval();
 
       return () => {
-        clearInterval(interval);
         stopExitNode();
       };
     }

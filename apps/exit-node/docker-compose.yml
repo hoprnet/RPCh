@@ -3,7 +3,9 @@
 
 services:
   exit-node:
-    build: .
+    image: exit
+    # build: 
+    #   context: apps/exit-node
     restart: unless-stopped
 
   hoprd:

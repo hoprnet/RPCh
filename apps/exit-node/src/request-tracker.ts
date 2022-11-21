@@ -1,8 +1,7 @@
 /**
  * Responsible for keeping track of all requests received.
  */
-import { Request, Response } from "rpch-commons";
-import { utils } from "rpch-commons";
+import { Request, Response, utils } from "rpch-commons/src/index.js";
 const { createLogger, isExpired } = utils;
 
 const { log, logVerbose, logError } = createLogger("exit");
@@ -38,24 +37,19 @@ export default class RequestTracker {
     log("Responded to %s with %s", requestEntry.request.body, response.body);
   }
 
-  public setInterval(timeout: number) {
-    this.timeout = timeout;
-  }
-
   /**
-   * Checks for requests where the received time is greater that the timeout
+   * Check every “timeout” for expired Requests
    */
-  public removeExpired(): void {
-    const now = new Date();
-
-    logVerbose(" Number of requests", this.requests.size);
-
-    for (const [id, entry] of this.requests.entries()) {
-      log(isExpired(this.timeout, now, entry.receivedAt));
-      if (isExpired(this.timeout, now, entry.receivedAt)) {
-        log("Request %s timed out. Deleting", id);
-        this.requests.delete(id);
+  public setInterval(): void {
+    setInterval(() => {
+      for (const [key, value] of this.requests.entries()) {
+        const timeNow = new Date();
+        log(isExpired(this.timeout, timeNow, value.receivedAt));
+        if (isExpired(this.timeout, timeNow, value.receivedAt)) {
+          log("Request %s timed out. Deleting", key);
+          this.requests.delete(key);
+        }
       }
-    }
+    }, this.timeout);
   }
 }
