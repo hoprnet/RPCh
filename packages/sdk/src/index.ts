@@ -1,6 +1,10 @@
 import { Cache, Request, Response, Segment } from "rpch-commons";
 import RequestCache from "./request-cache";
 import { sendMessage, createMessageListener } from "./hoprd";
+import { utils } from "rpch-commons";
+const { createLogger } = utils;
+
+const { log } = createLogger();
 
 const MOCK_DISCOVERY_PLATFORM_API_ENDPOINT = "https://localhost:3000";
 const MOCK_API_TOKEN = "123456789";
@@ -27,9 +31,18 @@ export default class SDK {
       MOCK_DISCOVERY_PLATFORM_API_ENDPOINT,
       MOCK_API_TOKEN,
       (message) => {
-        // send data to cache
+        try {
+          const segment = Segment.fromString(message);
+          this.cache.onSegment(segment);
+        } catch (e) {
+          log(
+            "rejected received data from HOPRd: not a valid segment",
+            message
+          );
+        }
       }
     );
+    this.requestCache.setInterval();
   }
 
   public createRequest(
