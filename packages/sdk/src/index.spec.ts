@@ -14,6 +14,9 @@ describe("test SDK class", function () {
     sdk = new SDK();
   });
   it("should request messaging access token", function () {});
-  it("should create request", function () {});
+  it("should create request", function () {
+    const request = sdk.createRequest(ORIGIN, PROVIDER, RPC_REQ_SMALL);
+    assert(request instanceof Request);
+  });
   it("should send request", function () {});
 });
