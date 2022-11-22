@@ -24,10 +24,13 @@ export default class SDK {
     );
   }
 
-  public requestMessagingAccessToken(apiEndpoint: string, apiToken: string) {
+  public async requestMessagingAccessToken(
+    apiEndpoint: string,
+    apiToken: string
+  ) {
     // get api token access
     // open listener
-    createMessageListener(
+    await createMessageListener(
       MOCK_DISCOVERY_PLATFORM_API_ENDPOINT,
       MOCK_API_TOKEN,
       (message) => {
@@ -54,12 +57,12 @@ export default class SDK {
   }
 
   public sendRequest(req: Request): Promise<Response> {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       const message = req.toMessage();
       const segments = message.toSegments();
       this.requestCache.addRequest(req, resolve, reject);
       for (const segment of segments) {
-        sendMessage({
+        await sendMessage({
           apiEndpoint: MOCK_DISCOVERY_PLATFORM_API_ENDPOINT,
           apiToken: MOCK_API_TOKEN,
           message: segment.toString(),
