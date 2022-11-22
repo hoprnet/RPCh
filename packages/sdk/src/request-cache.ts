@@ -1,4 +1,5 @@
 import { Cache as SegmentsCache, Request, Response, utils } from "rpch-commons";
+const { isExpired } = utils;
 const { log, logVerbose, logError } = utils.createLogger("request-cache");
 
 /**
@@ -39,6 +40,10 @@ export default class RequestCache {
     });
   }
 
+  public getRequest(key: number) {
+    return this.requests.get(key);
+  }
+
   /**
    * Remove request from requests map
    * @param req
@@ -77,9 +82,7 @@ export default class RequestCache {
     setInterval(() => {
       for (const [key, value] of this.requests.entries()) {
         const timeNow = new Date();
-        const timePassedSinceCreation =
-          timeNow.getTime() - value.createdAt.getTime();
-        if (timePassedSinceCreation > this.timeout) {
+        if (isExpired(this.timeout, timeNow, value.createdAt)) {
           this.requests.get(key)?.reject("Request timed out");
           this.requests.delete(key);
         }
