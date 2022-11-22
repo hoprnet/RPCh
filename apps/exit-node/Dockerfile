@@ -1,37 +1,37 @@
 # Create exit node container
 
-FROM node:16-bullseye-slim@sha256:2e42e0aab9c9fd2d914417659ebedb4f995dfde79f3f7127cbc7e57ae6485dd9 as build_commons
+# FROM node:16-bullseye-slim@sha256:2e42e0aab9c9fd2d914417659ebedb4f995dfde79f3f7127cbc7e57ae6485dd9 as build_commons
 
-SHELL ["/bin/bash", "-lc"]
+# SHELL ["/bin/bash", "-lc"]
 
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
-  git \
-  python3 \
-  unzip \
-  curl \
-  build-essential \
-  ca-certificates \
-  && rm -rf  /var/lib/apt/lists/* \
-  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
+# RUN apt-get update \
+#   && apt-get install -y --no-install-recommends \
+#   git \
+#   python3 \
+#   unzip \
+#   curl \
+#   build-essential \
+#   ca-certificates \
+#   && rm -rf  /var/lib/apt/lists/* \
+#   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
 
-# Making sure some standard enviroment variables are set for production use
-ENV NEXT_TELEMETRY_DISABLE 1
-ENV npm_config_build_from_source false
+# # Making sure some standard enviroment variables are set for production use
+# ENV NEXT_TELEMETRY_DISABLE 1
+# ENV npm_config_build_from_source false
 
-WORKDIR /app
+# WORKDIR /app
 
-RUN ${PWD}
-RUN cd packages/common
+# RUN ${PWD}
+# RUN cd packages/common
 
-# Install dev dependencies and build the app
-RUN yarn install \
-  && rm -rf ./build \
-  && tsc
+# # Install dev dependencies and build the app
+# RUN yarn install \
+#   && rm -rf ./build \
+#   && tsc
 
-COPY packages/common/build /app/packages/common
+# COPY packages/common/build /app/packages/common
 
-RUN rm -rf node_modules
+# RUN rm -rf node_modules
 
 FROM node:16-bullseye-slim@sha256:2e42e0aab9c9fd2d914417659ebedb4f995dfde79f3f7127cbc7e57ae6485dd9 as build
 
@@ -55,8 +55,8 @@ ENV npm_config_build_from_source false
 WORKDIR /app
 
 COPY apps/exit-node/ /app
-# COPY packages/common /app/packages/common
-COPY --from=build_common /app/packages/common .
+COPY packages/common /app/packages/common
+# COPY --from=build_common /app/packages/common .
 COPY configs /app/configs
 
 # Install dev dependencies and build the app

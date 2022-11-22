@@ -16,15 +16,15 @@
     "@types/debug": "^4.1.7",
     "@types/jest": "^29.2.3",
     "@types/ws": "^8.5.3",
-    "eslint-config-rpch": "file:configs/eslint/",
-    "rpch-configs-typescript": "file:configs/typescript/",
+    "eslint-config-rpch": "*",
+    "rpch-configs-typescript": "*",
     "eslint": "^7.32.0",
     "typescript": "^4.5.2"
   },
   "dependencies": {
     "debug": "^4.3.4",
     "node-fetch": "^3.3.0",
-    "rpch-commons": "file:packages/common/",
+    "rpch-commons": "*",
     "ws": "^8.11.0"
   },
   "jest": {

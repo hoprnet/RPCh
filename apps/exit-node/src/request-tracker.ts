@@ -1,7 +1,7 @@
 /**
  * Responsible for keeping track of all requests received.
  */
-import { Request, Response, utils } from "rpch-commons/src/index.js";
+import { Request, Response, utils } from "rpch-commons";
 const { createLogger, isExpired } = utils;
 
 const { log, logVerbose, logError } = createLogger("exit");
