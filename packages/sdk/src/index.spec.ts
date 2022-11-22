@@ -1,11 +1,8 @@
 import assert from "assert";
 import nock from "nock";
 import { Request, Response } from "rpch-commons";
-import {
-  PEER_ID_A as ORIGIN,
-  PROVIDER,
-  RPC_REQ_SMALL,
-} from "rpch-commons/src/fixtures";
+import { fixtures } from "rpch-commons";
+const { PEER_ID_A: ORIGIN, PROVIDER, RPC_REQ_SMALL } = fixtures;
 import SDK from "./index";
 const REQUEST = new Request(1, ORIGIN, PROVIDER, RPC_REQ_SMALL);
 const RESPONSE_BODY = "response";

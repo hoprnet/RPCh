@@ -1,10 +1,7 @@
 import assert from "assert";
 import { Cache, Request, Response } from "rpch-commons";
-import {
-  PEER_ID_A as ORIGIN,
-  PROVIDER,
-  RPC_REQ_SMALL,
-} from "rpch-commons/src/fixtures";
+import { fixtures } from "rpch-commons";
+const { PEER_ID_A: ORIGIN, PROVIDER, RPC_REQ_SMALL } = fixtures;
 import RequestCache from "./request-cache";
 const TIMEOUT = 60e3;
 const RESPONSE_BODY = "response";
