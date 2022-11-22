@@ -22,7 +22,7 @@ export const sendMessage = async ({
   apiToken: string | undefined;
   message: string;
   destination: string;
-}): Promise<void> => {
+}): Promise<void | string> => {
   const [url, headers] = createApiUrl(
     "http",
     apiEndpoint,
@@ -50,6 +50,8 @@ export const sendMessage = async ({
     );
   } else {
     log("send message to HOPRd node", message, destination);
+    const text = await response.text();
+    return text;
   }
 };
 

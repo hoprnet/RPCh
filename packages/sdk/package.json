@@ -14,6 +14,7 @@
     "@types/ws": "^8.5.3",
     "eslint": "^7.32.0",
     "eslint-config-rpch": "*",
+    "nock": "^13.2.9",
     "rpch-configs-typescript": "*",
     "typescript": "^4.5.2"
   },
