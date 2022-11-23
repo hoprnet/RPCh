@@ -4,3 +4,4 @@ export { default as Request } from "./request";
 export { default as Response } from "./response";
 export { default as Cache } from "./cache";
 export * as utils from "./utils";
+export * as fixtures from "./fixtures";
