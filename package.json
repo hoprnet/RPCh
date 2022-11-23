@@ -4,14 +4,15 @@
   "private": true,
   "workspaces": [
     "configs/*",
-    "packages/*"
+    "packages/*",
+    "apps/*"
   ],
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
     "lint": "turbo run lint",
-    "format:check": "prettier --check \"**/*.{ts,tsx,md}\"",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,md,json}\"",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
     "test": "turbo run test"
   },
   "devDependencies": {

@@ -1,0 +1,27 @@
+import assert from "assert";
+import nock from "nock";
+import { fixtures } from "rpch-commons";
+import * as exit from "./exit";
+
+const MOCK_RPC_RESPONSE = "[RESPONSE]";
+
+describe("test exit.ts", function () {
+  it("should send a request to a provider and receive a string", async function () {
+    nock(fixtures.PROVIDER).post(/.*/).reply(200, MOCK_RPC_RESPONSE);
+
+    const response = await exit.sendRpcRequest(
+      fixtures.RPC_REQ_SMALL,
+      fixtures.PROVIDER
+    );
+    assert.equal(response, MOCK_RPC_RESPONSE);
+  });
+  it("should send a request to a provider and throw an error", async function () {
+    nock(fixtures.PROVIDER).post(/.*/).reply(404, "Not Found");
+
+    try {
+      await exit.sendRpcRequest(fixtures.RPC_REQ_SMALL, fixtures.PROVIDER);
+    } catch (error) {
+      assert.equal(error, "Not Found");
+    }
+  });
+});
