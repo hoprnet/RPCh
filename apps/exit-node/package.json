@@ -15,15 +15,17 @@
   "devDependencies": {
     "@types/debug": "^4.1.7",
     "@types/jest": "^29.2.3",
+    "@types/node-fetch": "2.6.2",
     "@types/ws": "^8.5.3",
-    "eslint-config-rpch": "*",
-    "rpch-configs-typescript": "*",
     "eslint": "^7.32.0",
+    "eslint-config-rpch": "*",
+    "nock": "^13.2.9",
+    "rpch-configs-typescript": "*",
     "typescript": "^4.5.2"
   },
   "dependencies": {
     "debug": "^4.3.4",
-    "node-fetch": "^3.3.0",
+    "node-fetch": "^2.6.2",
     "rpch-commons": "*",
     "ws": "^8.11.0"
   },

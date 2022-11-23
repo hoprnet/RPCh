@@ -4,14 +4,13 @@
 import { Request, Response, utils } from "rpch-commons";
 const { createLogger, isExpired } = utils;
 
-const { log, logVerbose, logError } = createLogger("exit");
+const { log, logError } = createLogger("exit");
 
 /**
  * Keep track of requests made.
  */
 export default class RequestTracker {
   private requests = new Map<number, { request: Request; receivedAt: Date }>();
-  public requestsReceived: number = 0;
   constructor(private timeout: number) {}
 
   /**
@@ -20,7 +19,6 @@ export default class RequestTracker {
    */
   public onRequest(request: Request) {
     this.requests.set(request.id, { request, receivedAt: new Date() });
-    ++this.requestsReceived;
   }
 
   /**
@@ -37,11 +35,15 @@ export default class RequestTracker {
     log("Responded to %s with %s", requestEntry.request.body, response.body);
   }
 
+  public getRequest(id: number) {
+    return this.requests.get(id);
+  }
+
   /**
    * Check every “timeout” for expired Requests
    */
-  public setInterval(): void {
-    setInterval(() => {
+  public setInterval(): NodeJS.Timer {
+    return setInterval(() => {
       for (const [key, value] of this.requests.entries()) {
         const timeNow = new Date();
         log(isExpired(this.timeout, timeNow, value.receivedAt));

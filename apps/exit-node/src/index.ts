@@ -3,9 +3,9 @@
  */
 // createMessageListener() -> cache (commons) -> onRequest() -> updateRequestTracker(), sendRpcRequest() -> sendMesage(), updateRequestTracker() <<remove old request>>
 import { Cache, utils } from "rpch-commons";
-import { createMessageListener, sendMessage } from "./hoprd.js";
-import { sendRpcRequest } from "./exit.js";
-import RequestTracker from "./request-tracker.js";
+import { createMessageListener, sendMessage } from "./hoprd";
+import { sendRpcRequest } from "./exit";
+import RequestTracker from "./request-tracker";
 const { createLogger } = utils;
 
 const { log } = createLogger("exit");
@@ -63,6 +63,7 @@ const start = async (ops: {
       const interval = requestTracker.setInterval();
 
       return () => {
+        clearInterval(interval);
         stopExitNode();
       };
     }

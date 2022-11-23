@@ -8,7 +8,7 @@ import { utils as ethersUtils } from "ethers";
 import { utils } from "rpch-commons";
 const { createLogger, createApiUrl } = utils;
 
-const { log, logVerbose } = createLogger("exit");
+const { log, logError, logVerbose } = createLogger("exit");
 
 /**
  * Send a segment to a HOPRd node.
@@ -18,7 +18,7 @@ export const sendMessage = async (
   apiToken: string | undefined,
   message: string,
   destination: string
-): Promise<void> => {
+): Promise<void | string> => {
   const [url, headers] = createApiUrl(
     "http",
     apiEndpoint,
@@ -43,13 +43,15 @@ export const sendMessage = async (
   });
 
   if (response.status !== 202) {
-    console.error(
+    logError(
       "failed to send message to HOPRd node",
       response.status,
       await response.text()
     );
   } else {
-    console.log("send message to HOPRd node", message, destination);
+    log("send message to HOPRd node", message, destination);
+    const text = await response.text();
+    return text;
   }
 };
 

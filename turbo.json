@@ -3,14 +3,16 @@
   "pipeline": {
     "build": {
       "dependsOn": [
-        "^build",
-        "$HOPRD_API_ENDPOINT",
-        "$HOPRD_API_TOKEN",
-        "$RESPONSE_TIMEOUT_STR"
+        "^build"
       ],
       "outputs": [
         "dist/**",
         ".next/**"
+      ],
+      "env": [
+        "HOPRD_API_ENDPOINT",
+        "HOPRD_API_TOKEN",
+        "RESPONSE_TIMEOUT_STR"
       ]
     },
     "lint": {
