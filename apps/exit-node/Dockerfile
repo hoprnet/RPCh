@@ -20,12 +20,10 @@ RUN apt-get update \
 # ENV NEXT_TELEMETRY_DISABLE 1
 # ENV npm_config_build_from_source false
 
-# RUN apk update
-
 WORKDIR /app
 RUN yarn global add turbo
 COPY . .
-RUN turbo prune --scope="./apps/exit-node" --docker
+RUN turbo prune --scope="rpch-exit-node" --docker
 
 FROM node:16-alpine AS installer
 RUN apk add --no-cache libc6-compat
@@ -41,17 +39,13 @@ RUN yarn install
 # Build the project
 COPY --from=builder /app/out/full .
 COPY turbo.json turbo.json
-RUN yarn run build
+RUN yarn run build --filter="rpch-exit-node"
 
 FROM node:16-alpine AS runner
 WORKDIR /app
 
-# Don't run production as root
-# RUN addgroup --system --gid 1001 nodejs
-# RUN adduser --system --uid 1001 nextjs
-# USER nextjs
-
-COPY --from=installer /app/apps/web/package.json .
+COPY --from=installer /app/apps/exit-node/package.json .
+COPY --from=installer /app .
 
 # Allow configuration of enviroment variables as build arg or runtime env
 ARG HOPRD_API_ENDPOINT
@@ -60,7 +54,7 @@ ARG HOPR_API_TOKEN
 ENV HOPRD_API_ENDPOINT=${HOPR_API_TOKEN:-}
 ENV HOPR_API_TOKEN=${HOPR_API_TOKEN:-}
 
-CMD node apps/exit-node/index.js
+CMD node --es-module-specifier-resolution=node apps/exit-node/src/index.js
 
 # COPY packages/common /app/packages/common
 # COPY --from=build_common /app/packages/common .

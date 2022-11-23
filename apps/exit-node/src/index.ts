@@ -33,7 +33,7 @@ const start = async (ops: {
   apiEndpoint: string;
   apiToken?: string;
   timeout: number;
-}) => {
+}) : Promise<void> => {
   const stopExitNode = createMessageListener(
     ops.apiEndpoint,
     ops.apiToken,
