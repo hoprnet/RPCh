@@ -1,7 +1,7 @@
 {
   "extends": "rpch-configs-typescript/nodejs.json",
-  "include": ["."],
-  "exclude": ["build", "node_modules"],
+  "include": ["src"],
+  "exclude": ["node_modules", "src/**/*.spec*", "build"],
   "compilerOptions": {
     "outDir": "build"
   }
