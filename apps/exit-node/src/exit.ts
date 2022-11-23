@@ -1,11 +1,11 @@
 /**
- * Responsible for creating external requests.
+ * Responsible for creating external requests to a provider.
  */
 import fetch from "node-fetch";
 import { utils } from "rpch-commons";
-const { createLogger } = utils;
 
-const { log, logVerbose } = createLogger("exit");
+const { createLogger } = utils;
+const { log, logVerbose } = createLogger(["exit-node", "exit"]);
 
 /**
  * Creates a request to the given provider and returns response.

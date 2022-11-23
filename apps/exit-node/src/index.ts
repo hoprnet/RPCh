@@ -1,14 +1,8 @@
-/**
- * Responsible for managing the whole functionality of the exit-node.
- */
-// createMessageListener() -> cache (commons) -> onRequest() -> updateRequestTracker(), sendRpcRequest() -> sendMesage(), updateRequestTracker() <<remove old request>>
 import { Cache, utils } from "rpch-commons";
-import { createMessageListener, sendMessage } from "./hoprd";
 import { sendRpcRequest } from "./exit";
-import RequestTracker from "./request-tracker";
-const { createLogger } = utils;
 
-const { log } = createLogger("exit");
+const { createLogger } = utils;
+const { log } = createLogger("exit-node");
 
 const {
   HOPRD_API_ENDPOINT,
@@ -33,7 +27,7 @@ const start = async (ops: {
   apiEndpoint: string;
   apiToken?: string;
   timeout: number;
-}) : Promise<void> => {
+}): Promise<void> => {
   const stopExitNode = createMessageListener(
     ops.apiEndpoint,
     ops.apiToken,

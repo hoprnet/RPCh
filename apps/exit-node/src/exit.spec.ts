@@ -1,16 +1,27 @@
 import assert from "assert";
-import * as exit from "./exit";
-import { fixtures } from "rpch-commons";
 import nock from "nock";
-const { PROVIDER } = fixtures;
-const PROVIDER_RESPONSE = "Nethermind JSON RPC";
-const REQUEST_BODY = "Request Body Example";
+import { fixtures } from "rpch-commons";
+import * as exit from "./exit";
 
-describe("test exit node", function () {
-  it("Should send request to provider", async function () {
-    nock(PROVIDER).post(/.*/).reply(200, PROVIDER_RESPONSE);
+const MOCK_RPC_RESPONSE = "[RESPONSE]";
 
-    const responseRPC = await exit.sendRpcRequest(REQUEST_BODY, PROVIDER);
-    assert.equal(responseRPC, PROVIDER_RESPONSE);
+describe("test exit.ts", function () {
+  it("should send a request to a provider and receive a string", async function () {
+    nock(fixtures.PROVIDER).post(/.*/).reply(200, MOCK_RPC_RESPONSE);
+
+    const response = await exit.sendRpcRequest(
+      fixtures.RPC_REQ_SMALL,
+      fixtures.PROVIDER
+    );
+    assert.equal(response, MOCK_RPC_RESPONSE);
+  });
+  it("should send a request to a provider and throw an error", async function () {
+    nock(fixtures.PROVIDER).post(/.*/).reply(404, "Not Found");
+
+    try {
+      await exit.sendRpcRequest(fixtures.RPC_REQ_SMALL, fixtures.PROVIDER);
+    } catch (error) {
+      assert.equal(error, "Not Found");
+    }
   });
 });
