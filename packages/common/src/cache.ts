@@ -25,6 +25,13 @@ export default class Cache {
     private onResponse: (response: Response) => void
   ) {}
 
+  /**
+   * Feeds the cache with a new segment.
+   * If segment completed a set of segments which can either be
+   * a Request or Response it either trigger `onRequest` or `onResponse`
+   * functions.
+   * @param segment
+   */
   public onSegment(segment: Segment): void {
     // get segment entry with matching msgId, or create a new one
     const segmentEntry = this.segments.get(segment.msgId) || {
@@ -57,6 +64,9 @@ export default class Cache {
     }
   }
 
+  /**
+   * Removes expired segments.
+   */
   public removeExpired(): void {
     const now = new Date();
 
