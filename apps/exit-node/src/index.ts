@@ -1,8 +1,9 @@
-import { Cache, utils } from "rpch-commons";
+import { type Request, Cache, utils, Segment } from "rpch-commons";
 import { sendRpcRequest } from "./exit";
+import { createMessageListener, sendMessage } from "./hoprd";
 
 const { createLogger } = utils;
-const { log } = createLogger("exit-node");
+const { log, logError } = createLogger("exit-node");
 
 const {
   HOPRD_API_ENDPOINT,
@@ -24,44 +25,46 @@ if (isNaN(RESPONSE_TIMEOUT)) {
 }
 
 const start = async (ops: {
+  timeout: number;
   apiEndpoint: string;
   apiToken?: string;
-  timeout: number;
-}): Promise<void> => {
-  const stopExitNode = createMessageListener(
+}): Promise<() => void> => {
+  const onRequest = async (rpchRequest: Request) => {
+    try {
+      const response = await sendRpcRequest(
+        rpchRequest.body,
+        rpchRequest.provider
+      );
+      const rpchResponse = rpchRequest.createResponse(response);
+      await sendMessage({
+        apiEndpoint: ops.apiEndpoint,
+        apiToken: ops.apiToken,
+        message: rpchResponse.toMessage().body,
+        destination: rpchRequest.origin,
+      });
+    } catch {
+      logError("failed");
+    }
+  };
+
+  const cache = new Cache(ops.timeout, onRequest, () => {});
+
+  const stopExitNode = await createMessageListener(
     ops.apiEndpoint,
-    ops.apiToken,
+    ops.apiToken || "",
     (message: string) => {
-      const requestTracker = new RequestTracker(ops.timeout);
       try {
-        new Cache(
-          ops.timeout,
-          (request) => {
-            requestTracker.onRequest(request);
-            sendRpcRequest(request.body, request.provider);
-          },
-          (response) => {
-            sendMessage(
-              ops.apiEndpoint,
-              ops.apiToken,
-              response.body,
-              ops.apiEndpoint
-            );
-            requestTracker.onResponse(response);
-          }
-        );
+        const segment = Segment.fromString(message);
+        cache.onSegment(segment);
       } catch (error) {
         log("Rejected received data from HOPRd: not a valid message", message);
       }
-
-      const interval = requestTracker.setInterval();
-
-      return () => {
-        clearInterval(interval);
-        stopExitNode();
-      };
     }
   );
+
+  return () => {
+    stopExitNode();
+  };
 };
 
 start({
