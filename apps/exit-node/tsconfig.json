@@ -1,5 +1,5 @@
 {
   "extends": "rpch-configs-typescript/nodejs.json",
   "include": ["."],
-  "exclude": ["dist", "build", "node_modules", "/app/packages/*.specs.ts"]
+  "exclude": ["dist", "build", "node_modules"]
 }
