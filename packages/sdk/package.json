@@ -5,19 +5,24 @@
   "types": "./src/index.ts",
   "license": "MIT",
   "scripts": {
-    "test": "jest || exit 0",
+    "test": "jest",
     "lint": "TIMING=1 eslint \"src/**/*.ts*\""
   },
   "devDependencies": {
     "@types/debug": "^4.1.7",
+    "@types/node-fetch": "^2.6.2",
+    "@types/ws": "^8.5.3",
     "eslint": "^7.32.0",
     "eslint-config-rpch": "*",
+    "nock": "^13.2.9",
     "rpch-configs-typescript": "*",
     "typescript": "^4.5.2"
   },
   "dependencies": {
     "debug": "^4.3.4",
-    "rpch-commons": "*"
+    "node-fetch": "^2.6.2",
+    "rpch-commons": "*",
+    "ws": "^8.11.0"
   },
   "jest": {
     "preset": "ts-jest",
