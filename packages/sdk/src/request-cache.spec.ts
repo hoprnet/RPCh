@@ -3,7 +3,8 @@ import { Cache, Request, Response } from "rpch-commons";
 import { fixtures } from "rpch-commons";
 const { PEER_ID_A: ORIGIN, PROVIDER, RPC_REQ_SMALL } = fixtures;
 import RequestCache from "./request-cache";
-const TIMEOUT = 60e3;
+
+const TIMEOUT = 10e3;
 const RESPONSE_BODY = "response";
 const RESPONSE_A = new Response(1, RESPONSE_BODY);
 const RESPONSE_B = new Response(2, RESPONSE_BODY);
@@ -22,23 +23,14 @@ describe("test request cache class", function () {
     );
     assert.equal(requestCache.getRequest(REQUEST.id)?.request.id, REQUEST.id);
   });
-  it("should remove request with matching response", function () {
+  it("should remove a request", function () {
     requestCache.addRequest(
       REQUEST,
       () => {},
       () => {}
     );
-    requestCache.onResponseFromSegments(RESPONSE_A);
+    requestCache.removeRequest(REQUEST);
     assert.equal(requestCache.getRequest(REQUEST.id), undefined);
-  });
-  it("shouldn't remove request with different response", function () {
-    requestCache.addRequest(
-      REQUEST,
-      () => {},
-      () => {}
-    );
-    requestCache.onResponseFromSegments(RESPONSE_B);
-    assert.equal(requestCache.getRequest(REQUEST.id)?.request.id, REQUEST.id);
   });
   it("should timeout request", function () {
     jest.useFakeTimers();

@@ -53,29 +53,6 @@ export default class RequestCache {
   }
 
   /**
-   * Resolve request promise and delete the request from map
-   * @param res Response received from cache module
-   */
-  public onResponseFromSegments(res: Response): void {
-    const matchingRequest = this.requests.get(res.id);
-    if (!matchingRequest) {
-      logError("matching request not found", res.id);
-      return;
-    }
-    matchingRequest.resolve(res);
-    this.requests.delete(res.id);
-    log("responded to %s with %s", matchingRequest.request.body, res.body);
-  }
-
-  /**
-   * Logs the request received from cache module
-   * @param req Request received from cache module
-   */
-  public onRequestFromSegments(req: Request): void {
-    log("received request %s", req.body);
-  }
-
-  /**
    * Check every “timeout” for expired Requests
    */
   public setInterval(): void {

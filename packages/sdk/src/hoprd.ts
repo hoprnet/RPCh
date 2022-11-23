@@ -5,6 +5,9 @@ import fetch from "node-fetch";
 const { createLogger, createApiUrl } = utils;
 const { log, logError, logVerbose } = createLogger("hoprd");
 
+/**
+ * Request messaging access token from a selected HOPRd entry node
+ */
 export const requestMessagingAccessToken = () => {
   throw new Error("Not implemented yet");
 };
