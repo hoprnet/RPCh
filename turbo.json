@@ -2,18 +2,8 @@
   "$schema": "https://turbo.build/schema.json",
   "pipeline": {
     "build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "dist/**",
-        ".next/**"
-      ],
-      "env": [
-        "HOPRD_API_ENDPOINT",
-        "HOPRD_API_TOKEN",
-        "RESPONSE_TIMEOUT_STR"
-      ]
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**"]
     },
     "lint": {
       "outputs": []
