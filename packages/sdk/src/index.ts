@@ -1,11 +1,9 @@
-import { Cache, Request, Response, Segment } from "rpch-commons";
+import { Cache, hoprd, Request, Response, Segment, utils } from "rpch-commons";
 import RequestCache from "./request-cache";
-import { sendMessage, createMessageListener } from "./hoprd";
-import { utils } from "rpch-commons";
+
+const { sendMessage, createMessageListener } = hoprd;
 const { createLogger } = utils;
-
 const { log, logError } = createLogger();
-
 const MOCK_DISCOVERY_PLATFORM_API_ENDPOINT = "https://localhost:3000";
 const MOCK_API_TOKEN = "123456789";
 const MOCK_DESTINATION =

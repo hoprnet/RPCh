@@ -1,6 +1,6 @@
-import { Cache as SegmentsCache, Request, Response, utils } from "rpch-commons";
+import { Request, Response, utils } from "rpch-commons";
+
 const { isExpired } = utils;
-const { log, logVerbose, logError } = utils.createLogger("request-cache");
 
 /**
  * Keeps in cache the Requests which have been sent by the SDK.
