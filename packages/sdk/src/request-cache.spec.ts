@@ -8,19 +8,11 @@ const RESPONSE_BODY = "response";
 const RESPONSE_A = new Response(1, RESPONSE_BODY);
 const RESPONSE_B = new Response(2, RESPONSE_BODY);
 const REQUEST = new Request(1, ORIGIN, PROVIDER, RPC_REQ_SMALL);
-function wait(timeout: number) {
-  return new Promise((resolve) => setTimeout(resolve, timeout));
-}
+
 describe("test request cache class", function () {
   let requestCache: RequestCache;
-  let cache: Cache;
   beforeEach(() => {
     requestCache = new RequestCache(TIMEOUT);
-    cache = new Cache(
-      TIMEOUT,
-      requestCache.onRequestFromSegments,
-      requestCache.onResponseFromSegments
-    );
   });
   it("should add request", function () {
     requestCache.addRequest(
