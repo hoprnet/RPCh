@@ -1,20 +1,16 @@
 import assert from "assert";
 import { fixtures, Request, Response } from "rpch-commons";
 import startExitNode from ".";
-
-const MOCKED_REQUEST = Request.fromData(
-  "origin",
-  fixtures.PROVIDER,
-  fixtures.RPC_REQ_LARGE
-);
-
-const MOCK_RPC_RESPONSE = fixtures.RPC_REQ_LARGE;
-const MOCKED_RESPONSE = new Response(MOCKED_REQUEST.id, MOCK_RPC_RESPONSE);
+const {
+  REQUEST_A: MOCKED_REQUEST,
+  RESPONSE_A: MOCKED_RESPONSE,
+  RESPONSE_BODY,
+} = fixtures;
 
 const createMockedSetup = () => {
   let triggerOnMessage: (message: string) => void = () => {};
   const exit = {
-    sendRpcRequest: jest.fn(async () => MOCK_RPC_RESPONSE),
+    sendRpcRequest: jest.fn(async () => RESPONSE_BODY),
   };
   const hoprd = {
     sendMessage: jest.fn(async () => "MOCK_SEND_MSG_RESPONSE"),

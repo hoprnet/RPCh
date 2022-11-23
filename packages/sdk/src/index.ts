@@ -1,16 +1,16 @@
-import { Cache, Request, Response, Segment } from "rpch-commons";
+import { Cache, Request, Response, Segment, fixtures } from "rpch-commons";
 import RequestCache from "./request-cache";
 import { sendMessage, createMessageListener } from "./hoprd";
 import { utils } from "rpch-commons";
 const { createLogger } = utils;
+const {
+  TIMEOUT,
+  MOCK_DISCOVERY_PLATFORM_API_ENDPOINT,
+  MOCK_API_TOKEN,
+  MOCK_DESTINATION,
+} = fixtures;
 
 const { log, logError } = createLogger();
-
-const MOCK_DISCOVERY_PLATFORM_API_ENDPOINT = "https://localhost:3000";
-const MOCK_API_TOKEN = "123456789";
-const MOCK_DESTINATION =
-  "16Uiu2HAmM9KAPaXA4eAz58Q7Eb3LEkDvLarU4utkyL6vM5mwDeEK";
-const TIMEOUT = 60e3;
 
 /**
  * Send traffic through the RPCh network

@@ -2,6 +2,9 @@
  * Contains various variables used in tests.
  */
 
+import Request from "./request";
+import Response from "./response";
+
 export const RPC_REQ_SMALL = `{"id":"1663836360444","jsonrpc":"2.0","method":"eth_chainId","params":[]}`;
 export const RPC_REQ_LARGE = `{"id":"1663836360445","jsonrpc":"2.0","method":"eth_chainId","params":["sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample"]}`;
 
@@ -13,3 +16,25 @@ export const PEER_ID_B =
   "16Uiu2HAmM9KAPaXA4eAz58Q7Eb3LEkDvLarU4utkyL6vM5mwDeEK";
 
 export const PROVIDER = "https://primary.gnosis-chain.rpc.hoprtech.net";
+
+export const TIMEOUT = 10e3;
+
+export const RESPONSE_BODY = "response";
+
+export const RESPONSE_A = new Response(1, RESPONSE_BODY);
+
+export const RESPONSE_B = new Response(2, RESPONSE_BODY);
+
+export const REQUEST_A = new Request(1, PEER_ID_A, PROVIDER, RPC_REQ_SMALL);
+
+export const REQUEST_B = new Request(2, PEER_ID_A, PROVIDER, RPC_REQ_SMALL);
+
+export const MOCK_DISCOVERY_PLATFORM_API_ENDPOINT = "https://localhost:3000";
+
+export const MOCK_RESPONSE_TEXT =
+  "e61bbdda74873540c7244fe69c39f54e5270bd46709c1dcb74c8e3afce7b9e616d";
+
+export const MOCK_API_TOKEN = "123456789";
+
+export const MOCK_DESTINATION =
+  "16Uiu2HAmM9KAPaXA4eAz58Q7Eb3LEkDvLarU4utkyL6vM5mwDeEK";
