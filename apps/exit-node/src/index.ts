@@ -1,6 +1,5 @@
-import { type Request, Cache, utils, Segment } from "rpch-commons";
+import { type Request, Cache, utils, Segment, hoprd } from "rpch-commons";
 import * as exit from "./exit";
-import * as hoprd from "./hoprd";
 
 const { createLogger } = utils;
 const { log, logError } = createLogger("exit-node");

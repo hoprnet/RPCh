@@ -1,44 +1,46 @@
 import assert from "assert";
-import { Cache, Request, Response } from "rpch-commons";
 import { fixtures } from "rpch-commons";
-const { TIMEOUT, REQUEST_A } = fixtures;
 import RequestCache from "./request-cache";
+
+const TIMEOUT = 10e3;
 
 describe("test request cache class", function () {
   let requestCache: RequestCache;
-  beforeEach(() => {
+
+  beforeEach(function () {
     requestCache = new RequestCache(TIMEOUT);
   });
+
   it("should add request", function () {
     requestCache.addRequest(
-      REQUEST_A,
+      fixtures.SMALL_REQUEST,
       () => {},
       () => {}
     );
     assert.equal(
-      requestCache.getRequest(REQUEST_A.id)?.request.id,
-      REQUEST_A.id
+      requestCache.getRequest(fixtures.SMALL_REQUEST.id)?.request.id,
+      fixtures.SMALL_REQUEST.id
     );
   });
   it("should remove a request", function () {
     requestCache.addRequest(
-      REQUEST_A,
+      fixtures.SMALL_REQUEST,
       () => {},
       () => {}
     );
-    requestCache.removeRequest(REQUEST_A);
-    assert.equal(requestCache.getRequest(REQUEST_A.id), undefined);
+    requestCache.removeRequest(fixtures.SMALL_REQUEST);
+    assert.equal(requestCache.getRequest(fixtures.SMALL_REQUEST.id), undefined);
   });
   it("should timeout request", function () {
     jest.useFakeTimers();
     requestCache.addRequest(
-      REQUEST_A,
+      fixtures.SMALL_REQUEST,
       () => {},
       () => {}
     );
     requestCache.setInterval();
     jest.advanceTimersByTime(2 * TIMEOUT);
-    assert.equal(requestCache.getRequest(REQUEST_A.id), undefined);
+    assert.equal(requestCache.getRequest(fixtures.SMALL_REQUEST.id), undefined);
     jest.useRealTimers();
   });
 });

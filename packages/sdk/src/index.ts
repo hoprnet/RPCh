@@ -1,15 +1,8 @@
-import { Cache, Request, Response, Segment, fixtures } from "rpch-commons";
+import { Cache, Request, Response, Segment, hoprd, utils } from "rpch-commons";
 import RequestCache from "./request-cache";
-import { sendMessage, createMessageListener } from "./hoprd";
-import { utils } from "rpch-commons";
-const { createLogger } = utils;
-const {
-  TIMEOUT,
-  MOCK_DISCOVERY_PLATFORM_API_ENDPOINT,
-  MOCK_API_TOKEN,
-  MOCK_DESTINATION,
-} = fixtures;
 
+const { sendMessage, createMessageListener } = hoprd;
+const { createLogger } = utils;
 const { log, logError } = createLogger();
 
 /**
@@ -19,10 +12,16 @@ export default class SDK {
   private cache: Cache;
   private requestCache: RequestCache;
 
-  constructor() {
-    this.requestCache = new RequestCache(TIMEOUT);
+  constructor(
+    private timeout: number,
+    private discoveryPlatformApiEndpoint: string,
+    private entryNodeApiEndpoint: string,
+    private entryNodeApiToken: string,
+    private exitNodePeerId: string
+  ) {
+    this.requestCache = new RequestCache(this.timeout);
     this.cache = new Cache(
-      TIMEOUT,
+      this.timeout,
       this.onRequestFromSegments,
       this.onResponseFromSegments
     );
@@ -35,14 +34,14 @@ export default class SDK {
    * @param apiToken
    */
   public async requestMessagingAccessToken(
-    apiEndpoint: string,
-    apiToken: string
+    _apiEndpoint: string,
+    _apiToken: string
   ) {
     // get api token access
     // open listener
     await createMessageListener(
-      MOCK_DISCOVERY_PLATFORM_API_ENDPOINT,
-      MOCK_API_TOKEN,
+      this.entryNodeApiEndpoint,
+      this.entryNodeApiToken,
       (message) => {
         try {
           const segment = Segment.fromString(message);
@@ -85,10 +84,10 @@ export default class SDK {
       this.requestCache.addRequest(req, resolve, reject);
       for (const segment of segments) {
         await sendMessage({
-          apiEndpoint: MOCK_DISCOVERY_PLATFORM_API_ENDPOINT,
-          apiToken: MOCK_API_TOKEN,
+          apiEndpoint: this.entryNodeApiEndpoint,
+          apiToken: this.entryNodeApiToken,
           message: segment.toString(),
-          destination: MOCK_DESTINATION,
+          destination: this.exitNodePeerId,
         });
       }
     });
