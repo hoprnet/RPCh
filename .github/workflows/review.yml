@@ -47,6 +47,7 @@ jobs:
         uses: ArtiomTr/jest-coverage-report-action@v2
         id: coverage
         with:
+          package-manager: yarn
           test-script: yarn jest
           output: report-markdown
 
