@@ -48,7 +48,9 @@ jobs:
         id: coverage
         with:
           package-manager: yarn
-          test-script: yarn jest
+          test-script: yarn coverage
+          coverage-file: report.json
+          base-coverage-file: report.json
           output: report-markdown
 
       - name: Sticky coverage comment
