@@ -15,7 +15,7 @@
       "outputs": []
     },
     "coverage": {
-      "outputs": ["coverage/**"]
+      "outputs": ["coverage/**", "report.json"]
     },
     "dev": {
       "cache": false
