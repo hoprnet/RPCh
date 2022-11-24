@@ -44,7 +44,7 @@ jobs:
         run: yarn test
 
       - name: Run Coverage
-        uses: ArtiomTr/jest-coverage-report-action@v2
+        uses: diegoalzate/jest-coverage-report-action
         id: coverage
         with:
           package-manager: yarn
