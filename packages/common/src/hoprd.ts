@@ -44,16 +44,16 @@ export const sendMessage = async ({
     body: JSON.stringify(body),
   });
 
-  if (response.status !== 202) {
+  if (response.status === 202) {
+    log("send message to HOPRd node", message, destination);
+    const text = await response.text();
+    return text;
+  } else {
     logError(
       "failed to send message to HOPRd node",
       response.status,
       await response.text()
     );
-  } else {
-    log("send message to HOPRd node", message, destination);
-    const text = await response.text();
-    return text;
   }
 };
 
