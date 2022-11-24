@@ -13,7 +13,8 @@
     "lint": "turbo run lint",
     "format:check": "prettier --check \"**/src/*.{ts,tsx,md,json}\"",
     "format": "prettier --write \"**/src/*.{ts,tsx,md,json}\"",
-    "test": "turbo run test"
+    "test": "turbo run test",
+    "coverage": "turbo run coverage"
   },
   "devDependencies": {
     "@types/jest": "^29.2.1",

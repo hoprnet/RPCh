@@ -6,6 +6,7 @@
   "license": "MIT",
   "scripts": {
     "test": "jest",
+    "coverage": "jest --coverage",
     "lint": "TIMING=1 eslint \"src/**/*.ts*\""
   },
   "devDependencies": {
