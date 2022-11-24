@@ -1,0 +1,18 @@
+{
+  "name": "rpch-funding-platform",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {
+    "start": "node build/index.js",
+    "build": "tsc",
+    "clean": "rm -rf ./build",
+    "test": "jest",
+    "lint": "TIMING=1 eslint \"src/**/*.ts*\""
+  },
+  "devDependencies": {},
+  "dependencies": {},
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node"
+  }
+}
