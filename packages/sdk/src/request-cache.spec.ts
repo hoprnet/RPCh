@@ -1,13 +1,9 @@
 import assert from "assert";
-import { Cache, Request, Response } from "rpch-commons";
-import { fixtures } from "rpch-commons";
-const { PEER_ID_A: ORIGIN, PROVIDER, RPC_REQ_SMALL } = fixtures;
+import { fixtures, Request } from "rpch-commons";
 import RequestCache from "./request-cache";
 
+const { PEER_ID_A: ORIGIN, PROVIDER, RPC_REQ_SMALL } = fixtures;
 const TIMEOUT = 10e3;
-const RESPONSE_BODY = "response";
-const RESPONSE_A = new Response(1, RESPONSE_BODY);
-const RESPONSE_B = new Response(2, RESPONSE_BODY);
 const REQUEST = new Request(1, ORIGIN, PROVIDER, RPC_REQ_SMALL);
 
 describe("test request cache class", function () {
