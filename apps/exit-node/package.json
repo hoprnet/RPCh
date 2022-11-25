@@ -3,17 +3,15 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "start": "node build/index.js",
     "build": "tsc",
+    "start": "node build/index.js",
     "clean": "rm -rf ./build",
     "test": "jest",
     "coverage": "jest --json --coverage --testLocationInResults --outputFile=report.json",
     "lint": "TIMING=1 eslint \"src/**/*.ts*\""
   },
   "devDependencies": {
-    "@types/jest": "^29.2.3",
     "@types/node-fetch": "2.6.2",
-    "@types/ws": "^8.5.3",
     "eslint": "^7.32.0",
     "eslint-config-rpch": "*",
     "nock": "^13.2.9",
@@ -22,8 +20,7 @@
   },
   "dependencies": {
     "node-fetch": "^2.6.2",
-    "rpch-commons": "*",
-    "ws": "^8.11.0"
+    "rpch-commons": "*"
   },
   "jest": {
     "preset": "ts-jest",

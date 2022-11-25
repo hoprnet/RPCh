@@ -1,7 +1,7 @@
 import assert from "assert";
 import * as hoprd from "./hoprd";
+import * as fixtures from "./fixtures";
 import nock from "nock";
-import { fixtures } from "rpch-commons";
 
 const ENTRY_NODE_API_ENDPOINT = "http://entry_node";
 const ENTRY_NODE_API_TOKEN = "12345";

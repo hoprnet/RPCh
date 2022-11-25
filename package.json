@@ -10,19 +10,19 @@
   "scripts": {
     "build": "turbo run build",
     "lint": "turbo run lint",
-    "format:check": "prettier --check \"**/src/*.{ts,tsx,md,json}\"",
-    "format": "prettier --write \"**/src/*.{ts,tsx,md,json}\"",
     "test": "turbo run test",
-    "coverage": "turbo run coverage"
+    "coverage": "turbo run coverage",
+    "format:check": "prettier --check \"**/src/*.{ts,tsx,md,json}\"",
+    "format": "prettier --write \"**/src/*.{ts,tsx,md,json}\""
   },
   "devDependencies": {
     "@types/jest": "^29.2.1",
     "eslint-config-rpch": "*",
     "jest": "^29.2.2",
-    "prettier": "latest",
+    "prettier": "^2.8.0",
     "ts-jest": "^29.0.3",
     "typescript": "^4.5.2",
-    "turbo": "latest"
+    "turbo": "^1.6.3"
   },
   "engines": {
     "node": ">=16.0.0"
