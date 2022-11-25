@@ -1,0 +1,9 @@
+{
+  "name": "rpch-configs-prettier",
+  "version": "0.0.0",
+  "private": true,
+  "main": "index.js",
+  "dependencies": {
+    "prettier": "^2.8.0"
+  }
+}

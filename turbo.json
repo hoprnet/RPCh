@@ -17,7 +17,13 @@
         "RESPONSE_TIMEOUT"
       ]
     },
+    "format": {
+      "outputs": []
+    },
     "lint": {
+      "dependsOn": [
+        "format"
+      ],
       "outputs": []
     },
     "test": {
@@ -28,9 +34,6 @@
         "coverage/**",
         "report.json"
       ]
-    },
-    "dev": {
-      "cache": false
     }
   }
 }

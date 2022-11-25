@@ -6,22 +6,19 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
+    "format": "prettier --check \"src/**/*.{ts,md,json}\"",
+    "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
     "test": "jest",
-    "coverage": "jest --json --coverage --testLocationInResults --outputFile=report.json",
-    "lint": "TIMING=1 eslint \"src/**/*.ts*\""
+    "coverage": "jest --json --coverage --testLocationInResults --outputFile=report.json"
   },
   "devDependencies": {
-    "eslint": "^7.32.0",
-    "eslint-config-rpch": "*",
-    "nock": "^13.2.9",
     "rpch-configs-typescript": "*",
-    "typescript": "^4.5.2"
+    "rpch-configs-eslint": "*",
+    "rpch-configs-prettier": "*",
+    "rpch-configs-jest": "*",
+    "nock": "^13.2.9"
   },
   "dependencies": {
-    "rpch-commons": "*"
-  },
-  "jest": {
-    "preset": "ts-jest",
-    "testEnvironment": "node"
+    "rpch-common": "*"
   }
 }

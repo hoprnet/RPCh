@@ -1,6 +1,6 @@
 import assert from "assert";
 import nock from "nock";
-import { Request, fixtures } from "rpch-commons";
+import { Request, fixtures } from "rpch-common";
 import SDK from "./index";
 
 const TIMEOUT = 10e3;
