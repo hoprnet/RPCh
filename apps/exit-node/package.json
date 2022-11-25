@@ -7,7 +7,7 @@
     "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "test": "jest",
-    "coverage": "jest --json --coverage --testLocationInResults --outputFile=report.json",
+    "coverage": "jest --coverage",
     "start": "node build/index.js"
   },
   "devDependencies": {

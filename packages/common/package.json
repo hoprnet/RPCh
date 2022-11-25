@@ -9,7 +9,7 @@
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
     "test": "jest",
-    "coverage": "jest --json --coverage --testLocationInResults --outputFile=report.json"
+    "coverage": "jest --coverage"
   },
   "devDependencies": {
     "rpch-configs-typescript": "*",
