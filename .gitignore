@@ -8,7 +8,8 @@ node_modules
 # testing
 coverage
 report.json
-# next.js
+
+# builds
 .next/
 out/
 build

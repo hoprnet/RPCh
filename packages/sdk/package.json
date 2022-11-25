@@ -6,7 +6,7 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "format": "prettier --check \"src/**/*.{ts,md,json}\"",
+    "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
     "test": "jest",
     "coverage": "jest --json --coverage --testLocationInResults --outputFile=report.json"

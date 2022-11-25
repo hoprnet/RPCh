@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc",
     "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
-    "format": "prettier --check \"src/**/*.{ts,md,json}\"",
+    "format": "prettier --check \"src/**/*.{ts,md}\"",
     "test": "jest",
     "coverage": "jest --json --coverage --testLocationInResults --outputFile=report.json",
     "start": "node build/index.js"
