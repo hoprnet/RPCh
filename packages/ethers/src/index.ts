@@ -1,25 +1,28 @@
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { deepCopy } from "@ethersproject/properties";
-import { fixtures } from "rpch-commons";
 import SDK from "rpch-sdk";
-
-const TIMEOUT = 10e3;
-const DISCOVERY_PLATFORM_API_ENDPOINT = "http://discovery_platform";
-const ENTRY_NODE_API_ENDPOINT = "http://entry_node";
-const ENTRY_NODE_API_TOKEN = "12345";
-const EXIT_NODE_PEER_ID = fixtures.PEER_ID_B;
 
 export class RPChProvider extends JsonRpcProvider {
   public sdk: SDK;
 
-  constructor(public readonly url: string, public readonly origin: string) {
+  constructor(
+    public readonly url: string,
+    public readonly origin: string,
+    hoprSdkOps: {
+      timeout: number;
+      discoveryPlatformApiEndpoint: string;
+      entryNodeApiEndpoint: string;
+      entryNodeApiToken: string;
+      exitNodePeerId: string;
+    }
+  ) {
     super(url);
     this.sdk = new SDK(
-      TIMEOUT,
-      DISCOVERY_PLATFORM_API_ENDPOINT,
-      ENTRY_NODE_API_ENDPOINT,
-      ENTRY_NODE_API_TOKEN,
-      EXIT_NODE_PEER_ID
+      hoprSdkOps.timeout,
+      hoprSdkOps.discoveryPlatformApiEndpoint,
+      hoprSdkOps.entryNodeApiEndpoint,
+      hoprSdkOps.entryNodeApiToken,
+      hoprSdkOps.exitNodePeerId
     );
   }
 
