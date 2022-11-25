@@ -43,6 +43,9 @@ jobs:
       - name: Run Tests
         run: yarn test --ci
 
+      - name: Generate coverage
+        run: yarn coverage --ci
+
       - name: Code Coverage Report
         uses: irongut/CodeCoverageSummary@v1.3.0
         with:
