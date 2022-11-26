@@ -6,8 +6,7 @@
     "build": "tsc",
     "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
-    "test": "jest",
-    "coverage": "jest --coverage",
+    "test": "jest --coverage",
     "start": "node build/index.js"
   },
   "devDependencies": {

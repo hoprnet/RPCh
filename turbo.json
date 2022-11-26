@@ -27,9 +27,6 @@
       "outputs": []
     },
     "test": {
-      "outputs": []
-    },
-    "coverage": {
       "outputs": [
         "coverage/**",
         "report.json"

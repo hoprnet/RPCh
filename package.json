@@ -12,7 +12,6 @@
     "format": "turbo run format",
     "lint": "turbo run lint",
     "test": "turbo run test --",
-    "coverage": "turbo run coverage --",
     "format:fix": "turbo run format -- --check=false --write=true"
   },
   "devDependencies": {
