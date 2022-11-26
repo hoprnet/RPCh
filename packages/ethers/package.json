@@ -5,24 +5,22 @@
   "types": "./src/index.ts",
   "license": "MIT",
   "scripts": {
-    "test": "jest",
-    "lint": "TIMING=1 eslint \"src/**/*.ts*\""
+    "build": "tsc",
+    "format": "prettier --check \"src/**/*.{ts,md}\"",
+    "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
+    "test": "jest --coverage"
   },
   "devDependencies": {
-    "nock": "^13.2.9",
-    "eslint": "^7.32.0",
-    "eslint-config-rpch": "*",
     "rpch-configs-typescript": "*",
-    "typescript": "^4.5.2"
+    "rpch-configs-eslint": "*",
+    "rpch-configs-prettier": "*",
+    "rpch-configs-jest": "*",
+    "nock": "^13.2.9"
   },
   "dependencies": {
     "rpch-sdk": "*"
   },
   "peerDependencies": {
     "ethers": "^5.7.2"
-  },
-  "jest": {
-    "preset": "ts-jest",
-    "testEnvironment": "node"
   }
 }

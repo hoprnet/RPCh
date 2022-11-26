@@ -1,4 +1,4 @@
-import { type Request, type Response, fixtures } from "rpch-commons";
+import { type Request, type Response, fixtures } from "rpch-common";
 import { RPChProvider } from ".";
 import nock from "nock";
 
