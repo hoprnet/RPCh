@@ -2,20 +2,35 @@
   "$schema": "https://turbo.build/schema.json",
   "pipeline": {
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "build/**",
+        ".next/**"
+      ]
     },
     "rpch-exit-node#build": {
-      "env": ["HOPRD_API_ENDPOINT", "HOPRD_API_TOKEN", "RESPONSE_TIMEOUT_STR"]
+      "env": [
+        "HOPRD_API_ENDPOINT",
+        "HOPRD_API_TOKEN",
+        "RESPONSE_TIMEOUT"
+      ]
+    },
+    "format": {
+      "outputs": []
     },
     "lint": {
+      "dependsOn": [
+        "format"
+      ],
       "outputs": []
     },
     "test": {
-      "outputs": []
-    },
-    "dev": {
-      "cache": false
+      "outputs": [
+        "coverage/**",
+        "report.json"
+      ]
     }
   }
 }
