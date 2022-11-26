@@ -1,4 +1,4 @@
-import { Cache, Request, Response, Segment, hoprd, utils } from "rpch-commons";
+import { Cache, Request, Response, Segment, hoprd, utils } from "rpch-common";
 import RequestCache from "./request-cache";
 
 const { sendMessage, createMessageListener } = hoprd;

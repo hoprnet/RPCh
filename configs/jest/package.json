@@ -1,0 +1,13 @@
+{
+  "name": "rpch-configs-jest",
+  "version": "0.0.0",
+  "private": true,
+  "main": "index.js",
+  "dependencies": {
+    "jest": "^29.2.2",
+    "ts-jest": "^29.0.3"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.2.1"
+  }
+}

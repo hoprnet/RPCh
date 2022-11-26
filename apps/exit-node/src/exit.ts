@@ -2,7 +2,7 @@
  * Responsible for creating external requests to a provider.
  */
 import fetch from "node-fetch";
-import { utils } from "rpch-commons";
+import { utils } from "rpch-common";
 
 const { createLogger } = utils;
 const { log, logVerbose } = createLogger(["exit-node", "exit"]);
