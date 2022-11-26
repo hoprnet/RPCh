@@ -12,9 +12,9 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     # To use Remote Caching, uncomment the next lines and follow the steps below.
-    # env:
-    #  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-    #  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
     steps:
       - name: Check out code
@@ -40,10 +40,7 @@ jobs:
       - name: Review formatting
         run: yarn format
 
-      - name: Run Tests
-        run: yarn test --ci
-
-      - name: Generate coverage
+      - name: Run tests and coverage
         run: yarn coverage --ci
 
       - name: Code Coverage Report
