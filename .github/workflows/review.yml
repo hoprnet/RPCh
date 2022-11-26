@@ -7,8 +7,8 @@ on:
     types: [opened, synchronize]
 
 jobs:
-  build:
-    name: Build and Test
+  review:
+    name: Review
     timeout-minutes: 15
     runs-on: ubuntu-latest
     # To use Remote Caching, uncomment the next lines and follow the steps below.
@@ -40,25 +40,14 @@ jobs:
       - name: Review formatting
         run: yarn format
 
-      - name: Run tests and coverage
-        run: yarn coverage --ci
+      # - name: Run tests and coverage
+      #   run: yarn coverage --ci
 
-      - name: Code Coverage Report
-        uses: irongut/CodeCoverageSummary@v1.3.0
+      - uses: ArtiomTr/jest-coverage-report-action@v2
+        id: coverage
         with:
-          filename: ./**/clover.xml
-          badge: true
-          fail_below_min: false
-          format: markdown
-          hide_branch_rate: false
-          hide_complexity: true
-          indicators: true
-          output: both
-          thresholds: "60 80"
-
-      - name: Add Coverage PR Comment
-        uses: marocchino/sticky-pull-request-comment@v2
-        if: github.event_name == 'pull_request'
+          test-script: yarn coverage --ci --json
+          output: report-markdown
+      - uses: marocchino/sticky-pull-request-comment@v2
         with:
-          recreate: true
-          path: code-coverage-results.md
+          message: ${{ steps.coverage.outputs.report }}
