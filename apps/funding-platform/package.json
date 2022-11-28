@@ -10,9 +10,12 @@
     "lint": "TIMING=1 eslint \"src/**/*.ts*\""
   },
   "exports": {
-    "./*": "./build/*.js",
-    "./*/*": "./build/*/*.js"
+    ".": {
+      "import": "./build/index.js",
+      "require":"./build/index.js"
+    }
   },
+  "main": "./build/index.js",
   "devDependencies": {
     "@types/express": "^4.17.14",
     "dotenv": "^16.0.3",

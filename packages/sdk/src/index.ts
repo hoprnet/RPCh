@@ -1,4 +1,4 @@
-import { Cache, Request, Response, Segment, hoprd, utils } from "rpch-commons";
+import { Cache, Request, Response, Segment, hoprd, utils } from "rpch-common";
 import RequestCache from "./request-cache";
 
 const { sendMessage, createMessageListener } = hoprd;
@@ -78,12 +78,12 @@ export default class SDK {
    * @returns Promise<Response>
    */
   public sendRequest(req: Request): Promise<Response> {
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       const message = req.toMessage();
       const segments = message.toSegments();
       this.requestCache.addRequest(req, resolve, reject);
       for (const segment of segments) {
-        await sendMessage({
+        sendMessage({
           apiEndpoint: this.entryNodeApiEndpoint,
           apiToken: this.entryNodeApiToken,
           message: segment.toString(),

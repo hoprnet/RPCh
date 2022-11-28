@@ -1,5 +1,5 @@
 {
-  "name": "eslint-config-rpch",
+  "name": "rpch-configs-eslint",
   "version": "0.0.0",
   "private": true,
   "main": "index.js",
@@ -9,8 +9,5 @@
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-react": "7.31.8",
     "eslint-config-turbo": "latest"
-  },
-  "devDependencies": {
-    "typescript": "^4.7.4"
   }
 }

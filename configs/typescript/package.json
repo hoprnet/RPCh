@@ -8,5 +8,8 @@
     "nodejs-library.json",
     "nodejs.json",
     "react-library.json"
-  ]
+  ],
+  "dependencies": {
+    "typescript": "^4.5.2"
+  }
 }

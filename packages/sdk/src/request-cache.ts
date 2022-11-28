@@ -1,4 +1,4 @@
-import { Request, Response, utils } from "rpch-commons";
+import { Request, Response, utils } from "rpch-common";
 
 const { isExpired } = utils;
 
