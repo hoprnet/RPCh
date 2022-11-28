@@ -104,3 +104,18 @@ export const createApiUrl = (
 
   return [url.toString(), headers];
 };
+
+/**
+ * Attemps to decode a HOPRd body.
+ * @param body
+ * @returns decoded message
+ */
+export const decodeIncomingBody = (body: string): string | undefined => {
+  try {
+    return utils.toUtf8String(
+      utils.RLP.decode(new Uint8Array(JSON.parse(`[${body}]`)))[0]
+    );
+  } catch {
+    throw new Error("failed to decode body");
+  }
+};

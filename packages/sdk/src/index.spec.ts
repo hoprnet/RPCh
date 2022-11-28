@@ -1,69 +1,84 @@
 import assert from "assert";
 import nock from "nock";
-import { Request, Response } from "rpch-commons";
-import { fixtures } from "rpch-commons";
-const { PEER_ID_A: ORIGIN, PROVIDER, RPC_REQ_SMALL } = fixtures;
+import { Request, fixtures } from "rpch-common";
 import SDK from "./index";
 
-const REQUEST = new Request(1, ORIGIN, PROVIDER, RPC_REQ_SMALL);
-const RESPONSE_BODY = "response";
-const RESPONSE_A = new Response(1, RESPONSE_BODY);
-const RESPONSE_B = new Response(2, RESPONSE_BODY);
-const MOCK_DISCOVERY_PLATFORM_API_ENDPOINT = "https://localhost:3000";
-const MOCK_RESPONSE_TEXT =
-  "e61bbdda74873540c7244fe69c39f54e5270bd46709c1dcb74c8e3afce7b9e616d";
+const TIMEOUT = 10e3;
+const DISCOVERY_PLATFORM_API_ENDPOINT = "http://discovery_platform";
+const ENTRY_NODE_API_ENDPOINT = "http://entry_node";
+const ENTRY_NODE_API_TOKEN = "12345";
+const ORIGIN = fixtures.PEER_ID_A;
+const EXIT_NODE_PEER_ID = fixtures.PEER_ID_B;
 
 describe("test SDK class", function () {
   let sdk: SDK;
-  beforeEach(() => {
-    sdk = new SDK();
+
+  beforeEach(function () {
+    sdk = new SDK(
+      TIMEOUT,
+      DISCOVERY_PLATFORM_API_ENDPOINT,
+      ENTRY_NODE_API_ENDPOINT,
+      ENTRY_NODE_API_TOKEN,
+      EXIT_NODE_PEER_ID
+    );
   });
+
   it("should create request", function () {
-    const request = sdk.createRequest(ORIGIN, PROVIDER, RPC_REQ_SMALL);
+    const request = sdk.createRequest(
+      ORIGIN,
+      fixtures.PROVIDER,
+      fixtures.RPC_REQ_LARGE
+    );
     assert(request instanceof Request);
     assert.equal(request.origin, ORIGIN);
-    assert.equal(request.provider, PROVIDER);
-    assert.equal(request.body, RPC_REQ_SMALL);
+    assert.equal(request.provider, fixtures.PROVIDER);
+    assert.equal(request.body, fixtures.RPC_REQ_LARGE);
   });
   it("should send request and return response", function (done) {
-    nock(MOCK_DISCOVERY_PLATFORM_API_ENDPOINT)
+    nock(ENTRY_NODE_API_ENDPOINT)
+      .persist()
       .post(/.*/)
-      .reply(202, MOCK_RESPONSE_TEXT);
+      .reply(202, "someresponse");
 
-    sdk.sendRequest(REQUEST).then((value) => {
-      assert.equal(value.id, REQUEST.id);
+    sdk.sendRequest(fixtures.LARGE_REQUEST).then((response) => {
+      assert.equal(response.id, fixtures.LARGE_RESPONSE.id);
       // @ts-ignore
-      const pendingRequest = sdk.requestCache.getRequest(REQUEST.id);
+      const pendingRequest = sdk.requestCache.getRequest(
+        fixtures.LARGE_RESPONSE.id
+      );
       assert.equal(pendingRequest, undefined);
       done();
     });
 
-    sdk.onResponseFromSegments(RESPONSE_A);
+    sdk.onResponseFromSegments(fixtures.LARGE_RESPONSE);
   });
   describe("should handle requests correctly when receiving a response", function () {
     it("should remove request with matching response", function () {
       // @ts-ignore
       sdk.requestCache.addRequest(
-        REQUEST,
+        fixtures.LARGE_REQUEST,
         () => {},
         () => {}
       );
-      sdk.onResponseFromSegments(RESPONSE_A);
-      // @ts-ignore
-      assert.equal(sdk.requestCache.getRequest(REQUEST.id), undefined);
+      sdk.onResponseFromSegments(fixtures.LARGE_RESPONSE);
+      assert.equal(
+        // @ts-ignore
+        sdk.requestCache.getRequest(fixtures.LARGE_RESPONSE.id),
+        undefined
+      );
     });
     it("shouldn't remove request with different response", function () {
       // @ts-ignore
       sdk.requestCache.addRequest(
-        REQUEST,
+        fixtures.LARGE_REQUEST,
         () => {},
         () => {}
       );
-      sdk.onResponseFromSegments(RESPONSE_B);
+      sdk.onResponseFromSegments(fixtures.SMALL_RESPONSE);
       assert.equal(
         // @ts-ignore
-        sdk.requestCache.getRequest(REQUEST.id)?.request.id,
-        REQUEST.id
+        sdk.requestCache.getRequest(fixtures.LARGE_RESPONSE.id)?.request.id,
+        fixtures.LARGE_REQUEST.id
       );
     });
   });

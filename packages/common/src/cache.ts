@@ -51,6 +51,9 @@ export default class Cache {
     if (validateSegments(segmentEntry.segments)) {
       const message = Message.fromSegments(segmentEntry.segments);
 
+      // remove segments
+      this.segments.delete(segment.msgId);
+
       try {
         const req = Request.fromMessage(message);
         this.onRequest(req);
@@ -58,9 +61,6 @@ export default class Cache {
         const res = Response.fromMessage(message);
         this.onResponse(res);
       }
-
-      // remove segments
-      this.segments.delete(segment.msgId);
     }
   }
 

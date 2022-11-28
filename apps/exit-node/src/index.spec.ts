@@ -1,20 +1,11 @@
 import assert from "assert";
-import { fixtures, Request, Response } from "rpch-commons";
 import startExitNode from ".";
-
-const MOCKED_REQUEST = Request.fromData(
-  "origin",
-  fixtures.PROVIDER,
-  fixtures.RPC_REQ_LARGE
-);
-
-const MOCK_RPC_RESPONSE = fixtures.RPC_REQ_LARGE;
-const MOCKED_RESPONSE = new Response(MOCKED_REQUEST.id, MOCK_RPC_RESPONSE);
+import { fixtures } from "rpch-common";
 
 const createMockedSetup = () => {
   let triggerOnMessage: (message: string) => void = () => {};
   const exit = {
-    sendRpcRequest: jest.fn(async () => MOCK_RPC_RESPONSE),
+    sendRpcRequest: jest.fn(async () => fixtures.LARGE_RESPONSE.body),
   };
   const hoprd = {
     sendMessage: jest.fn(async () => "MOCK_SEND_MSG_RESPONSE"),
@@ -51,7 +42,7 @@ describe("test index.ts", function () {
     const { hoprd, exit, triggerOnMessage } = createMockedSetup();
 
     // send Request segments into Cache
-    for (const segment of MOCKED_REQUEST.toMessage().toSegments()) {
+    for (const segment of fixtures.LARGE_REQUEST.toMessage().toSegments()) {
       triggerOnMessage(segment.toString());
     }
 
@@ -60,7 +51,7 @@ describe("test index.ts", function () {
     // Response is now created, check if Response segments match our mocked Response
     assert.equal(
       hoprd.sendMessage.mock.calls.length,
-      MOCKED_RESPONSE.toMessage().toSegments.length
+      fixtures.LARGE_RESPONSE.toMessage().toSegments.length
     );
   });
 });

@@ -2,14 +2,41 @@
  * Contains various variables used in tests.
  */
 
-export const RPC_REQ_SMALL = `{"id":"1663836360444","jsonrpc":"2.0","method":"eth_chainId","params":[]}`;
-export const RPC_REQ_LARGE = `{"id":"1663836360445","jsonrpc":"2.0","method":"eth_chainId","params":["sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample"]}`;
+import Request from "./request";
+import Response from "./response";
 
-export const HOPRD_REQ_SMALL = `248,82,184,73,123,34,105,100,34,58,34,49,54,54,51,56,51,54,51,54,48,52,52,52,34,44,34,106,115,111,110,114,112,99,34,58,34,50,46,48,34,44,34,109,101,116,104,111,100,34,58,34,101,116,104,95,99,104,97,105,110,73,100,34,44,34,112,97,114,97,109,115,34,58,91,93,125,134,1,131,101,80,232,127`;
+/**
+ * An RPC provider
+ */
+export const PROVIDER = "https://primary.gnosis-chain.rpc.hoprtech.net";
 
 export const PEER_ID_A =
   "16Uiu2HAmM9KAPaXA4eAz58Q7Eb3LEkDvLarU4utkyLwDeEK6vM5m";
 export const PEER_ID_B =
   "16Uiu2HAmM9KAPaXA4eAz58Q7Eb3LEkDvLarU4utkyL6vM5mwDeEK";
 
-export const PROVIDER = "https://primary.gnosis-chain.rpc.hoprtech.net";
+/**
+ * A small RPC request
+ */
+export const RPC_REQ_SMALL = `{"id":"1663836360444","jsonrpc":"2.0","method":"eth_chainId","params":[]}`;
+/**
+ * A large RPC request that needs to be split into many segments
+ */
+export const RPC_REQ_LARGE = `{"id":"1663836360445","jsonrpc":"2.0","method":"eth_chainId","params":["sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample","sample"]}`;
+
+/**
+ * A small RPC response
+ */
+export const RPC_RES_SMALL = `{"id":1663836360444,"jsonrpc": "2.0","result": "0x0234c8a3397aab58"}`;
+/**
+ * A large RPC response that needs to be split into many segments
+ */
+export const RPC_RES_LARGE = `{"id":1663836360444,"jsonrpc": "2.0","result": "0x0234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab58"}`;
+
+export const SMALL_RESPONSE = new Response(1, RPC_RES_SMALL);
+export const LARGE_RESPONSE = new Response(2, RPC_RES_LARGE);
+
+export const SMALL_REQUEST = new Request(1, PEER_ID_A, PROVIDER, RPC_REQ_SMALL);
+export const LARGE_REQUEST = new Request(2, PEER_ID_A, PROVIDER, RPC_REQ_LARGE);
+
+export const RPC_RES_ERROR = `{"id":123,"jsonrpc": "2.0","error":{"code":1,"message":"ExampleMethodresultismissing'example_key'."}}`;

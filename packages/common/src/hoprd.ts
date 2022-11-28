@@ -1,8 +1,7 @@
-import { utils } from "rpch-commons";
-import { utils as ethersUtils } from "ethers";
+import { createLogger, createApiUrl, decodeIncomingBody } from "./utils";
 import WebSocket from "ws";
 import fetch from "node-fetch";
-const { createLogger, createApiUrl } = utils;
+
 const { log, logError, logVerbose } = createLogger("hoprd");
 
 /**
@@ -45,16 +44,16 @@ export const sendMessage = async ({
     body: JSON.stringify(body),
   });
 
-  if (response.status !== 202) {
+  if (response.status === 202) {
+    log("send message to HOPRd node", message, destination);
+    const text = await response.text();
+    return text;
+  } else {
     logError(
       "failed to send message to HOPRd node",
       response.status,
       await response.text()
     );
-  } else {
-    log("send message to HOPRd node", message, destination);
-    const text = await response.text();
-    return text;
   }
 };
 
@@ -95,19 +94,4 @@ export const createMessageListener = async (
     log("Closing HOPRd listener");
     ws.close();
   };
-};
-
-/**
- * Attemps to decode a HOPRd body.
- * @param body
- * @returns decoded message
- */
-const decodeIncomingBody = (body: string): string | undefined => {
-  try {
-    return ethersUtils.toUtf8String(
-      ethersUtils.RLP.decode(new Uint8Array(JSON.parse(`[${body}]`)))[0]
-    );
-  } catch {
-    logVerbose("safely failed to decode body", body);
-  }
 };

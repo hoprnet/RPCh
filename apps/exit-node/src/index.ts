@@ -1,6 +1,5 @@
-import { type Request, Cache, utils, Segment } from "rpch-commons";
+import { type Request, Cache, utils, Segment, hoprd } from "rpch-common";
 import * as exit from "./exit";
-import * as hoprd from "./hoprd";
 
 const { createLogger } = utils;
 const { log, logError } = createLogger("exit-node");
@@ -8,7 +7,7 @@ const { log, logError } = createLogger("exit-node");
 const {
   HOPRD_API_ENDPOINT,
   HOPRD_API_TOKEN,
-  RESPONSE_TIMEOUT_STR = "10000",
+  RESPONSE_TIMEOUT: RESPONSE_TIMEOUT_STR = "10000",
 } = process.env;
 
 const start = async (ops: {
