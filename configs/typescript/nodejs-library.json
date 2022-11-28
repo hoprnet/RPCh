@@ -3,8 +3,10 @@
   "display": "NodeJS Library",
   "extends": "./base.json",
   "compilerOptions": {
-    "lib": ["ES2015"],
-    "module": "ESNext",
+    "lib": [
+      "ES2015"
+    ],
+    "module": "CommonJS",
     "target": "es6"
   }
 }
