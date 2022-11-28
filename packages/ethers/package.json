@@ -18,6 +18,7 @@
     "nock": "^13.2.9"
   },
   "dependencies": {
+    "rpch-common": "*",
     "rpch-sdk": "*"
   },
   "peerDependencies": {
