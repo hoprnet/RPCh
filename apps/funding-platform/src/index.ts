@@ -1,4 +1,6 @@
-import * as entryServer from "./entry-server.js";
+import * as entryServer from "./entry-server";
+import dotenv from "dotenv";
+dotenv.config();
 
 const { SECRET_KEY } = process.env;
 
@@ -8,15 +10,10 @@ const start = async (ops: { secretKey: string }) => {
   });
 };
 
-export default start;
-// if this file is the entrypoint of the nodejs process
-if (require.main === module) {
-  // Validate enviroment variables
-  if (!SECRET_KEY) {
-    throw Error("env variable 'HOPRD_API_ENDPOINT' not found");
-  }
-
-  start({
-    secretKey: SECRET_KEY,
-  });
+if (!SECRET_KEY) {
+  throw Error("env variable 'secret key' not found");
 }
+
+start({
+  secretKey: SECRET_KEY,
+});

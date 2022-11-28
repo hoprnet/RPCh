@@ -3,7 +3,8 @@
     "include": ["src"],
     "exclude": ["node_modules", "src/**/*.spec*", "build"],
     "compilerOptions": {
-      "outDir": "build"
+      "outDir": "build",
+      "module": "NodeNext"
     }
   }
   

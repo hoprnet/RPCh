@@ -1,5 +1,5 @@
 import express from "express";
-import AccessToken from "./access-token.js";
+import AccessToken from "./access-token";
 
 const app = express();
 const port = process.env.PORT || 3000;
