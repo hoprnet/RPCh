@@ -10,8 +10,8 @@
     "lint": "TIMING=1 eslint \"src/**/*.ts*\""
   },
   "exports": {
-    "./*": "./dist/*.js",
-    "./*/*": "./dist/*/*.js"
+    "./*": "./build/*.js",
+    "./*/*": "./build/*/*.js"
   },
   "devDependencies": {
     "@types/express": "^4.17.14",
