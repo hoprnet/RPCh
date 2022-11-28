@@ -9,7 +9,9 @@ export const startServer = (ops: { secretKey: string }) => {
     const date = new Date();
     const maxHopr = 40;
     const token = new AccessToken(date, maxHopr, ops.secretKey);
-    return token.toString();
+    return res.json({
+      access_token: token.toString(),
+    });
   });
   app.post("/api/request/funds/:blockchain_address", (req, res) => {});
   app.get("/api/request/status", () => {});
