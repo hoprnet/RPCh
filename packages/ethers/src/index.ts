@@ -1,6 +1,7 @@
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { deepCopy } from "@ethersproject/properties";
 import SDK from "rpch-sdk";
+import { parseResponse, getResult } from "./utils";
 
 export class RPChProvider extends JsonRpcProvider {
   public sdk: SDK;
@@ -66,7 +67,7 @@ export class RPChProvider extends JsonRpcProvider {
       }
 
       const rpchResponse = await rpchResponsePromise;
-      const response = rpchResponse.body;
+      const response = getResult(parseResponse(rpchResponse));
       this.emit("debug", {
         action: "response",
         request: payload,

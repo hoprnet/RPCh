@@ -14,7 +14,7 @@ const getMockedResponse = (request: Request): Response => {
   let body: string = "";
 
   if (request.body.includes("eth_chainId")) {
-    body = `{"jsonrpc": "2.0","result": "0x64","id": ${rpcId}}`;
+    body = `{"jsonrpc": "2.0","result": "0x01","id": ${rpcId}}`;
   } else if (request.body.includes("eth_blockNumber")) {
     body = `{"jsonrpc": "2.0","result": "0x17f88c8","id": ${rpcId}}`;
   }
@@ -23,6 +23,7 @@ const getMockedResponse = (request: Request): Response => {
 };
 
 describe("test index.ts", function () {
+  // pseudo responses from entry node
   nock(ENTRY_NODE_API_ENDPOINT).persist().post(/.*/).reply(202, "someresponse");
 
   const provider = new RPChProvider(
@@ -37,15 +38,18 @@ describe("test index.ts", function () {
     }
   );
 
-  it("should get block number", async function () {
-    const p = provider.getBlockNumber();
+  // hook to emulate responses from the exit node
+  const originalSendRequest = provider.sdk.sendRequest.bind(provider.sdk);
+  provider.sdk.sendRequest = async (req: Request): Promise<Response> => {
     setTimeout(() => {
-      // @ts-ignore
-      const entry = Array.from(provider.sdk.requestCache.requests.values())[0];
-      const response = getMockedResponse(entry.request);
+      const response = getMockedResponse(req);
       provider.sdk.onResponseFromSegments(response);
     }, 1e3);
-    const blockNumber = await p;
+    return originalSendRequest(req);
+  };
+
+  it("should get block number", async function () {
+    const blockNumber = await provider.getBlockNumber();
     console.log(blockNumber);
   });
 });
