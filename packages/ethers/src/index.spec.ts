@@ -49,6 +49,11 @@ describe("test index.ts", function () {
     return originalSendRequest(req);
   };
 
+  it("should get chain id", async function () {
+    const network = await provider.getNetwork();
+    assert.equal(network.chainId, 1);
+  });
+
   it("should get block number", async function () {
     const blockNumber = await provider.getBlockNumber();
     assert.equal(blockNumber, 25135304);
