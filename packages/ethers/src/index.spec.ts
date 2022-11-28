@@ -1,3 +1,4 @@
+import assert from "assert";
 import { type Request, type Response, fixtures } from "rpch-common";
 import { RPChProvider } from ".";
 import nock from "nock";
@@ -44,12 +45,12 @@ describe("test index.ts", function () {
     setTimeout(() => {
       const response = getMockedResponse(req);
       provider.sdk.onResponseFromSegments(response);
-    }, 1e3);
+    }, 100);
     return originalSendRequest(req);
   };
 
   it("should get block number", async function () {
     const blockNumber = await provider.getBlockNumber();
-    console.log(blockNumber);
+    assert.equal(blockNumber, 25135304);
   });
 });
