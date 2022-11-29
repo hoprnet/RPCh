@@ -1,12 +1,14 @@
 type AccessToken = {
   Token: string;
-  ExpiredAt: string;
-  CreatedAt: string;
 };
 export type CreateAccessToken = AccessToken & {
   Id?: number;
+  ExpiredAt: string;
+  CreatedAt: string;
 };
 
-export type QueryAccessToken = {
+export type QueryAccessToken = AccessToken & {
   Id: number;
+  ExpiredAt: Date;
+  CreatedAt: Date;
 };

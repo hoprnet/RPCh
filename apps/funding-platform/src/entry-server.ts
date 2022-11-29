@@ -1,12 +1,38 @@
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
 import AccessToken from "./access-token";
 import DBAdapter from "./db";
 import SQL from "sql-template-strings";
-import { CreateAccessToken } from "./types";
+import { CreateAccessToken, QueryAccessToken } from "./types";
+import { utils } from "rpch-common";
+
 const app = express();
 const port = process.env.PORT || 3000;
 const THIRTY_MINUTES = 30;
 const MAX_HOPR = 40;
+const { isExpired } = utils;
+
+const tokenIsValid = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const db = DBAdapter.getInstance();
+  console.log(req.headers);
+  const requestToken = req.headers["x-funding-access-token"];
+  if (!requestToken) throw new Error("Missing Access Token");
+
+  const dbTokens = (await db.query(
+    SQL`SELECT * FROM AccessToken WHERE Token=${requestToken}`
+  )) as QueryAccessToken[];
+  if (!dbTokens.length) throw new Error("Access Token does not exist");
+
+  const token = dbTokens.at(0);
+  if ((token?.ExpiredAt.valueOf() ?? 0) < new Date().valueOf())
+    throw new Error("Access Token has expired");
+
+  // TODO: ADD HOPR CHECK
+  next();
+};
 
 export const startServer = () => {
   app.get("/api/access-token", async (req, res) => {
@@ -39,7 +65,15 @@ export const startServer = () => {
     });
   });
 
-  app.post("/api/request/funds/:blockchain_address", (req, res) => {});
+  app.post(
+    "/api/request/funds/:blockchain_address",
+    tokenIsValid,
+    (req, res) => {
+      return res.json({
+        data: "requested",
+      });
+    }
+  );
 
   app.get("/api/request/status", () => {});
 

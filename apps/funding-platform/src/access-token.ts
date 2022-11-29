@@ -26,9 +26,4 @@ export default class AccessToken {
       .digest("base64");
     return accessToken;
   }
-  public validate(token: string, message: string) {
-    // validate with db
-    // has it expired and token amount used
-    // did this person guess the token ?
-  }
 }
