@@ -4,7 +4,7 @@
     "exclude": ["node_modules", "src/**/*.spec*", "build"],
     "compilerOptions": {
       "outDir": "build",
-      "module": "NodeNext"
+      "module": "CommonJS"
     }
   }
   

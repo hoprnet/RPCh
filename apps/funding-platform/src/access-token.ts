@@ -1,18 +1,24 @@
-import { createHmac } from "crypto";
+import { createHmac, randomInt } from "crypto";
 
 export default class AccessToken {
-  private issuedAt: Date;
+  private createdAt: Date;
   constructor(
-    private expireAt: Date,
+    private expiredAt: Date,
     private amount: number,
     private secretKey: string
   ) {
-    this.issuedAt = new Date();
+    this.createdAt = new Date();
   }
+
+  public getCreatedAt() {
+    return this.createdAt;
+  }
+
   public toString(): string {
     const message = {
-      issuedAt: this.issuedAt.valueOf(),
-      expireAt: this.expireAt,
+      entropy: randomInt(1e6),
+      createdAt: this.createdAt.valueOf(),
+      expiredAt: this.expiredAt.valueOf(),
       amount: this.amount,
     };
     const accessToken = createHmac("sha256", this.secretKey)
@@ -20,5 +26,9 @@ export default class AccessToken {
       .digest("base64");
     return accessToken;
   }
-  public validate(token: string, message: string) {}
+  public validate(token: string, message: string) {
+    // validate with db
+    // has it expired and token amount used
+    // did this person guess the token ?
+  }
 }
