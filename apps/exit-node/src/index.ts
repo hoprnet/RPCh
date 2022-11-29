@@ -22,6 +22,7 @@ const start = async (ops: {
   apiEndpoint: string;
   apiToken?: string;
 }): Promise<() => void> => {
+console.log("Started!")
   const onRequest = async (rpchRequest: Request) => {
     try {
       const response = await ops.exit.sendRpcRequest(
@@ -60,10 +61,8 @@ const start = async (ops: {
   };
 };
 
-export default start;
-
 // if this file is the entrypoint of the nodejs process
-if (require.main === module) {
+// if (require.main === module) {
   // Validate enviroment variables
   if (!HOPRD_API_ENDPOINT) {
     throw Error("env variable 'HOPRD_API_ENDPOINT' not found");
@@ -83,5 +82,6 @@ if (require.main === module) {
     apiEndpoint: HOPRD_API_ENDPOINT,
     apiToken: HOPRD_API_TOKEN,
     timeout: RESPONSE_TIMEOUT,
-  });
-}
+  }).catch(console.error);
+  
+// }

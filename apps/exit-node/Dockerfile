@@ -51,10 +51,10 @@ COPY --from=installer /app .
 ARG HOPRD_API_ENDPOINT
 ARG HOPR_API_TOKEN
 
-ENV HOPRD_API_ENDPOINT=${HOPR_API_TOKEN:-}
-ENV HOPR_API_TOKEN=${HOPR_API_TOKEN:-}
+ENV HOPRD_API_ENDPOINT=${HOPR_API_TOKEN:-"https://zero_indus_callisto_white.playground.hoprnet.org:3001"}
+ENV HOPR_API_TOKEN=${HOPR_API_TOKEN:-"67Daeb8DA13Dd72dcfE01Dcc#"}
 
-CMD node --es-module-specifier-resolution=node apps/exit-node/src/index.js
+CMD node apps/exit-node/build/index.js
 
 # COPY packages/common /app/packages/common
 # COPY --from=build_common /app/packages/common .
