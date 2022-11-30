@@ -1,30 +1,18 @@
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { deepCopy } from "@ethersproject/properties";
-import SDK from "rpch-sdk";
+import SDK, { type HoprSdkTempOps } from "rpch-sdk";
+import { utils } from "rpch-common";
 import { parseResponse, getResult } from "./utils";
+
+const { logVerbose, logError } = utils.createLogger(["ethers"]);
 
 export class RPChProvider extends JsonRpcProvider {
   public sdk: SDK;
 
-  constructor(
-    public readonly url: string,
-    public readonly origin: string,
-    hoprSdkOps: {
-      timeout: number;
-      discoveryPlatformApiEndpoint: string;
-      entryNodeApiEndpoint: string;
-      entryNodeApiToken: string;
-      exitNodePeerId: string;
-    }
-  ) {
+  constructor(public readonly url: string, hoprSdkTempOps: HoprSdkTempOps) {
     super(url);
-    this.sdk = new SDK(
-      hoprSdkOps.timeout,
-      hoprSdkOps.discoveryPlatformApiEndpoint,
-      hoprSdkOps.entryNodeApiEndpoint,
-      hoprSdkOps.entryNodeApiToken,
-      hoprSdkOps.exitNodePeerId
-    );
+    this.sdk = new SDK(5000, hoprSdkTempOps);
+    this.sdk.start().catch((error) => logError(error));
   }
 
   public async send(method: string, params: Array<any>): Promise<any> {
@@ -49,10 +37,10 @@ export class RPChProvider extends JsonRpcProvider {
     }
 
     const rpchRequest = this.sdk.createRequest(
-      this.origin,
       this.url,
       JSON.stringify(payload)
     );
+    logVerbose("Created request", rpchRequest.id);
 
     try {
       const rpchResponsePromise = this.sdk.sendRequest(rpchRequest);
@@ -68,6 +56,7 @@ export class RPChProvider extends JsonRpcProvider {
 
       const rpchResponse = await rpchResponsePromise;
       const response = getResult(parseResponse(rpchResponse));
+      logVerbose("Received response for request", rpchRequest.id);
       this.emit("debug", {
         action: "response",
         request: payload,
@@ -77,6 +66,7 @@ export class RPChProvider extends JsonRpcProvider {
 
       return response;
     } catch (error) {
+      logError("Did not receive response for request", rpchRequest.id);
       this.emit("debug", {
         action: "response",
         error: error,

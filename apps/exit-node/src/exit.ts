@@ -4,8 +4,7 @@
 import fetch from "node-fetch";
 import { utils } from "rpch-common";
 
-const { createLogger } = utils;
-const { log, logVerbose } = createLogger(["exit-node", "exit"]);
+const { log, logVerbose } = utils.createLogger(["exit-node", "exit"]);
 
 /**
  * Creates a request to the given provider and returns response.
