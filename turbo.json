@@ -24,6 +24,9 @@
       ]
     },
     "dev": {
+      "dependsOn": [
+        "^build"
+      ],
       "cache": false
     },
     "format": {
