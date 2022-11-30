@@ -1,9 +1,9 @@
-import { AccessTokenService } from "access-token";
-import { DBInterface } from "db";
+import { AccessTokenService } from "./access-token";
+import { DBInterface } from "./db";
 import express, { NextFunction, Request, Response } from "express";
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = 3000;
 
 const tokenIsValid =
   (db: DBInterface) =>

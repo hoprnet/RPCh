@@ -1,4 +1,4 @@
-import { CreateAccessToken, QueryAccessToken } from "access-token/dto";
+import { CreateAccessToken, QueryAccessToken } from "../access-token/dto";
 import { DBInterface } from "./db.interface";
 
 export class DBAdapter implements DBInterface {

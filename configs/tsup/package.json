@@ -1,0 +1,9 @@
+{
+  "name": "rpch-configs-tsup",
+  "version": "0.0.0",
+  "private": true,
+  "main": "index.js",
+  "dependencies": {
+    "tsup": "^6.5.0"
+  }
+}

@@ -3,7 +3,9 @@
   "display": "NodeJS",
   "extends": "./base.json",
   "compilerOptions": {
-    "lib": ["ES2015"],
+    "lib": [
+      "ES2015"
+    ],
     "module": "CommonJS",
     "target": "es6"
   }

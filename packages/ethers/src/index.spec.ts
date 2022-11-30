@@ -1,9 +1,9 @@
 import assert from "assert";
+import nock from "nock";
 import { type Request, type Response, fixtures } from "rpch-common";
 import { RPChProvider } from ".";
-import nock from "nock";
 
-const TIMEOUT = 10e3;
+const PROVIDER_URL = fixtures.PROVIDER;
 const DISCOVERY_PLATFORM_API_ENDPOINT = "http://discovery_platform";
 const ENTRY_NODE_API_ENDPOINT = "http://entry_node";
 const ENTRY_NODE_API_TOKEN = "12345";
@@ -24,26 +24,33 @@ const getMockedResponse = (request: Request): Response => {
 };
 
 describe("test index.ts", function () {
-  // pseudo responses from entry node
-  nock(ENTRY_NODE_API_ENDPOINT).persist().post(/.*/).reply(202, "someresponse");
+  const provider = new RPChProvider(PROVIDER_URL, {
+    discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
+    entryNodeApiEndpoint: ENTRY_NODE_API_ENDPOINT,
+    entryNodeApiToken: ENTRY_NODE_API_TOKEN,
+    entryNodePeerId: ENTRY_NODE_PEER_ID,
+    exitNodePeerId: EXIT_NODE_PEER_ID,
+  });
 
-  const provider = new RPChProvider(
-    ENTRY_NODE_API_ENDPOINT,
-    ENTRY_NODE_PEER_ID,
-    {
-      timeout: TIMEOUT,
-      discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
-      entryNodeApiEndpoint: ENTRY_NODE_API_ENDPOINT,
-      entryNodeApiToken: ENTRY_NODE_API_TOKEN,
-      exitNodePeerId: EXIT_NODE_PEER_ID,
-    }
-  );
+  beforeAll(async function () {
+    await provider.sdk.start();
+
+    // pseudo responses from entry node
+    fixtures
+      .nockSendMessageApi(nock(ENTRY_NODE_API_ENDPOINT).persist())
+      .reply(202, "someresponse");
+  });
+
+  afterAll(async function () {
+    await provider.sdk.stop();
+  });
 
   // hook to emulate responses from the exit node
   const originalSendRequest = provider.sdk.sendRequest.bind(provider.sdk);
   provider.sdk.sendRequest = async (req: Request): Promise<Response> => {
     setTimeout(() => {
       const response = getMockedResponse(req);
+      // @ts-ignore
       provider.sdk.onResponseFromSegments(response);
     }, 100);
     return originalSendRequest(req);

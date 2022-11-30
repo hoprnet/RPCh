@@ -1,4 +1,4 @@
-import { CreateAccessToken, QueryAccessToken } from "access-token/dto";
+import { CreateAccessToken, QueryAccessToken } from "../access-token/dto";
 
 export interface DBInterface {
   saveAccessToken: (accessToken: CreateAccessToken) => void;

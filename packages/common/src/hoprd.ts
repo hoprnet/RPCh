@@ -2,14 +2,7 @@ import { createLogger, createApiUrl, decodeIncomingBody } from "./utils";
 import WebSocket from "ws";
 import fetch from "node-fetch";
 
-const { log, logError, logVerbose } = createLogger("hoprd");
-
-/**
- * Request messaging access token from a selected HOPRd entry node
- */
-export const requestMessagingAccessToken = () => {
-  throw new Error("Not implemented yet");
-};
+const { log, logError, logVerbose } = createLogger(["common", "hoprd"]);
 
 /**
  * Send a segment to a HOPRd node.
@@ -45,7 +38,7 @@ export const sendMessage = async ({
   });
 
   if (response.status === 202) {
-    log("send message to HOPRd node", message, destination);
+    logVerbose("send message to HOPRd node", message, destination);
     const text = await response.text();
     return text;
   } else {
@@ -81,7 +74,7 @@ export const createMessageListener = async (
 
   ws.on("message", (data: { toString: () => string }) => {
     const body = data.toString();
-    log("received body from HOPRd");
+    logVerbose("received body from HOPRd");
 
     const message = decodeIncomingBody(body);
     if (!message) return;

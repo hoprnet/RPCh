@@ -11,11 +11,34 @@
       ]
     },
     "rpch-exit-node#build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "build/**"
+      ],
       "env": [
         "HOPRD_API_ENDPOINT",
         "HOPRD_API_TOKEN",
         "RESPONSE_TIMEOUT"
       ]
+    },
+    "rpch-funding-platform#build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "build/**"
+      ],
+      "env": [
+        "SECRET_KEY"
+      ]
+    },
+    "dev": {
+      "dependsOn": [
+        "^build"
+      ],
+      "cache": false
     },
     "format": {
       "outputs": []

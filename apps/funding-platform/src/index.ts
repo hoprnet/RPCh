@@ -1,7 +1,7 @@
 import * as entryServer from "./entry-server";
 import dotenv from "dotenv";
-import { DBAdapter } from "db";
-import { AccessTokenService } from "access-token";
+import { DBAdapter } from "./db";
+import { AccessTokenService } from "./access-token";
 dotenv.config({ path: ".env.local" });
 
 const { SECRET_KEY } = process.env;

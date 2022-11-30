@@ -1,5 +1,5 @@
-import { AccessToken } from "access-token";
-import { DBInterface } from "db";
+import { AccessToken } from "./access-token";
+import { DBInterface } from "../db";
 import { CreateAccessToken } from "./dto";
 
 const THIRTY_MINUTES = 30;
