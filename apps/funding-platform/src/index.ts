@@ -1,16 +1,28 @@
-import * as entryServer from "./entry-server";
 import dotenv from "dotenv";
-import { AccessTokenService } from "./access-token";
-import { Memory, Low } from "lowdb";
+import { Low } from "lowdb";
+import { AccessTokenService, QueryAccessToken } from "./access-token";
+import * as entryServer from "./entry-server";
 
 dotenv.config({ path: ".env.local" });
 
 const { SECRET_KEY } = process.env;
 
-const start = async () => {
-  const dbAdapter = new Low(new Memory());
-  const accessTokenService = new AccessTokenService(dbAdapter);
+type Data = {
+  accessTokens: QueryAccessToken[];
+  requests: unknown[];
+};
 
+export type DBInstance = Low<Data>;
+
+const start = async () => {
+  const dbAdapter = {
+    data: {
+      requests: [],
+      accessTokens: [],
+    },
+  } as unknown as DBInstance;
+
+  const accessTokenService = new AccessTokenService(dbAdapter);
   entryServer.startServer({ db: dbAdapter, accessTokenService });
 };
 

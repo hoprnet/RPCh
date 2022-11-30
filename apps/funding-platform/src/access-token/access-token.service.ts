@@ -1,13 +1,13 @@
 import { AccessToken } from "./access-token";
 import { CreateAccessToken } from "./dto";
-import { Low } from "lowdb";
 import { saveAccessToken, getAccessToken, deleteAccessToken } from "../db";
+import { DBInstance } from "../index";
 
-const THIRTY_MINUTES = 30;
+const THIRTY_MINUTES = 1;
 const MAX_HOPR = 40;
 
 export class AccessTokenService {
-  constructor(private db: Low<null>) {}
+  constructor(private db: DBInstance) {}
 
   public async saveAccessToken() {
     const now = new Date();
@@ -21,7 +21,7 @@ export class AccessTokenService {
     );
 
     const query: CreateAccessToken = {
-      Token: accessToken.toString(),
+      Token: accessToken.getHash(),
       ExpiredAt: expiredAt.toISOString().slice(0, 19).replace("T", " "),
       CreatedAt: accessToken
         .getCreatedAt()

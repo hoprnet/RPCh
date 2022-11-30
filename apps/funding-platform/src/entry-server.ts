@@ -1,6 +1,6 @@
 import { AccessTokenService } from "./access-token";
 import express, { NextFunction, Request, Response } from "express";
-import { Low } from "lowdb";
+import { DBInstance } from "./index";
 
 const app = express();
 const port = 3000;
@@ -9,27 +9,28 @@ const tokenIsValid =
   (accessTokenService: AccessTokenService) =>
   async (req: Request, res: Response, next: NextFunction) => {
     const requestToken = req.headers["x-access-token"];
-    if (!requestToken) throw new Error("Missing Access Token");
+    if (!requestToken) return res.status(400).json("Missing Access Token");
+    console.log(requestToken);
+    const dbToken = await accessTokenService.getAccessToken(
+      requestToken as string
+    );
+    if (!dbToken) return res.status(404).json("Access Token does not exist");
 
-    const dbTokens = accessTokenService.getAccessToken(requestToken as string);
-    if (!dbTokens) throw new Error("Access Token does not exist");
-
-    const token = dbTokens;
-    if ((token?.ExpiredAt.valueOf() ?? 0) < new Date().valueOf())
-      throw new Error("Access Token has expired");
+    if ((new Date(dbToken?.ExpiredAt).valueOf() ?? 0) < new Date().valueOf())
+      return res.status(401).json("Access Token does not exist");
 
     // TODO: ADD HOPR CHECK
     next();
   };
 
 export const startServer = (ops: {
-  db: Low<null>;
+  db: DBInstance;
   accessTokenService: AccessTokenService;
 }) => {
   app.get("/api/access-token", async (req, res) => {
     const accessToken = await ops.accessTokenService.saveAccessToken();
     return res.json({
-      accessToken: accessToken.toString(),
+      accessToken: accessToken.getHash(),
       expiredAt: accessToken.getExpiredAt(),
     });
   });

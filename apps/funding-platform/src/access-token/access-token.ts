@@ -1,6 +1,7 @@
 import { createHmac, randomInt } from "crypto";
 
 export class AccessToken {
+  private hash: string;
   private createdAt: Date;
   constructor(
     private expiredAt: Date,
@@ -8,6 +9,7 @@ export class AccessToken {
     private secretKey: string
   ) {
     this.createdAt = new Date();
+    this.hash = this.generateHash();
   }
 
   public getCreatedAt() {
@@ -18,7 +20,11 @@ export class AccessToken {
     return this.expiredAt;
   }
 
-  public toString(): string {
+  public getHash() {
+    return this.hash;
+  }
+
+  public generateHash(): string {
     const message = {
       entropy: randomInt(1e6),
       createdAt: this.createdAt.valueOf(),
@@ -28,6 +34,7 @@ export class AccessToken {
     const accessToken = createHmac("sha256", this.secretKey)
       .update(JSON.stringify(message))
       .digest("base64");
+    this.hash = accessToken;
     return accessToken;
   }
 }
