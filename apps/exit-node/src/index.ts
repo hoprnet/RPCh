@@ -1,8 +1,7 @@
 import { type Request, Cache, utils, Segment, hoprd } from "rpch-common";
 import * as exit from "./exit";
 
-const { createLogger } = utils;
-const { log, logError } = createLogger("exit-node");
+const { log, logError } = utils.createLogger("exit-node");
 
 const {
   HOPRD_API_ENDPOINT,
@@ -18,9 +17,9 @@ const start = async (ops: {
     sendMessage: typeof hoprd.sendMessage;
     createMessageListener: typeof hoprd.createMessageListener;
   };
-  timeout: number;
   apiEndpoint: string;
   apiToken?: string;
+  timeout: number;
 }): Promise<() => void> => {
   const onRequest = async (rpchRequest: Request) => {
     try {
@@ -40,7 +39,10 @@ const start = async (ops: {
     }
   };
 
-  const cache = new Cache(ops.timeout, onRequest, () => {});
+  const cache = new Cache(onRequest, () => {});
+  const interval: NodeJS.Timer = setInterval(() => {
+    cache.removeExpired(ops.timeout);
+  }, 1000);
 
   const stopMessageListening = await ops.hoprd.createMessageListener(
     ops.apiEndpoint,
@@ -56,31 +58,32 @@ const start = async (ops: {
   );
 
   return () => {
+    clearInterval(interval);
     stopMessageListening();
   };
 };
 
 // if this file is the entrypoint of the nodejs process
 // if (require.main === module) {
-  // Validate enviroment variables
-  if (!HOPRD_API_ENDPOINT) {
-    throw Error("env variable 'HOPRD_API_ENDPOINT' not found");
-  }
-  if (!HOPRD_API_TOKEN) {
-    throw Error("env variable 'HOPRD_API_TOKEN' not found");
-  }
+// Validate enviroment variables
+if (!HOPRD_API_ENDPOINT) {
+  throw Error("env variable 'HOPRD_API_ENDPOINT' not found");
+}
+if (!HOPRD_API_TOKEN) {
+  throw Error("env variable 'HOPRD_API_TOKEN' not found");
+}
 
-  const RESPONSE_TIMEOUT = Number(RESPONSE_TIMEOUT_STR);
-  if (isNaN(RESPONSE_TIMEOUT)) {
-    throw Error("env variable 'RESPONSE_TIMEOUT' not a number");
-  }
+const RESPONSE_TIMEOUT = Number(RESPONSE_TIMEOUT_STR);
+if (isNaN(RESPONSE_TIMEOUT)) {
+  throw Error("env variable 'RESPONSE_TIMEOUT' not a number");
+}
 
-  start({
-    exit,
-    hoprd,
-    apiEndpoint: HOPRD_API_ENDPOINT,
-    apiToken: HOPRD_API_TOKEN,
-    timeout: RESPONSE_TIMEOUT,
-  }).catch(console.error);
-  
+start({
+  exit,
+  hoprd,
+  apiEndpoint: HOPRD_API_ENDPOINT,
+  apiToken: HOPRD_API_TOKEN,
+  timeout: RESPONSE_TIMEOUT,
+}).catch(console.error);
+
 // }

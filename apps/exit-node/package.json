@@ -3,9 +3,10 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "build": "tsc",
-    "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
+    "build": "rimraf build && tsup",
+    "dev": "yarn build --watch",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
+    "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
     "test": "jest --coverage",
     "start": "node build/index.js"
   },
@@ -14,6 +15,7 @@
     "rpch-configs-eslint": "*",
     "rpch-configs-prettier": "*",
     "rpch-configs-jest": "*",
+    "rpch-configs-tsup": "*",
     "@types/node-fetch": "2.6.2",
     "nock": "^13.2.9"
   },

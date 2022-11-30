@@ -12,7 +12,6 @@ const RESPONSE_SEGMENTS = RESPONSE.toMessage().toSegments();
 describe("test Cache class", function () {
   it("should reconstruct request message", function (done) {
     const cache = new Cache(
-      TIMEOUT,
       (request) => {
         assert.equal(request.body, REQUEST.body);
 
@@ -33,7 +32,6 @@ describe("test Cache class", function () {
   });
   it("should reconstruct response message", function (done) {
     const cache = new Cache(
-      TIMEOUT,
       () => {},
       (response) => {
         assert.equal(response.body, RESPONSE.body);
@@ -54,7 +52,6 @@ describe("test Cache class", function () {
   it("should drop expired segments", function () {
     jest.useFakeTimers();
     const cache = new Cache(
-      TIMEOUT,
       () => {},
       () => {}
     );
@@ -71,7 +68,7 @@ describe("test Cache class", function () {
     jest.advanceTimersByTime(TIMEOUT + 1e3);
 
     assert.equal(requestInCache.get(REQUEST.id)?.segments?.length, 2);
-    cache.removeExpired();
+    cache.removeExpired(TIMEOUT);
     assert.equal(requestInCache.get(REQUEST.id)?.segments?.length, undefined);
 
     jest.useRealTimers();

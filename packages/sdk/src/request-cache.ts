@@ -1,11 +1,10 @@
 import { Request, Response, utils } from "rpch-common";
 
-const { isExpired } = utils;
+const { logVerbose } = utils.createLogger(["sdk", "request-cache"]);
 
 /**
  * Keeps in cache the Requests which have been sent by the SDK.
  * As soon as the upstream class finds a matching Response, it will remove the Request from the Request Cache.
- * @param timeout how often should tangling Requests be discarded in ms
  */
 export default class RequestCache {
   // requests we have made to another relay, keyed by message.id
@@ -18,8 +17,6 @@ export default class RequestCache {
       reject: (reason?: any) => void;
     }
   >();
-
-  constructor(private timeout: number) {}
 
   /**
    * Add Request to requests map
@@ -40,30 +37,36 @@ export default class RequestCache {
     });
   }
 
-  public getRequest(key: number) {
-    return this.requests.get(key);
+  /**
+   * Get a request from the request map
+   * @param id of the request
+   */
+  public getRequest(id: number) {
+    return this.requests.get(id);
   }
 
   /**
    * Remove request from requests map
-   * @param req
+   * @param req request to remove
    */
   public removeRequest(req: Request): void {
     this.requests.delete(req.id);
   }
 
   /**
-   * Check every “timeout” for expired Requests
+   * Given a timeout, removes expired requests.
+   * @param timeout How many ms after a Request was created.
    */
-  public setInterval(): void {
-    setInterval(() => {
-      for (const [key, value] of this.requests.entries()) {
-        const timeNow = new Date();
-        if (isExpired(this.timeout, timeNow, value.createdAt)) {
-          this.requests.get(key)?.reject("Request timed out");
-          this.requests.delete(key);
-        }
+  public removeExpired(timeout: number): void {
+    const now = new Date();
+
+    logVerbose("requests", this.requests.size);
+
+    for (const [key, entry] of this.requests.entries()) {
+      if (utils.isExpired(timeout, now, entry.createdAt)) {
+        entry.reject("Request timed out");
+        this.requests.delete(key);
       }
-    }, this.timeout);
+    }
   }
 }

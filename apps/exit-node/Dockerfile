@@ -46,8 +46,8 @@ COPY --from=installer /app .
 ARG HOPRD_API_ENDPOINT
 ARG HOPRD_API_TOKEN
 
-ENV HOPRD_API_ENDPOINT=${HOPRD_API_ENDPOINT}
-ENV HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+ENV HOPRD_API_ENDPOINT=${HOPRD_API_ENDPOINT:-"https://zero_amazon_amalthea_fuchsia.playground.hoprnet.org:3001"}
+ENV HOPRD_API_TOKEN=${HOPRD_API_TOKEN:-"A12EfEAa9d472d705B9e72Cc#"}
 ENV DEBUG="rpch*"
 
 CMD node apps/exit-node/build/index.js
