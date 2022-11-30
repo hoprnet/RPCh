@@ -1,6 +1,6 @@
 import { createHmac, randomInt } from "crypto";
 
-export default class AccessToken {
+export class AccessToken {
   private createdAt: Date;
   constructor(
     private expiredAt: Date,
@@ -12,6 +12,10 @@ export default class AccessToken {
 
   public getCreatedAt() {
     return this.createdAt;
+  }
+
+  public getExpiredAt() {
+    return this.expiredAt;
   }
 
   public toString(): string {

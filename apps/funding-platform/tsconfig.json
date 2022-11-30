@@ -4,6 +4,8 @@
     "exclude": ["node_modules", "src/**/*.spec*", "build"],
     "compilerOptions": {
       "outDir": "build",
+      "rootDir": "./src",
+      "baseUrl": "./src",
     }
   }
   
