@@ -1,17 +1,17 @@
 import { AccessTokenService } from "./access-token";
-import { DBInterface } from "./db";
 import express, { NextFunction, Request, Response } from "express";
+import { Low } from "lowdb";
 
 const app = express();
 const port = 3000;
 
 const tokenIsValid =
-  (db: DBInterface) =>
+  (accessTokenService: AccessTokenService) =>
   async (req: Request, res: Response, next: NextFunction) => {
     const requestToken = req.headers["x-access-token"];
     if (!requestToken) throw new Error("Missing Access Token");
 
-    const dbTokens = db.getAccessToken(requestToken as string);
+    const dbTokens = accessTokenService.getAccessToken(requestToken as string);
     if (!dbTokens) throw new Error("Access Token does not exist");
 
     const token = dbTokens;
@@ -23,7 +23,7 @@ const tokenIsValid =
   };
 
 export const startServer = (ops: {
-  db: DBInterface;
+  db: Low<null>;
   accessTokenService: AccessTokenService;
 }) => {
   app.get("/api/access-token", async (req, res) => {
@@ -36,7 +36,7 @@ export const startServer = (ops: {
 
   app.post(
     "/api/request/funds/:blockchain_address",
-    tokenIsValid(ops.db),
+    tokenIsValid(ops.accessTokenService),
     (req, res) => {
       return res.json({
         data: "requested",

@@ -1,14 +1,14 @@
 import * as entryServer from "./entry-server";
 import dotenv from "dotenv";
-import { DBAdapter } from "./db";
 import { AccessTokenService } from "./access-token";
+import { Memory, Low } from "lowdb";
+
 dotenv.config({ path: ".env.local" });
 
 const { SECRET_KEY } = process.env;
 
 const start = async () => {
-  const db = undefined;
-  const dbAdapter = new DBAdapter(db);
+  const dbAdapter = new Low(new Memory());
   const accessTokenService = new AccessTokenService(dbAdapter);
 
   entryServer.startServer({ db: dbAdapter, accessTokenService });

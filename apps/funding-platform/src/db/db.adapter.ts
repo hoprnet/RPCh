@@ -1,18 +1,17 @@
-import { CreateAccessToken, QueryAccessToken } from "../access-token/dto";
-import { DBInterface } from "./db.interface";
+import { CreateAccessToken, QueryAccessToken } from "../access-token";
+import { Low } from "lowdb";
 
-export class DBAdapter implements DBInterface {
-  public constructor(private db: unknown) {}
-
-  public saveAccessToken(accessToken: CreateAccessToken) {
-    // db logic to save access token
-  }
-  public getAccessToken(accessToken: string) {
-    return "" as unknown as QueryAccessToken;
-  }
-  public deleteAccessToken(accessToken: string) {}
-  public createRequest(request: unknown) {}
-  public getRequestsByToken(request: unknown) {}
-  public updateRequest(request: unknown) {}
-  public deleteRequest(request: unknown) {}
-}
+export const saveAccessToken = (
+  db: Low<null>,
+  accessToken: CreateAccessToken
+) => {
+  // db logic to save access token
+};
+export const getAccessToken = (db: Low<null>, accessToken: string) => {
+  return "" as unknown as QueryAccessToken;
+};
+export const deleteAccessToken = (db: Low<null>, accessToken: string) => {};
+export const createRequest = (db: Low<null>, request: unknown) => {};
+export const getRequestsByToken = (db: Low<null>, request: unknown) => {};
+export const updateRequest = (db: Low<null>, request: unknown) => {};
+export const deleteRequest = (db: Low<null>, request: unknown) => {};

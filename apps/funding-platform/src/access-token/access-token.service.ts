@@ -1,12 +1,13 @@
 import { AccessToken } from "./access-token";
-import { DBInterface } from "../db";
 import { CreateAccessToken } from "./dto";
+import { Low } from "lowdb";
+import { saveAccessToken, getAccessToken, deleteAccessToken } from "../db";
 
 const THIRTY_MINUTES = 30;
 const MAX_HOPR = 40;
 
 export class AccessTokenService {
-  constructor(private db: DBInterface) {}
+  constructor(private db: Low<null>) {}
 
   public async saveAccessToken() {
     const now = new Date();
@@ -29,16 +30,16 @@ export class AccessTokenService {
         .replace("T", " "),
     };
 
-    await this.db.saveAccessToken(query);
+    await saveAccessToken(this.db, query);
 
     return accessToken;
   }
 
   public getAccessToken(accessTokenHash: string) {
-    return this.db.getAccessToken(accessTokenHash);
+    return getAccessToken(this.db, accessTokenHash);
   }
 
   public deleteAccessToken(accessTokenHash: string) {
-    return this.db.deleteAccessToken(accessTokenHash);
+    return deleteAccessToken(this.db, accessTokenHash);
   }
 }
