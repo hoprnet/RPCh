@@ -1,7 +1,13 @@
-import { Cache, Request, Response, Segment, hoprd, utils } from "rpch-common";
+import {
+  Cache as SegmentCache,
+  Request,
+  Response,
+  hoprd,
+  utils,
+} from "rpch-common";
 import RequestCache from "./request-cache";
 
-const { sendMessage, createMessageListener } = hoprd;
+const { sendMessage } = hoprd;
 const { createLogger } = utils;
 const { log, logError } = createLogger(["sdk"]);
 
@@ -30,8 +36,9 @@ export type EntryNode = {
  * Send traffic through the RPCh network
  */
 export default class SDK {
+  // single inverval for the SDK for things that need to be checked.
   private interval: NodeJS.Timer;
-  private cache: Cache;
+  private segmentCache: SegmentCache;
   private requestCache: RequestCache;
   // this will be static but right now passed via tempOps
   private discoveryPlatformApiEndpoint: string;
@@ -40,25 +47,28 @@ export default class SDK {
   // selected entry node
   private entryNode?: EntryNode;
   // selected exit node
-  private exitNode?: string;
+  private exitNodePeerId?: string;
 
   constructor(timeout: number, private readonly tempOps: HoprSdkTempOps) {
     this.discoveryPlatformApiEndpoint = tempOps.discoveryPlatformApiEndpoint;
 
-    this.cache = new Cache(
+    this.segmentCache = new SegmentCache(
       this.onRequestFromSegments,
       this.onResponseFromSegments
     );
     this.requestCache = new RequestCache();
 
+    // check for expires caches every second
     this.interval = setInterval(() => {
-      this.cache.removeExpired(timeout);
+      this.segmentCache.removeExpired(timeout);
       this.requestCache.removeExpired(timeout);
     }, 1000);
   }
 
   public get isReady(): boolean {
-    return !!this.entryNode && this.exitNodes.length > 0 && !!this.exitNode;
+    return (
+      !!this.entryNode && this.exitNodes.length > 0 && !!this.exitNodePeerId
+    );
   }
 
   /**
@@ -93,7 +103,7 @@ export default class SDK {
     // response gives back list of exit nodes
     // select exit node at random
     this.exitNodes = [this.tempOps.exitNodePeerId];
-    this.exitNode = this.tempOps.exitNodePeerId;
+    this.exitNodePeerId = this.tempOps.exitNodePeerId;
     return this.exitNodes;
   }
 
@@ -174,7 +184,7 @@ export default class SDK {
           apiEndpoint: this.entryNode!.apiEndpoint,
           apiToken: this.entryNode!.apiToken,
           message: segment.toString(),
-          destination: this.exitNode!,
+          destination: this.exitNodePeerId!,
         });
       }
     });

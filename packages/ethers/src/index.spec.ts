@@ -25,15 +25,18 @@ const getMockedResponse = (request: Request): Response => {
 
 describe("test index.ts", function () {
   // pseudo responses from entry node
-  // nock(PROVIDER_URL).persist().post(/.*/).reply(202, "someresponse");
   nock(ENTRY_NODE_API_ENDPOINT).persist().post(/.*/).reply(202, "someresponse");
 
-  const provider = new RPChProvider(ENTRY_NODE_API_ENDPOINT, {
+  const provider = new RPChProvider(PROVIDER_URL, {
     discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
     entryNodeApiEndpoint: ENTRY_NODE_API_ENDPOINT,
     entryNodeApiToken: ENTRY_NODE_API_TOKEN,
     entryNodePeerId: ENTRY_NODE_PEER_ID,
     exitNodePeerId: EXIT_NODE_PEER_ID,
+  });
+
+  beforeAll(async function () {
+    await provider.sdk.start();
   });
 
   afterAll(function () {
