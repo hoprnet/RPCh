@@ -15,6 +15,13 @@
         "HOPRD_API_ENDPOINT",
         "HOPRD_API_TOKEN",
         "RESPONSE_TIMEOUT"
+      ],
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "build/**",
+        ".next/**"
       ]
     },
     "format": {

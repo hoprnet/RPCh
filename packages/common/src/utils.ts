@@ -116,6 +116,7 @@ export const decodeIncomingBody = (body: string): string | undefined => {
       utils.RLP.decode(new Uint8Array(JSON.parse(`[${body}]`)))[0]
     );
   } catch {
-    throw new Error("failed to decode body");
+    // throw new Error("failed to decode body");
+    return undefined;
   }
 };
