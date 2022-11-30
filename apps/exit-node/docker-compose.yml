@@ -1,10 +1,15 @@
 # docker-compose file that allows RPCh exit node to run alongside HOPRd.
-# gcr.io/hoprassociation/hoprd@sha256:0f4f7085910de900aa1edd88c7b1e9334f654613a35784e55800c9da7c1db3e3
 
 services:
   hoprd:
     image: gcr.io/hoprassociation/hoprd@sha256:0f4f7085910de900aa1edd88c7b1e9334f654613a35784e55800c9da7c1db3e3
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD","curl", "http://$(HOPRD_API_HOST):$(HOPRD_API_PORT)"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 15s
     environment:
       - HOPRD_ENVIRONMENT=${HOPRD_ENVIRONMENT:-monte_rosa} # If i put a env var that doesnt exist... does it use the default image one?
       - HOPRD_HOST=${HOPRD_HOST:-0.0.0.0:9091}
@@ -33,12 +38,14 @@ services:
       - HOPRD_ON_CHAIN_CONFIRMATIONS=${HOPRD_ON_CHAIN_CONFIRMATIONS:-8}
 
   exit-node:
-    image: exit
-    # build: 
-    #   context: apps/exit-node
+    # image: exit
+    build: 
+      dockerfile: apps/exit-node/Dockerfile
+      context: ../../
     restart: unless-stopped
     environment:
       - HOPRD_API_ENDPOINT=${HOPRD_API_ENDPOINT:-localhost}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN:-3001}
     depends_on: 
-      - hoprd
+      hoprd:
+        condition: service_healthy

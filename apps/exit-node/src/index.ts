@@ -22,7 +22,6 @@ const start = async (ops: {
   apiEndpoint: string;
   apiToken?: string;
 }): Promise<() => void> => {
-console.log("Started!")
   const onRequest = async (rpchRequest: Request) => {
     try {
       const response = await ops.exit.sendRpcRequest(

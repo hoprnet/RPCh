@@ -44,10 +44,10 @@ COPY --from=installer /app .
 
 # Allow configuration of enviroment variables as build arg or runtime env
 ARG HOPRD_API_ENDPOINT
-ARG HOPR_API_TOKEN
+ARG HOPRD_API_TOKEN
 
-ENV HOPRD_API_ENDPOINT=${HOPR_API_TOKEN:-"https://one_moon_godavari_black.playground.hoprnet.org:3001"}
-ENV HOPRD_API_TOKEN=${HOPR_API_TOKEN:-"2eE90CE00FfE7#6701d2#852"}
+ENV HOPRD_API_ENDPOINT=${HOPRD_API_ENDPOINT}
+ENV HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
 ENV DEBUG="rpch*"
 
 CMD node apps/exit-node/build/index.js
