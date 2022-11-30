@@ -1,14 +1,14 @@
 import assert from "assert";
+import nock from "nock";
 import * as hoprd from "./hoprd";
 import * as fixtures from "./fixtures";
-import nock from "nock";
 
 const ENTRY_NODE_API_ENDPOINT = "http://entry_node";
 const ENTRY_NODE_API_TOKEN = "12345";
 const EXIT_NODE_PEER_ID = fixtures.PEER_ID_B;
 
-describe("test hoprd module", function () {
-  it("log when message is status 202", async function () {
+describe("test hoprd.ts / sendMessage", function () {
+  it("should return message response", async function () {
     nock(ENTRY_NODE_API_ENDPOINT).post(/.*/).reply(202, "someresponse");
     const res = await hoprd.sendMessage({
       apiEndpoint: ENTRY_NODE_API_ENDPOINT,

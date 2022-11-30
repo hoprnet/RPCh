@@ -39,4 +39,7 @@ export const LARGE_RESPONSE = new Response(2, RPC_RES_LARGE);
 export const SMALL_REQUEST = new Request(1, PEER_ID_A, PROVIDER, RPC_REQ_SMALL);
 export const LARGE_REQUEST = new Request(2, PEER_ID_A, PROVIDER, RPC_REQ_LARGE);
 
+/**
+ * An RPC response which is an error
+ */
 export const RPC_RES_ERROR = `{"id":123,"jsonrpc": "2.0","error":{"code":1,"message":"ExampleMethodresultismissing'example_key'."}}`;

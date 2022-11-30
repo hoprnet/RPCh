@@ -18,9 +18,9 @@ const start = async (ops: {
     sendMessage: typeof hoprd.sendMessage;
     createMessageListener: typeof hoprd.createMessageListener;
   };
-  timeout: number;
   apiEndpoint: string;
   apiToken?: string;
+  timeout: number;
 }): Promise<() => void> => {
   const onRequest = async (rpchRequest: Request) => {
     try {
@@ -40,7 +40,10 @@ const start = async (ops: {
     }
   };
 
-  const cache = new Cache(ops.timeout, onRequest, () => {});
+  const cache = new Cache(onRequest, () => {});
+  const interval: NodeJS.Timer = setInterval(() => {
+    cache.removeExpired(ops.timeout);
+  }, 1000);
 
   const stopMessageListening = await ops.hoprd.createMessageListener(
     ops.apiEndpoint,
@@ -56,6 +59,7 @@ const start = async (ops: {
   );
 
   return () => {
+    clearInterval(interval);
     stopMessageListening();
   };
 };

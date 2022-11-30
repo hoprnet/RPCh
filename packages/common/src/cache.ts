@@ -7,7 +7,8 @@ import { createLogger, isExpired } from "./utils";
 const { log, logVerbose } = createLogger("cache");
 
 /**
- * Caches incoming segments.
+ * A cache class which you can feed feed incoming Segments
+ * and it will trigger back found Requests and Responses.
  */
 export default class Cache {
   // partial segments received, keyed by segment.msgId
@@ -19,8 +20,12 @@ export default class Cache {
     }
   >();
 
+  /**
+   *
+   * @param onRequest Triggered once a Request can be constructed
+   * @param onResponse Triggered once a Response can be constructed
+   */
   constructor(
-    private timeout: number,
     private onRequest: (request: Request) => void,
     private onResponse: (response: Response) => void
   ) {}
@@ -65,15 +70,16 @@ export default class Cache {
   }
 
   /**
-   * Removes expired segments.
+   * Given a timeout, removes expired segments.
+   * @param timeout How many ms after a segment was received.
    */
-  public removeExpired(): void {
+  public removeExpired(timeout: number): void {
     const now = new Date();
 
     logVerbose("segments", this.segments.size);
 
     for (const [id, entry] of this.segments.entries()) {
-      if (isExpired(this.timeout, now, entry.receivedAt)) {
+      if (isExpired(timeout, now, entry.receivedAt)) {
         log("dropping expired partial segments");
         this.segments.delete(id);
       }

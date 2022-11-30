@@ -11,19 +11,19 @@
     "test": "jest --coverage"
   },
   "devDependencies": {
-    "rpch-configs-typescript": "*",
-    "rpch-configs-eslint": "*",
-    "rpch-configs-prettier": "*",
-    "rpch-configs-jest": "*",
-    "@types/node-fetch": "2.6.2",
     "@types/debug": "^4.1.7",
-    "@types/ws": "^8.5.3"
+    "@types/node-fetch": "2.6.2",
+    "@types/ws": "^8.5.3",
+    "rpch-configs-eslint": "*",
+    "rpch-configs-jest": "*",
+    "rpch-configs-prettier": "*",
+    "rpch-configs-typescript": "*"
   },
   "dependencies": {
-    "ws": "^8.11.0",
     "debug": "^4.3.4",
     "ethers": "^5.7.2",
     "nock": "^13.2.9",
-    "node-fetch": "^2.6.2"
+    "node-fetch": "^2.6.2",
+    "ws": "^8.11.0"
   }
 }

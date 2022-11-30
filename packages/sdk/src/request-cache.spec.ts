@@ -8,7 +8,7 @@ describe("test request cache class", function () {
   let requestCache: RequestCache;
 
   beforeEach(function () {
-    requestCache = new RequestCache(TIMEOUT);
+    requestCache = new RequestCache();
   });
 
   it("should add request", function () {
@@ -38,8 +38,8 @@ describe("test request cache class", function () {
       () => {},
       () => {}
     );
-    requestCache.setInterval();
     jest.advanceTimersByTime(2 * TIMEOUT);
+    requestCache.removeExpired(TIMEOUT);
     assert.equal(requestCache.getRequest(fixtures.SMALL_REQUEST.id), undefined);
     jest.useRealTimers();
   });
