@@ -9,7 +9,10 @@ const EXIT_NODE_PEER_ID = fixtures.PEER_ID_B;
 
 describe("test hoprd.ts / sendMessage", function () {
   it("should return message response", async function () {
-    nock(ENTRY_NODE_API_ENDPOINT).post(/.*/).reply(202, "someresponse");
+    fixtures
+      .nockSendMessageApi(nock(ENTRY_NODE_API_ENDPOINT))
+      .reply(202, "someresponse");
+
     const res = await hoprd.sendMessage({
       apiEndpoint: ENTRY_NODE_API_ENDPOINT,
       apiToken: ENTRY_NODE_API_TOKEN,
@@ -18,11 +21,13 @@ describe("test hoprd.ts / sendMessage", function () {
     });
     assert.equal(res, "someresponse");
   });
+
   it("log error when response is not status 202", async function () {
-    nock(ENTRY_NODE_API_ENDPOINT).post(/.*/).reply(422, {
+    fixtures.nockSendMessageApi(nock(ENTRY_NODE_API_ENDPOINT)).reply(422, {
       status: "UNKNOWN_FAILURE",
       error: "Full error message.",
     });
+
     const res = await hoprd.sendMessage({
       apiEndpoint: ENTRY_NODE_API_ENDPOINT,
       apiToken: ENTRY_NODE_API_TOKEN,

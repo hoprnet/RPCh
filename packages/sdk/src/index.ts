@@ -7,9 +7,7 @@ import {
 } from "rpch-common";
 import RequestCache from "./request-cache";
 
-const { sendMessage } = hoprd;
-const { createLogger } = utils;
-const { log, logError } = createLogger(["sdk"]);
+const { log, logError } = utils.createLogger(["sdk"]);
 
 /**
  * Temporary options to be passed to
@@ -37,7 +35,7 @@ export type EntryNode = {
  */
 export default class SDK {
   // single inverval for the SDK for things that need to be checked.
-  private interval: NodeJS.Timer;
+  private interval?: NodeJS.Timer;
   private segmentCache: SegmentCache;
   private requestCache: RequestCache;
   // this will be static but right now passed via tempOps
@@ -49,7 +47,10 @@ export default class SDK {
   // selected exit node
   private exitNodePeerId?: string;
 
-  constructor(timeout: number, private readonly tempOps: HoprSdkTempOps) {
+  constructor(
+    private readonly timeout: number,
+    private readonly tempOps: HoprSdkTempOps
+  ) {
     this.discoveryPlatformApiEndpoint = tempOps.discoveryPlatformApiEndpoint;
 
     this.segmentCache = new SegmentCache(
@@ -57,14 +58,11 @@ export default class SDK {
       this.onResponseFromSegments
     );
     this.requestCache = new RequestCache();
-
-    // check for expires caches every second
-    this.interval = setInterval(() => {
-      this.segmentCache.removeExpired(timeout);
-      this.requestCache.removeExpired(timeout);
-    }, 1000);
   }
 
+  /**
+   * @return true if SDK is ready to send requests
+   */
   public get isReady(): boolean {
     return (
       !!this.entryNode && this.exitNodes.length > 0 && !!this.exitNodePeerId
@@ -130,8 +128,17 @@ export default class SDK {
     log("ignoring received request %s", req.body);
   }
 
-  public async start(): Promise<SDK> {
-    if (this.isReady) return this;
+  /**
+   * Start the SDK and initialize necessary data.
+   */
+  public async start(): Promise<void> {
+    if (this.isReady) return;
+    // check for expires caches every second
+    this.interval = setInterval(() => {
+      this.segmentCache.removeExpired(this.timeout);
+      this.requestCache.removeExpired(this.timeout);
+    }, 1000);
+
     await this.selectEntryNode(this.discoveryPlatformApiEndpoint);
     await this.selectExitNode(this.discoveryPlatformApiEndpoint);
     // await createMessageListener(
@@ -149,10 +156,12 @@ export default class SDK {
     //     }
     //   }
     // );
-    return this;
   }
 
-  public stop(): void {
+  /**
+   * Stop the SDK and clear up tangling processes.
+   */
+  public async stop(): Promise<void> {
     clearInterval(this.interval);
   }
 
@@ -180,7 +189,7 @@ export default class SDK {
       const segments = message.toSegments();
       this.requestCache.addRequest(req, resolve, reject);
       for (const segment of segments) {
-        sendMessage({
+        hoprd.sendMessage({
           apiEndpoint: this.entryNode!.apiEndpoint,
           apiToken: this.entryNode!.apiToken,
           message: segment.toString(),

@@ -1,60 +1,92 @@
 import assert from "assert";
-import nock from "nock";
 import { Request, fixtures } from "rpch-common";
-import SDK from "./index";
+import nock from "nock";
+import SDK, { type HoprSdkTempOps } from "./index";
 
-const TIMEOUT = 10e3;
+const TIMEOUT = 5e3;
 const DISCOVERY_PLATFORM_API_ENDPOINT = "http://discovery_platform";
 const ENTRY_NODE_API_ENDPOINT = "http://entry_node";
 const ENTRY_NODE_API_TOKEN = "12345";
 const ENTRY_NODE_PEER_ID = fixtures.PEER_ID_A;
 const EXIT_NODE_PEER_ID = fixtures.PEER_ID_B;
 
+type MockOps = HoprSdkTempOps & { timeout: number };
+
+const createSdkMock = (
+  overwriteOps?: Partial<MockOps>
+): {
+  sdk: SDK;
+  ops: MockOps;
+} => {
+  fixtures
+    .nockSendMessageApi(nock(ENTRY_NODE_API_ENDPOINT))
+    .reply(202, "someresponse");
+
+  const ops: MockOps = {
+    timeout: overwriteOps?.timeout ?? TIMEOUT,
+    discoveryPlatformApiEndpoint:
+      overwriteOps?.discoveryPlatformApiEndpoint ??
+      DISCOVERY_PLATFORM_API_ENDPOINT,
+    entryNodeApiEndpoint:
+      overwriteOps?.entryNodeApiEndpoint ?? ENTRY_NODE_API_ENDPOINT,
+    entryNodeApiToken: overwriteOps?.entryNodeApiToken ?? ENTRY_NODE_API_TOKEN,
+    entryNodePeerId: overwriteOps?.entryNodePeerId ?? ENTRY_NODE_PEER_ID,
+    exitNodePeerId: overwriteOps?.exitNodePeerId ?? EXIT_NODE_PEER_ID,
+  };
+
+  const sdk = new SDK(ops.timeout, ops);
+
+  return { sdk, ops };
+};
+
 describe("test SDK class", function () {
-  let sdk: SDK;
+  describe("stopped", function () {
+    let sdk: SDK;
 
-  nock(ENTRY_NODE_API_ENDPOINT).persist().post(/.*/).reply(202, "someresponse");
+    beforeEach(async function () {
+      sdk = createSdkMock().sdk;
+    });
 
-  beforeEach(function () {
-    sdk = new SDK(TIMEOUT, {
-      discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
-      entryNodeApiEndpoint: ENTRY_NODE_API_ENDPOINT,
-      entryNodeApiToken: ENTRY_NODE_API_TOKEN,
-      entryNodePeerId: ENTRY_NODE_PEER_ID,
-      exitNodePeerId: EXIT_NODE_PEER_ID,
+    it("should fail to create request", function () {
+      assert.throws(() => {
+        return sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE);
+      }, "not ready");
+    });
+
+    it("should fail to send request", function () {
+      assert.throws(() => {
+        return sdk.sendRequest(fixtures.LARGE_REQUEST);
+      }, "not ready");
     });
   });
 
-  afterEach(function () {
-    sdk.stop();
-  });
+  describe("started", function () {
+    let ops: MockOps;
+    let sdk: SDK;
 
-  it("should fail to create request", function () {
-    assert.throws(() => {
-      return sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE);
-    }, "not ready");
-  });
+    beforeEach(async function () {
+      const mock = createSdkMock();
+      ops = mock.ops;
+      sdk = mock.sdk;
+      await sdk.start();
+    });
 
-  it("should fail to send request", function () {
-    assert.throws(() => {
-      return sdk.sendRequest(fixtures.LARGE_REQUEST);
-    }, "not ready");
-  });
+    afterEach(async function () {
+      await sdk.stop();
+    });
 
-  it("should create request", async function () {
-    await sdk.start();
-    const request = sdk.createRequest(
-      fixtures.PROVIDER,
-      fixtures.RPC_REQ_LARGE
-    );
-    assert(request instanceof Request);
-    assert.equal(request.origin, ENTRY_NODE_PEER_ID);
-    assert.equal(request.provider, fixtures.PROVIDER);
-    assert.equal(request.body, fixtures.RPC_REQ_LARGE);
-  });
+    it("should create request", async function () {
+      const request = sdk.createRequest(
+        fixtures.PROVIDER,
+        fixtures.RPC_REQ_LARGE
+      );
+      assert(request instanceof Request);
+      assert.equal(request.origin, ops.entryNodePeerId);
+      assert.equal(request.provider, fixtures.PROVIDER);
+      assert.equal(request.body, fixtures.RPC_REQ_LARGE);
+    });
 
-  it("should send request and return response", function (done) {
-    sdk.start().then(() => {
+    it("should send request and return response", function (done) {
       sdk.sendRequest(fixtures.LARGE_REQUEST).then((response) => {
         assert.equal(response.id, fixtures.LARGE_RESPONSE.id);
         // @ts-ignore
@@ -68,42 +100,38 @@ describe("test SDK class", function () {
       // @ts-ignore
       sdk.onResponseFromSegments(fixtures.LARGE_RESPONSE);
     });
-  });
 
-  describe("should handle requests correctly when receiving a response", function () {
-    beforeAll(async function () {
-      await sdk.start();
-    });
-
-    it("should remove request with matching response", function () {
-      // @ts-ignore
-      sdk.requestCache.addRequest(
-        fixtures.LARGE_REQUEST,
-        () => {},
-        () => {}
-      );
-      // @ts-ignore
-      sdk.onResponseFromSegments(fixtures.LARGE_RESPONSE);
-      assert.equal(
+    describe("should handle requests correctly when receiving a response", function () {
+      it("should remove request with matching response", function () {
         // @ts-ignore
-        sdk.requestCache.getRequest(fixtures.LARGE_RESPONSE.id),
-        undefined
-      );
-    });
-    it("shouldn't remove request with different response", function () {
-      // @ts-ignore
-      sdk.requestCache.addRequest(
-        fixtures.LARGE_REQUEST,
-        () => {},
-        () => {}
-      );
-      // @ts-ignore
-      sdk.onResponseFromSegments(fixtures.SMALL_RESPONSE);
-      assert.equal(
+        sdk.requestCache.addRequest(
+          fixtures.LARGE_REQUEST,
+          () => {},
+          () => {}
+        );
         // @ts-ignore
-        sdk.requestCache.getRequest(fixtures.LARGE_RESPONSE.id)?.request.id,
-        fixtures.LARGE_REQUEST.id
-      );
+        sdk.onResponseFromSegments(fixtures.LARGE_RESPONSE);
+        assert.equal(
+          // @ts-ignore
+          sdk.requestCache.getRequest(fixtures.LARGE_RESPONSE.id),
+          undefined
+        );
+      });
+      it("shouldn't remove request with different response", function () {
+        // @ts-ignore
+        sdk.requestCache.addRequest(
+          fixtures.LARGE_REQUEST,
+          () => {},
+          () => {}
+        );
+        // @ts-ignore
+        sdk.onResponseFromSegments(fixtures.SMALL_RESPONSE);
+        assert.equal(
+          // @ts-ignore
+          sdk.requestCache.getRequest(fixtures.LARGE_RESPONSE.id)?.request.id,
+          fixtures.LARGE_REQUEST.id
+        );
+      });
     });
   });
 });

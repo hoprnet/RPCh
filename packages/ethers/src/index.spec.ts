@@ -24,9 +24,6 @@ const getMockedResponse = (request: Request): Response => {
 };
 
 describe("test index.ts", function () {
-  // pseudo responses from entry node
-  nock(ENTRY_NODE_API_ENDPOINT).persist().post(/.*/).reply(202, "someresponse");
-
   const provider = new RPChProvider(PROVIDER_URL, {
     discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
     entryNodeApiEndpoint: ENTRY_NODE_API_ENDPOINT,
@@ -37,10 +34,15 @@ describe("test index.ts", function () {
 
   beforeAll(async function () {
     await provider.sdk.start();
+
+    // pseudo responses from entry node
+    fixtures
+      .nockSendMessageApi(nock(ENTRY_NODE_API_ENDPOINT).persist())
+      .reply(202, "someresponse");
   });
 
-  afterAll(function () {
-    provider.sdk.stop();
+  afterAll(async function () {
+    await provider.sdk.stop();
   });
 
   // hook to emulate responses from the exit node

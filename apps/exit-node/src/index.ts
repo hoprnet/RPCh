@@ -1,8 +1,7 @@
 import { type Request, Cache, utils, Segment, hoprd } from "rpch-common";
 import * as exit from "./exit";
 
-const { createLogger } = utils;
-const { log, logError } = createLogger("exit-node");
+const { log, logError } = utils.createLogger("exit-node");
 
 const {
   HOPRD_API_ENDPOINT,
