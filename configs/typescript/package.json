@@ -10,6 +10,8 @@
     "react-library.json"
   ],
   "dependencies": {
+    "rimraf": "^3.0.2",
+    "tsup": "^6.5.0",
     "typescript": "^4.5.2"
   }
 }

@@ -3,9 +3,9 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "build": "tsc",
-    "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
+    "build": "rimraf build && tsup",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
+    "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
     "test": "jest --coverage",
     "start": "node build/index.js"
   },

@@ -5,7 +5,7 @@
   "types": "./build/index.d.ts",
   "license": "MIT",
   "scripts": {
-    "build": "tsc",
+    "build": "rimraf build && tsup",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
     "test": "jest --coverage"
