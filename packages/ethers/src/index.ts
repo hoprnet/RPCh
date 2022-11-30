@@ -12,6 +12,7 @@ export class RPChProvider extends JsonRpcProvider {
   constructor(public readonly url: string, hoprSdkTempOps: HoprSdkTempOps) {
     super(url);
     this.sdk = new SDK(5000, hoprSdkTempOps);
+    this.sdk.start().catch((error) => logError(error));
   }
 
   public async send(method: string, params: Array<any>): Promise<any> {
