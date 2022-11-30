@@ -23,6 +23,9 @@
         "RESPONSE_TIMEOUT"
       ]
     },
+    "dev": {
+      "cache": false
+    },
     "format": {
       "outputs": []
     },
