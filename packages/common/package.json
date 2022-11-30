@@ -1,23 +1,25 @@
 {
   "name": "rpch-common",
   "version": "0.0.0",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./build/index.js",
+  "types": "./build/index.d.ts",
   "license": "MIT",
   "scripts": {
-    "build": "tsc",
+    "build": "rimraf build && tsup",
+    "dev": "yarn build --watch",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
     "test": "jest --coverage"
   },
   "devDependencies": {
-    "@types/debug": "^4.1.7",
-    "@types/node-fetch": "2.6.2",
-    "@types/ws": "^8.5.3",
+    "rpch-configs-typescript": "*",
     "rpch-configs-eslint": "*",
-    "rpch-configs-jest": "*",
     "rpch-configs-prettier": "*",
-    "rpch-configs-typescript": "*"
+    "rpch-configs-jest": "*",
+    "rpch-configs-tsup": "*",
+    "@types/node-fetch": "2.6.2",
+    "@types/debug": "^4.1.7",
+    "@types/ws": "^8.5.3"
   },
   "dependencies": {
     "debug": "^4.3.4",
