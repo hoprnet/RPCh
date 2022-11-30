@@ -2,7 +2,7 @@ import assert from "assert";
 import startExitNode from ".";
 import { fixtures } from "rpch-common";
 
-const createMockedSetup = () => {
+const createMockedSetup = async () => {
   let triggerOnMessage: (message: string) => void = () => {};
   const exit = {
     sendRpcRequest: jest.fn(async () => fixtures.LARGE_RESPONSE.body),
@@ -21,7 +21,7 @@ const createMockedSetup = () => {
     ),
   };
 
-  const stopExitNode = startExitNode({
+  const stopExitNode = await startExitNode({
     exit,
     hoprd,
     apiEndpoint: "",
@@ -38,8 +38,9 @@ const createMockedSetup = () => {
 };
 
 describe("test index.ts", function () {
-  it("should call all the right methods when a Request is received", function () {
-    const { hoprd, exit, triggerOnMessage } = createMockedSetup();
+  it("should call all the right methods when a Request is received", async function () {
+    const { hoprd, exit, triggerOnMessage, stopExitNode } =
+      await createMockedSetup();
 
     // send Request segments into Cache
     for (const segment of fixtures.LARGE_REQUEST.toMessage().toSegments()) {
@@ -53,5 +54,7 @@ describe("test index.ts", function () {
       hoprd.sendMessage.mock.calls.length,
       fixtures.LARGE_RESPONSE.toMessage().toSegments.length
     );
+
+    stopExitNode();
   });
 });
