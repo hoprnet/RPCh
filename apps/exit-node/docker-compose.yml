@@ -1,5 +1,6 @@
 # docker-compose file that allows RPCh exit node to run alongside HOPRd.
 version: "3"
+
 volumes:
   hoprd-data:
 services:
@@ -22,9 +23,7 @@ services:
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - HOPRD_PASSWORD=${HOPRD_PASSWORD}
       - HOPRD_INIT=true
-
   exit-node:
-    # image: exit
     build: 
       dockerfile: apps/exit-node/Dockerfile
       context: ../../

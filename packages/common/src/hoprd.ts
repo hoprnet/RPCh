@@ -76,7 +76,12 @@ export const createMessageListener = async (
     const body = data.toString();
     logVerbose("received body from HOPRd");
 
-    const message = decodeIncomingBody(body);
+    let message: string | undefined;
+    try {
+      message = decodeIncomingBody(body);
+    } catch (error) {
+      logError(error);
+    }
     if (!message) return;
     logVerbose("decoded received body", message);
 
