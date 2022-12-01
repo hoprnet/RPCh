@@ -12,39 +12,16 @@ services:
       - "8080:8080"
     volumes:
       - hoprd-data:/tmp
-    # healthcheck:
-    #   test: ["CMD","curl", "http://$(HOPRD_API_HOST):$(HOPRD_HEALTH_CHECK_PORT)"]
-    #   interval: 1m30s
-    #   timeout: 30s
-    #   retries: 5
-    #   start_period: 15s
     environment:
-      - HOPRD_ENVIRONMENT=${HOPRD_ENVIRONMENT:-monte_rosa} # If i put a env var that doesnt exist... does it use the default image one?
-      # - HOPRD_HOST=${HOPRD_HOST:-0.0.0.0:9091}
-      # - HOPRD_ANNOUNCE=${HOPRD_ANNOUNCE:-false}
+      - HOPRD_ENVIRONMENT=${HOPRD_ENVIRONMENT}
+      - HOPRD_HOST=0.0.0.0:9091
       - HOPRD_ADMIN=true
-      # - HOPRD_ADMIN_HOST=${HOPRD_ADMIN_HOST:-localhost}
-      # - HOPRD_ADMIN_PORT=${HOPRD_ADMIN_PORT:-3000}
+      - HOPRD_ADMIN_HOST=0.0.0.0
       - HOPRD_API=true
-      # - HOPRD_API_HOST=${HOPRD_API_HOST:-localhost}
-      # - HOPRD_API_PORT=${HOPRD_API_PORT:-3001}
+      - HOPRD_API_HOST=0.0.0.0
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-      - HOPRD_HEALTH_CHECK=true
-      # - HOPRD_HEALTH_CHECK_HOST=${HOPRD_HEALTH_CHECK_HOST:-localhost}
-      # - HOPRD_HEALTH_CHECK_PORT=${HOPRD_HEALTH_CHECK_PORT:-8080}
-      - HOPRD_PASSWORD=${HOPRD_PASSWORD:-"hoprd-password"}
-      # - HOPRD_PROVIDER=${HOPRD_PROVIDER}
-      # - HOPRD_IDENTITY=${HOPRD_IDENTITY:-/root/.hopr-identity}
-      # - HOPRD_DRY_RUN=${HOPRD_DRY_RUN:-false}
-      # - HOPRD_DATA=${HOPRD_DATA:-/app/packages/hoprd/hoprd-db}
-      - HOPRD_INIT=${HOPRD_INIT:-true}
-      # - HOPRD_ALLOW_LOCAL_NODE_CONNECTIONS=${HOPRD_ALLOW_LOCAL_NODE_CONNECTIONS:-false}
-      # - HOPRD_ALLOW_PRIVATE_NODE_CONNECTIONS=${HOPRD_ALLOW_PRIVATE_NODE_CONNECTIONS:-false}
-      # - HOPRD_HEARTBEAT_INTERVAL=${HOPRD_HEARTBEAT_INTERVAL:-60000}
-      # - HOPRD_HEARTBEAT_THRESHOLD=${HOPRD_HEARTBEAT_THRESHOLD:-60000}
-      # - HOPRD_HEARTBEAT_VARIANCE=${HOPRD_HEARTBEAT_VARIANCE:-2000}
-      # - HOPRD_NETWORK_QUALITY_THRESHOLD=${HOPRD_NETWORK_QUALITY_THRESHOLD:-0.5}
-      # - HOPRD_ON_CHAIN_CONFIRMATIONS=${HOPRD_ON_CHAIN_CONFIRMATIONS:-8}
+      - HOPRD_PASSWORD=${HOPRD_PASSWORD}
+      - HOPRD_INIT=true
 
   exit-node:
     # image: exit
@@ -58,4 +35,3 @@ services:
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
     depends_on: 
       - hoprd
-        # condition: service_started
