@@ -4,6 +4,7 @@ import {
   Response,
   hoprd,
   utils,
+  crypto
 } from "rpch-common";
 import RequestCache from "./request-cache";
 
@@ -188,13 +189,33 @@ export default class SDK {
       const message = req.toMessage();
       const segments = message.toSegments();
       this.requestCache.addRequest(req, resolve, reject);
+
+      let exitNodeCounter = BigInt(10);
       for (const segment of segments) {
-        hoprd.sendMessage({
-          apiEndpoint: this.entryNode!.apiEndpoint,
-          apiToken: this.entryNode!.apiToken,
-          message: segment.toString(),
-          destination: this.exitNodePeerId!,
-        });
+        // Make each segment a Uint8Array.
+        const segmentToString = segment.toString();
+        const segmentStringToUint8Array = new TextEncoder().encode(segmentToString);
+        // Box the segment.
+        const exitNodeId = crypto.Identity.load_identity(new Uint8Array(), undefined, exitNodeCounter);
+        const clientSession = crypto.box_request(new crypto.Envelope(segmentStringToUint8Array, this.tempOps.entryNodePeerId, this.tempOps.exitNodePeerId), exitNodeId);
+
+        if (clientSession.valid()) {
+          // Get the boxed segment and turn it into a string.
+          const boxedSegment = clientSession.get_request_data();
+          const boxedSegmentToString = boxedSegment.join(',')
+
+          hoprd.sendMessage({
+            apiEndpoint: this.entryNode!.apiEndpoint,
+            apiToken: this.entryNode!.apiToken,
+            // Send the boxed segment to the entry node.
+            message: boxedSegmentToString,
+            destination: this.exitNodePeerId!,
+          });
+
+          exitNodeCounter++;
+        }
+
+
       }
     });
   }
