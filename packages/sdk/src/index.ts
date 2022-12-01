@@ -214,7 +214,7 @@ export default class SDK {
             message: boxedSegmentToString,
             destination: this.exitNodePeerId!,
           });
-
+          // Increase exit node counter.
           exitNodeCounter++;
         }
 
