@@ -111,6 +111,9 @@ export default class SDK {
    * @param res Response received from cache module
    */
   private onResponseFromSegments(res: Response): void {
+
+    // Decrypt response from exit node here?
+
     const matchingRequest = this.requestCache.getRequest(res.id);
     if (!matchingRequest) {
       logError("matching request not found", res.id);

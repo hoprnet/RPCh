@@ -1,4 +1,4 @@
-import { type Request, Cache, utils, Segment, hoprd } from "rpch-common";
+import { type Request, Cache, utils, Segment, hoprd, crypto } from "rpch-common";
 import * as exit from "./exit";
 
 const { log, logError } = utils.createLogger("exit-node");
@@ -23,10 +23,18 @@ const start = async (ops: {
 }): Promise<() => void> => {
   const onRequest = async (rpchRequest: Request) => {
     try {
+      // We need to box the response.
       const response = await ops.exit.sendRpcRequest(
         rpchRequest.body,
         rpchRequest.provider
       );
+      // Using box_response from crypto
+      const boxedResponse = new TextEncoder().encode(response)
+      // Where can I get these values from at the exit node?
+      let entryNodePeerId = "16Uiu...";
+      let ourExitNodePeerId = "16Uiu2...";
+      const session = crypto.box_response(/*sesion*/, new crypto.Envelope(boxedResponse, entryNodePeerId, ourExitNodePeerId), null);
+
       const rpchResponse = rpchRequest.createResponse(response);
       await ops.hoprd.sendMessage({
         apiEndpoint: ops.apiEndpoint,
@@ -39,7 +47,7 @@ const start = async (ops: {
     }
   };
 
-  const cache = new Cache(onRequest, () => {});
+  const cache = new Cache(onRequest, () => { });
   const interval: NodeJS.Timer = setInterval(() => {
     cache.removeExpired(ops.timeout);
   }, 1000);
@@ -49,7 +57,21 @@ const start = async (ops: {
     ops.apiToken || "",
     (message: string) => {
       try {
-        const segment = Segment.fromString(message);
+        // Transform the request to Uint8Array as it comes as a string, turn array strings into numbers.
+        const messageArray = message.split(',').map(x => parseInt(x))
+        const boxedRequestData = Uint8Array.from(messageArray)
+
+        // Where can I get these values from at the exit node?
+        let entryNodePeerId = "16Uiu...";
+        let ourExitNodePeerId = "16Uiu2...";
+        let myExitNodeId = crypto.Identity.load_identity(new Uint8Array, undefined);
+        let session = crypto.unbox_request(new crypto.Envelope(boxedRequestData, entryNodePeerId, ourExitNodePeerId), myExitNodeId);
+        let unboxedRequest = session.get_request_data();
+
+        // Decode the Uint8Array to a string.
+        let unboxedRequestString = new TextDecoder().decode(unboxedRequest);
+
+        const segment = Segment.fromString(unboxedRequestString);
         cache.onSegment(segment);
       } catch (error) {
         log("Rejected received data from HOPRd: not a valid message", message);
