@@ -3,7 +3,6 @@ import express, { NextFunction, Request, Response } from "express";
 import { DBInstance } from "../index";
 
 const app = express();
-const port = 3000;
 
 const tokenIsValid =
   (accessTokenService: AccessTokenService) =>
@@ -22,7 +21,7 @@ const tokenIsValid =
     next();
   };
 
-export const startServer = (ops: {
+export const entryServer = (ops: {
   db: DBInstance;
   accessTokenService: AccessTokenService;
 }) => {
@@ -50,7 +49,5 @@ export const startServer = (ops: {
 
   app.get("/api/funds", () => {});
 
-  app.listen(port, () => {
-    console.log(`Entry server is listening on port ${port}`);
-  });
+  return app;
 };
