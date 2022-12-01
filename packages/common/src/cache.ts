@@ -1,8 +1,8 @@
 import Request from "./request";
 import Response from "./response";
 import Message from "./message";
-import Segment, { validateSegments } from "./segment";
-import { createLogger, isExpired } from "./utils";
+import Segment from "./segment";
+import { createLogger, isExpired, areAllSegmentsPresent } from "./utils";
 
 const { logVerbose } = createLogger(["common", "cache"]);
 
@@ -57,7 +57,7 @@ export default class Cache {
     this.segments.set(segment.msgId, segmentEntry);
     logVerbose("stored new segment for message ID", segment.msgId);
 
-    if (validateSegments(segmentEntry.segments)) {
+    if (areAllSegmentsPresent(segmentEntry.segments)) {
       const message = Message.fromSegments(segmentEntry.segments);
 
       // remove segments

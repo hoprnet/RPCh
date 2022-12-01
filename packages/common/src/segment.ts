@@ -1,6 +1,5 @@
 import { utils } from "ethers";
-
-const SEPERATOR = "|";
+import { joinPartsToBody, splitBodyToParts } from "./utils";
 
 /**
  * Represents a segment of a message.
@@ -30,8 +29,11 @@ export default class Segment {
   }
 
   public toString() {
-    return [this.msgId, this.segmentNr, this.segmentsLength, this.body].join(
-      SEPERATOR
+    return joinPartsToBody(
+      String(this.msgId),
+      String(this.segmentNr),
+      String(this.segmentsLength),
+      this.body
     );
   }
 
@@ -41,21 +43,14 @@ export default class Segment {
   }
 
   public static fromString(str: string): Segment {
-    const [msgId_, segmentNr_, segmentsLength_, ...body_] = str.split(
-      SEPERATOR
-    ) as string[];
+    const [msgId_, segmentNr_, segmentsLength_, ...remaining] =
+      splitBodyToParts(str);
 
     const msgId = Number(msgId_);
     const segmentNr = Number(segmentNr_);
     const segmentsLength = Number(segmentsLength_);
-    const body = body_.join(SEPERATOR);
+    const body = joinPartsToBody(...remaining);
 
     return new Segment(msgId, segmentNr, segmentsLength, body);
   }
 }
-
-export const validateSegments = (segments: Segment[]): boolean => {
-  if (segments.length === 0) return false;
-  const { segmentsLength } = segments[0];
-  return segmentsLength === segments.length;
-};
