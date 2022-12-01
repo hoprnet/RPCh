@@ -29,12 +29,12 @@ export default class Segment {
   }
 
   public toString() {
-    return joinPartsToBody(
+    return joinPartsToBody([
       String(this.msgId),
       String(this.segmentNr),
       String(this.segmentsLength),
-      this.body
-    );
+      this.body,
+    ]);
   }
 
   public static get MAX_SIZE_WITHOUT_BODY(): number {
@@ -49,7 +49,7 @@ export default class Segment {
     const msgId = Number(msgId_);
     const segmentNr = Number(segmentNr_);
     const segmentsLength = Number(segmentsLength_);
-    const body = joinPartsToBody(...remaining);
+    const body = joinPartsToBody(remaining);
 
     return new Segment(msgId, segmentNr, segmentsLength, body);
   }

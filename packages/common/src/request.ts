@@ -1,8 +1,10 @@
 import Message from "./message";
 import Response from "./response";
-import { generateRandomNumber } from "./utils";
-
-const SEPERATOR = "|";
+import {
+  generateRandomNumber,
+  joinPartsToBody,
+  splitBodyToParts,
+} from "./utils";
 
 /**
  * Represents a request made by the RPCh.
@@ -25,15 +27,22 @@ export default class Request {
   }
 
   public static fromMessage(message: Message): Request {
-    const [type, origin, provider, ...body] = message.body.split(SEPERATOR);
+    const [type, origin, provider, ...remaining] = splitBodyToParts(
+      message.body
+    );
     if (type !== "request") throw Error("Message is not a Request");
-    return new Request(message.id, origin, provider, body.join(SEPERATOR));
+    return new Request(
+      message.id,
+      origin,
+      provider,
+      joinPartsToBody(remaining)
+    );
   }
 
   public toMessage(): Message {
     return new Message(
       this.id,
-      ["request", this.origin, this.provider, this.body].join(SEPERATOR)
+      joinPartsToBody(["request", this.origin, this.provider, this.body])
     );
   }
 

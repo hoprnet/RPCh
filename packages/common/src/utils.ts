@@ -132,7 +132,7 @@ export const SEPERATOR = "|";
  * @param parts
  * @returns body
  */
-export const joinPartsToBody = (...parts: string[]): string => {
+export const joinPartsToBody = (parts: string[]): string => {
   return parts.join(SEPERATOR);
 };
 
