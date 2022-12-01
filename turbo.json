@@ -51,9 +51,7 @@
     },
     "test": {
       "outputs": [
-        "coverage/**",
-        "report.json"
-      ]
+        "coverage/**"      ]
     }
   }
 }

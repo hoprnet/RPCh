@@ -30,9 +30,5 @@
     "rpch-common": "*",
     "serverless-mysql": "^1.5.4",
     "sql-template-strings": "^2.2.2"
-  },
-  "jest": {
-    "preset": "ts-jest",
-    "testEnvironment": "node"
   }
 }

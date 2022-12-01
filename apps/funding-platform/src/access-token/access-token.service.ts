@@ -1,6 +1,10 @@
 import { AccessToken } from "./access-token";
 import { CreateAccessToken } from "./dto";
-import { saveAccessToken, getAccessToken, deleteAccessToken } from "../db";
+import {
+  saveAccessToken,
+  getAccessToken as getAccessTokenDB,
+  deleteAccessToken as deleteAccessTokenDB,
+} from "../db";
 import { DBInstance } from "../index";
 
 const THIRTY_MINUTES = 1;
@@ -9,7 +13,7 @@ const MAX_HOPR = 40;
 export class AccessTokenService {
   constructor(private db: DBInstance) {}
 
-  public async saveAccessToken() {
+  public async createAccessToken() {
     const now = new Date();
     const expiredAt = new Date(
       new Date(now).setMinutes(now.getMinutes() + THIRTY_MINUTES)
@@ -20,8 +24,10 @@ export class AccessTokenService {
       process.env.SECRET_KEY ?? ""
     );
 
+    const hash = accessToken.generateHash();
+
     const query: CreateAccessToken = {
-      Token: accessToken.getHash(),
+      Token: hash,
       ExpiredAt: expiredAt.toISOString().slice(0, 19).replace("T", " "),
       CreatedAt: accessToken
         .getCreatedAt()
@@ -36,10 +42,10 @@ export class AccessTokenService {
   }
 
   public getAccessToken(accessTokenHash: string) {
-    return getAccessToken(this.db, accessTokenHash);
+    return getAccessTokenDB(this.db, accessTokenHash);
   }
 
   public deleteAccessToken(accessTokenHash: string) {
-    return deleteAccessToken(this.db, accessTokenHash);
+    return deleteAccessTokenDB(this.db, accessTokenHash);
   }
 }

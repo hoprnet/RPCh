@@ -1,6 +1,6 @@
-import { AccessTokenService } from "./access-token";
+import { AccessTokenService } from "../access-token";
 import express, { NextFunction, Request, Response } from "express";
-import { DBInstance } from "./index";
+import { DBInstance } from "../index";
 
 const app = express();
 const port = 3000;
@@ -10,7 +10,6 @@ const tokenIsValid =
   async (req: Request, res: Response, next: NextFunction) => {
     const requestToken = req.headers["x-access-token"];
     if (!requestToken) return res.status(400).json("Missing Access Token");
-    console.log(requestToken);
     const dbToken = await accessTokenService.getAccessToken(
       requestToken as string
     );
@@ -28,7 +27,7 @@ export const startServer = (ops: {
   accessTokenService: AccessTokenService;
 }) => {
   app.get("/api/access-token", async (req, res) => {
-    const accessToken = await ops.accessTokenService.saveAccessToken();
+    const accessToken = await ops.accessTokenService.createAccessToken();
     return res.json({
       accessToken: accessToken.getHash(),
       expiredAt: accessToken.getExpiredAt(),

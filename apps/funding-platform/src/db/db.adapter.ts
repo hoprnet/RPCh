@@ -1,5 +1,5 @@
 import { CreateAccessToken, QueryAccessToken } from "../access-token";
-import { DBInstance } from "../index";
+import { Data, DBInstance } from "../index";
 
 export const saveAccessToken = async (
   db: DBInstance,
@@ -9,13 +9,11 @@ export const saveAccessToken = async (
     ...accessToken,
     Id: Math.floor(Math.random() * 10),
   } as QueryAccessToken);
-  console.log(res);
 };
 export const getAccessToken = async (
   db: DBInstance,
   accessTokenHash: string
 ): Promise<QueryAccessToken | undefined> => {
-  console.log(accessTokenHash, db.data?.accessTokens);
   const res = await db.data?.accessTokens.find(
     (a) => a.Token === accessTokenHash
   );
@@ -29,9 +27,12 @@ export const deleteAccessToken = async (
   const res = await db.data?.accessTokens.filter(
     (a) => a.Token !== accessTokenHash
   );
-  const accessTokensLengthAfter = db.data?.accessTokens.length;
+  db.data = {
+    accessTokens: res,
+    requests: db.data?.requests,
+  } as Data;
 
-  return (accessTokensLengthAfter ?? 0) < (accessTokensLengthBefore ?? 0);
+  return (res?.length ?? 0) < (accessTokensLengthBefore ?? 0);
 };
 export const createRequest = async (
   db: DBInstance,
