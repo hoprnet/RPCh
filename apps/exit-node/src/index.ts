@@ -85,5 +85,4 @@ if (require.main === module) {
     apiToken: HOPRD_API_TOKEN,
     timeout: RESPONSE_TIMEOUT,
   }).catch(console.error);
-
 }
