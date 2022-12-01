@@ -1,10 +1,9 @@
 import assert from "assert";
+export { start as startFundingPlatform } from "./index";
+
+const createMockedSetup = () => {};
 
 describe("test index", function () {
-  it("should start entry node", function () {
-    throw Error("Not implemented");
-  });
-  it("should start db", function () {
-    throw Error("Not implemented");
-  });
+  it.todo("should create access token service");
+  it.todo("should start server");
 });
