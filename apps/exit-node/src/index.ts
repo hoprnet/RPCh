@@ -9,7 +9,7 @@ const {
   RESPONSE_TIMEOUT: RESPONSE_TIMEOUT_STR = "10000",
 } = process.env;
 
-const start = async (ops: {
+export const start = async (ops: {
   exit: {
     sendRpcRequest: typeof exit.sendRpcRequest;
   };
@@ -64,26 +64,26 @@ const start = async (ops: {
 };
 
 // if this file is the entrypoint of the nodejs process
-// if (require.main === module) {
-// Validate enviroment variables
-if (!HOPRD_API_ENDPOINT) {
-  throw Error("env variable 'HOPRD_API_ENDPOINT' not found");
-}
-if (!HOPRD_API_TOKEN) {
-  throw Error("env variable 'HOPRD_API_TOKEN' not found");
-}
+if (require.main === module) {
+  // Validate enviroment variables
+  if (!HOPRD_API_ENDPOINT) {
+    throw Error("env variable 'HOPRD_API_ENDPOINT' not found");
+  }
+  if (!HOPRD_API_TOKEN) {
+    throw Error("env variable 'HOPRD_API_TOKEN' not found");
+  }
 
-const RESPONSE_TIMEOUT = Number(RESPONSE_TIMEOUT_STR);
-if (isNaN(RESPONSE_TIMEOUT)) {
-  throw Error("env variable 'RESPONSE_TIMEOUT' not a number");
+  const RESPONSE_TIMEOUT = Number(RESPONSE_TIMEOUT_STR);
+  if (isNaN(RESPONSE_TIMEOUT)) {
+    throw Error("env variable 'RESPONSE_TIMEOUT' not a number");
+  }
+
+  start({
+    exit,
+    hoprd,
+    apiEndpoint: HOPRD_API_ENDPOINT,
+    apiToken: HOPRD_API_TOKEN,
+    timeout: RESPONSE_TIMEOUT,
+  }).catch(console.error);
+
 }
-
-start({
-  exit,
-  hoprd,
-  apiEndpoint: HOPRD_API_ENDPOINT,
-  apiToken: HOPRD_API_TOKEN,
-  timeout: RESPONSE_TIMEOUT,
-}).catch(console.error);
-
-// }
