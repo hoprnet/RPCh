@@ -1,15 +1,14 @@
 import { createHmac, randomInt } from "crypto";
 
 export class AccessToken {
-  private hash: string;
+  private hash?: string;
   private createdAt: Date;
   constructor(
     private expiredAt: Date,
     private amount: number,
     private secretKey: string
   ) {
-    this.createdAt = new Date();
-    this.hash = this.generateHash();
+    this.createdAt = new Date(Date.now());
   }
 
   public getCreatedAt() {

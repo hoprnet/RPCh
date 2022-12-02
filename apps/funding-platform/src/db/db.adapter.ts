@@ -1,5 +1,12 @@
 import { CreateAccessToken, QueryAccessToken } from "../access-token";
-import { Data, DBInstance } from "../index";
+import { Low } from "lowdb";
+
+export type Data = {
+  accessTokens: QueryAccessToken[];
+  requests: unknown[];
+};
+
+export type DBInstance = Low<Data>;
 
 export const saveAccessToken = async (
   db: DBInstance,
@@ -7,9 +14,10 @@ export const saveAccessToken = async (
 ): Promise<void> => {
   const res = db.data?.accessTokens.push({
     ...accessToken,
-    Id: Math.floor(Math.random() * 10),
+    Id: Math.floor(Math.random() * 100),
   } as QueryAccessToken);
 };
+
 export const getAccessToken = async (
   db: DBInstance,
   accessTokenHash: string
@@ -17,8 +25,10 @@ export const getAccessToken = async (
   const res = await db.data?.accessTokens.find(
     (a) => a.Token === accessTokenHash
   );
+
   return res;
 };
+
 export const deleteAccessToken = async (
   db: DBInstance,
   accessTokenHash: string
@@ -34,6 +44,7 @@ export const deleteAccessToken = async (
 
   return (res?.length ?? 0) < (accessTokensLengthBefore ?? 0);
 };
+
 export const createRequest = async (
   db: DBInstance,
   request: unknown

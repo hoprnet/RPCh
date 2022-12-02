@@ -1,6 +1,6 @@
 import * as db from "./db.adapter";
 import assert from "assert";
-import { DBInstance } from "..";
+import { DBInstance } from "../db";
 import { CreateAccessToken } from "../access-token";
 
 describe("test db adapter functions", function () {
@@ -13,8 +13,8 @@ describe("test db adapter functions", function () {
   it("should save access token", async function () {
     const createAccessToken: CreateAccessToken = {
       Id: Math.floor(Math.random() * 1e6),
-      CreatedAt: new Date().toISOString(),
-      ExpiredAt: new Date().toISOString(),
+      CreatedAt: new Date(Date.now()).toISOString(),
+      ExpiredAt: new Date(Date.now()).toISOString(),
       Token: "token",
     };
     await db.saveAccessToken(dbInstance, createAccessToken);
@@ -27,14 +27,14 @@ describe("test db adapter functions", function () {
   it("should get access token", async function () {
     const createAccessToken1: CreateAccessToken = {
       Id: Math.floor(Math.random() * 1e6),
-      CreatedAt: new Date().toISOString(),
-      ExpiredAt: new Date().toISOString(),
+      CreatedAt: new Date(Date.now()).toISOString(),
+      ExpiredAt: new Date(Date.now()).toISOString(),
       Token: "token",
     };
     const createAccessToken2: CreateAccessToken = {
       Id: Math.floor(Math.random() * 1e6),
-      CreatedAt: new Date().toISOString(),
-      ExpiredAt: new Date().toISOString(),
+      CreatedAt: new Date(Date.now()).toISOString(),
+      ExpiredAt: new Date(Date.now()).toISOString(),
       Token: "token",
     };
     await db.saveAccessToken(dbInstance, createAccessToken1);
@@ -48,8 +48,8 @@ describe("test db adapter functions", function () {
   it("should delete access token", async function () {
     const createAccessToken: CreateAccessToken = {
       Id: Math.floor(Math.random() * 1e6),
-      CreatedAt: new Date().toISOString(),
-      ExpiredAt: new Date().toISOString(),
+      CreatedAt: new Date(Date.now()).toISOString(),
+      ExpiredAt: new Date(Date.now()).toISOString(),
       Token: "token",
     };
     await db.saveAccessToken(dbInstance, createAccessToken);

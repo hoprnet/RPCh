@@ -1,6 +1,9 @@
 import { AccessTokenService } from "./access-token.service";
 import assert from "assert";
-import { DBInstance } from "..";
+import { DBInstance } from "../db";
+
+const THIRTY_MINUTES = 30;
+const MAX_HOPR = 40;
 
 describe("test AccessTokenService class", function () {
   let accessTokenService: AccessTokenService;
@@ -11,25 +14,37 @@ describe("test AccessTokenService class", function () {
     accessTokenService = new AccessTokenService(db);
   });
   it("should create and save token", async function () {
-    const res = await accessTokenService.createAccessToken();
+    const accessToken = await accessTokenService.createAccessToken({
+      amount: MAX_HOPR,
+      timeout: THIRTY_MINUTES,
+    });
     const dbAccessToken = await accessTokenService.getAccessToken(
-      res.getHash()
+      accessToken.getHash()!
     );
-    assert(dbAccessToken?.Token === res.getHash());
+    assert(dbAccessToken?.Token === accessToken.getHash());
   });
   it("should get access token", async function () {
-    await accessTokenService.createAccessToken();
-    const res2 = await accessTokenService.createAccessToken();
-    const dbAccessToken2 = await accessTokenService.getAccessToken(
-      res2.getHash()
+    await accessTokenService.createAccessToken({
+      amount: MAX_HOPR,
+      timeout: THIRTY_MINUTES,
+    });
+    const accessToken = await accessTokenService.createAccessToken({
+      amount: MAX_HOPR,
+      timeout: THIRTY_MINUTES,
+    });
+    const dbAccessToken = await accessTokenService.getAccessToken(
+      accessToken.getHash()!
     );
-    assert(dbAccessToken2?.Token === res2.getHash());
+    assert(dbAccessToken?.Token === accessToken.getHash());
   });
   it("should delete access token", async function () {
-    const res = await accessTokenService.createAccessToken();
-    await accessTokenService.deleteAccessToken(res.getHash());
+    const accessToken = await accessTokenService.createAccessToken({
+      amount: MAX_HOPR,
+      timeout: THIRTY_MINUTES,
+    });
+    await accessTokenService.deleteAccessToken(accessToken.getHash()!);
     const dbAccessToken = await accessTokenService.getAccessToken(
-      res.getHash()
+      accessToken.getHash()!
     );
     assert(dbAccessToken === undefined);
   });

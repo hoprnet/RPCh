@@ -1,20 +1,13 @@
 import dotenv from "dotenv";
-import { Low } from "lowdb";
 import * as AccessToken from "./access-token";
 import { AccessTokenService } from "./access-token";
 import * as api from "./entry-server";
+import { DBInstance } from "./db";
 
 dotenv.config({ path: ".env.local" });
 
 const { SECRET_KEY } = process.env;
 const port = 3000;
-
-export type Data = {
-  accessTokens: AccessToken.QueryAccessToken[];
-  requests: unknown[];
-};
-
-export type DBInstance = Low<Data>;
 
 export const start = async (ops: {
   _entryServer: {
@@ -26,10 +19,8 @@ export const start = async (ops: {
   // init services
   const accessTokenService = new ops._AccessTokenService(ops._db);
   // init API server
-  const app = api.entryServer({ db: ops._db, accessTokenService });
-  app.listen(port, () => {
-    console.log(`Entry server is listening on port ${port}`);
-  });
+  const app = api.entryServer({ accessTokenService });
+  app.listen(port, () => {});
 };
 
 const main = () => {

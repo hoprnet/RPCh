@@ -1,10 +1,12 @@
 import { AccessTokenService } from "../access-token";
 import express, { NextFunction, Request, Response } from "express";
-import { DBInstance } from "../index";
 
 const app = express();
 
-const tokenIsValid =
+const THIRTY_MINUTES = 30;
+const MAX_HOPR = 40;
+
+export const tokenIsValid =
   (accessTokenService: AccessTokenService) =>
   async (req: Request, res: Response, next: NextFunction) => {
     const requestToken = req.headers["x-access-token"];
@@ -14,19 +16,24 @@ const tokenIsValid =
     );
     if (!dbToken) return res.status(404).json("Access Token does not exist");
 
-    if ((new Date(dbToken?.ExpiredAt).valueOf() ?? 0) < new Date().valueOf())
-      return res.status(401).json("Access Token does not exist");
+    if (
+      (new Date(dbToken?.ExpiredAt).valueOf() ?? 0) <
+      new Date(Date.now()).valueOf()
+    )
+      return res.status(401).json("Access Token expired");
 
     // TODO: ADD HOPR CHECK
     next();
   };
 
 export const entryServer = (ops: {
-  db: DBInstance;
   accessTokenService: AccessTokenService;
 }) => {
   app.get("/api/access-token", async (req, res) => {
-    const accessToken = await ops.accessTokenService.createAccessToken();
+    const accessToken = await ops.accessTokenService.createAccessToken({
+      amount: MAX_HOPR,
+      timeout: THIRTY_MINUTES,
+    });
     return res.json({
       accessToken: accessToken.getHash(),
       expiredAt: accessToken.getExpiredAt(),
@@ -43,11 +50,21 @@ export const entryServer = (ops: {
     }
   );
 
-  app.get("/api/request/status", () => {});
+  app.get(
+    "/api/request/status",
+    tokenIsValid(ops.accessTokenService),
+    (req, res) => {
+      return res.status(200).json();
+    }
+  );
 
-  app.get("/api/request/status/:request-id", () => {});
+  app.get(
+    "/api/request/status/:request-id",
+    tokenIsValid(ops.accessTokenService),
+    () => {}
+  );
 
-  app.get("/api/funds", () => {});
+  app.get("/api/funds", tokenIsValid(ops.accessTokenService), () => {});
 
   return app;
 };
