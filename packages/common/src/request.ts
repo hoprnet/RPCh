@@ -5,6 +5,7 @@ import {
   joinPartsToBody,
   splitBodyToParts,
 } from "./utils";
+import { Identity, Envelope, box_request, unbox_request } from "./crypto-lib";
 
 /**
  * Represents a request made by the RPCh.
@@ -26,10 +27,29 @@ export default class Request {
     return new Request(generateRandomNumber(), origin, provider, body);
   }
 
-  public static fromMessage(message: Message): Request {
-    const [type, origin, provider, ...remaining] = splitBodyToParts(
-      message.body
+  public static fromMessage(
+    message: Message,
+    crypto: {
+      exitNodeIdentity: Identity;
+      entryNodePeerId: string;
+      exitNodePeerId: string;
+    }
+  ): Request {
+    const [origin, encrypted] = splitBodyToParts(message.body);
+
+    const session = unbox_request(
+      new Envelope(
+        new TextEncoder().encode(encrypted),
+        crypto.entryNodePeerId,
+        crypto.exitNodePeerId
+      ),
+      crypto.exitNodeIdentity
     );
+
+    const [type, provider, ...remaining] = splitBodyToParts(
+      new TextDecoder().decode(session.get_request_data())
+    );
+
     if (type !== "request") throw Error("Message is not a Request");
     return new Request(
       message.id,
@@ -39,10 +59,26 @@ export default class Request {
     );
   }
 
-  public toMessage(): Message {
+  public toMessage(crypto: {
+    exitNodeIdentity: Identity;
+    entryNodePeerId: string;
+    exitNodePeerId: string;
+  }): Message {
+    const payload = joinPartsToBody(["request", this.provider, this.body]);
+
+    const envelope = new Envelope(
+      new TextEncoder().encode(payload),
+      crypto.entryNodePeerId,
+      crypto.exitNodePeerId
+    );
+    const session = box_request(envelope, crypto.exitNodeIdentity);
+
     return new Message(
       this.id,
-      joinPartsToBody(["request", this.origin, this.provider, this.body])
+      joinPartsToBody([
+        this.origin,
+        new TextDecoder().decode(session.get_response_data()),
+      ])
     );
   }
 
