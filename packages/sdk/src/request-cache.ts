@@ -1,4 +1,5 @@
 import { Request, Response, utils } from "rpch-common";
+import { Session } from "./crypto-lib";
 
 const { logVerbose } = utils.createLogger(["sdk", "request-cache"]);
 
@@ -12,6 +13,7 @@ export default class RequestCache {
     number,
     {
       request: Request;
+      session: Session;
       createdAt: Date;
       resolve: (value: Response | PromiseLike<Response>) => void;
       reject: (reason?: any) => void;
@@ -25,12 +27,14 @@ export default class RequestCache {
    * @param reject rejects the promise when the request runs into a timeout
    */
   public addRequest(
-    req: Request,
+    request: Request,
+    session: Session,
     resolve: (value: Response | PromiseLike<Response>) => void,
     reject: (reason?: any) => void
   ): void {
-    this.requests.set(req.id, {
-      request: req,
+    this.requests.set(request.id, {
+      request,
+      session,
       createdAt: new Date(),
       resolve,
       reject,

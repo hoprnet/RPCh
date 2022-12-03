@@ -6,6 +6,8 @@ import {
   utils,
 } from "rpch-common";
 import RequestCache from "./request-cache";
+import { Identity } from "./crypto-lib";
+import PeerId from "peer-id";
 
 const { log, logError } = utils.createLogger(["sdk"]);
 
@@ -184,10 +186,18 @@ export default class SDK {
    */
   public sendRequest(req: Request): Promise<Response> {
     if (!this.isReady) throw Error("SDK not ready to send requests");
+
+    const exitNodePeerId = PeerId.createFromB58String(this.exitNodePeerId!);
+    const exitNodeIdentity = Identity.load_identity(
+      exitNodePeerId.pubKey.bytes,
+      undefined,
+      BigInt(0)
+    );
+
     return new Promise((resolve, reject) => {
-      const message = req.toMessage();
+      const { message, session } = req.toMessage();
       const segments = message.toSegments();
-      this.requestCache.addRequest(req, resolve, reject);
+      this.requestCache.addRequest(req, session, resolve, reject);
       for (const segment of segments) {
         hoprd.sendMessage({
           apiEndpoint: this.entryNode!.apiEndpoint,

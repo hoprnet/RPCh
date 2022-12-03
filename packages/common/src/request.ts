@@ -5,7 +5,13 @@ import {
   joinPartsToBody,
   splitBodyToParts,
 } from "./utils";
-import { Identity, Envelope, box_request, unbox_request } from "./crypto-lib";
+import {
+  Identity,
+  Envelope,
+  box_request,
+  unbox_request,
+  Session,
+} from "./crypto-lib";
 
 /**
  * Represents a request made by the RPCh.
@@ -59,27 +65,29 @@ export default class Request {
     );
   }
 
-  public toMessage(crypto: {
-    exitNodeIdentity: Identity;
-    entryNodePeerId: string;
-    exitNodePeerId: string;
-  }): Message {
+  public toMessage(
+    entryNodePeerId: string,
+    exitNodePeerId: string,
+    exitNodeIdentity: Identity
+  ): { message: Message; session: Session } {
+    // create payload to encrypt
     const payload = joinPartsToBody(["request", this.provider, this.body]);
 
     const envelope = new Envelope(
       new TextEncoder().encode(payload),
-      crypto.entryNodePeerId,
-      crypto.exitNodePeerId
+      entryNodePeerId,
+      exitNodePeerId
     );
-    const session = box_request(envelope, crypto.exitNodeIdentity);
-
-    return new Message(
+    const session = box_request(envelope, exitNodeIdentity);
+    const message = new Message(
       this.id,
       joinPartsToBody([
         this.origin,
         new TextDecoder().decode(session.get_response_data()),
       ])
     );
+
+    return { message, session };
   }
 
   public createResponse(body: string): Response {
