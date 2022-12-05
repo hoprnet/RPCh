@@ -5,23 +5,25 @@ import {
   getRequest as getRequestDB,
   updateRequest as updateRequestDB,
   deleteRequest as deleteRequestDB,
+  getRequests as getRequestsDB,
 } from "../db";
 import { CreateRequest, UpdateRequest } from "./dto";
 
 export class RequestService {
   constructor(private db: DBInstance) {}
 
-  public async createRequest(
-    address: string,
-    amount: number,
-    accessTokenHash: string
-  ) {
+  public async createRequest(params: {
+    address: string;
+    amount: number;
+    chainId: number;
+    accessTokenHash: string;
+  }) {
     const now = new Date(Date.now());
     const createRequest: CreateRequest = {
-      amount,
-      accessTokenHash,
-      nodeAddress: address,
-      chainId: 80, //mock chain id
+      amount: params.amount,
+      accessTokenHash: params.accessTokenHash,
+      nodeAddress: params.address,
+      chainId: params.chainId,
       createdAt: now.toISOString(),
       requestId: Math.floor(Math.random() * 1e6),
       status: "FRESH",
@@ -31,7 +33,11 @@ export class RequestService {
   }
 
   public async getRequests() {
-    return getRequestsByAccessTokenDB(this.db);
+    return getRequestsDB(this.db);
+  }
+
+  public async getRequestsByAccessToken(accessTokenHash: string) {
+    return getRequestsByAccessTokenDB(this.db, accessTokenHash);
   }
 
   public async getRequest(requestId: number) {

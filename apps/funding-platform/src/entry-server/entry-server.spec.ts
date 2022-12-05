@@ -79,4 +79,23 @@ describe("test entry server", function () {
       .expect("Content-Type", /json/)
       .expect(404);
   });
+  it("should not accept requests with token that has exceeded max amount of tokens", async function () {
+    const responseToken = await request(app)
+      .get("/api/access-token")
+      .set("Accept", "application/json");
+
+    await request(app)
+      .post("/api/request/funds/0x0000000000000000")
+      .send({ amount: 40, chainId: 80 })
+      .set("Accept", "application/json")
+      .set("x-access-token", responseToken.body.accessToken);
+
+    await request(app)
+      .post("/api/request/funds/0x0000000000000000")
+      .send({ amount: 40, chainId: 80 })
+      .set("Accept", "application/json")
+      .set("x-access-token", responseToken.body.accessToken)
+      .expect("Content-Type", /json/)
+      .expect(401);
+  });
 });

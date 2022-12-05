@@ -58,8 +58,20 @@ export const getRequest = async (db: DBInstance, requestId: number) => {
   const request = db.data?.requests.find((req) => req.requestId === requestId);
   return request;
 };
-export const getRequestsByAccessToken = async (db: DBInstance) => {
+
+export const getRequests = async (db: DBInstance) => {
   const requests = db.data?.requests;
+
+  return requests;
+};
+
+export const getRequestsByAccessToken = async (
+  db: DBInstance,
+  accessTokenHash: string
+) => {
+  const requests = db.data?.requests.filter(
+    (req) => req.accessTokenHash === accessTokenHash
+  );
 
   return requests;
 };

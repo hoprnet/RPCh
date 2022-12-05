@@ -124,11 +124,39 @@ describe("test db adapter functions", function () {
 
     await db.saveRequest(dbInstance, request2);
 
-    const dbRequestsByAccessToken = await db.getRequestsByAccessToken(
-      dbInstance
-    );
+    const dbRequestsByAccessToken = await db.getRequests(dbInstance);
 
     assert.equal(dbRequestsByAccessToken?.length, 2);
+  });
+  it("should get requests by access token", async function () {
+    const request1 = {
+      requestId: Math.floor(Math.random() * 1e6),
+      accessTokenHash: "hash1",
+      amount: 10,
+      chainId: 80,
+      nodeAddress: "address",
+      createdAt: new Date(Date.now()).toISOString(),
+    } as CreateRequest;
+
+    await db.saveRequest(dbInstance, request1);
+
+    const request2 = {
+      requestId: Math.floor(Math.random() * 1e6),
+      accessTokenHash: "hash2",
+      amount: 10,
+      chainId: 80,
+      nodeAddress: "address",
+      createdAt: new Date(Date.now()).toISOString(),
+    } as CreateRequest;
+
+    await db.saveRequest(dbInstance, request2);
+
+    const dbRequestsByAccessToken = await db.getRequestsByAccessToken(
+      dbInstance,
+      request2.accessTokenHash
+    );
+
+    assert.equal(dbRequestsByAccessToken?.length, 1);
   });
   it("should delete request", async function () {
     const request = {
