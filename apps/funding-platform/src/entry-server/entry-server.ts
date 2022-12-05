@@ -1,5 +1,6 @@
 import { AccessTokenService } from "../access-token";
 import express, { NextFunction, Request, Response } from "express";
+import { CreateRequest, RequestService } from "../request";
 
 const app = express();
 
@@ -28,7 +29,10 @@ export const tokenIsValid =
 
 export const entryServer = (ops: {
   accessTokenService: AccessTokenService;
+  requestService: RequestService;
 }) => {
+  app.use(express.json());
+
   app.get("/api/access-token", async (req, res) => {
     const accessToken = await ops.accessTokenService.createAccessToken({
       amount: MAX_HOPR,
@@ -41,11 +45,19 @@ export const entryServer = (ops: {
   });
 
   app.post(
-    "/api/request/funds/:blockchain_address",
+    "/api/request/funds/:blockchainAddress",
     tokenIsValid(ops.accessTokenService),
-    (req, res) => {
+    async (req, res) => {
+      const address = req.params.blockchainAddress;
+      const amount = Number(req.body.amount);
+      const accessTokenHash = req.headers["x-access-token"] as string;
+      const request = (await ops.requestService.createRequest(
+        address,
+        amount,
+        accessTokenHash
+      )) as CreateRequest;
       return res.json({
-        data: "requested",
+        id: request.requestId,
       });
     }
   );
@@ -53,15 +65,23 @@ export const entryServer = (ops: {
   app.get(
     "/api/request/status",
     tokenIsValid(ops.accessTokenService),
-    (req, res) => {
-      return res.status(200).json();
+    async (req, res) => {
+      const accessTokenHash = req.headers["x-access-token"] as string;
+      const requests = await ops.requestService.getRequestsByAccessToken(
+        accessTokenHash
+      );
+      return res.status(200).json(requests);
     }
   );
 
   app.get(
-    "/api/request/status/:request-id",
+    "/api/request/status/:requestId",
     tokenIsValid(ops.accessTokenService),
-    () => {}
+    async (req, res) => {
+      const requestId = Number(req.params.requestId);
+      const request = await ops.requestService.getRequest(requestId);
+      return res.status(200).json(request);
+    }
   );
 
   app.get("/api/funds", tokenIsValid(ops.accessTokenService), () => {});

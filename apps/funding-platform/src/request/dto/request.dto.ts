@@ -1,13 +1,23 @@
 type Request = {
   requestId: number;
+  accessTokenHash: string;
   createdAt: string;
   nodeAddress: string;
   amount: number;
-  transactionHash: string;
+  transactionHash?: string;
   chainId: number;
-  reason: string;
-  status: string;
+  reason?: string;
+  status?: RequestStatus;
 };
+
+type RequestStatus =
+  | "FRESH"
+  | "PROCESSING"
+  | "FAILED-DURING-PROCESSING"
+  | "REJECTED-DURING-PROCESSING"
+  | "PENDING"
+  | "SUCCESS"
+  | "FAILED";
 
 export type CreateRequest = Request & {};
 

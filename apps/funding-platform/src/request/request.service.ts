@@ -11,25 +11,40 @@ import { CreateRequest, UpdateRequest } from "./dto";
 export class RequestService {
   constructor(private db: DBInstance) {}
 
-  public async createRequest() {
-    const createRequest = {} as CreateRequest;
-    return createRequestDB(this.db, createRequest);
+  public async createRequest(
+    address: string,
+    amount: number,
+    accessTokenHash: string
+  ) {
+    const now = new Date(Date.now());
+    const createRequest: CreateRequest = {
+      amount,
+      accessTokenHash,
+      nodeAddress: address,
+      chainId: 80, //mock chain id
+      createdAt: now.toISOString(),
+      requestId: Math.floor(Math.random() * 1e6),
+      status: "FRESH",
+    };
+    await createRequestDB(this.db, createRequest);
+    return createRequest;
   }
 
   public async getRequestsByAccessToken(accessTokenHash: string) {
     return getRequestsByAccessTokenDB(this.db, accessTokenHash);
   }
 
-  public async getRequestStatus(requestId: string) {
+  public async getRequest(requestId: number) {
     return getRequestDB(this.db, requestId);
   }
 
   public async updateRequest() {
     const updateRequest = {} as UpdateRequest;
-    return updateRequestDB(this.db, updateRequest);
+    await updateRequestDB(this.db, updateRequest);
+    return updateRequest;
   }
 
-  public async deleteRequest(requestId: string) {
+  public async deleteRequest(requestId: number) {
     return deleteRequestDB(this.db, requestId);
   }
 }

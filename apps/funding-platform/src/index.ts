@@ -1,6 +1,8 @@
 import dotenv from "dotenv";
 import * as AccessToken from "./access-token";
 import { AccessTokenService } from "./access-token";
+import { RequestService } from "./request";
+
 import * as api from "./entry-server";
 import { DBInstance } from "./db";
 
@@ -13,13 +15,15 @@ export const start = async (ops: {
   _entryServer: {
     entryServer: typeof api.entryServer;
   };
-  _AccessTokenService: typeof AccessToken.AccessTokenService;
+  _AccessTokenService: typeof AccessTokenService;
+  _RequestService: typeof RequestService;
   _db: DBInstance;
 }) => {
   // init services
   const accessTokenService = new ops._AccessTokenService(ops._db);
+  const requestService = new ops._RequestService(ops._db);
   // init API server
-  const app = api.entryServer({ accessTokenService });
+  const app = api.entryServer({ accessTokenService, requestService });
   app.listen(port, () => {});
 };
 
@@ -38,6 +42,7 @@ const main = () => {
   start({
     _entryServer: api,
     _AccessTokenService: AccessTokenService,
+    _RequestService: RequestService,
     _db: dbInstance,
   });
 };
