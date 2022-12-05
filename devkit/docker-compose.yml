@@ -1,0 +1,99 @@
+volumes:
+  # hoprd node id files, which should be kept between restarts to not change
+  # peer ids all the time
+  pluto-data:
+
+x-relay-service: &relay
+  image: ${RELAY_IMAGE}
+  restart: unless-stopped
+  depends_on:
+    - pluto
+  command: "env DEBUG=${DEBUG} yarn run start"
+
+services:
+  pluto:
+    image: gcr.io/hoprassociation/hopr-pluto:v1.90.32@sha256:fd33db04b4254971706e0a241b5309071f99374c058385f8cb16df3874b481d6
+    restart: unless-stopped
+    volumes:
+      - pluto-data:/tmp
+    ports:
+      # mapping admin and api ports to localhost for app developers to access
+      # the admin UI more easily
+      - "13301-13305:13301-13305"
+      - "19501-19505:19501-19505"
+    environment:
+      - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+  relay-1:
+    <<: *relay
+    environment:
+      - ENTRY_HOST=${RELAY_ENTRY_HOST}
+      - ENTRY_PORT=${RELAY_ENTRY_PORT}
+      - USE_AUTO_PATHFINDING=${RELAY_USE_AUTO_PATHFINDING:-false}
+      - HOPRD_API_ENDPOINT=http://pluto:13301
+      - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+    ports:
+      - "9001:8081" # mapping port to localhost for easier recognition
+    entrypoint:
+      ["/bin/wait-for", "http://${HOPRD_API_TOKEN}@pluto:13301/api/v2/account/addresses", "-t", "60", "--", "/sbin/tini", "--"]
+  relay-2:
+    <<: *relay
+    environment:
+      - ENTRY_HOST=${RELAY_ENTRY_HOST}
+      - ENTRY_PORT=${RELAY_ENTRY_PORT}
+      - USE_AUTO_PATHFINDING=${RELAY_USE_AUTO_PATHFINDING:-false}
+      - HOPRD_API_ENDPOINT=http://pluto:13302
+      - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+    ports:
+      - "9002:8081" # mapping port to localhost for easier recognition
+    entrypoint:
+      ["/bin/wait-for", "http://${HOPRD_API_TOKEN}@pluto:13302/api/v2/account/addresses", "-t", "60", "--", "/sbin/tini", "--"]
+  relay-3:
+    <<: *relay
+    environment:
+      - ENTRY_HOST=${RELAY_ENTRY_HOST}
+      - ENTRY_PORT=${RELAY_ENTRY_PORT}
+      - USE_AUTO_PATHFINDING=${RELAY_USE_AUTO_PATHFINDING:-false}
+      - HOPRD_API_ENDPOINT=http://pluto:13303
+      - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+    ports:
+      - "9003:8081" # mapping port to localhost for easier recognition
+    entrypoint:
+      ["/bin/wait-for", "http://${HOPRD_API_TOKEN}@pluto:13303/api/v2/account/addresses", "-t", "60", "--", "/sbin/tini", "--"]
+  relay-4:
+    <<: *relay
+    environment:
+      - ENTRY_HOST=${RELAY_ENTRY_HOST}
+      - ENTRY_PORT=${RELAY_ENTRY_PORT}
+      - USE_AUTO_PATHFINDING=${RELAY_USE_AUTO_PATHFINDING:-false}
+      - HOPRD_API_ENDPOINT=http://pluto:13304
+      - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+    ports:
+      - "9004:8081" # mapping port to localhost for easier recognition
+    entrypoint:
+      ["/bin/wait-for", "http://${HOPRD_API_TOKEN}@pluto:13304/api/v2/account/addresses", "-t", "60", "--", "/sbin/tini", "--"]
+  relay-5:
+    <<: *relay
+    environment:
+      - ENTRY_HOST=${RELAY_ENTRY_HOST}
+      - ENTRY_PORT=${RELAY_ENTRY_PORT}
+      - USE_AUTO_PATHFINDING=${RELAY_USE_AUTO_PATHFINDING:-false}
+      - HOPRD_API_ENDPOINT=http://pluto:13305
+      - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+    ports:
+      - "9005:8081" # mapping port to localhost for easier recognition
+    entrypoint:
+      ["/bin/wait-for", "http://${HOPRD_API_TOKEN}@pluto:13305/api/v2/account/addresses", "-t", "60", "--", "/sbin/tini", "--"]
+  exit-node:
+    build:
+      dockerfile: apps/exit-node/Dockerfile
+      context: ../
+    restart: unless-stopped
+    environment:
+      - DEBUG="rpch*"
+      - HOPRD_API_ENDPOINT=http://pluto:13301
+      - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+    depends_on:
+      - pluto
+    entrypoint:
+      ["/bin/wait-for", "http://${HOPRD_API_TOKEN}@pluto:13301/api/v2/account/addresses", "-t", "60", "--", "/sbin/tini", "--"]
+    command: "node apps/exit-node/build/index.js"

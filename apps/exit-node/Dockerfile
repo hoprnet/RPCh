@@ -50,7 +50,16 @@ RUN yarn run build --scope="rpch-exit-node"
 FROM node:16-alpine AS runner
 WORKDIR /app
 
+# we use tini as process 1 to catch signals properly, which is also built into Docker by default
+RUN apk add --no-cache tini curl
+
+# this helper script can be used to ensure the hoprd node is running before starting
+RUN  curl https://raw.githubusercontent.com/eficode/wait-for/v2.2.3/wait-for > /bin/wait-for \
+  && chmod u+x /bin/wait-for
+
 COPY --from=installer /app/apps/exit-node/package.json .
 COPY --from=installer /app .
 
-CMD node apps/exit-node/build/index.js
+CMD ["node", "apps/exit-node/build/index.js"]
+
+ENTRYPOINT ["/sbin/tini", "--"]
