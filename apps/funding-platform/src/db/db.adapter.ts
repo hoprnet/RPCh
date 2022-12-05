@@ -46,7 +46,7 @@ export const deleteAccessToken = async (
   return (filteredAccessTokens?.length ?? 0) < (accessTokensLengthBefore ?? 0);
 };
 
-export const createRequest = async (
+export const saveRequest = async (
   db: DBInstance,
   request: CreateRequest
 ): Promise<void> => {

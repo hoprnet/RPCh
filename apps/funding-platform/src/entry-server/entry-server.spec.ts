@@ -1,6 +1,7 @@
 import { Express } from "express";
 import request from "supertest";
 import { AccessTokenService } from "../access-token";
+import { RequestService } from "../request";
 import { DBInstance } from "../db";
 import { entryServer } from "./entry-server";
 
@@ -10,6 +11,7 @@ const MAX_HOPR = 40;
 describe("test entry server", function () {
   let dbInstance: DBInstance;
   let accessTokenService: AccessTokenService;
+  let requestService: RequestService;
   let app: Express;
 
   beforeEach(function () {
@@ -17,8 +19,10 @@ describe("test entry server", function () {
       data: { accessTokens: [], requests: [] },
     } as unknown as DBInstance;
     accessTokenService = new AccessTokenService(dbInstance);
+    requestService = new RequestService(dbInstance);
     app = entryServer({
       accessTokenService,
+      requestService,
     });
   });
 
@@ -61,13 +65,13 @@ describe("test entry server", function () {
 
     jest.useRealTimers();
   });
-  it("should not requests without access tokens", async function () {
+  it("should not accept requests without access tokens", async function () {
     return await request(app)
       .get("/api/request/status")
       .set("Accept", "application/json")
       .expect(400);
   });
-  it("should not requests with invented access token", async function () {
+  it("should not accept requests with invented access token", async function () {
     return await request(app)
       .get("/api/request/status")
       .set("Accept", "application/json")

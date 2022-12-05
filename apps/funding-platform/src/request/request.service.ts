@@ -1,7 +1,7 @@
 import { DBInstance } from "../db";
 import {
   getRequestsByAccessToken as getRequestsByAccessTokenDB,
-  createRequest as createRequestDB,
+  saveRequest as saveRequestDB,
   getRequest as getRequestDB,
   updateRequest as updateRequestDB,
   deleteRequest as deleteRequestDB,
@@ -26,7 +26,7 @@ export class RequestService {
       requestId: Math.floor(Math.random() * 1e6),
       status: "FRESH",
     };
-    await createRequestDB(this.db, createRequest);
+    await saveRequestDB(this.db, createRequest);
     return createRequest;
   }
 
@@ -38,9 +38,9 @@ export class RequestService {
     return getRequestDB(this.db, requestId);
   }
 
-  public async updateRequest() {
-    const updateRequest = {} as UpdateRequest;
-    await updateRequestDB(this.db, updateRequest);
+  public async updateRequest(requestId: number, updateRequest: UpdateRequest) {
+    const request = { ...updateRequest, requestId } as UpdateRequest;
+    await updateRequestDB(this.db, request);
     return updateRequest;
   }
 
