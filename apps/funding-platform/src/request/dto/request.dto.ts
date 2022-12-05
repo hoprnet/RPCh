@@ -1,4 +1,4 @@
-export interface Request {
+type Request = {
   requestId: number;
   createdAt: string;
   nodeAddress: string;
@@ -7,4 +7,10 @@ export interface Request {
   chainId: number;
   reason: string;
   status: string;
-}
+};
+
+export type CreateRequest = Request & {};
+
+export type UpdateRequest = Request & {};
+
+export type QueryRequest = Request & {};

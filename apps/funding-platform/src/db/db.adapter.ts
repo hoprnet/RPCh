@@ -1,5 +1,6 @@
 import { CreateAccessToken, QueryAccessToken } from "../access-token";
 import { Low } from "lowdb";
+import { CreateRequest, UpdateRequest } from "../request";
 
 export type Data = {
   accessTokens: QueryAccessToken[];
@@ -47,11 +48,15 @@ export const deleteAccessToken = async (
 
 export const createRequest = async (
   db: DBInstance,
-  request: unknown
+  request: CreateRequest
 ): Promise<void> => {};
-export const getRequestsByToken = async (
+export const getRequest = async (db: DBInstance, requestId: string) => {};
+export const getRequestsByAccessToken = async (
   db: DBInstance,
-  request: unknown
+  accessTokenHash: string
 ) => {};
-export const updateRequest = async (db: DBInstance, request: unknown) => {};
-export const deleteRequest = async (db: DBInstance, request: unknown) => {};
+export const updateRequest = async (
+  db: DBInstance,
+  request: UpdateRequest
+) => {};
+export const deleteRequest = async (db: DBInstance, requestId: string) => {};
