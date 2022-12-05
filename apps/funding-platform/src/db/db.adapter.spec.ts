@@ -101,7 +101,7 @@ describe("test db adapter functions", function () {
 
     assert.equal(dbRequest?.requestId, request2.requestId);
   });
-  it("should get request by access token", async function () {
+  it("should get requests", async function () {
     const request1 = {
       requestId: Math.floor(Math.random() * 1e6),
       accessTokenHash: "hash",
@@ -125,8 +125,7 @@ describe("test db adapter functions", function () {
     await db.saveRequest(dbInstance, request2);
 
     const dbRequestsByAccessToken = await db.getRequestsByAccessToken(
-      dbInstance,
-      request2.accessTokenHash
+      dbInstance
     );
 
     assert.equal(dbRequestsByAccessToken?.length, 2);

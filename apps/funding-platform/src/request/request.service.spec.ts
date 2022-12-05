@@ -25,7 +25,7 @@ describe("test RequestService class", function () {
     assert.equal(createdRequest?.nodeAddress, MOCK_ADDRESS);
     assert.equal(createdRequest?.amount, MOCK_AMOUNT);
   });
-  it("should get requests by access token", async function () {
+  it("should get requests", async function () {
     await requestService.createRequest(
       MOCK_ADDRESS,
       MOCK_AMOUNT,
@@ -37,9 +37,7 @@ describe("test RequestService class", function () {
       MOCK_ACCESS_TOKEN
     );
 
-    const requestsByAccessToken = await requestService.getRequestsByAccessToken(
-      MOCK_ACCESS_TOKEN
-    );
+    const requestsByAccessToken = await requestService.getRequests();
 
     assert.equal(requestsByAccessToken?.length, 2);
   });

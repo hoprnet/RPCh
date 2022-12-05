@@ -30,8 +30,8 @@ export class RequestService {
     return createRequest;
   }
 
-  public async getRequestsByAccessToken(accessTokenHash: string) {
-    return getRequestsByAccessTokenDB(this.db, accessTokenHash);
+  public async getRequests() {
+    return getRequestsByAccessTokenDB(this.db);
   }
 
   public async getRequest(requestId: number) {

@@ -66,10 +66,7 @@ export const entryServer = (ops: {
     "/api/request/status",
     tokenIsValid(ops.accessTokenService),
     async (req, res) => {
-      const accessTokenHash = req.headers["x-access-token"] as string;
-      const requests = await ops.requestService.getRequestsByAccessToken(
-        accessTokenHash
-      );
+      const requests = await ops.requestService.getRequests();
       return res.status(200).json(requests);
     }
   );
