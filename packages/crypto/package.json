@@ -1,5 +1,5 @@
 {
-  "name": "rpch-ethers",
+  "name": "rpch-crypto",
   "version": "0.0.0",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
@@ -8,22 +8,14 @@
     "build": "tsup",
     "dev": "yarn build --watch",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
-    "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
-    "test": "jest --coverage"
+    "lint": "TIMING=1 eslint \"src/**/*.ts*\""
   },
   "devDependencies": {
-    "rpch-configs-typescript": "*",
+    "@swc/core": "^1.3.21",
     "rpch-configs-eslint": "*",
     "rpch-configs-prettier": "*",
-    "rpch-configs-jest": "*",
     "rpch-configs-tsup": "*",
-    "nock": "^13.2.9"
+    "rpch-configs-typescript": "*"
   },
-  "dependencies": {
-    "rpch-common": "*",
-    "rpch-sdk": "*"
-  },
-  "peerDependencies": {
-    "ethers": "^5.7.2"
-  }
+  "dependencies": {}
 }

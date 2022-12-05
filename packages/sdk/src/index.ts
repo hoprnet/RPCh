@@ -55,10 +55,7 @@ export default class SDK {
   ) {
     this.discoveryPlatformApiEndpoint = tempOps.discoveryPlatformApiEndpoint;
 
-    this.segmentCache = new SegmentCache(
-      this.onRequestFromSegments,
-      this.onResponseFromSegments
-    );
+    this.segmentCache = new SegmentCache(this.onMessage);
     this.requestCache = new RequestCache();
   }
 
@@ -109,14 +106,19 @@ export default class SDK {
 
   /**
    * Resolve request promise and delete the request from map
-   * @param res Response received from cache module
+   * @param message Message received from cache module
    */
-  private onResponseFromSegments(res: Response): void {
-    const matchingRequest = this.requestCache.getRequest(res.id);
+  private onMessage(message: Message): void {
+    // check whether we have a matching request id
+    const matchingRequest = this.requestCache.getRequest(message.id);
     if (!matchingRequest) {
       logError("matching request not found", res.id);
       return;
     }
+
+    // construct Response from Message
+    const response = Response.fromRequest(matchingRequest, message.body);
+
     matchingRequest.resolve(res);
     this.requestCache.removeRequest(matchingRequest.request);
     log("responded to %s with %s", matchingRequest.request.body, res.body);

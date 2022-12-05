@@ -1,65 +1,70 @@
 import Message from "./message";
+import type Request from "./request";
 import { joinPartsToBody, splitBodyToParts } from "./utils";
-import {
-  box_response,
-  unbox_response,
-  Identity,
-  Envelope,
-  Session,
-} from "./crypto-lib";
+import { Identity } from "./crypto";
+import { Envelope, Session, unbox_response, box_response } from "rpch-crypto";
 
 /**
  * Represents a response made by a RPCh.
  * To be send over the HOPR network via Response.toMessage().
  */
 export default class Response {
-  constructor(public readonly id: number, public readonly body: string) {}
+  private constructor(
+    public readonly id: number,
+    public readonly body: string,
+    public readonly entryNode: Identity,
+    public readonly exitNode: Identity,
+    public readonly session: Session
+  ) {}
 
-  public static fromMessage(
-    message: Message,
-    crypto: {
-      session: Session;
-      exitNodeIdentity: Identity;
-      entryNodePeerId: string;
-      exitNodePeerId: string;
-    }
-  ): Response {
+  /**
+   * Create a Response for a given Request
+   * @param request
+   * @param body
+   * @return Response
+   */
+  public static fromRequest(request: Request, body: string): Response {
     unbox_response(
-      crypto.session,
+      request.session,
       new Envelope(
-        new TextEncoder().encode(message.body),
-        crypto.entryNodePeerId,
-        crypto.exitNodePeerId
-      ),
-      crypto.exitNodeIdentity
+        new TextEncoder().encode(body),
+        request.entryNode.peerId.toB58String(),
+        request.exitNode.peerId.toB58String()
+      )
     );
-    const unboxed_rpc_response = crypto.session.get_response_data();
+
+    const decrypted = request.session.get_response_data();
 
     const [type, ...remaining] = splitBodyToParts(
-      new TextDecoder().decode(unboxed_rpc_response)
+      new TextDecoder().decode(decrypted)
     );
     if (type !== "response") throw Error("Message is not a Response");
-    return new Response(message.id, joinPartsToBody(remaining));
+    return new Response(
+      request.id,
+      joinPartsToBody(remaining),
+      request.entryNode,
+      request.exitNode,
+      request.session
+    );
   }
 
-  public toMessage(crypto: {
-    session: Session;
-    exitNodeIdentity: Identity;
-    entryNodePeerId: string;
-    exitNodePeerId: string;
-  }): Message {
+  /**
+   * Convert Response to a Message
+   * @returns Message
+   */
+  public toMessage(): Message {
     box_response(
-      crypto.session,
+      this.session,
       new Envelope(
         new TextEncoder().encode(joinPartsToBody(["response", this.body])),
-        crypto.entryNodePeerId,
-        crypto.exitNodePeerId
-      ),
-      crypto.exitNodeIdentity
+        this.entryNode.peerId.toB58String(),
+        this.exitNode.peerId.toB58String()
+      )
     );
 
-    let boxed_response = crypto.session.get_response_data();
-
-    return new Message(this.id, new TextDecoder().decode(boxed_response));
+    return new Message(
+      this.id,
+      new TextDecoder().decode(this.session.get_response_data())
+    );
   }
 }

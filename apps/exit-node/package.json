@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "build": "rimraf build && tsup",
+    "build": "tsup",
     "dev": "yarn build --watch",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
