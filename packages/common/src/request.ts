@@ -43,7 +43,7 @@ export default class Request {
       entryNode.peerId.toB58String(),
       exitNode.peerId.toB58String()
     );
-    const session = box_request(envelope, exitNode.getIdentity());
+    const session = box_request(envelope, exitNode.getIdentity(BigInt(0)));
 
     return new Request(id, provider, body, entryNode, exitNode, session);
   }
@@ -59,13 +59,19 @@ export default class Request {
 
     const entryNode = new Identity(origin);
 
+    const pubKey = entryNode.pubKey;
+    const encArr = new TextEncoder().encode(encrypted);
+    const merged = new Uint8Array(pubKey.length + encArr.length);
+    merged.set(pubKey);
+    merged.set(encArr);
+
     const session = unbox_request(
       new Envelope(
-        new TextEncoder().encode(encrypted),
+        encArr,
         entryNode.peerId.toB58String(),
         exitNode.peerId.toB58String()
       ),
-      exitNode.getIdentity(),
+      exitNode.getIdentity(BigInt(0)),
       BigInt(0)
     );
 

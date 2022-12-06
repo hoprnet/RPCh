@@ -9,11 +9,11 @@ export class Identity {
 
   constructor(peerId: string, privKey?: string) {
     this.peerId = PeerId.createFromB58String(peerId);
-    this.pubKey = this.peerId.pubKey.bytes;
+    this.pubKey = this.peerId.pubKey.marshal();
     this.privKey = privKey ? utils.arrayify(privKey) : undefined;
   }
 
-  public getIdentity(): CryptoIdentity {
-    return CryptoIdentity.load_identity(this.pubKey, this.privKey);
+  public getIdentity(counter: bigint): CryptoIdentity {
+    return CryptoIdentity.load_identity(this.pubKey, this.privKey, counter);
   }
 }

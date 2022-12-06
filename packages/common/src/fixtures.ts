@@ -1,6 +1,6 @@
 import type Nock from "nock";
-import Request from "./request";
-import Response from "./response";
+// import Request from "./request";
+// import Response from "./response";
 import { Identity } from "./crypto";
 
 /**
@@ -44,27 +44,27 @@ export const RPC_RES_SMALL = `{"id":1663836360444,"jsonrpc": "2.0","result": "0x
  */
 export const RPC_RES_LARGE = `{"id":1663836360444,"jsonrpc": "2.0","result": "0x0234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab58"}`;
 
-export const SMALL_REQUEST = Request.createRequest(
-  PROVIDER,
-  RPC_REQ_SMALL,
-  IDENTITY_A,
-  IDENTITY_B
-);
-export const LARGE_REQUEST = Request.createRequest(
-  PROVIDER,
-  RPC_REQ_LARGE,
-  IDENTITY_A,
-  IDENTITY_B
-);
+// export const SMALL_REQUEST = Request.createRequest(
+//   PROVIDER,
+//   RPC_REQ_SMALL,
+//   IDENTITY_A,
+//   IDENTITY_B
+// );
+// export const LARGE_REQUEST = Request.createRequest(
+//   PROVIDER,
+//   RPC_REQ_LARGE,
+//   IDENTITY_A,
+//   IDENTITY_B
+// );
 
-export const SMALL_RESPONSE = Response.fromRequest(
-  SMALL_REQUEST,
-  RPC_RES_SMALL
-);
-export const LARGE_RESPONSE = Response.fromRequest(
-  LARGE_REQUEST,
-  RPC_RES_LARGE
-);
+// export const SMALL_RESPONSE = Response.fromRequest(
+//   SMALL_REQUEST,
+//   RPC_RES_SMALL
+// );
+// export const LARGE_RESPONSE = Response.fromRequest(
+//   LARGE_REQUEST,
+//   RPC_RES_LARGE
+// );
 
 /**
  * An RPC response which is an error

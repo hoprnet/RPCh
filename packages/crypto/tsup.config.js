@@ -46,6 +46,9 @@ const wasmPlugin = {
             result => result.instance.exports)`,
     }));
 
+    // // @ts-ignore
+    // globalThis.crypto = require("node:crypto").webcrypto;
+
     // Virtual modules in the "wasm-binary" namespace contain the
     // actual bytes of the WebAssembly file. This uses esbuild's
     // built-in "binary" loader instead of manually embedding the

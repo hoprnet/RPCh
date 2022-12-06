@@ -1,3 +1,6 @@
+import { set_panic_hook } from "rpch-crypto";
+set_panic_hook();
+
 import assert from "assert";
 import Request from "./request";
 import {
@@ -29,7 +32,7 @@ describe("test Request class", function () {
 
   it("should create message from request", function () {
     const message = REQUEST_MOCK.toMessage();
-    assert.equal(message.id, 13);
+    assert.equal(message.id, REQUEST_MOCK.id);
     assert.equal(
       message.body,
       `${IDENTITY_A.peerId.toB58String()}|${new TextDecoder().decode(
