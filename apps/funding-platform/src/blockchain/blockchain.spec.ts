@@ -1,13 +1,16 @@
-import assert from "assert";
+import { JsonRpcProvider } from "@ethersproject/providers";
 import { expect } from "@jest/globals";
-import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { mine } from "@nomicfoundation/hardhat-network-helpers";
+import assert from "assert";
+import { ethers } from "hardhat";
 import {
   getBalance,
+  getProvider,
   getReceiptOfTransaction,
   sendTransaction,
+  waitForTransaction,
 } from "./blockchain";
-import { JsonRpcProvider } from "@ethersproject/providers";
 
 describe("test Blockchain class", function () {
   let accounts: SignerWithAddress[];
@@ -27,9 +30,9 @@ describe("test Blockchain class", function () {
   it("should send transaction", async () => {
     const [owner, receiver] = accounts;
     const transactionHash = await sendTransaction({
-      owner: owner,
+      from: owner,
       to: receiver.address,
-      amount: "10",
+      amount: ethers.utils.parseEther("10").toString(),
     });
     assert.notEqual(transactionHash, undefined);
   });
@@ -37,7 +40,7 @@ describe("test Blockchain class", function () {
   it("should check the status of transaction", async function () {
     const [owner, receiver] = accounts;
     const transactionHash = await sendTransaction({
-      owner: owner,
+      from: owner,
       to: receiver.address,
       amount: "10",
     });
@@ -45,4 +48,34 @@ describe("test Blockchain class", function () {
     const possibleStatus = [0, 1];
     expect(possibleStatus).toContain(receipt.status);
   });
+  it("should fail if chain is not supported", async function () {
+    try {
+      await getProvider(-1);
+    } catch (e: any) {
+      expect(e.message).toBe("Chain not supported");
+    }
+  });
+  it("should return provider if chain is supported", async function () {
+    const chainId = 100;
+    const provider = await getProvider(chainId);
+    const { chainId: actualChainId } = await provider.getNetwork();
+    assert.equal(actualChainId, chainId);
+  });
+  it("should wait for transaction to be confirmed", async function () {
+    const [owner, receiver] = accounts;
+    const confirmations = 4;
+    const transactionHash = await sendTransaction({
+      from: owner,
+      to: receiver.address,
+      amount: "10",
+    });
+    await mine(confirmations);
+    const receipt = await waitForTransaction(
+      transactionHash,
+      provider,
+      confirmations
+    );
+    assert.equal(receipt.confirmations, confirmations + 1);
+  });
+  it.todo("should fail and be able to get the error message");
 });

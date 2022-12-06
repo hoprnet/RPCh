@@ -5,6 +5,7 @@ import { RequestService } from "./request";
 
 import * as api from "./entry-server";
 import { DBInstance } from "./db";
+import { Wallet } from "ethers";
 
 dotenv.config({ path: ".env.local" });
 

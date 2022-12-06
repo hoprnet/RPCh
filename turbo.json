@@ -31,7 +31,8 @@
         "build/**"
       ],
       "env": [
-        "SECRET_KEY"
+        "SECRET_KEY",
+        "PRIV_KEY"
       ]
     },
     "dev": {
