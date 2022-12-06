@@ -5,14 +5,16 @@
   "types": "./build/index.d.ts",
   "license": "MIT",
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && cp ./src/lib/rpch-crypto/pkg/rpch_crypto_bg.wasm ./build/rpch_crypto_bg.wasm",
     "dev": "yarn build --watch",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
-    "lint": "TIMING=1 eslint \"src/**/*.ts*\""
+    "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
+    "test": "jest --coverage"
   },
   "devDependencies": {
     "@swc/core": "^1.3.21",
     "rpch-configs-eslint": "*",
+    "rpch-configs-jest": "*",
     "rpch-configs-prettier": "*",
     "rpch-configs-tsup": "*",
     "rpch-configs-typescript": "*"
