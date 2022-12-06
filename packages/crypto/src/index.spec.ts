@@ -79,6 +79,8 @@ describe("test index.ts", function () {
       clientCounter
     );
 
+    clientCounter = session_exit_node.counter();
+
     assert.equal(
       utils.toUtf8String(session_exit_node.get_request_data()),
       utils.toUtf8String(REQ_BODY_U8A)
@@ -94,6 +96,8 @@ describe("test index.ts", function () {
       )
     );
 
+    clientCounter = session_exit_node.counter();
+
     // client
     unbox_response(
       session_client,
@@ -103,6 +107,8 @@ describe("test index.ts", function () {
         PEER_ID_EXIT_NODE.toB58String()
       )
     );
+
+    exitNodeCounter = session_client.counter();
 
     assert.equal(
       utils.toUtf8String(session_client.get_response_data()),
