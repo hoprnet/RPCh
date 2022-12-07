@@ -4,7 +4,7 @@ import { UpdateRequest } from "./dto";
 import { RequestService } from "./request.service";
 
 const MOCK_ADDRESS = "0xA10AA7711FD1FA48ACAE6FF00FCB63B0F6AD055F";
-const MOCK_AMOUNT = 100;
+const MOCK_AMOUNT = "100";
 const MOCK_CHAIN_ID = 80;
 const MOCK_ACCESS_TOKEN = "4K/9jJxPHzd53UO9dzQ3xLeRHhPWgMWhAxbrQloiZB4=";
 
@@ -72,7 +72,7 @@ describe("test RequestService class", function () {
 
     const updateRequest = {
       ...request,
-      amount: 2 * MOCK_AMOUNT,
+      amount: String(2 * Number(MOCK_AMOUNT)),
     } as UpdateRequest;
 
     await requestService.updateRequest(request.requestId, updateRequest);
@@ -94,5 +94,34 @@ describe("test RequestService class", function () {
     const deletedRequest = await requestService.getRequest(request.requestId);
 
     assert.equal(deletedRequest, undefined);
+  });
+  it("should return oldest unhandled request", async function () {
+    const firstRequest = await requestService.createRequest({
+      address: MOCK_ADDRESS,
+      amount: MOCK_AMOUNT,
+      accessTokenHash: MOCK_ACCESS_TOKEN,
+      chainId: MOCK_CHAIN_ID,
+    });
+    const secondRequest = await requestService.createRequest({
+      address: MOCK_ADDRESS,
+      amount: MOCK_AMOUNT,
+      accessTokenHash: MOCK_ACCESS_TOKEN,
+      chainId: MOCK_CHAIN_ID,
+    });
+    const thirdRequest = await requestService.createRequest({
+      address: MOCK_ADDRESS,
+      amount: MOCK_AMOUNT,
+      accessTokenHash: MOCK_ACCESS_TOKEN,
+      chainId: MOCK_CHAIN_ID,
+    });
+
+    const updateFirstRequest = await requestService.updateRequest(
+      firstRequest.requestId,
+      { ...firstRequest, status: "PENDING" }
+    );
+
+    const oldestFreshRequest = await requestService.getOldestFreshRequest();
+
+    assert.equal(oldestFreshRequest?.requestId, secondRequest.requestId);
   });
 });

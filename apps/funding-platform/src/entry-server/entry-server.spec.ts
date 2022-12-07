@@ -6,7 +6,7 @@ import { DBInstance } from "../db";
 import { entryServer } from "./entry-server";
 
 const SIXTY_MINUTES = 60;
-const MAX_HOPR = 40;
+const SECRET_KEY = "SECRET";
 
 describe("test entry server", function () {
   let dbInstance: DBInstance;
@@ -18,7 +18,7 @@ describe("test entry server", function () {
     dbInstance = {
       data: { accessTokens: [], requests: [] },
     } as unknown as DBInstance;
-    accessTokenService = new AccessTokenService(dbInstance);
+    accessTokenService = new AccessTokenService(dbInstance, SECRET_KEY);
     requestService = new RequestService(dbInstance);
     app = entryServer({
       accessTokenService,

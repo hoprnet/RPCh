@@ -32,7 +32,10 @@ const tokenIsValid =
         req.status !== "REJECTED-DURING-PROCESSING"
     );
     const sumOfTokensTotalPossibleRequests =
-      totalPossibleRequests?.reduce((prev, next) => prev + next.amount, 0) ?? 0;
+      totalPossibleRequests?.reduce(
+        (prev, next) => prev + Number(next.amount),
+        0
+      ) ?? 0;
 
     if (sumOfTokensTotalPossibleRequests >= MAX_HOPR) {
       return res.status(401).json("Exceeded max amount of tokens redeemed");
@@ -62,8 +65,8 @@ export const entryServer = (ops: {
     "/api/request/funds/:blockchainAddress",
     tokenIsValid(ops.accessTokenService, ops.requestService),
     async (req, res) => {
-      const address = req.params.blockchainAddress;
-      const amount = Number(req.body.amount);
+      const address = String(req.params.blockchainAddress);
+      const amount = String(req.body.amount);
       const chainId = Number(req.body.chainId);
       const accessTokenHash = req.headers["x-access-token"] as string;
       const request = (await ops.requestService.createRequest({

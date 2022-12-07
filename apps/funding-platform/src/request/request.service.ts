@@ -14,7 +14,7 @@ export class RequestService {
 
   public async createRequest(params: {
     address: string;
-    amount: number;
+    amount: string;
     chainId: number;
     accessTokenHash: string;
   }) {
@@ -52,5 +52,15 @@ export class RequestService {
 
   public async deleteRequest(requestId: number) {
     return deleteRequestDB(this.db, requestId);
+  }
+
+  public async getOldestFreshRequest() {
+    const requests = await this.getRequests();
+    const freshRequests = requests?.filter((req) => req.status === "FRESH");
+    const [oldestFreshRequest] = freshRequests?.sort(
+      (a, b) =>
+        new Date(a.createdAt).valueOf() - new Date(b.createdAt).valueOf()
+    ) ?? [undefined];
+    return oldestFreshRequest;
   }
 }

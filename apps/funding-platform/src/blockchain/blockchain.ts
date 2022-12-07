@@ -30,11 +30,13 @@ export const getProvider = async (chainId: number) => {
 
 export const getWallet = (
   privateKey: string,
-  provider: ethers.providers.JsonRpcProvider
+  provider?: ethers.providers.JsonRpcProvider
 ): ethers.Wallet => {
-  const wallet = new Wallet(privateKey);
-  const connectedWallet = wallet.connect(provider);
-  return connectedWallet;
+  let wallet = new Wallet(privateKey);
+  if (provider) {
+    wallet = wallet.connect(provider);
+  }
+  return wallet;
 };
 
 export const getBalance = (

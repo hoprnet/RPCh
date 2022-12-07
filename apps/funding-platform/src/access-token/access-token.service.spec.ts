@@ -4,14 +4,14 @@ import { DBInstance } from "../db";
 
 const THIRTY_MINUTES = 30;
 const MAX_HOPR = 40;
-
+const SECRET_KEY = "SECRET";
 describe("test AccessTokenService class", function () {
   let accessTokenService: AccessTokenService;
   beforeEach(function () {
     let db = {
       data: { accessTokens: [], requests: [] },
     } as unknown as DBInstance;
-    accessTokenService = new AccessTokenService(db);
+    accessTokenService = new AccessTokenService(db, SECRET_KEY);
   });
   it("should create and save token", async function () {
     const accessToken = await accessTokenService.createAccessToken({

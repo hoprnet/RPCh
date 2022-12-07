@@ -65,7 +65,7 @@ describe("test db adapter functions", function () {
     const request = {
       requestId: Math.floor(Math.random() * 1e6),
       accessTokenHash: "hash",
-      amount: 10,
+      amount: "10",
       chainId: 80,
       nodeAddress: "address",
       createdAt: new Date(Date.now()).toISOString(),
@@ -78,7 +78,7 @@ describe("test db adapter functions", function () {
     const request1 = {
       requestId: Math.floor(Math.random() * 1e6),
       accessTokenHash: "hash",
-      amount: 10,
+      amount: "10",
       chainId: 80,
       nodeAddress: "address",
       createdAt: new Date(Date.now()).toISOString(),
@@ -89,7 +89,7 @@ describe("test db adapter functions", function () {
     const request2 = {
       requestId: Math.floor(Math.random() * 1e6),
       accessTokenHash: "hash",
-      amount: 10,
+      amount: "10",
       chainId: 80,
       nodeAddress: "address",
       createdAt: new Date(Date.now()).toISOString(),
@@ -105,7 +105,7 @@ describe("test db adapter functions", function () {
     const request1 = {
       requestId: Math.floor(Math.random() * 1e6),
       accessTokenHash: "hash",
-      amount: 10,
+      amount: "10",
       chainId: 80,
       nodeAddress: "address",
       createdAt: new Date(Date.now()).toISOString(),
@@ -116,7 +116,7 @@ describe("test db adapter functions", function () {
     const request2 = {
       requestId: Math.floor(Math.random() * 1e6),
       accessTokenHash: "hash",
-      amount: 10,
+      amount: "10",
       chainId: 80,
       nodeAddress: "address",
       createdAt: new Date(Date.now()).toISOString(),
@@ -132,7 +132,7 @@ describe("test db adapter functions", function () {
     const request1 = {
       requestId: Math.floor(Math.random() * 1e6),
       accessTokenHash: "hash1",
-      amount: 10,
+      amount: "10",
       chainId: 80,
       nodeAddress: "address",
       createdAt: new Date(Date.now()).toISOString(),
@@ -143,7 +143,7 @@ describe("test db adapter functions", function () {
     const request2 = {
       requestId: Math.floor(Math.random() * 1e6),
       accessTokenHash: "hash2",
-      amount: 10,
+      amount: "10",
       chainId: 80,
       nodeAddress: "address",
       createdAt: new Date(Date.now()).toISOString(),
@@ -162,7 +162,7 @@ describe("test db adapter functions", function () {
     const request = {
       requestId: Math.floor(Math.random() * 1e6),
       accessTokenHash: "hash",
-      amount: 10,
+      amount: "10",
       chainId: 80,
       nodeAddress: "address",
       createdAt: new Date(Date.now()).toISOString(),
@@ -180,7 +180,7 @@ describe("test db adapter functions", function () {
     const request = {
       requestId: Math.floor(Math.random() * 1e6),
       accessTokenHash: "hash",
-      amount: 10,
+      amount: "10",
       chainId: 80,
       nodeAddress: "address",
       createdAt: new Date(Date.now()).toISOString(),
@@ -190,7 +190,7 @@ describe("test db adapter functions", function () {
 
     const updateRequest = {
       ...request,
-      amount: 20,
+      amount: "20",
     } as UpdateRequest;
 
     await db.updateRequest(dbInstance, updateRequest);

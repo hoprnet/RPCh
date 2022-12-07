@@ -11,9 +11,11 @@ import {
   getBalance,
   getProvider,
   getReceiptOfTransaction,
+  getWallet,
   sendTransaction,
   waitForTransaction,
 } from "./blockchain";
+import { Signer, Wallet } from "ethers";
 
 describe("test Blockchain class", function () {
   let accounts: SignerWithAddress[];
@@ -29,7 +31,6 @@ describe("test Blockchain class", function () {
     const balance = await getBalance(owner.address, provider);
     assert.equal(ethers.utils.formatEther(balance), "10000.0");
   });
-
   it("should send transaction", async () => {
     const [owner, receiver] = accounts;
     const transactionHash = await sendTransaction({
@@ -39,7 +40,6 @@ describe("test Blockchain class", function () {
     });
     assert.notEqual(transactionHash, undefined);
   });
-
   it("should check the status of transaction", async function () {
     const [owner, receiver] = accounts;
     const transactionHash = await sendTransaction({
@@ -50,6 +50,11 @@ describe("test Blockchain class", function () {
     const receipt = await getReceiptOfTransaction(provider, transactionHash);
     const possibleStatus = [0, 1];
     expect(possibleStatus).toContain(receipt.status);
+  });
+  it("should return a signer instance when passing a private key", async function () {
+    const privKey = Wallet.createRandom().privateKey;
+    const wallet = getWallet(privKey, provider);
+    assert(wallet instanceof Signer);
   });
   it("should fail if chain is not supported", async function () {
     try {
@@ -66,18 +71,16 @@ describe("test Blockchain class", function () {
   });
   it("should wait for transaction to be confirmed", async function () {
     const [owner, receiver] = accounts;
-    const confirmations = 4;
+    const confirmations = 10;
     const transactionHash = await sendTransaction({
       from: owner,
       to: receiver.address,
       amount: "10",
     });
-    await mine(confirmations);
-    const receipt = await waitForTransaction(
-      transactionHash,
-      provider,
-      confirmations
-    );
+    const [receipt] = await Promise.all([
+      waitForTransaction(transactionHash, provider, confirmations),
+      mine(confirmations),
+    ]);
     assert.equal(receipt.confirmations, confirmations + 1);
   });
   it("should fail because of gasLimit and be able to get the error message", async function () {
@@ -93,7 +96,6 @@ describe("test Blockchain class", function () {
           gasLimit: 1,
         },
       });
-      console.log(transactionHash);
     } catch (e: any) {
       expect(e.message).toBe(
         "Transaction gasPrice (1) is too low for the next block, which has a baseFeePerGas of 10000"
@@ -102,7 +104,6 @@ describe("test Blockchain class", function () {
   });
   it("should fail because of nonce and be able to get the error message", async function () {
     const [owner, receiver] = accounts;
-    await setNextBlockBaseFeePerGas(10000);
     try {
       await sendTransaction({
         from: owner,
@@ -116,4 +117,6 @@ describe("test Blockchain class", function () {
       expect(e.code).toBe("NONCE_EXPIRED");
     }
   });
+  // TODO: Add tests for smart contract reverts
+  it.todo("should fail if smart contract is reverted");
 });

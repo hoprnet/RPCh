@@ -3,7 +3,7 @@ type Request = {
   accessTokenHash: string;
   createdAt: string;
   nodeAddress: string;
-  amount: number;
+  amount: string;
   transactionHash?: string;
   chainId: number;
   reason?: string;

@@ -8,18 +8,14 @@ import {
 import { DBInstance } from "../db";
 
 export class AccessTokenService {
-  constructor(private db: DBInstance) {}
+  constructor(private db: DBInstance, private secretKey: string) {}
 
   public async createAccessToken(ops: { timeout: number; amount: number }) {
     const now = new Date(Date.now());
     const expiredAt = new Date(
       new Date(now).setMinutes(now.getMinutes() + ops.timeout)
     );
-    const accessToken = new AccessToken(
-      expiredAt,
-      ops.amount,
-      process.env.SECRET_KEY ?? ""
-    );
+    const accessToken = new AccessToken(expiredAt, ops.amount, this.secretKey);
 
     const hash = accessToken.generateHash();
 
