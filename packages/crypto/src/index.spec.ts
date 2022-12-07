@@ -28,12 +28,6 @@ const PEER_ID_EXIT_NODE = PeerId.createFromB58String(
   "16Uiu2HAkwJdCap1ErGKjtLeHjfnN53TD8kryG48NYVPWx4HhRfKW"
 );
 
-const IDENTITY_EXIT_NODE = Identity.load_identity(
-  PUB_KEY_EXIT_NODE,
-  PRIV_KEY_EXIT_NODE,
-  BigInt(0)
-);
-
 const REQ_BODY = "thisisrequest";
 const REQ_BODY_U8A = utils.toUtf8Bytes(REQ_BODY);
 
@@ -44,7 +38,82 @@ describe("test index.ts", function () {
   let clientCounter = BigInt(0);
   let exitNodeCounter = BigInt(0);
 
-  it("should do the whole flow", function () {
+  it("should do the whole flow first time", function () {
+    const IDENTITY_EXIT_NODE = Identity.load_identity(
+      PUB_KEY_EXIT_NODE,
+      PRIV_KEY_EXIT_NODE,
+      exitNodeCounter
+    );
+
+    // client
+    const session_client = box_request(
+      new Envelope(
+        REQ_BODY_U8A,
+        PEER_ID_ENTRY_NODE.toB58String(),
+        PEER_ID_EXIT_NODE.toB58String()
+      ),
+      IDENTITY_EXIT_NODE
+    );
+
+    exitNodeCounter = session_client.counter();
+
+    // exit node
+    const encrypted_req_data_received = session_client.get_request_data();
+    const session_exit_node = unbox_request(
+      new Envelope(
+        encrypted_req_data_received,
+        PEER_ID_ENTRY_NODE.toB58String(),
+        PEER_ID_EXIT_NODE.toB58String()
+      ),
+      IDENTITY_EXIT_NODE,
+      clientCounter
+    );
+
+    clientCounter = session_exit_node.counter();
+
+    assert.equal(
+      utils.toUtf8String(session_exit_node.get_request_data()),
+      utils.toUtf8String(REQ_BODY_U8A)
+    );
+
+    // exit node
+    box_response(
+      session_exit_node,
+      new Envelope(
+        RES_BODY_U8A,
+        PEER_ID_ENTRY_NODE.toB58String(),
+        PEER_ID_EXIT_NODE.toB58String()
+      )
+    );
+
+    clientCounter = session_exit_node.counter();
+
+    // client
+    const encrypted_res_data_received = session_exit_node.get_response_data();
+    unbox_response(
+      session_client,
+      new Envelope(
+        encrypted_res_data_received,
+        PEER_ID_ENTRY_NODE.toB58String(),
+        PEER_ID_EXIT_NODE.toB58String()
+      )
+    );
+
+    exitNodeCounter = session_client.counter();
+
+    assert.equal(
+      utils.toUtf8String(session_client.get_response_data()),
+      utils.toUtf8String(RES_BODY_U8A)
+    );
+  });
+
+  it("should do the whole flow second time", function () {
+    const IDENTITY_EXIT_NODE = Identity.load_identity(
+      PUB_KEY_EXIT_NODE,
+      PRIV_KEY_EXIT_NODE,
+      exitNodeCounter
+    );
+
     // client
     const session_client = box_request(
       new Envelope(
