@@ -9,8 +9,10 @@ export const sendTransaction = async (params: {
   from: Signer;
   to: string;
   amount: string;
+  options?: ethers.providers.TransactionRequest;
 }) => {
   const txParams = {
+    ...params.options,
     to: params.to,
     value: params.amount,
   };

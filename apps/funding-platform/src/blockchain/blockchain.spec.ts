@@ -1,7 +1,10 @@
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { expect } from "@jest/globals";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { mine } from "@nomicfoundation/hardhat-network-helpers";
+import {
+  mine,
+  setNextBlockBaseFeePerGas,
+} from "@nomicfoundation/hardhat-network-helpers";
 import assert from "assert";
 import { ethers } from "hardhat";
 import {
@@ -77,5 +80,40 @@ describe("test Blockchain class", function () {
     );
     assert.equal(receipt.confirmations, confirmations + 1);
   });
-  it.todo("should fail and be able to get the error message");
+  it("should fail because of gasLimit and be able to get the error message", async function () {
+    const [owner, receiver] = accounts;
+    await setNextBlockBaseFeePerGas(10000);
+    try {
+      const transactionHash = await sendTransaction({
+        from: owner,
+        to: receiver.address,
+        amount: "10",
+        options: {
+          gasPrice: 1,
+          gasLimit: 1,
+        },
+      });
+      console.log(transactionHash);
+    } catch (e: any) {
+      expect(e.message).toBe(
+        "Transaction gasPrice (1) is too low for the next block, which has a baseFeePerGas of 10000"
+      );
+    }
+  });
+  it("should fail because of nonce and be able to get the error message", async function () {
+    const [owner, receiver] = accounts;
+    await setNextBlockBaseFeePerGas(10000);
+    try {
+      await sendTransaction({
+        from: owner,
+        to: receiver.address,
+        amount: "10",
+        options: {
+          nonce: 0,
+        },
+      });
+    } catch (e: any) {
+      expect(e.code).toBe("NONCE_EXPIRED");
+    }
+  });
 });
