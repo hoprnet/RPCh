@@ -1,1 +1,4 @@
-export * from "./lib/rpch-crypto/pkg/rpch_crypto";
+// @ts-ignore
+globalThis.crypto = require("node:crypto").webcrypto;
+
+export * from "./lib/nodejs";
