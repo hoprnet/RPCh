@@ -7,6 +7,7 @@ import {
 } from "./utils";
 import { Identity } from "./crypto";
 import { Envelope, box_request, unbox_request, Session } from "rpch-crypto";
+import { utils } from "ethers";
 
 /**
  * Represents a request made by the RPCh.
@@ -39,11 +40,12 @@ export default class Request {
     const id = generateRandomNumber();
     const payload = joinPartsToBody(["request", provider, body]);
     const envelope = new Envelope(
-      new TextEncoder().encode(payload),
+      utils.toUtf8Bytes(payload),
       entryNode.peerId.toB58String(),
       exitNode.peerId.toB58String()
     );
-    const session = box_request(envelope, exitNode.getIdentity(BigInt(0)));
+    const session = box_request(envelope, exitNode.getIdentity());
+    session.counter();
 
     return new Request(id, provider, body, entryNode, exitNode, session);
   }
@@ -59,24 +61,21 @@ export default class Request {
 
     const entryNode = new Identity(origin);
 
-    const pubKey = entryNode.pubKey;
-    const encArr = new TextEncoder().encode(encrypted);
-    const merged = new Uint8Array(pubKey.length + encArr.length);
-    merged.set(pubKey);
-    merged.set(encArr);
+    console.log("to decrypt", utils.arrayify(encrypted));
 
     const session = unbox_request(
       new Envelope(
-        encArr,
+        utils.arrayify(encrypted),
         entryNode.peerId.toB58String(),
         exitNode.peerId.toB58String()
       ),
-      exitNode.getIdentity(BigInt(0)),
+      exitNode.getIdentity(),
       BigInt(0)
     );
+    session.counter();
 
     const [type, provider, ...remaining] = splitBodyToParts(
-      new TextDecoder().decode(session.get_request_data())
+      utils.toUtf8String(session.get_request_data())
     );
 
     if (type !== "request") throw Error("Message is not a Request");
@@ -95,11 +94,12 @@ export default class Request {
    * @returns Message
    */
   public toMessage(): Message {
+    console.log("toMessage", this.session.get_request_data());
     const message = new Message(
       this.id,
       joinPartsToBody([
         this.entryNode.peerId.toB58String(),
-        new TextDecoder().decode(this.session.get_request_data()),
+        utils.hexlify(this.session.get_request_data()),
       ])
     );
 
