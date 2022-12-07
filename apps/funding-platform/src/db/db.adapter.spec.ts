@@ -4,6 +4,23 @@ import { DBInstance } from "../db";
 import { CreateAccessToken } from "../access-token";
 import { CreateRequest, UpdateRequest } from "../request";
 
+const mockCreateAccessToken = () => ({
+  Id: Math.floor(Math.random() * 1e6),
+  CreatedAt: new Date(Date.now()).toISOString(),
+  ExpiredAt: new Date(Date.now()).toISOString(),
+  Token: "token",
+});
+
+const mockCreateRequest = (hash?: string) =>
+  ({
+    requestId: Math.floor(Math.random() * 1e6),
+    accessTokenHash: hash ?? "hash",
+    amount: "10",
+    chainId: 80,
+    nodeAddress: "address",
+    createdAt: new Date(Date.now()).toISOString(),
+  } as CreateRequest);
+
 describe("test db adapter functions", function () {
   let dbInstance: DBInstance;
   beforeEach(function () {
@@ -12,12 +29,7 @@ describe("test db adapter functions", function () {
     } as unknown as DBInstance;
   });
   it("should save access token", async function () {
-    const createAccessToken: CreateAccessToken = {
-      Id: Math.floor(Math.random() * 1e6),
-      CreatedAt: new Date(Date.now()).toISOString(),
-      ExpiredAt: new Date(Date.now()).toISOString(),
-      Token: "token",
-    };
+    const createAccessToken: CreateAccessToken = mockCreateAccessToken();
     await db.saveAccessToken(dbInstance, createAccessToken);
     const dbAccessToken = await db.getAccessToken(
       dbInstance,
@@ -26,18 +38,8 @@ describe("test db adapter functions", function () {
     assert(dbAccessToken?.Token, createAccessToken.Token);
   });
   it("should get access token", async function () {
-    const createAccessToken1: CreateAccessToken = {
-      Id: Math.floor(Math.random() * 1e6),
-      CreatedAt: new Date(Date.now()).toISOString(),
-      ExpiredAt: new Date(Date.now()).toISOString(),
-      Token: "token",
-    };
-    const createAccessToken2: CreateAccessToken = {
-      Id: Math.floor(Math.random() * 1e6),
-      CreatedAt: new Date(Date.now()).toISOString(),
-      ExpiredAt: new Date(Date.now()).toISOString(),
-      Token: "token",
-    };
+    const createAccessToken1: CreateAccessToken = mockCreateAccessToken();
+    const createAccessToken2: CreateAccessToken = mockCreateAccessToken();
     await db.saveAccessToken(dbInstance, createAccessToken1);
     await db.saveAccessToken(dbInstance, createAccessToken2);
     const dbAccessToken = await db.getAccessToken(
@@ -47,12 +49,7 @@ describe("test db adapter functions", function () {
     assert(dbAccessToken?.Token, createAccessToken2.Token);
   });
   it("should delete access token", async function () {
-    const createAccessToken: CreateAccessToken = {
-      Id: Math.floor(Math.random() * 1e6),
-      CreatedAt: new Date(Date.now()).toISOString(),
-      ExpiredAt: new Date(Date.now()).toISOString(),
-      Token: "token",
-    };
+    const createAccessToken: CreateAccessToken = mockCreateAccessToken();
     await db.saveAccessToken(dbInstance, createAccessToken);
     await db.deleteAccessToken(dbInstance, createAccessToken.Token);
     const dbAccessToken = await db.getAccessToken(
@@ -62,38 +59,17 @@ describe("test db adapter functions", function () {
     assert(dbAccessToken === undefined);
   });
   it("should save request", async function () {
-    const request = {
-      requestId: Math.floor(Math.random() * 1e6),
-      accessTokenHash: "hash",
-      amount: "10",
-      chainId: 80,
-      nodeAddress: "address",
-      createdAt: new Date(Date.now()).toISOString(),
-    } as CreateRequest;
+    const request = mockCreateRequest();
     await db.saveRequest(dbInstance, request);
     const dbRequest = await db.getRequest(dbInstance, request.requestId);
     assert.equal(request.requestId, dbRequest?.requestId);
   });
   it("should get request by id", async function () {
-    const request1 = {
-      requestId: Math.floor(Math.random() * 1e6),
-      accessTokenHash: "hash",
-      amount: "10",
-      chainId: 80,
-      nodeAddress: "address",
-      createdAt: new Date(Date.now()).toISOString(),
-    } as CreateRequest;
+    const request1 = mockCreateRequest();
 
     await db.saveRequest(dbInstance, request1);
 
-    const request2 = {
-      requestId: Math.floor(Math.random() * 1e6),
-      accessTokenHash: "hash",
-      amount: "10",
-      chainId: 80,
-      nodeAddress: "address",
-      createdAt: new Date(Date.now()).toISOString(),
-    } as CreateRequest;
+    const request2 = mockCreateRequest();
 
     await db.saveRequest(dbInstance, request2);
 
@@ -102,25 +78,11 @@ describe("test db adapter functions", function () {
     assert.equal(dbRequest?.requestId, request2.requestId);
   });
   it("should get requests", async function () {
-    const request1 = {
-      requestId: Math.floor(Math.random() * 1e6),
-      accessTokenHash: "hash",
-      amount: "10",
-      chainId: 80,
-      nodeAddress: "address",
-      createdAt: new Date(Date.now()).toISOString(),
-    } as CreateRequest;
+    const request1 = mockCreateRequest();
 
     await db.saveRequest(dbInstance, request1);
 
-    const request2 = {
-      requestId: Math.floor(Math.random() * 1e6),
-      accessTokenHash: "hash",
-      amount: "10",
-      chainId: 80,
-      nodeAddress: "address",
-      createdAt: new Date(Date.now()).toISOString(),
-    } as CreateRequest;
+    const request2 = mockCreateRequest();
 
     await db.saveRequest(dbInstance, request2);
 
@@ -129,25 +91,11 @@ describe("test db adapter functions", function () {
     assert.equal(dbRequestsByAccessToken?.length, 2);
   });
   it("should get requests by access token", async function () {
-    const request1 = {
-      requestId: Math.floor(Math.random() * 1e6),
-      accessTokenHash: "hash1",
-      amount: "10",
-      chainId: 80,
-      nodeAddress: "address",
-      createdAt: new Date(Date.now()).toISOString(),
-    } as CreateRequest;
+    const request1 = mockCreateRequest();
 
     await db.saveRequest(dbInstance, request1);
 
-    const request2 = {
-      requestId: Math.floor(Math.random() * 1e6),
-      accessTokenHash: "hash2",
-      amount: "10",
-      chainId: 80,
-      nodeAddress: "address",
-      createdAt: new Date(Date.now()).toISOString(),
-    } as CreateRequest;
+    const request2 = mockCreateRequest("different hash");
 
     await db.saveRequest(dbInstance, request2);
 
@@ -159,14 +107,7 @@ describe("test db adapter functions", function () {
     assert.equal(dbRequestsByAccessToken?.length, 1);
   });
   it("should delete request", async function () {
-    const request = {
-      requestId: Math.floor(Math.random() * 1e6),
-      accessTokenHash: "hash",
-      amount: "10",
-      chainId: 80,
-      nodeAddress: "address",
-      createdAt: new Date(Date.now()).toISOString(),
-    } as CreateRequest;
+    const request = mockCreateRequest();
 
     await db.saveRequest(dbInstance, request);
 
@@ -177,14 +118,7 @@ describe("test db adapter functions", function () {
     assert.equal(dbRequest, undefined);
   });
   it("should update request", async function () {
-    const request = {
-      requestId: Math.floor(Math.random() * 1e6),
-      accessTokenHash: "hash",
-      amount: "10",
-      chainId: 80,
-      nodeAddress: "address",
-      createdAt: new Date(Date.now()).toISOString(),
-    } as CreateRequest;
+    const request = mockCreateRequest();
 
     await db.saveRequest(dbInstance, request);
 

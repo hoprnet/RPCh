@@ -7,6 +7,12 @@ const MOCK_ADDRESS = "0xA10AA7711FD1FA48ACAE6FF00FCB63B0F6AD055F";
 const MOCK_AMOUNT = "100";
 const MOCK_CHAIN_ID = 80;
 const MOCK_ACCESS_TOKEN = "4K/9jJxPHzd53UO9dzQ3xLeRHhPWgMWhAxbrQloiZB4=";
+const REQUEST_PARAMS = {
+  address: MOCK_ADDRESS,
+  amount: MOCK_AMOUNT,
+  accessTokenHash: MOCK_ACCESS_TOKEN,
+  chainId: MOCK_CHAIN_ID,
+};
 
 describe("test RequestService class", function () {
   let requestService: RequestService;
@@ -17,58 +23,28 @@ describe("test RequestService class", function () {
     requestService = new RequestService(db);
   });
   it("should create and save request", async function () {
-    const request = await requestService.createRequest({
-      address: MOCK_ADDRESS,
-      amount: MOCK_AMOUNT,
-      accessTokenHash: MOCK_ACCESS_TOKEN,
-      chainId: MOCK_CHAIN_ID,
-    });
+    const request = await requestService.createRequest(REQUEST_PARAMS);
     const createdRequest = await requestService.getRequest(request.requestId);
     assert.equal(createdRequest?.nodeAddress, MOCK_ADDRESS);
     assert.equal(createdRequest?.amount, MOCK_AMOUNT);
   });
   it("should get requests", async function () {
-    await requestService.createRequest({
-      address: MOCK_ADDRESS,
-      amount: MOCK_AMOUNT,
-      accessTokenHash: MOCK_ACCESS_TOKEN,
-      chainId: MOCK_CHAIN_ID,
-    });
-    await requestService.createRequest({
-      address: MOCK_ADDRESS,
-      amount: MOCK_AMOUNT,
-      accessTokenHash: MOCK_ACCESS_TOKEN,
-      chainId: MOCK_CHAIN_ID,
-    });
+    await requestService.createRequest(REQUEST_PARAMS);
+    await requestService.createRequest(REQUEST_PARAMS);
 
     const requestsByAccessToken = await requestService.getRequests();
 
     assert.equal(requestsByAccessToken?.length, 2);
   });
   it("should get request by request id", async function () {
-    await requestService.createRequest({
-      address: MOCK_ADDRESS,
-      amount: MOCK_AMOUNT,
-      accessTokenHash: MOCK_ACCESS_TOKEN,
-      chainId: MOCK_CHAIN_ID,
-    });
-    const request = await requestService.createRequest({
-      address: MOCK_ADDRESS,
-      amount: MOCK_AMOUNT,
-      accessTokenHash: MOCK_ACCESS_TOKEN,
-      chainId: MOCK_CHAIN_ID,
-    });
+    await requestService.createRequest(REQUEST_PARAMS);
+    const request = await requestService.createRequest(REQUEST_PARAMS);
     const createdRequest = await requestService.getRequest(request.requestId);
     assert.equal(createdRequest?.nodeAddress, MOCK_ADDRESS);
     assert.equal(createdRequest?.amount, MOCK_AMOUNT);
   });
   it("should update request", async function () {
-    const request = await requestService.createRequest({
-      address: MOCK_ADDRESS,
-      amount: MOCK_AMOUNT,
-      accessTokenHash: MOCK_ACCESS_TOKEN,
-      chainId: MOCK_CHAIN_ID,
-    });
+    const request = await requestService.createRequest(REQUEST_PARAMS);
 
     const updateRequest = {
       ...request,
@@ -82,12 +58,7 @@ describe("test RequestService class", function () {
     assert.notEqual(updatedRequest?.amount, request.amount);
   });
   it("should delete request", async function () {
-    const request = await requestService.createRequest({
-      address: MOCK_ADDRESS,
-      amount: MOCK_AMOUNT,
-      accessTokenHash: MOCK_ACCESS_TOKEN,
-      chainId: MOCK_CHAIN_ID,
-    });
+    const request = await requestService.createRequest(REQUEST_PARAMS);
 
     await requestService.deleteRequest(request.requestId);
 
@@ -96,30 +67,13 @@ describe("test RequestService class", function () {
     assert.equal(deletedRequest, undefined);
   });
   it("should return oldest unhandled request", async function () {
-    const firstRequest = await requestService.createRequest({
-      address: MOCK_ADDRESS,
-      amount: MOCK_AMOUNT,
-      accessTokenHash: MOCK_ACCESS_TOKEN,
-      chainId: MOCK_CHAIN_ID,
-    });
-    const secondRequest = await requestService.createRequest({
-      address: MOCK_ADDRESS,
-      amount: MOCK_AMOUNT,
-      accessTokenHash: MOCK_ACCESS_TOKEN,
-      chainId: MOCK_CHAIN_ID,
-    });
-    const thirdRequest = await requestService.createRequest({
-      address: MOCK_ADDRESS,
-      amount: MOCK_AMOUNT,
-      accessTokenHash: MOCK_ACCESS_TOKEN,
-      chainId: MOCK_CHAIN_ID,
-    });
-
+    const firstRequest = await requestService.createRequest(REQUEST_PARAMS);
+    const secondRequest = await requestService.createRequest(REQUEST_PARAMS);
+    const thirdRequest = await requestService.createRequest(REQUEST_PARAMS);
     const updateFirstRequest = await requestService.updateRequest(
       firstRequest.requestId,
       { ...firstRequest, status: "PENDING" }
     );
-
     const oldestFreshRequest = await requestService.getOldestFreshRequest();
 
     assert.equal(oldestFreshRequest?.requestId, secondRequest.requestId);

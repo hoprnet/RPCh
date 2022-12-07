@@ -31,7 +31,7 @@ describe("test Blockchain class", function () {
     const balance = await getBalance(owner.address, provider);
     assert.equal(ethers.utils.formatEther(balance), "10000.0");
   });
-  it("should send transaction", async () => {
+  it("should send transaction and receive hash", async () => {
     const [owner, receiver] = accounts;
     const transactionHash = await sendTransaction({
       from: owner,

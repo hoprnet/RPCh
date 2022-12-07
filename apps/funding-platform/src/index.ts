@@ -11,9 +11,11 @@ dotenv.config({ path: ".env.local" });
 const { SECRET_KEY, PRIV_KEY } = process.env;
 const port = 3000;
 let running = false;
-const handleRun = (state: boolean) => {
+
+const handleRunning = (state: boolean) => {
   running = state;
 };
+
 export const start = async (ops: {
   _entryServer: {
     entryServer: typeof api.entryServer;
@@ -39,7 +41,7 @@ export const start = async (ops: {
         requestService: requestService,
         signer: wallet,
         confirmations: 1,
-        changeState: handleRun,
+        changeState: handleRunning,
       });
     }
   }, 1e3);
