@@ -3,8 +3,6 @@
   "version": "0.0.0",
   "private": true,
   "license": "MIT",
-  "main": "./build/index.js",
-  "types": "./build/index.d.ts",
   "scripts": {
     "build": "rimraf build && tsup",
     "dev": "yarn build --watch",
