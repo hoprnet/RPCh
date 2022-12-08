@@ -3,7 +3,7 @@ import request from "supertest";
 import { AccessTokenService } from "../access-token";
 import { RequestService } from "../request";
 import { DBInstance } from "../db";
-import { entryServer } from "./entry-server";
+import { entryServer } from ".";
 
 const SIXTY_MINUTES = 60;
 const SECRET_KEY = "SECRET";

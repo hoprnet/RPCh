@@ -63,4 +63,12 @@ export class RequestService {
     ) ?? [undefined];
     return oldestFreshRequest;
   }
+
+  public async getAllCompromisedRequests() {
+    const requests = await this.getRequests();
+    const compromisedRequests = requests?.filter(
+      (req) => req.status === "FRESH" || req.status === "PROCESSING"
+    );
+    return compromisedRequests;
+  }
 }

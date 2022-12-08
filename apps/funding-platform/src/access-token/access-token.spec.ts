@@ -1,26 +1,17 @@
-import { AccessToken } from "./access-token";
+import { generateAccessToken } from "./access-token";
 import assert from "assert";
 
-const MAX_HOPR = 20;
+const MOCK_MAX_AMOUNT = 20;
 const MOCK_SECRET_KEY = "SECRET_KEY";
-
+const MOCK_ACCESS_TOKEN_PARAMS = {
+  amount: MOCK_MAX_AMOUNT,
+  expiredAt: new Date(Date.now()),
+  secretKey: MOCK_SECRET_KEY,
+};
 describe("test AccessToken class", function () {
-  let accessToken: AccessToken;
-  beforeEach(function () {
-    accessToken = new AccessToken(
-      new Date(Date.now()),
-      MAX_HOPR,
-      MOCK_SECRET_KEY
-    );
-  });
   it("should generate a different hash everytime", function () {
-    const firstHash = accessToken.generateHash();
-    const secondHash = accessToken.generateHash();
+    const firstHash = generateAccessToken(MOCK_ACCESS_TOKEN_PARAMS);
+    const secondHash = generateAccessToken(MOCK_ACCESS_TOKEN_PARAMS);
     assert(firstHash !== secondHash);
-  });
-  it("should return generated hash correctly", function () {
-    const generatedHash = accessToken.generateHash();
-    const returnedHash = accessToken.getHash();
-    assert(returnedHash === generatedHash);
   });
 });

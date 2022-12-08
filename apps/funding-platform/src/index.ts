@@ -1,14 +1,11 @@
-import dotenv from "dotenv";
 import { AccessTokenService } from "./access-token";
 import { getWallet } from "./blockchain";
 import { DBInstance } from "./db";
-import { checkFreshRequests } from "./queue";
 import * as api from "./entry-server";
+import { checkFreshRequests } from "./queue";
 import { RequestService } from "./request";
 
-dotenv.config({ path: ".env.local" });
-
-const { SECRET_KEY, PRIV_KEY } = process.env;
+const { SECRET_KEY, WALLET_PRIV_KEY } = process.env;
 const port = 3000;
 let running = false;
 
@@ -44,7 +41,7 @@ export const start = async (ops: {
         changeState: handleRunning,
       });
     }
-  }, 1e3);
+  }, 60e3);
   app.listen(port, () => {});
 };
 
@@ -52,8 +49,8 @@ const main = () => {
   if (!SECRET_KEY) {
     throw Error("env variable 'SECRET_KEY' not found");
   }
-  if (!PRIV_KEY) {
-    throw Error("env variable 'PRIV_KEY' not found");
+  if (!WALLET_PRIV_KEY) {
+    throw Error("env variable 'WALLET_PRIV_KEY' not found");
   }
   // init db
   const dbInstance = {
@@ -68,7 +65,7 @@ const main = () => {
     _AccessTokenService: AccessTokenService,
     _RequestService: RequestService,
     _db: dbInstance,
-    _privateKey: PRIV_KEY,
+    _privateKey: WALLET_PRIV_KEY,
     _secretKey: SECRET_KEY,
   });
 };

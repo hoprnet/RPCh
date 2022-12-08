@@ -32,7 +32,7 @@
       ],
       "env": [
         "SECRET_KEY",
-        "PRIV_KEY"
+        "WALLET_PRIV_KEY"
       ]
     },
     "dev": {

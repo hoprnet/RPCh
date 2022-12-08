@@ -1,4 +1,4 @@
-import * as db from "./db.adapter";
+import * as db from ".";
 import assert from "assert";
 import { DBInstance } from "../db";
 import { CreateAccessToken } from "../access-token";

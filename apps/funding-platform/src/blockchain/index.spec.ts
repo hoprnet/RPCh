@@ -14,7 +14,7 @@ import {
   getWallet,
   sendTransaction,
   waitForTransaction,
-} from "./blockchain";
+} from ".";
 import { Signer, Wallet } from "ethers";
 
 describe("test Blockchain class", function () {

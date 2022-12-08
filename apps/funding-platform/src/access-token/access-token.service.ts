@@ -1,11 +1,19 @@
-import { AccessToken } from "./access-token";
-import { CreateAccessToken } from "./dto";
 import {
-  saveAccessToken,
-  getAccessToken as getAccessTokenDB,
+  DBInstance,
   deleteAccessToken as deleteAccessTokenDB,
+  getAccessToken as getAccessTokenDB,
+  saveAccessToken,
 } from "../db";
-import { DBInstance } from "../db";
+import type { CreateAccessToken } from "./dto";
+import { generateAccessToken } from "./access-token";
+
+const MOCK_MAX_AMOUNT = 20;
+const MOCK_SECRET_KEY = "SECRET_KEY";
+const MOCK_ACCESS_TOKEN_PARAMS = {
+  amount: MOCK_MAX_AMOUNT,
+  expiredAt: new Date(Date.now()),
+  secretKey: MOCK_SECRET_KEY,
+};
 
 export class AccessTokenService {
   constructor(private db: DBInstance, private secretKey: string) {}
@@ -15,19 +23,18 @@ export class AccessTokenService {
     const expiredAt = new Date(
       new Date(now).setMinutes(now.getMinutes() + ops.timeout)
     );
-    const accessToken = new AccessToken(expiredAt, ops.amount, this.secretKey);
 
-    const hash = accessToken.generateHash();
+    const hash = generateAccessToken(MOCK_ACCESS_TOKEN_PARAMS);
 
     const query: CreateAccessToken = {
       Token: hash,
       ExpiredAt: expiredAt.toISOString(),
-      CreatedAt: accessToken.getCreatedAt().toISOString(),
+      CreatedAt: now.toISOString(),
     };
 
     await saveAccessToken(this.db, query);
 
-    return accessToken;
+    return query;
   }
 
   public getAccessToken(accessTokenHash: string) {
