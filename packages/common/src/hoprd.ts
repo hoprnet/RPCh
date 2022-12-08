@@ -69,7 +69,7 @@ export const createMessageListener = async (
   const ws = new WebSocket(url);
 
   ws.on("upgrade", () => {
-    log("HORP RPC Relay is listening for messages coming from HOPRd at", url);
+    log("Listening for incoming messages from HOPRd", url);
   });
 
   ws.on("message", (data: { toString: () => string }) => {

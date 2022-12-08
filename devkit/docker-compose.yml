@@ -1,15 +1,22 @@
+# docker-compose file that allows you to run a cluster of HOPRd nodes and RPCh exit nodes
+version: "3"
+
 volumes:
   # hoprd node id files, which should be kept between restarts to not change
   # peer ids all the time
   pluto-data:
+  exit-node-data:
 
 x-exit-service: &exit
   build:
     dockerfile: apps/exit-node/Dockerfile
     context: ../
-  # depends_on:
-  #   - pluto
-  # command: "node apps/exit-node/build/index.js"
+  restart: unless-stopped
+  volumes:
+    - exit-node-data:/tmp
+  depends_on:
+    - pluto
+  command: "node apps/exit-node/build/index.js"
 
 services:
   pluto:
@@ -27,85 +34,81 @@ services:
     command: "node apps/exit-node/build/index.js"
   exit-1:
     <<: *exit
-    restart: unless-stopped
     environment:
-    - HOPRD_API_ENDPOINT=http://pluto:13301
-    - DEBUG="rpch*"
-    - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-    ports:
-      - "9001:8081" # mapping port to localhost for easier recognition
+      - DEBUG=${DEBUG}
+      - HOPRD_API_ENDPOINT=http://pluto:13301
+      - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
     entrypoint:
-      ["/bin/wait-for", "http://${HOPRD_API_TOKEN}@pluto:13301/api/v2/account/addresses", "-t", "60", "--", "/sbin/tini", "--"]
-    depends_on:
-      - pluto
-    command: "node apps/exit-node/build/index.js"
+      [
+        "/bin/wait-for",
+        "http://${HOPRD_API_TOKEN}@pluto:13301/api/v2/account/addresses",
+        "-t",
+        "300",
+        "--",
+        "/sbin/tini",
+        "--",
+      ]
   exit-2:
     <<: *exit
-    restart: unless-stopped
     environment:
-    - HOPRD_API_ENDPOINT=http://pluto:13302
-    - DEBUG="rpch*"
-    - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-    ports:
-      - "9002:8081" # mapping port to localhost for easier recognition
+      - DEBUG=${DEBUG}
+      - HOPRD_API_ENDPOINT=http://pluto:13302
+      - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
     entrypoint:
-      ["/bin/wait-for", "http://${HOPRD_API_TOKEN}@pluto:13302/api/v2/account/addresses", "-t", "60", "--", "/sbin/tini", "--"]
-    depends_on:
-      - pluto
-    command: "node apps/exit-node/build/index.js"
+      [
+        "/bin/wait-for",
+        "http://${HOPRD_API_TOKEN}@pluto:13302/api/v2/account/addresses",
+        "-t",
+        "300",
+        "--",
+        "/sbin/tini",
+        "--",
+      ]
   exit-3:
     <<: *exit
-    restart: unless-stopped
     environment:
-    - HOPRD_API_ENDPOINT=http://pluto:13303
-    - DEBUG="rpch*"
-    - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-    ports:
-      - "9003:8081" # mapping port to localhost for easier recognition
+      - DEBUG=${DEBUG}
+      - HOPRD_API_ENDPOINT=http://pluto:13303
+      - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
     entrypoint:
-      ["/bin/wait-for", "http://${HOPRD_API_TOKEN}@pluto:13303/api/v2/account/addresses", "-t", "60", "--", "/sbin/tini", "--"]
-    depends_on:
-      - pluto
-    command: "node apps/exit-node/build/index.js"
+      [
+        "/bin/wait-for",
+        "http://${HOPRD_API_TOKEN}@pluto:13303/api/v2/account/addresses",
+        "-t",
+        "300",
+        "--",
+        "/sbin/tini",
+        "--",
+      ]
   exit-4:
     <<: *exit
-    restart: unless-stopped
     environment:
-    - HOPRD_API_ENDPOINT=http://pluto:13304
-    - DEBUG="rpch*"
-    - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-    ports:
-      - "9004:8081" # mapping port to localhost for easier recognition
+      - DEBUG=${DEBUG}
+      - HOPRD_API_ENDPOINT=http://pluto:13304
+      - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
     entrypoint:
-      ["/bin/wait-for", "http://${HOPRD_API_TOKEN}@pluto:13304/api/v2/account/addresses", "-t", "60", "--", "/sbin/tini", "--"]
-    depends_on:
-      - pluto
-    command: "node apps/exit-node/build/index.js"
+      [
+        "/bin/wait-for",
+        "http://${HOPRD_API_TOKEN}@pluto:13304/api/v2/account/addresses",
+        "-t",
+        "300",
+        "--",
+        "/sbin/tini",
+        "--",
+      ]
   exit-5:
     <<: *exit
-    restart: unless-stopped
     environment:
-    - HOPRD_API_ENDPOINT=http://pluto:13305
-    - DEBUG="rpch*"
-    - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-    ports:
-      - "9005:8081" # mapping port to localhost for easier recognition
+      - DEBUG=${DEBUG}
+      - HOPRD_API_ENDPOINT=http://pluto:13305
+      - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
     entrypoint:
-      ["/bin/wait-for", "http://${HOPRD_API_TOKEN}@pluto:13305/api/v2/account/addresses", "-t", "60", "--", "/sbin/tini", "--"]
-    depends_on:
-      - pluto
-    command: "node apps/exit-node/build/index.js"
-  # exit-node:
-  #   build:
-  #     dockerfile: apps/exit-node/Dockerfile
-  #     context: ../
-  #   restart: unless-stopped
-  #   environment:
-  #     - DEBUG="rpch*"
-  #     - HOPRD_API_ENDPOINT=http://pluto:13301
-  #     - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-  #   depends_on:
-  #     - pluto
-  #   entrypoint:
-  #     ["/bin/wait-for", "http://${HOPRD_API_TOKEN}@pluto:13301/api/v2/account/addresses", "-t", "60", "--", "/sbin/tini", "--"]
-  #   command: "node apps/exit-node/build/index.js"
+      [
+        "/bin/wait-for",
+        "http://${HOPRD_API_TOKEN}@pluto:13305/api/v2/account/addresses",
+        "-t",
+        "300",
+        "--",
+        "/sbin/tini",
+        "--",
+      ]
