@@ -20,7 +20,8 @@ export default class Request {
     public readonly body: string,
     public readonly entryNode: Identity,
     public readonly exitNode: Identity,
-    public readonly session: Session
+    public readonly session: Session,
+    private updateCounter: (counter: bigint) => Promise<void>
   ) {}
 
   /**
@@ -61,8 +62,6 @@ export default class Request {
 
     const entryNode = new Identity(origin);
 
-    console.log("to decrypt", utils.arrayify(encrypted));
-
     const session = unbox_request(
       new Envelope(
         utils.arrayify(encrypted),
@@ -94,7 +93,6 @@ export default class Request {
    * @returns Message
    */
   public toMessage(): Message {
-    console.log("toMessage", this.session.get_request_data());
     const message = new Message(
       this.id,
       joinPartsToBody([
