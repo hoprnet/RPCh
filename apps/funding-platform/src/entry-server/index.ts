@@ -141,7 +141,7 @@ export const entryServer = (ops: {
       ops.requestService,
       ops.maxAmountOfTokens
     ),
-    async () => {
+    async (req, res) => {
       const providers = await getProviders(Array.from(chainIds.keys()));
       const balances = await getBalanceForAllChains(
         ops.walletAddress,
@@ -157,10 +157,10 @@ export const entryServer = (ops: {
         balances,
         frozenBalances
       );
-      return {
+      return res.json({
         available: availableBalances,
         frozen: frozenBalances,
-      };
+      });
     }
   );
 
