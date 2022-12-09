@@ -1,0 +1,114 @@
+# docker-compose file that allows you to run a cluster of HOPRd nodes and RPCh exit nodes
+version: "3"
+
+volumes:
+  # hoprd node id files, which should be kept between restarts to not change
+  # peer ids all the time
+  pluto-data:
+  exit-node-data:
+
+x-exit-service: &exit
+  build:
+    dockerfile: apps/exit-node/Dockerfile
+    context: ../
+  restart: unless-stopped
+  volumes:
+    - exit-node-data:/tmp
+  depends_on:
+    - pluto
+  command: "node apps/exit-node/build/index.js"
+
+services:
+  pluto:
+    image: gcr.io/hoprassociation/hopr-pluto:v1.90.32@sha256:fd33db04b4254971706e0a241b5309071f99374c058385f8cb16df3874b481d6
+    restart: unless-stopped
+    volumes:
+      - pluto-data:/tmp
+    ports:
+      # mapping admin and api ports to localhost for app developers to access
+      # the admin UI more easily
+      - "13301-13305:13301-13305"
+      - "19501-19505:19501-19505"
+    environment:
+      - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+    command: "node apps/exit-node/build/index.js"
+  exit-1:
+    <<: *exit
+    environment:
+      - DEBUG=${DEBUG}
+      - HOPRD_API_ENDPOINT=http://pluto:13301
+      - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+    entrypoint:
+      [
+        "/bin/wait-for",
+        "http://${HOPRD_API_TOKEN}@pluto:13301/api/v2/account/addresses",
+        "-t",
+        "300",
+        "--",
+        "/sbin/tini",
+        "--",
+      ]
+  exit-2:
+    <<: *exit
+    environment:
+      - DEBUG=${DEBUG}
+      - HOPRD_API_ENDPOINT=http://pluto:13302
+      - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+    entrypoint:
+      [
+        "/bin/wait-for",
+        "http://${HOPRD_API_TOKEN}@pluto:13302/api/v2/account/addresses",
+        "-t",
+        "300",
+        "--",
+        "/sbin/tini",
+        "--",
+      ]
+  exit-3:
+    <<: *exit
+    environment:
+      - DEBUG=${DEBUG}
+      - HOPRD_API_ENDPOINT=http://pluto:13303
+      - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+    entrypoint:
+      [
+        "/bin/wait-for",
+        "http://${HOPRD_API_TOKEN}@pluto:13303/api/v2/account/addresses",
+        "-t",
+        "300",
+        "--",
+        "/sbin/tini",
+        "--",
+      ]
+  exit-4:
+    <<: *exit
+    environment:
+      - DEBUG=${DEBUG}
+      - HOPRD_API_ENDPOINT=http://pluto:13304
+      - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+    entrypoint:
+      [
+        "/bin/wait-for",
+        "http://${HOPRD_API_TOKEN}@pluto:13304/api/v2/account/addresses",
+        "-t",
+        "300",
+        "--",
+        "/sbin/tini",
+        "--",
+      ]
+  exit-5:
+    <<: *exit
+    environment:
+      - DEBUG=${DEBUG}
+      - HOPRD_API_ENDPOINT=http://pluto:13305
+      - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+    entrypoint:
+      [
+        "/bin/wait-for",
+        "http://${HOPRD_API_TOKEN}@pluto:13305/api/v2/account/addresses",
+        "-t",
+        "300",
+        "--",
+        "/sbin/tini",
+        "--",
+      ]
