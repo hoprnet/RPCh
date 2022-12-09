@@ -12,12 +12,11 @@ import {
   getBalance,
   getBalanceForAllChains,
   getProvider,
-  getProviders,
   getReceiptOfTransaction,
   getWallet,
   sendTransaction,
   waitForTransaction,
-} from ".";
+} from "./";
 
 describe("test Blockchain class", function () {
   let accounts: SignerWithAddress[];

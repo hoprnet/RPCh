@@ -2,7 +2,7 @@ import express, { NextFunction, Request, Response } from "express";
 import { AccessTokenService } from "../access-token";
 import { chainIds, getBalanceForAllChains, getProviders } from "../blockchain";
 import { CreateRequest, RequestService } from "../request";
-import { hardhatChainId, isExpired } from "../utils";
+import { isExpired } from "../utils";
 
 const app = express();
 
@@ -10,7 +10,8 @@ const tokenIsValid =
   (
     accessTokenService: AccessTokenService,
     requestService: RequestService,
-    maxAmountOfTokens: number
+    maxAmountOfTokens: number,
+    requestFunds?: boolean
   ) =>
   async (req: Request, res: Response, next: NextFunction) => {
     const accessTokenHash = req.headers["x-access-token"] as string;
@@ -22,27 +23,44 @@ const tokenIsValid =
       return res.status(401).json("Access Token expired");
     }
 
-    const requestsByAccessToken = await requestService.getRequestsByAccessToken(
-      accessTokenHash
-    );
-    const totalPossibleRequests = requestsByAccessToken?.filter(
-      (req) =>
-        req.status !== "FAILED" &&
-        req.status !== "FAILED-DURING-PROCESSING" &&
-        req.status !== "REJECTED-DURING-PROCESSING"
-    );
-    const sumOfTokensTotalPossibleRequests =
-      totalPossibleRequests?.reduce(
-        (prev, next) => prev + Number(next.amount),
-        0
-      ) ?? 0;
+    const tokenHasBalanceRes = await tokenHasBalance({
+      requestService,
+      maxAmountOfTokens,
+      token: dbToken.Token,
+      requestAmount: requestFunds ? Number(req.body.amount) : 0,
+    });
 
-    if (sumOfTokensTotalPossibleRequests >= maxAmountOfTokens) {
+    if (!tokenHasBalanceRes) {
       return res.status(401).json("Exceeded max amount of tokens redeemed");
     }
 
     next();
   };
+
+export const tokenHasBalance = async (params: {
+  requestService: RequestService;
+  token: string;
+  maxAmountOfTokens: number;
+  requestAmount?: number;
+}) => {
+  const requestsByAccessToken =
+    await params.requestService.getRequestsByAccessToken(params.token);
+  const totalRequests = requestsByAccessToken?.filter(
+    (req) =>
+      req.status !== "FAILED" &&
+      req.status !== "FAILED-DURING-PROCESSING" &&
+      req.status !== "REJECTED-DURING-PROCESSING"
+  );
+  const sumOfTokensTotalPossibleRequests =
+    totalRequests?.reduce((prev, next) => prev + Number(next.amount), 0) ?? 0;
+
+  const tokenBalanceWithRequestAmount =
+    sumOfTokensTotalPossibleRequests + (params.requestAmount ?? 0);
+  if (params.maxAmountOfTokens < tokenBalanceWithRequestAmount) {
+    return false;
+  }
+  return true;
+};
 
 export const entryServer = (ops: {
   accessTokenService: AccessTokenService;
@@ -69,7 +87,8 @@ export const entryServer = (ops: {
     tokenIsValid(
       ops.accessTokenService,
       ops.requestService,
-      ops.maxAmountOfTokens
+      ops.maxAmountOfTokens,
+      true
     ),
     async (req, res) => {
       const address = String(req.params.blockchainAddress);
@@ -123,10 +142,7 @@ export const entryServer = (ops: {
       ops.maxAmountOfTokens
     ),
     async () => {
-      const productionChainIds = Array.from(chainIds.keys()).filter(
-        (chainId) => chainId !== hardhatChainId
-      );
-      const providers = await getProviders(productionChainIds);
+      const providers = await getProviders(Array.from(chainIds.keys()));
       const balances = await getBalanceForAllChains(
         ops.walletAddress,
         providers

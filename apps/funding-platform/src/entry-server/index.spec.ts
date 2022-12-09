@@ -3,10 +3,11 @@ import request from "supertest";
 import { AccessTokenService } from "../access-token";
 import { RequestService } from "../request";
 import { DBInstance } from "../db";
-import { entryServer } from ".";
+import { entryServer, tokenHasBalance } from ".";
 
-const SIXTY_MINUTES = 60;
 const SECRET_KEY = "SECRET";
+const MAX_AMOUNT_OF_TOKENS = 40;
+const TIMEOUT = 30;
 
 describe("test entry server", function () {
   let dbInstance: DBInstance;
@@ -24,8 +25,8 @@ describe("test entry server", function () {
       accessTokenService,
       requestService,
       walletAddress: "0x0000000000000000",
-      maxAmountOfTokens: 40,
-      timeout: 30,
+      maxAmountOfTokens: MAX_AMOUNT_OF_TOKENS,
+      timeout: TIMEOUT,
     });
   });
 
@@ -56,7 +57,7 @@ describe("test entry server", function () {
       .set("Accept", "application/json");
     const now = new Date(Date.now());
     const expiredAt = new Date(
-      new Date(now).setMinutes(now.getMinutes() + SIXTY_MINUTES)
+      new Date(now).setMinutes(now.getMinutes() + 2 * TIMEOUT)
     );
     jest.setSystemTime(expiredAt);
     await request(app)
@@ -89,16 +90,32 @@ describe("test entry server", function () {
 
     await request(app)
       .post("/api/request/funds/0x0000000000000000")
-      .send({ amount: 40, chainId: 80 })
+      .send({ amount: MAX_AMOUNT_OF_TOKENS - 1, chainId: 80 })
       .set("Accept", "application/json")
       .set("x-access-token", responseToken.body.accessToken);
 
     await request(app)
       .post("/api/request/funds/0x0000000000000000")
-      .send({ amount: 40, chainId: 80 })
+      .send({ amount: MAX_AMOUNT_OF_TOKENS, chainId: 80 })
       .set("Accept", "application/json")
       .set("x-access-token", responseToken.body.accessToken)
       .expect("Content-Type", /json/)
       .expect(401);
+  });
+  it("should not allow tokens that are requesting more than max amount of tokens", async function () {
+    const tokenHash = "hash";
+    requestService.createRequest({
+      amount: (MAX_AMOUNT_OF_TOKENS - 1).toString(),
+      chainId: 80,
+      accessTokenHash: tokenHash,
+      address: "0x0",
+    });
+    const tokenHasBalanceRes = await tokenHasBalance({
+      maxAmountOfTokens: MAX_AMOUNT_OF_TOKENS,
+      requestService,
+      token: tokenHash,
+      requestAmount: MAX_AMOUNT_OF_TOKENS,
+    });
+    expect(tokenHasBalanceRes).toEqual(false);
   });
 });

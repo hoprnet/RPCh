@@ -1,10 +1,18 @@
 import { ethers, providers, Signer, Wallet } from "ethers";
 import { hardhatChainId } from "../utils";
 
-export const chainIds = new Map<number, ethers.utils.ConnectionInfo>([
+const productionChainIds: [number, ethers.utils.ConnectionInfo][] = [
   [100, { url: "https://rpc.gnosischain.com/" }],
+];
+const developmentChainIds: [number, ethers.utils.ConnectionInfo][] = [
   [hardhatChainId, { url: "http://localhost:8545" }],
-]);
+];
+export const chainIds = new Map<number, ethers.utils.ConnectionInfo>(
+  // eslint-disable-next-line turbo/no-undeclared-env-vars
+  process.env.NODE_ENV === "production"
+    ? productionChainIds
+    : developmentChainIds
+);
 
 export const sendTransaction = async (params: {
   from: Signer;
