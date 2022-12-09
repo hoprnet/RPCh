@@ -23,6 +23,9 @@ describe("test entry server", function () {
     app = entryServer({
       accessTokenService,
       requestService,
+      walletAddress: "0x0000000000000000",
+      maxAmountOfTokens: 40,
+      timeout: 30,
     });
   });
 

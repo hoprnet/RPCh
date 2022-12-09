@@ -1,21 +1,23 @@
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { expect } from "@jest/globals";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
   mine,
   setNextBlockBaseFeePerGas,
 } from "@nomicfoundation/hardhat-network-helpers";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import assert from "assert";
+import { Signer, Wallet } from "ethers";
 import { ethers } from "hardhat";
 import {
   getBalance,
+  getBalanceForAllChains,
   getProvider,
+  getProviders,
   getReceiptOfTransaction,
   getWallet,
   sendTransaction,
   waitForTransaction,
 } from ".";
-import { Signer, Wallet } from "ethers";
 
 describe("test Blockchain class", function () {
   let accounts: SignerWithAddress[];
@@ -69,6 +71,12 @@ describe("test Blockchain class", function () {
     const { chainId: actualChainId } = await provider.getNetwork();
     assert.equal(actualChainId, chainId);
   });
+  it("should return array of providers if chain is supported", async function () {
+    const chainId = 100;
+    const [provider] = await getProviders([chainId]);
+    const { chainId: actualChainId } = await provider.getNetwork();
+    assert.equal(actualChainId, chainId);
+  });
   it("should wait for transaction to be confirmed", async function () {
     const [owner, receiver] = accounts;
     const confirmations = 10;
@@ -116,6 +124,15 @@ describe("test Blockchain class", function () {
     } catch (e: any) {
       expect(e.code).toBe("NONCE_EXPIRED");
     }
+  });
+  it("should get balances keyed by chain", async function () {
+    const [owner] = accounts;
+    const balance = await getBalance(owner.address, provider);
+    const keyedBalance = await getBalanceForAllChains(owner.address, [
+      provider,
+    ]);
+
+    assert.equal(keyedBalance[provider.network.chainId], balance.toString());
   });
   // TODO: Add tests for smart contract reverts
   it.todo("should fail if smart contract is reverted");

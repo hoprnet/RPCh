@@ -7,6 +7,8 @@ import { RequestService } from "./request";
 
 const { SECRET_KEY, WALLET_PRIV_KEY } = process.env;
 const port = 3000;
+const MAX_AMOUNT_OF_TOKENS = 100;
+const TIMEOUT = 30;
 let running = false;
 
 const handleRunning = (state: boolean) => {
@@ -31,7 +33,13 @@ export const start = async (ops: {
   const requestService = new ops._RequestService(ops._db);
   const wallet = getWallet(ops._privateKey);
   // init API server
-  const app = api.entryServer({ accessTokenService, requestService });
+  const app = api.entryServer({
+    accessTokenService,
+    requestService,
+    walletAddress: wallet.address,
+    maxAmountOfTokens: MAX_AMOUNT_OF_TOKENS,
+    timeout: TIMEOUT,
+  });
   setInterval(() => {
     if (!running) {
       checkFreshRequests({

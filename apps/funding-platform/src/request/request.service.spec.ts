@@ -13,6 +13,12 @@ const REQUEST_PARAMS = {
   accessTokenHash: MOCK_ACCESS_TOKEN,
   chainId: MOCK_CHAIN_ID,
 };
+const mockRequestParams = (chainId: number) => ({
+  address: MOCK_ADDRESS,
+  amount: MOCK_AMOUNT,
+  accessTokenHash: MOCK_ACCESS_TOKEN,
+  chainId: chainId ?? MOCK_CHAIN_ID,
+});
 
 describe("test RequestService class", function () {
   let requestService: RequestService;
@@ -77,5 +83,57 @@ describe("test RequestService class", function () {
     const oldestFreshRequest = await requestService.getOldestFreshRequest();
 
     assert.equal(oldestFreshRequest?.requestId, secondRequest.requestId);
+  });
+  it("should return all compromised requests", async function () {
+    const firstRequest = await requestService.createRequest(REQUEST_PARAMS);
+    const secondRequest = await requestService.createRequest(REQUEST_PARAMS);
+    const thirdRequest = await requestService.createRequest(REQUEST_PARAMS);
+    const updateFirstRequest = await requestService.updateRequest(
+      firstRequest.requestId,
+      { ...firstRequest, status: "FAILED" }
+    );
+    const compromisedRequests =
+      await requestService.getAllCompromisedRequests();
+    assert.equal(compromisedRequests?.length, 2);
+  });
+  it("should return all compromised requests keyed by chain", async function () {
+    const firstRequest = await requestService.createRequest(
+      mockRequestParams(1)
+    );
+    const secondRequest = await requestService.createRequest(
+      mockRequestParams(1)
+    );
+    const thirdRequest = await requestService.createRequest(
+      mockRequestParams(2)
+    );
+    const updateFirstRequest = await requestService.updateRequest(
+      firstRequest.requestId,
+      { ...firstRequest, status: "FAILED" }
+    );
+    const compromisedRequests =
+      await requestService.getAllCompromisedRequests();
+    const compromisedRequestsKeyedByChain =
+      requestService.groupRequestsByChainId(compromisedRequests ?? []);
+    assert.equal(compromisedRequestsKeyedByChain[1].length, 1);
+    assert.equal(compromisedRequestsKeyedByChain[2].length, 1);
+  });
+  it("should return sum of all compromised requests keyed by chain", async function () {
+    const firstRequest = await requestService.createRequest(
+      mockRequestParams(1)
+    );
+    const secondRequest = await requestService.createRequest(
+      mockRequestParams(1)
+    );
+    const thirdRequest = await requestService.createRequest(
+      mockRequestParams(2)
+    );
+    const updateFirstRequest = await requestService.updateRequest(
+      firstRequest.requestId,
+      { ...firstRequest, status: "FAILED" }
+    );
+    const sumOfAmountByChainId =
+      await requestService.sumAmountOfCompromisedRequests();
+    assert.equal(sumOfAmountByChainId[1], MOCK_AMOUNT);
+    assert.equal(sumOfAmountByChainId[2], MOCK_AMOUNT);
   });
 });

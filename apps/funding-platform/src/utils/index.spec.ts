@@ -9,6 +9,7 @@ describe("test utils file", function () {
       const pastDate = new Date(Date.now()).toISOString();
       jest.setSystemTime(new Date("2020-02-20"));
       const res = isExpired(pastDate);
+      jest.useRealTimers();
       assert(res);
     });
     it("should handle active dates", function () {
@@ -17,6 +18,7 @@ describe("test utils file", function () {
       const futureDate = new Date(Date.now()).toISOString();
       jest.setSystemTime(new Date("2020-02-19"));
       const res = isExpired(futureDate);
+      jest.useRealTimers();
       assert(!res);
     });
   });

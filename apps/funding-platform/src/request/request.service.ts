@@ -7,7 +7,7 @@ import {
   deleteRequest as deleteRequestDB,
   getRequests as getRequestsDB,
 } from "../db";
-import { CreateRequest, UpdateRequest } from "./dto";
+import { CreateRequest, QueryRequest, UpdateRequest } from "./dto";
 
 export class RequestService {
   constructor(private db: DBInstance) {}
@@ -70,5 +70,33 @@ export class RequestService {
       (req) => req.status === "FRESH" || req.status === "PROCESSING"
     );
     return compromisedRequests;
+  }
+
+  public groupRequestsByChainId(requests: QueryRequest[]) {
+    const requestsKeyedByChainId: { [chainId: number]: QueryRequest[] } = {};
+    for (const request of requests ?? []) {
+      requestsKeyedByChainId[request.chainId] = [
+        ...(requestsKeyedByChainId[request.chainId] ?? []),
+        request,
+      ];
+    }
+    return requestsKeyedByChainId;
+  }
+
+  public async sumAmountOfCompromisedRequests() {
+    const compromisedRequests = await this.getAllCompromisedRequests();
+    const compromisedRequestsGroupedByChainId = this.groupRequestsByChainId(
+      compromisedRequests ?? []
+    );
+    {
+      const sumOfRequestsByChainId: { [chainId: number]: number } = {};
+      for (const chainId in compromisedRequestsGroupedByChainId) {
+        const sumOfRequests = compromisedRequestsGroupedByChainId[
+          chainId
+        ].reduce((prev, next) => prev + Number(next.amount), 0);
+        sumOfRequestsByChainId[chainId] = sumOfRequests;
+      }
+      return sumOfRequestsByChainId;
+    }
   }
 }

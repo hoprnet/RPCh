@@ -4,3 +4,5 @@ export const isExpired = (expireAt: string) => {
   }
   return false;
 };
+
+export const hardhatChainId = 31337;
