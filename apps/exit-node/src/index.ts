@@ -30,7 +30,7 @@ export const start = async (ops: {
       const rpchResponse = rpchRequest.createResponse(response);
       const segments = rpchResponse.toMessage().toSegments();
       for (const segment of segments) {
-        await ops.hoprd.sendMessage({
+        ops.hoprd.sendMessage({
           apiEndpoint: ops.apiEndpoint,
           apiToken: ops.apiToken,
           message: segment.toString(),
