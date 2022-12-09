@@ -131,9 +131,38 @@ describe("test RequestService class", function () {
       firstRequest.requestId,
       { ...firstRequest, status: "FAILED" }
     );
-    const sumOfAmountByChainId =
-      await requestService.sumAmountOfCompromisedRequests();
+    const compromisedRequests =
+      await requestService.getAllCompromisedRequests();
+    const sumOfAmountByChainId = await requestService.sumAmountOfRequests(
+      compromisedRequests ?? []
+    );
     assert.equal(sumOfAmountByChainId[1], MOCK_AMOUNT);
     assert.equal(sumOfAmountByChainId[2], MOCK_AMOUNT);
+  });
+  it("should calculate available and frozen funds", async function () {
+    const firstRequest = await requestService.createRequest(
+      mockRequestParams(1)
+    );
+    const secondRequest = await requestService.createRequest(
+      mockRequestParams(1)
+    );
+    const thirdRequest = await requestService.createRequest(
+      mockRequestParams(2)
+    );
+    const updateFirstRequest = await requestService.updateRequest(
+      firstRequest.requestId,
+      { ...firstRequest, status: "FAILED" }
+    );
+    const compromisedRequests =
+      await requestService.getAllCompromisedRequests();
+    const sumOfCompromisedRequestsByChainId =
+      await requestService.sumAmountOfRequests(compromisedRequests ?? []);
+
+    const availableFunds = await requestService.calculateAvailableFunds(
+      sumOfCompromisedRequestsByChainId,
+      sumOfCompromisedRequestsByChainId
+    );
+    assert.equal(availableFunds[1], 0);
+    assert.equal(availableFunds[2], 0);
   });
 });

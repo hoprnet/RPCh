@@ -83,20 +83,38 @@ export class RequestService {
     return requestsKeyedByChainId;
   }
 
-  public async sumAmountOfCompromisedRequests() {
-    const compromisedRequests = await this.getAllCompromisedRequests();
-    const compromisedRequestsGroupedByChainId = this.groupRequestsByChainId(
-      compromisedRequests ?? []
+  public sumAmountOfRequests(requests: QueryRequest[]) {
+    const requestsGroupedByChainId = this.groupRequestsByChainId(
+      requests ?? []
     );
     {
       const sumOfRequestsByChainId: { [chainId: number]: number } = {};
-      for (const chainId in compromisedRequestsGroupedByChainId) {
-        const sumOfRequests = compromisedRequestsGroupedByChainId[
-          chainId
-        ].reduce((prev, next) => prev + Number(next.amount), 0);
+      for (const chainId in requestsGroupedByChainId) {
+        const sumOfRequests = requestsGroupedByChainId[chainId].reduce(
+          (prev, next) => prev + Number(next.amount),
+          0
+        );
         sumOfRequestsByChainId[chainId] = sumOfRequests;
       }
       return sumOfRequestsByChainId;
     }
   }
+
+  public calculateAvailableFunds = (
+    balances: {
+      [chainId: number]: number;
+    },
+    frozenBalances: {
+      [chainId: number]: number;
+    }
+  ) => {
+    const availableBalances: { [chainId: number]: number } = {};
+    for (const chainId in balances) {
+      const totalBalance = Number(balances[chainId]);
+      const frozenBalance = frozenBalances[Number(chainId)] ?? 0;
+      const availableBalance = totalBalance - frozenBalance;
+      availableBalances[Number(chainId)] = availableBalance;
+    }
+    return availableBalances;
+  };
 }

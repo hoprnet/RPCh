@@ -44,24 +44,6 @@ const tokenIsValid =
     next();
   };
 
-export const calculateAvailableFunds = (
-  balances: {
-    [chainId: number]: string;
-  },
-  frozenBalances: {
-    [chainId: number]: number;
-  }
-) => {
-  const availableBalances: { [chainId: number]: number } = {};
-  for (const chainId in balances) {
-    const totalBalance = Number(balances[chainId]);
-    const frozenBalance = frozenBalances[Number(chainId)] ?? 0;
-    const availableBalance = totalBalance - frozenBalance;
-    availableBalances[Number(chainId)] = availableBalance;
-  }
-  return availableBalances;
-};
-
 export const entryServer = (ops: {
   accessTokenService: AccessTokenService;
   requestService: RequestService;
@@ -144,15 +126,18 @@ export const entryServer = (ops: {
       const productionChainIds = Array.from(chainIds.keys()).filter(
         (chainId) => chainId !== hardhatChainId
       );
-      const providers = getProviders(productionChainIds);
+      const providers = await getProviders(productionChainIds);
       const balances = await getBalanceForAllChains(
         ops.walletAddress,
         providers
       );
-      const frozenBalances =
-        await ops.requestService.sumAmountOfCompromisedRequests();
+      const compromisedRequests =
+        await ops.requestService.getAllCompromisedRequests();
+      const frozenBalances = await ops.requestService.sumAmountOfRequests(
+        compromisedRequests ?? []
+      );
 
-      const availableBalances = calculateAvailableFunds(
+      const availableBalances = ops.requestService.calculateAvailableFunds(
         balances,
         frozenBalances
       );

@@ -23,16 +23,16 @@ export const sendTransaction = async (params: {
   return transaction.hash;
 };
 
-export const getProvider = (chainId: number) => {
+export const getProvider = async (chainId: number) => {
   if (!chainIds.has(chainId)) throw new Error("Chain not supported");
   const provider = new ethers.providers.JsonRpcProvider(chainIds.get(chainId));
   return provider;
 };
 
-export const getProviders = (chainIds: number[]) => {
+export const getProviders = async (chainIds: number[]) => {
   const providers = [];
   for (const chainId of chainIds) {
-    const provider = getProvider(chainId);
+    const provider = await getProvider(chainId);
     providers.push(provider);
   }
   return providers;
@@ -60,10 +60,10 @@ export const getBalanceForAllChains = async (
   address: string,
   providers: ethers.providers.JsonRpcProvider[]
 ) => {
-  const balances: { [chainId: number]: string } = {};
+  const balances: { [chainId: number]: number } = {};
   for (const provider of providers) {
     const balance = await getBalance(address, provider);
-    balances[provider.network.chainId] = balance.toString();
+    balances[provider.network.chainId] = Number(balance.toString());
   }
   return balances;
 };

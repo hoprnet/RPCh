@@ -65,18 +65,6 @@ describe("test Blockchain class", function () {
       expect(e.message).toBe("Chain not supported");
     }
   });
-  it("should return provider if chain is supported", async function () {
-    const chainId = 100;
-    const provider = await getProvider(chainId);
-    const { chainId: actualChainId } = await provider.getNetwork();
-    assert.equal(actualChainId, chainId);
-  });
-  it("should return array of providers if chain is supported", async function () {
-    const chainId = 100;
-    const [provider] = await getProviders([chainId]);
-    const { chainId: actualChainId } = await provider.getNetwork();
-    assert.equal(actualChainId, chainId);
-  });
   it("should wait for transaction to be confirmed", async function () {
     const [owner, receiver] = accounts;
     const confirmations = 10;
