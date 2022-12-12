@@ -34,6 +34,7 @@ describe("test index.ts", function () {
       accessTokenHash: MOCK_ACCESS_TOKEN,
       chainId: MOCK_CHAIN_ID,
     });
+    if (!createRequest) throw new Error("request was not created");
     await checkFreshRequests({
       requestService,
       signer: owner,
@@ -53,6 +54,7 @@ describe("test index.ts", function () {
       accessTokenHash: MOCK_ACCESS_TOKEN,
       chainId: MOCK_CHAIN_ID,
     });
+    if (!createRequest) throw new Error("request was not created");
     await requestService.updateRequest(createRequest.requestId, {
       ...createRequest,
       status: "REJECTED-DURING-PROCESSING",

@@ -30,6 +30,7 @@ describe("test RequestService class", function () {
   });
   it("should create and save request", async function () {
     const request = await requestService.createRequest(REQUEST_PARAMS);
+    if (!request) throw new Error("request was not created");
     const createdRequest = await requestService.getRequest(request.requestId);
     assert.equal(createdRequest?.nodeAddress, MOCK_ADDRESS);
     assert.equal(createdRequest?.amount, MOCK_AMOUNT);
@@ -45,13 +46,14 @@ describe("test RequestService class", function () {
   it("should get request by request id", async function () {
     await requestService.createRequest(REQUEST_PARAMS);
     const request = await requestService.createRequest(REQUEST_PARAMS);
+    if (!request) throw new Error("request was not created");
     const createdRequest = await requestService.getRequest(request.requestId);
     assert.equal(createdRequest?.nodeAddress, MOCK_ADDRESS);
     assert.equal(createdRequest?.amount, MOCK_AMOUNT);
   });
   it("should update request", async function () {
     const request = await requestService.createRequest(REQUEST_PARAMS);
-
+    if (!request) throw new Error("request was not created");
     const updateRequest = {
       ...request,
       amount: String(2 * Number(MOCK_AMOUNT)),
@@ -65,7 +67,7 @@ describe("test RequestService class", function () {
   });
   it("should delete request", async function () {
     const request = await requestService.createRequest(REQUEST_PARAMS);
-
+    if (!request) throw new Error("request was not created");
     await requestService.deleteRequest(request.requestId);
 
     const deletedRequest = await requestService.getRequest(request.requestId);
@@ -74,6 +76,7 @@ describe("test RequestService class", function () {
   });
   it("should return oldest unhandled request", async function () {
     const firstRequest = await requestService.createRequest(REQUEST_PARAMS);
+    if (!firstRequest) throw new Error("request was not created");
     const secondRequest = await requestService.createRequest(REQUEST_PARAMS);
     const thirdRequest = await requestService.createRequest(REQUEST_PARAMS);
     const updateFirstRequest = await requestService.updateRequest(
@@ -82,10 +85,11 @@ describe("test RequestService class", function () {
     );
     const oldestFreshRequest = await requestService.getOldestFreshRequest();
 
-    assert.equal(oldestFreshRequest?.requestId, secondRequest.requestId);
+    assert.equal(oldestFreshRequest?.requestId, secondRequest?.requestId);
   });
   it("should return all compromised requests", async function () {
     const firstRequest = await requestService.createRequest(REQUEST_PARAMS);
+    if (!firstRequest) throw new Error("request was not created");
     const secondRequest = await requestService.createRequest(REQUEST_PARAMS);
     const thirdRequest = await requestService.createRequest(REQUEST_PARAMS);
     const updateFirstRequest = await requestService.updateRequest(
@@ -100,6 +104,7 @@ describe("test RequestService class", function () {
     const firstRequest = await requestService.createRequest(
       mockRequestParams(1)
     );
+    if (!firstRequest) throw new Error("request was not created");
     const secondRequest = await requestService.createRequest(
       mockRequestParams(1)
     );
@@ -121,6 +126,7 @@ describe("test RequestService class", function () {
     const firstRequest = await requestService.createRequest(
       mockRequestParams(1)
     );
+    if (!firstRequest) throw new Error("request was not created");
     const secondRequest = await requestService.createRequest(
       mockRequestParams(1)
     );
@@ -143,6 +149,7 @@ describe("test RequestService class", function () {
     const firstRequest = await requestService.createRequest(
       mockRequestParams(1)
     );
+    if (!firstRequest) throw new Error("request was not created");
     const secondRequest = await requestService.createRequest(
       mockRequestParams(1)
     );
