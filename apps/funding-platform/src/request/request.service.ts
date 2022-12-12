@@ -44,6 +44,7 @@ export class RequestService {
       return createRequest;
     } catch (e: any) {
       logError("Failed to create request: ", e);
+      throw new Error("request was not created");
     }
   }
 

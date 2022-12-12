@@ -1,6 +1,7 @@
-import { ethers, Signer } from "ethers";
+import { BigNumber, ethers, Signer } from "ethers";
 import { utils } from "rpch-common";
 import {
+  getBalance,
   getProvider,
   sendTransaction,
   waitForTransaction,
@@ -27,17 +28,19 @@ export const checkFreshRequests = async (ops: {
   const freshRequest = await ops.requestService.getOldestFreshRequest();
   log("handling request: ", freshRequest?.requestId);
   try {
-    // TODO: add funding checks
     if (!ops.signer) throw new Error("Missing signer  transaction");
     if (!freshRequest) throw new Error("No pending fresh request");
     if (!freshRequest?.chainId) throw new Error("Request is missing chainId");
-    // fund request
     const provider = ops.signer.provider
       ? ops.signer.provider
       : await getProvider(freshRequest.chainId);
     let connectedSigner = ops.signer.provider
       ? ops.signer
       : ops.signer.connect(provider);
+    const balance = await connectedSigner.getBalance();
+    if (balance < BigNumber.from(freshRequest.amount))
+      throw new Error("Signer does not have enough balance to fund request");
+    // fund request
     const txHash = await sendTransaction({
       from: connectedSigner,
       to: freshRequest?.nodeAddress,
