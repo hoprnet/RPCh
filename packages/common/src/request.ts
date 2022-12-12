@@ -6,7 +6,12 @@ import {
   splitBodyToParts,
 } from "./utils";
 import { Identity } from "./crypto";
-import { Envelope, box_request, unbox_request, Session } from "rpch-crypto";
+import {
+  Envelope,
+  box_request,
+  unbox_request,
+  Session,
+} from "rpch-crypto/nodejs";
 import { utils } from "ethers";
 
 /**

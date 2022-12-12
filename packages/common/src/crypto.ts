@@ -1,6 +1,6 @@
 import PeerId from "peer-id";
 import { utils } from "ethers";
-import { Identity as CryptoIdentity } from "rpch-crypto";
+import { Identity as CryptoIdentity } from "rpch-crypto/nodejs";
 
 export class Identity {
   public readonly privKey?: Uint8Array;

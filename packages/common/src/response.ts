@@ -2,7 +2,12 @@ import Message from "./message";
 import type Request from "./request";
 import { joinPartsToBody, splitBodyToParts } from "./utils";
 import { Identity } from "./crypto";
-import { Envelope, Session, unbox_response, box_response } from "rpch-crypto";
+import {
+  Envelope,
+  Session,
+  unbox_response,
+  box_response,
+} from "rpch-crypto/nodejs";
 import { utils } from "ethers";
 
 /**
