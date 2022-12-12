@@ -1039,6 +1039,11 @@
   resolved "https://registry.yarnpkg.com/@protobufjs/utf8/-/utf8-1.1.0.tgz#a777360b5b39a1a2e5106f8e858f2fd2d060c570"
   integrity sha512-Vvn3zZrhQZkkBE8LSuW3em98c0FwgO4nxzv6OdSxPKJIEKY2bGbHn+mhGIPerzI4twdxaP8/0+06HBpwf345Lw==
 
+"@rpch/crypto@^0.2.1":
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/@rpch/crypto/-/crypto-0.2.1.tgz#4b6306a1921222a5839caabb1d8fbfa246fff912"
+  integrity sha512-8rUYFDTinf3r6WmFqIw85Fxaml7CXtaMESAS+HftNrdUCgKU5vXOEL5aSuCEEQAXNijB22DvlXdyYuZU2MIEXg==
+
 "@rushstack/eslint-patch@^1.1.3":
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/@rushstack/eslint-patch/-/eslint-patch-1.2.0.tgz#8be36a1f66f3265389e90b5f9c9962146758f728"

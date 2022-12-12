@@ -5,7 +5,7 @@
   "types": "./build/index.d.ts",
   "license": "MIT",
   "scripts": {
-    "build": "tsup && cp ./src/lib/nodejs/rpch_crypto_bg.wasm ./build/rpch_crypto_bg.wasm",
+    "build": "tsup",
     "dev": "yarn build --watch",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
@@ -19,5 +19,7 @@
     "rpch-configs-tsup": "*",
     "rpch-configs-typescript": "*"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@rpch/crypto": "^0.2.1"
+  }
 }

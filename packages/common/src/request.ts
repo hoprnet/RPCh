@@ -20,8 +20,7 @@ export default class Request {
     public readonly body: string,
     public readonly entryNode: Identity,
     public readonly exitNode: Identity,
-    public readonly session: Session,
-    private updateCounter: (counter: bigint) => Promise<void>
+    public readonly session: Session
   ) {}
 
   /**
