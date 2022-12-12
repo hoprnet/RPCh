@@ -86,8 +86,8 @@ export const entryServer = (ops: {
       timeout: ops.maxAmountOfTokens,
     });
     return res.json({
-      accessToken: accessToken.Token,
-      expiredAt: accessToken.ExpiredAt,
+      accessToken: accessToken?.Token,
+      expiredAt: accessToken?.ExpiredAt,
     });
   });
 

@@ -22,9 +22,9 @@ describe("test AccessTokenService class", function () {
       accessTokenParams
     );
     const dbAccessToken = await accessTokenService.getAccessToken(
-      accessToken.Token!
+      accessToken?.Token!
     );
-    assert(dbAccessToken?.Token === accessToken.Token);
+    assert(dbAccessToken?.Token === accessToken?.Token);
   });
   it("should get access token", async function () {
     await accessTokenService.createAccessToken(accessTokenParams);
@@ -32,17 +32,17 @@ describe("test AccessTokenService class", function () {
       accessTokenParams
     );
     const dbAccessToken = await accessTokenService.getAccessToken(
-      accessToken.Token!
+      accessToken?.Token!
     );
-    assert(dbAccessToken?.Token === accessToken.Token);
+    assert(dbAccessToken?.Token === accessToken?.Token);
   });
   it("should delete access token", async function () {
     const accessToken = await accessTokenService.createAccessToken(
       accessTokenParams
     );
-    await accessTokenService.deleteAccessToken(accessToken.Token!);
+    await accessTokenService.deleteAccessToken(accessToken?.Token!);
     const dbAccessToken = await accessTokenService.getAccessToken(
-      accessToken.Token!
+      accessToken?.Token!
     );
     assert(dbAccessToken === undefined);
   });

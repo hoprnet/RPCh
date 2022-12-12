@@ -6,6 +6,12 @@ import {
 } from "../db";
 import type { CreateAccessToken } from "./dto";
 import { generateAccessToken } from "./access-token";
+import { utils } from "rpch-common";
+
+const { log, logError } = utils.createLogger([
+  "funding-platform",
+  "access-token-service",
+]);
 
 /**
  * An abstraction layer for access tokens to interact with db.
@@ -16,26 +22,31 @@ export class AccessTokenService {
   constructor(private db: DBInstance, private secretKey: string) {}
 
   public async createAccessToken(ops: { timeout: number; amount: number }) {
-    const now = new Date(Date.now());
-    const expiredAt = new Date(
-      new Date(now).setMinutes(now.getMinutes() + ops.timeout)
-    );
+    try {
+      log("Creating access token...");
+      const now = new Date(Date.now());
+      const expiredAt = new Date(
+        new Date(now).setMinutes(now.getMinutes() + ops.timeout)
+      );
 
-    const hash = generateAccessToken({
-      amount: ops.amount,
-      secretKey: this.secretKey,
-      expiredAt,
-    });
+      const hash = generateAccessToken({
+        amount: ops.amount,
+        secretKey: this.secretKey,
+        expiredAt,
+      });
 
-    const query: CreateAccessToken = {
-      Token: hash,
-      ExpiredAt: expiredAt.toISOString(),
-      CreatedAt: now.toISOString(),
-    };
+      const query: CreateAccessToken = {
+        Token: hash,
+        ExpiredAt: expiredAt.toISOString(),
+        CreatedAt: now.toISOString(),
+      };
 
-    await saveAccessToken(this.db, query);
+      await saveAccessToken(this.db, query);
 
-    return query;
+      return query;
+    } catch (e: any) {
+      logError("Failed to create access token: ", e);
+    }
   }
 
   public getAccessToken(accessTokenHash: string) {

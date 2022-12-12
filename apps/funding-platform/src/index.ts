@@ -4,7 +4,9 @@ import { DBInstance } from "./db";
 import * as api from "./entry-server";
 import { checkFreshRequests } from "./queue";
 import { RequestService } from "./request";
+import { utils } from "rpch-common";
 
+const { log } = utils.createLogger(["funding-platform", "index"]);
 const { SECRET_KEY, WALLET_PRIV_KEY } = process.env;
 const port = 3000;
 const MAX_AMOUNT_OF_TOKENS = 100;
@@ -50,7 +52,9 @@ export const start = async (ops: {
       });
     }
   }, 60e3);
-  app.listen(port, () => {});
+  app.listen(port, () => {
+    log("entry server is up");
+  });
 };
 
 const main = () => {

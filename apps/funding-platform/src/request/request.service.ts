@@ -8,6 +8,12 @@ import {
   getRequests as getRequestsDB,
 } from "../db";
 import { CreateRequest, QueryRequest, UpdateRequest } from "./dto";
+import { utils } from "rpch-common";
+
+const { log, logError } = utils.createLogger([
+  "funding-platform",
+  "request-service",
+]);
 
 /**
  * An abstraction layer for requests to interact with db.
@@ -22,18 +28,23 @@ export class RequestService {
     chainId: number;
     accessTokenHash: string;
   }) {
-    const now = new Date(Date.now());
-    const createRequest: CreateRequest = {
-      amount: params.amount,
-      accessTokenHash: params.accessTokenHash,
-      nodeAddress: params.address,
-      chainId: params.chainId,
-      createdAt: now.toISOString(),
-      requestId: Math.floor(Math.random() * 1e6),
-      status: "FRESH",
-    };
-    await saveRequestDB(this.db, createRequest);
-    return createRequest;
+    try {
+      log("Creating request...");
+      const now = new Date(Date.now());
+      const createRequest: CreateRequest = {
+        amount: params.amount,
+        accessTokenHash: params.accessTokenHash,
+        nodeAddress: params.address,
+        chainId: params.chainId,
+        createdAt: now.toISOString(),
+        requestId: Math.floor(Math.random() * 1e6),
+        status: "FRESH",
+      };
+      await saveRequestDB(this.db, createRequest);
+      return createRequest;
+    } catch (e: any) {
+      logError("Failed to create request: ", e);
+    }
   }
 
   public async getRequests() {
@@ -49,12 +60,17 @@ export class RequestService {
   }
 
   public async updateRequest(requestId: number, updateRequest: UpdateRequest) {
-    const request = { ...updateRequest, requestId } as UpdateRequest;
-    await updateRequestDB(this.db, request);
-    return updateRequest;
+    try {
+      const request = { ...updateRequest, requestId } as UpdateRequest;
+      await updateRequestDB(this.db, request);
+      return updateRequest;
+    } catch (e: any) {
+      logError("Failed to update request", requestId, e);
+    }
   }
 
   public async deleteRequest(requestId: number) {
+    log("Deleted request:", requestId);
     return deleteRequestDB(this.db, requestId);
   }
 

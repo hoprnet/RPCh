@@ -44,6 +44,8 @@ RUN apk add --no-cache tini curl
 COPY --from=installer /app/apps/funding-platform/package.json .
 COPY --from=installer /app .
 
+ENV NODE_ENV=production
+
 CMD ["node", "apps/funding-platform/build/index.js"]
 
 ENTRYPOINT ["/sbin/tini", "--"]
