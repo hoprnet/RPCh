@@ -9,6 +9,10 @@ import {
 } from "../db";
 import { CreateRequest, QueryRequest, UpdateRequest } from "./dto";
 
+/**
+ * An abstraction layer for requests to interact with db.
+ * @param db holds all methods to interact with db
+ */
 export class RequestService {
   constructor(private db: DBInstance) {}
 

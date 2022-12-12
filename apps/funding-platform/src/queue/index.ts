@@ -9,9 +9,17 @@ import { RequestService } from "../request";
 
 const { log, logError } = utils.createLogger(["funding-platform", "queue"]);
 
+/**
+ * Scans through all requests and fulfills the oldest fresh reqeust
+ * @param requestService
+ * @param signer ethers signer that will send the transaction
+ * @param confirmations amount of confirmations to wait for every transaction
+ * @param changeState updates a higher lever boolean that stops this function from running
+ * while it is already running
+ */
 export const checkFreshRequests = async (ops: {
   requestService: RequestService;
-  signer?: Signer;
+  signer: Signer;
   confirmations: number;
   changeState: (state: boolean) => void;
 }) => {

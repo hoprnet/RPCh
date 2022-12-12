@@ -1,5 +1,12 @@
 import { createHmac, randomInt } from "crypto";
 
+/**
+ * Function that generates an access token hash
+ * @param secretKey used to sign the access token
+ * @param amount the amount that is being requested
+ * @param expiredAt date when the access token will expire
+ * @returns access token hash
+ */
 export const generateAccessToken = (params: {
   expiredAt: Date;
   amount: number;

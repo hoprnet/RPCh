@@ -7,14 +7,11 @@ import {
 import type { CreateAccessToken } from "./dto";
 import { generateAccessToken } from "./access-token";
 
-const MOCK_MAX_AMOUNT = 20;
-const MOCK_SECRET_KEY = "SECRET_KEY";
-const MOCK_ACCESS_TOKEN_PARAMS = {
-  amount: MOCK_MAX_AMOUNT,
-  expiredAt: new Date(Date.now()),
-  secretKey: MOCK_SECRET_KEY,
-};
-
+/**
+ * An abstraction layer for access tokens to interact with db.
+ * @param db holds all methods to interact with db
+ * @param secretKey signs access tokens
+ */
 export class AccessTokenService {
   constructor(private db: DBInstance, private secretKey: string) {}
 
@@ -24,7 +21,11 @@ export class AccessTokenService {
       new Date(now).setMinutes(now.getMinutes() + ops.timeout)
     );
 
-    const hash = generateAccessToken(MOCK_ACCESS_TOKEN_PARAMS);
+    const hash = generateAccessToken({
+      amount: ops.amount,
+      secretKey: this.secretKey,
+      expiredAt,
+    });
 
     const query: CreateAccessToken = {
       Token: hash,

@@ -62,6 +62,15 @@ export const tokenHasBalance = async (params: {
   return true;
 };
 
+/**
+ * Express server that holds all routes
+ * @param accessTokenService
+ * @param requestService
+ * @param walletAddress address used to query balance
+ * @param maxAmountOfTokens max limit of tokens that an access token can request
+ * @param timeout amount of minutes that a token will be valid
+ * @returns Express app
+ */
 export const entryServer = (ops: {
   accessTokenService: AccessTokenService;
   requestService: RequestService;
