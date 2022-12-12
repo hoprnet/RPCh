@@ -28,12 +28,15 @@ export const start = async (ops: {
         rpchRequest.provider
       );
       const rpchResponse = rpchRequest.createResponse(response);
-      await ops.hoprd.sendMessage({
-        apiEndpoint: ops.apiEndpoint,
-        apiToken: ops.apiToken,
-        message: rpchResponse.toMessage().body,
-        destination: rpchRequest.origin,
-      });
+      const segments = rpchResponse.toMessage().toSegments();
+      for (const segment of segments) {
+        ops.hoprd.sendMessage({
+          apiEndpoint: ops.apiEndpoint,
+          apiToken: ops.apiToken,
+          message: segment.toString(),
+          destination: rpchRequest.origin,
+        });
+      }
     } catch (error) {
       logError("Failed to respond with data", error);
     }
