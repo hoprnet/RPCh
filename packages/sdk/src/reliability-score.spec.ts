@@ -1,5 +1,5 @@
 import { fixtures } from "rpch-common";
-import ReliabilityScore from "./reliability-score";
+import ReliabilityScore, { MAX_RESPONSES } from "./reliability-score";
 
 const ENTRY_NODE_PEER_ID = fixtures.PEER_ID_A;
 
@@ -10,7 +10,7 @@ describe("test reliability score class", () => {
     reliabilityScore = new ReliabilityScore();
   });
 
-  it("should add a metric", () => {
+  it("should add metrics", () => {
     reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, "request01", "success");
     reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, "request02", "dishonest");
 
@@ -25,33 +25,18 @@ describe("test reliability score class", () => {
 
     expect(score).toBe(0.2);
   });
-});
+  it.todo("should calculate score for ready nodes");
+  it.todo(
+    "should remove metrics which are less than MAX_RESPONSES except dishonest ones"
+  );
+  it.todo("should set metrics");
+  it("should get all scores", () => {
+    reliabilityScore.addMetric("16Uiu2peerId1", "request01", "success");
+    reliabilityScore.addMetric("16Uiu2peerId2", "request02", "dishonest");
+    reliabilityScore.addMetric("16Uiu2peerId3", "request03", "none");
 
-// it("should determine if a node is a fresh node", () => {
-//     const sent = 10;
-//     expect(sent).toBeLessThan(20);
-//   });
-//   it("should determine if a node is a ready node", () => {
-//     const sent = 21;
-//     expect(sent).toBeGreaterThanOrEqual(20);
-//   });
-//   it("should assing a score of 0.2 to fresh nodes", () => {
-//     const sent = 10;
-//     // const score = getScore(ENTRY_NODE_PEER_ID);
-//     // expect(score).toBe(0.2);
-//   });
-//   it("should assing a score of 0 if a node is dishonest", () => {
-//     let score = 0.3;
-//     // where to get this from?
-//     const dishonest = 0.1;
-//     if (dishonest > 0) {
-//       score = 0;
-//     }
-//     expect(score).toBe(0);
-//   });
-//   it("should assing score to a ready node", () => {
-//     const sent = 21;
-//     const received = 0;
-//     const score = (sent - received) / sent;
-//     expect(score).toBe(1);
-//   });
+    const scores = reliabilityScore.getScores();
+
+    expect(scores).toHaveLength(3);
+  });
+});
