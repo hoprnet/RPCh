@@ -2,13 +2,13 @@ import {
   Cache as SegmentCache,
   Request,
   Response,
+  Segment,
   hoprd,
   utils,
 } from "rpch-common";
 import RequestCache from "./request-cache";
 
 const { log, logError } = utils.createLogger(["sdk"]);
-
 /**
  * Temporary options to be passed to
  * the SDK for development purposes.
@@ -110,7 +110,7 @@ export default class SDK {
    * @param res Response received from cache module
    */
   private onResponseFromSegments(res: Response): void {
-    const matchingRequest = this.requestCache.getRequest(res.id);
+    const matchingRequest = this.requestCache?.getRequest(res.id);
     if (!matchingRequest) {
       logError("matching request not found", res.id);
       return;
@@ -137,25 +137,26 @@ export default class SDK {
     this.interval = setInterval(() => {
       this.segmentCache.removeExpired(this.timeout);
       this.requestCache.removeExpired(this.timeout);
-    }, 1000);
+    }, 1e4);
 
     await this.selectEntryNode(this.discoveryPlatformApiEndpoint);
     await this.selectExitNode(this.discoveryPlatformApiEndpoint);
-    // await createMessageListener(
-    //   this.entryNode!.apiEndpoint,
-    //   this.entryNode!.apiToken,
-    //   (message) => {
-    //     try {
-    //       const segment = Segment.fromString(message);
-    //       this.cache.onSegment(segment);
-    //     } catch (e) {
-    //       log(
-    //         "rejected received data from HOPRd: not a valid segment",
-    //         message
-    //       );
-    //     }
-    //   }
-    // );
+    await hoprd.createMessageListener(
+      this.entryNode!.apiEndpoint,
+      this.entryNode!.apiToken,
+      (message) => {
+        try {
+          const segment = Segment.fromString(message);
+          this.segmentCache.onSegment(segment);
+        } catch (e) {
+          log(
+            "rejected received data from HOPRd: not a valid segment",
+            message,
+            e
+          );
+        }
+      }
+    );
   }
 
   /**

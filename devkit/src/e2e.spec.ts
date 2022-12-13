@@ -52,7 +52,7 @@ describe("e2e tests", function () {
     assert.equal(blockNumber, 25135304);
   });
 
-  it("should get balance", async function () {
+  it("should get ether price", async function () {
     const blockNumber = await provider.getEtherPrice();
     assert.equal(blockNumber, 25135304);
   });
