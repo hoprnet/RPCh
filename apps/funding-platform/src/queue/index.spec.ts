@@ -93,6 +93,7 @@ describe("test index.ts", function () {
       queryRequest?.reason,
       "Signer does not have enough balance to fund request"
     );
+    assert.equal(queryRequest?.status, "REJECTED-DURING-PROCESSING");
   });
   it("should fail if request does not have chain id", async function () {
     const [owner] = accounts;
@@ -113,5 +114,6 @@ describe("test index.ts", function () {
       createRequest.requestId
     );
     assert.equal(queryRequest?.reason, "Request is missing chainId");
+    assert.equal(queryRequest?.status, "REJECTED-DURING-PROCESSING");
   });
 });

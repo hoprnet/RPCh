@@ -9,7 +9,7 @@ const MOCK_ACCESS_TOKEN_PARAMS = {
   secretKey: MOCK_SECRET_KEY,
 };
 describe("test AccessToken class", function () {
-  it("should generate a different hash everytime", function () {
+  it("should generate a different hash every time", function () {
     const firstHash = generateAccessToken(MOCK_ACCESS_TOKEN_PARAMS);
     const secondHash = generateAccessToken(MOCK_ACCESS_TOKEN_PARAMS);
     assert(firstHash !== secondHash);

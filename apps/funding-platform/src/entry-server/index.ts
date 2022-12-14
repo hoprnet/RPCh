@@ -1,6 +1,7 @@
 import express, { NextFunction, Request, Response } from "express";
 import { AccessTokenService } from "../access-token";
-import { chainIds, getBalanceForAllChains, getProviders } from "../blockchain";
+import { getBalanceForAllChains, getProviders } from "../blockchain";
+import { validConnectionInfo } from "../utils";
 import { CreateRequest, RequestService } from "../request";
 import { isExpired } from "../utils";
 
@@ -151,7 +152,10 @@ export const entryServer = (ops: {
       ops.maxAmountOfTokens
     ),
     async (req, res) => {
-      const providers = await getProviders(Array.from(chainIds.keys()));
+      const providers = await getProviders(
+        validConnectionInfo,
+        Array.from(validConnectionInfo.keys())
+      );
       const balances = await getBalanceForAllChains(
         ops.walletAddress,
         providers

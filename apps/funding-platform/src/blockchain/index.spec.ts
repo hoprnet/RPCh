@@ -8,6 +8,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import assert from "assert";
 import { Signer, Wallet } from "ethers";
 import { ethers } from "hardhat";
+import { validConnectionInfo } from "../utils";
 import {
   getBalance,
   getBalanceForAllChains,
@@ -59,7 +60,7 @@ describe("test Blockchain class", function () {
   });
   it("should fail if chain is not supported", async function () {
     try {
-      await getProvider(-1);
+      await getProvider(validConnectionInfo, -1);
     } catch (e: any) {
       expect(e.message).toBe("Chain not supported");
     }

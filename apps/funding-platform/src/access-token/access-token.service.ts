@@ -25,6 +25,8 @@ export class AccessTokenService {
     try {
       log("Creating access token...");
       const now = new Date(Date.now());
+      // expiredAt is calculated by adding the minutes set
+      // with ops.timeout to the current time
       const expiredAt = new Date(
         new Date(now).setMinutes(now.getMinutes() + ops.timeout)
       );

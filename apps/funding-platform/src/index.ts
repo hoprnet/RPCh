@@ -1,58 +1,68 @@
+import { utils } from "rpch-common";
 import { AccessTokenService } from "./access-token";
 import { getWallet } from "./blockchain";
 import { DBInstance } from "./db";
 import * as api from "./entry-server";
 import { checkFreshRequests } from "./queue";
 import { RequestService } from "./request";
-import { utils } from "rpch-common";
 
-const { log } = utils.createLogger(["funding-platform", "index"]);
-const { SECRET_KEY, WALLET_PRIV_KEY } = process.env;
-const port = 3000;
-const MAX_AMOUNT_OF_TOKENS = 100;
-const TIMEOUT = 30;
+const { log } = utils.createLogger(["funding-platform"]);
+
+const {
+  // Secret key used for access token generation
+  SECRET_KEY,
+  // Wallet private key that will be completing the requests
+  WALLET_PRIV_KEY,
+  // Port that server will listen for requests
+  PORT = 3000,
+  // Number of confirmations that will be required for a transaction to be accepted
+  CONFIRMATIONS = 1,
+  // Max amount of tokens a access token can request
+  MAX_AMOUNT_OF_TOKENS = 100,
+  // Amount of minutes that a access token is valid
+  TIMEOUT = 30,
+} = process.env;
+
+// boolean flag that stops queue from running
+// while it is still waiting for a transaction
 let running = false;
-
 const handleRunning = (state: boolean) => {
   running = state;
 };
 
-export const start = async (ops: {
-  _entryServer: {
+const start = async (ops: {
+  entryServer: {
     entryServer: typeof api.entryServer;
   };
-  _AccessTokenService: typeof AccessTokenService;
-  _RequestService: typeof RequestService;
-  _db: DBInstance;
-  _secretKey: string;
-  _privateKey: string;
+  db: DBInstance;
+  secretKey: string;
+  privateKey: string;
+  confirmations: number;
 }) => {
   // init services
-  const accessTokenService = new ops._AccessTokenService(
-    ops._db,
-    ops._secretKey
-  );
-  const requestService = new ops._RequestService(ops._db);
-  const wallet = getWallet(ops._privateKey);
+  const accessTokenService = new AccessTokenService(ops.db, ops.secretKey);
+  const requestService = new RequestService(ops.db);
+  const wallet = getWallet(ops.privateKey);
   // init API server
   const app = api.entryServer({
     accessTokenService,
     requestService,
     walletAddress: wallet.address,
-    maxAmountOfTokens: MAX_AMOUNT_OF_TOKENS,
-    timeout: TIMEOUT,
+    maxAmountOfTokens: Number(MAX_AMOUNT_OF_TOKENS),
+    timeout: Number(TIMEOUT),
   });
+  // start queue that fulfills requests
   setInterval(() => {
     if (!running) {
       checkFreshRequests({
         requestService: requestService,
         signer: wallet,
-        confirmations: 1,
+        confirmations: ops.confirmations,
         changeState: handleRunning,
       });
     }
   }, 60e3);
-  app.listen(port, () => {
+  app.listen(PORT, () => {
     log("entry server is up");
   });
 };
@@ -73,12 +83,11 @@ const main = () => {
   } as unknown as DBInstance;
 
   start({
-    _entryServer: api,
-    _AccessTokenService: AccessTokenService,
-    _RequestService: RequestService,
-    _db: dbInstance,
-    _privateKey: WALLET_PRIV_KEY,
-    _secretKey: SECRET_KEY,
+    entryServer: api,
+    db: dbInstance,
+    privateKey: WALLET_PRIV_KEY,
+    secretKey: SECRET_KEY,
+    confirmations: Number(CONFIRMATIONS),
   });
 };
 

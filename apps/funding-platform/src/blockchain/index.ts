@@ -1,18 +1,5 @@
-import { ethers, providers, Signer, Wallet } from "ethers";
-import { hardhatChainId } from "../utils";
-
-const productionChainIds: [number, ethers.utils.ConnectionInfo][] = [
-  [100, { url: "https://rpc.gnosischain.com/" }],
-];
-const developmentChainIds: [number, ethers.utils.ConnectionInfo][] = [
-  [hardhatChainId, { url: "http://localhost:8545" }],
-];
-export const chainIds = new Map<number, ethers.utils.ConnectionInfo>(
-  // eslint-disable-next-line turbo/no-undeclared-env-vars
-  process.env.NODE_ENV === "production"
-    ? productionChainIds
-    : developmentChainIds
-);
+import { ethers, Signer, Wallet } from "ethers";
+import { ValidConnectionInfo } from "../utils";
 
 export const sendTransaction = async (params: {
   from: Signer;
@@ -31,16 +18,24 @@ export const sendTransaction = async (params: {
   return transaction.hash;
 };
 
-export const getProvider = async (chainId: number) => {
-  if (!chainIds.has(chainId)) throw new Error("Chain not supported");
-  const provider = new ethers.providers.JsonRpcProvider(chainIds.get(chainId));
+export const getProvider = async (
+  validChainIds: ValidConnectionInfo,
+  chainId: number
+) => {
+  if (!validChainIds.has(chainId)) throw new Error("Chain not supported");
+  const provider = new ethers.providers.JsonRpcProvider(
+    validChainIds.get(chainId)
+  );
   return provider;
 };
 
-export const getProviders = async (chainIds: number[]) => {
+export const getProviders = async (
+  validChainIds: ValidConnectionInfo,
+  chainIds: number[]
+) => {
   const providers = [];
   for (const chainId of chainIds) {
-    const provider = await getProvider(chainId);
+    const provider = await getProvider(validChainIds, chainId);
     providers.push(provider);
   }
   return providers;

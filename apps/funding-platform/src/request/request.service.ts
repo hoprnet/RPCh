@@ -85,6 +85,10 @@ export class RequestService {
     return oldestFreshRequest;
   }
 
+  /**
+   * Queries all requests that have not been processed.
+   * These are requests that have neither succeeded nor failed.
+   */
   public async getAllCompromisedRequests() {
     const requests = await this.getRequests();
     const compromisedRequests = requests?.filter(
