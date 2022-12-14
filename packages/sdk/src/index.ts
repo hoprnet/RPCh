@@ -54,8 +54,8 @@ export default class SDK {
     this.discoveryPlatformApiEndpoint = tempOps.discoveryPlatformApiEndpoint;
 
     this.segmentCache = new SegmentCache(
-      this.onRequestFromSegments,
-      this.onResponseFromSegments
+      (req: Request) => this.onRequestFromSegments(req),
+      (res: Response) => this.onResponseFromSegments(res)
     );
     this.requestCache = new RequestCache();
   }
@@ -110,7 +110,7 @@ export default class SDK {
    * @param res Response received from cache module
    */
   private onResponseFromSegments(res: Response): void {
-    const matchingRequest = this.requestCache?.getRequest(res.id);
+    const matchingRequest = this.requestCache.getRequest(res.id);
     if (!matchingRequest) {
       logError("matching request not found", res.id);
       return;
