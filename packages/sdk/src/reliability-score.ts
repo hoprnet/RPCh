@@ -12,6 +12,8 @@ export type ResponseMetric = {
   result: Result;
 };
 
+// ! Need to export these?
+export const FRESH_NODE_THRESHOLD = 20;
 export const MAX_RESPONSES = 100;
 
 /**
@@ -32,7 +34,7 @@ export default class ReliabilityScore {
   /**
    * The score range goes from 0 to 1.
    */
-  public score = new Map<string, number>();
+  private score = new Map<string, number>();
 
   /**
    * Add new metric to the metrics Map.
@@ -40,22 +42,50 @@ export default class ReliabilityScore {
    * @param requestId
    * @param result
    */
-  public addMetric(peerId: string, requestId: string, result: Result) {
-    // it's like a spread (...) for Maps. How to do this better?
-    const responses = this.metrics.has(peerId)
-      ? new Map(this.metrics.get(peerId)?.responses)
-      : new Map<string, ResponseMetric>();
 
-    this.metrics.set(peerId, {
-      responses: responses.set(requestId, {
-        id: "id1",
-        createdAt: new Date(),
-        result,
-      }),
-      sent: 0,
-      updatedAt: new Date(),
+  public addMetric(peerId: string, requestId: string, result: Result) {
+    let nodeMetrics = this.metrics.get(peerId);
+
+    if (!nodeMetrics) {
+      nodeMetrics = {
+        responses: new Map<string, ResponseMetric>(),
+        sent: 0,
+        updatedAt: new Date(),
+      };
+      this.metrics.set(peerId, nodeMetrics);
+    }
+
+    nodeMetrics.sent += 1;
+
+    nodeMetrics.responses.set(requestId, {
+      id: "some-id",
+      createdAt: new Date(),
+      result,
     });
   }
+
+  // Is there a better way to do this? @steve.
+  private getResultsStats(peerId: string) {
+    // TODO: Fix possible undefined
+    const responses = Array.from(this.metrics.get(peerId)!.responses);
+
+    const results = responses.reduce((acc, [_, response]) => {
+      acc.push(response.result);
+      return acc;
+    }, [] as string[]);
+
+    const success = results.filter((result) => result === "success");
+    const dishonest = results.filter((result) => result === "dishonest");
+    // ! is it 'none' or 'failed' hehe
+    const none = results.filter((result) => result === "none");
+
+    return {
+      success: success.length,
+      dishonest: dishonest.length,
+      none: none.length,
+    };
+  }
+
   /**
    * Get peerId score.
    * @param peerId
@@ -63,20 +93,16 @@ export default class ReliabilityScore {
    */
   public getScore(peerId: string) {
     if (this.metrics.has(peerId)) {
+      // TODO: Fix possible undefined
       const sent = this.metrics.get(peerId)!.sent;
-      if (sent < 20) {
+      const stats = this.getResultsStats(peerId);
+      if (sent < FRESH_NODE_THRESHOLD) {
         this.score.set(peerId, 0.2);
-      } else if (sent >= 20) {
-        // TODO: Add dishonest.
-        const dishonest = 0.1;
-        if (dishonest > 0) {
-          this.score.set(peerId, 0);
-        } else {
-          // TODO: Add failed.
-          const failed = 0;
-          const score = (sent - failed) / sent;
-          this.score.set(peerId, score);
-        }
+      } else if (stats.dishonest > 0) {
+        this.score.set(peerId, 0);
+      } else {
+        const score = (sent - stats.none) / sent;
+        this.score.set(peerId, score);
       }
       return this.score.get(peerId);
     } else return 0;
@@ -87,15 +113,10 @@ export default class ReliabilityScore {
    * @returns array of objects with peerId and score
    */
   public getScores() {
-    const entries = this.metrics.entries();
-    const scores = [];
-    for (const entry of entries) {
-      const peerId = entry.at(0) as string;
-      if (this.metrics.has(peerId)) {
-        const score = this.getScore(peerId);
-        scores.push({ peerId, score });
-      }
-    }
-    return scores;
+    const entries = Array.from(this.metrics);
+    return entries.map(([peerId]) => {
+      const score = this.getScore(peerId);
+      return { peerId, score };
+    });
   }
 }
