@@ -2,9 +2,9 @@
  * Possible `result` values.
  * @type success: we have received an honest and valid response.
  * @type dishonest: we have received a response but Kevlar says its not honest.
- * @type none: we have received no response for that request.
+ * @type failed: we have received no response for that request.
  */
-export type Result = "success" | "dishonest" | "none";
+export type Result = "success" | "dishonest" | "failed";
 
 export type ResponseMetric = {
   id: string;
@@ -69,21 +69,19 @@ export default class ReliabilityScore {
     // TODO: Fix possible undefined
     const responses = Array.from(this.metrics.get(peerId)!.responses);
 
-    const results = responses.reduce((acc, [_, response]) => {
-      acc.push(response.result);
-      return acc;
-    }, [] as string[]);
-
-    const success = results.filter((result) => result === "success");
-    const dishonest = results.filter((result) => result === "dishonest");
-    // ! is it 'none' or 'failed' hehe
-    const none = results.filter((result) => result === "none");
-
-    return {
-      success: success.length,
-      dishonest: dishonest.length,
-      none: none.length,
-    };
+    return responses.reduce(
+      (acc, [_, response]) => {
+        if (response.result === "success") {
+          acc.sucess++;
+        } else if (response.result === "dishonest") {
+          acc.dishonest++;
+        } else if (response.result === "failed") {
+          acc.failed++;
+        }
+        return acc;
+      },
+      { sucess: 0, dishonest: 0, failed: 0 }
+    );
   }
 
   /**
@@ -93,24 +91,23 @@ export default class ReliabilityScore {
    */
   public getScore(peerId: string) {
     if (this.metrics.has(peerId)) {
-      // TODO: Fix possible undefined
-      const sent = this.metrics.get(peerId)!.sent;
+      const sent = this.metrics.get(peerId)?.sent || 0;
       const stats = this.getResultsStats(peerId);
       if (sent < FRESH_NODE_THRESHOLD) {
         this.score.set(peerId, 0.2);
       } else if (stats.dishonest > 0) {
         this.score.set(peerId, 0);
       } else {
-        const score = (sent - stats.none) / sent;
+        const score = (sent - stats.failed) / sent;
         this.score.set(peerId, score);
       }
-      return this.score.get(peerId);
+      return this.score.get(peerId) || 0;
     } else return 0;
   }
 
   /**
    * Get all scores
-   * @returns array of objects with peerId and score
+   * @returns array of peerId and score objects.
    */
   public getScores() {
     const entries = Array.from(this.metrics);
