@@ -21,7 +21,10 @@ export const MAX_RESPONSES = 100;
  * we are using is reliable or not.
  */
 export default class ReliabilityScore {
-  // metrics should be public or private?
+  /**
+   * Keeps track of metrics.
+   */
+  // ! metrics should be public or private?
   public metrics = new Map<
     string,
     {
@@ -32,7 +35,8 @@ export default class ReliabilityScore {
   >();
 
   /**
-   * The score range goes from 0 to 1.
+   * Keeps track of calculated score.
+   * The `score` range goes from 0 to 1.
    */
   private score = new Map<string, number>();
 
@@ -42,7 +46,6 @@ export default class ReliabilityScore {
    * @param requestId
    * @param result
    */
-
   public addMetric(peerId: string, requestId: string, result: Result) {
     let nodeMetrics = this.metrics.get(peerId);
 
@@ -62,11 +65,16 @@ export default class ReliabilityScore {
       createdAt: new Date(),
       result,
     });
+
+    let stats = this.getResultsStats(peerId);
   }
 
-  // Is there a better way to do this? @steve.
+  /**
+   * Get a node's responses.result stats.
+   * @param peerId
+   * @returns object with number of successful, dishonest and failed responses.
+   */
   private getResultsStats(peerId: string) {
-    // TODO: Fix possible undefined
     const responses = Array.from(this.metrics.get(peerId)!.responses);
 
     return responses.reduce(
@@ -85,9 +93,9 @@ export default class ReliabilityScore {
   }
 
   /**
-   * Get peerId score.
+   * Get node score.
    * @param peerId
-   * @returns peerId score
+   * @returns peerId score.
    */
   public getScore(peerId: string) {
     if (this.metrics.has(peerId)) {
@@ -106,7 +114,7 @@ export default class ReliabilityScore {
   }
 
   /**
-   * Get all scores
+   * Get all node scores.
    * @returns array of peerId and score objects.
    */
   public getScores() {

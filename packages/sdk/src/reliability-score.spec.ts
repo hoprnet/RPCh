@@ -1,5 +1,6 @@
 import { fixtures } from "rpch-common";
-import ReliabilityScore from "./reliability-score";
+import ReliabilityScore, { Result } from "./reliability-score";
+import { utils } from "rpch-common";
 
 // TODO: Delete the 'testme' script from package.json
 
@@ -12,9 +13,23 @@ describe("test reliability score class", () => {
     reliabilityScore = new ReliabilityScore();
   });
 
-  const add20Metrics = (peerId: string) => {
-    for (let count = 1; count <= 20; count++) {
-      reliabilityScore.addMetric(peerId, `request${count}`, "success");
+  /**
+   * Add n amount of metrics to a given node with a specified result.
+   * @param amount
+   * @param peerId
+   * @param result
+   */
+  const addNumberOfMetrics = (
+    amount: number,
+    peerId: string,
+    result: Result
+  ) => {
+    for (let count = 1; count <= amount; count++) {
+      reliabilityScore.addMetric(
+        peerId,
+        `req${utils.generateRandomNumber()}`,
+        result
+      );
     }
   };
 
@@ -39,7 +54,7 @@ describe("test reliability score class", () => {
     expect(score).toBe(0.2);
   });
   it("should calculate score for ready nodes", () => {
-    add20Metrics(ENTRY_NODE_PEER_ID);
+    addNumberOfMetrics(20, ENTRY_NODE_PEER_ID, "success");
     reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, "request21", "failed");
     reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, "request22", "failed");
 
@@ -66,8 +81,21 @@ describe("test reliability score class", () => {
       expect(item.score).toBe(0.2);
     }
   });
-  it.todo(
-    "should remove metrics which are less than MAX_RESPONSES except dishonest ones"
-  );
+  it("should remove metrics which are less than MAX_RESPONSES except dishonest ones", () => {
+    addNumberOfMetrics(20, ENTRY_NODE_PEER_ID, "success");
+    addNumberOfMetrics(10, ENTRY_NODE_PEER_ID, "failed");
+    addNumberOfMetrics(1, ENTRY_NODE_PEER_ID, "dishonest"); // +1
+    addNumberOfMetrics(69, ENTRY_NODE_PEER_ID, "success");
+
+    const entryNode = reliabilityScore.metrics.get(ENTRY_NODE_PEER_ID);
+
+    expect(entryNode?.responses.size).toBe(100);
+
+    addNumberOfMetrics(4, ENTRY_NODE_PEER_ID, "success");
+
+    // expect(entryNode?.responses.size).toBe(41);
+
+    console.log("@score:", reliabilityScore.getScore(ENTRY_NODE_PEER_ID));
+  });
   it.todo("should set metrics");
 });
