@@ -1,6 +1,5 @@
-import { fixtures } from "rpch-common";
 import ReliabilityScore, { Result } from "./reliability-score";
-import { utils } from "rpch-common";
+import { fixtures, utils } from "rpch-common";
 
 // TODO: Delete the 'testme' script from package.json
 
@@ -14,7 +13,9 @@ describe("test reliability score class", () => {
   });
 
   /**
-   * Add n amount of metrics to a given node with a specified result.
+   * By using `ReliabilityScore.addMetric()`, adds n amount of metrics to a given node with a specified result.
+   *
+   * Implements jest fake timers to delay each metric addition by 500ms.
    * @param amount
    * @param peerId
    * @param result
@@ -24,13 +25,16 @@ describe("test reliability score class", () => {
     peerId: string,
     result: Result
   ) => {
+    jest.useFakeTimers();
     for (let count = 1; count <= amount; count++) {
+      jest.advanceTimersByTime(500);
       reliabilityScore.addMetric(
         peerId,
-        `req${utils.generateRandomNumber()}`,
+        `request${utils.generateRandomNumber()}`,
         result
       );
     }
+    jest.useRealTimers();
   };
 
   it("should add metrics", () => {
@@ -42,7 +46,7 @@ describe("test reliability score class", () => {
     expect(entryNode?.sent).toBe(3);
     expect(entryNode?.responses.size).toBe(3);
   });
-  it("should have a score of 0 for unexistent nodes", () => {
+  it("should have a score of 0 for unexistent peerIds", () => {
     const score = reliabilityScore.getScore("unexistentPeerId");
 
     expect(score).toBe(0);
@@ -55,8 +59,7 @@ describe("test reliability score class", () => {
   });
   it("should calculate score for ready nodes", () => {
     addNumberOfMetrics(20, ENTRY_NODE_PEER_ID, "success");
-    reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, "request21", "failed");
-    reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, "request22", "failed");
+    addNumberOfMetrics(2, ENTRY_NODE_PEER_ID, "failed");
 
     // score = (22 - 2)/22 => 0.9090909090909091
     expect(reliabilityScore.getScore(ENTRY_NODE_PEER_ID)).toBe(
@@ -83,19 +86,21 @@ describe("test reliability score class", () => {
   });
   it("should remove metrics which are less than MAX_RESPONSES except dishonest ones", () => {
     addNumberOfMetrics(20, ENTRY_NODE_PEER_ID, "success");
-    addNumberOfMetrics(10, ENTRY_NODE_PEER_ID, "failed");
-    addNumberOfMetrics(1, ENTRY_NODE_PEER_ID, "dishonest"); // +1
-    addNumberOfMetrics(69, ENTRY_NODE_PEER_ID, "success");
+    addNumberOfMetrics(5, ENTRY_NODE_PEER_ID, "failed");
+    addNumberOfMetrics(5, ENTRY_NODE_PEER_ID, "failed");
+    addNumberOfMetrics(70, ENTRY_NODE_PEER_ID, "success");
 
     const entryNode = reliabilityScore.metrics.get(ENTRY_NODE_PEER_ID);
+    const score = reliabilityScore.getScore(ENTRY_NODE_PEER_ID);
 
     expect(entryNode?.responses.size).toBe(100);
+    expect(entryNode?.sent).toBe(100);
+    expect(score).toBe(0.9);
 
-    addNumberOfMetrics(4, ENTRY_NODE_PEER_ID, "success");
+    console.log("@stats:", entryNode?.stats);
 
-    // expect(entryNode?.responses.size).toBe(41);
-
-    console.log("@score:", reliabilityScore.getScore(ENTRY_NODE_PEER_ID));
+    addNumberOfMetrics(1, ENTRY_NODE_PEER_ID, "dishonest");
+    // TODO: Recalculate score.
   });
   it.todo("should set metrics");
 });
