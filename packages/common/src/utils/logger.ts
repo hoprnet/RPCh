@@ -36,18 +36,15 @@ const withMetric = (logger: Debug.Debugger) => {
     if (!ARE_METRICS_ENABLED) return logger(formatter, ...args);
 
     let metricInstance: Metric | undefined;
-    if (
-      ARE_METRICS_ENABLED &&
-      args.length > 0 &&
-      args[args.length - 1] instanceof Metric
-    ) {
+    // check if last argument is a Metric instance and remove it from args
+    if (args.length > 0 && args[args.length - 1] instanceof Metric) {
       metricInstance = args.pop();
     }
 
     return logger(
       formatter,
       ...args,
-      metricInstance ? metricInstance.data : undefined
+      ARE_METRICS_ENABLED && metricInstance ? metricInstance.data : undefined
     );
   };
 };
