@@ -1,5 +1,3 @@
-import { utils } from "rpch-common";
-
 /**
  * Possible `result` values.
  * @type success: we have received an honest and valid response.
@@ -9,7 +7,6 @@ import { utils } from "rpch-common";
 export type Result = "success" | "dishonest" | "failed";
 
 export type ResponseMetric = {
-  id: string;
   createdAt: Date;
   result: Result;
 };
@@ -55,22 +52,24 @@ export default class ReliabilityScore {
    * @returns object with number of successful, dishonest and failed responses.
    */
   private getResultsStats(peerId: string): Stats {
-    if (this.metrics.has(peerId)) {
-      const responses = Array.from(this.metrics.get(peerId)!.responses);
-      return responses.reduce(
-        (acc, [_, response]) => {
-          if (response.result === "success") {
-            acc.success++;
-          } else if (response.result === "dishonest") {
-            acc.dishonest++;
-          } else if (response.result === "failed") {
-            acc.failed++;
-          }
-          return acc;
-        },
-        { success: 0, dishonest: 0, failed: 0 }
-      );
-    } else return { success: 0, dishonest: 0, failed: 0 };
+    if (!this.metrics.has(peerId)) {
+      return { success: 0, dishonest: 0, failed: 0 };
+    }
+
+    const responses = Array.from(this.metrics.get(peerId)!.responses);
+    return responses.reduce(
+      (acc, [_, response]) => {
+        if (response.result === "success") {
+          acc.success++;
+        } else if (response.result === "dishonest") {
+          acc.dishonest++;
+        } else if (response.result === "failed") {
+          acc.failed++;
+        }
+        return acc;
+      },
+      { success: 0, dishonest: 0, failed: 0 }
+    );
   }
 
   /**
@@ -93,7 +92,6 @@ export default class ReliabilityScore {
     }
 
     nodeMetrics.responses.set(requestId, {
-      id: `id${utils.generateRandomNumber()}`,
       createdAt: new Date(),
       result,
     });
@@ -148,7 +146,7 @@ export default class ReliabilityScore {
 
   /**
    * Get all node scores.
-   * @returns array of peerId and score objects.
+   * @returns array of objects with peerId and score.
    */
   public getScores() {
     const entries = Array.from(this.metrics);
