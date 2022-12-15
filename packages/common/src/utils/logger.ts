@@ -1,7 +1,10 @@
 import Debug from "debug";
 
+const PROJECT_NAMESPACE = "rpch";
 const LOG_SEPERATOR = ":";
-const ARE_METRICS_ENABLED = Debug("metric").enabled;
+const ARE_METRICS_ENABLED = Debug(
+  [PROJECT_NAMESPACE, "metrics"].join(LOG_SEPERATOR)
+).enabled;
 
 /**
  * A type to help us input
@@ -23,6 +26,9 @@ class Metric {
   public static create(data: Partial<MetricData>): Metric {
     return new Metric(data);
   }
+  public toString(): string {
+    return JSON.stringify(this.data);
+  }
 }
 
 /**
@@ -33,19 +39,33 @@ class Metric {
  */
 const withMetric = (logger: Debug.Debugger) => {
   return (formatter: any, ...args: any[]) => {
-    if (!ARE_METRICS_ENABLED) return logger(formatter, ...args);
+    let logArgs: any[] = [];
+    let metrics: Metric[] = [];
 
-    let metricInstance: Metric | undefined;
-    // check if last argument is a Metric instance and remove it from args
-    if (args.length > 0 && args[args.length - 1] instanceof Metric) {
-      metricInstance = args.pop();
+    // filter out metric instances from args
+    for (const arg of args) {
+      if (arg instanceof Metric) {
+        metrics.push(arg);
+      } else {
+        logArgs.push(arg);
+      }
     }
 
-    return logger(
-      formatter,
-      ...args,
-      ARE_METRICS_ENABLED && metricInstance ? metricInstance.data : undefined
-    );
+    // create a single metric instance
+    const metricStr = Metric.create(
+      metrics.reduce((result, obj) => {
+        return {
+          ...result,
+          ...obj,
+        };
+      }, {} as any)
+    ).toString();
+
+    if (ARE_METRICS_ENABLED && metricStr.length > 0) {
+      logArgs.push(metricStr);
+    }
+
+    return logger(formatter, ...logArgs);
   };
 };
 
