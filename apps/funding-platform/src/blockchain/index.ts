@@ -1,27 +1,27 @@
-import { ethers, Signer, Wallet } from "ethers";
-import { ValidConnectionInfo } from "../utils";
+import { ethers, Signer, Wallet, Contract } from "ethers";
+import { validChainIds } from "../utils";
+import * as erc20 from "./erc20-fixture.json";
 
 export const sendTransaction = async (params: {
+  smartContractAddress: string;
   from: Signer;
   to: string;
   amount: string;
-  options?: ethers.providers.TransactionRequest;
-}) => {
-  const txParams = {
-    ...params.options,
-    to: params.to,
-    value: params.amount,
-  };
+}): Promise<ethers.providers.TransactionResponse> => {
+  const contract = new Contract(
+    params.smartContractAddress,
+    erc20.abi,
+    params.from
+  );
 
-  const transaction = await params.from.sendTransaction(txParams);
+  const txParams = [params.to, params.amount];
 
-  return transaction.hash;
+  const transactionResponse = await contract.transfer(...txParams);
+
+  return transactionResponse;
 };
 
-export const getProvider = async (
-  validChainIds: ValidConnectionInfo,
-  chainId: number
-) => {
+export const getProvider = async (chainId: number) => {
   if (!validChainIds.has(chainId)) throw new Error("Chain not supported");
   const provider = new ethers.providers.JsonRpcProvider(
     validChainIds.get(chainId)
@@ -29,13 +29,10 @@ export const getProvider = async (
   return provider;
 };
 
-export const getProviders = async (
-  validChainIds: ValidConnectionInfo,
-  chainIds: number[]
-) => {
+export const getProviders = async (chainIds: number[]) => {
   const providers = [];
   for (const chainId of chainIds) {
-    const provider = await getProvider(validChainIds, chainId);
+    const provider = await getProvider(chainId);
     providers.push(provider);
   }
   return providers;
@@ -53,19 +50,31 @@ export const getWallet = (
 };
 
 export const getBalance = (
-  address: string,
+  smartContractAddress: string,
+  walletAddress: string,
   provider: ethers.providers.JsonRpcProvider
 ) => {
-  return provider.getBalance(address);
+  const contract = new ethers.Contract(
+    smartContractAddress,
+    erc20.abi,
+    provider
+  );
+  const balance = contract.balanceOf(walletAddress);
+  return balance;
 };
 
 export const getBalanceForAllChains = async (
-  address: string,
+  smartContractAddresses: { [chainId: number]: string },
+  walletAddress: string,
   providers: ethers.providers.JsonRpcProvider[]
 ) => {
   const balances: { [chainId: number]: number } = {};
   for (const provider of providers) {
-    const balance = await getBalance(address, provider);
+    const balance = await getBalance(
+      smartContractAddresses[provider.network.chainId],
+      walletAddress,
+      provider
+    );
     balances[provider.network.chainId] = Number(balance.toString());
   }
   return balances;

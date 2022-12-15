@@ -5,8 +5,8 @@ import {
   sendTransaction,
   waitForTransaction,
 } from "../blockchain";
-import { RequestService } from "../request";
-import { CustomError, validConnectionInfo } from "../utils";
+import { QueryRequest, RequestService } from "../request";
+import { CustomError, smartContractAddresses } from "../utils";
 
 const { log, logError } = utils.createLogger(["funding-platform", "queue"]);
 
@@ -25,33 +25,43 @@ export const checkFreshRequests = async (ops: {
   changeState: (state: boolean) => void;
 }) => {
   ops.changeState(true);
-  const freshRequest = await ops.requestService.getOldestFreshRequest();
-  log("handling request: ", freshRequest?.requestId);
+  let freshRequest: QueryRequest | undefined;
   try {
-    // check if request and signer is valid
+    freshRequest = await ops.requestService.getOldestFreshRequest();
+    log("handling request: ", freshRequest?.requestId);
+    // check if request and signer are valid
     if (!ops.signer) throw new CustomError("Missing signer  transaction");
     if (!freshRequest) throw new CustomError("No pending fresh request");
     if (!freshRequest?.chainId)
       throw new CustomError("Request is missing chainId");
+    // check if signer has enough to fund request
     const provider = ops.signer.provider
       ? ops.signer.provider
-      : await getProvider(validConnectionInfo, freshRequest.chainId);
+      : await getProvider(freshRequest.chainId);
     let connectedSigner = ops.signer.provider
       ? ops.signer
       : ops.signer.connect(provider);
     const balance = await connectedSigner.getBalance();
-    // check if signer has enough to fund request
     if (balance < BigNumber.from(freshRequest.amount))
       throw new CustomError(
         "Signer does not have enough balance to fund request"
       );
+    // set request status to pending while it is on the wire
+    await ops.requestService.updateRequest(freshRequest.requestId, {
+      ...freshRequest,
+      status: "PENDING",
+    });
     // sent transaction to fund request
-    const txHash = await sendTransaction({
+    const { hash: txHash } = await sendTransaction({
+      smartContractAddress:
+        smartContractAddresses?.[
+          freshRequest.chainId as keyof typeof smartContractAddresses
+        ],
       from: connectedSigner,
       to: freshRequest?.nodeAddress,
       amount: ethers.utils.parseEther(freshRequest.amount).toString(),
     });
-    // set request status to pending while it is confirmed or rejected
+    // set request status to pending while it is confirmed or failed
     await ops.requestService.updateRequest(freshRequest.requestId, {
       ...freshRequest,
       transactionHash: txHash,
@@ -63,25 +73,24 @@ export const checkFreshRequests = async (ops: {
       provider,
       ops.confirmations
     );
-    // update request to success or failed and add the transaction hash to the request
+    // update request to success or failed
     await ops.requestService.updateRequest(freshRequest.requestId, {
       ...freshRequest,
-      transactionHash: txHash,
       status: txReceipt.status === 1 ? "SUCCESS" : "FAILED",
     });
   } catch (e: any) {
     logError(e);
     if (freshRequest) {
-      // check if request was not accepted or if it failed unexpectedly
+      // check if request was rejected
       if (e instanceof CustomError) {
-        // update request to not accepted and why it was not accepted
+        // update request to rejected and why
         await ops.requestService.updateRequest(freshRequest?.requestId, {
           ...freshRequest,
           status: "REJECTED-DURING-PROCESSING",
           reason: e.message,
         });
       } else {
-        // update request to failed and save the reason it unexpected failed
+        // update request to failed during processing and save the reason it unexpectedly failed
         await ops.requestService.updateRequest(freshRequest?.requestId, {
           ...freshRequest,
           status: "FAILED-DURING-PROCESSING",

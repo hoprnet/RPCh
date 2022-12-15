@@ -2,4 +2,8 @@
   "extends": "rpch-configs-typescript/nodejs.json",
   "include": ["src", "./hardhat.config.ts"],
   "exclude": ["node_modules"],
+  // added for json file imports
+  "compilerOptions": {
+    "resolveJsonModule": true,
+  }
 }

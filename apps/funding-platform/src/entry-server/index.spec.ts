@@ -3,7 +3,7 @@ import request from "supertest";
 import { AccessTokenService } from "../access-token";
 import { RequestService } from "../request";
 import { DBInstance } from "../db";
-import { entryServer, tokenHasBalance } from ".";
+import { entryServer, doesAccessTokenHaveEnoughBalance } from ".";
 
 const SECRET_KEY = "SECRET";
 const MAX_AMOUNT_OF_TOKENS = 40;
@@ -110,7 +110,7 @@ describe("test entry server", function () {
       accessTokenHash: tokenHash,
       address: "0x0",
     });
-    const tokenHasBalanceRes = await tokenHasBalance({
+    const tokenHasBalanceRes = await doesAccessTokenHaveEnoughBalance({
       maxAmountOfTokens: MAX_AMOUNT_OF_TOKENS,
       requestService,
       token: tokenHash,

@@ -1,14 +1,10 @@
 import { JsonRpcProvider } from "@ethersproject/providers";
-import { expect } from "@jest/globals";
-import {
-  mine,
-  setNextBlockBaseFeePerGas,
-} from "@nomicfoundation/hardhat-network-helpers";
+import { expect } from "chai";
+import { mine } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import assert from "assert";
-import { Signer, Wallet } from "ethers";
+import { Contract, Signer, Wallet } from "ethers";
 import { ethers } from "hardhat";
-import { validConnectionInfo } from "../utils";
 import {
   getBalance,
   getBalanceForAllChains,
@@ -18,24 +14,43 @@ import {
   sendTransaction,
   waitForTransaction,
 } from "./";
+import * as erc20 from "./erc20-fixture.json";
+import { smartContractAddresses } from "../utils";
+
+const INITIAL_AMOUNT = ethers.utils.parseEther("1000").toString();
+const TOKEN_NAME = "CUSTOM TOKEN";
+const DECIMAL_UNITS = "18";
+const TOKEN_SYMBOL = "TKN";
 
 describe("test Blockchain class", function () {
   let accounts: SignerWithAddress[];
   let provider: JsonRpcProvider;
-
+  let contract: Contract;
   beforeEach(async function () {
     accounts = await ethers.getSigners();
     provider = ethers.provider;
+    const contractFactory = new ethers.ContractFactory(
+      erc20.abi,
+      erc20.byteCode
+    ).connect(accounts[0]);
+    contract = await contractFactory.deploy(
+      INITIAL_AMOUNT,
+      TOKEN_NAME,
+      DECIMAL_UNITS,
+      TOKEN_SYMBOL
+    );
+    await contract.deployed();
   });
 
   it("should get balance", async function () {
     const [owner] = accounts;
-    const balance = await getBalance(owner.address, provider);
-    assert.equal(ethers.utils.formatEther(balance), "10000.0");
+    const balance = await getBalance(contract.address, owner.address, provider);
+    assert.equal(balance.toString(), INITIAL_AMOUNT);
   });
-  it("should send transaction and receive hash", async () => {
+  it("should send transaction and receive transaction response", async () => {
     const [owner, receiver] = accounts;
     const transactionHash = await sendTransaction({
+      smartContractAddress: contract.address,
       from: owner,
       to: receiver.address,
       amount: ethers.utils.parseEther("10").toString(),
@@ -44,14 +59,15 @@ describe("test Blockchain class", function () {
   });
   it("should check the status of transaction", async function () {
     const [owner, receiver] = accounts;
-    const transactionHash = await sendTransaction({
+    const { hash: transactionHash } = await sendTransaction({
+      smartContractAddress: contract.address,
       from: owner,
       to: receiver.address,
       amount: "10",
     });
     const receipt = await getReceiptOfTransaction(provider, transactionHash);
     const possibleStatus = [0, 1];
-    expect(possibleStatus).toContain(receipt.status);
+    expect(possibleStatus).includes(receipt.status);
   });
   it("should return a signer instance when passing a private key", async function () {
     const privKey = Wallet.createRandom().privateKey;
@@ -60,15 +76,16 @@ describe("test Blockchain class", function () {
   });
   it("should fail if chain is not supported", async function () {
     try {
-      await getProvider(validConnectionInfo, -1);
+      await getProvider(-1);
     } catch (e: any) {
-      expect(e.message).toBe("Chain not supported");
+      expect(e.message).to.eq("Chain not supported");
     }
   });
   it("should wait for transaction to be confirmed", async function () {
     const [owner, receiver] = accounts;
     const confirmations = 10;
-    const transactionHash = await sendTransaction({
+    const { hash: transactionHash } = await sendTransaction({
+      smartContractAddress: contract.address,
       from: owner,
       to: receiver.address,
       amount: "10",
@@ -79,46 +96,31 @@ describe("test Blockchain class", function () {
     ]);
     assert.equal(receipt.confirmations, confirmations + 1);
   });
-  it("should fail because of gasLimit and be able to get the error message", async function () {
+  it("should fail because of because user does not have enough funds", async function () {
     const [owner, receiver] = accounts;
-    await setNextBlockBaseFeePerGas(10000);
-    try {
-      const transactionHash = await sendTransaction({
+    await sendTransaction({
+      smartContractAddress: contract.address,
+      from: owner,
+      to: receiver.address,
+      amount: INITIAL_AMOUNT,
+    });
+    await expect(
+      sendTransaction({
+        smartContractAddress: contract.address,
         from: owner,
         to: receiver.address,
-        amount: "10",
-        options: {
-          gasPrice: 1,
-          gasLimit: 1,
-        },
-      });
-    } catch (e: any) {
-      expect(e.message).toBe(
-        "Transaction gasPrice (1) is too low for the next block, which has a baseFeePerGas of 10000"
-      );
-    }
-  });
-  it("should fail because of nonce and be able to get the error message", async function () {
-    const [owner, receiver] = accounts;
-    try {
-      await sendTransaction({
-        from: owner,
-        to: receiver.address,
-        amount: "10",
-        options: {
-          nonce: 0,
-        },
-      });
-    } catch (e: any) {
-      expect(e.code).toBe("NONCE_EXPIRED");
-    }
+        amount: INITIAL_AMOUNT,
+      })
+    ).to.be.reverted;
   });
   it("should get balances keyed by chain", async function () {
     const [owner] = accounts;
-    const balance = await getBalance(owner.address, provider);
-    const keyedBalance = await getBalanceForAllChains(owner.address, [
-      provider,
-    ]);
+    const balance = await getBalance(contract.address, owner.address, provider);
+    const keyedBalance = await getBalanceForAllChains(
+      { [provider.network.chainId]: contract.address },
+      owner.address,
+      [provider]
+    );
 
     assert.equal(keyedBalance[provider.network.chainId], balance.toString());
   });

@@ -89,7 +89,7 @@ export class RequestService {
    * Queries all requests that have not been processed.
    * These are requests that have neither succeeded nor failed.
    */
-  public async getAllCompromisedRequests() {
+  public async getAllUnresolvedRequests() {
     const requests = await this.getRequests();
     const compromisedRequests = requests?.filter(
       (req) => req.status === "FRESH" || req.status === "PROCESSING"

@@ -12,16 +12,19 @@
     "start": "node build/index.js"
   },
   "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^1.0.5",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.7",
     "@nomiclabs/hardhat-ethers": "^2.2.1",
+    "@types/chai": "^4.3.4",
     "@types/express": "^4.17.14",
     "@types/supertest": "^2.0.12",
+    "chai": "^4.3.7",
+    "hardhat": "^2.12.3",
     "rpch-configs-eslint": "*",
     "rpch-configs-jest": "*",
     "rpch-configs-prettier": "*",
     "rpch-configs-tsup": "*",
     "rpch-configs-typescript": "*",
-    "hardhat": "^2.12.3",
     "supertest": "^6.3.1",
     "ts-node": "^10.9.1"
   },

@@ -1,7 +1,7 @@
 import express, { NextFunction, Request, Response } from "express";
 import { AccessTokenService } from "../access-token";
 import { getBalanceForAllChains, getProviders } from "../blockchain";
-import { validConnectionInfo } from "../utils";
+import { smartContractAddresses, validChainIds } from "../utils";
 import { CreateRequest, RequestService } from "../request";
 import { isExpired } from "../utils";
 
@@ -24,26 +24,26 @@ const tokenIsValid =
       return res.status(401).json("Access Token expired");
     }
 
-    const tokenHasBalanceRes = await tokenHasBalance({
+    const hasEnough = await doesAccessTokenHaveEnoughBalance({
       requestService,
       maxAmountOfTokens,
       token: dbToken.Token,
       requestAmount: requestFunds ? Number(req.body.amount) : 0,
     });
 
-    if (!tokenHasBalanceRes) {
+    if (!hasEnough) {
       return res.status(401).json("Exceeded max amount of tokens redeemed");
     }
 
     next();
   };
 
-export const tokenHasBalance = async (params: {
+export const doesAccessTokenHaveEnoughBalance = async (params: {
   requestService: RequestService;
   token: string;
   maxAmountOfTokens: number;
   requestAmount?: number;
-}) => {
+}): Promise<Boolean> => {
   const requestsByAccessToken =
     await params.requestService.getRequestsByAccessToken(params.token);
   const totalRequests = requestsByAccessToken?.filter(
@@ -152,16 +152,14 @@ export const entryServer = (ops: {
       ops.maxAmountOfTokens
     ),
     async (req, res) => {
-      const providers = await getProviders(
-        validConnectionInfo,
-        Array.from(validConnectionInfo.keys())
-      );
+      const providers = await getProviders(Array.from(validChainIds.keys()));
       const balances = await getBalanceForAllChains(
+        smartContractAddresses,
         ops.walletAddress,
         providers
       );
       const compromisedRequests =
-        await ops.requestService.getAllCompromisedRequests();
+        await ops.requestService.getAllUnresolvedRequests();
       const frozenBalances = await ops.requestService.sumAmountOfRequests(
         compromisedRequests ?? []
       );

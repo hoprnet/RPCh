@@ -96,8 +96,7 @@ describe("test RequestService class", function () {
       firstRequest.requestId,
       { ...firstRequest, status: "FAILED" }
     );
-    const compromisedRequests =
-      await requestService.getAllCompromisedRequests();
+    const compromisedRequests = await requestService.getAllUnresolvedRequests();
     assert.equal(compromisedRequests?.length, 2);
   });
   it("should return all compromised requests keyed by chain", async function () {
@@ -115,8 +114,7 @@ describe("test RequestService class", function () {
       firstRequest.requestId,
       { ...firstRequest, status: "FAILED" }
     );
-    const compromisedRequests =
-      await requestService.getAllCompromisedRequests();
+    const compromisedRequests = await requestService.getAllUnresolvedRequests();
     const compromisedRequestsKeyedByChain =
       requestService.groupRequestsByChainId(compromisedRequests ?? []);
     assert.equal(compromisedRequestsKeyedByChain[1].length, 1);
@@ -137,8 +135,7 @@ describe("test RequestService class", function () {
       firstRequest.requestId,
       { ...firstRequest, status: "FAILED" }
     );
-    const compromisedRequests =
-      await requestService.getAllCompromisedRequests();
+    const compromisedRequests = await requestService.getAllUnresolvedRequests();
     const sumOfAmountByChainId = await requestService.sumAmountOfRequests(
       compromisedRequests ?? []
     );
@@ -160,8 +157,7 @@ describe("test RequestService class", function () {
       firstRequest.requestId,
       { ...firstRequest, status: "FAILED" }
     );
-    const compromisedRequests =
-      await requestService.getAllCompromisedRequests();
+    const compromisedRequests = await requestService.getAllUnresolvedRequests();
     const sumOfCompromisedRequestsByChainId =
       await requestService.sumAmountOfRequests(compromisedRequests ?? []);
 
