@@ -84,23 +84,36 @@ describe("test reliability score class", () => {
       expect(item.score).toBe(0.2);
     }
   });
-  it("should remove metrics which are less than MAX_RESPONSES except dishonest ones", () => {
+  it("should remove responses which are greater than MAX_RESPONSES except dishonest ones", () => {
+    // Adding 100 responses
     addNumberOfMetrics(20, ENTRY_NODE_PEER_ID, "success");
-    addNumberOfMetrics(5, ENTRY_NODE_PEER_ID, "failed");
-    addNumberOfMetrics(5, ENTRY_NODE_PEER_ID, "failed");
+    addNumberOfMetrics(8, ENTRY_NODE_PEER_ID, "failed");
+    addNumberOfMetrics(2, ENTRY_NODE_PEER_ID, "dishonest");
     addNumberOfMetrics(70, ENTRY_NODE_PEER_ID, "success");
 
     const entryNode = reliabilityScore.metrics.get(ENTRY_NODE_PEER_ID);
-    const score = reliabilityScore.getScore(ENTRY_NODE_PEER_ID);
 
     expect(entryNode?.responses.size).toBe(100);
     expect(entryNode?.sent).toBe(100);
-    expect(score).toBe(0.9);
+    expect(reliabilityScore.getScore(ENTRY_NODE_PEER_ID)).toBe(0);
 
-    console.log("@stats:", entryNode?.stats);
+    // Adding 1 more response than MAX_RESPONSES.
+    addNumberOfMetrics(1, ENTRY_NODE_PEER_ID, "success");
+    // Removing all responses except dishonest ones.
 
-    addNumberOfMetrics(1, ENTRY_NODE_PEER_ID, "dishonest");
-    // TODO: Recalculate score.
+    // Because it will be a fresh node with 0 responses.
+    expect(entryNode?.sent).toBe(0);
+    // But we keep the 2 dishonest responses.
+    expect(entryNode?.responses.size).toBe(2);
+    expect(reliabilityScore.getScore(ENTRY_NODE_PEER_ID)).toBe(0.2);
+
+    // Adding some dishonest responses.
+    addNumberOfMetrics(5, ENTRY_NODE_PEER_ID, "dishonest");
+    addNumberOfMetrics(5, ENTRY_NODE_PEER_ID, "failed");
+    addNumberOfMetrics(12, ENTRY_NODE_PEER_ID, "success");
+
+    expect(entryNode?.sent).toBe(22);
+    expect(reliabilityScore.getScore(ENTRY_NODE_PEER_ID)).toBe(0);
   });
   it.todo("should set metrics");
 });

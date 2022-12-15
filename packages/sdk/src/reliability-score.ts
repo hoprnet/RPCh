@@ -111,6 +111,7 @@ export default class ReliabilityScore {
           nodeMetrics.sent = 1;
         }
       }
+
       nodeMetrics.stats = this.getResultsStats(peerId);
       const score = this.getScore(peerId);
       this.score.set(peerId, score);
