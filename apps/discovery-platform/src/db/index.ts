@@ -1,7 +1,4 @@
-import type {
-  CreateRegisteredNode,
-  QueryRegisteredNode,
-} from "../registered-node/dto";
+import type { QueryRegisteredNode } from "../registered-node/dto";
 
 export type Data = {
   registeredNodes: QueryRegisteredNode[];
@@ -21,6 +18,24 @@ export const saveRegisteredNode = async (
 ) => {
   try {
     await db.data.registeredNodes.push(node);
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
+
+export const getRegisteredNode = async (db: DBInstance, peerId: string) => {
+  return db.data.registeredNodes.find((node) => node.peerId === peerId);
+};
+
+export const updateRegisteredNode = async (
+  db: DBInstance,
+  updatedNode: QueryRegisteredNode
+) => {
+  try {
+    db.data.registeredNodes = db.data.registeredNodes.map((node) =>
+      node.peerId === updatedNode.peerId ? { ...node, ...updatedNode } : node
+    );
     return true;
   } catch (e) {
     return false;

@@ -3,6 +3,7 @@ import { DBInstance } from "../db";
 import {
   createRegisteredNode,
   getAllRegisteredNodes,
+  getRegisteredNode,
 } from "../registered-node";
 import { CreateRegisteredNode } from "../registered-node/dto";
 
@@ -28,7 +29,9 @@ export const entryServer = (ops: { db: DBInstance }) => {
     }
   });
   apiRouter.get("/node/:peerId", (req, res) => {
-    return res.json({ body: req.route });
+    const { peerId } = req.query;
+    const node = getRegisteredNode(ops.db, peerId as string);
+    return res.json({ body: node });
   });
   apiRouter.get("/funding-service/funds", (req, res) => {
     return res.json({ body: req.route });

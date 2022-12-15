@@ -23,6 +23,17 @@
         "RESPONSE_TIMEOUT"
       ]
     },
+    "rpch-discovery-platform#build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "build/**"
+      ],
+      "env": [
+        "PORT"
+      ]
+    },
     "dev": {
       "dependsOn": [
         "^build"
