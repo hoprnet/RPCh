@@ -46,7 +46,7 @@ describe("test reliability score class", () => {
     expect(entryNode?.sent).toBe(3);
     expect(entryNode?.responses.size).toBe(3);
   });
-  it("should have a score of 0 for unexistent peerIds", () => {
+  it("should have a score of 0 for unexistant peerIds", () => {
     const score = reliabilityScore.getScore("unexistentPeerId");
 
     expect(score).toBe(0);
@@ -101,10 +101,10 @@ describe("test reliability score class", () => {
     addNumberOfMetrics(1, ENTRY_NODE_PEER_ID, "success");
     // Removing all responses except dishonest ones.
 
-    // Because it will be a fresh node with 0 responses.
-    expect(entryNode?.sent).toBe(0);
+    // Because it will be a fresh node with 1 response matching the last one.
+    expect(entryNode?.sent).toBe(1);
     // But we keep the 2 dishonest responses.
-    expect(entryNode?.responses.size).toBe(2);
+    expect(entryNode?.responses.size).toBe(3);
     expect(reliabilityScore.getScore(ENTRY_NODE_PEER_ID)).toBe(0.2);
 
     // Adding some dishonest responses.
@@ -112,8 +112,10 @@ describe("test reliability score class", () => {
     addNumberOfMetrics(5, ENTRY_NODE_PEER_ID, "failed");
     addNumberOfMetrics(12, ENTRY_NODE_PEER_ID, "success");
 
-    expect(entryNode?.sent).toBe(22);
+    expect(entryNode?.sent).toBe(23);
     expect(reliabilityScore.getScore(ENTRY_NODE_PEER_ID)).toBe(0);
   });
+  // ! What if I have more dishonests than MAX_RESPONSES?
+  // TODO: Split test, one for dishonests.
   it.todo("should set metrics");
 });

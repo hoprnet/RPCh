@@ -103,18 +103,21 @@ export default class ReliabilityScore {
 
     // Remove all responses except those with a dishonest result.
     if (nodeMetrics.sent > MAX_RESPONSES) {
+      const [lastRequestId, lastResponse] = Array.from(
+        nodeMetrics.responses
+      ).at(-1) as [string, ResponseMetric];
+
       for (const [requestId, { result }] of nodeMetrics.responses) {
         if (result !== "dishonest") {
           nodeMetrics.responses.delete(requestId);
-          nodeMetrics.sent = 0;
-        } else {
-          nodeMetrics.sent = 1;
         }
       }
+      nodeMetrics.responses.set(lastRequestId, lastResponse);
 
+      nodeMetrics.sent = 1;
       nodeMetrics.stats = this.getResultsStats(peerId);
-      const score = this.getScore(peerId);
-      this.score.set(peerId, score);
+      const updatedScore = this.getScore(peerId);
+      this.score.set(peerId, updatedScore);
     }
   }
 
