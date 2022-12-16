@@ -3,19 +3,7 @@ description: "Build the RPCh monorepo"
 
 runs:
   using: "composite"
-  # env:
-  #   # enable remote caching using turbo
-  #   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-  #   TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
   steps:
-    - name: Check out code
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 2
-    # must be run by parent workflow
-    # this action will intentionally fail
-    # if this is not run
-
     - name: Setup Node.js environment
       uses: actions/setup-node@v3
       with:
