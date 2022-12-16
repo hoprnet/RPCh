@@ -12,6 +12,14 @@ export const getAllRegisteredNodes = async (db: DBInstance) => {
   return db.data.registeredNodes;
 };
 
+export const getAllExitNodes = async (db: DBInstance) => {
+  return db.data.registeredNodes.filter((node) => node.hasExitNode);
+};
+
+export const getAllNodesThatAreNotExitNodes = async (db: DBInstance) => {
+  return db.data.registeredNodes.filter((node) => !node.hasExitNode);
+};
+
 export const saveRegisteredNode = async (
   db: DBInstance,
   node: QueryRegisteredNode

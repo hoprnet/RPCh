@@ -19,24 +19,30 @@ export const entryServer = (ops: { db: DBInstance }) => {
     const registered = await createRegisteredNode(ops.db, node);
     return res.json({ body: registered });
   });
+
   apiRouter.get("/node", async (req, res) => {
     const { hasExitNode } = req.query;
     const nodes = await getAllRegisteredNodes(ops.db);
     if (hasExitNode === "true") {
-      return res.json({ body: nodes.filter((node) => node.hasExitNode) });
+      return res.json(nodes.filter((node) => node.hasExitNode));
     } else {
-      return res.json({ body: nodes.filter((node) => !node.hasExitNode) });
+      return res.json(nodes.filter((node) => !node.hasExitNode));
     }
   });
-  apiRouter.get("/node/:peerId", (req, res) => {
-    const { peerId } = req.query;
-    const node = getRegisteredNode(ops.db, peerId as string);
-    return res.json({ body: node });
+
+  apiRouter.get("/node/:peerId", async (req, res) => {
+    const { peerId } = req.params;
+    const node = await getRegisteredNode(ops.db, peerId as string);
+    return res.json({ node });
   });
+
   apiRouter.get("/funding-service/funds", (req, res) => {
+    // TODO
     return res.json({ body: req.route });
   });
+
   apiRouter.get("/request/entry-node", (req, res) => {
+    // TODO
     return res.json({ body: req.route });
   });
 

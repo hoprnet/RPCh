@@ -1,9 +1,7 @@
-import fetch from "node-fetch";
 import { gql } from "graphql-request";
+import fetch from "node-fetch";
 import { QueryRegisteredNode } from "../registered-node/dto";
 import { GraphHoprResponse } from "./dto";
-import { updateRegisteredNode } from "../registered-node";
-import { DBInstance } from "../db";
 
 const GRAPH_HOPR_URL =
   "https://api.thegraph.com/subgraphs/name/hoprnet/hopr-channels";
@@ -23,7 +21,6 @@ export const checkCommitment = async (ops: {
   node: QueryRegisteredNode;
   minBalance: number;
   minChannels: number;
-  db: DBInstance;
 }) => {
   // make query
   const channels = await fetch(GRAPH_HOPR_URL, {
@@ -42,10 +39,10 @@ export const checkCommitment = async (ops: {
   const graphRes = (await channels.json()) as GraphHoprResponse;
   // check if it has enough balance and enough open channels
   if (validateNode(graphRes, ops.minBalance, ops.minChannels)) {
-    // update node to status "READY"
-    await updateRegisteredNode(ops.db, { ...ops.node, status: "READY" });
-    // fund here?
+    return true;
   }
+
+  return false;
 };
 
 const validateNode = (

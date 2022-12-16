@@ -1,20 +1,14 @@
-import {
-  DBInstance,
-  getAllRegisteredNodes as getAllRegisteredNodesDB,
-  saveRegisteredNode,
-  getRegisteredNode as getRegisteredNodeDB,
-  updateRegisteredNode as updateRegisteredNodeDB,
-} from "../db";
+import * as db from "../db";
 import { CreateRegisteredNode, QueryRegisteredNode } from "./dto";
 
 export const getAllRegisteredNodes = async (
-  db: DBInstance
+  dbInstance: db.DBInstance
 ): Promise<QueryRegisteredNode[]> => {
-  return await getAllRegisteredNodesDB(db);
+  return await db.getAllRegisteredNodes(dbInstance);
 };
 
 export const createRegisteredNode = async (
-  db: DBInstance,
+  dbInstance: db.DBInstance,
   node: CreateRegisteredNode
 ): Promise<boolean> => {
   const newNode = {
@@ -27,20 +21,30 @@ export const createRegisteredNode = async (
     peerId: node.peerId,
   } as QueryRegisteredNode;
 
-  return await saveRegisteredNode(db, newNode);
+  return await db.saveRegisteredNode(dbInstance, newNode);
 };
 
 export const getRegisteredNode = async (
-  db: DBInstance,
+  dbInstance: db.DBInstance,
   peerId: string
 ): Promise<QueryRegisteredNode | undefined> => {
-  const node = await getRegisteredNodeDB(db, peerId);
+  const node = await db.getRegisteredNode(dbInstance, peerId);
   return node;
 };
 
 export const updateRegisteredNode = async (
-  db: DBInstance,
+  dbInstance: db.DBInstance,
   updatedNode: QueryRegisteredNode
 ): Promise<boolean> => {
-  return await updateRegisteredNodeDB(db, updatedNode);
+  return await db.updateRegisteredNode(dbInstance, updatedNode);
+};
+
+export const getAllExitNodes = async (dbInstance: db.DBInstance) => {
+  return await db.getAllExitNodes(dbInstance);
+};
+
+export const getAllNodesThatAreNotExitNodes = async (
+  dbInstance: db.DBInstance
+) => {
+  return await db.getAllNodesThatAreNotExitNodes(dbInstance);
 };
