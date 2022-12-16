@@ -20,7 +20,7 @@
     "nock": "^13.2.9"
   },
   "dependencies": {
-    "@rpch/common": "*",
+    "@rpch/common": "0.0.0",
     "@rpch/sdk": "0.0.0"
   },
   "peerDependencies": {
