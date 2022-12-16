@@ -46,6 +46,8 @@ export default class SDK {
   private entryNode?: EntryNode;
   // selected exit node
   private exitNodePeerId?: string;
+  // stopMessageListener
+  private stopMessageListener?: () => void;
 
   constructor(
     private readonly timeout: number,
@@ -141,7 +143,7 @@ export default class SDK {
 
     await this.selectEntryNode(this.discoveryPlatformApiEndpoint);
     await this.selectExitNode(this.discoveryPlatformApiEndpoint);
-    await hoprd.createMessageListener(
+    this.stopMessageListener = await hoprd.createMessageListener(
       this.entryNode!.apiEndpoint,
       this.entryNode!.apiToken,
       (message) => {
@@ -163,6 +165,7 @@ export default class SDK {
    * Stop the SDK and clear up tangling processes.
    */
   public async stop(): Promise<void> {
+    if (this.stopMessageListener) this.stopMessageListener();
     clearInterval(this.interval);
   }
 
