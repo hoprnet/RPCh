@@ -1,4 +1,4 @@
-name: CI
+name: Review
 
 on:
   push:
@@ -7,6 +7,9 @@ on:
     types: [opened, synchronize]
 
 jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+
   review:
     name: Review
     timeout-minutes: 15
@@ -17,24 +20,6 @@ jobs:
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
     steps:
-      - name: Check out code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 2
-
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v3
-        with:
-          node-version: 16
-          cache: "yarn"
-          cache-dependency-path: ./yarn.lock
-
-      - name: Install dependencies
-        run: yarn
-
-      - name: Build
-        run: yarn build
-
       - name: Review linting
         run: yarn lint
 
