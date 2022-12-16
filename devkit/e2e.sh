@@ -67,7 +67,7 @@ entry_node_peer_id=$(cat logs |grep "node1" -A 1 | grep "Peer Id" | awk '{ print
 exit_node_peer_id=$(cat logs |grep "node5" -A 1 | grep "Peer Id" | awk '{ print $5 }')
 
 # Run tests with env variables
-ENTRY_NODE_PEER_ID="$entry_node_peer_id" EXIT_NODE_PEER_ID="$exit_node_peer_id" HOPRD_API_TOKEN="$HOPRD_API_TOKEN" \
+ENTRY_NODE_PEER_ID="$entry_node_peer_id" EXIT_NODE_PEER_ID="$exit_node_peer_id" ENTRY_NODE_API_TOKEN="$HOPRD_API_TOKEN" \
 yarn test
 
 # After tests exit tear down setup
