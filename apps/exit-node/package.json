@@ -1,6 +1,7 @@
 {
-  "name": "rpch-exit-node",
+  "name": "@rpch/exit-node",
   "version": "0.0.0",
+  "private": true,
   "license": "MIT",
   "scripts": {
     "build": "rimraf build && tsup",
@@ -13,14 +14,14 @@
   "devDependencies": {
     "@types/node-fetch": "2.6.2",
     "nock": "^13.2.9",
-    "rpch-configs-eslint": "*",
-    "rpch-configs-jest": "*",
-    "rpch-configs-prettier": "*",
-    "rpch-configs-tsup": "*",
-    "rpch-configs-typescript": "*"
+    "@rpch/configs-eslint": "*",
+    "@rpch/configs-jest": "*",
+    "@rpch/configs-prettier": "*",
+    "@rpch/configs-tsup": "*",
+    "@rpch/configs-typescript": "*"
   },
   "dependencies": {
     "node-fetch": "^2.6.2",
-    "rpch-common": "*"
+    "@rpch/common": "0.0.0"
   }
 }

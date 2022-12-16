@@ -10,7 +10,7 @@
         ".next/**"
       ]
     },
-    "rpch-exit-node#build": {
+    "@rpch/exit-node#build": {
       "dependsOn": [
         "^build"
       ],

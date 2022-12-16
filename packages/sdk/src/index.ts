@@ -4,7 +4,7 @@ import {
   Response,
   hoprd,
   utils,
-} from "rpch-common";
+} from "@rpch/common";
 import RequestCache from "./request-cache";
 
 const { log, logError } = utils.createLogger(["sdk"]);

@@ -1,5 +1,5 @@
 {
-  "name": "rpch-sdk",
+  "name": "@rpch/sdk",
   "version": "0.0.0",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
@@ -12,14 +12,14 @@
     "test": "jest --coverage"
   },
   "devDependencies": {
-    "rpch-configs-typescript": "*",
-    "rpch-configs-eslint": "*",
-    "rpch-configs-prettier": "*",
-    "rpch-configs-jest": "*",
-    "rpch-configs-tsup": "*",
+    "@rpch/configs-typescript": "*",
+    "@rpch/configs-eslint": "*",
+    "@rpch/configs-prettier": "*",
+    "@rpch/configs-jest": "*",
+    "@rpch/configs-tsup": "*",
     "nock": "^13.2.9"
   },
   "dependencies": {
-    "rpch-common": "*"
+    "@rpch/common": "*"
   }
 }

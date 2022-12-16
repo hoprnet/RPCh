@@ -1,6 +1,6 @@
 import assert from "assert";
 import { start as startExitNode } from "./index";
-import { fixtures } from "rpch-common";
+import { fixtures } from "@rpch/common";
 
 const createMockedSetup = async () => {
   let triggerOnMessage: (message: string) => void = () => {};

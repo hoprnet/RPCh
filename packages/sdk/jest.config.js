@@ -1,1 +1,1 @@
-module.exports = require("rpch-configs-jest");
+module.exports = require("@rpch/configs-jest");

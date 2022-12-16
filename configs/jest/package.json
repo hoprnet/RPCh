@@ -1,5 +1,5 @@
 {
-  "name": "rpch-configs-jest",
+  "name": "@rpch/configs-jest",
   "version": "0.0.0",
   "private": true,
   "main": "index.js",

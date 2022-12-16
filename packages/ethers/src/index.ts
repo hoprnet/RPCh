@@ -1,7 +1,7 @@
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { deepCopy } from "@ethersproject/properties";
-import SDK, { type HoprSdkTempOps } from "rpch-sdk";
-import { utils } from "rpch-common";
+import SDK, { type HoprSdkTempOps } from "@rpch/sdk";
+import { utils } from "@rpch/common";
 import { parseResponse, getResult } from "./utils";
 
 const { logVerbose, logError } = utils.createLogger(["ethers"]);

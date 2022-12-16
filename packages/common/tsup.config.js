@@ -1,1 +1,1 @@
-module.exports = require("rpch-configs-tsup");
+module.exports = require("@rpch/configs-tsup");

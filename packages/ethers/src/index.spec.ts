@@ -1,6 +1,6 @@
 import assert from "assert";
 import nock from "nock";
-import { type Request, type Response, fixtures } from "rpch-common";
+import { type Request, type Response, fixtures } from "@rpch/common";
 import { RPChProvider } from ".";
 
 const PROVIDER_URL = fixtures.PROVIDER;

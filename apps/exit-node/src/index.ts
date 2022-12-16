@@ -1,4 +1,4 @@
-import { type Request, Cache, utils, Segment, hoprd } from "rpch-common";
+import { type Request, Cache, utils, Segment, hoprd } from "@rpch/common";
 import * as exit from "./exit";
 
 const { log, logError } = utils.createLogger("exit-node");

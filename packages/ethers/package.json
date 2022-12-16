@@ -1,5 +1,5 @@
 {
-  "name": "rpch-ethers",
+  "name": "@rpch/ethers",
   "version": "0.0.0",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
@@ -12,16 +12,16 @@
     "test": "jest --coverage"
   },
   "devDependencies": {
-    "rpch-configs-typescript": "*",
-    "rpch-configs-eslint": "*",
-    "rpch-configs-prettier": "*",
-    "rpch-configs-jest": "*",
-    "rpch-configs-tsup": "*",
+    "@rpch/configs-typescript": "*",
+    "@rpch/configs-eslint": "*",
+    "@rpch/configs-prettier": "*",
+    "@rpch/configs-jest": "*",
+    "@rpch/configs-tsup": "*",
     "nock": "^13.2.9"
   },
   "dependencies": {
-    "rpch-common": "*",
-    "rpch-sdk": "*"
+    "@rpch/common": "*",
+    "@rpch/sdk": "0.0.0"
   },
   "peerDependencies": {
     "ethers": "^5.7.2"

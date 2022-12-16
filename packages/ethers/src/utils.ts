@@ -1,4 +1,4 @@
-import { type Response } from "rpch-common";
+import { type Response } from "@rpch/common";
 
 export const parseResponse = (res: Response): Record<any, any> => {
   if (!res.body) throw Error(`Response's body is not parsable '${res.body}'`);

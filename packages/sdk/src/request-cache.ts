@@ -1,4 +1,4 @@
-import { Request, Response, utils } from "rpch-common";
+import { Request, Response, utils } from "@rpch/common";
 
 const { logVerbose } = utils.createLogger(["sdk", "request-cache"]);
 
