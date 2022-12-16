@@ -17,10 +17,6 @@ export type Stats = {
   failed: number;
 };
 
-// ! Need to export these?
-export const FRESH_NODE_THRESHOLD = 20;
-export const MAX_RESPONSES = 100;
-
 /**
  * Way to measure if the HOPRd entry node
  * we are using is reliable or not.
@@ -29,8 +25,7 @@ export default class ReliabilityScore {
   /**
    * Keeps track of metrics.
    */
-  // ! metrics should be public or private?
-  public metrics = new Map<
+  private metrics = new Map<
     string,
     {
       responses: Map<string, ResponseMetric>;
@@ -45,6 +40,13 @@ export default class ReliabilityScore {
    * The `score` range goes from 0 to 1.
    */
   private score = new Map<string, number>();
+  private FRESH_NODE_THRESHOLD: number;
+  private MAX_RESPONSES: number;
+
+  constructor(freshNodeThreshold: number, maxResponses: number) {
+    this.FRESH_NODE_THRESHOLD = freshNodeThreshold;
+    this.MAX_RESPONSES = maxResponses;
+  }
 
   /**
    * Get a node's responses.result stats.
@@ -100,7 +102,7 @@ export default class ReliabilityScore {
     nodeMetrics.stats = this.getResultsStats(peerId);
 
     // Remove all responses except those with a dishonest result.
-    if (nodeMetrics.sent > MAX_RESPONSES) {
+    if (nodeMetrics.sent > this.MAX_RESPONSES) {
       const [lastRequestId, lastResponse] = Array.from(
         nodeMetrics.responses
       ).at(-1) as [string, ResponseMetric];
@@ -126,11 +128,11 @@ export default class ReliabilityScore {
    */
   public getScore(peerId: string) {
     if (this.metrics.has(peerId)) {
-      const sent = this.metrics.get(peerId)?.sent || 0;
-      const dishonest = this.metrics.get(peerId)?.stats.dishonest || 0;
-      const failed = this.metrics.get(peerId)?.stats.failed || 0;
+      const sent = this.metrics.get(peerId)!.sent;
+      const dishonest = this.metrics.get(peerId)!.stats.dishonest;
+      const failed = this.metrics.get(peerId)!.stats.failed;
 
-      if (sent < FRESH_NODE_THRESHOLD) {
+      if (sent < this.FRESH_NODE_THRESHOLD) {
         this.score.set(peerId, 0.2);
       } else if (dishonest > 0) {
         this.score.set(peerId, 0);

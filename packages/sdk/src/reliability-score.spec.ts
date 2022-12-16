@@ -1,21 +1,22 @@
 import ReliabilityScore, { Result } from "./reliability-score";
 import { fixtures, utils } from "rpch-common";
 
-// TODO: Delete the 'testme' script from package.json
-
 const ENTRY_NODE_PEER_ID = fixtures.PEER_ID_A;
+const FRESH_NODE_THRESHOLD = 20;
+const MAX_RESPONSES = 100;
 
 describe("test reliability score class", () => {
   let reliabilityScore: ReliabilityScore;
 
   beforeEach(() => {
-    reliabilityScore = new ReliabilityScore();
+    reliabilityScore = new ReliabilityScore(
+      FRESH_NODE_THRESHOLD,
+      MAX_RESPONSES
+    );
   });
 
   /**
    * By using `ReliabilityScore.addMetric()`, adds n amount of metrics to a given node with a specified result.
-   *
-   * Implements jest fake timers to delay each metric addition by 500ms.
    * @param amount
    * @param peerId
    * @param result
@@ -25,31 +26,44 @@ describe("test reliability score class", () => {
     peerId: string,
     result: Result
   ) => {
-    jest.useFakeTimers();
     for (let count = 1; count <= amount; count++) {
-      jest.advanceTimersByTime(500);
       reliabilityScore.addMetric(
         peerId,
         `request${utils.generateRandomNumber()}`,
         result
       );
     }
-    jest.useRealTimers();
   };
 
   it("should add metrics", () => {
     reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, "request01", "success");
     reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, "request02", "dishonest");
     reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, "request03", "failed");
+
+    // @ts-ignore-next-line
     const entryNode = reliabilityScore.metrics.get(ENTRY_NODE_PEER_ID);
 
     expect(entryNode?.sent).toBe(3);
     expect(entryNode?.responses.size).toBe(3);
   });
-  it("should have a score of 0 for unexistant peerIds", () => {
-    const score = reliabilityScore.getScore("unexistentPeerId");
+  it("should have a score of 0 for nonexistent peerIds", () => {
+    const score = reliabilityScore.getScore("nonexistentPeerId");
 
     expect(score).toBe(0);
+  });
+  it("should have score of 0 for dishonest nodes", () => {
+    addNumberOfMetrics(19, ENTRY_NODE_PEER_ID, "success");
+    addNumberOfMetrics(1, ENTRY_NODE_PEER_ID, "dishonest");
+
+    const score = reliabilityScore.getScore(ENTRY_NODE_PEER_ID);
+
+    expect(score).toBe(0);
+  });
+  it("shouldn't have stats for nonexistent nodes", () => {
+    // @ts-ignore-next-line
+    const stats = reliabilityScore.getResultsStats("nonexistentPeerId");
+
+    expect(stats).toMatchObject({ success: 0, dishonest: 0, failed: 0 });
   });
   it("should have a score of 0.2 for fresh nodes", () => {
     reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, "request01", "success");
@@ -88,6 +102,7 @@ describe("test reliability score class", () => {
     addNumberOfMetrics(90, ENTRY_NODE_PEER_ID, "success");
     addNumberOfMetrics(10, ENTRY_NODE_PEER_ID, "failed");
 
+    // @ts-ignore-next-line
     const entryNode = reliabilityScore.metrics.get(ENTRY_NODE_PEER_ID);
     expect(entryNode?.responses.size).toBe(100);
     expect(entryNode?.sent).toBe(100);
@@ -102,6 +117,7 @@ describe("test reliability score class", () => {
     addNumberOfMetrics(8, ENTRY_NODE_PEER_ID, "failed");
     addNumberOfMetrics(2, ENTRY_NODE_PEER_ID, "dishonest");
 
+    // @ts-ignore-next-line
     const entryNode = reliabilityScore.metrics.get(ENTRY_NODE_PEER_ID);
 
     addNumberOfMetrics(1, ENTRY_NODE_PEER_ID, "success");

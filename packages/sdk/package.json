@@ -9,8 +9,7 @@
     "dev": "yarn build --watch",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
-    "test": "jest --coverage",
-    "testme": "jest reliability-score.spec.ts --verbose --watchAll"
+    "test": "jest --coverage"
   },
   "devDependencies": {
     "rpch-configs-typescript": "*",

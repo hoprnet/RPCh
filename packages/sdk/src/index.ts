@@ -5,6 +5,7 @@ import {
   hoprd,
   utils,
 } from "rpch-common";
+import ReliabilityScore from "./reliability-score";
 import RequestCache from "./request-cache";
 
 const { log, logError } = utils.createLogger(["sdk"]);
@@ -19,6 +20,8 @@ export type HoprSdkTempOps = {
   entryNodeApiToken: string;
   entryNodePeerId: string;
   exitNodePeerId: string;
+  freshNodeThreshold: number;
+  maxResponses: number;
 };
 
 /**
@@ -38,6 +41,7 @@ export default class SDK {
   private interval?: NodeJS.Timer;
   private segmentCache: SegmentCache;
   private requestCache: RequestCache;
+  private reliabilityScore: ReliabilityScore;
   // this will be static but right now passed via tempOps
   private discoveryPlatformApiEndpoint: string;
   // available exit nodes
@@ -58,6 +62,10 @@ export default class SDK {
       this.onResponseFromSegments
     );
     this.requestCache = new RequestCache();
+    this.reliabilityScore = new ReliabilityScore(
+      tempOps.freshNodeThreshold,
+      tempOps.maxResponses
+    );
   }
 
   /**
@@ -88,6 +96,10 @@ export default class SDK {
     };
     return this.entryNode;
   }
+
+  // ! Add metric when success of no responses
+  // ! no response, call addMetrics
+  // this.reliabilityScore.addMetric(this.entryNode?.peerId, "", "failed");
 
   /**
    * Updates exit node list from the Discovery Platform
