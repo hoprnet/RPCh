@@ -24,6 +24,9 @@ jobs:
 
       - name: Build
         uses: ./.github/actions/build-rpch
+        env:
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
       - name: Review linting
         run: yarn lint
