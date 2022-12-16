@@ -17,6 +17,10 @@ jobs:
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
     steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
       - name: Build
         uses: ./.github/actions/build.yml
 
