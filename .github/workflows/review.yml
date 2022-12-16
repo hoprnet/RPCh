@@ -22,7 +22,7 @@ jobs:
         with:
           fetch-depth: 2
       - name: Build
-        uses: ./.github/actions/build.yml
+        uses: ./.github/actions/build-action
 
   review:
     name: Review
