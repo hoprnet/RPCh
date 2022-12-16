@@ -8,8 +8,17 @@ on:
 
 jobs:
   build:
-    uses: ./.github/workflows/build.yml
-    secrets: inherit
+    name: Build
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    env:
+      # enable remote caching using turbo
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+
+    steps:
+      - name: Build
+        uses: ./.github/actions/build.yml
 
   review:
     name: Review
