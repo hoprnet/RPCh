@@ -9,13 +9,13 @@ runs:
     TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
   steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 2
     # must be run by parent workflow
     # this action will intentionally fail
     # if this is not run
-    # - name: Check out code
-    #   uses: actions/checkout@v3
-    #   with:
-    #     fetch-depth: 2
 
     - name: Setup Node.js environment
       uses: actions/setup-node@v3
