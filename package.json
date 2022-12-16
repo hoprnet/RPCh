@@ -13,9 +13,11 @@
     "format": "turbo run format",
     "lint": "turbo run lint",
     "test": "turbo run test --",
-    "format:fix": "turbo run format -- --check=false --write=true"
+    "format:fix": "turbo run format -- --check=false --write=true",
+    "publish-packages": "changeset version"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.25.2",
     "turbo": "^1.6.3"
   },
   "engines": {
