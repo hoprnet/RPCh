@@ -3,21 +3,21 @@ description: "Build the RPCh monorepo"
 
 runs:
   using: "composite"
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 2
+  steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 2
 
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v3
-        with:
-          node-version: 16
-          cache: "yarn"
-          cache-dependency-path: ./yarn.lock
+    - name: Setup Node.js environment
+      uses: actions/setup-node@v3
+      with:
+        node-version: 16
+        cache: "yarn"
+        cache-dependency-path: ./yarn.lock
 
-      - name: Install dependencies
-        run: yarn
+    - name: Install dependencies
+      run: yarn
 
-      - name: Build
-        run: yarn build
+    - name: Build
+      run: yarn build
