@@ -1,5 +1,4 @@
 name: Review
-description: "Review the RPCh monorepo"
 
 on:
   push:
