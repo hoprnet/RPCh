@@ -1,4 +1,5 @@
 name: Review
+description: "Review the RPCh monorepo"
 
 on:
   push:
@@ -7,23 +8,6 @@ on:
     types: [opened, synchronize]
 
 jobs:
-  build:
-    name: Build
-    timeout-minutes: 15
-    runs-on: ubuntu-latest
-    env:
-      # enable remote caching using turbo
-      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 2
-      - name: Build
-        uses: ./.github/actions/build-action
-
   review:
     name: Review
     needs: build
@@ -47,10 +31,8 @@ jobs:
           cache: "yarn"
           cache-dependency-path: ./yarn.lock
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: build-artifacts
+      - name: Build
+        uses: ./.github/actions/build-action
 
       - name: Review linting
         run: yarn lint
