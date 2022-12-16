@@ -23,6 +23,16 @@
         "RESPONSE_TIMEOUT"
       ]
     },
+    "rpch-e2e": {
+      "dependsOn": [
+        "^build"
+      ],
+      "env": [
+        "ENTRY_NODE_PEER_ID",
+        "EXIT_NODE_PEER_ID",
+        "ENTRY_NODE_API_TOKEN"
+      ]
+    },
     "dev": {
       "dependsOn": [
         "^build"
