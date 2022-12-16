@@ -23,7 +23,7 @@ jobs:
           fetch-depth: 2
 
       - name: Build
-        uses: ./.github/actions/build-action
+        uses: ./.github/actions/build-rpch
 
       - name: Review linting
         run: yarn lint
