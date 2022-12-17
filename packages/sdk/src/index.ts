@@ -97,10 +97,6 @@ export default class SDK {
     return this.entryNode;
   }
 
-  // ! Add metric when success of no responses
-  // ! no response, call addMetrics
-  // this.reliabilityScore.addMetric(this.entryNode?.peerId, "", "failed");
-
   /**
    * Updates exit node list from the Discovery Platform
    * @param discoveryPlatformApiEndpoint
@@ -128,6 +124,13 @@ export default class SDK {
       return;
     }
     matchingRequest.resolve(res);
+
+    // ! @Steve: peerId should be this.tempOps?.entryNodePeerId or this.entryNode.peerId?
+    this.reliabilityScore.addMetric(
+      this.tempOps?.entryNodePeerId,
+      matchingRequest.request.id,
+      "success"
+    );
     this.requestCache.removeRequest(matchingRequest.request);
     log("responded to %s with %s", matchingRequest.request.body, res.body);
   }
@@ -149,6 +152,13 @@ export default class SDK {
     this.interval = setInterval(() => {
       this.segmentCache.removeExpired(this.timeout);
       this.requestCache.removeExpired(this.timeout);
+
+      // TODO: get requestId here, but where from, returning key at requestCache.removeExpired?
+      this.reliabilityScore.addMetric(
+        this.tempOps.entryNodePeerId,
+        1,
+        "failed"
+      );
     }, 1000);
 
     await this.selectEntryNode(this.discoveryPlatformApiEndpoint);

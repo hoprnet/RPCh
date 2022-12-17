@@ -28,7 +28,7 @@ export default class ReliabilityScore {
   private metrics = new Map<
     string,
     {
-      responses: Map<string, ResponseMetric>;
+      responses: Map<number, ResponseMetric>;
       stats: Stats;
       sent: number;
       updatedAt: Date;
@@ -80,12 +80,12 @@ export default class ReliabilityScore {
    * @param requestId
    * @param result
    */
-  public addMetric(peerId: string, requestId: string, result: Result) {
+  public addMetric(peerId: string, requestId: number, result: Result) {
     let nodeMetrics = this.metrics.get(peerId);
 
     if (!nodeMetrics) {
       nodeMetrics = {
-        responses: new Map<string, ResponseMetric>(),
+        responses: new Map<number, ResponseMetric>(),
         stats: { success: 0, dishonest: 0, failed: 0 },
         sent: 0,
         updatedAt: new Date(),
@@ -105,7 +105,7 @@ export default class ReliabilityScore {
     if (nodeMetrics.sent > this.MAX_RESPONSES) {
       const [lastRequestId, lastResponse] = Array.from(
         nodeMetrics.responses
-      ).at(-1) as [string, ResponseMetric];
+      ).at(-1) as [number, ResponseMetric];
 
       for (const [requestId, { result }] of nodeMetrics.responses) {
         if (result !== "dishonest") {
