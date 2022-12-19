@@ -60,7 +60,12 @@ export default class Request {
    * @param exitNode
    * @returns Request
    */
-  public static fromMessage(message: Message, exitNode: Identity): Request {
+  public static fromMessage(
+    message: Message,
+    exitNode: Identity,
+    lastRequestFromClient: bigint,
+    updateLastRequestFromClient: (counter: bigint) => any
+  ): Request {
     const [origin, encrypted] = splitBodyToParts(message.body);
 
     const entryNode = new Identity(origin);
@@ -72,9 +77,10 @@ export default class Request {
         exitNode.peerId.toB58String()
       ),
       exitNode.cryptoIdentity,
-      BigInt(0)
+      lastRequestFromClient
     );
-    // session.counter();
+
+    updateLastRequestFromClient(session.updated_counter());
 
     const [type, provider, ...remaining] = splitBodyToParts(
       utils.toUtf8String(session.get_request_data())
@@ -105,14 +111,5 @@ export default class Request {
     );
 
     return message;
-  }
-
-  /**
-   * Given the Request, create a Response
-   * @param body
-   * @returns Response
-   */
-  public createResponse(body: string): Response {
-    return Response.fromRequest(this, body);
   }
 }

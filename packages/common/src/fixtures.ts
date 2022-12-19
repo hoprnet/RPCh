@@ -1,27 +1,23 @@
 import type Nock from "nock";
 import Request from "./request";
-import Response from "./response";
 import { Identity } from "./utils";
 
-/**
- * An RPC provider
- */
 export const PROVIDER = "https://primary.gnosis-chain.rpc.hoprtech.net";
 
-export const PRIV_KEY_A =
-  "0xd12c951563ee7e322562b7ce7a31c37cc6c10d9b86f834ed30f7c4ab42ae8de0";
-export const PRIV_KEY_B =
-  "0x1a7a8c37e30c97ebf532042bdc37fe724a3950b0cd7ea5a57c9f3e30c53c44a3";
+export const PEER_ID_A =
+  "16Uiu2HAmA5h2q7G2RrZMA4znAH4p8KBcuJWUmjjVfpW5DXePQ2He";
+export const PEER_ID_B =
+  "16Uiu2HAkwJdCap1ErGKjtLeHjfnN53TD8kryG48NYVPWx4HhRfKW";
 
 export const PUB_KEY_A =
   "0x02d9c0e0ab99d251a8fd2cd48df6554dfd5112afe589a3dcab75928aea34f98581";
 export const PUB_KEY_B =
   "0x021be92a59234dbef617f5eb0d5426758a6cad16f951458a3d753aa22c09e75509";
 
-export const PEER_ID_A =
-  "16Uiu2HAmA5h2q7G2RrZMA4znAH4p8KBcuJWUmjjVfpW5DXePQ2He";
-export const PEER_ID_B =
-  "16Uiu2HAkwJdCap1ErGKjtLeHjfnN53TD8kryG48NYVPWx4HhRfKW";
+export const PRIV_KEY_A =
+  "0xd12c951563ee7e322562b7ce7a31c37cc6c10d9b86f834ed30f7c4ab42ae8de0";
+export const PRIV_KEY_B =
+  "0x1a7a8c37e30c97ebf532042bdc37fe724a3950b0cd7ea5a57c9f3e30c53c44a3";
 
 export const IDENTITY_A = new Identity(PEER_ID_A, PRIV_KEY_A);
 export const IDENTITY_B = new Identity(PEER_ID_B, PRIV_KEY_B);
@@ -55,15 +51,6 @@ export const LARGE_REQUEST = Request.createRequest(
   RPC_REQ_LARGE,
   IDENTITY_A,
   IDENTITY_B
-);
-
-export const SMALL_RESPONSE = Response.fromRequest(
-  SMALL_REQUEST,
-  RPC_RES_SMALL
-);
-export const LARGE_RESPONSE = Response.fromRequest(
-  LARGE_REQUEST,
-  RPC_RES_LARGE
 );
 
 /**

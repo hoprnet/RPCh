@@ -1,14 +1,15 @@
 import {
   Cache as SegmentCache,
+  Message,
   Request,
   Response,
   hoprd,
   utils,
 } from "rpch-common";
 import RequestCache from "./request-cache";
-import { Identity } from "./crypto-lib";
 import PeerId from "peer-id";
 
+const { Identity } = utils;
 const { log, logError } = utils.createLogger(["sdk"]);
 
 /**
@@ -110,26 +111,18 @@ export default class SDK {
    */
   private onMessage(message: Message): void {
     // check whether we have a matching request id
-    const matchingRequest = this.requestCache.getRequest(message.id);
-    if (!matchingRequest) {
-      logError("matching request not found", res.id);
+    const match = this.requestCache.getRequest(message.id);
+    if (!match) {
+      logError("matching request not found", message.id);
       return;
     }
 
     // construct Response from Message
-    const response = Response.fromRequest(matchingRequest, message.body);
+    const response = Response.fromRequest(match.request, message.body);
 
-    matchingRequest.resolve(res);
-    this.requestCache.removeRequest(matchingRequest.request);
-    log("responded to %s with %s", matchingRequest.request.body, res.body);
-  }
-
-  /**
-   * Logs the request received from cache module
-   * @param req Request received from cache module
-   */
-  private onRequestFromSegments(req: Request): void {
-    log("ignoring received request %s", req.body);
+    match.resolve(response);
+    this.requestCache.removeRequest(match.request);
+    log("responded to %s with %s", match.request.body, response.body);
   }
 
   /**
@@ -178,7 +171,12 @@ export default class SDK {
    */
   public createRequest(provider: string, body: string): Request {
     if (!this.isReady) throw Error("SDK not ready to create requests");
-    return Request.fromData(this.entryNode!.peerId, provider, body);
+    return Request.createRequest(
+      provider,
+      body,
+      new Identity(this.entryNode!.peerId),
+      new Identity(this.exitNodePeerId!)
+    );
   }
 
   /**
@@ -189,17 +187,10 @@ export default class SDK {
   public sendRequest(req: Request): Promise<Response> {
     if (!this.isReady) throw Error("SDK not ready to send requests");
 
-    const exitNodePeerId = PeerId.createFromB58String(this.exitNodePeerId!);
-    const exitNodeIdentity = Identity.load_identity(
-      exitNodePeerId.pubKey.bytes,
-      undefined,
-      BigInt(0)
-    );
-
     return new Promise((resolve, reject) => {
-      const { message, session } = req.toMessage();
+      const message = req.toMessage();
       const segments = message.toSegments();
-      this.requestCache.addRequest(req, session, resolve, reject);
+      this.requestCache.addRequest(req, resolve, reject);
       for (const segment of segments) {
         hoprd.sendMessage({
           apiEndpoint: this.entryNode!.apiEndpoint,

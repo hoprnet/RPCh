@@ -1,12 +1,6 @@
 import assert from "assert";
 import Request from "./request";
-import {
-  PROVIDER,
-  RPC_REQ_SMALL,
-  RPC_RES_SMALL,
-  IDENTITY_A,
-  IDENTITY_B,
-} from "./fixtures";
+import { PROVIDER, RPC_REQ_SMALL, IDENTITY_A, IDENTITY_B } from "./fixtures";
 
 describe("test Request class", function () {
   it("should create request", function () {
@@ -48,7 +42,12 @@ describe("test Request class", function () {
       IDENTITY_B
     );
     const message = REQUEST_MOCK.toMessage();
-    const request = Request.fromMessage(message, IDENTITY_B);
+    const request = Request.fromMessage(
+      message,
+      IDENTITY_B,
+      BigInt(0),
+      () => {}
+    );
     assert.equal(typeof request.id, "number");
     assert(request.id > 0);
     assert.equal(request.body, RPC_REQ_SMALL);
@@ -63,18 +62,5 @@ describe("test Request class", function () {
     );
     assert(!!request.session);
     assert(request.session.get_request_data().length > 0);
-  });
-
-  it("should create response from request", function () {
-    const REQUEST_MOCK = Request.createRequest(
-      PROVIDER,
-      RPC_REQ_SMALL,
-      IDENTITY_A,
-      IDENTITY_B
-    );
-
-    const response = REQUEST_MOCK.createResponse(RPC_RES_SMALL);
-    assert.equal(response.id, REQUEST_MOCK.id);
-    assert.equal(typeof response.body, "string");
   });
 });

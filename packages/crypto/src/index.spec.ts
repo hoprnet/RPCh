@@ -33,7 +33,7 @@ const RES_BODY_U8A = utils.toUtf8Bytes(RES_BODY);
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-describe("test index.ts", function () {
+describe("test @rpch/crypto flow twice", function () {
   let client_last_request_ts = BigInt(0);
   let exit_last_response_ts = BigInt(0);
 
@@ -48,8 +48,6 @@ describe("test index.ts", function () {
       // exit node identity
       Identity.load_identity(PUB_KEY_EXIT_NODE)
     );
-
-    await wait(2);
 
     // --> exit node
     const encrypted_req_data_received = client_session.get_request_data();
@@ -79,9 +77,9 @@ describe("test index.ts", function () {
       )
     );
 
-    await wait(2);
-
     // --> client
+    // cannot unbox response immediately, timestamp cannot be the same
+    await wait(2);
     const encrypted_res_data_received = exit_node_session.get_response_data();
     unbox_response(
       client_session,
@@ -113,8 +111,6 @@ describe("test index.ts", function () {
       Identity.load_identity(PUB_KEY_EXIT_NODE)
     );
 
-    await wait(2);
-
     // --> exit node
     const encrypted_req_data_received = client_session.get_request_data();
     const exit_node_session = unbox_request(
@@ -143,9 +139,9 @@ describe("test index.ts", function () {
       )
     );
 
-    await wait(2);
-
     // --> client
+    // cannot unbox response immediately, timestamp cannot be the same
+    await wait(2);
     const encrypted_res_data_received = exit_node_session.get_response_data();
     unbox_response(
       client_session,

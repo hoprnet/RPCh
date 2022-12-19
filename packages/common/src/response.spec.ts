@@ -1,37 +1,85 @@
 import assert from "assert";
 import Response from "./response";
-import { SMALL_REQUEST as MOCK_REQUEST, RPC_RES_SMALL } from "./fixtures";
+import {
+  PROVIDER,
+  RPC_REQ_SMALL,
+  RPC_RES_SMALL,
+  IDENTITY_A,
+  IDENTITY_B,
+} from "./fixtures";
+import Request from "./request";
 
 describe("test Response class", function () {
-  const MOCK_RESPONSE = MOCK_REQUEST.createResponse(RPC_RES_SMALL);
+  let MOCK_REQUEST: Request;
 
-  it("should create response", function () {
-    assert.equal(MOCK_RESPONSE.id, MOCK_REQUEST.id);
-    assert.equal(MOCK_RESPONSE.body, RPC_RES_SMALL);
-    assert.equal(MOCK_RESPONSE.entryNode, MOCK_REQUEST.entryNode);
-    assert.equal(MOCK_RESPONSE.exitNode, MOCK_REQUEST.exitNode);
-    assert(!!MOCK_RESPONSE.session);
-    assert(MOCK_RESPONSE.session.get_request_data().length > 0);
-  });
-
-  it("should create message from response", function () {
-    const message = MOCK_RESPONSE.toMessage();
-    assert.equal(message.id, 13);
-    assert.equal(
-      message.body,
-      `${MOCK_REQUEST.exitNode.peerId.toB58String()}|${new TextDecoder().decode(
-        MOCK_RESPONSE.session.get_response_data()
-      )}`
+  beforeEach(function () {
+    MOCK_REQUEST = Request.createRequest(
+      PROVIDER,
+      RPC_REQ_SMALL,
+      IDENTITY_A,
+      IDENTITY_B
     );
   });
 
   it("should create response from Request", function () {
-    const response = Response.fromRequest(MOCK_REQUEST, RPC_RES_SMALL);
+    const response = Response.createResponse(MOCK_REQUEST, RPC_RES_SMALL);
 
     assert.equal(response.id, MOCK_REQUEST.id);
     assert.equal(response.body, RPC_RES_SMALL);
     assert.equal(response.entryNode, MOCK_REQUEST.entryNode);
     assert.equal(response.exitNode, MOCK_REQUEST.exitNode);
+    assert(!!response.session);
+    assert(response.session.get_request_data().length > 0);
+  });
+
+  it("should create message from Response", function () {
+    const response = Response.createResponse(MOCK_REQUEST, RPC_RES_SMALL);
+
+    const message = response.toMessage();
+    assert.equal(message.id, response.id);
+    assert(message.body.length > 0);
+  });
+
+  it("should create response from message", async function () {
+    const wait = (ms: number) =>
+      new Promise((resolve) => setTimeout(resolve, ms));
+
+    // client
+    const clientRequest = Request.createRequest(
+      PROVIDER,
+      RPC_REQ_SMALL,
+      IDENTITY_A,
+      IDENTITY_B
+    );
+
+    await wait(2);
+
+    // exit node
+    const exitNodeRequest = Request.fromMessage(
+      clientRequest.toMessage(),
+      IDENTITY_B,
+      BigInt(0),
+      () => {}
+    );
+    const exitNodeResponse = Response.createResponse(
+      exitNodeRequest,
+      RPC_RES_SMALL
+    );
+
+    await wait(2);
+
+    // client
+    const response = Response.fromMessage(
+      clientRequest,
+      exitNodeResponse.toMessage(),
+      BigInt(0),
+      () => {}
+    );
+
+    assert.equal(response.id, clientRequest.id);
+    assert.equal(response.body, RPC_RES_SMALL);
+    assert.equal(response.entryNode, clientRequest.entryNode);
+    assert.equal(response.exitNode, clientRequest.exitNode);
     assert(!!response.session);
     assert(response.session.get_request_data().length > 0);
   });

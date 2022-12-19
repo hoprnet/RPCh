@@ -81,7 +81,7 @@ describe("test SDK class", function () {
         fixtures.RPC_REQ_LARGE
       );
       assert(request instanceof Request);
-      assert.equal(request.origin, ops.entryNodePeerId);
+      assert.equal(request.entryNode.peerId.toB58String(), ops.entryNodePeerId);
       assert.equal(request.provider, fixtures.PROVIDER);
       assert.equal(request.body, fixtures.RPC_REQ_LARGE);
     });

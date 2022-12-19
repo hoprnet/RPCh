@@ -28,7 +28,7 @@ export default class Response {
    * @param body
    * @return Response
    */
-  public static fromRequest(request: Request, body: string): Response {
+  public static createResponse(request: Request, body: string): Response {
     const payload = joinPartsToBody(["response", body]);
     const envelope = new Envelope(
       utils.toUtf8Bytes(payload),
@@ -37,11 +37,9 @@ export default class Response {
     );
     box_response(request.session, envelope);
 
-    const encrypted = utils.hexlify(request.session.get_response_data());
-
     return new Response(
       request.id,
-      encrypted,
+      body,
       request.entryNode,
       request.exitNode,
       request.session
@@ -54,7 +52,12 @@ export default class Response {
    * @param exitNode
    * @returns Request
    */
-  public static fromMessage(request: Request, message: Message): Response {
+  public static fromMessage(
+    request: Request,
+    message: Message,
+    lastResponseFromExitNode: bigint,
+    updateLastResponseFromExitNode: (counter: bigint) => any
+  ): Response {
     unbox_response(
       request.session,
       new Envelope(
@@ -62,8 +65,10 @@ export default class Response {
         request.entryNode.peerId.toB58String(),
         request.exitNode.peerId.toB58String()
       ),
-      BigInt(0)
+      lastResponseFromExitNode
     );
+
+    updateLastResponseFromExitNode(request.session.updated_counter());
 
     const decrypted = utils.toUtf8String(request.session.get_response_data());
 
