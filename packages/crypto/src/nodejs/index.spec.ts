@@ -35,51 +35,48 @@ const RES_BODY = "thisisresponse";
 const RES_BODY_U8A = utils.toUtf8Bytes(RES_BODY);
 
 describe("test index.ts", function () {
-  let clientReqCounter = BigInt(0);
-  // let clientResCounter = BigInt(0);
-  // let exitNodeReqCounter = BigInt(0);
-  let exitNodeResCounter = BigInt(0);
+  let client_counter_value = BigInt(0);
+  let client_last_request_ts = BigInt(0);
+  let exit_last_response_ts = BigInt(0);
 
   it("should do the whole flow first time", function () {
-    const IDENTITY_EXIT_NODE = Identity.load_identity(
-      PUB_KEY_EXIT_NODE,
-      PRIV_KEY_EXIT_NODE
-    );
-
-    // client
-    const session_client = box_request(
+    // --> on client
+    const client_session = box_request(
       new Envelope(
         REQ_BODY_U8A,
         PEER_ID_ENTRY_NODE.toB58String(),
         PEER_ID_EXIT_NODE.toB58String()
       ),
-      IDENTITY_EXIT_NODE
+      // exit node identity
+      Identity.load_identity(PUB_KEY_EXIT_NODE)
     );
 
-    session_client.updated_counter();
+    // now the RPCh Client must update the counter
+    client_session.updated_counter();
 
-    // exit node
-    const encrypted_req_data_received = session_client.get_request_data();
-    const session_exit_node = unbox_request(
+    // --> exit node
+    const encrypted_req_data_received = client_session.get_request_data();
+    const exit_node_session = unbox_request(
       new Envelope(
         encrypted_req_data_received,
         PEER_ID_ENTRY_NODE.toB58String(),
         PEER_ID_EXIT_NODE.toB58String()
       ),
-      IDENTITY_EXIT_NODE,
-      clientReqCounter
+      Identity.load_identity(PUB_KEY_EXIT_NODE, PRIV_KEY_EXIT_NODE),
+      client_last_request_ts
     );
 
-    clientReqCounter = session_exit_node.updated_counter();
+    // exit node must update the client's counter value in a DB
+    client_last_request_ts = BigInt(+new Date());
+    client_counter_value = exit_node_session.updated_counter();
 
     assert.equal(
-      utils.toUtf8String(session_exit_node.get_request_data()),
+      utils.toUtf8String(exit_node_session.get_request_data()),
       utils.toUtf8String(REQ_BODY_U8A)
     );
 
-    // exit node
     box_response(
-      session_exit_node,
+      exit_node_session,
       new Envelope(
         RES_BODY_U8A,
         PEER_ID_ENTRY_NODE.toB58String(),
@@ -87,68 +84,67 @@ describe("test index.ts", function () {
       )
     );
 
-    // clientResCounter = session_exit_node.updated_counter();
+    client_counter_value = exit_node_session.updated_counter();
 
-    // client
-    const encrypted_res_data_received = session_exit_node.get_response_data();
+    // --> client
+    const encrypted_res_data_received = exit_node_session.get_response_data();
     unbox_response(
-      session_client,
+      client_session,
       new Envelope(
         encrypted_res_data_received,
         PEER_ID_ENTRY_NODE.toB58String(),
         PEER_ID_EXIT_NODE.toB58String()
       ),
-      exitNodeResCounter
+      exit_last_response_ts
     );
 
-    exitNodeResCounter = session_client.updated_counter();
+    exit_last_response_ts = BigInt(+new Date());
+    client_session.updated_counter();
 
     assert.equal(
-      utils.toUtf8String(session_client.get_response_data()),
+      utils.toUtf8String(client_session.get_response_data()),
       utils.toUtf8String(RES_BODY_U8A)
     );
   });
 
   it("should do the whole flow second time", function () {
-    const IDENTITY_EXIT_NODE = Identity.load_identity(
-      PUB_KEY_EXIT_NODE,
-      PRIV_KEY_EXIT_NODE
-    );
-
-    // client
-    const session_client = box_request(
+    // --> on client
+    const client_session = box_request(
       new Envelope(
         REQ_BODY_U8A,
         PEER_ID_ENTRY_NODE.toB58String(),
         PEER_ID_EXIT_NODE.toB58String()
       ),
-      IDENTITY_EXIT_NODE
+      // exit node identity
+      Identity.load_identity(PUB_KEY_EXIT_NODE)
     );
 
-    session_client.updated_counter();
+    // now the RPCh Client must update the counter
+    client_session.updated_counter();
 
-    // exit node
-    const encrypted_req_data_received = session_client.get_request_data();
-    const session_exit_node = unbox_request(
+    // --> exit node
+    const encrypted_req_data_received = client_session.get_request_data();
+    const exit_node_session = unbox_request(
       new Envelope(
         encrypted_req_data_received,
         PEER_ID_ENTRY_NODE.toB58String(),
         PEER_ID_EXIT_NODE.toB58String()
       ),
-      IDENTITY_EXIT_NODE,
-      clientReqCounter
+      Identity.load_identity(PUB_KEY_EXIT_NODE, PRIV_KEY_EXIT_NODE),
+      client_last_request_ts
     );
 
-    clientReqCounter = session_exit_node.updated_counter();
+    // exit node must update the client's counter value in a DB
+    client_last_request_ts = BigInt(+new Date());
+    client_counter_value = exit_node_session.updated_counter();
 
     assert.equal(
-      utils.toUtf8String(session_exit_node.get_request_data()),
+      utils.toUtf8String(exit_node_session.get_request_data()),
       utils.toUtf8String(REQ_BODY_U8A)
     );
 
-    // exit node
     box_response(
-      session_exit_node,
+      exit_node_session,
       new Envelope(
         RES_BODY_U8A,
         PEER_ID_ENTRY_NODE.toB58String(),
@@ -156,24 +152,25 @@ describe("test index.ts", function () {
       )
     );
 
-    // clientCounter = session_exit_node.counter();
+    client_counter_value = exit_node_session.updated_counter();
 
-    // client
-    const encrypted_res_data_received = session_exit_node.get_response_data();
+    // --> client
+    const encrypted_res_data_received = exit_node_session.get_response_data();
     unbox_response(
-      session_client,
+      client_session,
       new Envelope(
         encrypted_res_data_received,
         PEER_ID_ENTRY_NODE.toB58String(),
         PEER_ID_EXIT_NODE.toB58String()
       ),
-      exitNodeResCounter
+      exit_last_response_ts
     );
 
-    exitNodeResCounter = session_client.updated_counter();
+    exit_last_response_ts = BigInt(+new Date());
+    client_session.updated_counter();
 
     assert.equal(
-      utils.toUtf8String(session_client.get_response_data()),
+      utils.toUtf8String(client_session.get_response_data()),
       utils.toUtf8String(RES_BODY_U8A)
     );
   });
