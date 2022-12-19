@@ -34,12 +34,13 @@ const REQ_BODY_U8A = utils.toUtf8Bytes(REQ_BODY);
 const RES_BODY = "thisisresponse";
 const RES_BODY_U8A = utils.toUtf8Bytes(RES_BODY);
 
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 describe("test index.ts", function () {
-  let client_counter_value = BigInt(0);
   let client_last_request_ts = BigInt(0);
   let exit_last_response_ts = BigInt(0);
 
-  it("should do the whole flow first time", function () {
+  it("should do the whole flow first time", async function () {
     // --> on client
     const client_session = box_request(
       new Envelope(
@@ -51,8 +52,7 @@ describe("test index.ts", function () {
       Identity.load_identity(PUB_KEY_EXIT_NODE)
     );
 
-    // now the RPCh Client must update the counter
-    client_session.updated_counter();
+    await wait(100);
 
     // --> exit node
     const encrypted_req_data_received = client_session.get_request_data();
@@ -66,9 +66,7 @@ describe("test index.ts", function () {
       client_last_request_ts
     );
 
-    // exit node must update the client's counter value in a DB
-    client_last_request_ts = BigInt(+new Date());
-    client_counter_value = exit_node_session.updated_counter();
+    client_last_request_ts = exit_node_session.updated_counter();
 
     assert.equal(
       utils.toUtf8String(exit_node_session.get_request_data()),
@@ -84,7 +82,7 @@ describe("test index.ts", function () {
       )
     );
 
-    client_counter_value = exit_node_session.updated_counter();
+    await wait(100);
 
     // --> client
     const encrypted_res_data_received = exit_node_session.get_response_data();
@@ -98,8 +96,7 @@ describe("test index.ts", function () {
       exit_last_response_ts
     );
 
-    exit_last_response_ts = BigInt(+new Date());
-    client_session.updated_counter();
+    exit_last_response_ts = client_session.updated_counter();
 
     assert.equal(
       utils.toUtf8String(client_session.get_response_data()),
@@ -107,7 +104,7 @@ describe("test index.ts", function () {
     );
   });
 
-  it("should do the whole flow second time", function () {
+  it("should do the whole flow second time", async function () {
     // --> on client
     const client_session = box_request(
       new Envelope(
@@ -119,8 +116,7 @@ describe("test index.ts", function () {
       Identity.load_identity(PUB_KEY_EXIT_NODE)
     );
 
-    // now the RPCh Client must update the counter
-    client_session.updated_counter();
+    await wait(100);
 
     // --> exit node
     const encrypted_req_data_received = client_session.get_request_data();
@@ -134,9 +130,7 @@ describe("test index.ts", function () {
       client_last_request_ts
     );
 
-    // exit node must update the client's counter value in a DB
-    client_last_request_ts = BigInt(+new Date());
-    client_counter_value = exit_node_session.updated_counter();
+    client_last_request_ts = exit_node_session.updated_counter();
 
     assert.equal(
       utils.toUtf8String(exit_node_session.get_request_data()),
@@ -152,7 +146,7 @@ describe("test index.ts", function () {
       )
     );
 
-    client_counter_value = exit_node_session.updated_counter();
+    await wait(100);
 
     // --> client
     const encrypted_res_data_received = exit_node_session.get_response_data();
@@ -166,8 +160,7 @@ describe("test index.ts", function () {
       exit_last_response_ts
     );
 
-    exit_last_response_ts = BigInt(+new Date());
-    client_session.updated_counter();
+    exit_last_response_ts = client_session.updated_counter();
 
     assert.equal(
       utils.toUtf8String(client_session.get_response_data()),
