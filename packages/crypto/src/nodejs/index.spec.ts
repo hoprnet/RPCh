@@ -35,14 +35,15 @@ const RES_BODY = "thisisresponse";
 const RES_BODY_U8A = utils.toUtf8Bytes(RES_BODY);
 
 describe("test index.ts", function () {
-  let clientCounter = BigInt(0);
-  let exitNodeCounter = BigInt(0);
+  let clientReqCounter = BigInt(0);
+  // let clientResCounter = BigInt(0);
+  // let exitNodeReqCounter = BigInt(0);
+  let exitNodeResCounter = BigInt(0);
 
   it("should do the whole flow first time", function () {
     const IDENTITY_EXIT_NODE = Identity.load_identity(
       PUB_KEY_EXIT_NODE,
-      PRIV_KEY_EXIT_NODE,
-      exitNodeCounter
+      PRIV_KEY_EXIT_NODE
     );
 
     // client
@@ -55,7 +56,7 @@ describe("test index.ts", function () {
       IDENTITY_EXIT_NODE
     );
 
-    exitNodeCounter = session_client.counter();
+    session_client.updated_counter();
 
     // exit node
     const encrypted_req_data_received = session_client.get_request_data();
@@ -66,10 +67,10 @@ describe("test index.ts", function () {
         PEER_ID_EXIT_NODE.toB58String()
       ),
       IDENTITY_EXIT_NODE,
-      clientCounter
+      clientReqCounter
     );
 
-    clientCounter = session_exit_node.counter();
+    clientReqCounter = session_exit_node.updated_counter();
 
     assert.equal(
       utils.toUtf8String(session_exit_node.get_request_data()),
@@ -86,7 +87,7 @@ describe("test index.ts", function () {
       )
     );
 
-    clientCounter = session_exit_node.counter();
+    // clientResCounter = session_exit_node.updated_counter();
 
     // client
     const encrypted_res_data_received = session_exit_node.get_response_data();
@@ -96,10 +97,11 @@ describe("test index.ts", function () {
         encrypted_res_data_received,
         PEER_ID_ENTRY_NODE.toB58String(),
         PEER_ID_EXIT_NODE.toB58String()
-      )
+      ),
+      exitNodeResCounter
     );
 
-    exitNodeCounter = session_client.counter();
+    exitNodeResCounter = session_client.updated_counter();
 
     assert.equal(
       utils.toUtf8String(session_client.get_response_data()),
@@ -110,8 +112,7 @@ describe("test index.ts", function () {
   it("should do the whole flow second time", function () {
     const IDENTITY_EXIT_NODE = Identity.load_identity(
       PUB_KEY_EXIT_NODE,
-      PRIV_KEY_EXIT_NODE,
-      exitNodeCounter
+      PRIV_KEY_EXIT_NODE
     );
 
     // client
@@ -124,7 +125,7 @@ describe("test index.ts", function () {
       IDENTITY_EXIT_NODE
     );
 
-    exitNodeCounter = session_client.counter();
+    session_client.updated_counter();
 
     // exit node
     const encrypted_req_data_received = session_client.get_request_data();
@@ -135,10 +136,10 @@ describe("test index.ts", function () {
         PEER_ID_EXIT_NODE.toB58String()
       ),
       IDENTITY_EXIT_NODE,
-      clientCounter
+      clientReqCounter
     );
 
-    clientCounter = session_exit_node.counter();
+    clientReqCounter = session_exit_node.updated_counter();
 
     assert.equal(
       utils.toUtf8String(session_exit_node.get_request_data()),
@@ -155,7 +156,7 @@ describe("test index.ts", function () {
       )
     );
 
-    clientCounter = session_exit_node.counter();
+    // clientCounter = session_exit_node.counter();
 
     // client
     const encrypted_res_data_received = session_exit_node.get_response_data();
@@ -165,10 +166,11 @@ describe("test index.ts", function () {
         encrypted_res_data_received,
         PEER_ID_ENTRY_NODE.toB58String(),
         PEER_ID_EXIT_NODE.toB58String()
-      )
+      ),
+      exitNodeResCounter
     );
 
-    exitNodeCounter = session_client.counter();
+    exitNodeResCounter = session_client.updated_counter();
 
     assert.equal(
       utils.toUtf8String(session_client.get_response_data()),

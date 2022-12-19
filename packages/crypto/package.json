@@ -20,6 +20,6 @@
     "rpch-configs-typescript": "*"
   },
   "dependencies": {
-    "@rpch/crypto": "^0.2.1"
+    "@rpch/crypto": "^0.3.0"
   }
 }
