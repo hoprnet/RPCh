@@ -1,6 +1,3 @@
-import { set_panic_hook } from "rpch-crypto";
-set_panic_hook();
-
 import assert from "assert";
 import Request from "./request";
 import {

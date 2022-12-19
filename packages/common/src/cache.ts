@@ -57,7 +57,7 @@ export default class Cache {
       this.segments.delete(segment.msgId);
 
       // trigger onMessage
-      this.onMessage(Message.fromSegments(segmentEntry.segments));
+      this.onMessage(message);
       logVerbose("found new Message", message.id);
     }
   }

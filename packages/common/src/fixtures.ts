@@ -1,7 +1,7 @@
 import type Nock from "nock";
 import Request from "./request";
 import Response from "./response";
-import { Identity } from "./crypto";
+import { Identity } from "./utils";
 
 /**
  * An RPC provider

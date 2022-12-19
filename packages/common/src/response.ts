@@ -1,13 +1,12 @@
-import Message from "./message";
 import type Request from "./request";
-import { joinPartsToBody, splitBodyToParts } from "./utils";
-import { Identity } from "./crypto";
 import {
   Envelope,
   Session,
   unbox_response,
   box_response,
 } from "rpch-crypto/nodejs";
+import Message from "./message";
+import { joinPartsToBody, splitBodyToParts, Identity } from "./utils";
 import { utils } from "ethers";
 
 /**
@@ -62,7 +61,8 @@ export default class Response {
         utils.arrayify(message.body),
         request.entryNode.peerId.toB58String(),
         request.exitNode.peerId.toB58String()
-      )
+      ),
+      BigInt(0)
     );
 
     const decrypted = utils.toUtf8String(request.session.get_response_data());

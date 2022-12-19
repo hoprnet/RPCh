@@ -4,8 +4,8 @@ import {
   generateRandomNumber,
   joinPartsToBody,
   splitBodyToParts,
+  Identity,
 } from "./utils";
-import { Identity } from "./crypto";
 import {
   Envelope,
   box_request,
@@ -49,8 +49,7 @@ export default class Request {
       entryNode.peerId.toB58String(),
       exitNode.peerId.toB58String()
     );
-    const session = box_request(envelope, exitNode.getIdentity());
-    session.counter();
+    const session = box_request(envelope, exitNode.cryptoIdentity);
 
     return new Request(id, provider, body, entryNode, exitNode, session);
   }
@@ -72,10 +71,10 @@ export default class Request {
         entryNode.peerId.toB58String(),
         exitNode.peerId.toB58String()
       ),
-      exitNode.getIdentity(),
+      exitNode.cryptoIdentity,
       BigInt(0)
     );
-    session.counter();
+    // session.counter();
 
     const [type, provider, ...remaining] = splitBodyToParts(
       utils.toUtf8String(session.get_request_data())
