@@ -61,7 +61,7 @@ export default class SDK {
       this.onRequestFromSegments,
       this.onResponseFromSegments
     );
-    this.requestCache = new RequestCache();
+    this.requestCache = new RequestCache(this.onRequestRemoval);
     this.reliabilityScore = new ReliabilityScore(
       tempOps.freshNodeThreshold,
       tempOps.maxResponses
@@ -125,7 +125,6 @@ export default class SDK {
     }
     matchingRequest.resolve(res);
 
-    // ! @Steve: peerId should be this.tempOps?.entryNodePeerId or this.entryNode.peerId?
     this.reliabilityScore.addMetric(
       this.tempOps?.entryNodePeerId,
       matchingRequest.request.id,
@@ -143,6 +142,15 @@ export default class SDK {
     log("ignoring received request %s", req.body);
   }
 
+  private onRequestRemoval(req: Request): void {
+    console.log("called");
+    this.reliabilityScore.addMetric(
+      this.tempOps.entryNodePeerId,
+      req.id,
+      "failed"
+    );
+  }
+
   /**
    * Start the SDK and initialize necessary data.
    */
@@ -152,13 +160,6 @@ export default class SDK {
     this.interval = setInterval(() => {
       this.segmentCache.removeExpired(this.timeout);
       this.requestCache.removeExpired(this.timeout);
-
-      // TODO: get requestId here, but where from, returning key at requestCache.removeExpired?
-      this.reliabilityScore.addMetric(
-        this.tempOps.entryNodePeerId,
-        1,
-        "failed"
-      );
     }, 1000);
 
     await this.selectEntryNode(this.discoveryPlatformApiEndpoint);
