@@ -4,6 +4,7 @@ import { AccessTokenService } from "../access-token";
 import { RequestService } from "../request";
 import { DBInstance } from "../db";
 import { entryServer, doesAccessTokenHaveEnoughBalance } from ".";
+import { assert } from "chai";
 
 const SECRET_KEY = "SECRET";
 const MAX_AMOUNT_OF_TOKENS = 40;
@@ -117,5 +118,18 @@ describe("test entry server", function () {
       requestAmount: MAX_AMOUNT_OF_TOKENS,
     });
     expect(tokenHasBalanceRes).toEqual(false);
+  });
+  it("should return correct amount left", async function () {
+    const responseToken = await request(app)
+      .get("/api/access-token")
+      .set("Accept", "application/json");
+
+    const resFunding = await request(app)
+      .post("/api/request/funds/0x0000000000000000")
+      .send({ amount: MAX_AMOUNT_OF_TOKENS - 10, chainId: 80 })
+      .set("Accept", "application/json")
+      .set("x-access-token", responseToken.body.accessToken);
+
+    assert.equal(resFunding.body.amountLeft, 10);
   });
 });

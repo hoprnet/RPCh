@@ -89,6 +89,7 @@ export const entryServer = (ops: {
     return res.json({
       accessToken: accessToken?.Token,
       expiredAt: accessToken?.ExpiredAt,
+      amountLeft: ops.maxAmountOfTokens,
     });
   });
 
@@ -111,8 +112,16 @@ export const entryServer = (ops: {
         accessTokenHash,
         chainId,
       })) as CreateRequest;
+      const allUnresolvedAndSuccessfulRequestsByAccessToken =
+        await ops.requestService.getAllUnresolvedAndSuccessfulRequestsByAccessToken(
+          accessTokenHash
+        );
+      const amountUsed = ops.requestService.sumAmountOfRequests(
+        allUnresolvedAndSuccessfulRequestsByAccessToken
+      );
       return res.json({
         id: request.requestId,
+        amountLeft: ops.maxAmountOfTokens - amountUsed[chainId],
       });
     }
   );

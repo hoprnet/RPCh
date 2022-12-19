@@ -97,6 +97,25 @@ export class RequestService {
     return compromisedRequests;
   }
 
+  public async getAllUnresolvedAndSuccessfulRequestsByAccessToken(
+    accessTokenHash: string
+  ) {
+    const allRequestsByAccessToken = await this.getRequestsByAccessToken(
+      accessTokenHash
+    );
+    const successfulRequestsByAccessToken = allRequestsByAccessToken?.filter(
+      (request) => request.status === "SUCCESS"
+    );
+    const allUnresolvedRequests = await this.getAllUnresolvedRequests();
+    const allUnresolvedRequestsByAccessToken = allUnresolvedRequests?.filter(
+      (request) => request.accessTokenHash === accessTokenHash
+    );
+    return [
+      ...(successfulRequestsByAccessToken ?? []),
+      ...(allUnresolvedRequestsByAccessToken ?? []),
+    ];
+  }
+
   public groupRequestsByChainId(requests: QueryRequest[]) {
     const requestsKeyedByChainId: { [chainId: number]: QueryRequest[] } = {};
     for (const request of requests ?? []) {
