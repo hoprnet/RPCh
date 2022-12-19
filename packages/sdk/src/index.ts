@@ -142,8 +142,12 @@ export default class SDK {
     log("ignoring received request %s", req.body);
   }
 
+  /**
+   * Adds a failed metric to the reliability score
+   * when the request expires.
+   * @param req Request received from cache module.
+   */
   private onRequestRemoval(req: Request): void {
-    console.log("called");
     this.reliabilityScore.addMetric(
       this.tempOps.entryNodePeerId,
       req.id,
