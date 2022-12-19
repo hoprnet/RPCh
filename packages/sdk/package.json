@@ -12,12 +12,12 @@
     "test": "jest --coverage"
   },
   "devDependencies": {
-    "rpch-configs-typescript": "*",
+    "nock": "^13.2.9",
     "rpch-configs-eslint": "*",
-    "rpch-configs-prettier": "*",
     "rpch-configs-jest": "*",
+    "rpch-configs-prettier": "*",
     "rpch-configs-tsup": "*",
-    "nock": "^13.2.9"
+    "rpch-configs-typescript": "*"
   },
   "dependencies": {
     "rpch-common": "*"

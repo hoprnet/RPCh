@@ -12,6 +12,14 @@ const EXIT_NODE_PEER_ID = fixtures.PEER_ID_B;
 
 type MockOps = HoprSdkTempOps & { timeout: number };
 
+jest.mock("rpch-common", () => ({
+  ...jest.requireActual("rpch-common"),
+  hoprd: {
+    createMessageListener: jest.fn(),
+    sendMessage: jest.fn(() => fixtures.LARGE_RESPONSE),
+  },
+}));
+
 const createSdkMock = (
   overwriteOps?: Partial<MockOps>
 ): {
