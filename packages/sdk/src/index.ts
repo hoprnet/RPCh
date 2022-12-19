@@ -118,7 +118,7 @@ export default class SDK {
     }
 
     // construct Response from Message
-    const response = Response.fromRequest(match.request, message.body);
+    const response = Response.createResponse(match.request, message.body);
 
     match.resolve(response);
     this.requestCache.removeRequest(match.request);

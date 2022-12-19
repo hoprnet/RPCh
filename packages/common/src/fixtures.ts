@@ -1,19 +1,20 @@
 import type Nock from "nock";
 import Request from "./request";
+import Response from "./response";
 import { Identity } from "./utils";
 
+// example of a working provider
 export const PROVIDER = "https://primary.gnosis-chain.rpc.hoprtech.net";
 
+// reusable identity fixtures
 export const PEER_ID_A =
   "16Uiu2HAmA5h2q7G2RrZMA4znAH4p8KBcuJWUmjjVfpW5DXePQ2He";
 export const PEER_ID_B =
   "16Uiu2HAkwJdCap1ErGKjtLeHjfnN53TD8kryG48NYVPWx4HhRfKW";
-
 export const PUB_KEY_A =
   "0x02d9c0e0ab99d251a8fd2cd48df6554dfd5112afe589a3dcab75928aea34f98581";
 export const PUB_KEY_B =
   "0x021be92a59234dbef617f5eb0d5426758a6cad16f951458a3d753aa22c09e75509";
-
 export const PRIV_KEY_A =
   "0xd12c951563ee7e322562b7ce7a31c37cc6c10d9b86f834ed30f7c4ab42ae8de0";
 export const PRIV_KEY_B =
@@ -40,24 +41,32 @@ export const RPC_RES_SMALL = `{"id":1663836360444,"jsonrpc": "2.0","result": "0x
  */
 export const RPC_RES_LARGE = `{"id":1663836360444,"jsonrpc": "2.0","result": "0x0234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab58"}`;
 
-export const SMALL_REQUEST = Request.createRequest(
-  PROVIDER,
-  RPC_REQ_SMALL,
-  IDENTITY_A,
-  IDENTITY_B
-);
-export const LARGE_REQUEST = Request.createRequest(
-  PROVIDER,
-  RPC_REQ_LARGE,
-  IDENTITY_A,
-  IDENTITY_B
-);
+/**
+ * Create a client request
+ * @param size
+ * @returns Request
+ */
+export const createClientRequest = (
+  size: "small" | "large" = "small"
+): Request => {
+  return Request.createRequest(
+    PROVIDER,
+    size === "small" ? RPC_REQ_SMALL : RPC_REQ_LARGE,
+    IDENTITY_A,
+    IDENTITY_B
+  );
+};
 
 /**
  * An RPC response which is an error
  */
 export const RPC_RES_ERROR = `{"id":123,"jsonrpc": "2.0","error":{"code":1,"message":"ExampleMethodresultismissing'example_key'."}}`;
 
+/**
+ * Given a nock scope, make it only resolve to requests
+ * matching HOPRd's message API.
+ * @param nock
+ */
 export const nockSendMessageApi = (nock: Nock.Scope): Nock.Interceptor => {
   return nock.post((uri) => uri.includes("/api/v2/messages"));
 };
