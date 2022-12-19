@@ -27,12 +27,17 @@ export class FundingPlatformApi {
     this.amountLeft = ops.amountLeft;
   }
 
+  private async fetchAccessToken(): Promise<string> {
+    const res = await fetch(`${this.url}/api/access-token`);
+    const resJson = (await res.json()) as getAccessTokenResponse;
+    this.saveAccessToken(resJson);
+    return resJson.accessToken;
+  }
+
   private async getAccessToken(amount?: number): Promise<string> {
     if (!this.accessTokenIsValid(amount)) {
-      const res = await fetch(`${this.url}/api/access-token`);
-      const resJson = (await res.json()) as getAccessTokenResponse;
-      this.saveAccessToken(resJson);
-      return this.accessToken!;
+      const accessToken = this.fetchAccessToken();
+      return accessToken;
     } else {
       return this.accessToken!;
     }
@@ -61,6 +66,9 @@ export class FundingPlatformApi {
     }
 
     try {
+      const dbNode = await getRegisteredNode(this.db, node.peerId);
+      if (!dbNode) throw new Error("Node is not registered");
+
       const res = await fetch(`${this.url}/api/request/funds/${node.peerId}`, {
         method: "POST",
         headers: {
@@ -71,7 +79,8 @@ export class FundingPlatformApi {
           chainId: node.chainId,
         } as postFundingRequest),
       });
-      await updateRegisteredNode(this.db, { ...node, status: "FUNDING" });
+
+      await updateRegisteredNode(this.db, { ...dbNode, status: "FUNDING" });
 
       const { id: requestId, amountLeft } =
         (await res.json()) as postFundingResponse;
@@ -125,7 +134,11 @@ export class FundingPlatformApi {
         request.status === "SUCCESS" ||
         request.status === "REJECTED-DURING-PROCESSING"
       ) {
-        await updateRegisteredNode(this.db, { ...node!, status: "READY" });
+        await updateRegisteredNode(this.db, {
+          ...node!,
+          status: request.status === "SUCCESS" ? "READY" : "UNUSABLE",
+          totalAmountFunded: node.totalAmountFunded + Number(request.amount),
+        });
         this.pendingRequests.delete(peerId);
       } else if (
         request.status === "FAILED" ||

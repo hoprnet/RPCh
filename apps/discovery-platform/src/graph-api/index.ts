@@ -45,13 +45,13 @@ export const checkCommitment = async (ops: {
   return false;
 };
 
-const validateNode = (
+export const validateNode = (
   graphRes: GraphHoprResponse,
   minBalance: number,
   minChannels: number
 ) => {
   const validChannels = graphRes.data.account.fromChannels.filter(
-    (channel) => channel.balance > minBalance
+    (channel) => channel.balance >= minBalance
   );
-  return validChannels.length > minChannels;
+  return validChannels.length >= minChannels;
 };

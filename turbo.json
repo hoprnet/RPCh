@@ -31,7 +31,10 @@
         "build/**"
       ],
       "env": [
-        "PORT"
+        "PORT",
+        "FUNDING_PLATFORM_API",
+        "BALANCE_THRESHOLD",
+        "CHANNELS_THRESHOLD"
       ]
     },
     "dev": {
