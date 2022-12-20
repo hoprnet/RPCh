@@ -139,7 +139,7 @@ export default class SDK {
     this.interval = setInterval(() => {
       this.segmentCache.removeExpired(this.timeout);
       this.requestCache.removeExpired(this.timeout);
-    }, 1e4);
+    }, 1e3);
 
     await this.selectEntryNode(this.discoveryPlatformApiEndpoint);
     await this.selectExitNode(this.discoveryPlatformApiEndpoint);

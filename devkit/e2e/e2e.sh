@@ -1,13 +1,13 @@
 #!/bin/sh
 
 # If there's a fatal error or users Ctrl+C it will tear down setup
-trap 'docker compose down; rm ./logs; exit' SIGINT || trap 'docker compose down; rm ./logs; exit' SIGKILL
+trap 'docker compose -f ../sandbox/docker-compose.yml down; rm ./logs; exit' SIGINT || trap 'docker compose -f ../sandbox/docker-compose.yml down; rm ./logs; exit' SIGKILL
 
 #  Run docker compose as daemon
-docker compose up -d --remove-orphans --build --force-recreate
+docker compose -f ../sandbox/docker-compose.yml up -d --remove-orphans --build --force-recreate
 
 # Extract HOPRD_API_TOKEN from env file
-source .env
+source ../sandbox/.env
 
 logs1=""
 logs2=""
@@ -15,39 +15,41 @@ logs3=""
 logs4=""
 logs5=""
 logs_pluto=""
+logs_error=""
+segmentation_error=""
 pluto=false
 sleep 10
 
 until [[ $logs1 =~ "Listening for incoming messages from HOPRd" ]]; do
-    docker logs devkit-exit-1-1 &> logs
+    docker logs sandbox-exit-1-1 &> logs
     logs1=$(cat logs)
     sleep 1
 done
 echo "Node 1 running"
 
 until [[ $logs2 =~ "Listening for incoming messages from HOPRd" ]]; do
-    docker logs devkit-exit-2-1 &> logs
+    docker logs sandbox-exit-2-1 &> logs
     logs2=$(cat logs)
     sleep 1
 done
 echo "Node 2 running"
 
 until [[ $logs3 =~ "Listening for incoming messages from HOPRd" ]]; do
-    docker logs devkit-exit-3-1 &> logs
+    docker logs sandbox-exit-3-1 &> logs
     logs3=$(cat logs)
     sleep 1
 done
 echo "Node 3 running"
 
 until [[ $logs4 =~ "Listening for incoming messages from HOPRd" ]]; do
-    docker logs devkit-exit-4-1 &> logs
+    docker logs sandbox-exit-4-1 &> logs
     logs4=$(cat logs)
     sleep 1
 done
 echo "Node 4 running"
 
 until [[ $logs5 =~ "Listening for incoming messages from HOPRd" ]]; do
-    docker logs devkit-exit-5-1 &> logs
+    docker logs sandbox-exit-5-1 &> logs
     logs5=$(cat logs)
     sleep 1
 done
@@ -56,8 +58,19 @@ echo "All nodes ready!"
 
 echo "Waiting for node to find each other and channels to open"
 until [[ $pluto == true ]]; do
-    docker logs devkit-pluto-1 &> logs
+    docker logs sandbox-pluto-1 &> logs
     logs_pluto=$(cat logs | grep "Terminating this script will clean up the running local cluster" | head -1)
+    logs_error=$(cat logs | grep "Cleaning up processes" | head -1)
+    segmentation_error=$(cat logs | grep "Segmentation fault" | head -1)
+    # Check for a segmentation fault or if the retries are over
+    if [[ ! -z "$logs_error" || ! -z "$segmentation_error" ]]; then
+        echo "Unrecoverable error"
+        echo "Exiting..."
+        docker compose -f ../sandbox/docker-compose.yml down
+        rm ./logs
+        exit
+    fi
+
     [[ ! -z "$logs_pluto" ]] && pluto=true
 done
 echo "Done!"
@@ -71,5 +84,5 @@ ENTRY_NODE_PEER_ID="$entry_node_peer_id" EXIT_NODE_PEER_ID="$exit_node_peer_id" 
 yarn test-e2e
 
 # After tests exit tear down setup
-docker compose down
+docker compose -f ../sandbox/docker-compose.yml down
 rm ./logs

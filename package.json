@@ -6,7 +6,7 @@
     "configs/*",
     "packages/*",
     "apps/*",
-    "devkit"
+    "devkit/e2e"
   ],
   "scripts": {
     "build": "turbo run build",

@@ -10,7 +10,7 @@ volumes:
 x-exit-service: &exit
   build:
     dockerfile: apps/exit-node/Dockerfile
-    context: ../
+    context: ../../
   restart: unless-stopped
   volumes:
     - exit-node-data:/tmp

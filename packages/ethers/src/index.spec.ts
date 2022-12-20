@@ -10,11 +10,22 @@ const ENTRY_NODE_API_TOKEN = "12345";
 const ENTRY_NODE_PEER_ID = fixtures.PEER_ID_A;
 const EXIT_NODE_PEER_ID = fixtures.PEER_ID_B;
 
+let triggerOnMessage: (message: string) => void = () => {};
+
 jest.mock("rpch-common", () => ({
   ...jest.requireActual("rpch-common"),
   hoprd: {
-    createMessageListener: jest.fn(),
-    sendMessage: jest.fn(),
+    sendMessage: jest.fn(async () => "MOCK_SEND_MSG_RESPONSE"),
+    createMessageListener: jest.fn(
+      async (
+        _apiEndpoint: string,
+        _apiToken: string,
+        onMessage: (message: string) => void
+      ) => {
+        triggerOnMessage = onMessage;
+        return () => {};
+      }
+    ),
   },
 }));
 

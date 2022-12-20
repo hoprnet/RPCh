@@ -18,16 +18,4 @@ describe("test Segment class", function () {
     assert.equal(segment.segmentsLength, 1);
     assert.equal(segment.body, BODY);
   });
-  it("Should be a correct segment", function () {
-    const segment = Segment.fromString(
-      `621489|0|1|response|{"jsonrpc":"2.0","result":"0x64","id":42}`
-    );
-    assert.equal(segment.msgId, 621489);
-    assert.equal(segment.segmentNr, 0);
-    assert.equal(segment.segmentsLength, 1);
-    assert.equal(
-      segment.body,
-      `response|{"jsonrpc":"2.0","result":"0x64","id":42}`
-    );
-  });
 });
