@@ -9,6 +9,8 @@ const ENTRY_NODE_API_ENDPOINT = "http://entry_node";
 const ENTRY_NODE_API_TOKEN = "12345";
 const ENTRY_NODE_PEER_ID = fixtures.PEER_ID_A;
 const EXIT_NODE_PEER_ID = fixtures.PEER_ID_B;
+const FRESH_NODE_THRESHOLD = 20;
+const MAX_RESPONSES = 100;
 
 const getMockedResponse = (request: Request): Response => {
   const rpcId: number = JSON.parse(request.body)["id"];
@@ -30,6 +32,8 @@ describe("test index.ts", function () {
     entryNodeApiToken: ENTRY_NODE_API_TOKEN,
     entryNodePeerId: ENTRY_NODE_PEER_ID,
     exitNodePeerId: EXIT_NODE_PEER_ID,
+    freshNodeThreshold: FRESH_NODE_THRESHOLD,
+    maxResponses: MAX_RESPONSES,
   });
 
   beforeAll(async function () {
