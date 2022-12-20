@@ -9,6 +9,7 @@ import { isExpired } from "../utils";
 import { QueryRegisteredNode } from "../registered-node/dto";
 import { DBInstance } from "../db";
 import { getRegisteredNode, updateRegisteredNode } from "../registered-node";
+
 export class FundingPlatformApi {
   private accessToken: string | undefined;
   private expiredAt: Date | undefined;

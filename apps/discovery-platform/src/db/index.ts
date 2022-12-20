@@ -16,7 +16,7 @@ export const getAllExitNodes = async (db: DBInstance) => {
   return db.data.registeredNodes.filter((node) => node.hasExitNode);
 };
 
-export const getAllNodesThatAreNotExitNodes = async (db: DBInstance) => {
+export const getAllNonExitNodes = async (db: DBInstance) => {
   return db.data.registeredNodes.filter((node) => !node.hasExitNode);
 };
 

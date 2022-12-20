@@ -1,12 +1,12 @@
 import assert from "assert";
-import * as db from "./";
 import { QueryRegisteredNode } from "../registered-node/dto";
+import * as db from "./";
 
-const createMockNode = (peerId?: string) =>
+const createMockNode = (peerId?: string, hasExitNode?: boolean) =>
   ({
     chainId: 100,
     peerId: peerId ?? "peerId",
-    hasExitNode: true,
+    hasExitNode: hasExitNode ?? true,
     honestyScore: 0,
     registeredAt: new Date(Date.now()),
     status: "FRESH",
@@ -36,8 +36,28 @@ describe("test db functions", function () {
 
     assert.equal(allNodes.length, 2);
   });
-  it.todo("should get all nodes that are not exit nodes");
-  it.todo("should get all nodes that are not exit nodes");
+  it("should get all nodes that are not exit nodes", async function () {
+    const firstNode = createMockNode("peer1", false);
+    await db.saveRegisteredNode(dbInstance, firstNode);
+    const secondNode = createMockNode("peer1", false);
+    await db.saveRegisteredNode(dbInstance, secondNode);
+    await db.saveRegisteredNode(dbInstance, createMockNode());
+
+    const notExitNodes = await db.getAllNonExitNodes(dbInstance);
+
+    assert.equal(notExitNodes.length, 2);
+  });
+  it("should get all nodes that are not exit nodes", async function () {
+    const firstNode = createMockNode("peer1", true);
+    await db.saveRegisteredNode(dbInstance, firstNode);
+    const secondNode = createMockNode("peer1", true);
+    await db.saveRegisteredNode(dbInstance, secondNode);
+    await db.saveRegisteredNode(dbInstance, createMockNode("peer2", false));
+
+    const exitNodes = await db.getAllExitNodes(dbInstance);
+
+    assert.equal(exitNodes.length, 2);
+  });
   it("should get one registered node", async function () {
     await db.saveRegisteredNode(dbInstance, createMockNode("1"));
     await db.saveRegisteredNode(dbInstance, createMockNode("2"));

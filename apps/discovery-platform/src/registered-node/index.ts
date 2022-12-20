@@ -43,8 +43,6 @@ export const getAllExitNodes = async (dbInstance: db.DBInstance) => {
   return await db.getAllExitNodes(dbInstance);
 };
 
-export const getAllNodesThatAreNotExitNodes = async (
-  dbInstance: db.DBInstance
-) => {
-  return await db.getAllNodesThatAreNotExitNodes(dbInstance);
+export const getAllNonExitNodes = async (dbInstance: db.DBInstance) => {
+  return await db.getAllNonExitNodes(dbInstance);
 };

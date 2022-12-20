@@ -1,16 +1,18 @@
 import assert from "assert";
-import { CreateRegisteredNode } from "./dto";
 import {
   createRegisteredNode,
+  getAllExitNodes,
+  getAllNonExitNodes,
   getAllRegisteredNodes,
   getRegisteredNode,
   updateRegisteredNode,
 } from ".";
 import { DBInstance } from "../db";
+import { CreateRegisteredNode } from "./dto";
 
-const mockNode = (peerId?: string) =>
+const mockNode = (peerId?: string, hasExitNode?: boolean) =>
   ({
-    hasExitNode: true,
+    hasExitNode: hasExitNode ?? true,
     peerId: peerId ?? "peerId",
     chainId: 100,
     ports: {
@@ -60,6 +62,20 @@ describe("test registered node functions", function () {
     const updatedNode = await getRegisteredNode(db, "1");
     assert.equal(updatedNode?.status, "READY");
   });
-  it.todo("should get all nodes that are not exit nodes");
-  it.todo("should get all nodes that are not exit nodes");
+  it("should get all nodes that are not exit nodes", async function () {
+    await createRegisteredNode(db, mockNode("1", false));
+    await createRegisteredNode(db, mockNode("2", true));
+    await createRegisteredNode(db, mockNode("3", false));
+    const notExitNodes = await getAllNonExitNodes(db);
+
+    assert.equal(notExitNodes.length, 2);
+  });
+  it("should get all nodes that are exit nodes", async function () {
+    await createRegisteredNode(db, mockNode("1", false));
+    await createRegisteredNode(db, mockNode("2", true));
+    await createRegisteredNode(db, mockNode("3", true));
+    const exitNodes = await getAllExitNodes(db);
+
+    assert.equal(exitNodes.length, 2);
+  });
 });
