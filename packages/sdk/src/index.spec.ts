@@ -21,7 +21,7 @@ const createSdkMock = (
   ops: MockOps;
 } => {
   fixtures
-    .nockSendMessageApi(nock(ENTRY_NODE_API_ENDPOINT))
+    .nockSendMessageApi(nock(ENTRY_NODE_API_ENDPOINT).persist(true))
     .reply(202, "someresponse");
 
   const ops: MockOps = {
@@ -106,41 +106,59 @@ describe("test SDK class", function () {
       sdk.onMessage(exitNodeResponse.toMessage());
     });
 
-    it("should call addMetric when onResponseFromSegments is triggered", function (done) {
+    it("should call `addMetric` when `onMessage` is triggered", async function () {
       //@ts-ignore
       const addMetricMock = jest.spyOn(sdk.reliabilityScore, "addMetric");
 
-      sdk.sendRequest(fixtures.SMALL_REQUEST);
-      sdk.sendRequest(fixtures.LARGE_REQUEST).then(() => done());
+      const [smallRequest, , smallResponse] = fixtures.createMockedRequestFlow(
+        3,
+        "small"
+      );
+      const [largeRequest, , largeResponse] = fixtures.createMockedRequestFlow(
+        3,
+        "large"
+      );
+
+      let p1 = sdk.sendRequest(smallRequest);
+      let p2 = sdk.sendRequest(largeRequest);
 
       // @ts-ignore
-      sdk.onResponseFromSegments(fixtures.SMALL_RESPONSE);
+      sdk.onMessage(smallResponse.toMessage());
       // @ts-ignore
-      sdk.onResponseFromSegments(fixtures.LARGE_RESPONSE);
+      sdk.onMessage(largeResponse.toMessage());
+
+      await Promise.all([p1, p2]);
 
       assert.equal(addMetricMock.mock.calls.length, 2);
       assert(addMetricMock.mock.calls.at(0)?.includes("success"));
     });
 
     it("should call addMetric when onRequestRemoval is triggered", function () {
+      const [largeRequest, , largeResponse] = fixtures.createMockedRequestFlow(
+        3,
+        "large"
+      );
+
       //@ts-ignore
       const addMetricMock = jest.spyOn(sdk.reliabilityScore, "addMetric");
       // @ts-ignore
       sdk.requestCache.addRequest(
-        fixtures.LARGE_REQUEST,
+        largeRequest,
         () => {},
         () => {}
       );
       // @ts-ignore
-      sdk.onRequestRemoval(fixtures.LARGE_REQUEST);
+      sdk.onRequestRemoval(largeResponse);
       assert.equal(addMetricMock.mock.calls.length, 1);
       assert(addMetricMock.mock.calls.at(0)?.includes("failed"));
     });
 
     describe("should handle requests correctly when receiving a response", function () {
-      it("should remove request with matching response", function () {
+      it("should remove request with matching response", async function () {
         const [clientRequest, , exitNodeResponse] =
           fixtures.createMockedRequestFlow(3);
+
+        await new Promise((resolve) => setTimeout(resolve, 10));
 
         // @ts-ignore
         sdk.requestCache.addRequest(
