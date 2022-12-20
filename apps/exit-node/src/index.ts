@@ -20,7 +20,7 @@ const {
 
 let lastRequestFromClient = BigInt(0);
 
-const start = async (ops: {
+export const start = async (ops: {
   exit: {
     sendRpcRequest: typeof exit.sendRpcRequest;
   };
@@ -100,8 +100,6 @@ const start = async (ops: {
   };
 };
 
-export default start;
-
 // if this file is the entrypoint of the nodejs process
 if (require.main === module) {
   // Validate enviroment variables
@@ -127,5 +125,5 @@ if (require.main === module) {
     apiEndpoint: HOPRD_API_ENDPOINT,
     apiToken: HOPRD_API_TOKEN,
     timeout: RESPONSE_TIMEOUT,
-  });
+  }).catch(console.error);
 }

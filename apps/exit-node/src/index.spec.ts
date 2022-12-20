@@ -1,5 +1,5 @@
 import assert from "assert";
-import startExitNode from ".";
+import { start as startExitNode } from "./index";
 import { fixtures } from "rpch-common";
 import { utils } from "ethers";
 

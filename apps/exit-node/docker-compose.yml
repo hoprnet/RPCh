@@ -1,0 +1,41 @@
+# docker-compose file that allows RPCh exit node to run alongside HOPRd
+version: "3"
+
+volumes:
+  hoprd-data:
+  exit-node-data:
+
+services:
+  hoprd:
+    image: gcr.io/hoprassociation/hoprd@sha256:0f4f7085910de900aa1edd88c7b1e9334f654613a35784e55800c9da7c1db3e3
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+      - "9091:9091"
+      - "8080:8080"
+    volumes:
+      - hoprd-data:/tmp
+    environment:
+      - HOPRD_ENVIRONMENT=${HOPRD_ENVIRONMENT}
+      - HOPRD_HOST=0.0.0.0:9091
+      - HOPRD_ADMIN=true
+      - HOPRD_ADMIN_HOST=0.0.0.0
+      - HOPRD_API=true
+      - HOPRD_API_HOST=0.0.0.0
+      - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+      - HOPRD_PASSWORD=${HOPRD_PASSWORD}
+      - HOPRD_INIT=true
+  exit-node:
+    build:
+      dockerfile: apps/exit-node/Dockerfile
+      context: ../../
+    restart: unless-stopped
+    volumes:
+      - exit-node-data:/tmp
+    environment:
+      - DEBUG=${DEBUG}
+      - HOPRD_API_ENDPOINT=http://hoprd:3001
+      - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+      - PRIVATE_KEY=${PRIVATE_KEY}
+    depends_on:
+      - hoprd

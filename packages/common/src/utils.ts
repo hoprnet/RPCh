@@ -113,7 +113,7 @@ export const createApiUrl = (
  * @param body
  * @returns decoded message
  */
-export const decodeIncomingBody = (body: string): string | undefined => {
+export const decodeIncomingBody = (body: string): string => {
   try {
     return utils.toUtf8String(
       utils.RLP.decode(new Uint8Array(JSON.parse(`[${body}]`)))[0]
