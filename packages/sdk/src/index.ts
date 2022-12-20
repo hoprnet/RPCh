@@ -7,7 +7,6 @@ import {
   utils,
 } from "rpch-common";
 import RequestCache from "./request-cache";
-import PeerId from "peer-id";
 
 const { Identity } = utils;
 const { log, logError } = utils.createLogger(["sdk"]);
@@ -49,6 +48,7 @@ export default class SDK {
   private entryNode?: EntryNode;
   // selected exit node
   private exitNodePeerId?: string;
+  private lastResponseFromExitNode = BigInt(0);
 
   constructor(
     private readonly timeout: number,
@@ -118,7 +118,14 @@ export default class SDK {
     }
 
     // construct Response from Message
-    const response = Response.createResponse(match.request, message.body);
+    const response = Response.fromMessage(
+      match.request,
+      message,
+      this.lastResponseFromExitNode,
+      (counter) => {
+        this.lastResponseFromExitNode = counter;
+      }
+    );
 
     match.resolve(response);
     this.requestCache.removeRequest(match.request);

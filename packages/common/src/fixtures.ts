@@ -60,12 +60,43 @@ export const createMockedClientRequest = (
   );
 };
 
-export const createMockedRequestFlow = (): [
+export function createMockedRequestFlow(
+  steps: 2,
+  size?: "small" | "large"
+): [clientRequest: Request, exitNodeRequest: Request];
+export function createMockedRequestFlow(
+  steps: 3,
+  size?: "small" | "large"
+): [
+  clientRequest: Request,
+  exitNodeRequest: Request,
+  exitNodeResponse: Response
+];
+export function createMockedRequestFlow(
+  steps: 4,
+  size?: "small" | "large"
+): [
   clientRequest: Request,
   exitNodeRequest: Request,
   exitNodeResponse: Response,
   clientResponse: Response
-] => {
+];
+/**
+ * Recreate a whole flow of request and responses.
+ * With steps you can indicate how much you want
+ * to generate.
+ * @param steps
+ * @param size
+ */
+export function createMockedRequestFlow(
+  steps: 2 | 3 | 4 = 4,
+  size: "small" | "large" = "small"
+): [
+  clientRequest: Request,
+  exitNodeRequest: Request,
+  exitNodeResponse?: Response,
+  clientResponse?: Response
+] {
   const ENTRY_NODE = IDENTITY_A_NO_PRIV;
   const EXIT_NODE = IDENTITY_B;
   const EXIT_NODE_NO_PRIV = IDENTITY_B_NO_PRIV;
@@ -73,7 +104,7 @@ export const createMockedRequestFlow = (): [
   // client
   const clientRequest = Request.createRequest(
     PROVIDER,
-    RPC_REQ_SMALL,
+    size === "small" ? RPC_REQ_SMALL : RPC_REQ_LARGE,
     ENTRY_NODE,
     EXIT_NODE_NO_PRIV
   );
@@ -85,10 +116,13 @@ export const createMockedRequestFlow = (): [
     BigInt(0),
     () => {}
   );
+  if (steps === 2) return [clientRequest, exitNodeRequest];
+
   const exitNodeResponse = Response.createResponse(
     exitNodeRequest,
-    RPC_RES_SMALL
+    size === "small" ? RPC_RES_SMALL : RPC_RES_LARGE
   );
+  if (steps === 3) return [clientRequest, exitNodeRequest, exitNodeResponse];
 
   // client
   const clientResponse = Response.fromMessage(
@@ -99,7 +133,7 @@ export const createMockedRequestFlow = (): [
   );
 
   return [clientRequest, exitNodeRequest, exitNodeResponse, clientResponse];
-};
+}
 
 /**
  * An RPC response which is an error

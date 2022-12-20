@@ -1,6 +1,6 @@
 import assert from "assert";
 import nock from "nock";
-import { type Request, type Response, fixtures } from "rpch-common";
+import { type Message, Request, Response, fixtures } from "rpch-common";
 import { RPChProvider } from ".";
 
 const PROVIDER_URL = fixtures.PROVIDER;
@@ -10,17 +10,31 @@ const ENTRY_NODE_API_TOKEN = "12345";
 const ENTRY_NODE_PEER_ID = fixtures.PEER_ID_A;
 const EXIT_NODE_PEER_ID = fixtures.PEER_ID_B;
 
-const getMockedResponse = (request: Request): Response => {
+let lastRequestFromClient = BigInt(0);
+
+const getMockedResponse = async (request: Request): Promise<Message> => {
+  await new Promise((resolve) => setTimeout(resolve, 10));
+
+  const exitNodeRequest = Request.fromMessage(
+    request.toMessage(),
+    fixtures.IDENTITY_B,
+    lastRequestFromClient,
+    (counter) => (lastRequestFromClient = counter)
+  );
+
   const rpcId: number = JSON.parse(request.body)["id"];
   let body: string = "";
-
   if (request.body.includes("eth_chainId")) {
     body = `{"jsonrpc": "2.0","result": "0x01","id": ${rpcId}}`;
   } else if (request.body.includes("eth_blockNumber")) {
     body = `{"jsonrpc": "2.0","result": "0x17f88c8","id": ${rpcId}}`;
   }
 
-  return request.createResponse(body);
+  const exitNodeResponse = Response.createResponse(exitNodeRequest, body);
+
+  await new Promise((resolve) => setTimeout(resolve, 10));
+
+  return exitNodeResponse.toMessage();
 };
 
 describe("test index.ts", function () {
@@ -49,9 +63,10 @@ describe("test index.ts", function () {
   const originalSendRequest = provider.sdk.sendRequest.bind(provider.sdk);
   provider.sdk.sendRequest = async (req: Request): Promise<Response> => {
     setTimeout(() => {
-      const response = getMockedResponse(req);
-      // @ts-ignore
-      provider.sdk.onResponseFromSegments(response);
+      getMockedResponse(req).then((resMsg) => {
+        // @ts-ignore
+        provider.sdk.onMessage(resMsg);
+      });
     }, 100);
     return originalSendRequest(req);
   };

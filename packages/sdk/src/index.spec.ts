@@ -55,7 +55,7 @@ describe("test SDK class", function () {
 
     it("should fail to send request", function () {
       assert.throws(() => {
-        return sdk.sendRequest(fixtures.LARGE_REQUEST);
+        return sdk.sendRequest(fixtures.createMockedClientRequest());
       }, "not ready");
     });
   });
@@ -87,49 +87,62 @@ describe("test SDK class", function () {
     });
 
     it("should send request and return response", function (done) {
-      sdk.sendRequest(fixtures.LARGE_REQUEST).then((response) => {
-        assert.equal(response.id, fixtures.LARGE_RESPONSE.id);
+      const [clientRequest, , exitNodeResponse] =
+        fixtures.createMockedRequestFlow(3);
+
+      sdk.sendRequest(clientRequest).then((response) => {
+        assert.equal(response.id, clientRequest.id);
         // @ts-ignore
-        const pendingRequest = sdk.requestCache.getRequest(
-          fixtures.LARGE_RESPONSE.id
-        );
+        const pendingRequest = sdk.requestCache.getRequest(clientRequest.id);
         assert.equal(pendingRequest, undefined);
         done();
       });
 
       // @ts-ignore
-      sdk.onResponseFromSegments(fixtures.LARGE_RESPONSE);
+      sdk.onMessage(exitNodeResponse.toMessage());
     });
 
     describe("should handle requests correctly when receiving a response", function () {
       it("should remove request with matching response", function () {
+        const [clientRequest, , exitNodeResponse] =
+          fixtures.createMockedRequestFlow(3);
+
         // @ts-ignore
         sdk.requestCache.addRequest(
-          fixtures.LARGE_REQUEST,
+          clientRequest,
           () => {},
           () => {}
         );
         // @ts-ignore
-        sdk.onResponseFromSegments(fixtures.LARGE_RESPONSE);
+        sdk.onMessage(exitNodeResponse.toMessage());
         assert.equal(
           // @ts-ignore
-          sdk.requestCache.getRequest(fixtures.LARGE_RESPONSE.id),
+          sdk.requestCache.getRequest(clientRequest.id),
           undefined
         );
       });
       it("shouldn't remove request with different response", function () {
+        const [clientRequestA, ,] = fixtures.createMockedRequestFlow(
+          3,
+          "small"
+        );
+        const [, , exitNodeResponseB] = fixtures.createMockedRequestFlow(
+          3,
+          "large"
+        );
+
         // @ts-ignore
         sdk.requestCache.addRequest(
-          fixtures.LARGE_REQUEST,
+          clientRequestA,
           () => {},
           () => {}
         );
         // @ts-ignore
-        sdk.onResponseFromSegments(fixtures.SMALL_RESPONSE);
+        sdk.onMessage(exitNodeResponseB.toMessage());
         assert.equal(
           // @ts-ignore
-          sdk.requestCache.getRequest(fixtures.LARGE_RESPONSE.id)?.request.id,
-          fixtures.LARGE_REQUEST.id
+          sdk.requestCache.getRequest(clientRequestA.id)?.request.id,
+          clientRequestA.id
         );
       });
     });

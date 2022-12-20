@@ -60,7 +60,7 @@ describe("test Response class", function () {
 
   it("should create response from message", function () {
     const [clientRequest, , exitNodeResponse, clientResponse] =
-      createMockedRequestFlow();
+      createMockedRequestFlow(4);
     shouldBeAValidResponse(clientResponse, {
       body: exitNodeResponse.body,
       entryNode: clientRequest.entryNode,
