@@ -1,3 +1,4 @@
+import pgp from "pg-promise";
 import { utils } from "rpch-common";
 import { AccessTokenService } from "./access-token";
 import { getWallet } from "./blockchain";
@@ -13,6 +14,8 @@ const {
   SECRET_KEY,
   // Wallet private key that will be completing the requests
   WALLET_PRIV_KEY,
+  // Postgres db connection url
+  DB_CONNECTION_URL,
   // Port that server will listen for requests
   PORT = 3000,
   // Number of confirmations that will be required for a transaction to be accepted
@@ -40,6 +43,7 @@ const start = async (ops: {
   confirmations: number;
 }) => {
   // init services
+  await ops.db.connect();
   const accessTokenService = new AccessTokenService(ops.db, ops.secretKey);
   const requestService = new RequestService(ops.db);
   const wallet = getWallet(ops.privateKey);
@@ -75,13 +79,14 @@ const main = () => {
   if (!WALLET_PRIV_KEY) {
     throw Error("env variable 'WALLET_PRIV_KEY' not found");
   }
+  if (!DB_CONNECTION_URL) {
+    throw Error("env variable 'DB_CONNECTION_URL' not found");
+  }
   // init db
-  const dbInstance = {
-    data: {
-      requests: [],
-      accessTokens: [],
-    },
-  } as unknown as DBInstance;
+  const pgInstance = pgp();
+  const connectionString: string =
+    "postgres://postgres:password@localhost:5432/rpch_test";
+  const dbInstance = pgInstance({ connectionString });
 
   start({
     entryServer: api,

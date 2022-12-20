@@ -23,28 +23,25 @@ export class RequestService {
   constructor(private db: DBInstance) {}
 
   public async createRequest(params: {
-    address: string;
+    nodeAddress: string;
     amount: string;
     chainId: number;
     accessTokenHash: string;
-  }) {
+  }): Promise<QueryRequest> {
     try {
       log("Creating request...");
-      const now = new Date(Date.now());
       const createRequest: CreateRequest = {
         amount: params.amount,
         accessTokenHash: params.accessTokenHash,
-        nodeAddress: params.address,
+        nodeAddress: params.nodeAddress,
         chainId: params.chainId,
-        createdAt: now.toISOString(),
-        requestId: Math.floor(Math.random() * 1e6),
         status: "FRESH",
       };
-      await saveRequestDB(this.db, createRequest);
-      return createRequest;
+      const dbRes = await saveRequestDB(this.db, createRequest);
+      return dbRes;
     } catch (e: any) {
       logError("Failed to create request: ", e);
-      throw new Error("request was not created");
+      throw new Error(e);
     }
   }
 
@@ -62,7 +59,7 @@ export class RequestService {
 
   public async updateRequest(requestId: number, updateRequest: UpdateRequest) {
     try {
-      const request = { ...updateRequest, requestId } as UpdateRequest;
+      const request = { ...updateRequest, id: requestId } as UpdateRequest;
       await updateRequestDB(this.db, request);
       return updateRequest;
     } catch (e: any) {
@@ -80,7 +77,7 @@ export class RequestService {
     const freshRequests = requests?.filter((req) => req.status === "FRESH");
     const [oldestFreshRequest] = freshRequests?.sort(
       (a, b) =>
-        new Date(a.createdAt).valueOf() - new Date(b.createdAt).valueOf()
+        new Date(a.created_at).valueOf() - new Date(b.created_at).valueOf()
     ) ?? [undefined];
     return oldestFreshRequest;
   }
@@ -108,7 +105,7 @@ export class RequestService {
     );
     const allUnresolvedRequests = await this.getAllUnresolvedRequests();
     const allUnresolvedRequestsByAccessToken = allUnresolvedRequests?.filter(
-      (request) => request.accessTokenHash === accessTokenHash
+      (request) => request.access_token_hash === accessTokenHash
     );
     return [
       ...(successfulRequestsByAccessToken ?? []),
@@ -119,8 +116,8 @@ export class RequestService {
   public groupRequestsByChainId(requests: QueryRequest[]) {
     const requestsKeyedByChainId: { [chainId: number]: QueryRequest[] } = {};
     for (const request of requests ?? []) {
-      requestsKeyedByChainId[request.chainId] = [
-        ...(requestsKeyedByChainId[request.chainId] ?? []),
+      requestsKeyedByChainId[request.chain_id] = [
+        ...(requestsKeyedByChainId[request.chain_id] ?? []),
         request,
       ];
     }

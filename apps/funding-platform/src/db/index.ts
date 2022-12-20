@@ -1,99 +1,139 @@
 import { CreateAccessToken, QueryAccessToken } from "../access-token";
-import { Low } from "lowdb";
 import { CreateRequest, QueryRequest, UpdateRequest } from "../request";
+import pgp from "pg-promise";
 
 export type Data = {
   accessTokens: QueryAccessToken[];
   requests: QueryRequest[];
 };
 
-export type DBInstance = Low<Data>;
+export type DBInstance = pgp.IDatabase<{}>;
 
 export const saveAccessToken = async (
   db: DBInstance,
   accessToken: CreateAccessToken
-): Promise<void> => {
-  const res = db.data?.accessTokens.push({
-    ...accessToken,
-    Id: Math.floor(Math.random() * 1e6),
-  } as QueryAccessToken);
+): Promise<QueryAccessToken> => {
+  const text =
+    "INSERT INTO access_tokens(id, token, expired_at) values(default, $<token>, $<expiredAt>) RETURNING *";
+  const values = {
+    token: accessToken.token,
+    expiredAt: accessToken.expiredAt,
+  };
+  const dbRes = (await db.one(text, values)) as QueryAccessToken;
+  return dbRes;
 };
 
 export const getAccessToken = async (
   db: DBInstance,
   accessTokenHash: string
 ): Promise<QueryAccessToken | undefined> => {
-  const accessToken = await db.data?.accessTokens.find(
-    (a) => a.Token === accessTokenHash
-  );
+  const text = "SELECT * FROM access_tokens WHERE token=$<token>";
+  const values = {
+    token: accessTokenHash,
+  };
+  const dbRes = (await db.oneOrNone(text, values)) as QueryAccessToken;
 
-  return accessToken;
+  return dbRes;
 };
 
 export const deleteAccessToken = async (
   db: DBInstance,
   accessTokenHash: string
-): Promise<boolean> => {
-  const accessTokensLengthBefore = db.data?.accessTokens.length;
-  const filteredAccessTokens = await db.data?.accessTokens.filter(
-    (a) => a.Token !== accessTokenHash
-  );
-  db.data = {
-    accessTokens: filteredAccessTokens,
-    requests: db.data?.requests,
-  } as Data;
-
-  return (filteredAccessTokens?.length ?? 0) < (accessTokensLengthBefore ?? 0);
+): Promise<QueryAccessToken> => {
+  const text = "DELETE FROM access_tokens WHERE token=$<token> RETURNING *";
+  const values = {
+    token: accessTokenHash,
+  };
+  const dbRes = await db.oneOrNone(text, values);
+  return dbRes;
 };
 
 export const saveRequest = async (
   db: DBInstance,
   request: CreateRequest
-): Promise<void> => {
-  db.data?.requests.push({
-    ...request,
-  });
-};
-export const getRequest = async (db: DBInstance, requestId: number) => {
-  const request = db.data?.requests.find((req) => req.requestId === requestId);
-  return request;
+): Promise<QueryRequest> => {
+  const text = `INSERT INTO requests(id, access_token_hash, node_address, amount, chain_id, status)
+    values(default, $<token>, $<address>, $<amount>, $<chainId>, $<status>)
+    RETURNING *`;
+  const values = {
+    token: request.accessTokenHash,
+    address: request.nodeAddress,
+    amount: request.amount,
+    chainId: request.chainId,
+    status: request.status,
+  };
+  const dbRes = (await db.one(text, values)) as QueryRequest;
+  return dbRes;
 };
 
-export const getRequests = async (db: DBInstance) => {
-  const requests = db.data?.requests;
+export const getRequest = async (
+  db: DBInstance,
+  requestId: number
+): Promise<QueryRequest> => {
+  const text = "SELECT * FROM requests WHERE id=$<id>";
+  const values = {
+    id: requestId,
+  };
+  const dbRes = (await db.oneOrNone(text, values)) as QueryRequest;
 
-  return requests;
+  return dbRes;
+};
+
+export const getRequests = async (db: DBInstance): Promise<QueryRequest[]> => {
+  const text = "SELECT * FROM requests";
+  const dbRes = (await db.manyOrNone(text)) as QueryRequest[];
+  return dbRes;
 };
 
 export const getRequestsByAccessToken = async (
   db: DBInstance,
   accessTokenHash: string
-) => {
-  const requests = db.data?.requests.filter(
-    (req) => req.accessTokenHash === accessTokenHash
-  );
+): Promise<QueryRequest[]> => {
+  const text = "SELECT * FROM requests WHERE access_token_hash=$<token>";
+  const values = {
+    token: accessTokenHash,
+  };
+  const dbRes = (await db.manyOrNone(text, values)) as QueryRequest[];
 
-  return requests;
+  return dbRes;
 };
-export const updateRequest = async (db: DBInstance, request: UpdateRequest) => {
-  const updatedRequests = db.data?.requests.map((tReq) =>
-    tReq.requestId === request.requestId ? { ...tReq, ...request } : tReq
-  );
-  db.data = {
-    accessTokens: db.data?.accessTokens,
-    requests: updatedRequests,
-  } as Data;
+export const updateRequest = async (
+  db: DBInstance,
+  request: UpdateRequest
+): Promise<QueryRequest> => {
+  const text = `UPDATE requests SET 
+    access_token_hash=$<accessTokenHash>,
+    node_address=$<nodeAddress>,
+    amount=$<amount>,
+    chain_id=$<chainId>,
+    reason=$<reason>,
+    transaction_hash=$<transactionHash>,
+    status=$<status>
+    WHERE id=$<id>`;
+  const values = {
+    id: request.id,
+    accessTokenHash: request.accessTokenHash,
+    nodeAddress: request.nodeAddress,
+    amount: request.amount,
+    chainId: request.chainId,
+    reason: request.reason,
+    transactionHash: request.transactionHash,
+    status: request.status,
+  } as UpdateRequest;
+
+  const dbRes = (await db.oneOrNone(text, values)) as QueryRequest;
+
+  return dbRes;
 };
 
-export const deleteRequest = async (db: DBInstance, requestId: number) => {
-  const accessTokensLengthBefore = db.data?.accessTokens.length;
-  const filteredRequests = await db.data?.requests.filter(
-    (a) => a.requestId !== requestId
-  );
-  db.data = {
-    accessTokens: db.data?.accessTokens,
-    requests: filteredRequests,
-  } as Data;
-
-  return (filteredRequests?.length ?? 0) < (accessTokensLengthBefore ?? 0);
+export const deleteRequest = async (
+  db: DBInstance,
+  requestId: number
+): Promise<QueryRequest> => {
+  const text = "DELETE FROM requests WHERE id=$<id> RETURNING *";
+  const values = {
+    id: requestId,
+  };
+  const dbRes = await db.oneOrNone(text, values);
+  return dbRes;
 };

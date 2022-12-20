@@ -109,7 +109,7 @@ describe("test entry server", function () {
       amount: (MAX_AMOUNT_OF_TOKENS - 1).toString(),
       chainId: 80,
       accessTokenHash: tokenHash,
-      address: "0x0",
+      nodeAddress: "0x0",
     });
     const tokenHasBalanceRes = await doesAccessTokenHaveEnoughBalance({
       maxAmountOfTokens: MAX_AMOUNT_OF_TOKENS,

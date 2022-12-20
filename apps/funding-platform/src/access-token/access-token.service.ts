@@ -38,9 +38,9 @@ export class AccessTokenService {
       });
 
       const query: CreateAccessToken = {
-        Token: hash,
-        ExpiredAt: expiredAt.toISOString(),
-        CreatedAt: now.toISOString(),
+        token: hash,
+        expiredAt: expiredAt.toISOString(),
+        createdAt: now.toISOString(),
       };
 
       await saveAccessToken(this.db, query);

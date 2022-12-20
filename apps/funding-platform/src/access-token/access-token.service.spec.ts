@@ -1,6 +1,8 @@
 import { AccessTokenService } from "./access-token.service";
 import assert from "assert";
 import { DBInstance } from "../db";
+import { mockPgInstance } from "../db/index.mock";
+import { IBackup, IMemoryDb } from "pg-mem";
 
 const THIRTY_MINUTES = 30;
 const MAX_HOPR = 40;
@@ -11,20 +13,25 @@ const accessTokenParams = {
 };
 describe("test AccessTokenService class", function () {
   let accessTokenService: AccessTokenService;
+  let dbInstance: DBInstance;
+  let pgInstance: IMemoryDb;
+  let initialDbState: IBackup;
+  beforeAll(async function () {
+    pgInstance = await mockPgInstance();
+    initialDbState = pgInstance.backup();
+    dbInstance = pgInstance.adapters.createPgPromise();
+  });
   beforeEach(function () {
-    let db = {
-      data: { accessTokens: [], requests: [] },
-    } as unknown as DBInstance;
-    accessTokenService = new AccessTokenService(db, SECRET_KEY);
+    accessTokenService = new AccessTokenService(dbInstance, SECRET_KEY);
   });
   it("should create and save token", async function () {
     const accessToken = await accessTokenService.createAccessToken(
       accessTokenParams
     );
     const dbAccessToken = await accessTokenService.getAccessToken(
-      accessToken?.Token!
+      accessToken?.token!
     );
-    assert(dbAccessToken?.Token === accessToken?.Token);
+    assert(dbAccessToken?.token === accessToken?.token);
   });
   it("should get access token", async function () {
     await accessTokenService.createAccessToken(accessTokenParams);
@@ -32,18 +39,18 @@ describe("test AccessTokenService class", function () {
       accessTokenParams
     );
     const dbAccessToken = await accessTokenService.getAccessToken(
-      accessToken?.Token!
+      accessToken?.token!
     );
-    assert(dbAccessToken?.Token === accessToken?.Token);
+    assert(dbAccessToken?.token === accessToken?.token);
   });
   it("should delete access token", async function () {
     const accessToken = await accessTokenService.createAccessToken(
       accessTokenParams
     );
-    await accessTokenService.deleteAccessToken(accessToken?.Token!);
+    await accessTokenService.deleteAccessToken(accessToken?.token!);
     const dbAccessToken = await accessTokenService.getAccessToken(
-      accessToken?.Token!
+      accessToken?.token!
     );
-    assert(dbAccessToken === undefined);
+    assert(dbAccessToken === null);
   });
 });

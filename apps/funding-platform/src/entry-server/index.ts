@@ -20,14 +20,14 @@ const tokenIsValid =
     const dbToken = await accessTokenService.getAccessToken(accessTokenHash);
     if (!dbToken) return res.status(404).json("Access Token does not exist");
 
-    if (isExpired(dbToken.ExpiredAt)) {
+    if (isExpired(dbToken.expired_at)) {
       return res.status(401).json("Access Token expired");
     }
 
     const hasEnough = await doesAccessTokenHaveEnoughBalance({
       requestService,
       maxAmountOfTokens,
-      token: dbToken.Token,
+      token: dbToken.token,
       requestAmount: requestFunds ? Number(req.body.amount) : 0,
     });
 
@@ -87,8 +87,8 @@ export const entryServer = (ops: {
       timeout: ops.maxAmountOfTokens,
     });
     return res.json({
-      accessToken: accessToken?.Token,
-      expiredAt: accessToken?.ExpiredAt,
+      accessToken: accessToken?.token,
+      expiredAt: accessToken?.expiredAt,
       amountLeft: ops.maxAmountOfTokens,
     });
   });
@@ -102,16 +102,16 @@ export const entryServer = (ops: {
       true
     ),
     async (req, res) => {
-      const address = String(req.params.blockchainAddress);
+      const nodeAddress = String(req.params.blockchainAddress);
       const amount = String(req.body.amount);
       const chainId = Number(req.body.chainId);
       const accessTokenHash = req.headers["x-access-token"] as string;
-      const request = (await ops.requestService.createRequest({
-        address,
+      const request = await ops.requestService.createRequest({
+        nodeAddress,
         amount,
         accessTokenHash,
         chainId,
-      })) as CreateRequest;
+      });
       const allUnresolvedAndSuccessfulRequestsByAccessToken =
         await ops.requestService.getAllUnresolvedAndSuccessfulRequestsByAccessToken(
           accessTokenHash
@@ -120,7 +120,7 @@ export const entryServer = (ops: {
         allUnresolvedAndSuccessfulRequestsByAccessToken
       );
       return res.json({
-        id: request.requestId,
+        id: request.id,
         amountLeft: ops.maxAmountOfTokens - amountUsed[chainId],
       });
     }
