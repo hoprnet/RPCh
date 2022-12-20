@@ -1,86 +1,71 @@
 import assert from "assert";
+import Message from "./message";
 import Response from "./response";
+import { Identity } from "./utils";
 import {
-  PROVIDER,
-  RPC_REQ_SMALL,
+  createMockedClientRequest,
+  createMockedRequestFlow,
   RPC_RES_SMALL,
-  IDENTITY_A,
-  IDENTITY_B,
 } from "./fixtures";
-import Request from "./request";
+
+const shouldBeAValidResponse = (
+  actual: Response,
+  expected: Pick<Response, "body" | "entryNode" | "exitNode">
+) => {
+  assert.equal(typeof actual.id, "number");
+  assert(actual.id > 0);
+  assert.equal(actual.body, expected.body);
+  assert.equal(
+    actual.entryNode.peerId.toB58String(),
+    expected.entryNode.peerId.toB58String()
+  );
+  assert.deepEqual(actual.entryNode.pubKey, expected.entryNode.pubKey);
+  assert.deepEqual(actual.entryNode.privKey, expected.entryNode.privKey);
+  assert.equal(
+    actual.exitNode.peerId.toB58String(),
+    expected.exitNode.peerId.toB58String()
+  );
+  assert.deepEqual(actual.exitNode.pubKey, expected.exitNode.pubKey);
+  assert.deepEqual(actual.exitNode.privKey, expected.exitNode.privKey);
+  assert(!!actual.session);
+  assert(actual.session.get_request_data().length > 0);
+};
+
+const shouldBeAValidResponseMessage = (
+  actual: Message,
+  expected: Pick<Message, "id">
+) => {
+  assert.equal(actual.id, expected.id);
+  assert(actual.body.length > 0);
+};
 
 describe("test Response class", function () {
-  let MOCK_REQUEST: Request;
-
-  beforeEach(function () {
-    MOCK_REQUEST = Request.createRequest(
-      PROVIDER,
-      RPC_REQ_SMALL,
-      IDENTITY_A,
-      IDENTITY_B
-    );
-  });
-
   it("should create response from Request", function () {
-    const response = Response.createResponse(MOCK_REQUEST, RPC_RES_SMALL);
+    const request = createMockedClientRequest();
+    const response = Response.createResponse(request, RPC_RES_SMALL);
 
-    assert.equal(response.id, MOCK_REQUEST.id);
-    assert.equal(response.body, RPC_RES_SMALL);
-    assert.equal(response.entryNode, MOCK_REQUEST.entryNode);
-    assert.equal(response.exitNode, MOCK_REQUEST.exitNode);
-    assert(!!response.session);
-    assert(response.session.get_request_data().length > 0);
+    shouldBeAValidResponse(response, {
+      body: RPC_RES_SMALL,
+      entryNode: request.entryNode,
+      exitNode: request.exitNode,
+    });
   });
 
   it("should create message from Response", function () {
-    const response = Response.createResponse(MOCK_REQUEST, RPC_RES_SMALL);
+    const request = createMockedClientRequest();
+    const response = Response.createResponse(request, RPC_RES_SMALL);
 
-    const message = response.toMessage();
-    assert.equal(message.id, response.id);
-    assert(message.body.length > 0);
+    shouldBeAValidResponseMessage(response.toMessage(), { id: request.id });
   });
 
-  it("should create response from message", async function () {
-    const wait = (ms: number) =>
-      new Promise((resolve) => setTimeout(resolve, ms));
-
-    // client
-    const clientRequest = Request.createRequest(
-      PROVIDER,
-      RPC_REQ_SMALL,
-      IDENTITY_A,
-      IDENTITY_B
-    );
-
-    await wait(2);
-
-    // exit node
-    const exitNodeRequest = Request.fromMessage(
-      clientRequest.toMessage(),
-      IDENTITY_B,
-      BigInt(0),
-      () => {}
-    );
-    const exitNodeResponse = Response.createResponse(
-      exitNodeRequest,
-      RPC_RES_SMALL
-    );
-
-    await wait(2);
-
-    // client
-    const response = Response.fromMessage(
-      clientRequest,
-      exitNodeResponse.toMessage(),
-      BigInt(0),
-      () => {}
-    );
-
-    assert.equal(response.id, clientRequest.id);
-    assert.equal(response.body, RPC_RES_SMALL);
-    assert.equal(response.entryNode, clientRequest.entryNode);
-    assert.equal(response.exitNode, clientRequest.exitNode);
-    assert(!!response.session);
-    assert(response.session.get_request_data().length > 0);
+  it("should create response from message", function () {
+    const [clientRequest, , exitNodeResponse, clientResponse] =
+      createMockedRequestFlow();
+    shouldBeAValidResponse(clientResponse, {
+      body: exitNodeResponse.body,
+      entryNode: clientRequest.entryNode,
+      // we dont have the private key of the exit node
+      exitNode: new Identity(clientRequest.exitNode.peerId.toB58String()),
+    });
   });
 });

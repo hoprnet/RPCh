@@ -1,9 +1,9 @@
 import assert from "assert";
 import Cache from "./cache";
-import { createClientRequest } from "./fixtures";
+import { createMockedClientRequest } from "./fixtures";
 
 const TIMEOUT = 10e3;
-const MESSAGE = createClientRequest().toMessage();
+const MESSAGE = createMockedClientRequest("large").toMessage();
 const MESSAGE_SEGMENTS = MESSAGE.toSegments();
 
 describe("test Cache class", function () {

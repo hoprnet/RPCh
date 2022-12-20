@@ -1,7 +1,7 @@
 import assert from "assert";
 import { utils } from "ethers";
 import { splitStrByBytes, isExpired, areAllSegmentsPresent } from "./utils";
-import { LARGE_REQUEST } from "./fixtures";
+import { createMockedClientRequest } from "./fixtures";
 
 describe("test utils / splitStrByBytes", function () {
   it("should return 1 string", function () {
@@ -31,7 +31,9 @@ describe("test utils / isExpired", function () {
 });
 
 describe("test utils / areAllSegmentsPresent", function () {
-  const completeSegments = LARGE_REQUEST.toMessage().toSegments();
+  const completeSegments = createMockedClientRequest("large")
+    .toMessage()
+    .toSegments();
   const incompleteSegments = completeSegments.slice(1);
 
   it("should return true", function () {

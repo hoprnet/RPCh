@@ -21,7 +21,9 @@ export const PRIV_KEY_B =
   "0x1a7a8c37e30c97ebf532042bdc37fe724a3950b0cd7ea5a57c9f3e30c53c44a3";
 
 export const IDENTITY_A = new Identity(PEER_ID_A, PRIV_KEY_A);
+export const IDENTITY_A_NO_PRIV = new Identity(PEER_ID_A);
 export const IDENTITY_B = new Identity(PEER_ID_B, PRIV_KEY_B);
+export const IDENTITY_B_NO_PRIV = new Identity(PEER_ID_B);
 
 /**
  * A small RPC request
@@ -42,19 +44,61 @@ export const RPC_RES_SMALL = `{"id":1663836360444,"jsonrpc": "2.0","result": "0x
 export const RPC_RES_LARGE = `{"id":1663836360444,"jsonrpc": "2.0","result": "0x0234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab58"}`;
 
 /**
- * Create a client request
+ * Create a new client request
+ * with a fresh crypto session
  * @param size
  * @returns Request
  */
-export const createClientRequest = (
+export const createMockedClientRequest = (
   size: "small" | "large" = "small"
 ): Request => {
   return Request.createRequest(
     PROVIDER,
     size === "small" ? RPC_REQ_SMALL : RPC_REQ_LARGE,
-    IDENTITY_A,
-    IDENTITY_B
+    IDENTITY_A_NO_PRIV,
+    IDENTITY_B_NO_PRIV
   );
+};
+
+export const createMockedRequestFlow = (): [
+  clientRequest: Request,
+  exitNodeRequest: Request,
+  exitNodeResponse: Response,
+  clientResponse: Response
+] => {
+  const ENTRY_NODE = IDENTITY_A_NO_PRIV;
+  const EXIT_NODE = IDENTITY_B;
+  const EXIT_NODE_NO_PRIV = IDENTITY_B_NO_PRIV;
+
+  // client
+  const clientRequest = Request.createRequest(
+    PROVIDER,
+    RPC_REQ_SMALL,
+    ENTRY_NODE,
+    EXIT_NODE_NO_PRIV
+  );
+
+  // exit node
+  const exitNodeRequest = Request.fromMessage(
+    clientRequest.toMessage(),
+    EXIT_NODE,
+    BigInt(0),
+    () => {}
+  );
+  const exitNodeResponse = Response.createResponse(
+    exitNodeRequest,
+    RPC_RES_SMALL
+  );
+
+  // client
+  const clientResponse = Response.fromMessage(
+    clientRequest,
+    exitNodeResponse.toMessage(),
+    BigInt(0),
+    () => {}
+  );
+
+  return [clientRequest, exitNodeRequest, exitNodeResponse, clientResponse];
 };
 
 /**
