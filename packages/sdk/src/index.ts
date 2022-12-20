@@ -126,7 +126,7 @@ export default class SDK {
     matchingRequest.resolve(res);
 
     this.reliabilityScore.addMetric(
-      this.tempOps?.entryNodePeerId,
+      this.tempOps.entryNodePeerId,
       matchingRequest.request.id,
       "success"
     );

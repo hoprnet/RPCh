@@ -105,6 +105,37 @@ describe("test SDK class", function () {
       sdk.onResponseFromSegments(fixtures.LARGE_RESPONSE);
     });
 
+    it("should call addMetric when onResponseFromSegments is triggered", function (done) {
+      //@ts-ignore
+      const addMetricMock = jest.spyOn(sdk.reliabilityScore, "addMetric");
+
+      sdk.sendRequest(fixtures.SMALL_REQUEST);
+      sdk.sendRequest(fixtures.LARGE_REQUEST).then(() => done());
+
+      // @ts-ignore
+      sdk.onResponseFromSegments(fixtures.SMALL_RESPONSE);
+      // @ts-ignore
+      sdk.onResponseFromSegments(fixtures.LARGE_RESPONSE);
+
+      assert.equal(addMetricMock.mock.calls.length, 2);
+      assert(addMetricMock.mock.calls.at(0)?.includes("success"));
+    });
+
+    it("should call addMetric when onRequestRemoval is triggered", function () {
+      //@ts-ignore
+      const addMetricMock = jest.spyOn(sdk.reliabilityScore, "addMetric");
+      // @ts-ignore
+      sdk.requestCache.addRequest(
+        fixtures.LARGE_REQUEST,
+        () => {},
+        () => {}
+      );
+      // @ts-ignore
+      sdk.onRequestRemoval(fixtures.LARGE_REQUEST);
+      assert.equal(addMetricMock.mock.calls.length, 1);
+      assert(addMetricMock.mock.calls.at(0)?.includes("failed"));
+    });
+
     describe("should handle requests correctly when receiving a response", function () {
       it("should remove request with matching response", function () {
         // @ts-ignore
