@@ -18,8 +18,9 @@
         "build/**"
       ],
       "env": [
-        "HOPRD_API_ENDPOINT",
+        "PRIVATE_KEY",
         "HOPRD_API_TOKEN",
+        "HOPRD_API_ENDPOINT",
         "RESPONSE_TIMEOUT"
       ]
     },
