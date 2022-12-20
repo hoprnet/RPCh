@@ -18,6 +18,8 @@ export default class RequestCache {
     }
   >();
 
+  constructor(private onRequestRemoval: (req: Request) => void) {}
+
   /**
    * Add Request to requests map
    * @param req
@@ -61,10 +63,10 @@ export default class RequestCache {
     const now = new Date();
 
     logVerbose("requests", this.requests.size);
-
     for (const [key, entry] of this.requests.entries()) {
       if (utils.isExpired(timeout, now, entry.createdAt)) {
         entry.reject("Request timed out");
+        this.onRequestRemoval(entry.request);
         this.requests.delete(key);
       }
     }

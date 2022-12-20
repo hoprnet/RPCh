@@ -9,6 +9,8 @@ const ENTRY_NODE_API_ENDPOINT = "http://entry_node";
 const ENTRY_NODE_API_TOKEN = "12345";
 const ENTRY_NODE_PEER_ID = fixtures.PEER_ID_A;
 const EXIT_NODE_PEER_ID = fixtures.PEER_ID_B;
+const FRESH_NODE_THRESHOLD = 20;
+const MAX_RESPONSES = 100;
 
 type MockOps = HoprSdkTempOps & { timeout: number };
 
@@ -32,6 +34,8 @@ const createSdkMock = (
     entryNodeApiToken: overwriteOps?.entryNodeApiToken ?? ENTRY_NODE_API_TOKEN,
     entryNodePeerId: overwriteOps?.entryNodePeerId ?? ENTRY_NODE_PEER_ID,
     exitNodePeerId: overwriteOps?.exitNodePeerId ?? EXIT_NODE_PEER_ID,
+    freshNodeThreshold: FRESH_NODE_THRESHOLD,
+    maxResponses: MAX_RESPONSES,
   };
 
   const sdk = new SDK(ops.timeout, ops);
@@ -100,6 +104,37 @@ describe("test SDK class", function () {
 
       // @ts-ignore
       sdk.onMessage(exitNodeResponse.toMessage());
+    });
+
+    it("should call addMetric when onResponseFromSegments is triggered", function (done) {
+      //@ts-ignore
+      const addMetricMock = jest.spyOn(sdk.reliabilityScore, "addMetric");
+
+      sdk.sendRequest(fixtures.SMALL_REQUEST);
+      sdk.sendRequest(fixtures.LARGE_REQUEST).then(() => done());
+
+      // @ts-ignore
+      sdk.onResponseFromSegments(fixtures.SMALL_RESPONSE);
+      // @ts-ignore
+      sdk.onResponseFromSegments(fixtures.LARGE_RESPONSE);
+
+      assert.equal(addMetricMock.mock.calls.length, 2);
+      assert(addMetricMock.mock.calls.at(0)?.includes("success"));
+    });
+
+    it("should call addMetric when onRequestRemoval is triggered", function () {
+      //@ts-ignore
+      const addMetricMock = jest.spyOn(sdk.reliabilityScore, "addMetric");
+      // @ts-ignore
+      sdk.requestCache.addRequest(
+        fixtures.LARGE_REQUEST,
+        () => {},
+        () => {}
+      );
+      // @ts-ignore
+      sdk.onRequestRemoval(fixtures.LARGE_REQUEST);
+      assert.equal(addMetricMock.mock.calls.length, 1);
+      assert(addMetricMock.mock.calls.at(0)?.includes("failed"));
     });
 
     describe("should handle requests correctly when receiving a response", function () {

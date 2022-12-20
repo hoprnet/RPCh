@@ -6,6 +6,7 @@ import {
   hoprd,
   utils,
 } from "rpch-common";
+import ReliabilityScore from "./reliability-score";
 import RequestCache from "./request-cache";
 
 const { Identity } = utils;
@@ -21,6 +22,8 @@ export type HoprSdkTempOps = {
   entryNodeApiToken: string;
   entryNodePeerId: string;
   exitNodePeerId: string;
+  freshNodeThreshold: number;
+  maxResponses: number;
 };
 
 /**
@@ -40,6 +43,7 @@ export default class SDK {
   private interval?: NodeJS.Timer;
   private segmentCache: SegmentCache;
   private requestCache: RequestCache;
+  private reliabilityScore: ReliabilityScore;
   // this will be static but right now passed via tempOps
   private discoveryPlatformApiEndpoint: string;
   // available exit nodes
@@ -57,7 +61,11 @@ export default class SDK {
     this.discoveryPlatformApiEndpoint = tempOps.discoveryPlatformApiEndpoint;
 
     this.segmentCache = new SegmentCache(this.onMessage);
-    this.requestCache = new RequestCache();
+    this.requestCache = new RequestCache(this.onRequestRemoval);
+    this.reliabilityScore = new ReliabilityScore(
+      tempOps.freshNodeThreshold,
+      tempOps.maxResponses
+    );
   }
 
   /**
@@ -128,8 +136,26 @@ export default class SDK {
     );
 
     match.resolve(response);
+    this.reliabilityScore.addMetric(
+      this.tempOps.entryNodePeerId,
+      match.request.id,
+      "success"
+    );
     this.requestCache.removeRequest(match.request);
     log("responded to %s with %s", match.request.body, response.body);
+  }
+
+  /**
+   * Adds a failed metric to the reliability score
+   * when the request expires.
+   * @param req Request received from cache module.
+   */
+  private onRequestRemoval(req: Request): void {
+    this.reliabilityScore.addMetric(
+      this.tempOps.entryNodePeerId,
+      req.id,
+      "failed"
+    );
   }
 
   /**
