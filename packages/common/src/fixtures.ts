@@ -42,103 +42,82 @@ export const RPC_RES_SMALL = `{"id":1663836360444,"jsonrpc": "2.0","result": "0x
  * A large RPC response that needs to be split into many segments
  */
 export const RPC_RES_LARGE = `{"id":1663836360444,"jsonrpc": "2.0","result": "0x0234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab58"}`;
-
-/**
- * Create a new client request
- * with a fresh crypto session
- * @param size
- * @returns Request
- */
-export const createMockedClientRequest = (
-  size: "small" | "large" = "small"
-): Request => {
-  return Request.createRequest(
-    PROVIDER,
-    size === "small" ? RPC_REQ_SMALL : RPC_REQ_LARGE,
-    IDENTITY_A_NO_PRIV,
-    IDENTITY_B_NO_PRIV
-  );
-};
-
-export function createMockedRequestFlow(
-  steps: 2,
-  size?: "small" | "large"
-): [clientRequest: Request, exitNodeRequest: Request];
-export function createMockedRequestFlow(
-  steps: 3,
-  size?: "small" | "large"
-): [
-  clientRequest: Request,
-  exitNodeRequest: Request,
-  exitNodeResponse: Response
-];
-export function createMockedRequestFlow(
-  steps: 4,
-  size?: "small" | "large"
-): [
-  clientRequest: Request,
-  exitNodeRequest: Request,
-  exitNodeResponse: Response,
-  clientResponse: Response
-];
-/**
- * Recreate a whole flow of request and responses.
- * With steps you can indicate how much you want
- * to generate.
- * @param steps
- * @param size
- */
-export function createMockedRequestFlow(
-  steps: 2 | 3 | 4 = 4,
-  size: "small" | "large" = "small"
-): [
-  clientRequest: Request,
-  exitNodeRequest: Request,
-  exitNodeResponse?: Response,
-  clientResponse?: Response
-] {
-  const ENTRY_NODE = IDENTITY_A_NO_PRIV;
-  const EXIT_NODE = IDENTITY_B;
-  const EXIT_NODE_NO_PRIV = IDENTITY_B_NO_PRIV;
-
-  // client
-  const clientRequest = Request.createRequest(
-    PROVIDER,
-    size === "small" ? RPC_REQ_SMALL : RPC_REQ_LARGE,
-    ENTRY_NODE,
-    EXIT_NODE_NO_PRIV
-  );
-
-  // exit node
-  const exitNodeRequest = Request.fromMessage(
-    clientRequest.toMessage(),
-    EXIT_NODE,
-    BigInt(0),
-    () => {}
-  );
-  if (steps === 2) return [clientRequest, exitNodeRequest];
-
-  const exitNodeResponse = Response.createResponse(
-    exitNodeRequest,
-    size === "small" ? RPC_RES_SMALL : RPC_RES_LARGE
-  );
-  if (steps === 3) return [clientRequest, exitNodeRequest, exitNodeResponse];
-
-  // client
-  const clientResponse = Response.fromMessage(
-    clientRequest,
-    exitNodeResponse.toMessage(),
-    BigInt(0),
-    () => {}
-  );
-
-  return [clientRequest, exitNodeRequest, exitNodeResponse, clientResponse];
-}
-
 /**
  * An RPC response which is an error
  */
 export const RPC_RES_ERROR = `{"id":123,"jsonrpc": "2.0","error":{"code":1,"message":"ExampleMethodresultismissing'example_key'."}}`;
+
+/**
+ * Adjust global Date.now().
+ * Primarily used to avoid verification
+ * due to RPCh crypto verification when
+ * unit testing Requests and Responses.
+ * @param tmsp new timestamp
+ * @returns Reset time
+ */
+export const setDateNow = (tmsp: number): (() => void) => {
+  const DateNowOriginal = Date.now;
+  Date.now = jest.fn(() => tmsp);
+  return () => {
+    Date.now = DateNowOriginal;
+  };
+};
+
+/**
+ * A generator function to generate a fully
+ * mocked request / response flow.
+ * @param entryNode
+ * @param exitNode
+ * @param requestBody
+ */
+export function* createMockedFlow(requestBody: string = RPC_REQ_SMALL) {
+  const tmsp = +new Date();
+  const TIME_DIFF = 50;
+  const entryNode = IDENTITY_A_NO_PRIV;
+  const exitNode = IDENTITY_B_NO_PRIV;
+  const exitNodeWithPriv = IDENTITY_B;
+  let resetDateNow: ReturnType<typeof setDateNow>;
+
+  // client side
+  resetDateNow = setDateNow(tmsp - TIME_DIFF * 3);
+  const clientRequest = Request.createRequest(
+    PROVIDER,
+    requestBody,
+    entryNode,
+    exitNode
+  );
+  resetDateNow();
+  const lastRequestFromClient: number = (yield clientRequest) || 0;
+
+  // exit node side
+  resetDateNow = setDateNow(tmsp - TIME_DIFF * 2);
+  const exitNodeRequest = Request.fromMessage(
+    clientRequest.toMessage(),
+    exitNodeWithPriv,
+    BigInt(lastRequestFromClient),
+    () => {}
+  );
+  resetDateNow();
+  const responseBody: string = (yield exitNodeRequest) || RPC_RES_SMALL;
+
+  // exit node side
+  const exitNodeResponse = Response.createResponse(
+    exitNodeRequest,
+    responseBody
+  );
+  const lastResponseFromExitNode: number = (yield exitNodeResponse) || 0;
+
+  // client side
+  resetDateNow = setDateNow(tmsp - TIME_DIFF);
+  const clientResponse = Response.fromMessage(
+    clientRequest,
+    exitNodeResponse.toMessage(),
+    BigInt(lastResponseFromExitNode),
+    () => {}
+  );
+  resetDateNow();
+  return clientResponse;
+}
 
 /**
  * Given a nock scope, make it only resolve to requests

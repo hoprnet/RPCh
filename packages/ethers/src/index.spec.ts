@@ -14,15 +14,25 @@ const MAX_RESPONSES = 100;
 
 let lastRequestFromClient = BigInt(0);
 
+const MOCKS = {
+  createRequestFromClient(body: string) {
+    return Request.createRequest(
+      fixtures.PROVIDER,
+      body,
+      fixtures.IDENTITY_A_NO_PRIV,
+      fixtures.IDENTITY_B_NO_PRIV
+    );
+  },
+  createResponseFromExitNode(request: Request, body: string) {
+    const clonedRequest = this.createRequestFromClient(request.body);
+    // @ts-expect-error
+    clonedRequest.id = request.id;
+    return Response.createResponse(clonedRequest, body);
+  },
+};
+
 const getMockedResponse = async (request: Request): Promise<Message> => {
   await new Promise((resolve) => setTimeout(resolve, 10));
-
-  const exitNodeRequest = Request.fromMessage(
-    request.toMessage(),
-    fixtures.IDENTITY_B,
-    lastRequestFromClient,
-    (counter) => (lastRequestFromClient = counter)
-  );
 
   const rpcId: number = JSON.parse(request.body)["id"];
   let body: string = "";
@@ -32,11 +42,11 @@ const getMockedResponse = async (request: Request): Promise<Message> => {
     body = `{"jsonrpc": "2.0","result": "0x17f88c8","id": ${rpcId}}`;
   }
 
-  const exitNodeResponse = Response.createResponse(exitNodeRequest, body);
+  const response = MOCKS.createResponseFromExitNode(request, body);
 
   await new Promise((resolve) => setTimeout(resolve, 10));
 
-  return exitNodeResponse.toMessage();
+  return response.toMessage();
 };
 
 describe("test index.ts", function () {

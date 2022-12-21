@@ -1,12 +1,8 @@
 import assert from "assert";
 import Message from "./message";
+import type Request from "./request";
 import Response from "./response";
-import { Identity } from "./utils";
-import {
-  createMockedClientRequest,
-  createMockedRequestFlow,
-  RPC_RES_SMALL,
-} from "./fixtures";
+import { createMockedFlow, RPC_RES_SMALL } from "./fixtures";
 
 const shouldBeAValidResponse = (
   actual: Response,
@@ -41,7 +37,8 @@ const shouldBeAValidResponseMessage = (
 
 describe("test Response class", function () {
   it("should create response from Request", function () {
-    const request = createMockedClientRequest();
+    const flow = createMockedFlow();
+    const request = flow.next().value as Request;
     const response = Response.createResponse(request, RPC_RES_SMALL);
 
     shouldBeAValidResponse(response, {
@@ -52,20 +49,30 @@ describe("test Response class", function () {
   });
 
   it("should create message from Response", function () {
-    const request = createMockedClientRequest();
+    const flow = createMockedFlow();
+    const request = flow.next().value as Request;
     const response = Response.createResponse(request, RPC_RES_SMALL);
 
     shouldBeAValidResponseMessage(response.toMessage(), { id: request.id });
   });
 
-  it("should create response from message", function () {
-    const [clientRequest, , exitNodeResponse, clientResponse] =
-      createMockedRequestFlow(4);
+  it("should create response from message", async function () {
+    const flow = createMockedFlow();
+    const clientRequest = flow.next().value as Request;
+    flow.next();
+    const exitNodeResponse = flow.next().value as Response;
+
+    const clientResponse = Response.fromMessage(
+      clientRequest,
+      exitNodeResponse.toMessage(),
+      BigInt(0),
+      () => {}
+    );
+
     shouldBeAValidResponse(clientResponse, {
       body: exitNodeResponse.body,
       entryNode: clientRequest.entryNode,
-      // we dont have the private key of the exit node
-      exitNode: new Identity(clientRequest.exitNode.peerId.toB58String()),
+      exitNode: clientRequest.exitNode,
     });
   });
 });

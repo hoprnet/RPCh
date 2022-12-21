@@ -1,7 +1,7 @@
 import assert from "assert";
 import { utils } from "ethers";
 import { splitStrByBytes, isExpired, areAllSegmentsPresent } from "./utils";
-import { createMockedClientRequest } from "./fixtures";
+import { createMockedFlow, RPC_REQ_LARGE } from "./fixtures";
 
 describe("test utils / splitStrByBytes", function () {
   it("should return 1 string", function () {
@@ -31,8 +31,9 @@ describe("test utils / isExpired", function () {
 });
 
 describe("test utils / areAllSegmentsPresent", function () {
-  const completeSegments = createMockedClientRequest("large")
-    .toMessage()
+  const completeSegments = createMockedFlow(RPC_REQ_LARGE)
+    .next()
+    .value.toMessage()
     .toSegments();
   const incompleteSegments = completeSegments.slice(1);
 

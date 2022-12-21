@@ -1,9 +1,9 @@
 import assert from "assert";
 import Cache from "./cache";
-import { createMockedClientRequest } from "./fixtures";
+import { createMockedFlow, RPC_REQ_LARGE } from "./fixtures";
 
 const TIMEOUT = 10e3;
-const MESSAGE = createMockedClientRequest("large").toMessage();
+const MESSAGE = createMockedFlow(RPC_REQ_LARGE).next().value.toMessage();
 const MESSAGE_SEGMENTS = MESSAGE.toSegments();
 
 describe("test Cache class", function () {
