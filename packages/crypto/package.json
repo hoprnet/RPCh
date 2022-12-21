@@ -3,6 +3,10 @@
   "version": "0.0.0",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
+  "exports": {
+    "./nodejs": "./build/nodejs",
+    "./web": "./build/web"
+  },
   "license": "MIT",
   "scripts": {
     "build": "rimraf index.js index.d.ts nodejs web && tsup",
