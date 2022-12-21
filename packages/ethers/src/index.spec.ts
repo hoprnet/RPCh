@@ -7,33 +7,15 @@ const PROVIDER_URL = fixtures.PROVIDER;
 const DISCOVERY_PLATFORM_API_ENDPOINT = "http://discovery_platform";
 const ENTRY_NODE_API_ENDPOINT = "http://entry_node";
 const ENTRY_NODE_API_TOKEN = "12345";
-const ENTRY_NODE_PEER_ID = fixtures.PEER_ID_A;
-const EXIT_NODE_PEER_ID = fixtures.PEER_ID_B;
+const ENTRY_NODE = fixtures.IDENTITY_A_NO_PRIV;
+const EXIT_NODE = fixtures.IDENTITY_B_NO_PRIV;
+const EXIT_NODE_WITH_PRIV = fixtures.IDENTITY_B;
 const FRESH_NODE_THRESHOLD = 20;
 const MAX_RESPONSES = 100;
 
 let lastRequestFromClient = BigInt(0);
 
-const MOCKS = {
-  createRequestFromClient(body: string) {
-    return Request.createRequest(
-      fixtures.PROVIDER,
-      body,
-      fixtures.IDENTITY_A_NO_PRIV,
-      fixtures.IDENTITY_B_NO_PRIV
-    );
-  },
-  createResponseFromExitNode(request: Request, body: string) {
-    const clonedRequest = this.createRequestFromClient(request.body);
-    // @ts-expect-error
-    clonedRequest.id = request.id;
-    return Response.createResponse(clonedRequest, body);
-  },
-};
-
 const getMockedResponse = async (request: Request): Promise<Message> => {
-  await new Promise((resolve) => setTimeout(resolve, 10));
-
   const rpcId: number = JSON.parse(request.body)["id"];
   let body: string = "";
   if (request.body.includes("eth_chainId")) {
@@ -42,11 +24,21 @@ const getMockedResponse = async (request: Request): Promise<Message> => {
     body = `{"jsonrpc": "2.0","result": "0x17f88c8","id": ${rpcId}}`;
   }
 
-  const response = MOCKS.createResponseFromExitNode(request, body);
+  await fixtures.wait(10);
 
-  await new Promise((resolve) => setTimeout(resolve, 10));
+  const exitNodeRequest = Request.fromMessage(
+    request.toMessage(),
+    EXIT_NODE_WITH_PRIV,
+    lastRequestFromClient,
+    (counter) => {
+      lastRequestFromClient = counter;
+    }
+  );
+  const exitNodeResponse = Response.createResponse(exitNodeRequest, body);
 
-  return response.toMessage();
+  await fixtures.wait(10);
+
+  return exitNodeResponse.toMessage();
 };
 
 describe("test index.ts", function () {
@@ -54,8 +46,8 @@ describe("test index.ts", function () {
     discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
     entryNodeApiEndpoint: ENTRY_NODE_API_ENDPOINT,
     entryNodeApiToken: ENTRY_NODE_API_TOKEN,
-    entryNodePeerId: ENTRY_NODE_PEER_ID,
-    exitNodePeerId: EXIT_NODE_PEER_ID,
+    entryNodePeerId: ENTRY_NODE.peerId.toB58String(),
+    exitNodePeerId: EXIT_NODE.peerId.toB58String(),
     freshNodeThreshold: FRESH_NODE_THRESHOLD,
     maxResponses: MAX_RESPONSES,
   });
@@ -75,14 +67,15 @@ describe("test index.ts", function () {
 
   // hook to emulate responses from the exit node
   const originalSendRequest = provider.sdk.sendRequest.bind(provider.sdk);
-  provider.sdk.sendRequest = async (req: Request): Promise<Response> => {
+  provider.sdk.sendRequest = async (request: Request): Promise<Response> => {
+    const now = Date.now();
     setTimeout(() => {
-      getMockedResponse(req).then((resMsg) => {
+      getMockedResponse(request).then((responseMessage) => {
         // @ts-ignore
-        provider.sdk.onMessage(resMsg);
+        provider.sdk.onMessage(responseMessage);
       });
     }, 100);
-    return originalSendRequest(req);
+    return originalSendRequest(request);
   };
 
   it("should get chain id", async function () {

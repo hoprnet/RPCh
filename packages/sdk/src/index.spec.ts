@@ -58,8 +58,10 @@ describe("test SDK class", function () {
     });
 
     it("should fail to send request", function () {
+      const request = fixtures.createMockedFlow().next().value as Request;
+
       assert.throws(() => {
-        return sdk.sendRequest(fixtures.createMockedClientRequest());
+        return sdk.sendRequest(request);
       }, "not ready");
     });
   });
@@ -79,7 +81,7 @@ describe("test SDK class", function () {
       await sdk.stop();
     });
 
-    it("should create request", async function () {
+    it("should create request", function () {
       const request = sdk.createRequest(
         fixtures.PROVIDER,
         fixtures.RPC_REQ_LARGE
@@ -92,7 +94,7 @@ describe("test SDK class", function () {
 
     it("should send request and return response", function (done) {
       const [clientRequest, , exitNodeResponse] =
-        fixtures.createMockedRequestFlow(3);
+        fixtures.generateMockedFlow(3);
 
       sdk.sendRequest(clientRequest).then((response) => {
         assert.equal(response.id, clientRequest.id);
@@ -110,13 +112,17 @@ describe("test SDK class", function () {
       //@ts-ignore
       const addMetricMock = jest.spyOn(sdk.reliabilityScore, "addMetric");
 
-      const [smallRequest, , smallResponse] = fixtures.createMockedRequestFlow(
+      const [smallRequest, , smallResponse] = fixtures.generateMockedFlow(
         3,
-        "small"
+        fixtures.RPC_REQ_SMALL,
+        undefined,
+        fixtures.RPC_RES_SMALL
       );
-      const [largeRequest, , largeResponse] = fixtures.createMockedRequestFlow(
+      const [largeRequest, , largeResponse] = fixtures.generateMockedFlow(
         3,
-        "large"
+        fixtures.RPC_REQ_LARGE,
+        undefined,
+        fixtures.RPC_RES_LARGE
       );
 
       let p1 = sdk.sendRequest(smallRequest);
@@ -134,9 +140,11 @@ describe("test SDK class", function () {
     });
 
     it("should call addMetric when onRequestRemoval is triggered", function () {
-      const [largeRequest, , largeResponse] = fixtures.createMockedRequestFlow(
+      const [largeRequest, , largeResponse] = fixtures.generateMockedFlow(
         3,
-        "large"
+        fixtures.RPC_REQ_LARGE,
+        undefined,
+        fixtures.RPC_RES_LARGE
       );
 
       //@ts-ignore
@@ -154,11 +162,9 @@ describe("test SDK class", function () {
     });
 
     describe("should handle requests correctly when receiving a response", function () {
-      it("should remove request with matching response", async function () {
+      it("should remove request with matching response", function () {
         const [clientRequest, , exitNodeResponse] =
-          fixtures.createMockedRequestFlow(3);
-
-        await new Promise((resolve) => setTimeout(resolve, 10));
+          fixtures.generateMockedFlow(3);
 
         // @ts-ignore
         sdk.requestCache.addRequest(
@@ -175,13 +181,17 @@ describe("test SDK class", function () {
         );
       });
       it("shouldn't remove request with different response", function () {
-        const [clientRequestA, ,] = fixtures.createMockedRequestFlow(
+        const [clientRequestA] = fixtures.generateMockedFlow(
           3,
-          "small"
+          fixtures.RPC_REQ_SMALL,
+          undefined,
+          fixtures.RPC_RES_SMALL
         );
-        const [, , exitNodeResponseB] = fixtures.createMockedRequestFlow(
+        const [, , exitNodeResponseB] = fixtures.generateMockedFlow(
           3,
-          "large"
+          fixtures.RPC_REQ_LARGE,
+          undefined,
+          fixtures.RPC_RES_LARGE
         );
 
         // @ts-ignore

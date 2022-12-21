@@ -3,9 +3,11 @@ import { start as startExitNode } from "./index";
 import { fixtures } from "rpch-common";
 import { utils } from "ethers";
 
-const [clientRequest, , exitNodeResponse] = fixtures.createMockedRequestFlow(
+const [clientRequest, , exitNodeResponse] = fixtures.generateMockedFlow(
   3,
-  "large"
+  fixtures.RPC_REQ_LARGE,
+  undefined,
+  fixtures.RPC_RES_LARGE
 );
 
 const createMockedSetup = async () => {

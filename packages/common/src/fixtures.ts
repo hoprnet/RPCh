@@ -64,13 +64,24 @@ export const setDateNow = (tmsp: number): (() => void) => {
 };
 
 /**
- * A generator function to generate a fully
- * mocked request / response flow.
+ * Sometimes it makes more sense to simply wait
+ * than using `setDateNow`.
+ * @param ms
+ */
+export const wait = (ms: number) =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * A creator function to create a fully
+ * mocked request / response flow
+ * step by step.
  * @param entryNode
  * @param exitNode
  * @param requestBody
  */
-export function* createMockedFlow(requestBody: string = RPC_REQ_SMALL) {
+export function* createMockedFlow(
+  requestBody: string = RPC_REQ_SMALL
+): Generator<Request | Response, Response, any> {
   const tmsp = +new Date();
   const TIME_DIFF = 50;
   const entryNode = IDENTITY_A_NO_PRIV;
@@ -79,7 +90,7 @@ export function* createMockedFlow(requestBody: string = RPC_REQ_SMALL) {
   let resetDateNow: ReturnType<typeof setDateNow>;
 
   // client side
-  resetDateNow = setDateNow(tmsp - TIME_DIFF * 3);
+  resetDateNow = setDateNow(tmsp - TIME_DIFF * 4);
   const clientRequest = Request.createRequest(
     PROVIDER,
     requestBody,
@@ -90,7 +101,7 @@ export function* createMockedFlow(requestBody: string = RPC_REQ_SMALL) {
   const lastRequestFromClient: number = (yield clientRequest) || 0;
 
   // exit node side
-  resetDateNow = setDateNow(tmsp - TIME_DIFF * 2);
+  resetDateNow = setDateNow(tmsp - TIME_DIFF * 3);
   const exitNodeRequest = Request.fromMessage(
     clientRequest.toMessage(),
     exitNodeWithPriv,
@@ -101,10 +112,12 @@ export function* createMockedFlow(requestBody: string = RPC_REQ_SMALL) {
   const responseBody: string = (yield exitNodeRequest) || RPC_RES_SMALL;
 
   // exit node side
+  resetDateNow = setDateNow(tmsp - TIME_DIFF * 2);
   const exitNodeResponse = Response.createResponse(
     exitNodeRequest,
     responseBody
   );
+  resetDateNow();
   const lastResponseFromExitNode: number = (yield exitNodeResponse) || 0;
 
   // client side
@@ -117,6 +130,43 @@ export function* createMockedFlow(requestBody: string = RPC_REQ_SMALL) {
   );
   resetDateNow();
   return clientResponse;
+}
+
+/**
+ * Generates a whole mocked flow
+ * request / response at once.
+ * @param steps when to stop generating
+ * @param requestBody
+ * @param lastRequestFromClient
+ * @param responseBody
+ * @param lastResponseFromExitNode
+ */
+export function generateMockedFlow(
+  steps: 1 | 2 | 3,
+  requestBody: string = RPC_REQ_SMALL,
+  lastRequestFromClient: number = 0,
+  responseBody: string = RPC_RES_SMALL,
+  lastResponseFromExitNode: number = 0
+): [
+  clientRequest: Request,
+  exitNodeRequest: Request,
+  exitNodeResponse: Response,
+  clientResponse: Response
+] {
+  const X = {} as any;
+  const flow = createMockedFlow(requestBody);
+
+  const clientRequest = flow.next().value as Request;
+  if (steps === 1) return [clientRequest, X, X, X];
+
+  const exitNodeRequest = flow.next(lastRequestFromClient).value as Request;
+  if (steps === 2) return [clientRequest, exitNodeRequest, X, X];
+
+  const exitNodeResponse = flow.next(responseBody).value as Response;
+  if (steps === 3) return [clientRequest, exitNodeRequest, exitNodeResponse, X];
+
+  const clientResponse = flow.next(lastResponseFromExitNode).value as Response;
+  return [clientRequest, exitNodeRequest, exitNodeResponse, clientResponse];
 }
 
 /**

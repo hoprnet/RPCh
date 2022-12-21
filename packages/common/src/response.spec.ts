@@ -2,7 +2,11 @@ import assert from "assert";
 import Message from "./message";
 import type Request from "./request";
 import Response from "./response";
-import { createMockedFlow, RPC_RES_SMALL } from "./fixtures";
+import {
+  createMockedFlow,
+  generateMockedFlow,
+  RPC_RES_SMALL,
+} from "./fixtures";
 
 const shouldBeAValidResponse = (
   actual: Response,
@@ -56,11 +60,8 @@ describe("test Response class", function () {
     shouldBeAValidResponseMessage(response.toMessage(), { id: request.id });
   });
 
-  it("should create response from message", async function () {
-    const flow = createMockedFlow();
-    const clientRequest = flow.next().value as Request;
-    flow.next();
-    const exitNodeResponse = flow.next().value as Response;
+  it("should create response from message", function () {
+    const [clientRequest, , exitNodeResponse] = generateMockedFlow(3);
 
     const clientResponse = Response.fromMessage(
       clientRequest,

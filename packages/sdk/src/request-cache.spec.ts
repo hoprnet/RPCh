@@ -12,7 +12,7 @@ describe("test request cache class", function () {
   });
 
   it("should add request", function () {
-    const request = fixtures.createMockedClientRequest();
+    const [request] = fixtures.generateMockedFlow(1);
 
     requestCache.addRequest(
       request,
@@ -22,7 +22,7 @@ describe("test request cache class", function () {
     assert.equal(requestCache.getRequest(request.id)?.request.id, request.id);
   });
   it("should remove a request", function () {
-    const request = fixtures.createMockedClientRequest();
+    const [request] = fixtures.generateMockedFlow(1);
 
     requestCache.addRequest(
       request,
@@ -33,7 +33,7 @@ describe("test request cache class", function () {
     assert.equal(requestCache.getRequest(request.id), undefined);
   });
   it("should timeout request", function () {
-    const request = fixtures.createMockedClientRequest();
+    const [request] = fixtures.generateMockedFlow(1);
 
     jest.useFakeTimers();
     requestCache.addRequest(
