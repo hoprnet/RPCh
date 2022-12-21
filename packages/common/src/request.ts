@@ -1,5 +1,4 @@
 import Message from "./message";
-import Response from "./response";
 import {
   generateRandomNumber,
   joinPartsToBody,
