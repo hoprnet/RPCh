@@ -9,7 +9,7 @@
     "dev": "yarn build --watch",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
-    "test": "sh e2e.sh",
+    "test": "bash e2e.sh",
     "test-e2e": "jest --coverage"
   },
   "devDependencies": {

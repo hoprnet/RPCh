@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # If there's a fatal error or users Ctrl+C it will tear down setup
 trap 'docker compose -f ../sandbox/docker-compose.yml down; rm ./logs; exit' SIGINT || trap 'docker compose -f ../sandbox/docker-compose.yml down; rm ./logs; exit' SIGKILL
