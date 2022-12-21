@@ -6,11 +6,11 @@
   "license": "MIT",
   "scripts": {
     "build": "exit 0",
-    "dev": "yarn build --watch",
+    "dev": "exit 0",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
-    "test": "bash e2e.sh",
-    "test-e2e": "jest --coverage"
+    "test": "exit 0",
+    "start": "bash e2e.sh"
   },
   "devDependencies": {
     "rpch-configs-typescript": "*",

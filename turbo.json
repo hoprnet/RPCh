@@ -81,7 +81,7 @@
         "coverage/**"
       ]
     },
-    "rpch-e2e#test": {
+    "rpch-e2e#start": {
       "cache": false
     }
   }
