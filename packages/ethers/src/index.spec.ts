@@ -12,6 +12,25 @@ const EXIT_NODE_PEER_ID = fixtures.PEER_ID_B;
 const FRESH_NODE_THRESHOLD = 20;
 const MAX_RESPONSES = 100;
 
+let triggerOnMessage: (message: string) => void = () => {};
+
+jest.mock("rpch-common", () => ({
+  ...jest.requireActual("rpch-common"),
+  hoprd: {
+    sendMessage: jest.fn(async () => "MOCK_SEND_MSG_RESPONSE"),
+    createMessageListener: jest.fn(
+      async (
+        _apiEndpoint: string,
+        _apiToken: string,
+        onMessage: (message: string) => void
+      ) => {
+        triggerOnMessage = onMessage;
+        return () => {};
+      }
+    ),
+  },
+}));
+
 const getMockedResponse = (request: Request): Response => {
   const rpcId: number = JSON.parse(request.body)["id"];
   let body: string = "";
