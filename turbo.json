@@ -23,7 +23,7 @@
         "RESPONSE_TIMEOUT"
       ]
     },
-    "rpch-e2e": {
+    "rpch-e2e#build": {
       "dependsOn": [
         "^build"
       ],
@@ -66,7 +66,11 @@
     },
     "test": {
       "outputs": [
-        "coverage/**"      ]
+        "coverage/**"
+      ]
+    },
+    "rpch-e2e#test": {
+      "cache": false
     }
   }
 }
