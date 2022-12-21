@@ -81,7 +81,7 @@ exit_node_peer_id=$(cat logs |grep "node5" -A 1 | grep "Peer Id" | awk '{ print 
 
 # Run tests with env variables
 ENTRY_NODE_PEER_ID="$entry_node_peer_id" EXIT_NODE_PEER_ID="$exit_node_peer_id" ENTRY_NODE_API_TOKEN="$HOPRD_API_TOKEN" \
-yarn test-e2e
+npx jest --coverage
 
 # After tests exit tear down setup
 docker compose -f ../sandbox/docker-compose.yml down

@@ -10,8 +10,7 @@
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
     "test": "exit 0",
-    "start": "bash e2e.sh",
-    "test-e2e": "jest --coverage"
+    "start": "bash e2e.sh"
   },
   "devDependencies": {
     "rpch-configs-typescript": "*",
