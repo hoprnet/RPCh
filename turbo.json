@@ -33,6 +33,22 @@
         "ENTRY_NODE_API_TOKEN"
       ]
     },
+    "rpch-funding-platform#build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "build/**"
+      ],
+      "env": [
+        "SECRET_KEY",
+        "WALLET_PRIV_KEY",
+        "PORT",
+        "CONFIRMATIONS",
+        "MAX_AMOUNT_OF_TOKENS",
+        "TIMEOUT"
+      ]
+    },
     "dev": {
       "dependsOn": [
         "^build"
@@ -50,9 +66,7 @@
     },
     "test": {
       "outputs": [
-        "coverage/**",
-        "report.json"
-      ]
+        "coverage/**"      ]
     }
   }
 }

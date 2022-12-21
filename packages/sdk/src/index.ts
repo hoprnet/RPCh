@@ -6,6 +6,7 @@ import {
   hoprd,
   utils,
 } from "rpch-common";
+import ReliabilityScore from "./reliability-score";
 import RequestCache from "./request-cache";
 
 const { log, logError } = utils.createLogger(["sdk"]);
@@ -19,6 +20,8 @@ export type HoprSdkTempOps = {
   entryNodeApiToken: string;
   entryNodePeerId: string;
   exitNodePeerId: string;
+  freshNodeThreshold: number;
+  maxResponses: number;
 };
 
 /**
@@ -38,6 +41,7 @@ export default class SDK {
   private interval?: NodeJS.Timer;
   private segmentCache: SegmentCache;
   private requestCache: RequestCache;
+  private reliabilityScore: ReliabilityScore;
   // this will be static but right now passed via tempOps
   private discoveryPlatformApiEndpoint: string;
   // available exit nodes
@@ -59,7 +63,11 @@ export default class SDK {
       (req: Request) => this.onRequestFromSegments(req),
       (res: Response) => this.onResponseFromSegments(res)
     );
-    this.requestCache = new RequestCache();
+    this.requestCache = new RequestCache(this.onRequestRemoval);
+    this.reliabilityScore = new ReliabilityScore(
+      tempOps.freshNodeThreshold,
+      tempOps.maxResponses
+    );
   }
 
   /**
@@ -118,6 +126,12 @@ export default class SDK {
       return;
     }
     matchingRequest.resolve(res);
+
+    this.reliabilityScore.addMetric(
+      this.tempOps.entryNodePeerId,
+      matchingRequest.request.id,
+      "success"
+    );
     this.requestCache.removeRequest(matchingRequest.request);
     log("responded to %s with %s", matchingRequest.request.body, res.body);
   }
@@ -128,6 +142,19 @@ export default class SDK {
    */
   private onRequestFromSegments(req: Request): void {
     log("ignoring received request %s", req.body);
+  }
+
+  /**
+   * Adds a failed metric to the reliability score
+   * when the request expires.
+   * @param req Request received from cache module.
+   */
+  private onRequestRemoval(req: Request): void {
+    this.reliabilityScore.addMetric(
+      this.tempOps.entryNodePeerId,
+      req.id,
+      "failed"
+    );
   }
 
   /**
