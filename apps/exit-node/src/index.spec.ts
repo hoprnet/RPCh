@@ -66,9 +66,8 @@ describe("test index.ts", function () {
     // // Response is now created, check if Response segments match our mocked Response
     // assert.equal(
     //   hoprd.sendMessage.mock.calls.length,
+    //   clientRequest.toMessage().toSegments().length
     // );
-    // console.log(hoprd.sendMessage.mock);
-    // console.log(exitNodeResponse.toMessage().toSegments().length);
 
     stopExitNode();
   });
