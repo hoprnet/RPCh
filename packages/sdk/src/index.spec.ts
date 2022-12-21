@@ -14,6 +14,25 @@ const MAX_RESPONSES = 100;
 
 type MockOps = HoprSdkTempOps & { timeout: number };
 
+let triggerOnMessage: (message: string) => void = () => {};
+
+jest.mock("rpch-common", () => ({
+  ...jest.requireActual("rpch-common"),
+  hoprd: {
+    sendMessage: jest.fn(async () => "MOCK_SEND_MSG_RESPONSE"),
+    createMessageListener: jest.fn(
+      async (
+        _apiEndpoint: string,
+        _apiToken: string,
+        onMessage: (message: string) => void
+      ) => {
+        triggerOnMessage = onMessage;
+        return () => {};
+      }
+    ),
+  },
+}));
+
 const createSdkMock = (
   overwriteOps?: Partial<MockOps>
 ): {

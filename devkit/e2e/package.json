@@ -1,0 +1,26 @@
+{
+  "name": "rpch-e2e",
+  "version": "0.0.0",
+  "main": "./build/index.js",
+  "types": "./build/index.d.ts",
+  "license": "MIT",
+  "scripts": {
+    "build": "exit 0",
+    "dev": "yarn build --watch",
+    "format": "prettier --check \"src/**/*.{ts,md}\"",
+    "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
+    "test": "bash e2e.sh",
+    "test-e2e": "jest --coverage"
+  },
+  "devDependencies": {
+    "rpch-configs-typescript": "*",
+    "rpch-configs-eslint": "*",
+    "rpch-configs-prettier": "*",
+    "rpch-configs-jest": "*",
+    "rpch-configs-tsup": "*"
+  },
+  "dependencies": {
+    "rpch-ethers": "*",
+    "rpch-common": "*"
+  }
+}

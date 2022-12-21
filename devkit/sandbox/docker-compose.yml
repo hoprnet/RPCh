@@ -10,7 +10,7 @@ volumes:
 x-exit-service: &exit
   build:
     dockerfile: apps/exit-node/Dockerfile
-    context: ../
+    context: ../../
   restart: unless-stopped
   volumes:
     - exit-node-data:/tmp
@@ -20,7 +20,7 @@ x-exit-service: &exit
 
 services:
   pluto:
-    image: gcr.io/hoprassociation/hopr-pluto:v1.90.32@sha256:fd33db04b4254971706e0a241b5309071f99374c058385f8cb16df3874b481d6
+    image: gcr.io/hoprassociation/hopr-pluto:v1.90.68@sha256:aa32cf496307a2f92d6aa965913e6e1c156b2bd5c9b41ae3657c9dfdf1d8c651
     restart: unless-stopped
     volumes:
       - pluto-data:/tmp

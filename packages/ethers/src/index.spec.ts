@@ -41,6 +41,16 @@ const getMockedResponse = async (request: Request): Promise<Message> => {
   return exitNodeResponse.toMessage();
 };
 
+jest.mock("rpch-common", () => ({
+  ...jest.requireActual("rpch-common"),
+  hoprd: {
+    sendMessage: jest.fn(async () => "MOCK_SEND_MSG_RESPONSE"),
+    createMessageListener: jest.fn(async () => {
+      return () => {};
+    }),
+  },
+}));
+
 describe("test index.ts", function () {
   const provider = new RPChProvider(PROVIDER_URL, {
     discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,

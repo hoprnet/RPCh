@@ -3,6 +3,7 @@ import {
   Message,
   Request,
   Response,
+  Segment,
   hoprd,
   utils,
 } from "rpch-common";
@@ -11,7 +12,6 @@ import RequestCache from "./request-cache";
 
 const { Identity } = utils;
 const { log, logError } = utils.createLogger(["sdk"]);
-
 /**
  * Temporary options to be passed to
  * the SDK for development purposes.
@@ -53,15 +53,18 @@ export default class SDK {
   // selected exit node
   private exitNodePeerId?: string;
   private lastResponseFromExitNode = BigInt(0);
+  // stopMessageListener
+  private stopMessageListener?: () => void;
 
   constructor(
     private readonly timeout: number,
     private readonly tempOps: HoprSdkTempOps
   ) {
     this.discoveryPlatformApiEndpoint = tempOps.discoveryPlatformApiEndpoint;
-
-    this.segmentCache = new SegmentCache(this.onMessage);
-    this.requestCache = new RequestCache(this.onRequestRemoval);
+    this.segmentCache = new SegmentCache((message) => this.onMessage(message));
+    this.requestCache = new RequestCache((request) =>
+      this.onRequestRemoval(request)
+    );
     this.reliabilityScore = new ReliabilityScore(
       tempOps.freshNodeThreshold,
       tempOps.maxResponses
@@ -167,31 +170,33 @@ export default class SDK {
     this.interval = setInterval(() => {
       this.segmentCache.removeExpired(this.timeout);
       this.requestCache.removeExpired(this.timeout);
-    }, 1000);
+    }, 1e3);
 
     await this.selectEntryNode(this.discoveryPlatformApiEndpoint);
     await this.selectExitNode(this.discoveryPlatformApiEndpoint);
-    // await createMessageListener(
-    //   this.entryNode!.apiEndpoint,
-    //   this.entryNode!.apiToken,
-    //   (message) => {
-    //     try {
-    //       const segment = Segment.fromString(message);
-    //       this.cache.onSegment(segment);
-    //     } catch (e) {
-    //       log(
-    //         "rejected received data from HOPRd: not a valid segment",
-    //         message
-    //       );
-    //     }
-    //   }
-    // );
+    this.stopMessageListener = await hoprd.createMessageListener(
+      this.entryNode!.apiEndpoint,
+      this.entryNode!.apiToken,
+      (message) => {
+        try {
+          const segment = Segment.fromString(message);
+          this.segmentCache.onSegment(segment);
+        } catch (e) {
+          log(
+            "rejected received data from HOPRd: not a valid segment",
+            message,
+            e
+          );
+        }
+      }
+    );
   }
 
   /**
    * Stop the SDK and clear up tangling processes.
    */
   public async stop(): Promise<void> {
+    if (this.stopMessageListener) this.stopMessageListener();
     clearInterval(this.interval);
   }
 
