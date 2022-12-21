@@ -5,6 +5,8 @@ import { fixtures } from "rpch-common";
 const PROVIDER_URL = fixtures.PROVIDER;
 const DISCOVERY_PLATFORM_API_ENDPOINT = "http://discovery_platform";
 const ENTRY_NODE_API_ENDPOINT = "http://localhost:13301";
+const FRESH_NODE_THRESHOLD = 20;
+const MAX_RESPONSES = 100;
 const { ENTRY_NODE_PEER_ID, EXIT_NODE_PEER_ID, ENTRY_NODE_API_TOKEN } =
   process.env;
 
@@ -21,6 +23,8 @@ describe("e2e tests", function () {
     entryNodeApiToken: ENTRY_NODE_API_TOKEN,
     entryNodePeerId: ENTRY_NODE_PEER_ID,
     exitNodePeerId: EXIT_NODE_PEER_ID,
+    freshNodeThreshold: FRESH_NODE_THRESHOLD,
+    maxResponses: MAX_RESPONSES,
   });
 
   beforeAll(async function () {
