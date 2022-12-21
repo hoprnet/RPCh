@@ -43,3 +43,6 @@ jobs:
 
       - name: Run tests and coverage
         run: yarn test --ci
+
+      - name: Run E2E tests
+        run: yarn test:e2e
