@@ -1,6 +1,7 @@
 import assert from "assert";
 import { QueryRegisteredNode } from "../registered-node/dto";
 import * as db from "./";
+import { QueryQuota } from "../quota/dto";
 
 const createMockNode = (peerId?: string, hasExitNode?: boolean) =>
   ({
@@ -13,12 +14,22 @@ const createMockNode = (peerId?: string, hasExitNode?: boolean) =>
     totalAmountFunded: 0,
   } as QueryRegisteredNode);
 
+const createMockQuota = (params?: QueryQuota): QueryQuota => {
+  return {
+    id: params?.id ?? Math.floor(Math.random() * 100),
+    action_taker: params?.action_taker ?? "discovery-platform",
+    client: params?.client ?? "client",
+    quota: params?.quota ?? 1,
+  };
+};
+
 describe("test db functions", function () {
   let dbInstance: db.DBInstance;
   beforeEach(function () {
     dbInstance = {
       data: {
         registeredNodes: [],
+        quotas: [],
       },
     };
   });
@@ -73,5 +84,60 @@ describe("test db functions", function () {
     await db.updateRegisteredNode(dbInstance, { ...node, status: "UNUSABLE" });
     const updatedNode = await db.getRegisteredNode(dbInstance, "1");
     assert.equal(updatedNode?.status, "UNUSABLE");
+  });
+  it("should create quota", async function () {
+    const mockQuota = createMockQuota();
+    const quota = await db.createQuota(dbInstance, mockQuota);
+    assert.equal(quota.id, mockQuota.id);
+  });
+  it("should get quota by id", async function () {
+    const mockQuota = createMockQuota();
+    await db.createQuota(dbInstance, mockQuota);
+    await db.createQuota(dbInstance, createMockQuota());
+    const queryQuota = await db.getQuota(dbInstance, mockQuota.id ?? 0);
+    assert.equal(queryQuota?.id, mockQuota.id);
+  });
+  it("should get quotas by client", async function () {
+    const mockQuota = createMockQuota({
+      client: "client",
+      action_taker: "discovery",
+      quota: 10,
+    });
+    await db.createQuota(dbInstance, mockQuota);
+    await db.createQuota(dbInstance, mockQuota);
+    await db.createQuota(
+      dbInstance,
+      createMockQuota({
+        action_taker: "discovery",
+        client: "other client",
+        quota: 20,
+      })
+    );
+
+    const quotas = await db.getAllQuotasByClient(dbInstance, "client");
+    assert.equal(quotas.length, 2);
+  });
+  it("should update quota", async function () {
+    const mockQuota = createMockQuota({
+      client: "client",
+      action_taker: "discovery",
+      quota: 10,
+    });
+    await db.createQuota(dbInstance, mockQuota);
+    await db.updateQuota(dbInstance, { ...mockQuota, action_taker: "eve" });
+    const updatedQuota = await db.getQuota(dbInstance, mockQuota.id ?? 0);
+    assert.equal(updatedQuota?.action_taker, "eve");
+  });
+  it("should delete quota", async function () {
+    const mockQuota = createMockQuota({
+      client: "client",
+      action_taker: "discovery",
+      quota: 10,
+    });
+    await db.createQuota(dbInstance, mockQuota);
+    if (!mockQuota.id) throw new Error("Could not create mock quota");
+    await db.deleteQuota(dbInstance, mockQuota.id);
+    const deletedQuota = await db.getQuota(dbInstance, mockQuota.id ?? 0);
+    assert.equal(deletedQuota, undefined);
   });
 });

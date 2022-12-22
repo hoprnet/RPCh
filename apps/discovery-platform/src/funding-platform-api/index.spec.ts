@@ -36,6 +36,7 @@ describe("test funding platform api class", function () {
     dbInstance = {
       data: {
         registeredNodes: [],
+        quotas: [],
       },
     };
     fundingPlatformApi = new FundingPlatformApi(

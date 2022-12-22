@@ -42,7 +42,7 @@ export const entryServer = (ops: { db: DBInstance }) => {
   });
 
   apiRouter.get("/request/entry-node", (req, res) => {
-    // TODO
+    // chose random entry node --> check quota --> return entry node and decrease quota
     return res.json({ body: req.route });
   });
 

@@ -28,6 +28,7 @@ describe("test registered node functions", function () {
     db = {
       data: {
         registeredNodes: [],
+        quotas: [],
       },
     };
   });
