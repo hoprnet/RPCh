@@ -31,7 +31,6 @@ services:
       - "19501-19505:19501-19505"
     environment:
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-    command: "node apps/exit-node/build/index.js"
   exit-1:
     <<: *exit
     environment:

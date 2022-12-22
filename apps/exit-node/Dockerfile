@@ -48,7 +48,11 @@ RUN yarn run build --scope="rpch-exit-node"
 
 #  Copy only the necesary files to run the app.
 FROM node:16-alpine AS runner
+
 WORKDIR /app
+
+# set volume which can be mapped by users on the host system
+VOLUME ["/app/db"]
 
 # we use tini as process 1 to catch signals properly, which is also built into Docker by default
 RUN apk add --no-cache tini curl
@@ -60,6 +64,4 @@ RUN  curl https://raw.githubusercontent.com/eficode/wait-for/v2.2.3/wait-for > /
 COPY --from=installer /app/apps/exit-node/package.json .
 COPY --from=installer /app .
 
-CMD ["node", "apps/exit-node/build/index.js"]
-
-ENTRYPOINT ["/sbin/tini", "--"]
+ENTRYPOINT ["/sbin/tini", "--", "node", "apps/exit-node/build/index.js"]

@@ -8,6 +8,7 @@ import {
   hoprd,
 } from "rpch-common";
 import * as exit from "./exit";
+import { privKeyStrToPeerId } from "./utils";
 
 const { log, logError } = utils.createLogger("exit-node");
 
@@ -27,23 +28,12 @@ export const start = async (ops: {
   hoprd: {
     sendMessage: typeof hoprd.sendMessage;
     createMessageListener: typeof hoprd.createMessageListener;
-    fetchPeerId: typeof hoprd.fetchPeerId;
   };
   privateKey: string;
   apiEndpoint: string;
   apiToken?: string;
   timeout: number;
 }): Promise<() => void> => {
-  const getMyPeerId = async () => {
-    const result = await ops.hoprd.fetchPeerId({
-      apiEndpoint: ops.apiEndpoint,
-      apiToken: ops.apiToken,
-    });
-    if (result) {
-      return result.listeningAddress[0].split("/").pop();
-    }
-  };
-
   const onMessage = async (message: Message) => {
     try {
       const rpchRequest = Request.fromMessage(
@@ -74,8 +64,10 @@ export const start = async (ops: {
     }
   };
 
-  const myPeerId = await getMyPeerId();
-  const myIdentity = new utils.Identity(myPeerId!, ops.privateKey);
+  const myIdentity = new utils.Identity(
+    (await privKeyStrToPeerId(ops.privateKey)).toB58String(),
+    ops.privateKey
+  );
   const cache = new Cache(onMessage);
   const interval: NodeJS.Timer = setInterval(() => {
     cache.removeExpired(ops.timeout);

@@ -27,11 +27,6 @@ const createMockedSetup = async () => {
         return () => {};
       }
     ),
-    fetchPeerId: jest.fn(async () => ({
-      listeningAddress: [exitNodeResponse.exitNode.peerId.toB58String()] as [
-        string
-      ],
-    })),
   };
 
   const stopExitNode = await startExitNode({

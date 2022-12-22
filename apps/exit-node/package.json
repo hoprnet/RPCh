@@ -13,6 +13,7 @@
   },
   "devDependencies": {
     "@types/node-fetch": "2.6.2",
+    "@types/secp256k1": "^4.0.3",
     "nock": "^13.2.9",
     "rpch-configs-eslint": "*",
     "rpch-configs-jest": "*",
@@ -21,7 +22,10 @@
     "rpch-configs-typescript": "*"
   },
   "dependencies": {
+    "@libp2p/crypto": "^1.0.10",
+    "ethers": "^5.7.2",
     "node-fetch": "^2.6.2",
-    "rpch-common": "*"
+    "rpch-common": "*",
+    "secp256k1": "^4.0.3"
   }
 }
