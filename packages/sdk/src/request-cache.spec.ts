@@ -8,7 +8,7 @@ describe("test request cache class", function () {
   let requestCache: RequestCache;
 
   beforeEach(function () {
-    requestCache = new RequestCache();
+    requestCache = new RequestCache(jest.fn(() => "MOCK_ON_REQUEST_REMOVAL"));
   });
 
   it("should add request", function () {
@@ -41,6 +41,8 @@ describe("test request cache class", function () {
     jest.advanceTimersByTime(2 * TIMEOUT);
     requestCache.removeExpired(TIMEOUT);
     assert.equal(requestCache.getRequest(fixtures.SMALL_REQUEST.id), undefined);
+    // @ts-ignore-next-line
+    assert.equal(requestCache.onRequestRemoval.mock.calls.length, 1);
     jest.useRealTimers();
   });
 });

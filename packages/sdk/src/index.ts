@@ -2,13 +2,14 @@ import {
   Cache as SegmentCache,
   Request,
   Response,
+  Segment,
   hoprd,
   utils,
 } from "rpch-common";
+import ReliabilityScore from "./reliability-score";
 import RequestCache from "./request-cache";
 
 const { log, logError } = utils.createLogger(["sdk"]);
-
 /**
  * Temporary options to be passed to
  * the SDK for development purposes.
@@ -19,6 +20,8 @@ export type HoprSdkTempOps = {
   entryNodeApiToken: string;
   entryNodePeerId: string;
   exitNodePeerId: string;
+  freshNodeThreshold: number;
+  maxResponses: number;
 };
 
 /**
@@ -38,6 +41,7 @@ export default class SDK {
   private interval?: NodeJS.Timer;
   private segmentCache: SegmentCache;
   private requestCache: RequestCache;
+  private reliabilityScore: ReliabilityScore;
   // this will be static but right now passed via tempOps
   private discoveryPlatformApiEndpoint: string;
   // available exit nodes
@@ -46,6 +50,8 @@ export default class SDK {
   private entryNode?: EntryNode;
   // selected exit node
   private exitNodePeerId?: string;
+  // stopMessageListener
+  private stopMessageListener?: () => void;
 
   constructor(
     private readonly timeout: number,
@@ -54,10 +60,14 @@ export default class SDK {
     this.discoveryPlatformApiEndpoint = tempOps.discoveryPlatformApiEndpoint;
 
     this.segmentCache = new SegmentCache(
-      this.onRequestFromSegments,
-      this.onResponseFromSegments
+      (req: Request) => this.onRequestFromSegments(req),
+      (res: Response) => this.onResponseFromSegments(res)
     );
-    this.requestCache = new RequestCache();
+    this.requestCache = new RequestCache(this.onRequestRemoval);
+    this.reliabilityScore = new ReliabilityScore(
+      tempOps.freshNodeThreshold,
+      tempOps.maxResponses
+    );
   }
 
   /**
@@ -116,6 +126,12 @@ export default class SDK {
       return;
     }
     matchingRequest.resolve(res);
+
+    this.reliabilityScore.addMetric(
+      this.tempOps.entryNodePeerId,
+      matchingRequest.request.id,
+      "success"
+    );
     this.requestCache.removeRequest(matchingRequest.request);
     log("responded to %s with %s", matchingRequest.request.body, res.body);
   }
@@ -129,6 +145,19 @@ export default class SDK {
   }
 
   /**
+   * Adds a failed metric to the reliability score
+   * when the request expires.
+   * @param req Request received from cache module.
+   */
+  private onRequestRemoval(req: Request): void {
+    this.reliabilityScore.addMetric(
+      this.tempOps.entryNodePeerId,
+      req.id,
+      "failed"
+    );
+  }
+
+  /**
    * Start the SDK and initialize necessary data.
    */
   public async start(): Promise<void> {
@@ -137,31 +166,33 @@ export default class SDK {
     this.interval = setInterval(() => {
       this.segmentCache.removeExpired(this.timeout);
       this.requestCache.removeExpired(this.timeout);
-    }, 1000);
+    }, 1e3);
 
     await this.selectEntryNode(this.discoveryPlatformApiEndpoint);
     await this.selectExitNode(this.discoveryPlatformApiEndpoint);
-    // await createMessageListener(
-    //   this.entryNode!.apiEndpoint,
-    //   this.entryNode!.apiToken,
-    //   (message) => {
-    //     try {
-    //       const segment = Segment.fromString(message);
-    //       this.cache.onSegment(segment);
-    //     } catch (e) {
-    //       log(
-    //         "rejected received data from HOPRd: not a valid segment",
-    //         message
-    //       );
-    //     }
-    //   }
-    // );
+    this.stopMessageListener = await hoprd.createMessageListener(
+      this.entryNode!.apiEndpoint,
+      this.entryNode!.apiToken,
+      (message) => {
+        try {
+          const segment = Segment.fromString(message);
+          this.segmentCache.onSegment(segment);
+        } catch (e) {
+          log(
+            "rejected received data from HOPRd: not a valid segment",
+            message,
+            e
+          );
+        }
+      }
+    );
   }
 
   /**
    * Stop the SDK and clear up tangling processes.
    */
   public async stop(): Promise<void> {
+    if (this.stopMessageListener) this.stopMessageListener();
     clearInterval(this.interval);
   }
 

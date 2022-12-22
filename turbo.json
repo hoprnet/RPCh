@@ -23,6 +23,32 @@
         "RESPONSE_TIMEOUT"
       ]
     },
+    "rpch-e2e#build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "env": [
+        "ENTRY_NODE_PEER_ID",
+        "EXIT_NODE_PEER_ID",
+        "ENTRY_NODE_API_TOKEN"
+      ]
+    },
+    "rpch-funding-platform#build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "build/**"
+      ],
+      "env": [
+        "SECRET_KEY",
+        "WALLET_PRIV_KEY",
+        "PORT",
+        "CONFIRMATIONS",
+        "MAX_AMOUNT_OF_TOKENS",
+        "TIMEOUT"
+      ]
+    },
     "dev": {
       "dependsOn": [
         "^build"
@@ -40,9 +66,11 @@
     },
     "test": {
       "outputs": [
-        "coverage/**",
-        "report.json"
+        "coverage/**"
       ]
+    },
+    "rpch-e2e#start": {
+      "cache": false
     }
   }
 }
