@@ -47,11 +47,21 @@ describe("test graph api functions", function () {
       );
       assert(!isValidated);
     });
-    it("should return true if enough channels are open", function () {
-      const MIN_BALANCE = 1;
-      const MIN_CHANNELS_OPEN = 3;
+    it("should return false if not enough balance are in the channels", function () {
+      const MIN_BALANCE = 4;
+      const MIN_CHANNELS_OPEN = 5;
       const isValidated = validateNode(
         mockGraphResponse(3, 1),
+        MIN_BALANCE,
+        MIN_CHANNELS_OPEN
+      );
+      assert(!isValidated);
+    });
+    it("should return true if enough channels are open and enough balance is inside the channels", function () {
+      const MIN_BALANCE = 4;
+      const MIN_CHANNELS_OPEN = 3;
+      const isValidated = validateNode(
+        mockGraphResponse(3, 2),
         MIN_BALANCE,
         MIN_CHANNELS_OPEN
       );

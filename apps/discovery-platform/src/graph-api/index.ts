@@ -9,7 +9,7 @@ const GRAPH_HOPR_URL =
 const query = gql`
   query getAccount($id: String!, $minBalance: BigDecimal!) {
     account(id: $id) {
-      fromChannels(where: { status: OPEN, balance_gt: $minBalance }) {
+      fromChannels(where: { status: OPEN }) {
         id
         balance
       }
@@ -50,8 +50,10 @@ export const validateNode = (
   minBalance: number,
   minChannels: number
 ) => {
-  const validChannels = graphRes.data.account.fromChannels.filter(
-    (channel) => channel.balance >= minBalance
+  const sumOfBalance = graphRes.data.account.fromChannels.reduce(
+    (acc, channel) => acc + channel.balance,
+    0
   );
-  return validChannels.length >= minChannels;
+  const amountOfOpenChannels = graphRes.data.account.fromChannels.length;
+  return amountOfOpenChannels >= minChannels && sumOfBalance >= minBalance;
 };

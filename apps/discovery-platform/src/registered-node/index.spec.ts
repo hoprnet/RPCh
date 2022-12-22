@@ -79,4 +79,5 @@ describe("test registered node functions", function () {
 
     assert.equal(exitNodes.length, 2);
   });
+  it.todo("should get a access token");
 });

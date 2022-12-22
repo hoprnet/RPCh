@@ -1,14 +1,13 @@
 import { DBInstance } from "./db";
 import { entryServer } from "./entry-server";
 import { FundingPlatformApi } from "./funding-platform-api";
-import { checkCommitment } from "./graph-api";
-import { getAllRegisteredNodes } from "./registered-node";
 
 const {
   PORT = 3000,
   FUNDING_PLATFORM_API,
   BALANCE_THRESHOLD,
   CHANNELS_THRESHOLD,
+  BASE_QUOTA = 1,
 } = process.env;
 
 const main = () => {
@@ -56,7 +55,11 @@ const main = () => {
   //   await fundingPlatformApi.checkForPendingRequests();
   // }, 1000);
 
-  const server = entryServer({ db });
+  const server = entryServer({
+    db,
+    baseQuota: Number(BASE_QUOTA),
+    fundingPlatformApi,
+  });
   server.listen(PORT);
 
   // return () => {

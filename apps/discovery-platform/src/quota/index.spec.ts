@@ -6,6 +6,7 @@ import {
   deleteQuota,
   getAllQuotasByClient,
   getQuota,
+  sumQuotas,
   updateQuota,
 } from "./index";
 
@@ -87,5 +88,24 @@ describe("test quota functions", function () {
     await db.deleteQuota(dbInstance, createdQuota.id);
     const deletedQuota = await db.getQuota(dbInstance, createdQuota.id ?? 0);
     assert.equal(deletedQuota, undefined);
+  });
+  it("should sum all quotas", async function () {
+    const baseQuota = 10;
+    const mockQuota = createMockQuota({
+      client: "client",
+      actionTaker: "discovery",
+      quota: baseQuota,
+      createdAt: "now",
+    });
+    await createQuota(dbInstance, mockQuota);
+    await createQuota(dbInstance, mockQuota);
+
+    const allQuotasFromClient = await getAllQuotasByClient(
+      dbInstance,
+      "client"
+    );
+    const sum = sumQuotas(allQuotasFromClient);
+
+    assert.equal(sum, 2 * baseQuota);
   });
 });

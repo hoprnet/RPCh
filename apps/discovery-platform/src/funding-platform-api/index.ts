@@ -94,6 +94,22 @@ export class FundingPlatformApi {
     }
   }
 
+  public async getAvailableFunds() {
+    if (!this.accessTokenIsValid()) {
+      await this.getAccessToken();
+    }
+
+    const funds = await fetch(`${this.url}/api/funds`, {
+      headers: {
+        "x-access-token": this.accessToken!,
+      },
+    });
+
+    const fundsJSON = await funds.json();
+
+    return fundsJSON;
+  }
+
   private async getRequestStatus(requestId: string) {
     if (!this.accessTokenIsValid()) {
       await this.getAccessToken();

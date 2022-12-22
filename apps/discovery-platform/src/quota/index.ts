@@ -35,3 +35,8 @@ export const updateQuota = async (
 export const deleteQuota = async (dbInstance: db.DBInstance, id: number) => {
   return await db.deleteQuota(dbInstance, id);
 };
+
+export const sumQuotas = (quotas: QueryQuota[]) => {
+  const sumOfQuotas = quotas.reduce((prev, next) => prev + next.quota, 0);
+  return sumOfQuotas;
+};

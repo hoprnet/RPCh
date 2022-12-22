@@ -34,7 +34,8 @@
         "PORT",
         "FUNDING_PLATFORM_API",
         "BALANCE_THRESHOLD",
-        "CHANNELS_THRESHOLD"
+        "CHANNELS_THRESHOLD",
+        "BASE_QUOTA"
       ]
     },
     "dev": {

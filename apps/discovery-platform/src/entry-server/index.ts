@@ -4,13 +4,31 @@ import {
   createRegisteredNode,
   getAllRegisteredNodes,
   getRegisteredNode,
+  getSelectedNodeAccessToken,
 } from "../registered-node";
 import { CreateRegisteredNode } from "../registered-node/dto";
+import { CreateQuota } from "../quota/dto";
+import { createQuota, getAllQuotasByClient, sumQuotas } from "../quota";
+import { FundingPlatformApi } from "../funding-platform-api";
 
 const app = express();
 const apiRouter = express.Router();
 
-export const entryServer = (ops: { db: DBInstance }) => {
+export const doesClientHaveQuota = async (
+  db: DBInstance,
+  client: string,
+  baseQuota: number
+) => {
+  const allQuotasFromClient = await getAllQuotasByClient(db, client);
+  const sumOfClientsQuota = sumQuotas(allQuotasFromClient);
+  return sumOfClientsQuota >= baseQuota;
+};
+
+export const entryServer = (ops: {
+  db: DBInstance;
+  baseQuota: number;
+  fundingPlatformApi: FundingPlatformApi;
+}) => {
   app.use("/api", apiRouter);
   apiRouter.use(express.json());
 
@@ -36,14 +54,46 @@ export const entryServer = (ops: { db: DBInstance }) => {
     return res.json({ node });
   });
 
-  apiRouter.get("/funding-service/funds", (req, res) => {
-    // TODO
-    return res.json({ body: req.route });
+  apiRouter.get("/funding-service/funds", async (req, res) => {
+    const funds = await ops.fundingPlatformApi.getAvailableFunds();
+    return res.json({ body: funds });
   });
 
-  apiRouter.get("/request/entry-node", (req, res) => {
-    // chose random entry node --> check quota --> return entry node and decrease quota
-    return res.json({ body: req.route });
+  apiRouter.post("/client/funds", async (req, res) => {
+    const { client, quota } = req.body as CreateQuota;
+    const createdQuota = await createQuota(ops.db, {
+      client,
+      quota,
+      actionTaker: "discovery platform",
+      createdAt: new Date().toISOString(),
+    });
+    return res.json({ quota: createdQuota });
+  });
+
+  apiRouter.get("/request/entry-node", async (req, res) => {
+    // TODO: add funding to selected node
+    const { client } = req.body;
+    // check if client has enough quota
+    const doesClientHaveQuotaResponse = await doesClientHaveQuota(
+      ops.db,
+      client,
+      ops.baseQuota
+    );
+    if (!doesClientHaveQuotaResponse) {
+      return res.status(400).json({
+        body: "Client does not have enough quota",
+      });
+    }
+    // choose selected entry node
+    const selectedNodeAccessToken = await getSelectedNodeAccessToken(ops.db);
+    // create negative quota (showing that the client has used up initial quota)
+    await createQuota(ops.db, {
+      client,
+      quota: ops.baseQuota * -1,
+      actionTaker: "discovery platform",
+      createdAt: new Date().toISOString(),
+    });
+    return res.json({ body: selectedNodeAccessToken });
   });
 
   return app;

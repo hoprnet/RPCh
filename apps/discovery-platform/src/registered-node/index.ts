@@ -46,3 +46,11 @@ export const getAllExitNodes = async (dbInstance: db.DBInstance) => {
 export const getAllNonExitNodes = async (dbInstance: db.DBInstance) => {
   return await db.getAllNonExitNodes(dbInstance);
 };
+
+export const getSelectedNodeAccessToken = async (dbInstance: db.DBInstance) => {
+  const allNodes = await getAllRegisteredNodes(dbInstance);
+  const selectedNode = allNodes.at(Math.floor(Math.random() * allNodes.length));
+  // TODO: get access token of selected node
+  const accessToken = `0x` + selectedNode?.peerId;
+  return accessToken;
+};

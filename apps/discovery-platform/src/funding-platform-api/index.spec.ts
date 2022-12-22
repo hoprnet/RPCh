@@ -11,12 +11,15 @@ import { QueryRegisteredNode } from "../registered-node/dto";
 
 const FUNDING_PLATFORM_URL = "http://localhost:5000";
 const FAKE_ACCESS_TOKEN = "EcLjvxdALOT0eq18d8Gzz3DEr3AMG27NtL+++YPSZNE=";
+
 const nockGetApiAccessToken =
   nock(FUNDING_PLATFORM_URL).get("/api/access-token");
 const nockFundingRequest = (peerId: string) =>
   nock(FUNDING_PLATFORM_URL).post(`/api/request/funds/${peerId}`);
 const nockRequestStatus = (requestId: number) =>
   nock(FUNDING_PLATFORM_URL).get(`/api/request/status/${requestId}`);
+const nockGetFunds = nock(FUNDING_PLATFORM_URL).get("/api/funds");
+
 const createMockNode = (peerId?: string) =>
   ({
     chainId: 100,
@@ -348,5 +351,21 @@ describe("test funding platform api class", function () {
       assert.notEqual(dbNode?.status, "READY");
       assert.equal(dbNode?.totalAmountFunded, "0");
     });
+  });
+  it("should get funding platform funds", async function () {
+    nockGetApiAccessToken.once().reply(200, {
+      accessToken: FAKE_ACCESS_TOKEN,
+      amountLeft: 10,
+      expiredAt: new Date().toISOString(),
+    } as getAccessTokenResponse);
+
+    nockGetFunds.reply(200, {
+      80: 10,
+      100: 4000,
+    });
+
+    const funds = await fundingPlatformApi.getAvailableFunds();
+
+    assert.equal(funds[80], 10);
   });
 });
