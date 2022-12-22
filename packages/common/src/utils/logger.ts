@@ -14,6 +14,7 @@ type MetricData = {
   id: any;
   ethereumAddress: string;
   peerId: string;
+  loggedAt: string;
   [key: string]: any;
 };
 
@@ -24,6 +25,7 @@ type MetricData = {
 class Metric {
   constructor(public readonly data: Partial<MetricData>) {}
   public static create(data: Partial<MetricData>): Metric {
+    data.loggedAt = String(+Date.now());
     return new Metric(data);
   }
   public toString(): string {
