@@ -1,12 +1,12 @@
-import { utils } from "rpch-common";
 import { AccessTokenService } from "./access-token";
 import { getWallet } from "./blockchain";
 import { DBInstance } from "./db";
 import * as api from "./entry-server";
 import { checkFreshRequests } from "./queue";
 import { RequestService } from "./request";
+import { createLogger } from "./utils";
 
-const { log } = utils.createLogger(["funding-platform"]);
+const log = createLogger([]);
 
 const {
   // Secret key used for access token generation
@@ -64,7 +64,7 @@ const start = async (ops: {
   }, 60e3);
   // start listening at PORT for requests
   app.listen(PORT, () => {
-    log("entry server is up");
+    log.normal("entry server is up");
   });
 };
 

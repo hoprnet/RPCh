@@ -6,12 +6,9 @@ import {
 } from "../db";
 import type { CreateAccessToken } from "./dto";
 import { generateAccessToken } from "./access-token";
-import { utils } from "rpch-common";
+import { createLogger } from "../utils";
 
-const { log, logError } = utils.createLogger([
-  "funding-platform",
-  "access-token-service",
-]);
+const log = createLogger(["access-token-service"]);
 
 /**
  * An abstraction layer for access tokens to interact with db.
@@ -23,7 +20,7 @@ export class AccessTokenService {
 
   public async createAccessToken(ops: { timeout: number; amount: number }) {
     try {
-      log("Creating access token...");
+      log.normal("Creating access token...");
       const now = new Date(Date.now());
       // expiredAt is calculated by adding the minutes set
       // with ops.timeout to the current time
@@ -47,7 +44,7 @@ export class AccessTokenService {
 
       return query;
     } catch (e: any) {
-      logError("Failed to create access token: ", e);
+      log.error("Failed to create access token: ", e);
     }
   }
 

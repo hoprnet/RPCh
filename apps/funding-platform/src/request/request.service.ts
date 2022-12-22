@@ -8,12 +8,9 @@ import {
   getRequests as getRequestsDB,
 } from "../db";
 import { CreateRequest, QueryRequest, UpdateRequest } from "./dto";
-import { utils } from "rpch-common";
+import { createLogger } from "../utils";
 
-const { log, logError } = utils.createLogger([
-  "funding-platform",
-  "request-service",
-]);
+const log = createLogger(["request-service"]);
 
 /**
  * An abstraction layer for requests to interact with db.
@@ -29,7 +26,7 @@ export class RequestService {
     accessTokenHash: string;
   }) {
     try {
-      log("Creating request...");
+      log.normal("Creating request...");
       const now = new Date(Date.now());
       const createRequest: CreateRequest = {
         amount: params.amount,
@@ -43,7 +40,7 @@ export class RequestService {
       await saveRequestDB(this.db, createRequest);
       return createRequest;
     } catch (e: any) {
-      logError("Failed to create request: ", e);
+      log.error("Failed to create request: ", e);
       throw new Error("request was not created");
     }
   }
@@ -66,12 +63,21 @@ export class RequestService {
       await updateRequestDB(this.db, request);
       return updateRequest;
     } catch (e: any) {
-      logError("Failed to update request", requestId, e);
+      log.error(
+        "Failed to update request",
+        requestId,
+        e,
+        log.createMetric({ id: requestId })
+      );
     }
   }
 
   public async deleteRequest(requestId: number) {
-    log("Deleted request:", requestId);
+    log.normal(
+      "Deleted request:",
+      requestId,
+      log.createMetric({ id: requestId })
+    );
     return deleteRequestDB(this.db, requestId);
   }
 
