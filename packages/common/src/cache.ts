@@ -48,14 +48,22 @@ export default class Cache {
       log.verbose(
         "dropping segment, already exists",
         segment.msgId,
-        segment.segmentNr
+        segment.segmentNr,
+        log.createMetric({
+          messageId: segment.msgId,
+          segmentNumber: segment.segmentNr,
+        })
       );
       return;
     }
 
     segmentEntry.segments = [...segmentEntry.segments, segment];
     this.segments.set(segment.msgId, segmentEntry);
-    log.verbose("stored new segment for message ID", segment.msgId);
+    log.verbose(
+      "stored new segment for message ID",
+      segment.msgId,
+      log.createMetric({ id: segment.msgId })
+    );
 
     if (validateSegments(segmentEntry.segments)) {
       const message = Message.fromSegments(segmentEntry.segments);
@@ -90,7 +98,11 @@ export default class Cache {
   public removeExpired(timeout: number): void {
     const now = new Date();
 
-    log.verbose("total number of segments", this.segments.size);
+    log.verbose(
+      "total number of segments",
+      this.segments.size,
+      log.createMetric({ numberOfSegments: this.segments.size })
+    );
 
     for (const [id, entry] of this.segments.entries()) {
       if (isExpired(timeout, now, entry.receivedAt)) {

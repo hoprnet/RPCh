@@ -3,7 +3,7 @@ import { deepCopy } from "@ethersproject/properties";
 import SDK, { type HoprSdkTempOps } from "rpch-sdk";
 import { parseResponse, getResult, createLogger } from "./utils";
 
-const log = createLogger(["ethers"]);
+const log = createLogger([]);
 
 export class RPChProvider extends JsonRpcProvider {
   public sdk: SDK;
