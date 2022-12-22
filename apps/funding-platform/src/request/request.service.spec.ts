@@ -1,10 +1,10 @@
 import assert from "assert";
 import { DBInstance } from "../db";
-import { CreateRequest, UpdateRequest } from "./dto";
+import { UpdateRequest } from "./dto";
 import { RequestService } from "./request.service";
 import { AccessTokenService } from "../access-token";
 import { IBackup, IMemoryDb } from "pg-mem";
-import { mockPgInstance } from "../db/index.mock";
+import { mockPgInstance } from "../db/index.spec";
 
 const SECRET_KEY = "SECRET";
 const MOCK_ADDRESS = "0xA10AA7711FD1FA48ACAE6FF00FCB63B0F6AD055F";

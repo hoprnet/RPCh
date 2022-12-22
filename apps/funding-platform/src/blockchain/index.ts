@@ -52,7 +52,7 @@ export const getWallet = (
 export const getBalance = (
   smartContractAddress: string,
   walletAddress: string,
-  provider: ethers.providers.JsonRpcProvider
+  provider: ethers.providers.Provider
 ) => {
   const contract = new ethers.Contract(
     smartContractAddress,
@@ -92,6 +92,6 @@ export const waitForTransaction = (
   transactionHash: string,
   provider: ethers.providers.Provider,
   confirmations: number
-) => {
+): Promise<ethers.providers.TransactionReceipt> => {
   return provider.waitForTransaction(transactionHash, confirmations);
 };

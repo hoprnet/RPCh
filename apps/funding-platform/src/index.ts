@@ -6,6 +6,7 @@ import { DBInstance } from "./db";
 import * as api from "./entry-server";
 import { checkFreshRequests } from "./queue";
 import { RequestService } from "./request";
+import fs from "fs";
 
 const { log } = utils.createLogger(["funding-platform"]);
 
@@ -42,8 +43,16 @@ const start = async (ops: {
   privateKey: string;
   confirmations: number;
 }) => {
-  // init services
+  // create tables if they do not exist in the db
+  const schemaSql = fs.readFileSync("dump.sql", "utf8").toString();
+  const existingTables = await ops.db.manyOrNone(
+    "SELECT * FROM information_schema.tables WHERE table_name IN ('access_tokens', 'requests')"
+  );
+  if (!existingTables.length) {
+    await ops.db.none(schemaSql);
+  }
   await ops.db.connect();
+  // init services
   const accessTokenService = new AccessTokenService(ops.db, ops.secretKey);
   const requestService = new RequestService(ops.db);
   const wallet = getWallet(ops.privateKey);
@@ -84,8 +93,8 @@ const main = () => {
   }
   // init db
   const pgInstance = pgp();
-  const connectionString: string =
-    "postgres://postgres:password@localhost:5432/rpch_test";
+  const connectionString: string = DB_CONNECTION_URL;
+  // create table if the table does not exist
   const dbInstance = pgInstance({ connectionString });
 
   start({

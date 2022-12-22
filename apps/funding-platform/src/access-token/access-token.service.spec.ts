@@ -1,7 +1,7 @@
 import { AccessTokenService } from "./access-token.service";
 import assert from "assert";
 import { DBInstance } from "../db";
-import { mockPgInstance } from "../db/index.mock";
+import { mockPgInstance } from "../db/index.spec";
 import { IBackup, IMemoryDb } from "pg-mem";
 
 const THIRTY_MINUTES = 30;

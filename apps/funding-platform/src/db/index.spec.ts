@@ -1,10 +1,17 @@
-import * as db from ".";
 import assert from "assert";
-import { DBInstance } from "../db";
+import { IBackup, IMemoryDb } from "pg-mem";
+import * as db from ".";
 import { CreateAccessToken, generateAccessToken } from "../access-token";
+import { DBInstance } from "../db";
 import { CreateRequest, UpdateRequest } from "../request";
-import { IBackup, IMemoryDb, newDb } from "pg-mem";
-import { mockPgInstance } from "./index.mock";
+import fs from "fs";
+import { newDb } from "pg-mem";
+
+export async function mockPgInstance(): Promise<IMemoryDb> {
+  const pgInstance = await newDb();
+  pgInstance.public.none(fs.readFileSync("dump.sql", "utf8"));
+  return pgInstance;
+}
 
 const mockCreateAccessToken = () => ({
   id: Math.floor(Math.random() * 1e6),
@@ -31,11 +38,13 @@ describe("test db adapter functions", function () {
   let dbInstance: DBInstance;
   let pgInstance: IMemoryDb;
   let initialDbState: IBackup;
+
   beforeAll(async function () {
     pgInstance = await mockPgInstance();
     initialDbState = pgInstance.backup();
     dbInstance = pgInstance.adapters.createPgPromise();
   });
+
   beforeEach(async function () {
     initialDbState.restore();
   });

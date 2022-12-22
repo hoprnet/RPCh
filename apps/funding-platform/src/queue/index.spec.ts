@@ -1,26 +1,29 @@
-import { ethers } from "hardhat";
-import assert from "assert";
-import { DBInstance } from "../db";
-import { checkFreshRequests } from ".";
-import { RequestService } from "../request";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { JsonRpcProvider } from "@ethersproject/providers";
-import { setBalance } from "@nomicfoundation/hardhat-network-helpers";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import assert from "assert";
+import { ethers } from "hardhat";
 import { IBackup, IMemoryDb } from "pg-mem";
+import { checkFreshRequests } from ".";
 import { AccessTokenService } from "../access-token";
-import { mockPgInstance } from "../db/index.mock";
-import * as erc20 from "../blockchain/erc20-fixture.json";
-import { Contract } from "ethers";
+import { DBInstance } from "../db";
+import { mockPgInstance } from "../db/index.spec";
+import { RequestService } from "../request";
 
 const MOCK_ADDRESS = "0xA10AA7711FD1FA48ACAE6FF00FCB63B0F6AD055F";
-const MOCK_AMOUNT = "100";
+const MOCK_AMOUNT = "1000";
 const MOCK_CHAIN_ID = 31337;
 const MOCK_TIMEOUT = 3000;
 
-const INITIAL_AMOUNT = ethers.utils.parseEther("1000").toString();
-const TOKEN_NAME = "CUSTOM TOKEN";
-const DECIMAL_UNITS = "18";
-const TOKEN_SYMBOL = "TKN";
+const INITIAL_AMOUNT = ethers.utils.parseEther(MOCK_AMOUNT).toString();
+
+jest.mock("../blockchain", () => {
+  return {
+    ...jest.requireActual("../blockchain"),
+    sendTransaction: jest.fn(async () => ({ hash: MOCK_ADDRESS })),
+    waitForTransaction: jest.fn(async () => ({ status: 1 })),
+    getBalance: jest.fn(async () => INITIAL_AMOUNT),
+  };
+});
 
 const createAccessTokenAndRequest = async (
   accessTokenService: AccessTokenService,
@@ -57,7 +60,6 @@ describe("test index.ts", function () {
   let initialDbState: IBackup;
   let requestService: RequestService;
   let accessTokenService: AccessTokenService;
-  let contract: Contract;
 
   beforeAll(async function () {
     pgInstance = await mockPgInstance();
@@ -71,17 +73,6 @@ describe("test index.ts", function () {
     accounts = await ethers.getSigners();
     provider = ethers.provider;
     requestService = new RequestService(dbInstance);
-    const contractFactory = new ethers.ContractFactory(
-      erc20.abi,
-      erc20.byteCode
-    ).connect(accounts[0]);
-    contract = await contractFactory.deploy(
-      INITIAL_AMOUNT,
-      TOKEN_NAME,
-      DECIMAL_UNITS,
-      TOKEN_SYMBOL
-    );
-    await contract.deployed();
   });
   it("should handle fresh requests", async function () {
     const [owner] = accounts;
@@ -125,39 +116,32 @@ describe("test index.ts", function () {
   });
   it("should fail if signer does not have enough to fund request", async function () {
     const [owner] = accounts;
-    await setBalance(owner.address, 0);
+
     const createRequest = await createAccessTokenAndRequest(
       accessTokenService,
-      requestService
+      requestService,
+      {
+        amount: ethers.utils
+          .parseEther(String(Number(MOCK_AMOUNT) + 1))
+          .toString(),
+        chainId: provider.network.chainId,
+        nodeAddress: MOCK_ADDRESS,
+      }
     );
+
     await checkFreshRequests({
       requestService,
       signer: owner,
       confirmations: 0,
       changeState: () => {},
     });
+
     const queryRequest = await requestService.getRequest(createRequest.id);
+
     assert.equal(
       queryRequest?.reason,
       "Signer does not have enough balance to fund request"
     );
-    assert.equal(queryRequest?.status, "REJECTED-DURING-PROCESSING");
-  });
-  it("should fail if request does not have chain id", async function () {
-    const [owner] = accounts;
-    await setBalance(owner.address, 0);
-    const createRequest = await createAccessTokenAndRequest(
-      accessTokenService,
-      requestService
-    );
-    await checkFreshRequests({
-      requestService,
-      signer: owner,
-      confirmations: 0,
-      changeState: () => {},
-    });
-    const queryRequest = await requestService.getRequest(createRequest.id);
-    assert.equal(queryRequest?.reason, "Request is missing chainId");
     assert.equal(queryRequest?.status, "REJECTED-DURING-PROCESSING");
   });
 });

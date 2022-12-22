@@ -22,7 +22,7 @@ SET default_table_access_method = heap;
 -- Name: access_tokens; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.access_tokens (
+CREATE TABLE IF NOT EXISTS public.access_tokens (
     id integer NOT NULL,
     token text NOT NULL,
     expired_at timestamp without time zone NOT NULL,

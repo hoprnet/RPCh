@@ -1,6 +1,7 @@
 import { BigNumber, ethers, Signer } from "ethers";
 import { utils } from "rpch-common";
 import {
+  getBalance,
   getProvider,
   sendTransaction,
   waitForTransaction,
@@ -41,7 +42,14 @@ export const checkFreshRequests = async (ops: {
     let connectedSigner = ops.signer.provider
       ? ops.signer
       : ops.signer.connect(provider);
-    const balance = await connectedSigner.getBalance();
+    let address = await connectedSigner.getAddress();
+    const balance = await getBalance(
+      smartContractAddresses?.[
+        freshRequest.chain_id as keyof typeof smartContractAddresses
+      ],
+      address,
+      provider
+    );
     if (balance < BigNumber.from(freshRequest.amount))
       throw new CustomError(
         "Signer does not have enough balance to fund request"
