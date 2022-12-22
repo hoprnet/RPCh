@@ -4,7 +4,6 @@ import {
   Response,
   Segment,
   hoprd,
-  utils,
 } from "rpch-common";
 import ReliabilityScore from "./reliability-score";
 import RequestCache from "./request-cache";
