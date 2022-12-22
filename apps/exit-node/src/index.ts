@@ -1,7 +1,8 @@
-import { type Request, Cache, utils, Segment, hoprd } from "rpch-common";
+import { type Request, Cache, Segment, hoprd } from "rpch-common";
 import * as exit from "./exit";
+import { createLogger } from "./utils";
 
-const { log, logError } = utils.createLogger("exit-node");
+const log = createLogger([]);
 
 const {
   HOPRD_API_ENDPOINT,
@@ -38,7 +39,7 @@ export const start = async (ops: {
         });
       }
     } catch (error) {
-      logError("Failed to respond with data", error);
+      log.error("Failed to respond with data", error);
     }
   };
 
@@ -55,7 +56,10 @@ export const start = async (ops: {
         const segment = Segment.fromString(message);
         cache.onSegment(segment);
       } catch (error) {
-        log("Rejected received data from HOPRd: not a valid message", message);
+        log.normal(
+          "Rejected received data from HOPRd: not a valid message",
+          message
+        );
       }
     }
   );
