@@ -64,4 +64,6 @@ RUN  curl https://raw.githubusercontent.com/eficode/wait-for/v2.2.3/wait-for > /
 COPY --from=installer /app/apps/exit-node/package.json .
 COPY --from=installer /app .
 
-ENTRYPOINT ["/sbin/tini", "--", "node", "apps/exit-node/build/index.js"]
+CMD ["node", "apps/exit-node/build/index.js"]
+
+ENTRYPOINT ["/sbin/tini", "--"]

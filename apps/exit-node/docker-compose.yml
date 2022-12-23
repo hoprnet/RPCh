@@ -42,3 +42,14 @@ services:
       - RPCH_IDENTITY_DIR=${RPCH_IDENTITY_DIR}
       - RPCH_PRIVATE_KEY=${RPCH_PRIVATE_KEY}
       - RPCH_DATA_DIR=${RPCH_DATA_DIR}
+    entrypoint:
+      [
+        "/bin/wait-for",
+        "http://${HOPRD_API_TOKEN}@hoprd:3001/api/v2/account/addresses",
+        "-t",
+        "300",
+        "--",
+        "/sbin/tini",
+        "--",
+      ]
+    command: "node apps/exit-node/build/index.js"

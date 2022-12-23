@@ -14,7 +14,7 @@ import {
 import * as exit from "./exit";
 import * as identity from "./identity";
 
-const { log, logError } = utils.createLogger("exit-node");
+const { log, logVerbose, logError } = utils.createLogger("exit-node");
 
 const {
   RPCH_PASSWORD,
@@ -85,19 +85,26 @@ export const start = async (ops: {
     }
   };
 
+  logVerbose("Initializing DB at", ops.dataDir);
   const db = levelup(leveldown(ops.dataDir));
 
-  const myPeerId = await ops.hoprd.fetchPeerId({
-    apiEndpoint: ops.apiEndpoint,
-    apiToken: ops.apiToken,
-  });
+  logVerbose("Fetching peer id", ops.dataDir);
+  const myPeerId = await ops.hoprd
+    .fetchPeerId({
+      apiEndpoint: ops.apiEndpoint,
+      apiToken: ops.apiToken,
+    })
+    .catch((error) => logError(error));
   if (!myPeerId) throw Error("Could not find HOPRd's peer id");
+  logVerbose("Fetched peer id", myPeerId);
 
+  logVerbose("Get identity");
   const myIdentity = await identity.getIdentity({
     identityDir: ops.identityDir,
     password: ops.password,
     privateKey: ops.privateKey,
   });
+  logVerbose("Got identity", myIdentity);
   const cache = new Cache(onMessage);
   const interval: NodeJS.Timer = setInterval(() => {
     cache.removeExpired(ops.timeout);
@@ -142,6 +149,8 @@ if (require.main === module) {
     throw Error("env variable 'RESPONSE_TIMEOUT' not a number");
   }
 
+  log("Starting exit-node");
+
   start({
     exit,
     hoprd,
@@ -154,5 +163,5 @@ if (require.main === module) {
     apiEndpoint: HOPRD_API_ENDPOINT,
     apiToken: HOPRD_API_TOKEN,
     timeout: RESPONSE_TIMEOUT,
-  }).catch(console.error);
+  }).catch((error) => logError(error));
 }
