@@ -75,7 +75,7 @@ export default class Request {
     exitNodeDestination: string,
     exitNodeWriteIdentity: Identity,
     lastRequestFromClient: bigint,
-    updateLastRequestFromClient: (counter: bigint) => any
+    updateLastRequestFromClient: (clientId: string, counter: bigint) => any
   ): Request {
     const [origin, encrypted] = splitBodyToParts(message.body);
 
@@ -92,7 +92,10 @@ export default class Request {
       lastRequestFromClient
     );
 
-    updateLastRequestFromClient(session.updated_counter());
+    updateLastRequestFromClient(
+      entryNodeDestination,
+      session.updated_counter()
+    );
 
     const [type, provider, ...remaining] = splitBodyToParts(
       utils.toUtf8String(session.get_request_data())

@@ -11,11 +11,11 @@ const ENTRY_NODE_DESTINATION = fixtures.HOPRD_PEER_ID_A;
 const EXIT_NODE_DESTINATION = fixtures.EXIT_NODE_HOPRD_PEER_ID_A;
 const EXIT_NODE_PUB_KEY = fixtures.EXIT_NODE_PUB_KEY_A;
 const EXIT_NODE_WRITE_IDENTITY = fixtures.EXIT_NODE_WRITE_IDENTITY_A;
-// const EXIT_NODE_READ_IDENTITY = ÷
 const FRESH_NODE_THRESHOLD = 20;
 const MAX_RESPONSES = 100;
 
-let lastRequestFromClient = BigInt(0);
+const sdkStore = fixtures.createAsyncKeyValStore();
+const exitNodeStore = fixtures.createAsyncKeyValStore();
 
 const getMockedResponse = async (request: Request): Promise<Message> => {
   const rpcId: number = JSON.parse(request.body)["id"];
@@ -28,13 +28,16 @@ const getMockedResponse = async (request: Request): Promise<Message> => {
 
   await fixtures.wait(10);
 
+  const counter = await exitNodeStore
+    .get(request.entryNodeDestination)
+    .then((v) => BigInt(v || "0"));
   const exitNodeRequest = Request.fromMessage(
     request.toMessage(),
     EXIT_NODE_DESTINATION,
     EXIT_NODE_WRITE_IDENTITY,
-    lastRequestFromClient,
-    (counter) => {
-      lastRequestFromClient = counter;
+    counter,
+    (clientId: string, counter: bigint) => {
+      return exitNodeStore.set(clientId, counter.toString());
     }
   );
   const exitNodeResponse = Response.createResponse(exitNodeRequest, body);
@@ -55,16 +58,21 @@ jest.mock("rpch-common", () => ({
 }));
 
 describe("test index.ts", function () {
-  const provider = new RPChProvider(PROVIDER_URL, {
-    discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
-    entryNodeApiEndpoint: ENTRY_NODE_API_ENDPOINT,
-    entryNodeApiToken: ENTRY_NODE_API_TOKEN,
-    entryNodePeerId: ENTRY_NODE_DESTINATION,
-    exitNodePeerId: EXIT_NODE_DESTINATION,
-    exitNodePubKey: EXIT_NODE_PUB_KEY,
-    freshNodeThreshold: FRESH_NODE_THRESHOLD,
-    maxResponses: MAX_RESPONSES,
-  });
+  const provider = new RPChProvider(
+    PROVIDER_URL,
+    {
+      discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
+      entryNodeApiEndpoint: ENTRY_NODE_API_ENDPOINT,
+      entryNodeApiToken: ENTRY_NODE_API_TOKEN,
+      entryNodePeerId: ENTRY_NODE_DESTINATION,
+      exitNodePeerId: EXIT_NODE_DESTINATION,
+      exitNodePubKey: EXIT_NODE_PUB_KEY,
+      freshNodeThreshold: FRESH_NODE_THRESHOLD,
+      maxResponses: MAX_RESPONSES,
+    },
+    sdkStore.set,
+    sdkStore.get
+  );
 
   beforeAll(async function () {
     await provider.sdk.start();

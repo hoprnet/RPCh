@@ -15,8 +15,6 @@ const MAX_RESPONSES = 100;
 
 type MockOps = HoprSdkTempOps & { timeout: number };
 
-let triggerOnMessage: (message: string) => void = () => {};
-
 jest.mock("rpch-common", () => ({
   ...jest.requireActual("rpch-common"),
   hoprd: {
@@ -25,9 +23,8 @@ jest.mock("rpch-common", () => ({
       async (
         _apiEndpoint: string,
         _apiToken: string,
-        onMessage: (message: string) => void
+        _onMessage: (message: string) => void
       ) => {
-        triggerOnMessage = onMessage;
         return () => {};
       }
     ),
@@ -40,6 +37,8 @@ const createSdkMock = (
   sdk: SDK;
   ops: MockOps;
 } => {
+  const store = fixtures.createAsyncKeyValStore();
+
   fixtures
     .nockSendMessageApi(nock(ENTRY_NODE_API_ENDPOINT).persist(true))
     .reply(202, "someresponse");
@@ -59,7 +58,7 @@ const createSdkMock = (
     maxResponses: MAX_RESPONSES,
   };
 
-  const sdk = new SDK(ops.timeout, ops);
+  const sdk = new SDK(ops.timeout, ops, store.set, store.get);
 
   return { sdk, ops };
 };
@@ -183,7 +182,7 @@ describe("test SDK class", function () {
     });
 
     describe("should handle requests correctly when receiving a response", function () {
-      it("should remove request with matching response", function () {
+      it("should remove request with matching response", async function () {
         const [clientRequest, , exitNodeResponse] =
           fixtures.generateMockedFlow(3);
 
@@ -194,7 +193,7 @@ describe("test SDK class", function () {
           () => {}
         );
         // @ts-ignore
-        sdk.onMessage(exitNodeResponse.toMessage());
+        await sdk.onMessage(exitNodeResponse.toMessage());
         assert.equal(
           // @ts-ignore
           sdk.requestCache.getRequest(clientRequest.id),

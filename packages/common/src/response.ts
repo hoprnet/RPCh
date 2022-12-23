@@ -42,7 +42,7 @@ export default class Response {
     request: Request,
     message: Message,
     lastResponseFromExitNode: bigint,
-    updateLastResponseFromExitNode: (counter: bigint) => any
+    updateLastResponseFromExitNode: (exitNodeId: string, counter: bigint) => any
   ): Response {
     unbox_response(
       request.session,
@@ -54,7 +54,10 @@ export default class Response {
       lastResponseFromExitNode
     );
 
-    updateLastResponseFromExitNode(request.session.updated_counter());
+    updateLastResponseFromExitNode(
+      request.exitNodeDestination,
+      request.session.updated_counter()
+    );
 
     const decrypted = utils.toUtf8String(request.session.get_response_data());
 

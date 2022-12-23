@@ -12,8 +12,12 @@
     "start": "node build/index.js"
   },
   "devDependencies": {
+    "@types/leveldown": "^4.0.3",
+    "@types/levelup": "^5.1.2",
+    "@types/memdown": "^3.0.0",
     "@types/node-fetch": "2.6.2",
     "@types/secp256k1": "^4.0.3",
+    "memdown": "^6.1.1",
     "nock": "^13.2.9",
     "rpch-configs-eslint": "*",
     "rpch-configs-jest": "*",
@@ -23,6 +27,8 @@
   },
   "dependencies": {
     "ethers": "^5.7.2",
+    "leveldown": "^6.1.1",
+    "levelup": "^5.1.1",
     "node-fetch": "^2.6.2",
     "rpch-common": "*",
     "rpch-crypto": "*"

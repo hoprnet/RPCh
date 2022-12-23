@@ -55,13 +55,14 @@ export default class SDK {
   // selected exit node
   private exitNodePeerId?: string;
   private exitNodePubKey?: string;
-  private lastResponseFromExitNode = BigInt(0);
   // stopMessageListener
   private stopMessageListener?: () => void;
 
   constructor(
     private readonly timeout: number,
-    private readonly tempOps: HoprSdkTempOps
+    private readonly tempOps: HoprSdkTempOps,
+    private setKeyVal: (key: string, val: string) => Promise<any>,
+    private getKeyVal: (key: string) => Promise<string | undefined>
   ) {
     this.discoveryPlatformApiEndpoint = tempOps.discoveryPlatformApiEndpoint;
     this.segmentCache = new SegmentCache((message) => this.onMessage(message));
@@ -129,7 +130,7 @@ export default class SDK {
    * Resolve request promise and delete the request from map
    * @param message Message received from cache module
    */
-  private onMessage(message: Message): void {
+  private async onMessage(message: Message): Promise<void> {
     // check whether we have a matching request id
     const match = this.requestCache.getRequest(message.id);
     if (!match) {
@@ -137,13 +138,17 @@ export default class SDK {
       return;
     }
 
+    const counter = await this.getKeyVal(
+      match.request.exitNodeDestination
+    ).then((k) => BigInt(k || "0"));
+
     // construct Response from Message
     const response = Response.fromMessage(
       match.request,
       message,
-      this.lastResponseFromExitNode,
-      (counter) => {
-        this.lastResponseFromExitNode = counter;
+      counter,
+      (exitNodeId, counter) => {
+        this.setKeyVal(exitNodeId, counter.toString());
       }
     );
 

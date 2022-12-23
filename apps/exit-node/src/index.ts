@@ -1,4 +1,6 @@
 import * as path from "path";
+import levelup from "levelup";
+import leveldown from "leveldown";
 import { utils as ethersUtils } from "ethers";
 import {
   type Message,
@@ -18,14 +20,14 @@ const {
   RPCH_PASSWORD,
   RPCH_IDENTITY_DIR,
   RPCH_PRIVATE_KEY: RPCH_PRIVATE_KEY_STR,
+  RPCH_DATA_DIR,
   HOPRD_API_ENDPOINT,
   HOPRD_API_TOKEN,
   RESPONSE_TIMEOUT: RESPONSE_TIMEOUT_STR = "10000",
 } = process.env;
 
 const DEFAULT_IDENTITY_DIR = path.join(process.cwd(), ".rpch-identity");
-
-let lastRequestFromClient = BigInt(0);
+const DEFAULT_DATA_DIR = path.join(process.cwd(), "db");
 
 export const start = async (ops: {
   exit: {
@@ -39,6 +41,7 @@ export const start = async (ops: {
   privateKey?: Uint8Array;
   identityDir: string;
   password?: string;
+  dataDir: string;
   apiEndpoint: string;
   apiToken?: string;
   timeout: number;
@@ -55,13 +58,21 @@ export const start = async (ops: {
 
   const onMessage = async (message: Message) => {
     try {
+      const [clientId] = utils.splitBodyToParts(message.body);
+      const lastRequestFromClient: bigint = await db
+        .get(clientId)
+        .then((v) => {
+          return BigInt(v.toString());
+        })
+        .catch(() => BigInt(0));
+
       const rpchRequest = Request.fromMessage(
         message,
         myPeerId!,
         myIdentity,
         lastRequestFromClient,
-        (counter) => {
-          lastRequestFromClient = counter;
+        (clientId, counter) => {
+          db.put(clientId, counter.toString());
         }
       );
 
@@ -83,6 +94,8 @@ export const start = async (ops: {
       logError("Failed to respond with data", error);
     }
   };
+
+  const db = levelup(leveldown(ops.dataDir));
 
   const myPeerId = await fetchMyPeerId();
   if (!myPeerId) throw Error("");
@@ -144,6 +157,7 @@ if (require.main === module) {
       : undefined,
     identityDir: RPCH_IDENTITY_DIR || DEFAULT_IDENTITY_DIR,
     password: RPCH_PASSWORD,
+    dataDir: RPCH_DATA_DIR || DEFAULT_DATA_DIR,
     apiEndpoint: HOPRD_API_ENDPOINT,
     apiToken: HOPRD_API_TOKEN,
     timeout: RESPONSE_TIMEOUT,

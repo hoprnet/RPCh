@@ -185,3 +185,20 @@ export function generateMockedFlow(
 export const nockSendMessageApi = (nock: Nock.Scope): Nock.Interceptor => {
   return nock.post((uri) => uri.includes("/api/v2/messages"));
 };
+
+/**
+ * Create a key val store with async methods.
+ * Used to mock storage operations.
+ */
+export const createAsyncKeyValStore = () => {
+  const store = new Map<string, string>();
+
+  return {
+    async set(k: string, v: string) {
+      return store.set(k, v);
+    },
+    async get(k: string) {
+      return store.get(k);
+    },
+  };
+};

@@ -1,7 +1,10 @@
 import assert from "assert";
 import { fixtures } from "rpch-common";
+import MemDown from "memdown";
 import { utils } from "ethers";
 import { start as startExitNode } from "./index";
+
+jest.mock("leveldown", () => MemDown);
 
 const [clientRequest, , exitNodeResponse] = fixtures.generateMockedFlow(
   3,
@@ -13,7 +16,9 @@ const [clientRequest, , exitNodeResponse] = fixtures.generateMockedFlow(
 const createMockedSetup = async () => {
   let triggerMessageListenerOnMessage: (message: string) => void = () => {};
   const exit = {
-    sendRpcRequest: jest.fn(async () => exitNodeResponse.body),
+    sendRpcRequest: jest.fn(async () => {
+      return exitNodeResponse.body;
+    }),
   };
   const hoprd = {
     sendMessage: jest.fn(async () => "MOCK_SEND_MSG_RESPONSE"),
@@ -40,6 +45,7 @@ const createMockedSetup = async () => {
     privateKey: utils.arrayify(fixtures.EXIT_NODE_PRIV_KEY_A),
     identityDir: "",
     password: "",
+    dataDir: "",
     apiEndpoint: "",
     apiToken: "",
     timeout: 5e3,
@@ -55,22 +61,26 @@ const createMockedSetup = async () => {
 
 describe("test index.ts", function () {
   it("should call all the right methods when a Request is received", async function () {
-    const { hoprd, exit, triggerMessageListenerOnMessage, stopExitNode } =
-      await createMockedSetup();
+    const mock = await createMockedSetup();
 
     // send Request segments into Cache
     for (const segment of clientRequest.toMessage().toSegments()) {
-      triggerMessageListenerOnMessage(segment.toString());
+      mock.triggerMessageListenerOnMessage(segment.toString());
+    }
+
+    // wait for sendRpcRequest to be called
+    while (mock.exit.sendRpcRequest.mock.calls.length === 0) {
+      await fixtures.wait(1);
     }
 
     // Cache should trigger `onMessage` which would then call `sendRpcRequest`
-    assert.equal(exit.sendRpcRequest.mock.calls.length, 1);
-    // // Response is now created, check if Response segments match our mocked Response
-    // assert.equal(
-    //   hoprd.sendMessage.mock.calls.length,
-    //   clientRequest.toMessage().toSegments().length
-    // );
+    assert.equal(mock.exit.sendRpcRequest.mock.calls.length, 1);
+    // Response is now created, check if Response segments match our mocked Response
+    assert.equal(
+      mock.hoprd.sendMessage.mock.calls.length,
+      clientRequest.toMessage().toSegments().length
+    );
 
-    stopExitNode();
+    mock.stopExitNode();
   });
 });
