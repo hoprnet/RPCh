@@ -46,16 +46,6 @@ export const start = async (ops: {
   apiToken?: string;
   timeout: number;
 }): Promise<() => void> => {
-  const fetchMyPeerId = async () => {
-    const result = await ops.hoprd.fetchPeerId({
-      apiEndpoint: ops.apiEndpoint,
-      apiToken: ops.apiToken,
-    });
-    if (result) {
-      return result.listeningAddress[0].split("/").pop();
-    }
-  };
-
   const onMessage = async (message: Message) => {
     try {
       const [clientId] = utils.splitBodyToParts(message.body);
@@ -97,8 +87,11 @@ export const start = async (ops: {
 
   const db = levelup(leveldown(ops.dataDir));
 
-  const myPeerId = await fetchMyPeerId();
-  if (!myPeerId) throw Error("");
+  const myPeerId = await ops.hoprd.fetchPeerId({
+    apiEndpoint: ops.apiEndpoint,
+    apiToken: ops.apiToken,
+  });
+  if (!myPeerId) throw Error("Could not find HOPRd's peer id");
 
   const myIdentity = await identity.getIdentity({
     identityDir: ops.identityDir,

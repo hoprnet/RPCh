@@ -103,11 +103,11 @@ export const fetchPeerId = async ({
 }: {
   apiEndpoint: string;
   apiToken: string | undefined;
-}): Promise<void | { listeningAddress: [string] }> => {
+}): Promise<void | string> => {
   const [url, headers] = createApiUrl(
     "http",
     apiEndpoint,
-    "/api/v2/node/info",
+    "/api/v2/account/addresses",
     apiToken
   );
 
@@ -117,11 +117,12 @@ export const fetchPeerId = async ({
   });
 
   if (response.status === 200) {
-    logVerbose("received info from HOPRd node");
-    return response.json();
+    logVerbose("received addresses from HOPRd node");
+    const result: { native: string; hopr: string } = await response.json();
+    return result.hopr;
   } else {
     logError(
-      "failed to get info from HOPRd node",
+      "failed to get addresses from HOPRd node",
       response.status,
       await response.text()
     );
