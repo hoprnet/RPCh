@@ -1,17 +1,18 @@
-import Message from "./message";
-import {
-  generateRandomNumber,
-  joinPartsToBody,
-  splitBodyToParts,
-  Identity,
-} from "./utils";
+import PeerId from "peer-id";
+import { utils } from "ethers";
 import {
   Envelope,
   box_request,
   unbox_request,
   Session,
+  Identity,
 } from "rpch-crypto/nodejs";
-import { utils } from "ethers";
+import Message from "./message";
+import {
+  generateRandomNumber,
+  joinPartsToBody,
+  splitBodyToParts,
+} from "./utils";
 
 /**
  * Represents a request made by the RPCh.
@@ -22,8 +23,9 @@ export default class Request {
     public readonly id: number,
     public readonly provider: string,
     public readonly body: string,
-    public readonly entryNode: Identity,
-    public readonly exitNode: Identity,
+    public readonly entryNodeDestination: string,
+    public readonly exitNodeDestination: string,
+    public readonly exitNodeIdentity: Identity,
     public readonly session: Session
   ) {}
 
@@ -38,19 +40,28 @@ export default class Request {
   public static createRequest(
     provider: string,
     body: string,
-    entryNode: Identity,
-    exitNode: Identity
+    entryNodeDestination: string,
+    exitNodeDestination: string,
+    exitNodeReadIdentity: Identity
   ): Request {
     const id = generateRandomNumber();
     const payload = joinPartsToBody(["request", provider, body]);
     const envelope = new Envelope(
       utils.toUtf8Bytes(payload),
-      entryNode.peerId.toB58String(),
-      exitNode.peerId.toB58String()
+      entryNodeDestination,
+      exitNodeDestination
     );
-    const session = box_request(envelope, exitNode.cryptoIdentity);
+    const session = box_request(envelope, exitNodeReadIdentity);
 
-    return new Request(id, provider, body, entryNode, exitNode, session);
+    return new Request(
+      id,
+      provider,
+      body,
+      entryNodeDestination,
+      exitNodeDestination,
+      exitNodeReadIdentity,
+      session
+    );
   }
 
   /**
@@ -61,21 +72,23 @@ export default class Request {
    */
   public static fromMessage(
     message: Message,
-    exitNode: Identity,
+    exitNodeDestination: string,
+    exitNodeWriteIdentity: Identity,
     lastRequestFromClient: bigint,
     updateLastRequestFromClient: (counter: bigint) => any
   ): Request {
     const [origin, encrypted] = splitBodyToParts(message.body);
 
-    const entryNode = new Identity(origin);
+    const entryNodeDestination =
+      PeerId.createFromB58String(origin).toB58String();
 
     const session = unbox_request(
       new Envelope(
         utils.arrayify(encrypted),
-        entryNode.peerId.toB58String(),
-        exitNode.peerId.toB58String()
+        entryNodeDestination,
+        exitNodeDestination
       ),
-      exitNode.cryptoIdentity,
+      exitNodeWriteIdentity,
       lastRequestFromClient
     );
 
@@ -90,8 +103,9 @@ export default class Request {
       message.id,
       provider,
       joinPartsToBody(remaining),
-      entryNode,
-      exitNode,
+      entryNodeDestination,
+      exitNodeDestination,
+      exitNodeWriteIdentity,
       session
     );
   }
@@ -104,7 +118,7 @@ export default class Request {
     const message = new Message(
       this.id,
       joinPartsToBody([
-        this.entryNode.peerId.toB58String(),
+        this.entryNodeDestination,
         utils.hexlify(this.session.get_request_data()),
       ])
     );

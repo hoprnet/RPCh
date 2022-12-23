@@ -1,7 +1,6 @@
 import assert from "assert";
 import Message from "./message";
 import { RPC_REQ_SMALL, RPC_REQ_LARGE } from "./fixtures";
-import Request from "./request";
 
 describe("test Message class", function () {
   it("should create message", function () {

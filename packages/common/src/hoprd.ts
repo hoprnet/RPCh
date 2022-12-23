@@ -93,3 +93,37 @@ export const createMessageListener = async (
     ws.close();
   };
 };
+
+/**
+ * Send a segment to a HOPRd node.
+ */
+export const fetchPeerId = async ({
+  apiEndpoint,
+  apiToken,
+}: {
+  apiEndpoint: string;
+  apiToken: string | undefined;
+}): Promise<void | { listeningAddress: [string] }> => {
+  const [url, headers] = createApiUrl(
+    "http",
+    apiEndpoint,
+    "/api/v2/node/info",
+    apiToken
+  );
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers,
+  });
+
+  if (response.status === 200) {
+    logVerbose("received info from HOPRd node");
+    return response.json();
+  } else {
+    logError(
+      "failed to get info from HOPRd node",
+      response.status,
+      await response.text()
+    );
+  }
+};

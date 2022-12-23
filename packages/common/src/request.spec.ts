@@ -1,34 +1,33 @@
 import assert from "assert";
 import Message from "./message";
 import Request from "./request";
-import { Identity } from "./utils";
 import {
   PROVIDER,
   RPC_REQ_SMALL,
-  IDENTITY_A as ENTRY_NODE,
-  IDENTITY_B as EXIT_NODE,
+  HOPRD_PEER_ID_A as ENTRY_NODE_PEER_ID,
+  EXIT_NODE_HOPRD_PEER_ID_A as EXIT_NODE_HOPRD_PEER_ID,
+  EXIT_NODE_READ_IDENTITY_A as EXIT_NODE_READ_IDENTITY,
+  EXIT_NODE_WRITE_IDENTITY_A as EXIT_NODE_WRITE_IDENTITY,
 } from "./fixtures";
 
 const shouldBeAValidRequest = (
   actual: Request,
-  expected: Pick<Request, "provider" | "body" | "entryNode" | "exitNode">
+  expected: Pick<
+    Request,
+    | "provider"
+    | "body"
+    | "entryNodeDestination"
+    | "exitNodeDestination"
+    | "exitNodeIdentity"
+  >
 ) => {
   assert.equal(typeof actual.id, "number");
   assert(actual.id > 0);
   assert.equal(actual.provider, expected.provider);
   assert.equal(actual.body, expected.body);
-  assert.equal(
-    actual.entryNode.peerId.toB58String(),
-    expected.entryNode.peerId.toB58String()
-  );
-  assert.deepEqual(actual.entryNode.pubKey, expected.entryNode.pubKey);
-  assert.deepEqual(actual.entryNode.privKey, expected.entryNode.privKey);
-  assert.equal(
-    actual.exitNode.peerId.toB58String(),
-    expected.exitNode.peerId.toB58String()
-  );
-  assert.deepEqual(actual.exitNode.pubKey, expected.exitNode.pubKey);
-  assert.deepEqual(actual.exitNode.privKey, expected.exitNode.privKey);
+  assert.equal(actual.entryNodeDestination, expected.entryNodeDestination);
+  assert.equal(actual.exitNodeDestination, expected.exitNodeDestination);
+  assert(!!actual.exitNodeIdentity);
   assert(!!actual.session);
   assert(actual.session.get_request_data().length > 0);
 };
@@ -39,7 +38,7 @@ const shouldBeAValidRequestMessage = (
   request: Request
 ) => {
   assert.equal(actual.id, expected.id);
-  const expectedPrefix = request.entryNode.peerId.toB58String() + "|";
+  const expectedPrefix = request.entryNodeDestination + "|";
   assert(actual.body.startsWith(expectedPrefix));
   assert(actual.body.length > expectedPrefix.length);
 };
@@ -49,15 +48,17 @@ describe("test Request class", function () {
     const request = Request.createRequest(
       PROVIDER,
       RPC_REQ_SMALL,
-      ENTRY_NODE,
-      EXIT_NODE
+      ENTRY_NODE_PEER_ID,
+      EXIT_NODE_HOPRD_PEER_ID,
+      EXIT_NODE_READ_IDENTITY
     );
 
     shouldBeAValidRequest(request, {
       provider: PROVIDER,
       body: RPC_REQ_SMALL,
-      entryNode: ENTRY_NODE,
-      exitNode: EXIT_NODE,
+      entryNodeDestination: ENTRY_NODE_PEER_ID,
+      exitNodeDestination: EXIT_NODE_HOPRD_PEER_ID,
+      exitNodeIdentity: EXIT_NODE_READ_IDENTITY,
     });
   });
 
@@ -65,8 +66,9 @@ describe("test Request class", function () {
     const request = Request.createRequest(
       PROVIDER,
       RPC_REQ_SMALL,
-      ENTRY_NODE,
-      EXIT_NODE
+      ENTRY_NODE_PEER_ID,
+      EXIT_NODE_HOPRD_PEER_ID,
+      EXIT_NODE_READ_IDENTITY
     );
 
     shouldBeAValidRequestMessage(
@@ -83,10 +85,12 @@ describe("test Request class", function () {
       Request.createRequest(
         PROVIDER,
         RPC_REQ_SMALL,
-        ENTRY_NODE,
-        EXIT_NODE
+        ENTRY_NODE_PEER_ID,
+        EXIT_NODE_HOPRD_PEER_ID,
+        EXIT_NODE_READ_IDENTITY
       ).toMessage(),
-      EXIT_NODE,
+      EXIT_NODE_HOPRD_PEER_ID,
+      EXIT_NODE_WRITE_IDENTITY,
       BigInt(0),
       () => {}
     );
@@ -94,9 +98,9 @@ describe("test Request class", function () {
     shouldBeAValidRequest(request, {
       provider: PROVIDER,
       body: RPC_REQ_SMALL,
-      // we dont have the private key of the entry node
-      entryNode: new Identity(ENTRY_NODE.peerId.toB58String()),
-      exitNode: EXIT_NODE,
+      entryNodeDestination: ENTRY_NODE_PEER_ID,
+      exitNodeDestination: EXIT_NODE_HOPRD_PEER_ID,
+      exitNodeIdentity: EXIT_NODE_WRITE_IDENTITY,
     });
   });
 });

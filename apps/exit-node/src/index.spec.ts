@@ -1,7 +1,7 @@
 import assert from "assert";
-import { start as startExitNode } from "./index";
 import { fixtures } from "rpch-common";
 import { utils } from "ethers";
+import { start as startExitNode } from "./index";
 
 const [clientRequest, , exitNodeResponse] = fixtures.generateMockedFlow(
   3,
@@ -27,12 +27,19 @@ const createMockedSetup = async () => {
         return () => {};
       }
     ),
+    fetchPeerId: jest.fn(async () => ({
+      listeningAddress: [exitNodeResponse.request.exitNodeDestination] as [
+        string
+      ],
+    })),
   };
 
   const stopExitNode = await startExitNode({
     exit,
     hoprd,
-    privateKey: utils.hexlify(exitNodeResponse.exitNode.privKey!),
+    privateKey: utils.arrayify(fixtures.EXIT_NODE_PRIV_KEY_A),
+    identityDir: "",
+    password: "",
     apiEndpoint: "",
     apiToken: "",
     timeout: 5e3,

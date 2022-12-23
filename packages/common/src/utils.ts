@@ -1,8 +1,6 @@
 import type Segment from "./segment";
 import Debug, { type Debugger } from "debug";
-import PeerId from "peer-id";
 import { utils } from "ethers";
-import { Identity as CryptoIdentity } from "rpch-crypto/nodejs";
 
 /**
  * Sugar fuction for creating consistent loggers.
@@ -158,23 +156,3 @@ export const areAllSegmentsPresent = (segments: Segment[]): boolean => {
   const { segmentsLength } = segments[0];
   return segmentsLength === segments.length;
 };
-
-/**
- * Wrapper around @rpch/crypto's Identity.
- */
-export class Identity {
-  public readonly privKey?: Uint8Array;
-  public readonly pubKey: Uint8Array;
-  public readonly peerId: PeerId;
-  public readonly cryptoIdentity: CryptoIdentity;
-
-  constructor(peerId: string, privKey?: string) {
-    this.peerId = PeerId.createFromB58String(peerId);
-    this.pubKey = this.peerId.pubKey.marshal();
-    this.privKey = privKey ? utils.arrayify(privKey) : undefined;
-    this.cryptoIdentity = CryptoIdentity.load_identity(
-      this.pubKey,
-      this.privKey
-    );
-  }
-}

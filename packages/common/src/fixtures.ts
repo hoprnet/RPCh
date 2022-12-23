@@ -1,29 +1,34 @@
 import type Nock from "nock";
+import { utils } from "ethers";
+import { Identity } from "rpch-crypto/nodejs";
 import Request from "./request";
 import Response from "./response";
-import { Identity } from "./utils";
 
 // example of a working provider
 export const PROVIDER = "https://primary.gnosis-chain.rpc.hoprtech.net";
 
-// reusable identity fixtures
-export const PEER_ID_A =
+export const HOPRD_PEER_ID_A =
   "16Uiu2HAmA5h2q7G2RrZMA4znAH4p8KBcuJWUmjjVfpW5DXePQ2He";
-export const PEER_ID_B =
-  "16Uiu2HAkwJdCap1ErGKjtLeHjfnN53TD8kryG48NYVPWx4HhRfKW";
-export const PUB_KEY_A =
+export const HOPRD_PUB_KEY_A =
   "0x02d9c0e0ab99d251a8fd2cd48df6554dfd5112afe589a3dcab75928aea34f98581";
-export const PUB_KEY_B =
-  "0x021be92a59234dbef617f5eb0d5426758a6cad16f951458a3d753aa22c09e75509";
-export const PRIV_KEY_A =
+export const HOPRD_PRIV_KEY_A =
   "0xd12c951563ee7e322562b7ce7a31c37cc6c10d9b86f834ed30f7c4ab42ae8de0";
-export const PRIV_KEY_B =
-  "0x1a7a8c37e30c97ebf532042bdc37fe724a3950b0cd7ea5a57c9f3e30c53c44a3";
 
-export const IDENTITY_A = new Identity(PEER_ID_A, PRIV_KEY_A);
-export const IDENTITY_A_NO_PRIV = new Identity(PEER_ID_A);
-export const IDENTITY_B = new Identity(PEER_ID_B, PRIV_KEY_B);
-export const IDENTITY_B_NO_PRIV = new Identity(PEER_ID_B);
+// NOTICE: this is a HOPRd PeerID
+export const EXIT_NODE_HOPRD_PEER_ID_A =
+  "16Uiu2HAkwJdCap1ErGKjtLeHjfnN53TD8kryG48NYVPWx4HhRfKW";
+export const EXIT_NODE_PUB_KEY_A =
+  "0x021d5401d6fa65591e4a08a2fdff6c7687f1de5a2326ed8ade69b69e6fe9b9d59f";
+export const EXIT_NODE_PRIV_KEY_A =
+  "0xf49d5b21d9363ff94f9e4c7a575c2bdf6229893ad58f23c9ade02b29e1f3fba1";
+
+export const EXIT_NODE_WRITE_IDENTITY_A = Identity.load_identity(
+  utils.arrayify(EXIT_NODE_PUB_KEY_A),
+  utils.arrayify(EXIT_NODE_PRIV_KEY_A)
+);
+export const EXIT_NODE_READ_IDENTITY_A = Identity.load_identity(
+  utils.arrayify(EXIT_NODE_PUB_KEY_A)
+);
 
 /**
  * A small RPC request
@@ -84,9 +89,10 @@ export function* createMockedFlow(
 ): Generator<Request | Response, Response, any> {
   const tmsp = +new Date();
   const TIME_DIFF = 50;
-  const entryNode = IDENTITY_A_NO_PRIV;
-  const exitNode = IDENTITY_B_NO_PRIV;
-  const exitNodeWithPriv = IDENTITY_B;
+  const entryNodeDestination = HOPRD_PEER_ID_A;
+  const exitNodeDestination = EXIT_NODE_HOPRD_PEER_ID_A;
+  const exitNodeWriteIdentity = EXIT_NODE_WRITE_IDENTITY_A;
+  const exitNodeReadIdentity = EXIT_NODE_READ_IDENTITY_A;
   let resetDateNow: ReturnType<typeof setDateNow>;
 
   // client side
@@ -94,8 +100,9 @@ export function* createMockedFlow(
   const clientRequest = Request.createRequest(
     PROVIDER,
     requestBody,
-    entryNode,
-    exitNode
+    entryNodeDestination,
+    exitNodeDestination,
+    exitNodeReadIdentity
   );
   resetDateNow();
   const lastRequestFromClient: number = (yield clientRequest) || 0;
@@ -104,7 +111,8 @@ export function* createMockedFlow(
   resetDateNow = setDateNow(tmsp - TIME_DIFF * 3);
   const exitNodeRequest = Request.fromMessage(
     clientRequest.toMessage(),
-    exitNodeWithPriv,
+    exitNodeDestination,
+    exitNodeWriteIdentity,
     BigInt(lastRequestFromClient),
     () => {}
   );

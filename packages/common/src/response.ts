@@ -1,12 +1,7 @@
 import type Request from "./request";
-import {
-  Envelope,
-  Session,
-  unbox_response,
-  box_response,
-} from "rpch-crypto/nodejs";
+import { Envelope, unbox_response, box_response } from "rpch-crypto/nodejs";
 import Message from "./message";
-import { joinPartsToBody, splitBodyToParts, Identity } from "./utils";
+import { joinPartsToBody, splitBodyToParts } from "./utils";
 import { utils } from "ethers";
 
 /**
@@ -17,9 +12,7 @@ export default class Response {
   private constructor(
     public readonly id: number,
     public readonly body: string,
-    public readonly entryNode: Identity,
-    public readonly exitNode: Identity,
-    public readonly session: Session
+    public readonly request: Request
   ) {}
 
   /**
@@ -32,18 +25,11 @@ export default class Response {
     const payload = joinPartsToBody(["response", body]);
     const envelope = new Envelope(
       utils.toUtf8Bytes(payload),
-      request.entryNode.peerId.toB58String(),
-      request.exitNode.peerId.toB58String()
+      request.entryNodeDestination,
+      request.exitNodeDestination
     );
     box_response(request.session, envelope);
-
-    return new Response(
-      request.id,
-      body,
-      request.entryNode,
-      request.exitNode,
-      request.session
-    );
+    return new Response(request.id, body, request);
   }
 
   /**
@@ -62,8 +48,8 @@ export default class Response {
       request.session,
       new Envelope(
         utils.arrayify(message.body),
-        request.entryNode.peerId.toB58String(),
-        request.exitNode.peerId.toB58String()
+        request.entryNodeDestination,
+        request.exitNodeDestination
       ),
       lastResponseFromExitNode
     );
@@ -74,13 +60,7 @@ export default class Response {
 
     const [type, body] = splitBodyToParts(decrypted);
     if (type !== "response") throw Error("Message is not a Response");
-    return new Response(
-      request.id,
-      body,
-      request.entryNode,
-      request.exitNode,
-      request.session
-    );
+    return new Response(request.id, body, request);
   }
 
   /**
@@ -90,7 +70,7 @@ export default class Response {
   public toMessage(): Message {
     const message = new Message(
       this.id,
-      utils.hexlify(this.session.get_response_data())
+      utils.hexlify(this.request.session.get_response_data())
     );
 
     return message;

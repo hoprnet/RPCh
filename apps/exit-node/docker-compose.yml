@@ -35,11 +35,7 @@ services:
     restart: unless-stopped
     volumes:
       - exit-node-data:/tmp
-      - hoprd-data:/hoprd
     environment:
       - DEBUG=${DEBUG}
       - HOPRD_API_ENDPOINT=http://hoprd:3001
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-      - PRIVATE_KEY=${PRIVATE_KEY}
-      - HOPRD_PASSWORD=${HOPRD_PASSWORD}
-      - HOPRD_IDENTITY=${HOPRD_IDENTITY}

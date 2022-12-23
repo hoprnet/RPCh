@@ -1,3 +1,5 @@
+import * as path from "path";
+import { utils as ethersUtils } from "ethers";
 import {
   type Message,
   Request,
@@ -8,16 +10,21 @@ import {
   hoprd,
 } from "rpch-common";
 import * as exit from "./exit";
-import { privKeyStrToPeerId } from "./utils";
+import * as identity from "./identity";
 
 const { log, logError } = utils.createLogger("exit-node");
 
 const {
-  PRIVATE_KEY,
+  HOME = process.cwd(),
+  RPCH_PASSWORD,
+  RPCH_IDENTITY_DIR,
+  RPCH_PRIVATE_KEY: RPCH_PRIVATE_KEY_STR,
   HOPRD_API_ENDPOINT,
   HOPRD_API_TOKEN,
   RESPONSE_TIMEOUT: RESPONSE_TIMEOUT_STR = "10000",
 } = process.env;
+
+const DEFAULT_IDENTITY_DIR = path.join(HOME, ".rpch-identity");
 
 let lastRequestFromClient = BigInt(0);
 
@@ -28,16 +35,30 @@ export const start = async (ops: {
   hoprd: {
     sendMessage: typeof hoprd.sendMessage;
     createMessageListener: typeof hoprd.createMessageListener;
+    fetchPeerId: typeof hoprd.fetchPeerId;
   };
-  privateKey: string;
+  privateKey?: Uint8Array;
+  identityDir: string;
+  password?: string;
   apiEndpoint: string;
   apiToken?: string;
   timeout: number;
 }): Promise<() => void> => {
+  const fetchMyPeerId = async () => {
+    const result = await ops.hoprd.fetchPeerId({
+      apiEndpoint: ops.apiEndpoint,
+      apiToken: ops.apiToken,
+    });
+    if (result) {
+      return result.listeningAddress[0].split("/").pop();
+    }
+  };
+
   const onMessage = async (message: Message) => {
     try {
       const rpchRequest = Request.fromMessage(
         message,
+        myPeerId!,
         myIdentity,
         lastRequestFromClient,
         (counter) => {
@@ -56,7 +77,7 @@ export const start = async (ops: {
           apiEndpoint: ops.apiEndpoint,
           apiToken: ops.apiToken,
           message: segment.toString(),
-          destination: rpchRequest.entryNode.peerId.toB58String(),
+          destination: rpchRequest.entryNodeDestination,
         });
       }
     } catch (error) {
@@ -64,10 +85,14 @@ export const start = async (ops: {
     }
   };
 
-  const myIdentity = new utils.Identity(
-    (await privKeyStrToPeerId(ops.privateKey)).toB58String(),
-    ops.privateKey
-  );
+  const myPeerId = await fetchMyPeerId();
+  if (!myPeerId) throw Error("");
+
+  const myIdentity = await identity.getIdentity({
+    identityDir: ops.identityDir,
+    password: ops.password,
+    privateKey: ops.privateKey,
+  });
   const cache = new Cache(onMessage);
   const interval: NodeJS.Timer = setInterval(() => {
     cache.removeExpired(ops.timeout);
@@ -95,8 +120,10 @@ export const start = async (ops: {
 // if this file is the entrypoint of the nodejs process
 if (require.main === module) {
   // Validate enviroment variables
-  if (!PRIVATE_KEY) {
-    throw Error("env variable 'PRIVATE_KEY' not found");
+  if (!RPCH_PRIVATE_KEY_STR && !RPCH_PASSWORD) {
+    throw Error(
+      "env variable 'RPCH_PRIVATE_KEY' and 'RPCH_PASSWORD' not found"
+    );
   }
   if (!HOPRD_API_ENDPOINT) {
     throw Error("env variable 'HOPRD_API_ENDPOINT' not found");
@@ -113,7 +140,11 @@ if (require.main === module) {
   start({
     exit,
     hoprd,
-    privateKey: PRIVATE_KEY,
+    privateKey: RPCH_PRIVATE_KEY_STR
+      ? ethersUtils.arrayify(RPCH_PRIVATE_KEY_STR)
+      : undefined,
+    identityDir: RPCH_IDENTITY_DIR || DEFAULT_IDENTITY_DIR,
+    password: RPCH_PASSWORD,
     apiEndpoint: HOPRD_API_ENDPOINT,
     apiToken: HOPRD_API_TOKEN,
     timeout: RESPONSE_TIMEOUT,
