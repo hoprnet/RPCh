@@ -15,7 +15,6 @@ import * as identity from "./identity";
 const { log, logError } = utils.createLogger("exit-node");
 
 const {
-  HOME = process.cwd(),
   RPCH_PASSWORD,
   RPCH_IDENTITY_DIR,
   RPCH_PRIVATE_KEY: RPCH_PRIVATE_KEY_STR,
@@ -24,7 +23,7 @@ const {
   RESPONSE_TIMEOUT: RESPONSE_TIMEOUT_STR = "10000",
 } = process.env;
 
-const DEFAULT_IDENTITY_DIR = path.join(HOME, ".rpch-identity");
+const DEFAULT_IDENTITY_DIR = path.join(process.cwd(), ".rpch-identity");
 
 let lastRequestFromClient = BigInt(0);
 
