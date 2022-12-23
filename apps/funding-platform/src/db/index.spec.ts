@@ -34,6 +34,14 @@ const mockCreateRequest = (hash?: string) =>
     status: "FRESH",
   } as CreateRequest);
 
+const createAccessTokenAndRequest = async (dbInstance: DBInstance) => {
+  const createAccessToken: CreateAccessToken = mockCreateAccessToken();
+  await db.saveAccessToken(dbInstance, createAccessToken);
+  const request = mockCreateRequest(createAccessToken.token);
+  const queryRequest = await db.saveRequest(dbInstance, request);
+  return queryRequest;
+};
+
 describe("test db adapter functions", function () {
   let dbInstance: DBInstance;
   let pgInstance: IMemoryDb;
@@ -168,5 +176,44 @@ describe("test db adapter functions", function () {
     const dbUpdatedRequest = await db.getRequest(dbInstance, queryRequest.id);
 
     assert.equal(dbUpdatedRequest?.amount, 20);
+  });
+  it("should get oldest fresh request", async function () {
+    const firstRequest = await createAccessTokenAndRequest(dbInstance);
+    if (!firstRequest) throw new Error("request was not created");
+    const secondRequest = await createAccessTokenAndRequest(dbInstance);
+    const thirdRequest = await createAccessTokenAndRequest(dbInstance);
+    const updateFirstRequest = await db.updateRequest(dbInstance, {
+      id: firstRequest.id,
+      accessTokenHash: firstRequest.access_token_hash,
+      nodeAddress: firstRequest.node_address,
+      amount: firstRequest.amount,
+      chainId: firstRequest.chain_id,
+      reason: firstRequest.reason,
+      transactionHash: firstRequest.transaction_hash,
+      status: "FAILED",
+    });
+    const oldestFreshRequest = await db.getOldestFreshRequest(dbInstance);
+    assert.equal(
+      oldestFreshRequest?.access_token_hash,
+      secondRequest.access_token_hash
+    );
+  });
+  it("should get all unresolved requests", async function () {
+    const firstRequest = await createAccessTokenAndRequest(dbInstance);
+    if (!firstRequest) throw new Error("request was not created");
+    const secondRequest = await createAccessTokenAndRequest(dbInstance);
+    const thirdRequest = await createAccessTokenAndRequest(dbInstance);
+    const updateFirstRequest = await db.updateRequest(dbInstance, {
+      id: firstRequest.id,
+      accessTokenHash: firstRequest.access_token_hash,
+      nodeAddress: firstRequest.node_address,
+      amount: firstRequest.amount,
+      chainId: firstRequest.chain_id,
+      reason: firstRequest.reason,
+      transactionHash: firstRequest.transaction_hash,
+      status: "FAILED",
+    });
+    const unresolvedRequests = await db.getAllUnresolvedRequests(dbInstance);
+    assert.equal(unresolvedRequests?.length, 2);
   });
 });

@@ -219,6 +219,7 @@ describe("test RequestService class", function () {
       }
     );
     const unresolvedRequests = await requestService.getAllUnresolvedRequests();
+    console.log(unresolvedRequests);
     const unresolvedRequestsKeyedByChain =
       requestService.groupRequestsByChainId(unresolvedRequests ?? []);
     assert.equal(unresolvedRequestsKeyedByChain[1].length, 1);

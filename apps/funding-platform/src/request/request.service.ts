@@ -111,12 +111,7 @@ export class RequestService {
    * Gets the oldest request with "FRESH" status
    */
   public async getOldestFreshRequest(): Promise<QueryRequest> {
-    const requests = await this.getRequests();
-    const freshRequests = requests?.filter((req) => req.status === "FRESH");
-    const [oldestFreshRequest] = freshRequests?.sort(
-      (a, b) =>
-        new Date(a.created_at).valueOf() - new Date(b.created_at).valueOf()
-    ) ?? [undefined];
+    const oldestFreshRequest = await db.getOldestFreshRequest(this.db);
     return oldestFreshRequest;
   }
 
@@ -125,11 +120,8 @@ export class RequestService {
    * These are requests that have neither succeeded nor failed.
    */
   public async getAllUnresolvedRequests(): Promise<QueryRequest[]> {
-    const requests = await this.getRequests();
-    const compromisedRequests = requests?.filter(
-      (req) => req.status === "FRESH" || req.status === "PROCESSING"
-    );
-    return compromisedRequests;
+    const unresolvedRequests = await db.getAllUnresolvedRequests(this.db);
+    return unresolvedRequests;
   }
 
   /**

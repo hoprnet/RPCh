@@ -96,6 +96,7 @@ export const getRequestsByAccessToken = async (
 
   return dbRes;
 };
+
 export const updateRequest = async (
   db: DBInstance,
   request: UpdateRequest
@@ -134,5 +135,25 @@ export const deleteRequest = async (
     id: requestId,
   };
   const dbRes = await db.oneOrNone(text, values);
+  return dbRes;
+};
+
+export const getOldestFreshRequest = async (
+  db: DBInstance
+): Promise<QueryRequest> => {
+  const text = `SELECT * FROM requests
+    WHERE status = 'FRESH'
+    ORDER BY created_at ASC
+    LIMIT 1;`;
+  const dbRes = (await db.oneOrNone(text)) as QueryRequest;
+  return dbRes;
+};
+
+export const getAllUnresolvedRequests = async (
+  db: DBInstance
+): Promise<QueryRequest[]> => {
+  const text = `SELECT * FROM requests
+    WHERE status IN ('FRESH', 'PROCESSING')`;
+  const dbRes = (await db.manyOrNone(text)) as QueryRequest[];
   return dbRes;
 };
