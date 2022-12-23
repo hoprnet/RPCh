@@ -7,8 +7,9 @@ const TIMEOUT = 5e3;
 const DISCOVERY_PLATFORM_API_ENDPOINT = "http://discovery_platform";
 const ENTRY_NODE_API_ENDPOINT = "http://entry_node";
 const ENTRY_NODE_API_TOKEN = "12345";
-const ENTRY_NODE_PEER_ID = fixtures.PEER_ID_A;
-const EXIT_NODE_PEER_ID = fixtures.PEER_ID_B;
+const ENTRY_NODE_PEER_ID = fixtures.HOPRD_PEER_ID_A;
+const EXIT_NODE_PEER_ID = fixtures.EXIT_NODE_HOPRD_PEER_ID_A;
+const EXIT_NODE_PUB_KEY = fixtures.EXIT_NODE_PUB_KEY_A;
 const FRESH_NODE_THRESHOLD = 20;
 const MAX_RESPONSES = 100;
 
@@ -53,6 +54,7 @@ const createSdkMock = (
     entryNodeApiToken: overwriteOps?.entryNodeApiToken ?? ENTRY_NODE_API_TOKEN,
     entryNodePeerId: overwriteOps?.entryNodePeerId ?? ENTRY_NODE_PEER_ID,
     exitNodePeerId: overwriteOps?.exitNodePeerId ?? EXIT_NODE_PEER_ID,
+    exitNodePubKey: overwriteOps?.exitNodePubKey ?? EXIT_NODE_PUB_KEY,
     freshNodeThreshold: FRESH_NODE_THRESHOLD,
     maxResponses: MAX_RESPONSES,
   };
@@ -106,7 +108,7 @@ describe("test SDK class", function () {
         fixtures.RPC_REQ_LARGE
       );
       assert(request instanceof Request);
-      assert.equal(request.entryNode.peerId.toB58String(), ops.entryNodePeerId);
+      assert.equal(request.entryNodeDestination, ops.entryNodePeerId);
       assert.equal(request.provider, fixtures.PROVIDER);
       assert.equal(request.body, fixtures.RPC_REQ_LARGE);
     });

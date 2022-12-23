@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "peer-id": "^0.16.0",
-    "rpch-common": "*"
+    "rpch-common": "*",
+    "rpch-crypto": "*"
   }
 }

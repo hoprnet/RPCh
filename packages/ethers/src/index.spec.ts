@@ -7,9 +7,11 @@ const PROVIDER_URL = fixtures.PROVIDER;
 const DISCOVERY_PLATFORM_API_ENDPOINT = "http://discovery_platform";
 const ENTRY_NODE_API_ENDPOINT = "http://entry_node";
 const ENTRY_NODE_API_TOKEN = "12345";
-const ENTRY_NODE = fixtures.IDENTITY_A_NO_PRIV;
-const EXIT_NODE = fixtures.IDENTITY_B_NO_PRIV;
-const EXIT_NODE_WITH_PRIV = fixtures.IDENTITY_B;
+const ENTRY_NODE_DESTINATION = fixtures.HOPRD_PEER_ID_A;
+const EXIT_NODE_DESTINATION = fixtures.EXIT_NODE_HOPRD_PEER_ID_A;
+const EXIT_NODE_PUB_KEY = fixtures.EXIT_NODE_PUB_KEY_A;
+const EXIT_NODE_WRITE_IDENTITY = fixtures.EXIT_NODE_WRITE_IDENTITY_A;
+// const EXIT_NODE_READ_IDENTITY = ÷
 const FRESH_NODE_THRESHOLD = 20;
 const MAX_RESPONSES = 100;
 
@@ -28,7 +30,8 @@ const getMockedResponse = async (request: Request): Promise<Message> => {
 
   const exitNodeRequest = Request.fromMessage(
     request.toMessage(),
-    EXIT_NODE_WITH_PRIV,
+    EXIT_NODE_DESTINATION,
+    EXIT_NODE_WRITE_IDENTITY,
     lastRequestFromClient,
     (counter) => {
       lastRequestFromClient = counter;
@@ -56,8 +59,9 @@ describe("test index.ts", function () {
     discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
     entryNodeApiEndpoint: ENTRY_NODE_API_ENDPOINT,
     entryNodeApiToken: ENTRY_NODE_API_TOKEN,
-    entryNodePeerId: ENTRY_NODE.peerId.toB58String(),
-    exitNodePeerId: EXIT_NODE.peerId.toB58String(),
+    entryNodePeerId: ENTRY_NODE_DESTINATION,
+    exitNodePeerId: EXIT_NODE_DESTINATION,
+    exitNodePubKey: EXIT_NODE_PUB_KEY,
     freshNodeThreshold: FRESH_NODE_THRESHOLD,
     maxResponses: MAX_RESPONSES,
   });

@@ -7,10 +7,11 @@ import {
   hoprd,
   utils,
 } from "rpch-common";
+import { Identity } from "rpch-crypto/nodejs";
+import { utils as etherUtils } from "ethers";
 import ReliabilityScore from "./reliability-score";
 import RequestCache from "./request-cache";
 
-const { Identity } = utils;
 const { log, logError } = utils.createLogger(["sdk"]);
 /**
  * Temporary options to be passed to
@@ -22,6 +23,7 @@ export type HoprSdkTempOps = {
   entryNodeApiToken: string;
   entryNodePeerId: string;
   exitNodePeerId: string;
+  exitNodePubKey: string;
   freshNodeThreshold: number;
   maxResponses: number;
 };
@@ -47,11 +49,12 @@ export default class SDK {
   // this will be static but right now passed via tempOps
   private discoveryPlatformApiEndpoint: string;
   // available exit nodes
-  private exitNodes: string[] = [];
+  private exitNodes: { destination: string; pubKey: string }[] = [];
   // selected entry node
   private entryNode?: EntryNode;
   // selected exit node
   private exitNodePeerId?: string;
+  private exitNodePubKey?: string;
   private lastResponseFromExitNode = BigInt(0);
   // stopMessageListener
   private stopMessageListener?: () => void;
@@ -107,12 +110,18 @@ export default class SDK {
    */
   private async selectExitNode(
     discoveryPlatformApiEndpoint: string
-  ): Promise<string[]> {
+  ): Promise<{ destination: string; pubKey: string }[]> {
     // requests the list of exit nodes (sometimes hit cache)
     // response gives back list of exit nodes
     // select exit node at random
-    this.exitNodes = [this.tempOps.exitNodePeerId];
+    this.exitNodes = [
+      {
+        destination: this.tempOps.exitNodePeerId,
+        pubKey: this.tempOps.exitNodePubKey,
+      },
+    ];
     this.exitNodePeerId = this.tempOps.exitNodePeerId;
+    this.exitNodePubKey = this.tempOps.exitNodePubKey;
     return this.exitNodes;
   }
 
@@ -212,8 +221,9 @@ export default class SDK {
     return Request.createRequest(
       provider,
       body,
-      new Identity(this.entryNode!.peerId),
-      new Identity(this.exitNodePeerId!)
+      this.entryNode!.peerId,
+      this.exitNodePeerId!,
+      Identity.load_identity(etherUtils.arrayify(this.exitNodePubKey!))
     );
   }
 
