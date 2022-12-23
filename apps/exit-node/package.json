@@ -22,10 +22,8 @@
     "rpch-configs-typescript": "*"
   },
   "dependencies": {
-    "@libp2p/crypto": "^1.0.10",
     "ethers": "^5.7.2",
     "node-fetch": "^2.6.2",
-    "rpch-common": "*",
-    "secp256k1": "^4.0.3"
+    "rpch-common": "*"
   }
 }

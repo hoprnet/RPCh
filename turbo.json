@@ -29,7 +29,9 @@
         "build/**"
       ],
       "env": [
-        "PRIVATE_KEY",
+        "RPCH_PASSWORD",
+        "RPCH_IDENTITY_DIR",
+        "RPCH_PRIVATE_KEY",
         "HOPRD_API_TOKEN",
         "HOPRD_API_ENDPOINT",
         "RESPONSE_TIMEOUT"
