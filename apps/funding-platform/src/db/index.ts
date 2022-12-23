@@ -2,10 +2,9 @@ import { CreateAccessToken, QueryAccessToken } from "../access-token";
 import { CreateRequest, QueryRequest, UpdateRequest } from "../request";
 import pgp from "pg-promise";
 
-export type Data = {
-  accessTokens: QueryAccessToken[];
-  requests: QueryRequest[];
-};
+/**
+ * DB module that handles the formatting of queries and executing them
+ */
 
 export type DBInstance = pgp.IDatabase<{}>;
 

@@ -1,12 +1,18 @@
 import express, { NextFunction, Request, Response } from "express";
 import { AccessTokenService } from "../access-token";
 import { getBalanceForAllChains, getProviders } from "../blockchain";
-import { smartContractAddresses, validChainIds } from "../utils";
-import { CreateRequest, RequestService } from "../request";
-import { isExpired } from "../utils";
+import { RequestService } from "../request";
+import { isExpired, smartContractAddresses, validChainIds } from "../utils";
 
 const app = express();
 
+/**
+ * Middleware used to check if token has expired or has been used with too many requests
+ * @param accessTokenService
+ * @param requestService
+ * @param maxAmountOfTokens
+ * @param requestFunds
+ */
 const tokenIsValid =
   (
     accessTokenService: AccessTokenService,
@@ -38,6 +44,10 @@ const tokenIsValid =
     next();
   };
 
+/**
+ * Checks if token can make another request without exceeding max amount of tokens
+ * @returns boolean
+ */
 export const doesAccessTokenHaveEnoughBalance = async (params: {
   requestService: RequestService;
   token: string;
@@ -88,7 +98,7 @@ export const entryServer = (ops: {
     });
     return res.json({
       accessToken: accessToken?.token,
-      expiredAt: accessToken?.expiredAt,
+      expiredAt: accessToken?.expired_at,
       amountLeft: ops.maxAmountOfTokens,
     });
   });
