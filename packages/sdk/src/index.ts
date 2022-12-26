@@ -125,8 +125,16 @@ export default class SDK {
       log.error("matching request not found", res.id);
       return;
     }
+    const responseTime = Date.now() - matchingRequest.createdAt.getTime();
     matchingRequest.resolve(res);
-
+    log.verbose(
+      "response time for request %s: %s ms",
+      matchingRequest.request.id,
+      responseTime,
+      log.createMetric({
+        responseTime: responseTime,
+      })
+    );
     this.reliabilityScore.addMetric(
       this.tempOps.entryNodePeerId,
       matchingRequest.request.id,
