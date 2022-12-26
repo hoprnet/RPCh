@@ -2,11 +2,11 @@ import { assert } from "chai";
 import { Express } from "express";
 import { IBackup, IMemoryDb } from "pg-mem";
 import request from "supertest";
-import { doesAccessTokenHaveEnoughBalance, entryServer } from ".";
 import { AccessTokenService } from "../access-token";
 import { DBInstance } from "../db";
 import { mockPgInstance } from "../db/index.spec";
 import { RequestService } from "../request";
+import { entryServer } from ".";
 
 const SECRET_KEY = "SECRET";
 const MAX_AMOUNT_OF_TOKENS = 40;
@@ -112,26 +112,6 @@ describe("test entry server", function () {
       .expect("Content-Type", /json/)
       .expect(401);
   });
-  it("should not allow tokens that are requesting more than max amount of tokens", async function () {
-    const responseToken = await agent
-      .get("/api/access-token")
-      .set("Accept", "application/json");
-
-    requestService.createRequest({
-      amount: (MAX_AMOUNT_OF_TOKENS - 1).toString(),
-      chainId: 80,
-      accessTokenHash: responseToken.body.accessToken,
-      nodeAddress: "0x0",
-    });
-
-    const tokenHasBalanceRes = await doesAccessTokenHaveEnoughBalance({
-      maxAmountOfTokens: MAX_AMOUNT_OF_TOKENS,
-      requestService,
-      token: responseToken.body.accessToken,
-      requestAmount: MAX_AMOUNT_OF_TOKENS,
-    });
-    expect(tokenHasBalanceRes).toEqual(false);
-  });
   it("should return correct amount left", async function () {
     const responseToken = await agent
       .get("/api/access-token")
@@ -144,5 +124,42 @@ describe("test entry server", function () {
       .set("x-access-token", responseToken.body.accessToken);
 
     assert.equal(resFunding.body.amountLeft, 10);
+  });
+  describe("should validate body before trying a funding request", function () {
+    it("should fail if amount is missing on funding request", async function () {
+      const responseToken = await agent
+        .get("/api/access-token")
+        .set("Accept", "application/json");
+
+      await agent
+        .post("/api/request/funds/0x0000000000000000")
+        .send({ chainId: 80 })
+        .set("Accept", "application/json")
+        .set("x-access-token", responseToken.body.accessToken)
+        .expect(400);
+    });
+    it("should fail if chainId is missing on funding request", async function () {
+      const responseToken = await agent
+        .get("/api/access-token")
+        .set("Accept", "application/json");
+
+      await agent
+        .post("/api/request/funds/0x0876545")
+        .send({ amount: MAX_AMOUNT_OF_TOKENS })
+        .set("Accept", "application/json")
+        .set("x-access-token", responseToken.body.accessToken)
+        .expect(400);
+    });
+  });
+  it("should not allow querying requests with a non numeric id", async function () {
+    const responseToken = await agent
+      .get("/api/access-token")
+      .set("Accept", "application/json");
+
+    await agent
+      .get("/api/request/status/0x0")
+      .set("Accept", "application/json")
+      .set("x-access-token", responseToken.body.accessToken)
+      .expect(400);
   });
 });
