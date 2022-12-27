@@ -4,7 +4,7 @@ import Message from "./message";
 import Segment, { validateSegments } from "./segment";
 import { createLogger, isExpired } from "./utils";
 
-const { logVerbose } = createLogger(["common", "cache"]);
+const log = createLogger(["cache"]);
 
 /**
  * A cache class which you can feed feed incoming Segments
@@ -45,17 +45,25 @@ export default class Cache {
     };
 
     if (segmentEntry.segments.find((s) => s.segmentNr === segment.segmentNr)) {
-      logVerbose(
+      log.verbose(
         "dropping segment, already exists",
         segment.msgId,
-        segment.segmentNr
+        segment.segmentNr,
+        log.createMetric({
+          messageId: segment.msgId,
+          segmentNumber: segment.segmentNr,
+        })
       );
       return;
     }
 
     segmentEntry.segments = [...segmentEntry.segments, segment];
     this.segments.set(segment.msgId, segmentEntry);
-    logVerbose("stored new segment for message ID", segment.msgId);
+    log.verbose(
+      "stored new segment for message ID",
+      segment.msgId,
+      log.createMetric({ id: segment.msgId })
+    );
 
     if (validateSegments(segmentEntry.segments)) {
       const message = Message.fromSegments(segmentEntry.segments);
@@ -65,11 +73,19 @@ export default class Cache {
 
       try {
         const req = Request.fromMessage(message);
-        logVerbose("found new Request", req.id);
+        log.verbose(
+          "found new Request",
+          req.id,
+          log.createMetric({ id: req.id })
+        );
         this.onRequest(req);
       } catch {
         const res = Response.fromMessage(message);
-        logVerbose("found new Response", res.id);
+        log.verbose(
+          "found new Response",
+          res.id,
+          log.createMetric({ id: res.id })
+        );
         this.onResponse(res);
       }
     }
@@ -82,11 +98,15 @@ export default class Cache {
   public removeExpired(timeout: number): void {
     const now = new Date();
 
-    logVerbose("total number of segments", this.segments.size);
+    log.verbose(
+      "total number of segments",
+      this.segments.size,
+      log.createMetric({ numberOfSegments: this.segments.size })
+    );
 
     for (const [id, entry] of this.segments.entries()) {
       if (isExpired(timeout, now, entry.receivedAt)) {
-        logVerbose("dropping expired partial segments");
+        log.verbose("dropping expired partial segments");
         this.segments.delete(id);
       }
     }

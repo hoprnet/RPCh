@@ -1,6 +1,7 @@
 import { Request, Response, utils } from "rpch-common";
+import { createLogger } from "./utils";
 
-const { logVerbose } = utils.createLogger(["sdk", "request-cache"]);
+const log = createLogger(["request-cache"]);
 
 /**
  * Keeps in cache the Requests which have been sent by the SDK.
@@ -62,7 +63,7 @@ export default class RequestCache {
   public removeExpired(timeout: number): void {
     const now = new Date();
 
-    logVerbose("requests", this.requests.size);
+    log.verbose("requests", this.requests.size);
     for (const [key, entry] of this.requests.entries()) {
       if (utils.isExpired(timeout, now, entry.createdAt)) {
         entry.reject("Request timed out");

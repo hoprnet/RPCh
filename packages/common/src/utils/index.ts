@@ -1,34 +1,14 @@
-import Debug, { type Debugger } from "debug";
 import { utils } from "ethers";
+import LoggerFactory from "./logger";
+
+export { default as LoggerFactory } from "./logger";
+export const createLogger = LoggerFactory("common");
 
 /**
  * Maximum bytes we should be sending
  * within the HOPR network.
  */
 export const MAX_BYTES = 400;
-
-/**
- * Sugar fuction for creating consistent loggers.
- * @param args
- * @returns debug logger and error logger
- */
-export const createLogger = (
-  ...args: any[]
-): {
-  log: Debugger;
-  logVerbose: Debugger;
-  logError: Debugger;
-} => {
-  const log = Debug(["rpch", ...args].join(":"));
-  const logVerbose = log.extend("verbose");
-  const logError = log.extend("error");
-
-  return {
-    log,
-    logVerbose,
-    logError,
-  };
-};
 
 /**
  * Split string by bytes.

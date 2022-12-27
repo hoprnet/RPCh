@@ -6,9 +6,10 @@ import { DBInstance } from "./db";
 import * as api from "./entry-server";
 import { checkFreshRequests } from "./queue";
 import { RequestService } from "./request";
+import { createLogger } from "./utils";
 import fs from "fs";
 
-const { log } = utils.createLogger(["funding-platform"]);
+const log = createLogger([]);
 
 const {
   // Secret key used for access token generation
@@ -77,7 +78,7 @@ const start = async (ops: {
   }, 60e3);
   // start listening at PORT for requests
   app.listen(PORT, () => {
-    log("entry server is up");
+    log.normal("entry server is up");
   });
 };
 

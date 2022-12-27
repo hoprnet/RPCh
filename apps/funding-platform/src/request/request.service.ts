@@ -1,12 +1,9 @@
 import { DBInstance } from "../db";
 import * as db from "../db";
 import { CreateRequest, QueryRequest, UpdateRequest } from "./dto";
-import { utils } from "rpch-common";
+import { createLogger } from "../utils";
 
-const { log, logError } = utils.createLogger([
-  "funding-platform",
-  "request-service",
-]);
+const log = createLogger(["request-service"]);
 
 /**
  * An abstraction layer for requests to interact with db.
@@ -34,7 +31,8 @@ export class RequestService {
     accessTokenHash: string;
   }): Promise<QueryRequest> {
     try {
-      log("Creating request...");
+      log.normal("Creating request...");
+      const now = new Date(Date.now());
       const createRequest: CreateRequest = {
         amount: params.amount,
         accessTokenHash: params.accessTokenHash,
@@ -45,7 +43,7 @@ export class RequestService {
       const dbRes = await db.saveRequest(this.db, createRequest);
       return dbRes;
     } catch (e: any) {
-      logError("Failed to create request: ", e);
+      log.error("Failed to create request: ", e);
       throw new Error(e);
     }
   }
@@ -93,7 +91,12 @@ export class RequestService {
       const updatedRequest = await db.updateRequest(this.db, request);
       return updatedRequest;
     } catch (e: any) {
-      logError("Failed to update request", requestId, e);
+      log.error(
+        "Failed to update request",
+        requestId,
+        e,
+        log.createMetric({ id: requestId })
+      );
     }
   }
 
@@ -103,7 +106,11 @@ export class RequestService {
    * @returns Promise<QueryRequest>
    */
   public async deleteRequest(requestId: number): Promise<QueryRequest> {
-    log("Deleted request:", requestId);
+    log.normal(
+      "Deleted request:",
+      requestId,
+      log.createMetric({ id: requestId })
+    );
     return db.deleteRequest(this.db, requestId);
   }
 

@@ -1,5 +1,4 @@
 import { BigNumber, ethers, Signer } from "ethers";
-import { utils } from "rpch-common";
 import {
   getBalance,
   getProvider,
@@ -7,9 +6,9 @@ import {
   waitForTransaction,
 } from "../blockchain";
 import { QueryRequest, RequestService } from "../request";
-import { CustomError, smartContractAddresses } from "../utils";
+import { CustomError, smartContractAddresses, createLogger } from "../utils";
 
-const { log, logError } = utils.createLogger(["funding-platform", "queue"]);
+const log = createLogger(["queue"]);
 
 /**
  * Scans through all requests and fulfills the oldest fresh request
@@ -29,7 +28,11 @@ export const checkFreshRequests = async (ops: {
   let freshRequest: QueryRequest | undefined;
   try {
     freshRequest = await ops.requestService.getOldestFreshRequest();
-    log("handling request: ", freshRequest?.id);
+    log.normal(
+      "handling request: ",
+      freshRequest?.id,
+      log.createMetric({ id: freshRequest?.id })
+    );
     // check if request and signer are valid
     if (!ops.signer) throw new CustomError("Missing signer  transaction");
     if (!freshRequest) throw new CustomError("No pending fresh request");
@@ -100,7 +103,7 @@ export const checkFreshRequests = async (ops: {
       id: freshRequest.id,
     });
   } catch (e: any) {
-    logError(e);
+    log.error(e);
     if (freshRequest) {
       // check if request was rejected
       if (e instanceof CustomError) {

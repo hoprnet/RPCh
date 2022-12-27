@@ -4,12 +4,12 @@ import {
   Response,
   Segment,
   hoprd,
-  utils,
 } from "rpch-common";
 import ReliabilityScore from "./reliability-score";
 import RequestCache from "./request-cache";
+import { createLogger } from "./utils";
 
-const { log, logError } = utils.createLogger(["sdk"]);
+const log = createLogger([]);
 /**
  * Temporary options to be passed to
  * the SDK for development purposes.
@@ -122,18 +122,31 @@ export default class SDK {
   private onResponseFromSegments(res: Response): void {
     const matchingRequest = this.requestCache.getRequest(res.id);
     if (!matchingRequest) {
-      logError("matching request not found", res.id);
+      log.error("matching request not found", res.id);
       return;
     }
+    const responseTime = Date.now() - matchingRequest.createdAt.getTime();
     matchingRequest.resolve(res);
-
+    log.verbose(
+      "response time for request %s: %s ms",
+      matchingRequest.request.id,
+      responseTime,
+      log.createMetric({
+        responseTime: responseTime,
+      })
+    );
     this.reliabilityScore.addMetric(
       this.tempOps.entryNodePeerId,
       matchingRequest.request.id,
       "success"
     );
     this.requestCache.removeRequest(matchingRequest.request);
-    log("responded to %s with %s", matchingRequest.request.body, res.body);
+    log.normal(
+      "responded to %s with %s",
+      matchingRequest.request.body,
+      res.body,
+      log.createMetric({ id: res.id }) // Useful to have the id of the request that got resolved?
+    );
   }
 
   /**
@@ -141,7 +154,7 @@ export default class SDK {
    * @param req Request received from cache module
    */
   private onRequestFromSegments(req: Request): void {
-    log("ignoring received request %s", req.body);
+    log.normal("ignoring received request %s", req.body);
   }
 
   /**
@@ -155,6 +168,7 @@ export default class SDK {
       req.id,
       "failed"
     );
+    log.normal("request %s expired", req.id);
   }
 
   /**
@@ -178,7 +192,7 @@ export default class SDK {
           const segment = Segment.fromString(message);
           this.segmentCache.onSegment(segment);
         } catch (e) {
-          log(
+          log.normal(
             "rejected received data from HOPRd: not a valid segment",
             message,
             e

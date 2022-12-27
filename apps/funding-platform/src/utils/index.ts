@@ -1,4 +1,7 @@
 import { ethers } from "ethers";
+import { utils } from "rpch-common";
+
+export const createLogger = utils.LoggerFactory("funding-platform");
 
 export const isExpired = (expireAt: string) => {
   if ((new Date(expireAt).valueOf() ?? 0) < new Date(Date.now()).valueOf()) {

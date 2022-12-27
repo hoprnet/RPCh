@@ -1,6 +1,6 @@
 import assert from "assert";
 import { utils } from "ethers";
-import { splitStrByBytes, isExpired } from "./utils";
+import { splitStrByBytes, isExpired } from ".";
 
 describe("test utility splitStrByBytes", function () {
   it("should return 1 string", function () {
