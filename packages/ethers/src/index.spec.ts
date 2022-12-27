@@ -1,6 +1,7 @@
 import assert from "assert";
 import nock from "nock";
 import { type Message, Request, Response, fixtures } from "rpch-common";
+import * as crypto from "rpch-crypto/nodejs";
 import { RPChProvider } from ".";
 
 const PROVIDER_URL = fixtures.PROVIDER;
@@ -32,6 +33,7 @@ const getMockedResponse = async (request: Request): Promise<Message> => {
     .get(request.entryNodeDestination)
     .then((v) => BigInt(v || "0"));
   const exitNodeRequest = Request.fromMessage(
+    crypto,
     request.toMessage(),
     EXIT_NODE_DESTINATION,
     EXIT_NODE_WRITE_IDENTITY,
@@ -40,7 +42,11 @@ const getMockedResponse = async (request: Request): Promise<Message> => {
       return exitNodeStore.set(clientId, counter.toString());
     }
   );
-  const exitNodeResponse = Response.createResponse(exitNodeRequest, body);
+  const exitNodeResponse = Response.createResponse(
+    crypto,
+    exitNodeRequest,
+    body
+  );
 
   await fixtures.wait(10);
 

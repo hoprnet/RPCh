@@ -1,3 +1,4 @@
+import type * as RPChCrypto from "rpch-crypto/nodejs";
 import {
   Cache as SegmentCache,
   Message,
@@ -7,7 +8,6 @@ import {
   hoprd,
   utils,
 } from "rpch-common";
-import * as crypto from "rpch-crypto/nodejs";
 import { utils as etherUtils } from "ethers";
 import ReliabilityScore from "./reliability-score";
 import RequestCache from "./request-cache";
@@ -41,6 +41,7 @@ export type EntryNode = {
  * Send traffic through the RPCh network
  */
 export default class SDK {
+  private crypto?: typeof RPChCrypto;
   // single inverval for the SDK for things that need to be checked.
   private interval?: NodeJS.Timer;
   private segmentCache: SegmentCache;
@@ -144,7 +145,7 @@ export default class SDK {
 
     // construct Response from Message
     const response = Response.fromMessage(
-      crypto,
+      this.crypto!,
       match.request,
       message,
       counter,
@@ -181,6 +182,19 @@ export default class SDK {
    */
   public async start(): Promise<void> {
     if (this.isReady) return;
+
+    this.crypto = await import("rpch-crypto/web");
+
+    // // initialize crypto lib
+    // // @ts-expect-error
+    // if (typeof window === "undefined") {
+    //   log("Using 'node' RPCh crypto implementation");
+    //   this.crypto = require("rpch-crypto/nodejs");
+    // } else {
+    //   log("Using 'web' RPCh crypto implementation");
+    //   this.crypto = await import("rpch-crypto/web");
+    // }
+
     // check for expires caches every second
     this.interval = setInterval(() => {
       this.segmentCache.removeExpired(this.timeout);
@@ -225,12 +239,14 @@ export default class SDK {
   public createRequest(provider: string, body: string): Request {
     if (!this.isReady) throw Error("SDK not ready to create requests");
     return Request.createRequest(
-      crypto,
+      this.crypto!,
       provider,
       body,
       this.entryNode!.peerId,
       this.exitNodePeerId!,
-      crypto.Identity.load_identity(etherUtils.arrayify(this.exitNodePubKey!))
+      this.crypto!.Identity.load_identity(
+        etherUtils.arrayify(this.exitNodePubKey!)
+      )
     );
   }
 

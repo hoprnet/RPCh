@@ -86,7 +86,11 @@ export const getIdentity = async ({
   privateKey?: Uint8Array;
   identityDir: string;
   password?: string;
-}): Promise<Identity> => {
+}): Promise<{
+  privateKey: string;
+  publicKey: string;
+  identity: Identity;
+}> => {
   if (!privateKey && !password) {
     throw Error("Should provide 'privateKey' or 'password'");
   } else if (!privateKey && password) {
@@ -101,9 +105,14 @@ export const getIdentity = async ({
   }
 
   const wallet = new Wallet(privateKey!);
+  const publicKey = ethersUtils.computePublicKey(wallet.publicKey, true);
 
-  return Identity.load_identity(
-    ethersUtils.arrayify(wallet.publicKey),
-    ethersUtils.arrayify(wallet.privateKey)
-  );
+  return {
+    privateKey: wallet.privateKey,
+    publicKey,
+    identity: Identity.load_identity(
+      ethersUtils.arrayify(publicKey),
+      ethersUtils.arrayify(wallet.privateKey)
+    ),
+  };
 };

@@ -105,12 +105,13 @@ export const start = async (ops: {
   logVerbose("Fetched peer id", myPeerId);
 
   logVerbose("Get identity");
-  const myIdentity = await identity.getIdentity({
+  const { publicKey, identity: myIdentity } = await identity.getIdentity({
     identityDir: ops.identityDir,
     password: ops.password,
     privateKey: ops.privateKey,
   });
-  logVerbose("Got identity", myIdentity);
+  logVerbose("Got identity");
+  log("Running exit node with public key", publicKey);
   const cache = new Cache(onMessage);
   const interval: NodeJS.Timer = setInterval(() => {
     cache.removeExpired(ops.timeout);

@@ -12,6 +12,7 @@
     "test": "jest --coverage"
   },
   "devDependencies": {
+    "rpch-crypto": "*",
     "rpch-configs-typescript": "*",
     "rpch-configs-eslint": "*",
     "rpch-configs-prettier": "*",
