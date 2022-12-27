@@ -1,6 +1,6 @@
 import { createLogger, createApiUrl, decodeIncomingBody } from "./utils";
-import WebSocket from "ws";
-import fetch from "node-fetch";
+import fetch from "cross-fetch";
+import WebSocket from "isomorphic-ws";
 
 const { log, logError, logVerbose } = createLogger(["common", "hoprd"]);
 

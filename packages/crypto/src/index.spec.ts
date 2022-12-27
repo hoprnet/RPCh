@@ -8,7 +8,7 @@ import {
   unbox_request,
   box_response,
   unbox_response,
-} from "./nodejs";
+} from "./node";
 
 const PRIV_KEY_EXIT_NODE = utils.arrayify(
   "0x1a7a8c37e30c97ebf532042bdc37fe724a3950b0cd7ea5a57c9f3e30c53c44a3"
