@@ -1,13 +1,11 @@
 type Request = {
-  requestId: number;
   accessTokenHash: string;
-  createdAt: string;
   nodeAddress: string;
   amount: string;
   transactionHash?: string;
   chainId: number;
   reason?: string;
-  status?: RequestStatus;
+  status: RequestStatus;
 };
 
 type RequestStatus =
@@ -21,6 +19,18 @@ type RequestStatus =
 
 export type CreateRequest = Request & {};
 
-export type UpdateRequest = Request & {};
+export type UpdateRequest = Request & {
+  id: number;
+};
 
-export type QueryRequest = Request & {};
+export type QueryRequest = {
+  id: number;
+  access_token_hash: string;
+  created_at: string;
+  node_address: string;
+  amount: string;
+  transaction_hash?: string;
+  chain_id: number;
+  reason?: string;
+  status: RequestStatus;
+};
