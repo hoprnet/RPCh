@@ -1,4 +1,4 @@
-export type GraphHoprResponse = {
+export type GetAccountChannelsResponse = {
   data: {
     account: {
       fromChannels: {
@@ -7,4 +7,12 @@ export type GraphHoprResponse = {
       }[];
     };
   };
+};
+
+export type getAccountsFromBlockChangeResponse = {
+  data: {
+    account: {
+      balance: number;
+    };
+  }[];
 };

@@ -1,6 +1,6 @@
 import assert from "assert";
 import { checkCommitment, validateNode } from "./index";
-import { GraphHoprResponse } from "./dto";
+import { GetAccountChannelsResponse } from "./dto";
 import { QueryRegisteredNode } from "../registered-node/dto";
 import nock from "nock";
 
@@ -8,17 +8,17 @@ const GRAPH_HOPR_URL =
   "https://api.thegraph.com/subgraphs/name/hoprnet/hopr-channels";
 
 const mockGraphResponse: (
-  numOfResponses: number,
-  balancePerResponse: number
-) => GraphHoprResponse = (
-  numOfResponses: number,
-  balancePerResponse: number
+  numOfChannels: number,
+  balancePerChannel: number
+) => GetAccountChannelsResponse = (
+  numOfChannels: number,
+  balancePerChannel: number
 ) => ({
   data: {
     account: {
-      fromChannels: Array.from({ length: numOfResponses }).map((_, index) => ({
+      fromChannels: Array.from({ length: numOfChannels }).map((_, index) => ({
         id: String(index),
-        balance: balancePerResponse,
+        balance: balancePerChannel,
       })),
     },
   },
@@ -73,25 +73,30 @@ describe("test graph api functions", function () {
       const node: QueryRegisteredNode = createMockNode();
       const MIN_BALANCE = 1;
       const MIN_CHANNELS_OPEN = 5;
-      nock(GRAPH_HOPR_URL).post(/.*/).reply(200, mockGraphResponse(3, 1));
+      nock(GRAPH_HOPR_URL).post(/.*/).reply(200, mockGraphResponse(3, 1), {
+        "content-type": "application/json",
+      });
       const isCommitted = await checkCommitment({
         node,
         minBalance: MIN_BALANCE,
         minChannels: MIN_CHANNELS_OPEN,
       });
-      assert(!isCommitted);
+      assert.equal(isCommitted, false);
     });
     it("should return true if enough channels are open", async function () {
       const node: QueryRegisteredNode = createMockNode();
       const MIN_BALANCE = 1;
       const MIN_CHANNELS_OPEN = 5;
-      nock(GRAPH_HOPR_URL).post(/.*/).reply(200, mockGraphResponse(5, 1));
+      nock(GRAPH_HOPR_URL).post(/.*/).reply(200, mockGraphResponse(5, 1), {
+        "content-type": "application/json",
+      });
       const isCommitted = await checkCommitment({
         node,
         minBalance: MIN_BALANCE,
         minChannels: MIN_CHANNELS_OPEN,
       });
-      assert(isCommitted);
+
+      assert.equal(isCommitted, true);
     });
   });
 });
