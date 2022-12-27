@@ -4,7 +4,7 @@ import {
   getAccessToken as getAccessTokenDB,
   saveAccessToken,
 } from "../db";
-import type { CreateAccessToken } from "./dto";
+import type { CreateAccessToken, QueryAccessToken } from "./dto";
 import { generateAccessToken } from "./access-token";
 import { utils } from "rpch-common";
 
@@ -21,7 +21,16 @@ const { log, logError } = utils.createLogger([
 export class AccessTokenService {
   constructor(private db: DBInstance, private secretKey: string) {}
 
-  public async createAccessToken(ops: { timeout: number; amount: number }) {
+  /**
+   * Saves a access token in DB
+   * @param timeout number
+   * @param amount amount
+   * @returns Promise<QueryRequest | undefined>
+   */
+  public async createAccessToken(ops: {
+    timeout: number;
+    amount: number;
+  }): Promise<QueryAccessToken | undefined> {
     try {
       log("Creating access token...");
       const now = new Date(Date.now());
@@ -38,24 +47,38 @@ export class AccessTokenService {
       });
 
       const query: CreateAccessToken = {
-        Token: hash,
-        ExpiredAt: expiredAt.toISOString(),
-        CreatedAt: now.toISOString(),
+        token: hash,
+        expiredAt: expiredAt.toISOString(),
+        createdAt: now.toISOString(),
       };
 
-      await saveAccessToken(this.db, query);
+      const queryAccessToken = await saveAccessToken(this.db, query);
 
-      return query;
+      return queryAccessToken;
     } catch (e: any) {
       logError("Failed to create access token: ", e);
     }
   }
 
-  public getAccessToken(accessTokenHash: string) {
+  /**
+   * Gets access token object from DB with a specific access token hash
+   * @param accessTokenHash string
+   * @returns Promise<QueryAccessToken | undefined>
+   */
+  public getAccessToken(
+    accessTokenHash: string
+  ): Promise<QueryAccessToken | undefined> {
     return getAccessTokenDB(this.db, accessTokenHash);
   }
 
-  public deleteAccessToken(accessTokenHash: string) {
+  /**
+   * Deletes access token object from DB with a specific access token hash
+   * @param accessTokenHash string
+   * @returns Promise<QueryAccessToken | undefined>
+   */
+  public deleteAccessToken(
+    accessTokenHash: string
+  ): Promise<QueryAccessToken | undefined> {
     return deleteAccessTokenDB(this.db, accessTokenHash);
   }
 }

@@ -1,6 +1,7 @@
 import { BigNumber, ethers, Signer } from "ethers";
 import { utils } from "rpch-common";
 import {
+  getBalance,
   getProvider,
   sendTransaction,
   waitForTransaction,
@@ -28,44 +29,59 @@ export const checkFreshRequests = async (ops: {
   let freshRequest: QueryRequest | undefined;
   try {
     freshRequest = await ops.requestService.getOldestFreshRequest();
-    log("handling request: ", freshRequest?.requestId);
+    log("handling request: ", freshRequest?.id);
     // check if request and signer are valid
     if (!ops.signer) throw new CustomError("Missing signer  transaction");
     if (!freshRequest) throw new CustomError("No pending fresh request");
-    if (!freshRequest?.chainId)
+    if (!freshRequest?.chain_id)
       throw new CustomError("Request is missing chainId");
     // check if signer has enough to fund request
     const provider = ops.signer.provider
       ? ops.signer.provider
-      : await getProvider(freshRequest.chainId);
+      : await getProvider(freshRequest.chain_id);
     let connectedSigner = ops.signer.provider
       ? ops.signer
       : ops.signer.connect(provider);
-    const balance = await connectedSigner.getBalance();
+    let address = await connectedSigner.getAddress();
+    const balance = await getBalance(
+      smartContractAddresses?.[
+        freshRequest.chain_id as keyof typeof smartContractAddresses
+      ],
+      address,
+      provider
+    );
     if (balance < BigNumber.from(freshRequest.amount))
       throw new CustomError(
         "Signer does not have enough balance to fund request"
       );
     // set request status to pending while it is on the wire
-    await ops.requestService.updateRequest(freshRequest.requestId, {
-      ...freshRequest,
+    await ops.requestService.updateRequest(freshRequest.id, {
       status: "PENDING",
+      accessTokenHash: freshRequest.access_token_hash,
+      nodeAddress: freshRequest.node_address,
+      chainId: freshRequest.chain_id,
+      amount: freshRequest.amount,
+      id: freshRequest.id,
     });
     // sent transaction to fund request
     const { hash: txHash } = await sendTransaction({
       smartContractAddress:
         smartContractAddresses?.[
-          freshRequest.chainId as keyof typeof smartContractAddresses
+          freshRequest.chain_id as keyof typeof smartContractAddresses
         ],
       from: connectedSigner,
-      to: freshRequest?.nodeAddress,
+      to: freshRequest?.node_address,
       amount: ethers.utils.parseEther(freshRequest.amount).toString(),
     });
     // set request status to pending while it is confirmed or failed
-    await ops.requestService.updateRequest(freshRequest.requestId, {
-      ...freshRequest,
+    await ops.requestService.updateRequest(freshRequest.id, {
       transactionHash: txHash,
       status: "PENDING",
+      accessTokenHash: freshRequest.access_token_hash,
+      nodeAddress: freshRequest.node_address,
+      chainId: freshRequest.chain_id,
+      amount: freshRequest.amount,
+      id: freshRequest.id,
     });
     // wait for transaction to reach a certain amount of confirmations
     const txReceipt = await waitForTransaction(
@@ -74,9 +90,14 @@ export const checkFreshRequests = async (ops: {
       ops.confirmations
     );
     // update request to success or failed
-    await ops.requestService.updateRequest(freshRequest.requestId, {
-      ...freshRequest,
+    await ops.requestService.updateRequest(freshRequest.id, {
       status: txReceipt.status === 1 ? "SUCCESS" : "FAILED",
+      transactionHash: txHash,
+      accessTokenHash: freshRequest.access_token_hash,
+      nodeAddress: freshRequest.node_address,
+      chainId: freshRequest.chain_id,
+      amount: freshRequest.amount,
+      id: freshRequest.id,
     });
   } catch (e: any) {
     logError(e);
@@ -84,17 +105,25 @@ export const checkFreshRequests = async (ops: {
       // check if request was rejected
       if (e instanceof CustomError) {
         // update request to rejected and why
-        await ops.requestService.updateRequest(freshRequest?.requestId, {
-          ...freshRequest,
+        await ops.requestService.updateRequest(freshRequest?.id, {
           status: "REJECTED-DURING-PROCESSING",
           reason: e.message,
+          accessTokenHash: freshRequest.access_token_hash,
+          nodeAddress: freshRequest.node_address,
+          chainId: freshRequest.chain_id,
+          amount: freshRequest.amount,
+          id: freshRequest.id,
         });
       } else {
         // update request to failed during processing and save the reason it unexpectedly failed
-        await ops.requestService.updateRequest(freshRequest?.requestId, {
-          ...freshRequest,
+        await ops.requestService.updateRequest(freshRequest?.id, {
           status: "FAILED-DURING-PROCESSING",
           reason: e.message ?? JSON.stringify(e),
+          accessTokenHash: freshRequest.access_token_hash,
+          nodeAddress: freshRequest.node_address,
+          chainId: freshRequest.chain_id,
+          amount: freshRequest.amount,
+          id: freshRequest.id,
         });
       }
     }

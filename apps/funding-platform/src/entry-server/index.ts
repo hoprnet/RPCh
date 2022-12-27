@@ -1,67 +1,12 @@
-import express, { NextFunction, Request, Response } from "express";
+import express from "express";
 import { AccessTokenService } from "../access-token";
 import { getBalanceForAllChains, getProviders } from "../blockchain";
+import { RequestService } from "../request";
 import { smartContractAddresses, validChainIds } from "../utils";
-import { CreateRequest, RequestService } from "../request";
-import { isExpired } from "../utils";
+import { tokenIsValid } from "./middleware";
+import { body, validationResult, param } from "express-validator";
 
 const app = express();
-
-const tokenIsValid =
-  (
-    accessTokenService: AccessTokenService,
-    requestService: RequestService,
-    maxAmountOfTokens: number,
-    requestFunds?: boolean
-  ) =>
-  async (req: Request, res: Response, next: NextFunction) => {
-    const accessTokenHash = req.headers["x-access-token"] as string;
-    if (!accessTokenHash) return res.status(400).json("Missing Access Token");
-    const dbToken = await accessTokenService.getAccessToken(accessTokenHash);
-    if (!dbToken) return res.status(404).json("Access Token does not exist");
-
-    if (isExpired(dbToken.ExpiredAt)) {
-      return res.status(401).json("Access Token expired");
-    }
-
-    const hasEnough = await doesAccessTokenHaveEnoughBalance({
-      requestService,
-      maxAmountOfTokens,
-      token: dbToken.Token,
-      requestAmount: requestFunds ? Number(req.body.amount) : 0,
-    });
-
-    if (!hasEnough) {
-      return res.status(401).json("Exceeded max amount of tokens redeemed");
-    }
-
-    next();
-  };
-
-export const doesAccessTokenHaveEnoughBalance = async (params: {
-  requestService: RequestService;
-  token: string;
-  maxAmountOfTokens: number;
-  requestAmount?: number;
-}): Promise<Boolean> => {
-  const requestsByAccessToken =
-    await params.requestService.getRequestsByAccessToken(params.token);
-  const totalRequests = requestsByAccessToken?.filter(
-    (req) =>
-      req.status !== "FAILED" &&
-      req.status !== "FAILED-DURING-PROCESSING" &&
-      req.status !== "REJECTED-DURING-PROCESSING"
-  );
-  const sumOfTokensTotalPossibleRequests =
-    totalRequests?.reduce((prev, next) => prev + Number(next.amount), 0) ?? 0;
-
-  const tokenBalanceWithRequestAmount =
-    sumOfTokensTotalPossibleRequests + (params.requestAmount ?? 0);
-  if (params.maxAmountOfTokens < tokenBalanceWithRequestAmount) {
-    return false;
-  }
-  return true;
-};
 
 /**
  * Express server that holds all routes
@@ -87,14 +32,16 @@ export const entryServer = (ops: {
       timeout: ops.maxAmountOfTokens,
     });
     return res.json({
-      accessToken: accessToken?.Token,
-      expiredAt: accessToken?.ExpiredAt,
+      accessToken: accessToken?.token,
+      expiredAt: accessToken?.expired_at,
       amountLeft: ops.maxAmountOfTokens,
     });
   });
 
   app.post(
     "/api/request/funds/:blockchainAddress",
+    body("amount").notEmpty().bail().isNumeric({ no_symbols: true }),
+    body("chainId").notEmpty().bail().isNumeric(),
     tokenIsValid(
       ops.accessTokenService,
       ops.requestService,
@@ -102,16 +49,21 @@ export const entryServer = (ops: {
       true
     ),
     async (req, res) => {
-      const address = String(req.params.blockchainAddress);
+      // check if validation failed
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+      const nodeAddress = String(req.params.blockchainAddress);
       const amount = String(req.body.amount);
       const chainId = Number(req.body.chainId);
       const accessTokenHash = req.headers["x-access-token"] as string;
-      const request = (await ops.requestService.createRequest({
-        address,
+      const request = await ops.requestService.createRequest({
+        nodeAddress,
         amount,
         accessTokenHash,
         chainId,
-      })) as CreateRequest;
+      });
       const allUnresolvedAndSuccessfulRequestsByAccessToken =
         await ops.requestService.getAllUnresolvedAndSuccessfulRequestsByAccessToken(
           accessTokenHash
@@ -120,7 +72,7 @@ export const entryServer = (ops: {
         allUnresolvedAndSuccessfulRequestsByAccessToken
       );
       return res.json({
-        id: request.requestId,
+        id: request.id,
         amountLeft: ops.maxAmountOfTokens - amountUsed[chainId],
       });
     }
@@ -141,12 +93,18 @@ export const entryServer = (ops: {
 
   app.get(
     "/api/request/status/:requestId",
+    param("requestId").isNumeric(),
     tokenIsValid(
       ops.accessTokenService,
       ops.requestService,
       ops.maxAmountOfTokens
     ),
     async (req, res) => {
+      // check if validation failed
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
       const requestId = Number(req.params.requestId);
       const request = await ops.requestService.getRequest(requestId);
       return res.status(200).json(request);
