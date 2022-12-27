@@ -15,7 +15,6 @@ import {
   waitForTransaction,
 } from "./";
 import * as erc20 from "./erc20-fixture.json";
-import { smartContractAddresses } from "../utils";
 
 const INITIAL_AMOUNT = ethers.utils.parseEther("1000").toString();
 const TOKEN_NAME = "CUSTOM TOKEN";

@@ -1,3 +1,7 @@
+import { createLogger } from "./utils";
+
+const log = createLogger(["reliability-score"]);
+
 /**
  * Possible `result` values.
  * @type success: we have received an honest and valid response.
@@ -118,6 +122,11 @@ export default class ReliabilityScore {
       nodeMetrics.stats = this.getResultsStats(peerId);
       const updatedScore = this.getScore(peerId);
       this.score.set(peerId, updatedScore);
+      log.verbose(
+        "node %s exceeded the max number of responses possible. Recalculating score",
+        peerId,
+        log.createMetric({ peerId: peerId })
+      );
     }
   }
 
@@ -134,11 +143,20 @@ export default class ReliabilityScore {
 
       if (sent < this.FRESH_NODE_THRESHOLD) {
         this.score.set(peerId, 0.2);
+        log.normal(
+          "node %s is a fresh node with 0.2 realiability score",
+          peerId
+        );
       } else if (dishonest > 0) {
         this.score.set(peerId, 0);
+        log.normal(
+          "node %s is a dishonest node with 0 reliability score",
+          peerId
+        );
       } else {
         const score = (sent - failed) / sent;
         this.score.set(peerId, score);
+        log.normal("node %s has a %s realiability score", peerId, score);
       }
       return this.score.get(peerId) || 0;
     } else {

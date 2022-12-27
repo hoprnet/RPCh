@@ -59,6 +59,7 @@
         "SECRET_KEY",
         "WALLET_PRIV_KEY",
         "PORT",
+        "DB_CONNECTION_URL",
         "CONFIRMATIONS",
         "MAX_AMOUNT_OF_TOKENS",
         "TIMEOUT"

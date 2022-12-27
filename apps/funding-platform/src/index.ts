@@ -1,3 +1,4 @@
+import pgp from "pg-promise";
 import { utils } from "rpch-common";
 import { AccessTokenService } from "./access-token";
 import { getWallet } from "./blockchain";
@@ -5,14 +6,18 @@ import { DBInstance } from "./db";
 import * as api from "./entry-server";
 import { checkFreshRequests } from "./queue";
 import { RequestService } from "./request";
+import { createLogger } from "./utils";
+import fs from "fs";
 
-const { log } = utils.createLogger(["funding-platform"]);
+const log = createLogger([]);
 
 const {
   // Secret key used for access token generation
   SECRET_KEY,
   // Wallet private key that will be completing the requests
   WALLET_PRIV_KEY,
+  // Postgres db connection url
+  DB_CONNECTION_URL,
   // Port that server will listen for requests
   PORT = 3000,
   // Number of confirmations that will be required for a transaction to be accepted
@@ -39,6 +44,15 @@ const start = async (ops: {
   privateKey: string;
   confirmations: number;
 }) => {
+  // create tables if they do not exist in the db
+  const schemaSql = fs.readFileSync("dump.sql", "utf8").toString();
+  const existingTables = await ops.db.manyOrNone(
+    "SELECT * FROM information_schema.tables WHERE table_name IN ('access_tokens', 'requests')"
+  );
+  if (!existingTables.length) {
+    await ops.db.none(schemaSql);
+  }
+  await ops.db.connect();
   // init services
   const accessTokenService = new AccessTokenService(ops.db, ops.secretKey);
   const requestService = new RequestService(ops.db);
@@ -64,7 +78,7 @@ const start = async (ops: {
   }, 60e3);
   // start listening at PORT for requests
   app.listen(PORT, () => {
-    log("entry server is up");
+    log.normal("entry server is up");
   });
 };
 
@@ -75,13 +89,14 @@ const main = () => {
   if (!WALLET_PRIV_KEY) {
     throw Error("env variable 'WALLET_PRIV_KEY' not found");
   }
+  if (!DB_CONNECTION_URL) {
+    throw Error("env variable 'DB_CONNECTION_URL' not found");
+  }
   // init db
-  const dbInstance = {
-    data: {
-      requests: [],
-      accessTokens: [],
-    },
-  } as unknown as DBInstance;
+  const pgInstance = pgp();
+  const connectionString: string = DB_CONNECTION_URL;
+  // create table if the table does not exist
+  const dbInstance = pgInstance({ connectionString });
 
   start({
     entryServer: api,

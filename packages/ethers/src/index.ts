@@ -1,10 +1,9 @@
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { deepCopy } from "@ethersproject/properties";
 import SDK, { type HoprSdkTempOps } from "rpch-sdk";
-import { utils } from "rpch-common";
-import { parseResponse, getResult } from "./utils";
+import { parseResponse, getResult, createLogger } from "./utils";
 
-const { logVerbose, logError } = utils.createLogger(["ethers"]);
+const log = createLogger([]);
 
 export class RPChProvider extends JsonRpcProvider {
   public sdk: SDK;
@@ -17,7 +16,7 @@ export class RPChProvider extends JsonRpcProvider {
   ) {
     super(url);
     this.sdk = new SDK(5000, hoprSdkTempOps, setKeyVal, getKeyVal);
-    this.sdk.start().catch((error) => logError(error));
+    this.sdk.start().catch((error) => log.error(error));
   }
 
   public async send(method: string, params: Array<any>): Promise<any> {
@@ -45,7 +44,11 @@ export class RPChProvider extends JsonRpcProvider {
       this.url,
       JSON.stringify(payload)
     );
-    logVerbose("Created request", rpchRequest.id);
+    log.verbose(
+      "Created request",
+      rpchRequest.id,
+      log.createMetric({ id: rpchRequest.id })
+    );
 
     try {
       const rpchResponsePromise = this.sdk.sendRequest(rpchRequest);
@@ -61,7 +64,11 @@ export class RPChProvider extends JsonRpcProvider {
 
       const rpchResponse = await rpchResponsePromise;
       const response = getResult(parseResponse(rpchResponse));
-      logVerbose("Received response for request", rpchRequest.id);
+      log.verbose(
+        "Received response for request",
+        rpchRequest.id,
+        log.createMetric({ id: rpchRequest.id })
+      );
       this.emit("debug", {
         action: "response",
         request: payload,
@@ -71,7 +78,11 @@ export class RPChProvider extends JsonRpcProvider {
 
       return response;
     } catch (error) {
-      logError("Did not receive response for request", rpchRequest.id);
+      log.error(
+        "Did not receive response for request",
+        rpchRequest.id,
+        log.createMetric({ id: rpchRequest.id })
+      );
       this.emit("debug", {
         action: "response",
         error: error,

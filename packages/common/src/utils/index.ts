@@ -1,29 +1,9 @@
-import type Segment from "./segment";
-import Debug, { type Debugger } from "debug";
+import type Segment from "../segment";
 import { utils } from "ethers";
+import LoggerFactory from "./logger";
 
-/**
- * Sugar fuction for creating consistent loggers.
- * @param args
- * @returns debug logger and error logger
- */
-export const createLogger = (
-  ...args: any[]
-): {
-  log: Debugger;
-  logVerbose: Debugger;
-  logError: Debugger;
-} => {
-  const log = Debug(["rpch", ...args].join(":"));
-  const logVerbose = log.extend("verbose");
-  const logError = log.extend("error");
-
-  return {
-    log,
-    logVerbose,
-    logError,
-  };
-};
+export { default as LoggerFactory } from "./logger";
+export const createLogger = LoggerFactory("common");
 
 /**
  * Maximum bytes we should be sending

@@ -2,7 +2,7 @@ import { createLogger, createApiUrl, decodeIncomingBody } from "./utils";
 import WebSocket from "ws";
 import fetch from "node-fetch";
 
-const { log, logError, logVerbose } = createLogger(["common", "hoprd"]);
+const log = createLogger(["hoprd"]);
 
 /**
  * Send a segment to a HOPRd node.
@@ -38,11 +38,11 @@ export const sendMessage = async ({
   });
 
   if (response.status === 202) {
-    logVerbose("send message to HOPRd node", message, destination);
+    log.verbose("send message to HOPRd node", message, destination);
     const text = await response.text();
     return text;
   } else {
-    logError(
+    log.error(
       "failed to send message to HOPRd node",
       response.status,
       await response.text()
@@ -69,27 +69,27 @@ export const createMessageListener = async (
   const ws = new WebSocket(url);
 
   ws.on("upgrade", () => {
-    log("Listening for incoming messages from HOPRd", url);
+    log.normal("Listening for incoming messages from HOPRd", url);
   });
 
   ws.on("message", (data: { toString: () => string }) => {
     const body = data.toString();
-    logVerbose("received body from HOPRd");
+    log.verbose("received body from HOPRd");
 
     let message: string | undefined;
     try {
       message = decodeIncomingBody(body);
     } catch (error) {
-      logError(error);
+      log.error(error);
     }
     if (!message) return;
-    logVerbose("decoded received body", message);
+    log.verbose("decoded received body", message);
 
     onMessage(message);
   });
 
   return () => {
-    log("Closing HOPRd listener");
+    log.normal("Closing HOPRd listener");
     ws.close();
   };
 };
@@ -117,11 +117,11 @@ export const fetchPeerId = async ({
   });
 
   if (response.status === 200) {
-    logVerbose("received addresses from HOPRd node");
+    log.verbose("received addresses from HOPRd node");
     const result: { native: string; hopr: string } = await response.json();
     return result.hopr;
   } else {
-    logError(
+    log.error(
       "failed to get addresses from HOPRd node",
       response.status,
       await response.text()

@@ -1,7 +1,7 @@
 import assert from "assert";
 import { utils } from "ethers";
-import { splitStrByBytes, isExpired, areAllSegmentsPresent } from "./utils";
-import { createMockedFlow, RPC_REQ_LARGE } from "./fixtures";
+import { splitStrByBytes, isExpired, areAllSegmentsPresent } from "../utils";
+import { createMockedFlow, RPC_REQ_LARGE } from "../fixtures";
 
 describe("test utils / splitStrByBytes", function () {
   it("should return 1 string", function () {
