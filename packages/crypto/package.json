@@ -1,21 +1,11 @@
 {
   "name": "rpch-crypto",
   "version": "0.0.0",
-  "exports": {
-    "node": {
-      "types": "./build/node/index.d.ts",
-      "require": "./build/node/index.js"
-    },
-    "web": {
-      "types": "./build/web/index.d.ts",
-      "require": "./build/web/index.js"
-    }
-  },
-  "types": "./build/node/index.d.ts",
-  "main": "./build/node/index.js",
+  "main": "./build/index.js",
+  "types": "./build/index.d.ts",
   "license": "MIT",
   "scripts": {
-    "build": "tsup",
+    "build": "rimraf index.js index.d.ts nodejs web && tsup",
     "dev": "yarn build --watch",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
@@ -23,6 +13,7 @@
   },
   "devDependencies": {
     "@swc/core": "^1.3.21",
+    "rimraf": "^3.0.2",
     "rpch-configs-eslint": "*",
     "rpch-configs-jest": "*",
     "rpch-configs-prettier": "*",
