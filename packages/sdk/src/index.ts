@@ -6,13 +6,13 @@ import {
   Response,
   Segment,
   hoprd,
-  utils,
 } from "rpch-common";
 import { utils as etherUtils } from "ethers";
 import ReliabilityScore from "./reliability-score";
 import RequestCache from "./request-cache";
+import { createLogger } from "./utils";
 
-const { log, logError } = utils.createLogger(["sdk"]);
+const log = createLogger([]);
 /**
  * Temporary options to be passed to
  * the SDK for development purposes.
@@ -135,7 +135,11 @@ export default class SDK {
     // check whether we have a matching request id
     const match = this.requestCache.getRequest(message.id);
     if (!match) {
-      logError("matching request not found", message.id);
+      log.error(
+        "matching request not found",
+        message.id,
+        log.createMetric({ id: message.id })
+      );
       return;
     }
 
@@ -154,6 +158,17 @@ export default class SDK {
       }
     );
 
+    const responseTime = Date.now() - match.createdAt.getTime();
+    log.verbose(
+      "response time for request %s: %s ms",
+      match.request.id,
+      responseTime,
+      log.createMetric({
+        id: match.request.id,
+        responseTime: responseTime,
+      })
+    );
+
     match.resolve(response);
     this.reliabilityScore.addMetric(
       this.tempOps.entryNodePeerId,
@@ -161,7 +176,8 @@ export default class SDK {
       "success"
     );
     this.requestCache.removeRequest(match.request);
-    log("responded to %s with %s", match.request.body, response.body);
+
+    log.verbose("responded to %s with %s", match.request.body, response.body);
   }
 
   /**
@@ -175,6 +191,7 @@ export default class SDK {
       req.id,
       "failed"
     );
+    log.normal("request %s expired", req.id);
   }
 
   /**
@@ -211,7 +228,7 @@ export default class SDK {
           const segment = Segment.fromString(message);
           this.segmentCache.onSegment(segment);
         } catch (e) {
-          log(
+          log.normal(
             "rejected received data from HOPRd: not a valid segment",
             message,
             e

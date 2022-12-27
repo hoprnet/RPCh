@@ -3,19 +3,20 @@ import levelup from "levelup";
 import leveldown from "leveldown";
 import { utils as ethersUtils } from "ethers";
 import {
-  type Message,
   Request,
   Response,
+  type Message,
   Cache,
-  utils,
   Segment,
   hoprd,
+  utils,
 } from "rpch-common";
 import * as crypto from "rpch-crypto/nodejs";
 import * as exit from "./exit";
 import * as identity from "./identity";
+import { createLogger } from "./utils";
 
-const { log, logVerbose, logError } = utils.createLogger("exit-node");
+const log = createLogger([]);
 
 const {
   RPCH_PASSWORD,
@@ -87,31 +88,32 @@ export const start = async (ops: {
         });
       }
     } catch (error) {
-      logError("Failed to respond with data", error);
+      log.error("Failed to respond with data", error);
     }
   };
 
-  logVerbose("Initializing DB at", ops.dataDir);
+  log.verbose("Initializing DB at", ops.dataDir);
   const db = levelup(leveldown(ops.dataDir));
 
-  logVerbose("Fetching peer id", ops.dataDir);
+  log.verbose("Fetching peer id", ops.dataDir);
   const myPeerId = await ops.hoprd
     .fetchPeerId({
       apiEndpoint: ops.apiEndpoint,
       apiToken: ops.apiToken,
     })
-    .catch((error) => logError(error));
+    .catch((error) => log.error(error));
   if (!myPeerId) throw Error("Could not find HOPRd's peer id");
-  logVerbose("Fetched peer id", myPeerId);
+  log.verbose("Fetched peer id", myPeerId);
 
-  logVerbose("Get identity");
+  log.verbose("Get identity");
   const { publicKey, identity: myIdentity } = await identity.getIdentity({
     identityDir: ops.identityDir,
     password: ops.password,
     privateKey: ops.privateKey,
   });
-  logVerbose("Got identity");
-  log("Running exit node with public key", publicKey);
+  log.verbose("Got identity");
+  log.normal("Running exit node with public key", publicKey);
+
   const cache = new Cache(onMessage);
   const interval: NodeJS.Timer = setInterval(() => {
     cache.removeExpired(ops.timeout);
@@ -125,7 +127,10 @@ export const start = async (ops: {
         const segment = Segment.fromString(message);
         cache.onSegment(segment);
       } catch (error) {
-        log("Rejected received data from HOPRd: not a valid message", message);
+        log.normal(
+          "Rejected received data from HOPRd: not a valid message",
+          message
+        );
       }
     }
   );
@@ -156,7 +161,7 @@ if (require.main === module) {
     throw Error("env variable 'RESPONSE_TIMEOUT' not a number");
   }
 
-  log("Starting exit-node");
+  log.normal("Starting exit-node");
 
   start({
     exit,
@@ -170,5 +175,5 @@ if (require.main === module) {
     apiEndpoint: HOPRD_API_ENDPOINT,
     apiToken: HOPRD_API_TOKEN,
     timeout: RESPONSE_TIMEOUT,
-  }).catch((error) => logError(error));
+  }).catch((error) => log.error(error));
 }
