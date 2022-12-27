@@ -1,5 +1,5 @@
 import type Request from "./request";
-import { Envelope, unbox_response, box_response } from "rpch-crypto/nodejs";
+import { Envelope, box_response, unbox_response } from "rpch-crypto/nodejs";
 import Message from "./message";
 import { joinPartsToBody, splitBodyToParts } from "./utils";
 import { utils } from "ethers";
@@ -21,14 +21,21 @@ export default class Response {
    * @param body
    * @return Response
    */
-  public static createResponse(request: Request, body: string): Response {
+  public static createResponse(
+    crypto: {
+      Envelope: typeof Envelope;
+      box_response: typeof box_response;
+    },
+    request: Request,
+    body: string
+  ): Response {
     const payload = joinPartsToBody(["response", body]);
-    const envelope = new Envelope(
+    const envelope = new crypto.Envelope(
       utils.toUtf8Bytes(payload),
       request.entryNodeDestination,
       request.exitNodeDestination
     );
-    box_response(request.session, envelope);
+    crypto.box_response(request.session, envelope);
     return new Response(request.id, body, request);
   }
 
@@ -39,14 +46,18 @@ export default class Response {
    * @returns Request
    */
   public static fromMessage(
+    crypto: {
+      Envelope: typeof Envelope;
+      unbox_response: typeof unbox_response;
+    },
     request: Request,
     message: Message,
     lastResponseFromExitNode: bigint,
     updateLastResponseFromExitNode: (exitNodeId: string, counter: bigint) => any
   ): Response {
-    unbox_response(
+    crypto.unbox_response(
       request.session,
-      new Envelope(
+      new crypto.Envelope(
         utils.arrayify(message.body),
         request.entryNodeDestination,
         request.exitNodeDestination

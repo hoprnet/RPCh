@@ -11,6 +11,7 @@ import {
   Segment,
   hoprd,
 } from "rpch-common";
+import * as crypto from "rpch-crypto/nodejs";
 import * as exit from "./exit";
 import * as identity from "./identity";
 
@@ -57,6 +58,7 @@ export const start = async (ops: {
         .catch(() => BigInt(0));
 
       const rpchRequest = Request.fromMessage(
+        crypto,
         message,
         myPeerId!,
         myIdentity,
@@ -71,7 +73,11 @@ export const start = async (ops: {
         rpchRequest.provider
       );
 
-      const rpchResponse = Response.createResponse(rpchRequest, response);
+      const rpchResponse = Response.createResponse(
+        crypto,
+        rpchRequest,
+        response
+      );
       for (const segment of rpchResponse.toMessage().toSegments()) {
         ops.hoprd.sendMessage({
           apiEndpoint: ops.apiEndpoint,

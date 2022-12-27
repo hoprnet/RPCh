@@ -7,7 +7,7 @@ import {
   hoprd,
   utils,
 } from "rpch-common";
-import { Identity } from "rpch-crypto/nodejs";
+import * as crypto from "rpch-crypto/nodejs";
 import { utils as etherUtils } from "ethers";
 import ReliabilityScore from "./reliability-score";
 import RequestCache from "./request-cache";
@@ -144,6 +144,7 @@ export default class SDK {
 
     // construct Response from Message
     const response = Response.fromMessage(
+      crypto,
       match.request,
       message,
       counter,
@@ -224,11 +225,12 @@ export default class SDK {
   public createRequest(provider: string, body: string): Request {
     if (!this.isReady) throw Error("SDK not ready to create requests");
     return Request.createRequest(
+      crypto,
       provider,
       body,
       this.entryNode!.peerId,
       this.exitNodePeerId!,
-      Identity.load_identity(etherUtils.arrayify(this.exitNodePubKey!))
+      crypto.Identity.load_identity(etherUtils.arrayify(this.exitNodePubKey!))
     );
   }
 
