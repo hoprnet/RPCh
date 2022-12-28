@@ -6,7 +6,7 @@ import {
   unbox_request,
   Session,
   Identity,
-} from "rpch-crypto/nodejs";
+} from "@rpch/crypto-bridge/nodejs";
 import Message from "./message";
 import {
   generateRandomNumber,

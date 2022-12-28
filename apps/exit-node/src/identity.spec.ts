@@ -1,6 +1,6 @@
 import assert from "assert";
 import { utils } from "ethers";
-import { fixtures } from "rpch-common";
+import { fixtures } from "@rpch/common";
 import * as identity from "./identity";
 
 const PRIV_KEY = utils.arrayify(fixtures.EXIT_NODE_PRIV_KEY_A);

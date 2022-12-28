@@ -5,8 +5,8 @@ import {
   Response,
   Segment,
   hoprd,
-} from "rpch-common";
-import { Identity } from "rpch-crypto/nodejs";
+} from "@rpch/common";
+import { Identity } from "@rpch/crypto-bridge/nodejs";
 import { utils as etherUtils } from "ethers";
 import ReliabilityScore from "./reliability-score";
 import RequestCache from "./request-cache";

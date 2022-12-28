@@ -1,4 +1,4 @@
-import { Request, Response, utils } from "rpch-common";
+import { Request, Response, utils } from "@rpch/common";
 import { createLogger } from "./utils";
 
 const log = createLogger(["request-cache"]);

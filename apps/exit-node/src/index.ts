@@ -10,7 +10,7 @@ import {
   Segment,
   hoprd,
   utils,
-} from "rpch-common";
+} from "@rpch/common";
 import * as identity from "./identity";
 import * as exit from "./exit";
 import { createLogger } from "./utils";
@@ -27,7 +27,7 @@ const {
   RESPONSE_TIMEOUT: RESPONSE_TIMEOUT_STR = "10000",
 } = process.env;
 
-const DEFAULT_IDENTITY_DIR = path.join(process.cwd(), ".rpch-identity");
+const DEFAULT_IDENTITY_DIR = path.join(process.cwd(), ".identity");
 const DEFAULT_DATA_DIR = path.join(process.cwd(), "db");
 
 export const start = async (ops: {

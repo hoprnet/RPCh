@@ -10,7 +10,7 @@
         ".next/**"
       ]
     },
-    "rpch-crypto#build": {
+    "@rpch/crypto-bridge#build": {
       "dependsOn": [
         "^build"
       ],
@@ -21,7 +21,7 @@
         "web/**"
       ]
     },
-    "rpch-exit-node#build": {
+    "@rpch/exit-node#build": {
       "dependsOn": [
         "^build"
       ],
@@ -38,7 +38,7 @@
         "RESPONSE_TIMEOUT"
       ]
     },
-    "rpch-e2e#build": {
+    "@rpch/e2e#build": {
       "dependsOn": [
         "^build"
       ],
@@ -49,7 +49,7 @@
         "EXIT_NODE_PUB_KEY"
       ]
     },
-    "rpch-funding-platform#build": {
+    "@rpch/funding-platform#build": {
       "dependsOn": [
         "^build"
       ],
@@ -86,7 +86,7 @@
         "coverage/**"
       ]
     },
-    "rpch-e2e#start": {
+    "@rpch/e2e#start": {
       "cache": false
     }
   }

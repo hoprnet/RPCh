@@ -1,1 +1,1 @@
-module.exports = require("rpch-configs-prettier");
+module.exports = require("@rpch/configs-prettier");

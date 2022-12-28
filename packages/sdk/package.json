@@ -1,9 +1,9 @@
 {
-  "name": "rpch-sdk",
+  "name": "@rpch/sdk",
   "version": "0.0.0",
+  "license": "LGPL-3.0",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
-  "license": "MIT",
   "scripts": {
     "build": "tsup",
     "dev": "yarn build --watch",
@@ -13,15 +13,15 @@
   },
   "devDependencies": {
     "nock": "^13.2.9",
-    "rpch-configs-eslint": "*",
-    "rpch-configs-jest": "*",
-    "rpch-configs-prettier": "*",
-    "rpch-configs-tsup": "*",
-    "rpch-configs-typescript": "*"
+    "@rpch/configs-eslint": "*",
+    "@rpch/configs-jest": "*",
+    "@rpch/configs-prettier": "*",
+    "@rpch/configs-tsup": "*",
+    "@rpch/configs-typescript": "*"
   },
   "dependencies": {
     "peer-id": "^0.16.0",
-    "rpch-common": "*",
-    "rpch-crypto": "*"
+    "@rpch/common": "0.0.0",
+    "@rpch/crypto-bridge": "0.0.0"
   }
 }

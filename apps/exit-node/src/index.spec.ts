@@ -1,5 +1,5 @@
 import assert from "assert";
-import { fixtures } from "rpch-common";
+import { fixtures } from "@rpch/common";
 import MemDown from "memdown";
 import { utils } from "ethers";
 import { start as startExitNode } from "./index";

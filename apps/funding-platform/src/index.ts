@@ -1,5 +1,5 @@
 import pgp from "pg-promise";
-import { utils } from "rpch-common";
+import { utils } from "@rpch/common";
 import { AccessTokenService } from "./access-token";
 import { getWallet } from "./blockchain";
 import { DBInstance } from "./db";

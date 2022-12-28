@@ -1,4 +1,4 @@
-const baseConfig = require("rpch-configs-tsup");
+const baseConfig = require("@rpch/configs-tsup");
 
 /** @type {import('tsup').Options} */
 module.exports = {

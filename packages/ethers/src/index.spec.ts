@@ -1,6 +1,6 @@
 import assert from "assert";
 import nock from "nock";
-import { type Message, Request, Response, fixtures } from "rpch-common";
+import { type Message, Request, Response, fixtures } from "@rpch/common";
 import { RPChProvider } from ".";
 
 const PROVIDER_URL = fixtures.PROVIDER;
@@ -47,8 +47,8 @@ const getMockedResponse = async (request: Request): Promise<Message> => {
   return exitNodeResponse.toMessage();
 };
 
-jest.mock("rpch-common", () => ({
-  ...jest.requireActual("rpch-common"),
+jest.mock("@rpch/common", () => ({
+  ...jest.requireActual("@rpch/common"),
   hoprd: {
     sendMessage: jest.fn(async () => "MOCK_SEND_MSG_RESPONSE"),
     createMessageListener: jest.fn(async () => {
