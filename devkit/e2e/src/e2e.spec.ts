@@ -15,7 +15,7 @@ const {
 } = process.env;
 const sdkStore = fixtures.createAsyncKeyValStore();
 
-jest.setTimeout(4e4);
+jest.setTimeout(1e3 * 60 * 1); // one minute
 describe("e2e tests", function () {
   if (
     !ENTRY_NODE_PEER_ID ||
