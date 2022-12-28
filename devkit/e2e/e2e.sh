@@ -80,13 +80,10 @@ entry_node_peer_id=$(cat logs | grep "node1" -A 1 | grep "Peer Id" | awk '{ prin
 exit_node_peer_id=$(cat logs | grep "node5" -A 1 | grep "Peer Id" | awk '{ print $5 }')
 exit_node_pub_key=$(echo "$logs5" | grep "Running exit node with public key" | awk '{print $9}')
 
-echo "Right before running tests"
-echo "EXIT NODE PUB KEY: $exit_node_pub_key"
 # Run tests with env variables
 ENTRY_NODE_PEER_ID="$entry_node_peer_id" EXIT_NODE_PEER_ID="$exit_node_peer_id" ENTRY_NODE_API_TOKEN="$HOPRD_API_TOKEN" \
 EXIT_NODE_PUB_KEY="$exit_node_pub_key" npx jest --coverage
 
-echo "Tearing down setup"
 # After tests exit tear down setup
 docker compose -f ../sandbox/docker-compose.yml down
 rm ./logs
