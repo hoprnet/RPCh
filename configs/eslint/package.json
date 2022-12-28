@@ -1,6 +1,7 @@
 {
   "name": "@rpch/configs-eslint",
   "version": "0.0.0",
+  "license": "LGPL-3.0",
   "private": true,
   "main": "index.js",
   "dependencies": {

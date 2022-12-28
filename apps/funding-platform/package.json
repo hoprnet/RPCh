@@ -1,8 +1,8 @@
 {
   "name": "@rpch/funding-platform",
   "version": "0.0.0",
+  "license": "LGPL-3.0",
   "private": true,
-  "license": "MIT",
   "scripts": {
     "build": "rimraf build && tsup",
     "dev": "yarn build --watch",

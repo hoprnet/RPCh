@@ -7,8 +7,8 @@ on:
     types: [opened, synchronize]
 
 jobs:
-  review:
-    name: Review
+  review-source-code:
+    name: Review source code
     timeout-minutes: 30
     runs-on: ubuntu-latest
     env:
@@ -39,3 +39,16 @@ jobs:
 
       # - name: Run E2E tests
       #   run: yarn test:e2e
+  review-configuration:
+    name: Review configuration
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+
+      - name: Review licenses
+        run: find . -name 'package.json' -not -path "./node_modules/*" -exec \
+          jq --arg license 'LGPL-3.0' -r '.license|contains($license)' {} +;

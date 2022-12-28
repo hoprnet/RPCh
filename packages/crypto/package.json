@@ -1,9 +1,9 @@
 {
   "name": "@rpch/crypto-bridge",
   "version": "0.0.0",
+  "license": "LGPL-3.0",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
-  "license": "MIT",
   "scripts": {
     "build": "rimraf index.js index.d.ts nodejs web && tsup",
     "dev": "yarn build --watch",
