@@ -1,31 +1,48 @@
 import assert from "assert";
-import * as ethers from "rpch-ethers";
-import { fixtures } from "rpch-common";
+import * as ethers from "@rpch/ethers";
+import { fixtures } from "@rpch/common";
 
 const PROVIDER_URL = fixtures.PROVIDER;
 const DISCOVERY_PLATFORM_API_ENDPOINT = "http://discovery_platform";
 const ENTRY_NODE_API_ENDPOINT = "http://localhost:13301";
 const FRESH_NODE_THRESHOLD = 20;
 const MAX_RESPONSES = 100;
-const { ENTRY_NODE_PEER_ID, EXIT_NODE_PEER_ID, ENTRY_NODE_API_TOKEN } =
-  process.env;
+const {
+  ENTRY_NODE_PEER_ID,
+  EXIT_NODE_PEER_ID,
+  ENTRY_NODE_API_TOKEN,
+  EXIT_NODE_PUB_KEY,
+} = process.env;
+const sdkStore = fixtures.createAsyncKeyValStore();
 
-jest.setTimeout(2e4);
+jest.setTimeout(1e3 * 60 * 1); // one minute
 describe("e2e tests", function () {
-  if (!ENTRY_NODE_PEER_ID || !EXIT_NODE_PEER_ID || !ENTRY_NODE_API_TOKEN) {
+  if (
+    !ENTRY_NODE_PEER_ID ||
+    !EXIT_NODE_PEER_ID ||
+    !ENTRY_NODE_API_TOKEN ||
+    !EXIT_NODE_PUB_KEY
+  ) {
     throw Error(
-      "Entry Node Peer Id, Exit Node Peer Id or Entry Node API Token not set"
+      "env variables 'ENTRY_NODE_PEER_ID', 'EXIT_NODE_PEER_ID', \
+      'ENTRY_NODE_API_TOKEN' or 'EXIT_NODE_PUB_KEY' not set"
     );
   }
-  const provider = new ethers.RPChProvider(PROVIDER_URL, {
-    discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
-    entryNodeApiEndpoint: ENTRY_NODE_API_ENDPOINT,
-    entryNodeApiToken: ENTRY_NODE_API_TOKEN,
-    entryNodePeerId: ENTRY_NODE_PEER_ID,
-    exitNodePeerId: EXIT_NODE_PEER_ID,
-    freshNodeThreshold: FRESH_NODE_THRESHOLD,
-    maxResponses: MAX_RESPONSES,
-  });
+  const provider = new ethers.RPChProvider(
+    PROVIDER_URL,
+    {
+      discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
+      entryNodeApiEndpoint: ENTRY_NODE_API_ENDPOINT,
+      entryNodeApiToken: ENTRY_NODE_API_TOKEN,
+      entryNodePeerId: ENTRY_NODE_PEER_ID,
+      exitNodePeerId: EXIT_NODE_PEER_ID,
+      exitNodePubKey: EXIT_NODE_PUB_KEY,
+      freshNodeThreshold: FRESH_NODE_THRESHOLD,
+      maxResponses: MAX_RESPONSES,
+    },
+    sdkStore.set,
+    sdkStore.get
+  );
 
   beforeAll(async function () {
     await provider.sdk.start();
@@ -51,9 +68,4 @@ describe("e2e tests", function () {
     );
     assert.equal(balance._isBigNumber, true);
   });
-
-  // it("should get ether price", async function () {
-  //   const etherPrice = await provider.getEtherPrice();
-  //   assert.equal(etherPrice, 25135304);
-  // });
 });

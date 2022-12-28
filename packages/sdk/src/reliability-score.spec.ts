@@ -1,7 +1,7 @@
 import ReliabilityScore, { type Result } from "./reliability-score";
-import { fixtures, utils } from "rpch-common";
+import { fixtures, utils } from "@rpch/common";
 
-const ENTRY_NODE_PEER_ID = fixtures.PEER_ID_A;
+const ENTRY_NODE_PEER_ID = fixtures.HOPRD_PEER_ID_A;
 const FRESH_NODE_THRESHOLD = 20;
 const MAX_RESPONSES = 100;
 

@@ -10,7 +10,18 @@
         ".next/**"
       ]
     },
-    "rpch-exit-node#build": {
+    "@rpch/crypto-bridge#build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "index.js",
+        "index.d.ts",
+        "nodejs/**",
+        "web/**"
+      ]
+    },
+    "@rpch/exit-node#build": {
       "dependsOn": [
         "^build"
       ],
@@ -18,22 +29,27 @@
         "build/**"
       ],
       "env": [
-        "HOPRD_API_ENDPOINT",
+        "RPCH_PASSWORD",
+        "RPCH_IDENTITY_DIR",
+        "RPCH_PRIVATE_KEY",
+        "RPCH_DATA_DIR",
         "HOPRD_API_TOKEN",
+        "HOPRD_API_ENDPOINT",
         "RESPONSE_TIMEOUT"
       ]
     },
-    "rpch-e2e#build": {
+    "@rpch/e2e#build": {
       "dependsOn": [
         "^build"
       ],
       "env": [
         "ENTRY_NODE_PEER_ID",
         "EXIT_NODE_PEER_ID",
-        "ENTRY_NODE_API_TOKEN"
+        "ENTRY_NODE_API_TOKEN",
+        "EXIT_NODE_PUB_KEY"
       ]
     },
-    "rpch-funding-platform#build": {
+    "@rpch/funding-platform#build": {
       "dependsOn": [
         "^build"
       ],
@@ -70,7 +86,7 @@
         "coverage/**"
       ]
     },
-    "rpch-e2e#start": {
+    "@rpch/e2e#start": {
       "cache": false
     }
   }

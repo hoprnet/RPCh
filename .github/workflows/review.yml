@@ -1,18 +1,22 @@
-name: CI
+name: Review
 
 on:
   push:
-    branches: ["main"]
+    branches: [main]
   pull_request:
     types: [opened, synchronize]
 
+concurrency:
+  group: ${{ github.head_ref }}
+  cancel-in-progress: true
+
 jobs:
-  review:
-    name: Review
-    timeout-minutes: 15
+  review-source-code:
+    name: Review source code
+    timeout-minutes: 10
     runs-on: ubuntu-latest
-    # To use Remote Caching, uncomment the next lines and follow the steps below.
     env:
+      # enable remote caching using turbo
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
@@ -22,18 +26,11 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v3
-        with:
-          node-version: 16
-          cache: "yarn"
-          cache-dependency-path: ./yarn.lock
-
-      - name: Install dependencies
-        run: yarn
-
       - name: Build
-        run: yarn build
+        uses: ./.github/actions/build-rpch
+        env:
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
       - name: Review linting
         run: yarn lint
@@ -44,5 +41,64 @@ jobs:
       - name: Run tests and coverage
         run: yarn test --ci
 
-      - name: Run E2E tests
-        run: yarn test:e2e
+      # - name: Run E2E tests
+      #   run: yarn test:e2e
+
+  review-dockerfiles:
+    name: Review dockerfiles
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # TODO: dynamically get this list
+        apps: ["exit-node", "funding-platform"]
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+
+      - name: Build Dockerfile
+        run: docker build -f ./apps/${{ matrix.apps }}/Dockerfile .
+
+  review-configuration:
+    name: Review configuration
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+
+      - name: Review licenses
+        run: find . -name 'package.json' -not -path "./node_modules/*" -exec jq --arg license 'LGPL-3.0' -r '.license|contains($license)' {} +;
+
+  # review-e2e-test-results:
+  #   needs:
+  #     - review-source-code
+  #     - review-dockerfiles
+  #     - review-configuration
+  #   name: Review E2E test results
+  #   timeout-minutes: 60
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     # enable remote caching using turbo
+  #     TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  #     TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+
+  #   steps:
+  #     - name: Check out code
+  #       uses: actions/checkout@v3
+  #       with:
+  #         fetch-depth: 2
+
+  #     - name: Build
+  #       uses: ./.github/actions/build-rpch
+  #       env:
+  #         TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  #         TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+
+  #     - name: Run E2E tests
+  #       run: yarn test:e2e
