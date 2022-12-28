@@ -10,10 +10,17 @@ import { QueryRegisteredNode } from "../registered-node/dto";
 import { DBInstance } from "../db";
 import { getRegisteredNode, updateRegisteredNode } from "../registered-node";
 
+/**
+ * API used to fund registered nodes, handles creating and keeping track of pending requests.
+ */
 export class FundingPlatformApi {
+  // Access token used to authenticate with funding platform
   private accessToken: string | undefined;
+  // Date when the current tokens expires
   private expiredAt: Date | undefined;
+  // Maximum amount that the current token can request
   private amountLeft: number | undefined;
+  // Map of all pending requests
   private pendingRequests: Map<
     //peerId
     string,
@@ -22,12 +29,19 @@ export class FundingPlatformApi {
 
   constructor(private url: string, private db: DBInstance) {}
 
+  /**
+   * Save new access token to instance
+   * @param ops
+   */
   private saveAccessToken(ops: getAccessTokenResponse): void {
     (this.accessToken = ops.accessToken),
       (this.expiredAt = new Date(ops.expiredAt));
     this.amountLeft = ops.amountLeft;
   }
-
+  /**
+   * Fetch from funding platform a new access token
+   * @returns string
+   */
   private async fetchAccessToken(): Promise<string> {
     const res = await fetch(`${this.url}/api/access-token`);
     const resJson = (await res.json()) as getAccessTokenResponse;
@@ -35,6 +49,11 @@ export class FundingPlatformApi {
     return resJson.accessToken;
   }
 
+  /**
+   * get a valid access token
+   * @param amount
+   * @returns string
+   */
   private async getAccessToken(amount?: number): Promise<string> {
     if (!this.accessTokenIsValid(amount)) {
       const accessToken = this.fetchAccessToken();
@@ -44,6 +63,11 @@ export class FundingPlatformApi {
     }
   }
 
+  /**
+   * check if current access token is valid
+   * @param amount
+   * @returns boolean
+   */
   private accessTokenIsValid(amount?: number): boolean {
     if (!this.accessToken || !this.amountLeft || !this.expiredAt) {
       return false;
@@ -57,6 +81,13 @@ export class FundingPlatformApi {
     return true;
   }
 
+  /**
+   * Create a new funding request in funding platform
+   * @param amount amount that should be funded to the node
+   * @param node registered node that is going to receive the funding
+   * @param prevRetries number of times funding request has failed
+   * @returns
+   */
   public async requestFunds(
     amount: number,
     node: QueryRegisteredNode,
@@ -94,6 +125,9 @@ export class FundingPlatformApi {
     }
   }
 
+  /**
+   * Get available funds from funding service
+   */
   public async getAvailableFunds() {
     if (!this.accessTokenIsValid()) {
       await this.getAccessToken();
@@ -110,6 +144,10 @@ export class FundingPlatformApi {
     return fundsJSON;
   }
 
+  /**
+   * Get request status from funding platform
+   * @param requestId
+   */
   private async getRequestStatus(requestId: string) {
     if (!this.accessTokenIsValid()) {
       await this.getAccessToken();
@@ -126,6 +164,9 @@ export class FundingPlatformApi {
     return resJson;
   }
 
+  /**
+   * Save new request to pending requests so we can track it
+   */
   private savePendingRequest(
     peerId: string,
     requestId: number,
@@ -137,6 +178,9 @@ export class FundingPlatformApi {
     });
   }
 
+  /**
+   * Goes through all pending requests and chooses to prune/retry/ignore
+   */
   public async checkForPendingRequests() {
     for (const [
       peerId,
@@ -147,6 +191,7 @@ export class FundingPlatformApi {
 
       if (!node) throw new Error("Registered node does not exist");
 
+      // checks if it should prune
       if (
         request.status === "SUCCESS" ||
         request.status === "REJECTED-DURING-PROCESSING"
@@ -157,6 +202,8 @@ export class FundingPlatformApi {
           totalAmountFunded: node.totalAmountFunded + Number(request.amount),
         });
         this.pendingRequests.delete(peerId);
+
+        // check if it should retry
       } else if (
         request.status === "FAILED" ||
         request.status === "FAILED-DURING-PROCESSING"

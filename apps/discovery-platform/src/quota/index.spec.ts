@@ -3,9 +3,7 @@ import * as db from "../db";
 import { CreateQuota } from "./dto";
 import {
   createQuota,
-  deleteQuota,
   getAllQuotasByClient,
-  getQuota,
   sumQuotas,
   updateQuota,
 } from "./index";
@@ -61,7 +59,7 @@ describe("test quota functions", function () {
       })
     );
 
-    const quotas = await db.getAllQuotasByClient(dbInstance, "client");
+    const quotas = await db.getQuotasByClient(dbInstance, "client");
     assert.equal(quotas.length, 2);
   });
   it("should update quota", async function () {

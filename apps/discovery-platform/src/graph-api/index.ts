@@ -1,8 +1,8 @@
-import { gql, rawRequest, request } from "graphql-request";
+import { gql } from "graphql-request";
+import fetch from "node-fetch";
+import { utils } from "rpch-common";
 import { QueryRegisteredNode } from "../registered-node/dto";
 import { GetAccountChannelsResponse } from "./dto";
-import { utils } from "rpch-common";
-import fetch from "node-fetch";
 
 const { logVerbose, logError } = utils.createLogger([
   "discovery-platform",
@@ -12,6 +12,9 @@ const { logVerbose, logError } = utils.createLogger([
 const GRAPH_HOPR_URL =
   "https://api.thegraph.com/subgraphs/name/hoprnet/hopr-channels";
 
+/**
+ * Query to get info needed to know if a node is committed
+ */
 const getCommitmentQuery = gql`
   query getAccount($id: String!) {
     account(id: $id) {
@@ -23,6 +26,9 @@ const getCommitmentQuery = gql`
   }
 `;
 
+/**
+ * Query to get initial state / updated state for indexer
+ */
 const getAccountsFromBlockChange = gql`
   query getAccountsFromBlockChange($blockNumber: Int!) {
     accounts(where: { _change_block: { number_gte: $blockNumber } }) {
@@ -40,11 +46,18 @@ const getAccountsFromBlockChange = gql`
   }
 `;
 
+/**
+ * Check commitment for a specific node
+ * @param node QueryRegisteredNode
+ * @param minBalance Minimum balance needed for node to be considered committed
+ * @param minChannels Minimum amount of open channels needed to be considered committed
+ * @returns boolean | undefined
+ */
 export const checkCommitment = async (ops: {
   node: QueryRegisteredNode;
   minBalance: number;
   minChannels: number;
-}) => {
+}): Promise<boolean | undefined> => {
   try {
     const variables = {
       id: ops.node.peerId,
@@ -80,11 +93,18 @@ export const checkCommitment = async (ops: {
   }
 };
 
+/**
+ *
+ * @param graphRes hopr channels subgraph response
+ * @param minBalance Minimum balance needed for node to be considered committed
+ * @param minChannels Minimum amount of open channels needed to be considered committed
+ * @returns boolean
+ */
 export const validateNode = (
   graphRes: GetAccountChannelsResponse,
   minBalance: number,
   minChannels: number
-) => {
+): boolean => {
   const sumOfBalance = graphRes.data.account.fromChannels.reduce(
     (acc, channel) => acc + channel.balance,
     0

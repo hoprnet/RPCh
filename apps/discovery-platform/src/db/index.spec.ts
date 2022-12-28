@@ -43,7 +43,7 @@ describe("test db functions", function () {
   it("should get all registered nodes", async function () {
     await db.saveRegisteredNode(dbInstance, createMockNode());
     await db.saveRegisteredNode(dbInstance, createMockNode());
-    const allNodes = await db.getAllRegisteredNodes(dbInstance);
+    const allNodes = await db.getRegisteredNodes(dbInstance);
 
     assert.equal(allNodes.length, 2);
   });
@@ -54,7 +54,7 @@ describe("test db functions", function () {
     await db.saveRegisteredNode(dbInstance, secondNode);
     await db.saveRegisteredNode(dbInstance, createMockNode());
 
-    const notExitNodes = await db.getAllNonExitNodes(dbInstance);
+    const notExitNodes = await db.getNonExitNodes(dbInstance);
 
     assert.equal(notExitNodes.length, 2);
   });
@@ -65,7 +65,7 @@ describe("test db functions", function () {
     await db.saveRegisteredNode(dbInstance, secondNode);
     await db.saveRegisteredNode(dbInstance, createMockNode("peer2", false));
 
-    const exitNodes = await db.getAllExitNodes(dbInstance);
+    const exitNodes = await db.getExitNodes(dbInstance);
 
     assert.equal(exitNodes.length, 2);
   });
@@ -114,7 +114,7 @@ describe("test db functions", function () {
       })
     );
 
-    const quotas = await db.getAllQuotasByClient(dbInstance, "client");
+    const quotas = await db.getQuotasByClient(dbInstance, "client");
     assert.equal(quotas.length, 2);
   });
   it("should update quota", async function () {

@@ -1,9 +1,9 @@
 import assert from "assert";
 import {
   createRegisteredNode,
-  getAllExitNodes,
-  getAllNonExitNodes,
-  getAllRegisteredNodes,
+  getExitNodes,
+  getNonExitNodes,
+  getRegisteredNodes,
   getRegisteredNode,
   updateRegisteredNode,
 } from ".";
@@ -43,7 +43,7 @@ describe("test registered node functions", function () {
     await createRegisteredNode(db, mockNode());
     await createRegisteredNode(db, mockNode());
 
-    const allNodes = await getAllRegisteredNodes(db);
+    const allNodes = await getRegisteredNodes(db);
 
     assert.equal(allNodes.length, 2);
   });
@@ -67,7 +67,7 @@ describe("test registered node functions", function () {
     await createRegisteredNode(db, mockNode("1", false));
     await createRegisteredNode(db, mockNode("2", true));
     await createRegisteredNode(db, mockNode("3", false));
-    const notExitNodes = await getAllNonExitNodes(db);
+    const notExitNodes = await getNonExitNodes(db);
 
     assert.equal(notExitNodes.length, 2);
   });
@@ -75,7 +75,7 @@ describe("test registered node functions", function () {
     await createRegisteredNode(db, mockNode("1", false));
     await createRegisteredNode(db, mockNode("2", true));
     await createRegisteredNode(db, mockNode("3", true));
-    const exitNodes = await getAllExitNodes(db);
+    const exitNodes = await getExitNodes(db);
 
     assert.equal(exitNodes.length, 2);
   });

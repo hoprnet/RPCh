@@ -2,9 +2,9 @@ import express from "express";
 import { DBInstance } from "../db";
 import {
   createRegisteredNode,
-  getAllRegisteredNodes,
+  getRegisteredNodes,
   getRegisteredNode,
-  getSelectedNodeAccessToken,
+  getNodeAccessToken,
 } from "../registered-node";
 import { CreateRegisteredNode } from "../registered-node/dto";
 import { CreateQuota } from "../quota/dto";
@@ -40,7 +40,7 @@ export const entryServer = (ops: {
 
   apiRouter.get("/node", async (req, res) => {
     const { hasExitNode } = req.query;
-    const nodes = await getAllRegisteredNodes(ops.db);
+    const nodes = await getRegisteredNodes(ops.db);
     if (hasExitNode === "true") {
       return res.json(nodes.filter((node) => node.hasExitNode));
     } else {
@@ -85,7 +85,7 @@ export const entryServer = (ops: {
       });
     }
     // choose selected entry node
-    const selectedNodeAccessToken = await getSelectedNodeAccessToken(ops.db);
+    const selectedNodeAccessToken = await getNodeAccessToken(ops.db);
     // create negative quota (showing that the client has used up initial quota)
     await createQuota(ops.db, {
       client,

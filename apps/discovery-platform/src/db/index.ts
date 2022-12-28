@@ -10,15 +10,15 @@ export type DBInstance = {
   data: Data;
 };
 
-export const getAllRegisteredNodes = async (db: DBInstance) => {
+export const getRegisteredNodes = async (db: DBInstance) => {
   return db.data.registeredNodes;
 };
 
-export const getAllExitNodes = async (db: DBInstance) => {
+export const getExitNodes = async (db: DBInstance) => {
   return db.data.registeredNodes.filter((node) => node.hasExitNode);
 };
 
-export const getAllNonExitNodes = async (db: DBInstance) => {
+export const getNonExitNodes = async (db: DBInstance) => {
   return db.data.registeredNodes.filter((node) => !node.hasExitNode);
 };
 
@@ -68,7 +68,7 @@ export const getQuota = async (
   return quota;
 };
 
-export const getAllQuotasByClient = async (
+export const getQuotasByClient = async (
   dbInstance: DBInstance,
   client: string
 ): Promise<QueryQuota[]> => {

@@ -3,10 +3,15 @@ import { entryServer } from "./entry-server";
 import { FundingPlatformApi } from "./funding-platform-api";
 
 const {
+  // Port that server will listen for requests
   PORT = 3000,
+  // Api endpoint used for completing funding requests of registered nodes
   FUNDING_PLATFORM_API,
+  // Minimal amount of balance a account must have to show commitment
   BALANCE_THRESHOLD,
+  // Minimal amount of open channels a account must have to show commitment
   CHANNELS_THRESHOLD,
+  // Unit amount of quotas a request costs
   BASE_QUOTA = 1,
 } = process.env;
 
@@ -31,7 +36,7 @@ const main = () => {
   // listen for pending nodes with no funding
 
   // const requestFundsForReadyNodes = setTimeout(async () => {
-  //   const nodes = await getAllRegisteredNodes(db);
+  //   const nodes = await getRegisteredNodes(db);
   //   const readyNodesWithNoFunding = nodes.filter(
   //     (node) =>
   //       node.status === "READY" &&
