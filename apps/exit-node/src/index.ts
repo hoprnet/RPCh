@@ -105,8 +105,9 @@ export const start = async (ops: {
     password: ops.password,
     privateKey: ops.privateKey,
   });
+  console.log();
+  log.verbose("Running exit node with public key", publicKey);
   log.verbose("Got identity");
-  log.normal("Running exit node with public key", publicKey);
 
   const cache = new Cache(onMessage);
   const interval: NodeJS.Timer = setInterval(() => {
