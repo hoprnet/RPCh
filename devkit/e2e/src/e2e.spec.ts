@@ -68,9 +68,4 @@ describe("e2e tests", function () {
     );
     assert.equal(balance._isBigNumber, true);
   });
-
-  // it("should get ether price", async function () {
-  //   const etherPrice = await provider.getEtherPrice();
-  //   assert.equal(etherPrice, 25135304);
-  // });
 });
