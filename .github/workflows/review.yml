@@ -39,6 +39,7 @@ jobs:
 
       # - name: Run E2E tests
       #   run: yarn test:e2e
+
   review-configuration:
     name: Review configuration
     runs-on: ubuntu-latest
