@@ -1,6 +1,7 @@
 import assert from "assert";
 import nock from "nock";
-import { type Message, Request, Response, fixtures } from "rpch-common";
+import { type Message, Request, Response } from "rpch-common";
+import * as fixtures from "rpch-common/build/fixtures";
 import * as crypto from "rpch-crypto/nodejs";
 import { RPChProvider } from ".";
 
