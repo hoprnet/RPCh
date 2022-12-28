@@ -1,16 +1,45 @@
 import assert from "assert";
-import { IBackup, IMemoryDb } from "pg-mem";
+import fs from "fs";
+import { IBackup, IMemoryDb, newDb } from "pg-mem";
 import * as db from ".";
 import { CreateAccessToken, generateAccessToken } from "../access-token";
 import { DBInstance } from "../db";
 import { CreateRequest, UpdateRequest } from "../request";
-import fs from "fs";
-import { newDb } from "pg-mem";
 
-export async function mockPgInstance(): Promise<IMemoryDb> {
-  const pgInstance = await newDb();
-  pgInstance.public.none(fs.readFileSync("dump.sql", "utf8"));
-  return pgInstance;
+export class MockPgInstanceSingleton {
+  private static pgInstance: IMemoryDb;
+  private static dbInstance: DBInstance;
+  private static initialDbState: IBackup;
+
+  private constructor() {
+    let instance = newDb();
+    instance.public.none(fs.readFileSync("dump.sql", "utf8"));
+    MockPgInstanceSingleton.pgInstance = instance;
+    MockPgInstanceSingleton.initialDbState =
+      MockPgInstanceSingleton.pgInstance.backup();
+    return MockPgInstanceSingleton.pgInstance;
+  }
+
+  public static getInstance(): IMemoryDb {
+    return MockPgInstanceSingleton.pgInstance ?? new this();
+  }
+
+  public static getDbInstance(): DBInstance {
+    if (!MockPgInstanceSingleton.dbInstance) {
+      MockPgInstanceSingleton.dbInstance =
+        this.getInstance().adapters.createPgPromise();
+    }
+    return MockPgInstanceSingleton.dbInstance;
+  }
+
+  public static backup(): void {
+    MockPgInstanceSingleton.initialDbState =
+      MockPgInstanceSingleton.pgInstance.backup();
+  }
+
+  public static getInitialState(): IBackup {
+    return MockPgInstanceSingleton.initialDbState;
+  }
 }
 
 const mockCreateAccessToken = () => ({
@@ -45,16 +74,15 @@ const createAccessTokenAndRequest = async (dbInstance: DBInstance) => {
 describe("test db adapter functions", function () {
   let dbInstance: DBInstance;
   let pgInstance: IMemoryDb;
-  let initialDbState: IBackup;
 
   beforeAll(async function () {
-    pgInstance = await mockPgInstance();
-    initialDbState = pgInstance.backup();
-    dbInstance = pgInstance.adapters.createPgPromise();
+    pgInstance = MockPgInstanceSingleton.getInstance();
+    dbInstance = MockPgInstanceSingleton.getDbInstance();
+    MockPgInstanceSingleton.getInitialState();
   });
 
   beforeEach(async function () {
-    initialDbState.restore();
+    MockPgInstanceSingleton.getInitialState().restore();
   });
 
   it("should save access token", async function () {

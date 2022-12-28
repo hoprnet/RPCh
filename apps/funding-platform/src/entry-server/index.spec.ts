@@ -1,16 +1,16 @@
 import { assert } from "chai";
 import { Express } from "express";
-import { IBackup, IMemoryDb } from "pg-mem";
+import { IMemoryDb } from "pg-mem";
 import request from "supertest";
 import { AccessTokenService } from "../access-token";
 import { DBInstance } from "../db";
-import { mockPgInstance } from "../db/index.spec";
+import { MockPgInstanceSingleton } from "../db/index.spec";
 import { RequestService } from "../request";
 import { entryServer } from ".";
 
 const SECRET_KEY = "SECRET";
 const MAX_AMOUNT_OF_TOKENS = 40;
-const TIMEOUT = 30;
+const TIMEOUT = 30 * 60_000;
 
 describe("test entry server", function () {
   let dbInstance: DBInstance;
@@ -19,16 +19,15 @@ describe("test entry server", function () {
   let app: Express | undefined;
   let agent: request.SuperTest<request.Test>;
   let pgInstance: IMemoryDb;
-  let initialDbState: IBackup;
 
   beforeAll(async function () {
-    pgInstance = await mockPgInstance();
-    initialDbState = pgInstance.backup();
-    dbInstance = pgInstance.adapters.createPgPromise();
+    pgInstance = MockPgInstanceSingleton.getInstance();
+    dbInstance = MockPgInstanceSingleton.getDbInstance();
+    MockPgInstanceSingleton.getInitialState();
   });
 
   beforeEach(function () {
-    initialDbState.restore();
+    MockPgInstanceSingleton.getInitialState().restore();
     accessTokenService = new AccessTokenService(dbInstance, SECRET_KEY);
     requestService = new RequestService(dbInstance);
     app = entryServer({
