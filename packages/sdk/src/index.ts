@@ -1,14 +1,18 @@
 import {
   Cache as SegmentCache,
+  Message,
   Request,
   Response,
+  Segment,
   hoprd,
-  utils,
 } from "@rpch/common";
+import { Identity } from "@rpch/crypto-bridge/nodejs";
+import { utils as etherUtils } from "ethers";
+import ReliabilityScore from "./reliability-score";
 import RequestCache from "./request-cache";
+import { createLogger } from "./utils";
 
-const { log, logError } = utils.createLogger(["sdk"]);
-
+const log = createLogger([]);
 /**
  * Temporary options to be passed to
  * the SDK for development purposes.
@@ -19,6 +23,9 @@ export type HoprSdkTempOps = {
   entryNodeApiToken: string;
   entryNodePeerId: string;
   exitNodePeerId: string;
+  exitNodePubKey: string;
+  freshNodeThreshold: number;
+  maxResponses: number;
 };
 
 /**
@@ -38,26 +45,34 @@ export default class SDK {
   private interval?: NodeJS.Timer;
   private segmentCache: SegmentCache;
   private requestCache: RequestCache;
+  private reliabilityScore: ReliabilityScore;
   // this will be static but right now passed via tempOps
   private discoveryPlatformApiEndpoint: string;
   // available exit nodes
-  private exitNodes: string[] = [];
+  private exitNodes: { destination: string; pubKey: string }[] = [];
   // selected entry node
   private entryNode?: EntryNode;
   // selected exit node
   private exitNodePeerId?: string;
+  private exitNodePubKey?: string;
+  // stopMessageListener
+  private stopMessageListener?: () => void;
 
   constructor(
     private readonly timeout: number,
-    private readonly tempOps: HoprSdkTempOps
+    private readonly tempOps: HoprSdkTempOps,
+    private setKeyVal: (key: string, val: string) => Promise<any>,
+    private getKeyVal: (key: string) => Promise<string | undefined>
   ) {
     this.discoveryPlatformApiEndpoint = tempOps.discoveryPlatformApiEndpoint;
-
-    this.segmentCache = new SegmentCache(
-      this.onRequestFromSegments,
-      this.onResponseFromSegments
+    this.segmentCache = new SegmentCache((message) => this.onMessage(message));
+    this.requestCache = new RequestCache((request) =>
+      this.onRequestRemoval(request)
     );
-    this.requestCache = new RequestCache();
+    this.reliabilityScore = new ReliabilityScore(
+      tempOps.freshNodeThreshold,
+      tempOps.maxResponses
+    );
   }
 
   /**
@@ -96,36 +111,85 @@ export default class SDK {
    */
   private async selectExitNode(
     discoveryPlatformApiEndpoint: string
-  ): Promise<string[]> {
+  ): Promise<{ destination: string; pubKey: string }[]> {
     // requests the list of exit nodes (sometimes hit cache)
     // response gives back list of exit nodes
     // select exit node at random
-    this.exitNodes = [this.tempOps.exitNodePeerId];
+    this.exitNodes = [
+      {
+        destination: this.tempOps.exitNodePeerId,
+        pubKey: this.tempOps.exitNodePubKey,
+      },
+    ];
     this.exitNodePeerId = this.tempOps.exitNodePeerId;
+    this.exitNodePubKey = this.tempOps.exitNodePubKey;
     return this.exitNodes;
   }
 
   /**
    * Resolve request promise and delete the request from map
-   * @param res Response received from cache module
+   * @param message Message received from cache module
    */
-  private onResponseFromSegments(res: Response): void {
-    const matchingRequest = this.requestCache.getRequest(res.id);
-    if (!matchingRequest) {
-      logError("matching request not found", res.id);
+  private async onMessage(message: Message): Promise<void> {
+    // check whether we have a matching request id
+    const match = this.requestCache.getRequest(message.id);
+    if (!match) {
+      log.error(
+        "matching request not found",
+        message.id,
+        log.createMetric({ id: message.id })
+      );
       return;
     }
-    matchingRequest.resolve(res);
-    this.requestCache.removeRequest(matchingRequest.request);
-    log("responded to %s with %s", matchingRequest.request.body, res.body);
+
+    const counter = await this.getKeyVal(
+      match.request.exitNodeDestination
+    ).then((k) => BigInt(k || "0"));
+
+    // construct Response from Message
+    const response = Response.fromMessage(
+      match.request,
+      message,
+      counter,
+      (exitNodeId, counter) => {
+        this.setKeyVal(exitNodeId, counter.toString());
+      }
+    );
+
+    const responseTime = Date.now() - match.createdAt.getTime();
+    log.verbose(
+      "response time for request %s: %s ms",
+      match.request.id,
+      responseTime,
+      log.createMetric({
+        id: match.request.id,
+        responseTime: responseTime,
+      })
+    );
+
+    match.resolve(response);
+    this.reliabilityScore.addMetric(
+      this.tempOps.entryNodePeerId,
+      match.request.id,
+      "success"
+    );
+    this.requestCache.removeRequest(match.request);
+
+    log.verbose("responded to %s with %s", match.request.body, response.body);
   }
 
   /**
-   * Logs the request received from cache module
-   * @param req Request received from cache module
+   * Adds a failed metric to the reliability score
+   * when the request expires.
+   * @param req Request received from cache module.
    */
-  private onRequestFromSegments(req: Request): void {
-    log("ignoring received request %s", req.body);
+  private onRequestRemoval(req: Request): void {
+    this.reliabilityScore.addMetric(
+      this.tempOps.entryNodePeerId,
+      req.id,
+      "failed"
+    );
+    log.normal("request %s expired", req.id);
   }
 
   /**
@@ -137,31 +201,33 @@ export default class SDK {
     this.interval = setInterval(() => {
       this.segmentCache.removeExpired(this.timeout);
       this.requestCache.removeExpired(this.timeout);
-    }, 1000);
+    }, 1e3);
 
     await this.selectEntryNode(this.discoveryPlatformApiEndpoint);
     await this.selectExitNode(this.discoveryPlatformApiEndpoint);
-    // await createMessageListener(
-    //   this.entryNode!.apiEndpoint,
-    //   this.entryNode!.apiToken,
-    //   (message) => {
-    //     try {
-    //       const segment = Segment.fromString(message);
-    //       this.cache.onSegment(segment);
-    //     } catch (e) {
-    //       log(
-    //         "rejected received data from HOPRd: not a valid segment",
-    //         message
-    //       );
-    //     }
-    //   }
-    // );
+    this.stopMessageListener = await hoprd.createMessageListener(
+      this.entryNode!.apiEndpoint,
+      this.entryNode!.apiToken,
+      (message) => {
+        try {
+          const segment = Segment.fromString(message);
+          this.segmentCache.onSegment(segment);
+        } catch (e) {
+          log.normal(
+            "rejected received data from HOPRd: not a valid segment",
+            message,
+            e
+          );
+        }
+      }
+    );
   }
 
   /**
    * Stop the SDK and clear up tangling processes.
    */
   public async stop(): Promise<void> {
+    if (this.stopMessageListener) this.stopMessageListener();
     clearInterval(this.interval);
   }
 
@@ -174,7 +240,13 @@ export default class SDK {
    */
   public createRequest(provider: string, body: string): Request {
     if (!this.isReady) throw Error("SDK not ready to create requests");
-    return Request.fromData(this.entryNode!.peerId, provider, body);
+    return Request.createRequest(
+      provider,
+      body,
+      this.entryNode!.peerId,
+      this.exitNodePeerId!,
+      Identity.load_identity(etherUtils.arrayify(this.exitNodePubKey!))
+    );
   }
 
   /**
@@ -184,6 +256,7 @@ export default class SDK {
    */
   public sendRequest(req: Request): Promise<Response> {
     if (!this.isReady) throw Error("SDK not ready to send requests");
+
     return new Promise((resolve, reject) => {
       const message = req.toMessage();
       const segments = message.toSegments();

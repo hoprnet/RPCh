@@ -1,6 +1,7 @@
 import { Request, Response, utils } from "@rpch/common";
+import { createLogger } from "./utils";
 
-const { logVerbose } = utils.createLogger(["sdk", "request-cache"]);
+const log = createLogger(["request-cache"]);
 
 /**
  * Keeps in cache the Requests which have been sent by the SDK.
@@ -18,6 +19,8 @@ export default class RequestCache {
     }
   >();
 
+  constructor(private onRequestRemoval: (req: Request) => void) {}
+
   /**
    * Add Request to requests map
    * @param req
@@ -25,12 +28,12 @@ export default class RequestCache {
    * @param reject rejects the promise when the request runs into a timeout
    */
   public addRequest(
-    req: Request,
+    request: Request,
     resolve: (value: Response | PromiseLike<Response>) => void,
     reject: (reason?: any) => void
   ): void {
-    this.requests.set(req.id, {
-      request: req,
+    this.requests.set(request.id, {
+      request,
       createdAt: new Date(),
       resolve,
       reject,
@@ -60,11 +63,11 @@ export default class RequestCache {
   public removeExpired(timeout: number): void {
     const now = new Date();
 
-    logVerbose("requests", this.requests.size);
-
+    log.verbose("requests", this.requests.size);
     for (const [key, entry] of this.requests.entries()) {
       if (utils.isExpired(timeout, now, entry.createdAt)) {
         entry.reject("Request timed out");
+        this.onRequestRemoval(entry.request);
         this.requests.delete(key);
       }
     }

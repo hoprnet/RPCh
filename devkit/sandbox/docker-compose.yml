@@ -10,7 +10,7 @@ volumes:
 x-exit-service: &exit
   build:
     dockerfile: apps/exit-node/Dockerfile
-    context: ../
+    context: ../../
   restart: unless-stopped
   volumes:
     - exit-node-data:/tmp
@@ -20,7 +20,7 @@ x-exit-service: &exit
 
 services:
   pluto:
-    image: gcr.io/hoprassociation/hopr-pluto:v1.90.32@sha256:fd33db04b4254971706e0a241b5309071f99374c058385f8cb16df3874b481d6
+    image: gcr.io/hoprassociation/hopr-pluto:v1.90.68@sha256:aa32cf496307a2f92d6aa965913e6e1c156b2bd5c9b41ae3657c9dfdf1d8c651
     restart: unless-stopped
     volumes:
       - pluto-data:/tmp
@@ -31,13 +31,14 @@ services:
       - "19501-19505:19501-19505"
     environment:
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-    command: "node apps/exit-node/build/index.js"
   exit-1:
     <<: *exit
     environment:
       - DEBUG=${DEBUG}
       - HOPRD_API_ENDPOINT=http://pluto:13301
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+      - RPCH_PASSWORD=${RPCH_PASSWORD}
+      - RPCH_PRIVATE_KEY=${RPCH_PRIVATE_KEY}
     entrypoint:
       [
         "/bin/wait-for",
@@ -54,6 +55,8 @@ services:
       - DEBUG=${DEBUG}
       - HOPRD_API_ENDPOINT=http://pluto:13302
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+      - RPCH_PASSWORD=${RPCH_PASSWORD}
+      - RPCH_PRIVATE_KEY=${RPCH_PRIVATE_KEY}
     entrypoint:
       [
         "/bin/wait-for",
@@ -70,6 +73,8 @@ services:
       - DEBUG=${DEBUG}
       - HOPRD_API_ENDPOINT=http://pluto:13303
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+      - RPCH_PASSWORD=${RPCH_PASSWORD}
+      - RPCH_PRIVATE_KEY=${RPCH_PRIVATE_KEY}
     entrypoint:
       [
         "/bin/wait-for",
@@ -86,6 +91,8 @@ services:
       - DEBUG=${DEBUG}
       - HOPRD_API_ENDPOINT=http://pluto:13304
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+      - RPCH_PASSWORD=${RPCH_PASSWORD}
+      - RPCH_PRIVATE_KEY=${RPCH_PRIVATE_KEY}
     entrypoint:
       [
         "/bin/wait-for",
@@ -102,6 +109,8 @@ services:
       - DEBUG=${DEBUG}
       - HOPRD_API_ENDPOINT=http://pluto:13305
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+      - RPCH_PASSWORD=${RPCH_PASSWORD}
+      - RPCH_PRIVATE_KEY=${RPCH_PRIVATE_KEY}
     entrypoint:
       [
         "/bin/wait-for",

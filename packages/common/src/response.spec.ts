@@ -1,24 +1,64 @@
 import assert from "assert";
 import Message from "./message";
+import type Request from "./request";
 import Response from "./response";
+import {
+  createMockedFlow,
+  generateMockedFlow,
+  RPC_RES_SMALL,
+} from "./fixtures";
 
-const RESPONSE = "response";
+const shouldBeAValidResponse = (
+  actual: Response,
+  expected: Pick<Response, "body" | "request">
+) => {
+  assert.equal(typeof actual.id, "number");
+  assert(actual.id > 0);
+  assert.equal(actual.id, expected.request.id);
+  assert.equal(actual.body, expected.body);
+};
+
+const shouldBeAValidResponseMessage = (
+  actual: Message,
+  expected: Pick<Message, "id">
+) => {
+  assert.equal(actual.id, expected.id);
+  assert(actual.body.length > 0);
+};
 
 describe("test Response class", function () {
-  it("should create response", function () {
-    const response = new Response(13, RESPONSE);
-    assert.equal(response.id, 13);
-    assert.equal(response.body, RESPONSE);
+  it("should create response from Request", function () {
+    const flow = createMockedFlow();
+    const request = flow.next().value as Request;
+    const response = Response.createResponse(request, RPC_RES_SMALL);
+
+    shouldBeAValidResponse(response, {
+      body: RPC_RES_SMALL,
+      request: request,
+    });
   });
-  it("should create message from response", function () {
-    const message = new Response(13, RESPONSE).toMessage();
-    assert.equal(message.id, 13);
-    assert.equal(message.body, `response|${RESPONSE}`);
+
+  it("should create message from Response", function () {
+    const flow = createMockedFlow();
+    const request = flow.next().value as Request;
+    const response = Response.createResponse(request, RPC_RES_SMALL);
+
+    shouldBeAValidResponseMessage(response.toMessage(), { id: request.id });
   });
+
   it("should create response from message", function () {
-    const response = Response.fromMessage(
-      new Message(13, `response|${RESPONSE}`)
+    const [clientRequest, , exitNodeResponse] = generateMockedFlow(3);
+
+    const clientResponse = Response.fromMessage(
+      clientRequest,
+      exitNodeResponse.toMessage(),
+      BigInt(0),
+      () => {}
     );
-    assert.equal(response.body, RESPONSE);
+
+    shouldBeAValidResponse(clientResponse, {
+      body: exitNodeResponse.body,
+      request: clientRequest,
+    });
   });
 });

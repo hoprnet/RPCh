@@ -1,0 +1,25 @@
+{
+  "name": "@rpch/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "build": "exit 0",
+    "dev": "exit 0",
+    "format": "prettier --check \"src/**/*.{ts,md}\"",
+    "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
+    "test": "exit 0",
+    "start": "bash e2e.sh"
+  },
+  "devDependencies": {
+    "@rpch/configs-typescript": "*",
+    "@rpch/configs-eslint": "*",
+    "@rpch/configs-prettier": "*",
+    "@rpch/configs-jest": "*",
+    "@rpch/configs-tsup": "*"
+  },
+  "dependencies": {
+    "@rpch/ethers": "0.0.0",
+    "@rpch/common": "0.0.0"
+  }
+}

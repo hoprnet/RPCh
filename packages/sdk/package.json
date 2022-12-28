@@ -5,21 +5,23 @@
   "types": "./build/index.d.ts",
   "license": "MIT",
   "scripts": {
-    "build": "rimraf build && tsup",
+    "build": "tsup",
     "dev": "yarn build --watch",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
     "test": "jest --coverage"
   },
   "devDependencies": {
-    "@rpch/configs-typescript": "*",
+    "nock": "^13.2.9",
     "@rpch/configs-eslint": "*",
-    "@rpch/configs-prettier": "*",
     "@rpch/configs-jest": "*",
+    "@rpch/configs-prettier": "*",
     "@rpch/configs-tsup": "*",
-    "nock": "^13.2.9"
+    "@rpch/configs-typescript": "*"
   },
   "dependencies": {
-    "@rpch/common": "0.0.0"
+    "peer-id": "^0.16.0",
+    "@rpch/common": "0.0.0",
+    "@rpch/crypto-bridge": "0.0.0"
   }
 }

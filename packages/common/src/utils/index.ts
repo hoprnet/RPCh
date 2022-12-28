@@ -1,34 +1,15 @@
-import Debug, { type Debugger } from "debug";
+import type Segment from "../segment";
 import { utils } from "ethers";
+import LoggerFactory from "./logger";
+
+export { default as LoggerFactory } from "./logger";
+export const createLogger = LoggerFactory("common");
 
 /**
  * Maximum bytes we should be sending
  * within the HOPR network.
  */
 export const MAX_BYTES = 400;
-
-/**
- * Sugar fuction for creating consistent loggers.
- * @param args
- * @returns debug logger and error logger
- */
-export const createLogger = (
-  ...args: any[]
-): {
-  log: Debugger;
-  logVerbose: Debugger;
-  logError: Debugger;
-} => {
-  const log = Debug(["rpch", ...args].join(":"));
-  const logVerbose = log.extend("verbose");
-  const logError = log.extend("error");
-
-  return {
-    log,
-    logVerbose,
-    logError,
-  };
-};
 
 /**
  * Split string by bytes.
@@ -118,4 +99,40 @@ export const decodeIncomingBody = (body: string): string => {
   } catch {
     throw new Error("failed to decode body");
   }
+};
+
+/**
+ * Seperator used to construct bodies
+ * for Segment, Request, and Response.
+ */
+export const SEPERATOR = "|";
+
+/**
+ * Given some strings, join them using SEPERATOR.
+ * @param parts
+ * @returns body
+ */
+export const joinPartsToBody = (parts: string[]): string => {
+  return parts.join(SEPERATOR);
+};
+
+/**
+ * Given a body, split it using SEPERATOR.
+ * @param body
+ * @returns parts of the body
+ */
+export const splitBodyToParts = (body: string): string[] => {
+  return body.split(SEPERATOR);
+};
+
+/**
+ * Checks whether all given segments are present and can be
+ * joined to create a message.
+ * @param segments
+ * @returns true if all segments are present
+ */
+export const areAllSegmentsPresent = (segments: Segment[]): boolean => {
+  if (segments.length === 0) return false;
+  const { segmentsLength } = segments[0];
+  return segmentsLength === segments.length;
 };

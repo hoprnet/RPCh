@@ -2,9 +2,9 @@
  * Responsible for creating external requests to a provider.
  */
 import fetch from "node-fetch";
-import { utils } from "@rpch/common";
+import { createLogger } from "./utils";
 
-const { log, logVerbose } = utils.createLogger(["exit-node", "exit"]);
+const log = createLogger(["exit"]);
 
 /**
  * Creates a request to the given provider and returns response.
@@ -16,14 +16,24 @@ export const sendRpcRequest = async (
   body: string,
   provider: string
 ): Promise<string> => {
-  log("sending request to provider");
-  logVerbose("sending request to provider", body, provider);
+  log.normal("sending request to provider");
+  log.verbose(
+    "sending request to provider",
+    body,
+    provider,
+    log.createMetric({ provider: provider })
+  );
   return fetch(provider, {
     method: "POST",
     body: body,
   }).then(async (res) => {
     const response = await res.text();
-    logVerbose("response from provider", res.status, response);
+    log.verbose(
+      "response from provider",
+      res.status,
+      response,
+      log.createMetric({ responseStatus: res.status })
+    );
     return response;
   });
 };

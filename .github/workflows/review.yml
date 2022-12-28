@@ -9,7 +9,7 @@ on:
 jobs:
   review:
     name: Review
-    timeout-minutes: 15
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     env:
       # enable remote caching using turbo
@@ -36,3 +36,6 @@ jobs:
 
       - name: Run tests and coverage
         run: yarn test --ci
+
+      # - name: Run E2E tests
+      #   run: yarn test:e2e
