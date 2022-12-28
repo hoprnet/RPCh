@@ -6,6 +6,10 @@ on:
   pull_request:
     types: [opened, synchronize]
 
+concurrency:
+  group: ${{ github.head_ref }}
+  cancel-in-progress: true
+
 jobs:
   review-source-code:
     name: Review source code
@@ -39,6 +43,24 @@ jobs:
 
       # - name: Run E2E tests
       #   run: yarn test:e2e
+
+  review-dockerfiles:
+    name: Review dockerfiles
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # TODO: dynamically get this list
+        apps: ["exit-node", "funding-platform"]
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+
+      - name: Build Dockerfile
+        run: docker build -f ./apps/${{ matrix.apps }}/Dockerfile .
 
   review-configuration:
     name: Review configuration
