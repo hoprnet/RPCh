@@ -50,5 +50,4 @@ jobs:
           fetch-depth: 2
 
       - name: Review licenses
-        run: find . -name 'package.json' -not -path "./node_modules/*" -exec \
-          jq --arg license 'LGPL-3.0' -r '.license|contains($license)' {} +;
+        run: find . -name 'package.json' -not -path "./node_modules/*" -exec jq --arg license 'LGPL-3.0' -r '.license|contains($license)' {} +;
