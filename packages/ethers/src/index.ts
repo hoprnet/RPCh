@@ -8,9 +8,14 @@ const log = createLogger([]);
 export class RPChProvider extends JsonRpcProvider {
   public sdk: SDK;
 
-  constructor(public readonly url: string, hoprSdkTempOps: HoprSdkTempOps) {
+  constructor(
+    public readonly url: string,
+    hoprSdkTempOps: HoprSdkTempOps,
+    setKeyVal: (key: string, val: string) => Promise<any>,
+    getKeyVal: (key: string) => Promise<string | undefined>
+  ) {
     super(url);
-    this.sdk = new SDK(5000, hoprSdkTempOps);
+    this.sdk = new SDK(5000, hoprSdkTempOps, setKeyVal, getKeyVal);
     this.sdk.start().catch((error) => log.error(error));
   }
 

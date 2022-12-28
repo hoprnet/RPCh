@@ -1,7 +1,8 @@
 # Create exit node container
 
 # use slim version of node on Debian bullseye for smaller image sizes
-FROM node:16-bullseye-slim@sha256:2e42e0aab9c9fd2d914417659ebedb4f995dfde79f3f7127cbc7e57ae6485dd9 as builder
+# Specify platform to be amd because arm doesn't work
+FROM --platform=linux/amd64 node:16-bullseye-slim@sha256:2e42e0aab9c9fd2d914417659ebedb4f995dfde79f3f7127cbc7e57ae6485dd9 as builder
 
 # use bash to have source command and persistent environment.
 SHELL ["/bin/bash", "-lc"]
@@ -30,7 +31,8 @@ COPY . .
 RUN turbo prune --scope="rpch-exit-node" --docker
 
 # Add lockfile and package.json's of isolated subworkspace.
-FROM node:16-alpine AS installer
+# Specify platform to be amd because arm doesn't work
+FROM --platform=linux/amd64 node:16-alpine AS installer
 RUN apk add --no-cache libc6-compat
 RUN apk update
 WORKDIR /app
@@ -47,8 +49,13 @@ COPY turbo.json turbo.json
 RUN yarn run build --scope="rpch-exit-node"
 
 #  Copy only the necesary files to run the app.
-FROM node:16-alpine AS runner
+# Specify platform to be amd because arm doesn't work
+FROM --platform=linux/amd64 node:16-alpine AS runner
+
 WORKDIR /app
+
+# set volume which can be mapped by users on the host system
+VOLUME ["/app/db"]
 
 # we use tini as process 1 to catch signals properly, which is also built into Docker by default
 RUN apk add --no-cache tini curl

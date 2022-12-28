@@ -28,12 +28,12 @@ export default class RequestCache {
    * @param reject rejects the promise when the request runs into a timeout
    */
   public addRequest(
-    req: Request,
+    request: Request,
     resolve: (value: Response | PromiseLike<Response>) => void,
     reject: (reason?: any) => void
   ): void {
-    this.requests.set(req.id, {
-      request: req,
+    this.requests.set(request.id, {
+      request,
       createdAt: new Date(),
       resolve,
       reject,

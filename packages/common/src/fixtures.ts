@@ -1,16 +1,34 @@
 import type Nock from "nock";
+import { utils } from "ethers";
+import { Identity } from "rpch-crypto/nodejs";
 import Request from "./request";
 import Response from "./response";
 
-/**
- * An RPC provider
- */
+// example of a working provider
 export const PROVIDER = "https://primary.gnosis-chain.rpc.hoprtech.net";
 
-export const PEER_ID_A =
-  "16Uiu2HAmM9KAPaXA4eAz58Q7Eb3LEkDvLarU4utkyLwDeEK6vM5m";
-export const PEER_ID_B =
-  "16Uiu2HAmM9KAPaXA4eAz58Q7Eb3LEkDvLarU4utkyL6vM5mwDeEK";
+export const HOPRD_PEER_ID_A =
+  "16Uiu2HAmA5h2q7G2RrZMA4znAH4p8KBcuJWUmjjVfpW5DXePQ2He";
+export const HOPRD_PUB_KEY_A =
+  "0x02d9c0e0ab99d251a8fd2cd48df6554dfd5112afe589a3dcab75928aea34f98581";
+export const HOPRD_PRIV_KEY_A =
+  "0xd12c951563ee7e322562b7ce7a31c37cc6c10d9b86f834ed30f7c4ab42ae8de0";
+
+// NOTICE: this is a HOPRd PeerID
+export const EXIT_NODE_HOPRD_PEER_ID_A =
+  "16Uiu2HAkwJdCap1ErGKjtLeHjfnN53TD8kryG48NYVPWx4HhRfKW";
+export const EXIT_NODE_PUB_KEY_A =
+  "0x021d5401d6fa65591e4a08a2fdff6c7687f1de5a2326ed8ade69b69e6fe9b9d59f";
+export const EXIT_NODE_PRIV_KEY_A =
+  "0xf49d5b21d9363ff94f9e4c7a575c2bdf6229893ad58f23c9ade02b29e1f3fba1";
+
+export const EXIT_NODE_WRITE_IDENTITY_A = Identity.load_identity(
+  utils.arrayify(EXIT_NODE_PUB_KEY_A),
+  utils.arrayify(EXIT_NODE_PRIV_KEY_A)
+);
+export const EXIT_NODE_READ_IDENTITY_A = Identity.load_identity(
+  utils.arrayify(EXIT_NODE_PUB_KEY_A)
+);
 
 /**
  * A small RPC request
@@ -29,18 +47,158 @@ export const RPC_RES_SMALL = `{"id":1663836360444,"jsonrpc": "2.0","result": "0x
  * A large RPC response that needs to be split into many segments
  */
 export const RPC_RES_LARGE = `{"id":1663836360444,"jsonrpc": "2.0","result": "0x0234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab580234c8a3397aab58"}`;
-
-export const SMALL_RESPONSE = new Response(1, RPC_RES_SMALL);
-export const LARGE_RESPONSE = new Response(2, RPC_RES_LARGE);
-
-export const SMALL_REQUEST = new Request(1, PEER_ID_A, PROVIDER, RPC_REQ_SMALL);
-export const LARGE_REQUEST = new Request(2, PEER_ID_A, PROVIDER, RPC_REQ_LARGE);
-
 /**
  * An RPC response which is an error
  */
 export const RPC_RES_ERROR = `{"id":123,"jsonrpc": "2.0","error":{"code":1,"message":"ExampleMethodresultismissing'example_key'."}}`;
 
+/**
+ * Adjust global Date.now().
+ * Primarily used to avoid verification
+ * due to RPCh crypto verification when
+ * unit testing Requests and Responses.
+ * @param tmsp new timestamp
+ * @returns Reset time
+ */
+export const setDateNow = (tmsp: number): (() => void) => {
+  const DateNowOriginal = Date.now;
+  Date.now = jest.fn(() => tmsp);
+  return () => {
+    Date.now = DateNowOriginal;
+  };
+};
+
+/**
+ * Sometimes it makes more sense to simply wait
+ * than using `setDateNow`.
+ * @param ms
+ */
+export const wait = (ms: number) =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * A creator function to create a fully
+ * mocked request / response flow
+ * step by step.
+ * @param entryNode
+ * @param exitNode
+ * @param requestBody
+ */
+export function* createMockedFlow(
+  requestBody: string = RPC_REQ_SMALL
+): Generator<Request | Response, Response, any> {
+  const tmsp = +new Date();
+  const TIME_DIFF = 50;
+  const entryNodeDestination = HOPRD_PEER_ID_A;
+  const exitNodeDestination = EXIT_NODE_HOPRD_PEER_ID_A;
+  const exitNodeWriteIdentity = EXIT_NODE_WRITE_IDENTITY_A;
+  const exitNodeReadIdentity = EXIT_NODE_READ_IDENTITY_A;
+  let resetDateNow: ReturnType<typeof setDateNow>;
+
+  // client side
+  resetDateNow = setDateNow(tmsp - TIME_DIFF * 4);
+  const clientRequest = Request.createRequest(
+    PROVIDER,
+    requestBody,
+    entryNodeDestination,
+    exitNodeDestination,
+    exitNodeReadIdentity
+  );
+  resetDateNow();
+  const lastRequestFromClient: number = (yield clientRequest) || 0;
+
+  // exit node side
+  resetDateNow = setDateNow(tmsp - TIME_DIFF * 3);
+  const exitNodeRequest = Request.fromMessage(
+    clientRequest.toMessage(),
+    exitNodeDestination,
+    exitNodeWriteIdentity,
+    BigInt(lastRequestFromClient),
+    () => {}
+  );
+  resetDateNow();
+  const responseBody: string = (yield exitNodeRequest) || RPC_RES_SMALL;
+
+  // exit node side
+  resetDateNow = setDateNow(tmsp - TIME_DIFF * 2);
+  const exitNodeResponse = Response.createResponse(
+    exitNodeRequest,
+    responseBody
+  );
+  resetDateNow();
+  const lastResponseFromExitNode: number = (yield exitNodeResponse) || 0;
+
+  // client side
+  resetDateNow = setDateNow(tmsp - TIME_DIFF);
+  const clientResponse = Response.fromMessage(
+    clientRequest,
+    exitNodeResponse.toMessage(),
+    BigInt(lastResponseFromExitNode),
+    () => {}
+  );
+  resetDateNow();
+  return clientResponse;
+}
+
+/**
+ * Generates a whole mocked flow
+ * request / response at once.
+ * @param steps when to stop generating
+ * @param requestBody
+ * @param lastRequestFromClient
+ * @param responseBody
+ * @param lastResponseFromExitNode
+ */
+export function generateMockedFlow(
+  steps: 1 | 2 | 3,
+  requestBody: string = RPC_REQ_SMALL,
+  lastRequestFromClient: number = 0,
+  responseBody: string = RPC_RES_SMALL,
+  lastResponseFromExitNode: number = 0
+): [
+  clientRequest: Request,
+  exitNodeRequest: Request,
+  exitNodeResponse: Response,
+  clientResponse: Response
+] {
+  const X = {} as any;
+  const flow = createMockedFlow(requestBody);
+
+  const clientRequest = flow.next().value as Request;
+  if (steps === 1) return [clientRequest, X, X, X];
+
+  const exitNodeRequest = flow.next(lastRequestFromClient).value as Request;
+  if (steps === 2) return [clientRequest, exitNodeRequest, X, X];
+
+  const exitNodeResponse = flow.next(responseBody).value as Response;
+  if (steps === 3) return [clientRequest, exitNodeRequest, exitNodeResponse, X];
+
+  const clientResponse = flow.next(lastResponseFromExitNode).value as Response;
+  return [clientRequest, exitNodeRequest, exitNodeResponse, clientResponse];
+}
+
+/**
+ * Given a nock scope, make it only resolve to requests
+ * matching HOPRd's message API.
+ * @param nock
+ */
 export const nockSendMessageApi = (nock: Nock.Scope): Nock.Interceptor => {
   return nock.post((uri) => uri.includes("/api/v2/messages"));
+};
+
+/**
+ * Create a key val store with async methods.
+ * Used to mock storage operations.
+ */
+export const createAsyncKeyValStore = () => {
+  const store = new Map<string, string>();
+
+  return {
+    async set(k: string, v: string) {
+      return store.set(k, v);
+    },
+    async get(k: string) {
+      return store.get(k);
+    },
+  };
 };

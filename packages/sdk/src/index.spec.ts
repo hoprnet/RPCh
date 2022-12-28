@@ -7,14 +7,13 @@ const TIMEOUT = 5e3;
 const DISCOVERY_PLATFORM_API_ENDPOINT = "http://discovery_platform";
 const ENTRY_NODE_API_ENDPOINT = "http://entry_node";
 const ENTRY_NODE_API_TOKEN = "12345";
-const ENTRY_NODE_PEER_ID = fixtures.PEER_ID_A;
-const EXIT_NODE_PEER_ID = fixtures.PEER_ID_B;
+const ENTRY_NODE_PEER_ID = fixtures.HOPRD_PEER_ID_A;
+const EXIT_NODE_PEER_ID = fixtures.EXIT_NODE_HOPRD_PEER_ID_A;
+const EXIT_NODE_PUB_KEY = fixtures.EXIT_NODE_PUB_KEY_A;
 const FRESH_NODE_THRESHOLD = 20;
 const MAX_RESPONSES = 100;
 
 type MockOps = HoprSdkTempOps & { timeout: number };
-
-let triggerOnMessage: (message: string) => void = () => {};
 
 jest.mock("rpch-common", () => ({
   ...jest.requireActual("rpch-common"),
@@ -24,9 +23,8 @@ jest.mock("rpch-common", () => ({
       async (
         _apiEndpoint: string,
         _apiToken: string,
-        onMessage: (message: string) => void
+        _onMessage: (message: string) => void
       ) => {
-        triggerOnMessage = onMessage;
         return () => {};
       }
     ),
@@ -39,8 +37,10 @@ const createSdkMock = (
   sdk: SDK;
   ops: MockOps;
 } => {
+  const store = fixtures.createAsyncKeyValStore();
+
   fixtures
-    .nockSendMessageApi(nock(ENTRY_NODE_API_ENDPOINT))
+    .nockSendMessageApi(nock(ENTRY_NODE_API_ENDPOINT).persist(true))
     .reply(202, "someresponse");
 
   const ops: MockOps = {
@@ -53,11 +53,12 @@ const createSdkMock = (
     entryNodeApiToken: overwriteOps?.entryNodeApiToken ?? ENTRY_NODE_API_TOKEN,
     entryNodePeerId: overwriteOps?.entryNodePeerId ?? ENTRY_NODE_PEER_ID,
     exitNodePeerId: overwriteOps?.exitNodePeerId ?? EXIT_NODE_PEER_ID,
+    exitNodePubKey: overwriteOps?.exitNodePubKey ?? EXIT_NODE_PUB_KEY,
     freshNodeThreshold: FRESH_NODE_THRESHOLD,
     maxResponses: MAX_RESPONSES,
   };
 
-  const sdk = new SDK(ops.timeout, ops);
+  const sdk = new SDK(ops.timeout, ops, store.set, store.get);
 
   return { sdk, ops };
 };
@@ -77,8 +78,10 @@ describe("test SDK class", function () {
     });
 
     it("should fail to send request", function () {
+      const request = fixtures.createMockedFlow().next().value as Request;
+
       assert.throws(() => {
-        return sdk.sendRequest(fixtures.LARGE_REQUEST);
+        return sdk.sendRequest(request);
       }, "not ready");
     });
   });
@@ -98,92 +101,131 @@ describe("test SDK class", function () {
       await sdk.stop();
     });
 
-    it("should create request", async function () {
+    it("should create request", function () {
       const request = sdk.createRequest(
         fixtures.PROVIDER,
         fixtures.RPC_REQ_LARGE
       );
       assert(request instanceof Request);
-      assert.equal(request.origin, ops.entryNodePeerId);
+      assert.equal(request.entryNodeDestination, ops.entryNodePeerId);
       assert.equal(request.provider, fixtures.PROVIDER);
       assert.equal(request.body, fixtures.RPC_REQ_LARGE);
     });
 
     it("should send request and return response", function (done) {
-      sdk.sendRequest(fixtures.LARGE_REQUEST).then((response) => {
-        assert.equal(response.id, fixtures.LARGE_RESPONSE.id);
+      const [clientRequest, , exitNodeResponse] =
+        fixtures.generateMockedFlow(3);
+
+      sdk.sendRequest(clientRequest).then((response) => {
+        assert.equal(response.id, clientRequest.id);
         // @ts-ignore
-        const pendingRequest = sdk.requestCache.getRequest(
-          fixtures.LARGE_RESPONSE.id
-        );
+        const pendingRequest = sdk.requestCache.getRequest(clientRequest.id);
         assert.equal(pendingRequest, undefined);
         done();
       });
 
       // @ts-ignore
-      sdk.onResponseFromSegments(fixtures.LARGE_RESPONSE);
+      sdk.onMessage(exitNodeResponse.toMessage());
     });
 
-    it("should call addMetric when onResponseFromSegments is triggered", function (done) {
+    it("should call `addMetric` when `onMessage` is triggered", async function () {
       //@ts-ignore
       const addMetricMock = jest.spyOn(sdk.reliabilityScore, "addMetric");
 
-      sdk.sendRequest(fixtures.SMALL_REQUEST);
-      sdk.sendRequest(fixtures.LARGE_REQUEST).then(() => done());
+      const [smallRequest, , smallResponse] = fixtures.generateMockedFlow(
+        3,
+        fixtures.RPC_REQ_SMALL,
+        undefined,
+        fixtures.RPC_RES_SMALL
+      );
+      const [largeRequest, , largeResponse] = fixtures.generateMockedFlow(
+        3,
+        fixtures.RPC_REQ_LARGE,
+        undefined,
+        fixtures.RPC_RES_LARGE
+      );
+
+      let p1 = sdk.sendRequest(smallRequest);
+      let p2 = sdk.sendRequest(largeRequest);
 
       // @ts-ignore
-      sdk.onResponseFromSegments(fixtures.SMALL_RESPONSE);
+      sdk.onMessage(smallResponse.toMessage());
       // @ts-ignore
-      sdk.onResponseFromSegments(fixtures.LARGE_RESPONSE);
+      sdk.onMessage(largeResponse.toMessage());
+
+      await Promise.all([p1, p2]);
 
       assert.equal(addMetricMock.mock.calls.length, 2);
       assert(addMetricMock.mock.calls.at(0)?.includes("success"));
     });
 
     it("should call addMetric when onRequestRemoval is triggered", function () {
+      const [largeRequest, , largeResponse] = fixtures.generateMockedFlow(
+        3,
+        fixtures.RPC_REQ_LARGE,
+        undefined,
+        fixtures.RPC_RES_LARGE
+      );
+
       //@ts-ignore
       const addMetricMock = jest.spyOn(sdk.reliabilityScore, "addMetric");
       // @ts-ignore
       sdk.requestCache.addRequest(
-        fixtures.LARGE_REQUEST,
+        largeRequest,
         () => {},
         () => {}
       );
       // @ts-ignore
-      sdk.onRequestRemoval(fixtures.LARGE_REQUEST);
+      sdk.onRequestRemoval(largeResponse);
       assert.equal(addMetricMock.mock.calls.length, 1);
       assert(addMetricMock.mock.calls.at(0)?.includes("failed"));
     });
 
     describe("should handle requests correctly when receiving a response", function () {
-      it("should remove request with matching response", function () {
+      it("should remove request with matching response", async function () {
+        const [clientRequest, , exitNodeResponse] =
+          fixtures.generateMockedFlow(3);
+
         // @ts-ignore
         sdk.requestCache.addRequest(
-          fixtures.LARGE_REQUEST,
+          clientRequest,
           () => {},
           () => {}
         );
         // @ts-ignore
-        sdk.onResponseFromSegments(fixtures.LARGE_RESPONSE);
+        await sdk.onMessage(exitNodeResponse.toMessage());
         assert.equal(
           // @ts-ignore
-          sdk.requestCache.getRequest(fixtures.LARGE_RESPONSE.id),
+          sdk.requestCache.getRequest(clientRequest.id),
           undefined
         );
       });
       it("shouldn't remove request with different response", function () {
+        const [clientRequestA] = fixtures.generateMockedFlow(
+          3,
+          fixtures.RPC_REQ_SMALL,
+          undefined,
+          fixtures.RPC_RES_SMALL
+        );
+        const [, , exitNodeResponseB] = fixtures.generateMockedFlow(
+          3,
+          fixtures.RPC_REQ_LARGE,
+          undefined,
+          fixtures.RPC_RES_LARGE
+        );
+
         // @ts-ignore
         sdk.requestCache.addRequest(
-          fixtures.LARGE_REQUEST,
+          clientRequestA,
           () => {},
           () => {}
         );
         // @ts-ignore
-        sdk.onResponseFromSegments(fixtures.SMALL_RESPONSE);
+        sdk.onMessage(exitNodeResponseB.toMessage());
         assert.equal(
           // @ts-ignore
-          sdk.requestCache.getRequest(fixtures.LARGE_RESPONSE.id)?.request.id,
-          fixtures.LARGE_REQUEST.id
+          sdk.requestCache.getRequest(clientRequestA.id)?.request.id,
+          clientRequestA.id
         );
       });
     });

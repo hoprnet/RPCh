@@ -5,7 +5,7 @@
   "types": "./build/index.d.ts",
   "license": "MIT",
   "scripts": {
-    "build": "rimraf build && tsup",
+    "build": "tsup",
     "dev": "yarn build --watch",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
@@ -20,6 +20,8 @@
     "rpch-configs-typescript": "*"
   },
   "dependencies": {
-    "rpch-common": "*"
+    "peer-id": "^0.16.0",
+    "rpch-common": "*",
+    "rpch-crypto": "*"
   }
 }

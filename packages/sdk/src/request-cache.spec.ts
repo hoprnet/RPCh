@@ -12,35 +12,38 @@ describe("test request cache class", function () {
   });
 
   it("should add request", function () {
+    const [request] = fixtures.generateMockedFlow(1);
+
     requestCache.addRequest(
-      fixtures.SMALL_REQUEST,
+      request,
       () => {},
       () => {}
     );
-    assert.equal(
-      requestCache.getRequest(fixtures.SMALL_REQUEST.id)?.request.id,
-      fixtures.SMALL_REQUEST.id
-    );
+    assert.equal(requestCache.getRequest(request.id)?.request.id, request.id);
   });
   it("should remove a request", function () {
+    const [request] = fixtures.generateMockedFlow(1);
+
     requestCache.addRequest(
-      fixtures.SMALL_REQUEST,
+      request,
       () => {},
       () => {}
     );
-    requestCache.removeRequest(fixtures.SMALL_REQUEST);
-    assert.equal(requestCache.getRequest(fixtures.SMALL_REQUEST.id), undefined);
+    requestCache.removeRequest(request);
+    assert.equal(requestCache.getRequest(request.id), undefined);
   });
   it("should timeout request", function () {
+    const [request] = fixtures.generateMockedFlow(1);
+
     jest.useFakeTimers();
     requestCache.addRequest(
-      fixtures.SMALL_REQUEST,
+      request,
       () => {},
       () => {}
     );
     jest.advanceTimersByTime(2 * TIMEOUT);
     requestCache.removeExpired(TIMEOUT);
-    assert.equal(requestCache.getRequest(fixtures.SMALL_REQUEST.id), undefined);
+    assert.equal(requestCache.getRequest(request.id), undefined);
     // @ts-ignore-next-line
     assert.equal(requestCache.onRequestRemoval.mock.calls.length, 1);
     jest.useRealTimers();

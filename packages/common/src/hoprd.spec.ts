@@ -5,7 +5,7 @@ import * as fixtures from "./fixtures";
 
 const ENTRY_NODE_API_ENDPOINT = "http://entry_node";
 const ENTRY_NODE_API_TOKEN = "12345";
-const EXIT_NODE_PEER_ID = fixtures.PEER_ID_B;
+const EXIT_NODE_PEER_ID = fixtures.EXIT_NODE_HOPRD_PEER_ID_A;
 
 describe("test hoprd.ts / sendMessage", function () {
   it("should return message response", async function () {
