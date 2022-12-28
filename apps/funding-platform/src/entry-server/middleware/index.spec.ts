@@ -1,12 +1,8 @@
-import assert from "assert";
-import { DBInstance } from "../../db";
+import { IMemoryDb } from "pg-mem";
 import { AccessTokenService } from "../../access-token";
-import { RequestService } from "../../request";
-import { Express } from "express";
-import request from "supertest";
-import { IBackup, IMemoryDb } from "pg-mem";
+import { DBInstance } from "../../db";
 import { MockPgInstanceSingleton } from "../../db/index.spec";
-import { entryServer } from "../index";
+import { RequestService } from "../../request";
 import { doesAccessTokenHaveEnoughBalance } from "./index";
 
 const SECRET_KEY = "SECRET";

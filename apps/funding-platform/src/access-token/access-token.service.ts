@@ -30,12 +30,9 @@ export class AccessTokenService {
   }): Promise<QueryAccessToken | undefined> {
     try {
       log.normal("Creating access token...");
-      const now = new Date(Date.now());
-      // expiredAt is calculated by adding the minutes set
-      // with ops.timeout to the current time
-      const expiredAt = new Date(
-        new Date(now).setMinutes(now.getMinutes() + ops.timeout)
-      );
+      const now = new Date();
+      // this is calculated by adding timeout in milliseconds to the current time
+      const expiredAt = new Date(now.valueOf() + ops.timeout);
 
       const hash = generateAccessToken({
         amount: ops.amount,

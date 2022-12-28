@@ -14,7 +14,7 @@ const app = express();
  * @param requestService
  * @param walletAddress address used to query balance
  * @param maxAmountOfTokens max limit of tokens that an access token can request
- * @param timeout amount of minutes that a token will be valid
+ * @param timeout amount of milliseconds that a token will be valid
  * @returns Express app
  */
 export const entryServer = (ops: {
@@ -29,11 +29,12 @@ export const entryServer = (ops: {
   app.get("/api/access-token", async (req, res) => {
     const accessToken = await ops.accessTokenService.createAccessToken({
       amount: ops.maxAmountOfTokens,
-      timeout: ops.maxAmountOfTokens,
+      timeout: ops.timeout,
     });
     return res.json({
       accessToken: accessToken?.token,
       expiredAt: accessToken?.expired_at,
+      createdAt: accessToken?.created_at,
       amountLeft: ops.maxAmountOfTokens,
     });
   });

@@ -2,7 +2,7 @@ import { JsonRpcProvider } from "@ethersproject/providers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import assert from "assert";
 import { ethers } from "hardhat";
-import { IBackup, IMemoryDb } from "pg-mem";
+import { IMemoryDb } from "pg-mem";
 import { checkFreshRequests } from ".";
 import { AccessTokenService } from "../access-token";
 import { DBInstance } from "../db";
@@ -12,7 +12,7 @@ import { RequestService } from "../request";
 const MOCK_ADDRESS = "0xA10AA7711FD1FA48ACAE6FF00FCB63B0F6AD055F";
 const MOCK_AMOUNT = "1000";
 const MOCK_CHAIN_ID = 31337;
-const MOCK_TIMEOUT = 3000;
+const MOCK_TIMEOUT = 3_000;
 
 const INITIAL_AMOUNT = ethers.utils.parseEther(MOCK_AMOUNT).toString();
 

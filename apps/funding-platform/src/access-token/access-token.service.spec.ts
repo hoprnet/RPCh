@@ -2,14 +2,14 @@ import { AccessTokenService } from "./access-token.service";
 import assert from "assert";
 import { DBInstance } from "../db";
 import { MockPgInstanceSingleton } from "../db/index.spec";
-import { IBackup, IMemoryDb } from "pg-mem";
+import { IMemoryDb } from "pg-mem";
 
-const THIRTY_MINUTES = 30;
+const THIRTY_MINUTES_IN_MS = 30 * 60_000;
 const MAX_HOPR = 40;
 const SECRET_KEY = "SECRET";
 const accessTokenParams = {
   amount: MAX_HOPR,
-  timeout: THIRTY_MINUTES,
+  timeout: THIRTY_MINUTES_IN_MS,
 };
 describe("test AccessTokenService class", function () {
   let accessTokenService: AccessTokenService;
@@ -35,6 +35,24 @@ describe("test AccessTokenService class", function () {
       accessToken?.token!
     );
     assert(dbAccessToken?.token === accessToken?.token);
+  });
+  it("should create access token that expires in a specific amount of milliseconds", async function () {
+    const expectedExpireDate = new Date(
+      new Date().valueOf() + THIRTY_MINUTES_IN_MS
+    );
+    const accessToken = await accessTokenService.createAccessToken(
+      accessTokenParams
+    );
+    const dbAccessToken = await accessTokenService.getAccessToken(
+      accessToken?.token!
+    );
+    if (!dbAccessToken)
+      throw new Error("Could not find access token in test db");
+
+    assert(
+      new Date(dbAccessToken.expired_at).valueOf() ===
+        expectedExpireDate.valueOf()
+    );
   });
   it("should get access token", async function () {
     await accessTokenService.createAccessToken(accessTokenParams);

@@ -3,7 +3,7 @@ import { DBInstance } from "../db";
 import { UpdateRequest } from "./dto";
 import { RequestService } from "./request.service";
 import { AccessTokenService } from "../access-token";
-import { IBackup, IMemoryDb } from "pg-mem";
+import { IMemoryDb } from "pg-mem";
 import { MockPgInstanceSingleton } from "../db/index.spec";
 
 const SECRET_KEY = "SECRET";
