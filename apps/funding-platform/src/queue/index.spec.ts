@@ -6,7 +6,7 @@ import { IBackup, IMemoryDb } from "pg-mem";
 import { checkFreshRequests } from ".";
 import { AccessTokenService } from "../access-token";
 import { DBInstance } from "../db";
-import { mockPgInstance } from "../db/index.spec";
+import { MockPgInstanceSingleton } from "../db/index.spec";
 import { RequestService } from "../request";
 
 const MOCK_ADDRESS = "0xA10AA7711FD1FA48ACAE6FF00FCB63B0F6AD055F";
@@ -57,17 +57,16 @@ describe("test index.ts", function () {
   let provider: JsonRpcProvider;
   let dbInstance: DBInstance;
   let pgInstance: IMemoryDb;
-  let initialDbState: IBackup;
   let requestService: RequestService;
   let accessTokenService: AccessTokenService;
 
   beforeAll(async function () {
-    pgInstance = await mockPgInstance();
-    initialDbState = pgInstance.backup();
-    dbInstance = pgInstance.adapters.createPgPromise();
+    pgInstance = MockPgInstanceSingleton.getInstance();
+    dbInstance = MockPgInstanceSingleton.getDbInstance();
+    MockPgInstanceSingleton.getInitialState();
   });
   beforeEach(async function () {
-    initialDbState.restore();
+    MockPgInstanceSingleton.getInitialState().restore();
     accessTokenService = new AccessTokenService(dbInstance, "SECRET");
     requestService = new RequestService(dbInstance);
     accounts = await ethers.getSigners();

@@ -1,7 +1,7 @@
 import { AccessTokenService } from "./access-token.service";
 import assert from "assert";
 import { DBInstance } from "../db";
-import { mockPgInstance } from "../db/index.spec";
+import { MockPgInstanceSingleton } from "../db/index.spec";
 import { IBackup, IMemoryDb } from "pg-mem";
 
 const THIRTY_MINUTES = 30;
@@ -15,15 +15,18 @@ describe("test AccessTokenService class", function () {
   let accessTokenService: AccessTokenService;
   let dbInstance: DBInstance;
   let pgInstance: IMemoryDb;
-  let initialDbState: IBackup;
+
   beforeAll(async function () {
-    pgInstance = await mockPgInstance();
-    initialDbState = pgInstance.backup();
-    dbInstance = pgInstance.adapters.createPgPromise();
+    pgInstance = MockPgInstanceSingleton.getInstance();
+    dbInstance = MockPgInstanceSingleton.getDbInstance();
+    MockPgInstanceSingleton.getInitialState();
   });
+
   beforeEach(function () {
+    MockPgInstanceSingleton.getInitialState().restore();
     accessTokenService = new AccessTokenService(dbInstance, SECRET_KEY);
   });
+
   it("should create and save token", async function () {
     const accessToken = await accessTokenService.createAccessToken(
       accessTokenParams

@@ -4,7 +4,7 @@ import { UpdateRequest } from "./dto";
 import { RequestService } from "./request.service";
 import { AccessTokenService } from "../access-token";
 import { IBackup, IMemoryDb } from "pg-mem";
-import { mockPgInstance } from "../db/index.spec";
+import { MockPgInstanceSingleton } from "../db/index.spec";
 
 const SECRET_KEY = "SECRET";
 const MOCK_ADDRESS = "0xA10AA7711FD1FA48ACAE6FF00FCB63B0F6AD055F";
@@ -49,17 +49,16 @@ const createAccessTokenAndRequest = async (
 describe("test RequestService class", function () {
   let dbInstance: DBInstance;
   let pgInstance: IMemoryDb;
-  let initialDbState: IBackup;
   let requestService: RequestService;
   let accessTokenService: AccessTokenService;
 
   beforeAll(async function () {
-    pgInstance = await mockPgInstance();
-    initialDbState = pgInstance.backup();
-    dbInstance = pgInstance.adapters.createPgPromise();
+    pgInstance = MockPgInstanceSingleton.getInstance();
+    dbInstance = MockPgInstanceSingleton.getDbInstance();
+    MockPgInstanceSingleton.getInitialState();
   });
   beforeEach(function () {
-    initialDbState.restore();
+    MockPgInstanceSingleton.getInitialState().restore();
     accessTokenService = new AccessTokenService(dbInstance, SECRET_KEY);
     requestService = new RequestService(dbInstance);
   });

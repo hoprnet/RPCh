@@ -4,7 +4,7 @@ import { IBackup, IMemoryDb } from "pg-mem";
 import request from "supertest";
 import { AccessTokenService } from "../access-token";
 import { DBInstance } from "../db";
-import { mockPgInstance } from "../db/index.spec";
+import { MockPgInstanceSingleton } from "../db/index.spec";
 import { RequestService } from "../request";
 import { entryServer } from ".";
 
@@ -22,13 +22,13 @@ describe("test entry server", function () {
   let initialDbState: IBackup;
 
   beforeAll(async function () {
-    pgInstance = await mockPgInstance();
-    initialDbState = pgInstance.backup();
-    dbInstance = pgInstance.adapters.createPgPromise();
+    pgInstance = MockPgInstanceSingleton.getInstance();
+    dbInstance = MockPgInstanceSingleton.getDbInstance();
+    MockPgInstanceSingleton.getInitialState();
   });
 
   beforeEach(function () {
-    initialDbState.restore();
+    MockPgInstanceSingleton.getInitialState().restore();
     accessTokenService = new AccessTokenService(dbInstance, SECRET_KEY);
     requestService = new RequestService(dbInstance);
     app = entryServer({
