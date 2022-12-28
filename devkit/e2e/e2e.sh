@@ -84,6 +84,13 @@ entry_node_peer_id=$(cat logs | grep "node1" -A 1 | grep "Peer Id" | awk '{ prin
 exit_node_peer_id=$(cat logs | grep "node5" -A 1 | grep "Peer Id" | awk '{ print $5 }')
 exit_node_pub_key=$(echo "$logs5" | grep "Running exit node with public key" | awk '{print $9}')
 
+echo "Found entry node peer id"
+echo $entry_node_peer_id
+echo "Found exit node peer id"
+echo $exit_node_peer_id
+echo "Found exit node public key"
+echo $exit_node_pub_key
+
 # catch error if command fails
 set -Eeuo
 # Run tests with env variables

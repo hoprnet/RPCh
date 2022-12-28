@@ -15,7 +15,7 @@ export class RPChProvider extends JsonRpcProvider {
     getKeyVal: (key: string) => Promise<string | undefined>
   ) {
     super(url);
-    this.sdk = new SDK(5000, hoprSdkTempOps, setKeyVal, getKeyVal);
+    this.sdk = new SDK(10000, hoprSdkTempOps, setKeyVal, getKeyVal);
     this.sdk.start().catch((error) => log.error(error));
   }
 

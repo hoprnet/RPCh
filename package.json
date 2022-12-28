@@ -17,7 +17,8 @@
     "lint": "turbo run lint",
     "test": "turbo run test --",
     "test:e2e": "turbo run start --filter @rpch/e2e",
-    "publish-packages": "yarn build && yarn lint && yarn test && changeset version"
+    "version-packages": "changeset version",
+    "publish-packages": "changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.25.2",
