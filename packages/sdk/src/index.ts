@@ -1,4 +1,5 @@
-import type * as RPChCrypto from "rpch-crypto/nodejs";
+import type * as RPChCryptoNode from "rpch-crypto/nodejs";
+import type * as RPChCryptoWeb from "rpch-crypto/web";
 import {
   Cache as SegmentCache,
   Message,
@@ -41,7 +42,7 @@ export type EntryNode = {
  * Send traffic through the RPCh network
  */
 export default class SDK {
-  private crypto?: typeof RPChCrypto;
+  private crypto?: typeof RPChCryptoNode | typeof RPChCryptoWeb;
   // single inverval for the SDK for things that need to be checked.
   private interval?: NodeJS.Timer;
   private segmentCache: SegmentCache;
@@ -200,17 +201,17 @@ export default class SDK {
   public async start(): Promise<void> {
     if (this.isReady) return;
 
-    this.crypto = await import("rpch-crypto/web");
-
-    // // initialize crypto lib
-    // // @ts-expect-error
-    // if (typeof window === "undefined") {
-    //   log("Using 'node' RPCh crypto implementation");
-    //   this.crypto = require("rpch-crypto/nodejs");
-    // } else {
-    //   log("Using 'web' RPCh crypto implementation");
-    //   this.crypto = await import("rpch-crypto/web");
-    // }
+    // initialize crypto lib
+    // @ts-expect-error
+    if (typeof window === "undefined") {
+      log.verbose("Using 'node' RPCh crypto implementation");
+      this.crypto = require("rpch-crypto/nodejs") as typeof RPChCryptoNode;
+    } else {
+      log.verbose("Using 'web' RPCh crypto implementation");
+      this.crypto = (await import("rpch-crypto/web")) as typeof RPChCryptoWeb;
+      // @ts-expect-error
+      await this.crypto.init();
+    }
 
     // check for expires caches every second
     this.interval = setInterval(() => {

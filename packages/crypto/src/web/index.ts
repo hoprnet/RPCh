@@ -1,2 +1,2 @@
-export { default as default } from "@rpch/crypto/web";
 export * from "@rpch/crypto/web";
+export { default as init } from "@rpch/crypto/web";
