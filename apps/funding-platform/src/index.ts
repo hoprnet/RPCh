@@ -8,7 +8,7 @@ import { RequestService } from "./request";
 import { createLogger } from "./utils";
 import fs from "fs";
 
-const log = createLogger([]);
+const log = createLogger();
 
 const {
   // Secret key used for access token generation

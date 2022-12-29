@@ -4,13 +4,14 @@ import { fixtures } from "@rpch/common";
 
 const PROVIDER_URL = fixtures.PROVIDER;
 const DISCOVERY_PLATFORM_API_ENDPOINT = "http://discovery_platform";
-const ENTRY_NODE_API_ENDPOINT = "http://localhost:13301";
+const SDK_TIMEOUT = 10e3;
 const FRESH_NODE_THRESHOLD = 20;
 const MAX_RESPONSES = 100;
 const {
+  ENTRY_NODE_API_ENDPOINT = "http://localhost:13301",
+  ENTRY_NODE_API_TOKEN,
   ENTRY_NODE_PEER_ID,
   EXIT_NODE_PEER_ID,
-  ENTRY_NODE_API_TOKEN,
   EXIT_NODE_PUB_KEY,
 } = process.env;
 const sdkStore = fixtures.createAsyncKeyValStore();
@@ -30,6 +31,7 @@ describe("e2e tests", function () {
   }
   const provider = new ethers.RPChProvider(
     PROVIDER_URL,
+    SDK_TIMEOUT,
     {
       discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
       entryNodeApiEndpoint: ENTRY_NODE_API_ENDPOINT,

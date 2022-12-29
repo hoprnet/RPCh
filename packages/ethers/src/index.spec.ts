@@ -60,6 +60,7 @@ jest.mock("@rpch/common", () => ({
 describe("test index.ts", function () {
   const provider = new RPChProvider(
     PROVIDER_URL,
+    5e3,
     {
       discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
       entryNodeApiEndpoint: ENTRY_NODE_API_ENDPOINT,

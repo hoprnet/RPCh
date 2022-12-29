@@ -12,7 +12,7 @@ import ReliabilityScore from "./reliability-score";
 import RequestCache from "./request-cache";
 import { createLogger } from "./utils";
 
-const log = createLogger([]);
+const log = createLogger();
 /**
  * Temporary options to be passed to
  * the SDK for development purposes.
