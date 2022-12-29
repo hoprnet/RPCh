@@ -76,34 +76,33 @@ jobs:
       - name: Review licenses
         run: find . -name 'package.json' -not -path "./node_modules/*" -exec jq --arg license 'LGPL-3.0' -r '.license|contains($license)' {} +;
 
-  # uncomment once E2E tests are fixed https://github.com/Rpc-h/RPCh/issues/100
-  # review-e2e-test-results:
-  #   needs:
-  #     - review-source-code
-  #     - review-dockerfiles
-  #     - review-configuration
-  #   name: Review E2E test results
-  #   timeout-minutes: 60
-  #   runs-on: ubuntu-latest
-  #   env:
-  #     # enable remote caching using turbo
-  #     TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-  #     TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+  review-e2e-test-results:
+    needs:
+      - review-source-code
+      - review-dockerfiles
+      - review-configuration
+    name: Review E2E test results
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    env:
+      # enable remote caching using turbo
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
-  #   steps:
-  #     - name: Check out code
-  #       uses: actions/checkout@v3
-  #       with:
-  #         fetch-depth: 2
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
 
-  #     - name: Build
-  #       uses: ./.github/actions/build-rpch
-  #       env:
-  #         TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-  #         TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+      - name: Build
+        uses: ./.github/actions/build-rpch
+        env:
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
-  #     - name: Run E2E tests
-  #       run: yarn test:e2e
+      - name: Run E2E tests
+        run: yarn test:e2e
 
   # uncomment changeset publish is fixed https://github.com/changesets/changesets/issues/942
   # publish jobs require to be under branches release/**
@@ -113,7 +112,7 @@ jobs:
   #     - review-source-code
   #     - review-dockerfiles
   #     - review-configuration
-  #     # - review-e2e-test-results
+  #     - review-e2e-test-results
   #   name: Publish NPM packages
   #   timeout-minutes: 10
   #   runs-on: ubuntu-latest
