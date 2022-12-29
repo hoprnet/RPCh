@@ -16,9 +16,7 @@
     "format:fix": "turbo run format -- --check=false --write=true",
     "lint": "turbo run lint",
     "test": "turbo run test --",
-    "test:e2e": "turbo run start --filter @rpch/e2e",
-    "version-packages": "changeset version",
-    "publish-packages": "changeset publish"
+    "test:e2e": "turbo run start --filter @rpch/e2e"
   },
   "devDependencies": {
     "@changesets/cli": "^2.25.2",

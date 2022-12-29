@@ -64,6 +64,7 @@ jobs:
 
   review-configuration:
     name: Review configuration
+    timeout-minutes: 10
     runs-on: ubuntu-latest
 
     steps:
@@ -104,35 +105,36 @@ jobs:
   #       run: yarn test:e2e
 
   # publish jobs require to be under branches release/**
-  # publish-npm-packages:
-  #   needs:
-  #     - review-source-code
-  #     - review-dockerfiles
-  #     - review-configuration
-  #     # - review-e2e-test-results
-  #   if: ${{ startsWith(github.ref, 'refs/heads/release/') }}
-  #   name: Publish NPM packages
-  #   runs-on: ubuntu-latest
-  #   env:
-  #     # enable remote caching using turbo
-  #     TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-  #     TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+  publish-npm-packages:
+    if: startsWith(github.head_ref, 'release/')
+    needs:
+      - review-source-code
+      - review-dockerfiles
+      - review-configuration
+      # - review-e2e-test-results
+    name: Publish NPM packages
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    env:
+      # enable remote caching using turbo
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
-  #   steps:
-  #     - name: Check out code
-  #       uses: actions/checkout@v3
-  #       with:
-  #         fetch-depth: 2
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
 
-  #     - name: Build
-  #       uses: ./.github/actions/build-rpch
-  #       env:
-  #         TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-  #         TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+      - name: Build
+        uses: ./.github/actions/build-rpch
+        env:
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
-  #     - name: Create Release Pull Request or Publish to npm
-  #       id: changesets
-  #       uses: changesets/action@v1
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #         NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Create Release Pull Request or Publish to npm
+        id: changesets
+        uses: changesets/action@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
