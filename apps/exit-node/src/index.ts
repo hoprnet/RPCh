@@ -10,13 +10,13 @@ import {
   Segment,
   hoprd,
   utils,
-} from "rpch-common";
-import * as crypto from "rpch-crypto/nodejs";
+} from "@rpch/common";
+import * as crypto from "@rpch/crypto-bridge/nodejs";
 import * as exit from "./exit";
 import * as identity from "./identity";
 import { createLogger } from "./utils";
 
-const log = createLogger([]);
+const log = createLogger();
 
 const {
   RPCH_PASSWORD,
@@ -28,7 +28,7 @@ const {
   RESPONSE_TIMEOUT: RESPONSE_TIMEOUT_STR = "10000",
 } = process.env;
 
-const DEFAULT_IDENTITY_DIR = path.join(process.cwd(), ".rpch-identity");
+const DEFAULT_IDENTITY_DIR = path.join(process.cwd(), ".identity");
 const DEFAULT_DATA_DIR = path.join(process.cwd(), "db");
 
 export const start = async (ops: {

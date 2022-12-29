@@ -1,8 +1,8 @@
 {
-  "name": "rpch-funding-platform",
-  "version": "0.0.0",
+  "name": "@rpch/funding-platform",
+  "version": "0.0.2",
+  "license": "LGPL-3.0",
   "private": true,
-  "license": "MIT",
   "scripts": {
     "build": "rimraf build && tsup",
     "dev": "yarn build --watch",
@@ -21,11 +21,11 @@
     "chai": "^4.3.7",
     "hardhat": "^2.12.3",
     "pg-mem": "^2.6.4",
-    "rpch-configs-eslint": "*",
-    "rpch-configs-jest": "*",
-    "rpch-configs-prettier": "*",
-    "rpch-configs-tsup": "*",
-    "rpch-configs-typescript": "*",
+    "@rpch/configs-eslint": "*",
+    "@rpch/configs-jest": "*",
+    "@rpch/configs-prettier": "*",
+    "@rpch/configs-tsup": "*",
+    "@rpch/configs-typescript": "*",
     "supertest": "^6.3.1",
     "ts-node": "^10.9.1"
   },
@@ -35,6 +35,6 @@
     "express-validator": "^6.14.2",
     "lowdb": "^5.0.5",
     "pg-promise": "^10.15.4",
-    "rpch-common": "*"
+    "@rpch/common": "0.1.1"
   }
 }

@@ -28,7 +28,7 @@ RUN yarn global add turbo
 COPY . .
 
 # Generate a partial monorepo with a pruned lockfile for the target workspace.
-RUN turbo prune --scope="rpch-exit-node" --docker
+RUN turbo prune --scope="@rpch/exit-node" --docker
 
 # Add lockfile and package.json's of isolated subworkspace.
 # Specify platform to be amd because arm doesn't work
@@ -46,7 +46,7 @@ RUN yarn install
 # Build the project.
 COPY --from=builder /app/out/full .
 COPY turbo.json turbo.json
-RUN yarn run build --scope="rpch-exit-node"
+RUN yarn run build --scope="@rpch/exit-node"
 
 #  Copy only the necesary files to run the app.
 # Specify platform to be amd because arm doesn't work

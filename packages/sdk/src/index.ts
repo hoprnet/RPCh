@@ -1,5 +1,5 @@
-import type * as RPChCryptoNode from "rpch-crypto/nodejs";
-import type * as RPChCryptoWeb from "rpch-crypto/web";
+import type * as RPChCryptoNode from "@rpch/crypto-bridge/nodejs";
+import type * as RPChCryptoWeb from "@rpch/crypto-bridge/web";
 import {
   Cache as SegmentCache,
   Message,
@@ -7,13 +7,14 @@ import {
   Response,
   Segment,
   hoprd,
-} from "rpch-common";
+} from "@rpch/common";
+import { Identity } from "@rpch/crypto-bridge/nodejs";
 import { utils as etherUtils } from "ethers";
 import ReliabilityScore from "./reliability-score";
 import RequestCache from "./request-cache";
 import { createLogger } from "./utils";
 
-const log = createLogger([]);
+const log = createLogger();
 /**
  * Temporary options to be passed to
  * the SDK for development purposes.
@@ -205,10 +206,13 @@ export default class SDK {
     // @ts-expect-error
     if (typeof window === "undefined") {
       log.verbose("Using 'node' RPCh crypto implementation");
-      this.crypto = require("rpch-crypto/nodejs") as typeof RPChCryptoNode;
+      this.crypto =
+        require("@rpch/crypto-bridge/nodejs") as typeof RPChCryptoNode;
     } else {
       log.verbose("Using 'web' RPCh crypto implementation");
-      this.crypto = (await import("rpch-crypto/web")) as typeof RPChCryptoWeb;
+      this.crypto = (await import(
+        "@rpch/crypto-bridge/web"
+      )) as typeof RPChCryptoWeb;
       // @ts-expect-error
       await this.crypto.init();
     }

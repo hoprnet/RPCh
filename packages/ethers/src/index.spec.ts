@@ -1,8 +1,8 @@
 import assert from "assert";
 import nock from "nock";
-import { type Message, Request, Response } from "rpch-common";
-import * as fixtures from "rpch-common/build/fixtures";
-import * as crypto from "rpch-crypto/nodejs";
+import { type Message, Request, Response } from "@rpch/common";
+import * as fixtures from "@rpch/common/build/fixtures";
+import * as crypto from "@rpch/crypto/nodejs";
 import { RPChProvider } from ".";
 
 const PROVIDER_URL = fixtures.PROVIDER;
@@ -54,8 +54,8 @@ const getMockedResponse = async (request: Request): Promise<Message> => {
   return exitNodeResponse.toMessage();
 };
 
-jest.mock("rpch-common", () => ({
-  ...jest.requireActual("rpch-common"),
+jest.mock("@rpch/common", () => ({
+  ...jest.requireActual("@rpch/common"),
   hoprd: {
     sendMessage: jest.fn(async () => "MOCK_SEND_MSG_RESPONSE"),
     createMessageListener: jest.fn(async () => {
@@ -67,6 +67,7 @@ jest.mock("rpch-common", () => ({
 describe("test index.ts", function () {
   const provider = new RPChProvider(
     PROVIDER_URL,
+    5e3,
     {
       discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
       entryNodeApiEndpoint: ENTRY_NODE_API_ENDPOINT,

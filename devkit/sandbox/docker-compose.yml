@@ -38,7 +38,6 @@ services:
       - HOPRD_API_ENDPOINT=http://pluto:13301
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - RPCH_PASSWORD=${RPCH_PASSWORD}
-      - RPCH_PRIVATE_KEY=${RPCH_PRIVATE_KEY}
     entrypoint:
       [
         "/bin/wait-for",
@@ -56,7 +55,6 @@ services:
       - HOPRD_API_ENDPOINT=http://pluto:13302
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - RPCH_PASSWORD=${RPCH_PASSWORD}
-      - RPCH_PRIVATE_KEY=${RPCH_PRIVATE_KEY}
     entrypoint:
       [
         "/bin/wait-for",
@@ -74,7 +72,6 @@ services:
       - HOPRD_API_ENDPOINT=http://pluto:13303
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - RPCH_PASSWORD=${RPCH_PASSWORD}
-      - RPCH_PRIVATE_KEY=${RPCH_PRIVATE_KEY}
     entrypoint:
       [
         "/bin/wait-for",
@@ -92,7 +89,6 @@ services:
       - HOPRD_API_ENDPOINT=http://pluto:13304
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - RPCH_PASSWORD=${RPCH_PASSWORD}
-      - RPCH_PRIVATE_KEY=${RPCH_PRIVATE_KEY}
     entrypoint:
       [
         "/bin/wait-for",
@@ -110,7 +106,6 @@ services:
       - HOPRD_API_ENDPOINT=http://pluto:13305
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - RPCH_PASSWORD=${RPCH_PASSWORD}
-      - RPCH_PRIVATE_KEY=${RPCH_PRIVATE_KEY}
     entrypoint:
       [
         "/bin/wait-for",

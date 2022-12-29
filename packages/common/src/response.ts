@@ -1,9 +1,9 @@
 import type Request from "./request";
-import type {
+import {
   Envelope,
-  box_response,
   unbox_response,
-} from "rpch-crypto/nodejs";
+  box_response,
+} from "@rpch/crypto-bridge/nodejs";
 import Message from "./message";
 import { joinPartsToBody, splitBodyToParts } from "./utils";
 import { utils } from "ethers";

@@ -1,12 +1,8 @@
-import assert from "assert";
-import { DBInstance } from "../../db";
+import { IMemoryDb } from "pg-mem";
 import { AccessTokenService } from "../../access-token";
+import { DBInstance } from "../../db";
+import { MockPgInstanceSingleton } from "../../db/index.spec";
 import { RequestService } from "../../request";
-import { Express } from "express";
-import request from "supertest";
-import { IBackup, IMemoryDb } from "pg-mem";
-import { mockPgInstance } from "../../db/index.spec";
-import { entryServer } from "../index";
 import { doesAccessTokenHaveEnoughBalance } from "./index";
 
 const SECRET_KEY = "SECRET";
@@ -18,16 +14,15 @@ describe("should test entry server middleware functions", function () {
   let accessTokenService: AccessTokenService;
   let requestService: RequestService;
   let pgInstance: IMemoryDb;
-  let initialDbState: IBackup;
 
   beforeAll(async function () {
-    pgInstance = await mockPgInstance();
-    initialDbState = pgInstance.backup();
-    dbInstance = pgInstance.adapters.createPgPromise();
+    pgInstance = MockPgInstanceSingleton.getInstance();
+    dbInstance = MockPgInstanceSingleton.getDbInstance();
+    MockPgInstanceSingleton.getInitialState();
   });
 
   beforeEach(function () {
-    initialDbState.restore();
+    MockPgInstanceSingleton.getInitialState().restore();
     accessTokenService = new AccessTokenService(dbInstance, SECRET_KEY);
     requestService = new RequestService(dbInstance);
   });

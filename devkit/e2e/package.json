@@ -1,9 +1,8 @@
 {
-  "name": "rpch-e2e",
-  "version": "0.0.0",
-  "main": "./build/index.js",
-  "types": "./build/index.d.ts",
-  "license": "MIT",
+  "name": "@rpch/e2e",
+  "version": "0.0.2",
+  "private": true,
+  "license": "LGPL-3.0",
   "scripts": {
     "build": "exit 0",
     "dev": "exit 0",
@@ -13,14 +12,14 @@
     "start": "bash e2e.sh"
   },
   "devDependencies": {
-    "rpch-configs-typescript": "*",
-    "rpch-configs-eslint": "*",
-    "rpch-configs-prettier": "*",
-    "rpch-configs-jest": "*",
-    "rpch-configs-tsup": "*"
+    "@rpch/configs-typescript": "*",
+    "@rpch/configs-eslint": "*",
+    "@rpch/configs-prettier": "*",
+    "@rpch/configs-jest": "*",
+    "@rpch/configs-tsup": "*"
   },
   "dependencies": {
-    "rpch-ethers": "*",
-    "rpch-common": "*"
+    "@rpch/ethers": "0.1.1",
+    "@rpch/common": "0.1.1"
   }
 }

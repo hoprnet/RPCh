@@ -85,8 +85,8 @@ export default function CreateLoggerFactory(namespace: string) {
    * @param suffix ex: ['request']
    * @returns three loggers to be used to log things
    */
-  return function createLogger(suffix: string[] = []) {
-    const normal = base.extend(suffix.join(LOG_SEPERATOR));
+  return function createLogger(suffix?: string[]) {
+    const normal = suffix ? base.extend(suffix.join(LOG_SEPERATOR)) : base;
     const verbose = normal.extend("verbose");
     const error = normal.extend("error");
 

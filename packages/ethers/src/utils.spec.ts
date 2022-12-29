@@ -1,6 +1,6 @@
 import assert from "assert";
-import { Response } from "rpch-common";
-import * as fixtures from "rpch-common/build/fixtures";
+import { Response } from "@rpch/common";
+import * as fixtures from "@rpch/common/build/fixtures";
 import { parseResponse, getResult } from "./utils";
 
 describe("test utils.ts / parseResponse", function () {

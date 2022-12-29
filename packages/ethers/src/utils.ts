@@ -1,4 +1,4 @@
-import { type Response, utils } from "rpch-common";
+import { type Response, utils } from "@rpch/common";
 
 export const createLogger = utils.LoggerFactory("ethers");
 

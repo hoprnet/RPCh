@@ -1,9 +1,9 @@
 {
-  "name": "rpch-common",
-  "version": "0.0.0",
-  "types": "./build/index.d.ts",
+  "name": "@rpch/common",
+  "version": "0.1.1",
+  "license": "LGPL-3.0",
   "main": "./build/index.js",
-  "license": "MIT",
+  "types": "./build/index.d.ts",
   "scripts": {
     "build": "tsup",
     "dev": "yarn build --watch",
@@ -15,19 +15,19 @@
     "@types/debug": "^4.1.7",
     "@types/ws": "^8.5.3",
     "nock": "^13.2.9",
-    "rpch-configs-eslint": "*",
-    "rpch-configs-jest": "*",
-    "rpch-configs-prettier": "*",
-    "rpch-configs-tsup": "*",
-    "rpch-configs-typescript": "*"
+    "@rpch/configs-eslint": "*",
+    "@rpch/configs-jest": "*",
+    "@rpch/configs-prettier": "*",
+    "@rpch/configs-tsup": "*",
+    "@rpch/configs-typescript": "*"
   },
   "dependencies": {
-    "rpch-crypto": "*",
     "cross-fetch": "^3.1.5",
     "debug": "^4.3.4",
     "ethers": "^5.7.2",
     "isomorphic-ws": "^5.0.0",
     "peer-id": "^0.16.0",
+    "@rpch/crypto-bridge": "0.1.1",
     "ws": "^8.11.0"
   }
 }

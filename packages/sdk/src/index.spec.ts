@@ -1,6 +1,6 @@
 import assert from "assert";
-import { Request } from "rpch-common";
-import * as fixtures from "rpch-common/build/fixtures";
+import { Request } from "@rpch/common";
+import * as fixtures from "@rpch/common/build/fixtures";
 import nock from "nock";
 import SDK, { type HoprSdkTempOps } from "./index";
 
@@ -16,8 +16,8 @@ const MAX_RESPONSES = 100;
 
 type MockOps = HoprSdkTempOps & { timeout: number };
 
-jest.mock("rpch-common", () => ({
-  ...jest.requireActual("rpch-common"),
+jest.mock("@rpch/common", () => ({
+  ...jest.requireActual("@rpch/common"),
   hoprd: {
     sendMessage: jest.fn(async () => "MOCK_SEND_MSG_RESPONSE"),
     createMessageListener: jest.fn(

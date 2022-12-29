@@ -1,0 +1,21 @@
+name: "Build"
+description: "Build the RPCh monorepo"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node.js environment
+      uses: actions/setup-node@v3
+      with:
+        node-version: 16
+        cache: "yarn"
+        cache-dependency-path: ./yarn.lock
+        registry-url: "https://registry.npmjs.org/"
+
+    - name: Install dependencies
+      shell: bash
+      run: yarn
+
+    - name: Build
+      shell: bash
+      run: yarn build
