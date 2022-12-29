@@ -15,7 +15,7 @@ import * as identity from "./identity";
 import * as exit from "./exit";
 import { createLogger } from "./utils";
 
-const log = createLogger([]);
+const log = createLogger();
 
 const {
   RPCH_PASSWORD,
@@ -105,7 +105,7 @@ export const start = async (ops: {
     password: ops.password,
     privateKey: ops.privateKey,
   });
-  log.verbose("Running exit node with public key", publicKey);
+  log.normal("Running exit node with public key", publicKey);
   log.verbose("Got identity");
 
   const cache = new Cache(onMessage);

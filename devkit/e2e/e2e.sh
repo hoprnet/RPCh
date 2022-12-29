@@ -5,7 +5,7 @@ $(return >/dev/null 2>&1)
 test "$?" -eq "0" && { echo "This script should only be executed." >&2; exit 1; }
 
 # If there's a fatal error or users Ctrl+C it will tear down setup
-trap 'docker compose -f ../sandbox/docker-compose.yml down; rm ./logs; exit' SIGINT SIGKILL SIGTERM ERR EXIT
+trap 'docker compose -f ../sandbox/docker-compose.yml down; rm -f ./logs; exit' SIGINT SIGKILL SIGTERM ERR EXIT
 
 #  Run docker compose as daemon
 docker compose -f ../sandbox/docker-compose.yml up -d --remove-orphans --build --force-recreate
@@ -101,4 +101,4 @@ set +Eeuo
 
 # After tests exit tear down setup
 docker compose -f ../sandbox/docker-compose.yml down
-rm ./logs
+rm -f ./logs
