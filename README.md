@@ -13,7 +13,7 @@ We have four main project folders:
 3. [apps](./apps/): contains services which are run centrally by the RPCh org
 4. [devkit](./devkit/): contains developer tools and sandbox material
 
-### Getting start
+### Getting started
 
 1. Install nodejs `v16`
 2. Download dependencies with `yarn`
