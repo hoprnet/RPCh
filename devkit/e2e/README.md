@@ -1,10 +1,5 @@
-# Devkit
+# E2E
 
 ## Description
 
-The Devkit aims to provide a testing environment with the following specs:
-
-- running local RPC node
-- running local HOPRd node which uses the RPC node (acts as entry node)
-- running intermediary nodes
-- running HOPRd and RPCh exit nodes
+The E2E package utilizes [sandbox](../sandbox/) to run E2E tests to test the whole RPCh stack.
