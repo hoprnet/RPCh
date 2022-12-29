@@ -106,7 +106,7 @@ jobs:
 
   # publish jobs require to be under branches release/**
   publish-npm-packages:
-    if: startsWith(github.head_ref, 'releases/')
+    if: startsWith(github.head_ref, 'release/')
     needs:
       - review-source-code
       - review-dockerfiles
