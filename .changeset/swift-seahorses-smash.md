@@ -1,7 +1,4 @@
 ---
-"@rpch/exit-node": minor
-"@rpch/funding-platform": minor
-"@rpch/e2e": minor
 "@rpch/common": minor
 "@rpch/crypto-bridge": minor
 "@rpch/ethers": minor
