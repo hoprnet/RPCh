@@ -1,5 +1,4 @@
 import pgp from "pg-promise";
-import { utils } from "@rpch/common";
 import { AccessTokenService } from "./access-token";
 import { getWallet } from "./blockchain";
 import { DBInstance } from "./db";
@@ -24,8 +23,8 @@ const {
   CONFIRMATIONS = 1,
   // Max amount of tokens a access token can request
   MAX_AMOUNT_OF_TOKENS = 100,
-  // Amount of minutes that a access token is valid
-  TIMEOUT = 30,
+  // Amount of milliseconds that a access token is valid
+  TIMEOUT = 30 * 60_000,
 } = process.env;
 
 // boolean flag that stops queue from running
