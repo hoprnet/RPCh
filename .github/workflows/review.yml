@@ -105,12 +105,12 @@ jobs:
 
   # publish jobs require to be under branches release/**
   publish-npm-packages:
+    if: startsWith(github.ref, 'refs/heads/release/')
     needs:
       - review-source-code
       - review-dockerfiles
       - review-configuration
       # - review-e2e-test-results
-    if: ${{ startsWith(github.ref, 'refs/heads/release/') }}
     name: Publish NPM packages
     runs-on: ubuntu-latest
     env:
