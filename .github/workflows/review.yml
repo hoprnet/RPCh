@@ -2,7 +2,7 @@ name: Review
 
 on:
   push:
-    branches: [main]
+    branches: [main, "releases/**"]
   pull_request:
     types: [opened, synchronize]
 
@@ -64,6 +64,7 @@ jobs:
 
   review-configuration:
     name: Review configuration
+    timeout-minutes: 10
     runs-on: ubuntu-latest
 
     steps:
@@ -105,13 +106,14 @@ jobs:
 
   # publish jobs require to be under branches release/**
   publish-npm-packages:
-    if: startsWith(github.ref, 'refs/heads/release/')
+    if: startsWith(github.head_ref, 'releases/')
     needs:
       - review-source-code
       - review-dockerfiles
       - review-configuration
       # - review-e2e-test-results
     name: Publish NPM packages
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     env:
       # enable remote caching using turbo
