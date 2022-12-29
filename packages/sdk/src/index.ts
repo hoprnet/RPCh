@@ -1,4 +1,5 @@
-import type * as RPChCrypto from "rpch-crypto/nodejs";
+// import type * as RPChCrypto from "rpch-crypto/nodejs";
+import type * as RPChCrypto from "rpch-crypto/web";
 import {
   Cache as SegmentCache,
   Message,

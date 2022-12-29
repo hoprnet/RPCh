@@ -1,6 +1,7 @@
 import type Nock from "nock";
 import { utils } from "ethers";
-import * as crypto from "rpch-crypto/nodejs";
+// import * as crypto from "rpch-crypto/nodejs";
+import * as crypto from "rpch-crypto/web";
 import Request from "./request";
 import Response from "./response";
 
