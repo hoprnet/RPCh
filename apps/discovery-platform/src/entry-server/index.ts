@@ -1,15 +1,17 @@
 import express from "express";
 import { DBInstance } from "../db";
+import { FundingPlatformApi } from "../funding-platform-api";
+import { createQuota, getAllQuotasByClient, sumQuotas } from "../quota";
+import { CreateQuota } from "../quota/dto";
 import {
   createRegisteredNode,
-  getRegisteredNodes,
+  getExitNodes,
+  getNonExitNodes,
   getRegisteredNode,
-  getNodeAccessToken,
+  getEligibleNode,
+  getRewardForNode,
 } from "../registered-node";
 import { CreateRegisteredNode } from "../registered-node/dto";
-import { CreateQuota } from "../quota/dto";
-import { createQuota, getAllQuotasByClient, sumQuotas } from "../quota";
-import { FundingPlatformApi } from "../funding-platform-api";
 
 const app = express();
 const apiRouter = express.Router();
@@ -40,10 +42,11 @@ export const entryServer = (ops: {
 
   apiRouter.get("/node", async (req, res) => {
     const { hasExitNode } = req.query;
-    const nodes = await getRegisteredNodes(ops.db);
     if (hasExitNode === "true") {
-      return res.json(nodes.filter((node) => node.hasExitNode));
+      const nodes = await getExitNodes(ops.db);
+      return res.json(nodes);
     } else {
+      const nodes = await getNonExitNodes(ops.db);
       return res.json(nodes.filter((node) => !node.hasExitNode));
     }
   });
@@ -85,7 +88,16 @@ export const entryServer = (ops: {
       });
     }
     // choose selected entry node
-    const selectedNodeAccessToken = await getNodeAccessToken(ops.db);
+    const selectedNode = await getEligibleNode(ops.db);
+    if (!selectedNode) {
+      return res.json({ error: "could not find eligible node" });
+    }
+
+    // calculate how much should be funded to entry node
+    const amountToFund = getRewardForNode(ops.baseQuota, selectedNode);
+    // fund entry node
+    await ops.fundingPlatformApi.requestFunds(amountToFund, selectedNode);
+
     // create negative quota (showing that the client has used up initial quota)
     await createQuota(ops.db, {
       client,
@@ -93,7 +105,7 @@ export const entryServer = (ops: {
       actionTaker: "discovery platform",
       createdAt: new Date().toISOString(),
     });
-    return res.json({ body: selectedNodeAccessToken });
+    return res.json({ body: selectedNode });
   });
 
   return app;

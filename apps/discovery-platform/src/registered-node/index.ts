@@ -85,12 +85,21 @@ export const getNonExitNodes = async (dbInstance: db.DBInstance) => {
  * @param dbInstance DBinstance
  * @returns access token hash
  */
-export const getNodeAccessToken = async (
+export const getEligibleNode = async (
   dbInstance: db.DBInstance
-): Promise<string> => {
+): Promise<QueryRegisteredNode | undefined> => {
   const allNodes = await getRegisteredNodes(dbInstance);
+  // choose selected entry node
   const selectedNode = allNodes.at(Math.floor(Math.random() * allNodes.length));
   // TODO: get access token of selected node
-  const accessToken = `0x` + selectedNode?.peerId;
-  return accessToken;
+  return selectedNode;
+};
+
+export const getRewardForNode = (
+  baseQuota: number,
+  node: QueryRegisteredNode
+): number => {
+  const extra = node.hasExitNode ? 0.1 * 2 : 0.1;
+  const reward = baseQuota + extra;
+  return reward;
 };
