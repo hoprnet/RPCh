@@ -1,6 +1,6 @@
 {
   "name": "@rpch/common",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "license": "LGPL-3.0",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
@@ -27,7 +27,7 @@
     "nock": "^13.2.9",
     "node-fetch": "^2.6.2",
     "peer-id": "^0.16.0",
-    "@rpch/crypto-bridge": "0.0.0",
+    "@rpch/crypto-bridge": "0.1.0",
     "ws": "^8.11.0"
   }
 }
