@@ -10,7 +10,7 @@ runs:
         node-version: 16
         cache: "yarn"
         cache-dependency-path: ./yarn.lock
-        registry-url: "https://registry.npmjs.org"
+        registry-url: "https://registry.npmjs.org/"
 
     - name: Install dependencies
       shell: bash
