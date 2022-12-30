@@ -81,7 +81,7 @@ export const getNonExitNodes = async (dbInstance: db.DBInstance) => {
 };
 
 /**
- * get access token of a given node
+ * get node that will be used for that request
  * @param dbInstance DBinstance
  * @returns access token hash
  */
@@ -95,6 +95,12 @@ export const getEligibleNode = async (
   return selectedNode;
 };
 
+/**
+ * Calculate the reward that a given node should receive
+ * @param baseQuota how much quota did the node allow
+ * @param node node that gave access for request
+ * @returns number
+ */
 export const getRewardForNode = (
   baseQuota: number,
   node: QueryRegisteredNode

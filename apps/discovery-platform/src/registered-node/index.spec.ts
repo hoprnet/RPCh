@@ -6,6 +6,8 @@ import {
   getRegisteredNodes,
   getRegisteredNode,
   updateRegisteredNode,
+  getEligibleNode,
+  getRewardForNode,
 } from ".";
 import { DBInstance } from "../db";
 import { CreateRegisteredNode } from "./dto";
@@ -78,6 +80,35 @@ describe("test registered node functions", function () {
     const exitNodes = await getExitNodes(db);
 
     assert.equal(exitNodes.length, 2);
+  });
+  it("should get eligible node", async function () {
+    await createRegisteredNode(db, mockNode("1", false));
+    await createRegisteredNode(db, mockNode("2", true));
+    await createRegisteredNode(db, mockNode("3", true));
+
+    const eligibleNode = await getEligibleNode(db);
+
+    assert.equal(!!eligibleNode?.peerId, true);
+  });
+  it("should calculate reward for non exit node", async function () {
+    const baseQuota = 1;
+    await createRegisteredNode(db, mockNode("1", false));
+    const nonExit = await getRegisteredNode(db, "1");
+    if (!nonExit) throw new Error("Failed to create non exit node in test");
+
+    const reward = getRewardForNode(baseQuota, nonExit);
+
+    assert.equal(reward, baseQuota + 0.1);
+  });
+  it("should calculate reward for exit node", async function () {
+    const baseQuota = 1;
+    await createRegisteredNode(db, mockNode("1", true));
+    const nonExit = await getRegisteredNode(db, "1");
+    if (!nonExit) throw new Error("Failed to create non exit node in test");
+
+    const reward = getRewardForNode(baseQuota, nonExit);
+
+    assert.equal(reward, baseQuota + 0.1 * 2);
   });
   it.todo("should get a access token");
 });

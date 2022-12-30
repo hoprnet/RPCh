@@ -83,7 +83,6 @@ export const checkCommitment = async (ops: {
 
     // check if it has enough balance and enough open channels
     if (validateNode(graphRes, ops.minBalance, ops.minChannels)) {
-      console.log("here");
       return true;
     }
 

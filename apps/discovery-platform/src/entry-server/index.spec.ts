@@ -88,7 +88,6 @@ describe("test entry server", function () {
 
     assert(!doesClientHaveQuotaResponse);
   });
-
   it.todo("should get a honest entry node");
   it.todo("should fund entry node");
 });
