@@ -49,7 +49,7 @@ export const entryServer = (ops: {
       return res.json(nodes);
     } else {
       const nodes = await getNonExitNodes(ops.db);
-      return res.json(nodes.filter((node) => !node.hasExitNode));
+      return res.json(nodes);
     }
   });
 
@@ -70,7 +70,6 @@ export const entryServer = (ops: {
       client,
       quota,
       actionTaker: "discovery platform",
-      createdAt: new Date().toISOString(),
     });
     return res.json({ quota: createdQuota });
   });
@@ -104,7 +103,6 @@ export const entryServer = (ops: {
       client,
       quota: ops.baseQuota * -1,
       actionTaker: "discovery platform",
-      createdAt: new Date().toISOString(),
     });
     return res.json({ ...selectedNode, accessToken: ops.accessToken });
   });

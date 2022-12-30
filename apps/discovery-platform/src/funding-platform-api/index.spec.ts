@@ -8,40 +8,40 @@ import {
   postFundingResponse,
 } from "./dto";
 import { QueryRegisteredNode } from "../registered-node/dto";
+import { MockPgInstanceSingleton } from "../db/index.spec";
 
 const FUNDING_PLATFORM_URL = "http://localhost:5000";
 const FAKE_ACCESS_TOKEN = "EcLjvxdALOT0eq18d8Gzz3DEr3AMG27NtL+++YPSZNE=";
 
 const nockGetApiAccessToken =
   nock(FUNDING_PLATFORM_URL).get("/api/access-token");
-const nockFundingRequest = (peerId: string) =>
-  nock(FUNDING_PLATFORM_URL).post(`/api/request/funds/${peerId}`);
+const nockFundingRequest = (id: string) =>
+  nock(FUNDING_PLATFORM_URL).post(`/api/request/funds/${id}`);
 const nockRequestStatus = (requestId: number) =>
   nock(FUNDING_PLATFORM_URL).get(`/api/request/status/${requestId}`);
 const nockGetFunds = nock(FUNDING_PLATFORM_URL).get("/api/funds");
 
 const createMockNode = (peerId?: string) =>
   ({
-    chainId: 100,
-    peerId: peerId ?? "peerId",
-    hasExitNode: true,
-    honestyScore: 0,
-    registeredAt: new Date(Date.now()),
+    chain_id: 100,
+    id: peerId ?? "peerId",
+    has_exit_node: true,
+    honesty_score: 0,
     status: "FRESH",
-    totalAmountFunded: 0,
+    total_amount_funded: 0,
   } as QueryRegisteredNode);
 
 describe("test funding platform api class", function () {
   let fundingPlatformApi: FundingPlatformApi;
   let dbInstance: db.DBInstance;
 
+  beforeAll(async function () {
+    dbInstance = MockPgInstanceSingleton.getDbInstance();
+    MockPgInstanceSingleton.getInitialState();
+  });
+
   beforeEach(function () {
-    dbInstance = {
-      data: {
-        registeredNodes: [],
-        quotas: [],
-      },
-    };
+    MockPgInstanceSingleton.getInitialState().restore();
     fundingPlatformApi = new FundingPlatformApi(
       FUNDING_PLATFORM_URL,
       dbInstance
@@ -216,7 +216,7 @@ describe("test funding platform api class", function () {
         expiredAt: new Date().toISOString(),
       } as getAccessTokenResponse);
 
-      nockFundingRequest(node.peerId).reply(200, {
+      nockFundingRequest(node.id).reply(200, {
         amountLeft,
         id: requestId,
       } as postFundingResponse);
@@ -228,15 +228,15 @@ describe("test funding platform api class", function () {
       nockRequestStatus(fundingResponse).reply(200, {
         accessTokenHash: "hash",
         amount: "5",
-        chainId: node.chainId,
+        chainId: node.chain_id,
         createdAt: new Date(),
-        nodeAddress: node.peerId,
+        nodeAddress: node.id,
         requestId,
         status: "SUCCESS",
       } as getRequestStatusResponse);
 
       await fundingPlatformApi.checkForPendingRequests();
-      const dbNode = await db.getRegisteredNode(dbInstance, node.peerId);
+      const dbNode = await db.getRegisteredNode(dbInstance, node.id);
 
       assert.equal(
         // @ts-ignore
@@ -265,7 +265,7 @@ describe("test funding platform api class", function () {
         expiredAt: new Date().toISOString(),
       } as getAccessTokenResponse);
 
-      nockFundingRequest(node.peerId).reply(200, {
+      nockFundingRequest(node.id).reply(200, {
         amountLeft,
         id: requestId,
       } as postFundingResponse);
@@ -277,19 +277,19 @@ describe("test funding platform api class", function () {
       nockRequestStatus(fundingResponse).reply(200, {
         accessTokenHash: "hash",
         amount: "5",
-        chainId: node.chainId,
+        chainId: node.chain_id,
         createdAt: new Date(),
-        nodeAddress: node.peerId,
+        nodeAddress: node.id,
         requestId,
         status: "PENDING",
       } as getRequestStatusResponse);
 
       await fundingPlatformApi.checkForPendingRequests();
-      const dbNode = await db.getRegisteredNode(dbInstance, node.peerId);
+      const dbNode = await db.getRegisteredNode(dbInstance, node.id);
 
       assert.equal(
         // @ts-ignore
-        fundingPlatformApi.pendingRequests.has(node.peerId),
+        fundingPlatformApi.pendingRequests.has(node.id),
         true
       );
       assert.equal(
@@ -314,7 +314,7 @@ describe("test funding platform api class", function () {
         expiredAt: new Date().toISOString(),
       } as getAccessTokenResponse);
 
-      nockFundingRequest(node.peerId)
+      nockFundingRequest(node.id)
         .twice()
         .reply(200, {
           amountLeft,
@@ -328,28 +328,28 @@ describe("test funding platform api class", function () {
       nockRequestStatus(fundingResponse).reply(200, {
         accessTokenHash: "hash",
         amount: "5",
-        chainId: node.chainId,
+        chainId: node.chain_id,
         createdAt: new Date(),
-        nodeAddress: node.peerId,
+        nodeAddress: node.id,
         requestId,
         status: "FAILED",
       } as getRequestStatusResponse);
 
       await fundingPlatformApi.checkForPendingRequests();
-      const dbNode = await db.getRegisteredNode(dbInstance, node.peerId);
+      const dbNode = await db.getRegisteredNode(dbInstance, node.id);
 
       assert.equal(
         // @ts-ignore
-        fundingPlatformApi.pendingRequests.has(node.peerId),
+        fundingPlatformApi.pendingRequests.has(node.id),
         true
       );
       assert.equal(
         // @ts-ignore
-        fundingPlatformApi.pendingRequests.get(node.peerId)?.amountOfRetries,
+        fundingPlatformApi.pendingRequests.get(node.id)?.amountOfRetries,
         1
       );
       assert.notEqual(dbNode?.status, "READY");
-      assert.equal(dbNode?.totalAmountFunded, "0");
+      assert.equal(dbNode?.total_amount_funded, "0");
     });
   });
   it("should get funding platform funds", async function () {

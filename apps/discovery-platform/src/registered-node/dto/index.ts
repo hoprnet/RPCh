@@ -12,13 +12,16 @@ export type CreateRegisteredNode = RegisteredNode & {
   };
 };
 
-export type QueryRegisteredNode = RegisteredNode & {
-  registeredAt: Date;
-  totalAmountFunded: number;
-  honestyScore: number;
+export type QueryRegisteredNode = {
+  id: string;
+  has_exit_node: boolean;
+  chain_id: number;
+  total_amount_funded: number;
+  honesty_score: number;
   reason?: string;
   status: RegisteredNodeStatus;
-  // should we have is exit node or can we use just has exit node?
+  created_at: string;
+  updated_at: string;
 };
 
 type RegisteredNodeStatus = "FRESH" | "FUNDING" | "UNUSABLE" | "READY";

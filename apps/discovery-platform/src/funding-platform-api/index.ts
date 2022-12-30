@@ -98,17 +98,17 @@ export class FundingPlatformApi {
     }
 
     try {
-      const dbNode = await getRegisteredNode(this.db, node.peerId);
+      const dbNode = await getRegisteredNode(this.db, node.id);
       if (!dbNode) throw new Error("Node is not registered");
 
-      const res = await fetch(`${this.url}/api/request/funds/${node.peerId}`, {
+      const res = await fetch(`${this.url}/api/request/funds/${node.id}`, {
         method: "POST",
         headers: {
           "x-access-token": this.accessToken!,
         },
         body: JSON.stringify({
           amount: String(amount),
-          chainId: node.chainId,
+          chainId: node.chain_id,
         } as postFundingRequest),
       });
 
@@ -118,7 +118,7 @@ export class FundingPlatformApi {
         (await res.json()) as postFundingResponse;
 
       this.amountLeft = amountLeft;
-      this.savePendingRequest(node.peerId, requestId, prevRetries ?? 0);
+      this.savePendingRequest(node.id, requestId, prevRetries ?? 0);
       return requestId;
     } catch (e: any) {
       throw new Error(e.message);
@@ -199,7 +199,8 @@ export class FundingPlatformApi {
         await updateRegisteredNode(this.db, {
           ...node!,
           status: request.status === "SUCCESS" ? "READY" : "UNUSABLE",
-          totalAmountFunded: node.totalAmountFunded + Number(request.amount),
+          total_amount_funded:
+            node.total_amount_funded + Number(request.amount),
         });
         this.pendingRequests.delete(peerId);
 
@@ -212,7 +213,7 @@ export class FundingPlatformApi {
           Number(request.amount),
           node!
         );
-        this.savePendingRequest(node.peerId, requestId, amountOfRetries + 1);
+        this.savePendingRequest(node.id, requestId, amountOfRetries + 1);
       }
     }
   }

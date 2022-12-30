@@ -26,13 +26,12 @@ const mockGraphResponse: (
 
 const createMockNode = (peerId?: string) =>
   ({
-    chainId: 100,
-    peerId: peerId ?? "peerId",
-    hasExitNode: true,
-    honestyScore: 0,
-    registeredAt: new Date(Date.now()),
+    chain_id: 100,
+    id: peerId ?? "peerId",
+    has_exit_node: true,
+    honesty_score: 0,
     status: "FRESH",
-    totalAmountFunded: 0,
+    total_amount_funded: 0,
   } as QueryRegisteredNode);
 
 describe("test graph api functions", function () {

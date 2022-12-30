@@ -16,6 +16,7 @@
     "@types/node-fetch": "2.6.2",
     "@types/supertest": "^2.0.12",
     "nock": "^13.2.9",
+    "pg-mem": "^2.6.4",
     "rpch-configs-eslint": "*",
     "rpch-configs-jest": "*",
     "rpch-configs-prettier": "*",
@@ -28,6 +29,7 @@
     "graphql": "^16.6.0",
     "graphql-request": "^5.0.0",
     "node-fetch": "^2.6.2",
+    "pg-promise": "^11.0.0",
     "rpch-common": "*"
   }
 }

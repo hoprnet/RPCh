@@ -7,26 +7,28 @@ import {
   sumQuotas,
   updateQuota,
 } from "./index";
+import { MockPgInstanceSingleton } from "../db/index.spec";
 
 const createMockQuota = (params?: CreateQuota): CreateQuota => {
   return {
     actionTaker: params?.actionTaker ?? "discovery-platform",
     client: params?.client ?? "client",
     quota: params?.quota ?? 1,
-    createdAt: new Date().toISOString(),
   };
 };
 
 describe("test quota functions", function () {
   let dbInstance: db.DBInstance;
-  beforeEach(function () {
-    dbInstance = {
-      data: {
-        registeredNodes: [],
-        quotas: [],
-      },
-    };
+
+  beforeAll(async function () {
+    dbInstance = MockPgInstanceSingleton.getDbInstance();
+    MockPgInstanceSingleton.getInitialState();
   });
+
+  beforeEach(async function () {
+    MockPgInstanceSingleton.getInitialState().restore();
+  });
+
   it("should create quota", async function () {
     const mockQuota = createMockQuota();
     const quota = await createQuota(dbInstance, mockQuota);
@@ -45,7 +47,6 @@ describe("test quota functions", function () {
       client: "client",
       actionTaker: "discovery",
       quota: 10,
-      createdAt: "now",
     });
     await createQuota(dbInstance, mockQuota);
     await createQuota(dbInstance, mockQuota);
@@ -55,7 +56,6 @@ describe("test quota functions", function () {
         actionTaker: "discovery",
         client: "other client",
         quota: 20,
-        createdAt: "now",
       })
     );
 
@@ -67,7 +67,6 @@ describe("test quota functions", function () {
       client: "client",
       actionTaker: "discovery",
       quota: 10,
-      createdAt: "now",
     });
     const createdQuota = await createQuota(dbInstance, mockQuota);
     await updateQuota(dbInstance, { ...createdQuota, action_taker: "eve" });
@@ -79,7 +78,6 @@ describe("test quota functions", function () {
       client: "client",
       actionTaker: "discovery",
       quota: 10,
-      createdAt: "now",
     });
     const createdQuota = await createQuota(dbInstance, mockQuota);
     if (!createdQuota.id) throw new Error("Could not create mock quota");
@@ -93,7 +91,6 @@ describe("test quota functions", function () {
       client: "client",
       actionTaker: "discovery",
       quota: baseQuota,
-      createdAt: "now",
     });
     await createQuota(dbInstance, mockQuota);
     await createQuota(dbInstance, mockQuota);

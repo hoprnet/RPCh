@@ -11,9 +11,8 @@ export const createQuota = async (
   dbInstance: db.DBInstance,
   quota: CreateQuota
 ): Promise<QueryQuota> => {
-  const dbQuota: QueryQuota = {
-    id: Math.floor(Math.random() * 6e2),
-    action_taker: quota.actionTaker,
+  const dbQuota: CreateQuota = {
+    actionTaker: quota.actionTaker,
     client: quota.client,
     quota: quota.quota,
   };

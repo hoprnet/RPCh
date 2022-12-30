@@ -23,13 +23,12 @@ export const createRegisteredNode = async (
   node: CreateRegisteredNode
 ): Promise<boolean> => {
   const newNode = {
-    registeredAt: new Date(Date.now()),
-    honestyScore: 0,
-    totalAmountFunded: 0,
+    honesty_score: 0,
+    total_amount_funded: 0,
     status: "FRESH",
-    chainId: Number(node.chainId),
-    hasExitNode: Boolean(node.hasExitNode),
-    peerId: node.peerId,
+    chain_id: Number(node.chainId),
+    has_exit_node: Boolean(node.hasExitNode),
+    id: node.peerId,
   } as QueryRegisteredNode;
 
   return await db.saveRegisteredNode(dbInstance, newNode);
@@ -44,7 +43,7 @@ export const createRegisteredNode = async (
 export const getRegisteredNode = async (
   dbInstance: db.DBInstance,
   peerId: string
-): Promise<QueryRegisteredNode | undefined> => {
+): Promise<QueryRegisteredNode | null> => {
   const node = await db.getRegisteredNode(dbInstance, peerId);
   return node;
 };
@@ -108,7 +107,7 @@ export const getRewardForNode = (
   baseQuota: number,
   node: QueryRegisteredNode
 ): number => {
-  const extra = node.hasExitNode ? 0.1 * 2 : 0.1;
+  const extra = node.has_exit_node ? 0.1 * 2 : 0.1;
   const reward = baseQuota + extra;
   return reward;
 };

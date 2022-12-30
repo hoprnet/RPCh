@@ -32,11 +32,12 @@
       ],
       "env": [
         "PORT",
-        "FUNDING_PLATFORM_API",
+        "FUNDING_PLATFORM_URL",
         "BALANCE_THRESHOLD",
         "CHANNELS_THRESHOLD",
         "BASE_QUOTA",
-        "HOPRD_ACCESS_TOKEN"
+        "HOPRD_ACCESS_TOKEN",
+        "DB_CONNECTION_URL"
       ]
     },
     "dev": {

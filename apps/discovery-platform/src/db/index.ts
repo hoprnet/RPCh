@@ -1,52 +1,100 @@
-import { QueryQuota } from "../quota/dto";
+import { CreateQuota, QueryQuota } from "../quota/dto";
 import type { QueryRegisteredNode } from "../registered-node/dto";
+import pgp from "pg-promise";
 
-export type Data = {
-  registeredNodes: QueryRegisteredNode[];
-  quotas: QueryQuota[];
+export type DBInstance = pgp.IDatabase<{}>;
+
+const TABLES = {
+  REGISTERED_NODES: "registered_nodes",
+  FUNDING_REQUESTS: "funding_requests",
+  QUOTAS: "quotas",
 };
 
-export type DBInstance = {
-  data: Data;
+export const getRegisteredNodes = async (
+  dbInstance: DBInstance
+): Promise<QueryRegisteredNode[]> => {
+  const text = `SELECT * FROM ${TABLES.REGISTERED_NODES}`;
+  const dbRes = (await dbInstance.manyOrNone(text)) as QueryRegisteredNode[];
+  return dbRes;
 };
 
-export const getRegisteredNodes = async (db: DBInstance) => {
-  return db.data.registeredNodes;
+export const getExitNodes = async (
+  dbInstance: DBInstance
+): Promise<QueryRegisteredNode[]> => {
+  const text = `SELECT * FROM ${TABLES.REGISTERED_NODES} WHERE has_exit_node=true`;
+  const dbRes = (await dbInstance.manyOrNone(text)) as QueryRegisteredNode[];
+  return dbRes;
 };
 
-export const getExitNodes = async (db: DBInstance) => {
-  return db.data.registeredNodes.filter((node) => node.hasExitNode);
-};
-
-export const getNonExitNodes = async (db: DBInstance) => {
-  return db.data.registeredNodes.filter((node) => !node.hasExitNode);
+export const getNonExitNodes = async (
+  dbInstance: DBInstance
+): Promise<QueryRegisteredNode[]> => {
+  const text = `SELECT * FROM ${TABLES.REGISTERED_NODES} WHERE has_exit_node=false`;
+  const dbRes = (await dbInstance.manyOrNone(text)) as QueryRegisteredNode[];
+  return dbRes;
 };
 
 export const saveRegisteredNode = async (
-  db: DBInstance,
+  dbInstance: DBInstance,
   node: QueryRegisteredNode
-) => {
+): Promise<boolean> => {
   try {
-    await db.data.registeredNodes.push(node);
-    return true;
+    const text = `INSERT INTO 
+    ${TABLES.REGISTERED_NODES} (has_exit_node, id, chain_id, total_amount_funded, honesty_score, status)
+    VALUES ($<has_exit_node>, $<id>, $<chain_id>, $<total_amount_funded>, $<honesty_score>, $<status>)
+    RETURNING *`;
+    const values = {
+      has_exit_node: node.has_exit_node,
+      id: node.id,
+      chain_id: node.chain_id,
+      total_amount_funded: node.total_amount_funded,
+      honesty_score: node.honesty_score,
+      status: node.status,
+    };
+    const dbRes = (await dbInstance.one(text, values)) as QueryRegisteredNode;
+    return dbRes ? true : false;
   } catch (e) {
     return false;
   }
 };
 
-export const getRegisteredNode = async (db: DBInstance, peerId: string) => {
-  return db.data.registeredNodes.find((node) => node.peerId === peerId);
+export const getRegisteredNode = async (
+  dbInstance: DBInstance,
+  peerId: string
+): Promise<QueryRegisteredNode | null> => {
+  const text = `SELECT * FROM ${TABLES.REGISTERED_NODES} WHERE id=$<peerId>`;
+  const values = {
+    peerId,
+  };
+  const dbRes = (await dbInstance.oneOrNone(
+    text,
+    values
+  )) as QueryRegisteredNode;
+  return dbRes;
 };
 
 export const updateRegisteredNode = async (
-  db: DBInstance,
+  dbInstance: DBInstance,
   updatedNode: QueryRegisteredNode
-) => {
+): Promise<boolean> => {
   try {
-    db.data.registeredNodes = db.data.registeredNodes.map((node) =>
-      node.peerId === updatedNode.peerId ? { ...node, ...updatedNode } : node
-    );
-    return true;
+    const text = `UPDATE ${TABLES.REGISTERED_NODES}
+    SET has_exit_node = $<has_exit_node>, chain_id = $<chain_id>, 
+    total_amount_funded = $<total_amount_funded>, honesty_score = $<honesty_score>, 
+    reason = $<reason>, status = $<status>
+    WHERE id = $<id>
+    RETURNING *`;
+    const values = {
+      id: updatedNode.id,
+      has_exit_node: updatedNode.has_exit_node,
+      chain_id: updatedNode.chain_id,
+      total_amount_funded: updatedNode.total_amount_funded,
+      honesty_score: updatedNode.honesty_score,
+      reason: updatedNode.reason,
+      status: updatedNode.status,
+    };
+    const dbRes = (await dbInstance.one(text, values)) as QueryRegisteredNode;
+    return dbRes ? true : false;
   } catch (e) {
     return false;
   }
@@ -54,47 +102,70 @@ export const updateRegisteredNode = async (
 
 export const createQuota = async (
   dbInstance: DBInstance,
-  quota: QueryQuota
+  quota: CreateQuota
 ): Promise<QueryQuota> => {
-  await dbInstance.data.quotas.push(quota);
-  return quota;
+  const text = `INSERT INTO ${TABLES.QUOTAS} (id, client, quota, action_taker)
+  VALUES (default, $<client>, $<quota>, $<action_taker>) RETURNING *`;
+  const values = {
+    client: quota.client,
+    quota: quota.quota,
+    action_taker: quota.actionTaker,
+  };
+
+  const dbRes = (await dbInstance.one(text, values)) as QueryQuota;
+  return dbRes;
 };
 
 export const getQuota = async (
   dbInstance: DBInstance,
   id: number
 ): Promise<QueryQuota | undefined> => {
-  const quota = await dbInstance.data.quotas.find((quota) => quota.id === id);
-  return quota;
+  const text = `SELECT * FROM ${TABLES.QUOTAS} WHERE id=$<id>`;
+  const values = {
+    id,
+  };
+  const dbRes = (await dbInstance.oneOrNone(text, values)) as QueryQuota;
+  return dbRes;
 };
 
 export const getQuotasByClient = async (
   dbInstance: DBInstance,
   client: string
 ): Promise<QueryQuota[]> => {
-  const quotas = await dbInstance.data.quotas.filter(
-    (quota) => quota.client === client
-  );
-  return quotas;
+  const text = `SELECT * FROM ${TABLES.QUOTAS} WHERE client=$<client>`;
+  const values = {
+    client,
+  };
+  const dbRes = (await dbInstance.manyOrNone(text, values)) as QueryQuota[];
+  return dbRes;
 };
 
 export const updateQuota = async (
   dbInstance: DBInstance,
   quota: QueryQuota
 ): Promise<QueryQuota> => {
-  dbInstance.data.quotas = dbInstance.data.quotas.map((tempQuota) =>
-    tempQuota.id === quota.id ? { ...tempQuota, ...quota } : tempQuota
-  );
-  return quota;
+  const text = `UPDATE ${TABLES.QUOTAS}
+  SET client = $<client>, quota = $<quota>, action_taker = $<action_taker>
+  WHERE id = $<id> 
+  RETURNING *`;
+  const values = {
+    id: quota.id,
+    client: quota.client,
+    action_taker: quota.action_taker,
+    quota: quota.quota,
+  };
+  const dbRes = (await dbInstance.oneOrNone(text, values)) as QueryQuota;
+  return dbRes;
 };
 
 export const deleteQuota = async (
   dbInstance: DBInstance,
   id: number
 ): Promise<QueryQuota | undefined> => {
-  const deletedQuota = dbInstance.data.quotas.find((quota) => quota.id === id);
-  dbInstance.data.quotas = dbInstance.data.quotas.filter(
-    (quota) => quota.id !== id
-  );
-  return deletedQuota;
+  const text = `DELETE FROM ${TABLES.QUOTAS} WHERE id=$<id> RETURNING *`;
+  const values = {
+    id,
+  };
+  const dbRes = (await dbInstance.oneOrNone(text, values)) as QueryQuota;
+  return dbRes;
 };

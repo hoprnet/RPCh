@@ -60,7 +60,7 @@ export const checkCommitment = async (ops: {
 }): Promise<boolean | undefined> => {
   try {
     const variables = {
-      id: ops.node.peerId,
+      id: ops.node.id,
     };
     // make query
     const channels = await fetch(GRAPH_HOPR_URL, {
