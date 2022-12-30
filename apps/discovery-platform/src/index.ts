@@ -7,6 +7,8 @@ const {
   PORT = 3000,
   // Api endpoint used for completing funding requests of registered nodes
   FUNDING_PLATFORM_API,
+  // Access token used to connect to hoprd entry node
+  HOPRD_ACCESS_TOKEN,
   // Minimal amount of balance a account must have to show commitment
   BALANCE_THRESHOLD,
   // Minimal amount of open channels a account must have to show commitment
@@ -16,6 +18,9 @@ const {
 } = process.env;
 
 const main = () => {
+  if (!HOPRD_ACCESS_TOKEN) {
+    throw new Error('Missing "HOPRD_ACCESS_TOKEN" env variable');
+  }
   if (!FUNDING_PLATFORM_API)
     throw new Error('Missing "FUNDING_PLATFORM_API" env variable');
   if (!BALANCE_THRESHOLD)
@@ -42,6 +47,7 @@ const main = () => {
   const server = entryServer({
     db,
     baseQuota: Number(BASE_QUOTA),
+    accessToken: HOPRD_ACCESS_TOKEN,
     fundingPlatformApi,
   });
   server.listen(PORT);

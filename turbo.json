@@ -35,7 +35,8 @@
         "FUNDING_PLATFORM_API",
         "BALANCE_THRESHOLD",
         "CHANNELS_THRESHOLD",
-        "BASE_QUOTA"
+        "BASE_QUOTA",
+        "HOPRD_ACCESS_TOKEN"
       ]
     },
     "dev": {

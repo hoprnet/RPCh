@@ -23,12 +23,14 @@ export const doesClientHaveQuota = async (
 ) => {
   const allQuotasFromClient = await getAllQuotasByClient(db, client);
   const sumOfClientsQuota = sumQuotas(allQuotasFromClient);
+  console.log(allQuotasFromClient, sumOfClientsQuota);
   return sumOfClientsQuota >= baseQuota;
 };
 
 export const entryServer = (ops: {
   db: DBInstance;
   baseQuota: number;
+  accessToken: string;
   fundingPlatformApi: FundingPlatformApi;
 }) => {
   app.use("/api", apiRouter);
@@ -74,7 +76,6 @@ export const entryServer = (ops: {
   });
 
   apiRouter.get("/request/entry-node", async (req, res) => {
-    // TODO: add funding to selected node
     const { client } = req.body;
     // check if client has enough quota
     const doesClientHaveQuotaResponse = await doesClientHaveQuota(
@@ -90,7 +91,7 @@ export const entryServer = (ops: {
     // choose selected entry node
     const selectedNode = await getEligibleNode(ops.db);
     if (!selectedNode) {
-      return res.json({ error: "could not find eligible node" });
+      return res.json({ body: "Could not find eligible node" });
     }
 
     // calculate how much should be funded to entry node
@@ -105,7 +106,7 @@ export const entryServer = (ops: {
       actionTaker: "discovery platform",
       createdAt: new Date().toISOString(),
     });
-    return res.json({ body: selectedNode });
+    return res.json({ ...selectedNode, accessToken: ops.accessToken });
   });
 
   return app;

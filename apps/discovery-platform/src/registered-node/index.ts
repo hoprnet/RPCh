@@ -90,7 +90,10 @@ export const getEligibleNode = async (
 ): Promise<QueryRegisteredNode | undefined> => {
   const allNodes = await getRegisteredNodes(dbInstance);
   // choose selected entry node
-  const selectedNode = allNodes.at(Math.floor(Math.random() * allNodes.length));
+  const eligibleNodes = allNodes.filter((node) => node.status === "READY");
+  const selectedNode = eligibleNodes.at(
+    Math.floor(Math.random() * eligibleNodes.length)
+  );
   // TODO: get access token of selected node
   return selectedNode;
 };

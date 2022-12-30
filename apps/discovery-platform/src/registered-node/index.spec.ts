@@ -86,9 +86,18 @@ describe("test registered node functions", function () {
     await createRegisteredNode(db, mockNode("2", true));
     await createRegisteredNode(db, mockNode("3", true));
 
+    const queryNode = await getRegisteredNode(db, "2");
+    if (!queryNode) throw new Error("Could not query in registered node test");
+
+    const updateNode = await updateRegisteredNode(db, {
+      ...queryNode,
+      status: "READY",
+    });
+
     const eligibleNode = await getEligibleNode(db);
 
-    assert.equal(!!eligibleNode?.peerId, true);
+    assert.equal(eligibleNode?.peerId, queryNode?.peerId);
+    assert.equal(eligibleNode?.status, "READY");
   });
   it("should calculate reward for non exit node", async function () {
     const baseQuota = 1;
