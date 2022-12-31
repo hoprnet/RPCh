@@ -1,6 +1,6 @@
 {
   "name": "@rpch/e2e",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "private": true,
   "license": "LGPL-3.0",
   "scripts": {
@@ -19,7 +19,7 @@
     "@rpch/configs-tsup": "*"
   },
   "dependencies": {
-    "@rpch/ethers": "0.1.1",
-    "@rpch/common": "0.1.1"
+    "@rpch/ethers": "0.1.2",
+    "@rpch/common": "0.1.2"
   }
 }

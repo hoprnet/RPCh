@@ -1,5 +1,13 @@
 # @rpch/exit-node
 
+## 0.0.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @rpch/crypto-bridge@0.1.2
+  - @rpch/common@0.1.2
+
 ## 0.0.2
 
 ### Patch Changes
