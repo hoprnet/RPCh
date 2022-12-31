@@ -1,6 +1,6 @@
 {
   "name": "@rpch/sdk",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "license": "LGPL-3.0",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "peer-id": "^0.16.0",
-    "@rpch/common": "0.1.1",
-    "@rpch/crypto-bridge": "0.1.1"
+    "@rpch/common": "0.1.2",
+    "@rpch/crypto-bridge": "0.1.2"
   }
 }
