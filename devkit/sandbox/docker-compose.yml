@@ -34,7 +34,7 @@ services:
   exit-1:
     <<: *exit
     environment:
-      - DEBUG=${DEBUG}
+      - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_ENDPOINT=http://pluto:13301
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - RPCH_PASSWORD=${RPCH_PASSWORD}
@@ -51,7 +51,7 @@ services:
   exit-2:
     <<: *exit
     environment:
-      - DEBUG=${DEBUG}
+      - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_ENDPOINT=http://pluto:13302
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - RPCH_PASSWORD=${RPCH_PASSWORD}
@@ -68,7 +68,7 @@ services:
   exit-3:
     <<: *exit
     environment:
-      - DEBUG=${DEBUG}
+      - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_ENDPOINT=http://pluto:13303
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - RPCH_PASSWORD=${RPCH_PASSWORD}
@@ -85,7 +85,7 @@ services:
   exit-4:
     <<: *exit
     environment:
-      - DEBUG=${DEBUG}
+      - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_ENDPOINT=http://pluto:13304
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - RPCH_PASSWORD=${RPCH_PASSWORD}
@@ -102,7 +102,7 @@ services:
   exit-5:
     <<: *exit
     environment:
-      - DEBUG=${DEBUG}
+      - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_ENDPOINT=http://pluto:13305
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - RPCH_PASSWORD=${RPCH_PASSWORD}

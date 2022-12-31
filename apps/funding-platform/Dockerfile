@@ -45,6 +45,15 @@ COPY --from=installer /app/apps/funding-platform/package.json .
 COPY --from=installer /app .
 
 ENV NODE_ENV=production
+ENV SECRET_KEY=${SECRET_KEY:-"PleaseChangeMe"}
+ENV WALLET_PRIV_KEY=${WALLET_PRIV_KEY:-"PleaseChangeMe"}
+ENV PORT=${PORT:-3000}
+ENV CONFIRMATIONS=${CONFIRMATIONS:-1}
+ENV MAX_AMOUNT_OF_TOKENS=${MAX_AMOUNT_OF_TOKENS:-100}
+ENV TIMEOUT=${TIMEOUT:-3}
+ENV DB_CONNECTION_URL=${DB_CONNECTION_URL:-}
+ENV DEBUG=${DEBUG:-"rpch*,-*verbose,-*metrics"}
+
 
 CMD ["node", "apps/funding-platform/build/index.js"]
 
