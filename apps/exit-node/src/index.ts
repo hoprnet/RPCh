@@ -15,6 +15,7 @@ import * as crypto from "@rpch/crypto-bridge/nodejs";
 import * as exit from "./exit";
 import * as identity from "./identity";
 import { createLogger } from "./utils";
+import PeerId from "peer-id";
 
 const log = createLogger();
 
@@ -50,7 +51,19 @@ export const start = async (ops: {
 }): Promise<() => void> => {
   const onMessage = async (message: Message) => {
     try {
+      // in the method, we are only expecting to receive
+      // Requests, this means that the all messages are
+      // prefixed by the entry node's peer id
       const [clientId] = utils.splitBodyToParts(message.body);
+
+      // if this fails, then we most likely have received
+      // a Response
+      try {
+        PeerId.createFromB58String(clientId);
+      } catch {
+        log.verbose("Ignoring Response as we are an exit node");
+      }
+
       const lastRequestFromClient: bigint = await db
         .get(clientId)
         .then((v) => {

@@ -203,19 +203,26 @@ export default class SDK {
     if (this.isReady) return;
 
     // initialize crypto lib
+    log.verbose("Using 'web' RPCh crypto implementation");
+    this.crypto = (await import(
+      "@rpch/crypto-bridge/web"
+    )) as typeof RPChCryptoWeb;
     // @ts-expect-error
-    if (typeof window === "undefined") {
-      log.verbose("Using 'node' RPCh crypto implementation");
-      this.crypto =
-        require("@rpch/crypto-bridge/nodejs") as typeof RPChCryptoNode;
-    } else {
-      log.verbose("Using 'web' RPCh crypto implementation");
-      this.crypto = (await import(
-        "@rpch/crypto-bridge/web"
-      )) as typeof RPChCryptoWeb;
-      // @ts-expect-error
-      await this.crypto.init();
-    }
+    await this.crypto.init();
+
+    // // @ts-expect-error
+    // if (typeof window === "undefined") {
+    //   log.verbose("Using 'node' RPCh crypto implementation");
+    //   this.crypto =
+    //     require("@rpch/crypto-bridge/nodejs") as typeof RPChCryptoNode;
+    // } else {
+    //   log.verbose("Using 'web' RPCh crypto implementation");
+    //   this.crypto = (await import(
+    //     "@rpch/crypto-bridge/web"
+    //   )) as typeof RPChCryptoWeb;
+    //   // @ts-expect-error
+    //   await this.crypto.init();
+    // }
 
     // check for expires caches every second
     this.interval = setInterval(() => {
@@ -233,10 +240,9 @@ export default class SDK {
           const segment = Segment.fromString(message);
           this.segmentCache.onSegment(segment);
         } catch (e) {
-          log.normal(
+          log.verbose(
             "rejected received data from HOPRd: not a valid segment",
-            message,
-            e
+            message
           );
         }
       }
