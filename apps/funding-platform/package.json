@@ -1,6 +1,6 @@
 {
   "name": "@rpch/funding-platform",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "license": "LGPL-3.0",
   "private": true,
   "scripts": {
@@ -35,6 +35,6 @@
     "express-validator": "^6.14.2",
     "lowdb": "^5.0.5",
     "pg-promise": "^10.15.4",
-    "@rpch/common": "0.1.2"
+    "@rpch/common": "0.1.3"
   }
 }

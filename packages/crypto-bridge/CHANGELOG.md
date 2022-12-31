@@ -1,5 +1,11 @@
 # @rpch/crypto-bridge
 
+## 0.1.3
+
+### Patch Changes
+
+- Patch publishing bug
+
 ## 0.1.2
 
 ### Patch Changes
