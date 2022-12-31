@@ -1,6 +1,6 @@
 import type Nock from "nock";
 import { utils } from "ethers";
-import { Identity } from "@rpch/crypto-bridge/nodejs";
+import * as crypto from "@rpch/crypto-bridge/nodejs";
 import Request from "./request";
 import Response from "./response";
 
@@ -22,11 +22,11 @@ export const EXIT_NODE_PUB_KEY_A =
 export const EXIT_NODE_PRIV_KEY_A =
   "0xf49d5b21d9363ff94f9e4c7a575c2bdf6229893ad58f23c9ade02b29e1f3fba1";
 
-export const EXIT_NODE_WRITE_IDENTITY_A = Identity.load_identity(
+export const EXIT_NODE_WRITE_IDENTITY_A = crypto.Identity.load_identity(
   utils.arrayify(EXIT_NODE_PUB_KEY_A),
   utils.arrayify(EXIT_NODE_PRIV_KEY_A)
 );
-export const EXIT_NODE_READ_IDENTITY_A = Identity.load_identity(
+export const EXIT_NODE_READ_IDENTITY_A = crypto.Identity.load_identity(
   utils.arrayify(EXIT_NODE_PUB_KEY_A)
 );
 
@@ -98,6 +98,7 @@ export function* createMockedFlow(
   // client side
   resetDateNow = setDateNow(tmsp - TIME_DIFF * 4);
   const clientRequest = Request.createRequest(
+    crypto,
     PROVIDER,
     requestBody,
     entryNodeDestination,
@@ -110,6 +111,7 @@ export function* createMockedFlow(
   // exit node side
   resetDateNow = setDateNow(tmsp - TIME_DIFF * 3);
   const exitNodeRequest = Request.fromMessage(
+    crypto,
     clientRequest.toMessage(),
     exitNodeDestination,
     exitNodeWriteIdentity,
@@ -122,6 +124,7 @@ export function* createMockedFlow(
   // exit node side
   resetDateNow = setDateNow(tmsp - TIME_DIFF * 2);
   const exitNodeResponse = Response.createResponse(
+    crypto,
     exitNodeRequest,
     responseBody
   );
@@ -131,6 +134,7 @@ export function* createMockedFlow(
   // client side
   resetDateNow = setDateNow(tmsp - TIME_DIFF);
   const clientResponse = Response.fromMessage(
+    crypto,
     clientRequest,
     exitNodeResponse.toMessage(),
     BigInt(lastResponseFromExitNode),

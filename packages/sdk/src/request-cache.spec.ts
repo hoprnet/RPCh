@@ -1,5 +1,5 @@
 import assert from "assert";
-import { fixtures } from "@rpch/common";
+import * as fixtures from "@rpch/common/build/fixtures";
 import RequestCache from "./request-cache";
 
 const TIMEOUT = 10e3;

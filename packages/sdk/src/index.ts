@@ -1,3 +1,5 @@
+import type * as RPChCryptoNode from "@rpch/crypto-bridge/nodejs";
+import type * as RPChCryptoWeb from "@rpch/crypto-bridge/web";
 import {
   Cache as SegmentCache,
   Message,
@@ -41,6 +43,7 @@ export type EntryNode = {
  * Send traffic through the RPCh network
  */
 export default class SDK {
+  private crypto?: typeof RPChCryptoNode | typeof RPChCryptoWeb;
   // single inverval for the SDK for things that need to be checked.
   private interval?: NodeJS.Timer;
   private segmentCache: SegmentCache;
@@ -148,6 +151,7 @@ export default class SDK {
 
     // construct Response from Message
     const response = Response.fromMessage(
+      this.crypto!,
       match.request,
       message,
       counter,
@@ -197,6 +201,21 @@ export default class SDK {
    */
   public async start(): Promise<void> {
     if (this.isReady) return;
+
+    // @ts-expect-error
+    if (typeof window === "undefined") {
+      log.verbose("Using 'node' RPCh crypto implementation");
+      this.crypto =
+        require("@rpch/crypto-bridge/nodejs") as typeof RPChCryptoNode;
+    } else {
+      log.verbose("Using 'web' RPCh crypto implementation");
+      this.crypto = (await import(
+        "@rpch/crypto-bridge/web"
+      )) as typeof RPChCryptoWeb;
+      // @ts-expect-error
+      await this.crypto.init();
+    }
+
     // check for expires caches every second
     this.interval = setInterval(() => {
       this.segmentCache.removeExpired(this.timeout);
@@ -213,10 +232,9 @@ export default class SDK {
           const segment = Segment.fromString(message);
           this.segmentCache.onSegment(segment);
         } catch (e) {
-          log.normal(
+          log.verbose(
             "rejected received data from HOPRd: not a valid segment",
-            message,
-            e
+            message
           );
         }
       }
@@ -241,11 +259,14 @@ export default class SDK {
   public createRequest(provider: string, body: string): Request {
     if (!this.isReady) throw Error("SDK not ready to create requests");
     return Request.createRequest(
+      this.crypto!,
       provider,
       body,
       this.entryNode!.peerId,
       this.exitNodePeerId!,
-      Identity.load_identity(etherUtils.arrayify(this.exitNodePubKey!))
+      this.crypto!.Identity.load_identity(
+        etherUtils.arrayify(this.exitNodePubKey!)
+      )
     );
   }
 

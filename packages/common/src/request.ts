@@ -1,6 +1,6 @@
 import PeerId from "peer-id";
 import { utils } from "ethers";
-import {
+import type {
   Envelope,
   box_request,
   unbox_request,
@@ -38,6 +38,10 @@ export default class Request {
    * @returns Request
    */
   public static createRequest(
+    crypto: {
+      Envelope: typeof Envelope;
+      box_request: typeof box_request;
+    },
     provider: string,
     body: string,
     entryNodeDestination: string,
@@ -46,12 +50,12 @@ export default class Request {
   ): Request {
     const id = generateRandomNumber();
     const payload = joinPartsToBody(["request", provider, body]);
-    const envelope = new Envelope(
+    const envelope = new crypto.Envelope(
       utils.toUtf8Bytes(payload),
       entryNodeDestination,
       exitNodeDestination
     );
-    const session = box_request(envelope, exitNodeReadIdentity);
+    const session = crypto.box_request(envelope, exitNodeReadIdentity);
 
     return new Request(
       id,
@@ -71,6 +75,10 @@ export default class Request {
    * @returns Request
    */
   public static fromMessage(
+    crypto: {
+      Envelope: typeof Envelope;
+      unbox_request: typeof unbox_request;
+    },
     message: Message,
     exitNodeDestination: string,
     exitNodeWriteIdentity: Identity,
@@ -82,8 +90,8 @@ export default class Request {
     const entryNodeDestination =
       PeerId.createFromB58String(origin).toB58String();
 
-    const session = unbox_request(
-      new Envelope(
+    const session = crypto.unbox_request(
+      new crypto.Envelope(
         utils.arrayify(encrypted),
         entryNodeDestination,
         exitNodeDestination

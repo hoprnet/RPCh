@@ -11,9 +11,11 @@ import {
   hoprd,
   utils,
 } from "@rpch/common";
-import * as identity from "./identity";
+import * as crypto from "@rpch/crypto-bridge/nodejs";
 import * as exit from "./exit";
+import * as identity from "./identity";
 import { createLogger } from "./utils";
+import PeerId from "peer-id";
 
 const log = createLogger();
 
@@ -49,7 +51,19 @@ export const start = async (ops: {
 }): Promise<() => void> => {
   const onMessage = async (message: Message) => {
     try {
+      // in the method, we are only expecting to receive
+      // Requests, this means that the all messages are
+      // prefixed by the entry node's peer id
       const [clientId] = utils.splitBodyToParts(message.body);
+
+      // if this fails, then we most likely have received
+      // a Response
+      try {
+        PeerId.createFromB58String(clientId);
+      } catch {
+        log.verbose("Ignoring Response as we are an exit node");
+      }
+
       const lastRequestFromClient: bigint = await db
         .get(clientId)
         .then((v) => {
@@ -58,6 +72,7 @@ export const start = async (ops: {
         .catch(() => BigInt(0));
 
       const rpchRequest = Request.fromMessage(
+        crypto,
         message,
         myPeerId!,
         myIdentity,
@@ -72,7 +87,11 @@ export const start = async (ops: {
         rpchRequest.provider
       );
 
-      const rpchResponse = Response.createResponse(rpchRequest, response);
+      const rpchResponse = Response.createResponse(
+        crypto,
+        rpchRequest,
+        response
+      );
       for (const segment of rpchResponse.toMessage().toSegments()) {
         ops.hoprd.sendMessage({
           apiEndpoint: ops.apiEndpoint,
@@ -105,8 +124,8 @@ export const start = async (ops: {
     password: ops.password,
     privateKey: ops.privateKey,
   });
-  log.normal("Running exit node with public key", publicKey);
   log.verbose("Got identity");
+  log.normal("Running exit node with public key", publicKey);
 
   const cache = new Cache(onMessage);
   const interval: NodeJS.Timer = setInterval(() => {

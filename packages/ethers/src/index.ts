@@ -21,6 +21,7 @@ export class RPChProvider extends JsonRpcProvider {
   }
 
   public async send(method: string, params: Array<any>): Promise<any> {
+    log.verbose("Using SEND", method);
     const payload = {
       method: method,
       params: params,
@@ -53,6 +54,11 @@ export class RPChProvider extends JsonRpcProvider {
 
     try {
       const rpchResponsePromise = this.sdk.sendRequest(rpchRequest);
+      log.verbose(
+        "Send request",
+        rpchRequest.id,
+        log.createMetric({ id: rpchRequest.id })
+      );
 
       // Cache the fetch, but clear it on the next event loop
       if (cache) {
