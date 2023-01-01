@@ -250,7 +250,7 @@ describe("test funding platform api class", function () {
       );
       assert.equal(
         // @ts-ignore
-        dbNode?.totalAmountFunded,
+        dbNode?.total_amount_funded,
         "5"
       );
     });
@@ -299,7 +299,7 @@ describe("test funding platform api class", function () {
       );
       assert.equal(
         // @ts-ignore
-        dbNode?.totalAmountFunded,
+        dbNode?.total_amount_funded,
         "0"
       );
     });

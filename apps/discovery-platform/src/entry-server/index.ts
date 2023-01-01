@@ -23,7 +23,6 @@ export const doesClientHaveQuota = async (
 ) => {
   const allQuotasFromClient = await getAllQuotasByClient(db, client);
   const sumOfClientsQuota = sumQuotas(allQuotasFromClient);
-  console.log(allQuotasFromClient, sumOfClientsQuota);
   return sumOfClientsQuota >= baseQuota;
 };
 

@@ -44,8 +44,8 @@ describe("test registered node functions", function () {
     assert.equal(createdNode?.id, mockNode().peerId);
   });
   it("should get all registered node", async function () {
-    await createRegisteredNode(dbInstance, mockNode());
-    await createRegisteredNode(dbInstance, mockNode());
+    await createRegisteredNode(dbInstance, mockNode("1"));
+    await createRegisteredNode(dbInstance, mockNode("2"));
 
     const allNodes = await getRegisteredNodes(dbInstance);
 

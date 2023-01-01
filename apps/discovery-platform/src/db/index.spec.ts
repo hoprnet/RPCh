@@ -81,8 +81,8 @@ describe("test db functions", function () {
     assert.equal(dbNode?.id, node.id);
   });
   it("should get all registered nodes", async function () {
-    await db.saveRegisteredNode(dbInstance, createMockNode());
-    await db.saveRegisteredNode(dbInstance, createMockNode());
+    await db.saveRegisteredNode(dbInstance, createMockNode("1"));
+    await db.saveRegisteredNode(dbInstance, createMockNode("2"));
     const allNodes = await db.getRegisteredNodes(dbInstance);
 
     assert.equal(allNodes.length, 2);

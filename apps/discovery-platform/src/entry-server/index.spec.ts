@@ -69,7 +69,7 @@ describe("test entry server", function () {
     const node = mockNode();
     await request(app).post("/api/node/register").send(node);
     const createdNode = await request(app).get(`/api/node/${node.peerId}`);
-    assert.equal(createdNode.body.node.peerId, node.peerId);
+    assert.equal(createdNode.body.node.id, node.peerId);
   });
 
   it("should get a node", async function () {
@@ -77,7 +77,7 @@ describe("test entry server", function () {
     await request(app).post("/api/node/register").send(node);
     await request(app).post("/api/node/register").send(mockNode("fake"));
     const createdNode = await request(app).get(`/api/node/${node.peerId}`);
-    assert.equal(createdNode.body.node.peerId, node.peerId);
+    assert.equal(createdNode.body.node.id, node.peerId);
   });
 
   it("should get all nodes", async function () {
@@ -105,46 +105,34 @@ describe("test entry server", function () {
     assert.equal(createdQuota.body.quota.quota, 1);
   });
 
-  // it("should now allow request client does not have enough quota", async function () {
-  //   const doesClientHaveQuotaResponse = await doesClientHaveQuota(
-  //     {
-  //       data: {
-  //         quotas: [
-  //           {
-  //             client: "client3",
-  //             quota: 1,
-  //             action_taker: "test",
-  //           },
-  //         ],
-  //         registeredNodes: [],
-  //       },
-  //     },
-  //     "client2",
-  //     2
-  //   );
+  it("should now allow request client does not have enough quota", async function () {
+    // create quota for client
+    await request(app).post("/api/client/funds").send({
+      client: "client",
+      quota: 1,
+    });
+    const doesClientHaveQuotaResponse = await doesClientHaveQuota(
+      dbInstance,
+      "client",
+      2
+    );
 
-  //   assert(!doesClientHaveQuotaResponse);
-  // });
-  // it("should allow request because client has enough quota", async function () {
-  //   const doesClientHaveQuotaResponse = await doesClientHaveQuota(
-  //     {
-  //       data: {
-  //         quotas: [
-  //           {
-  //             client: "client3",
-  //             quota: 1,
-  //             action_taker: "test",
-  //           },
-  //         ],
-  //         registeredNodes: [],
-  //       },
-  //     },
-  //     "client3",
-  //     1
-  //   );
+    assert(!doesClientHaveQuotaResponse);
+  });
+  it("should allow request because client has enough quota", async function () {
+    // create quota for wrong client
+    await request(app).post("/api/client/funds").send({
+      client: "client",
+      quota: 1,
+    });
+    const doesClientHaveQuotaResponse = await doesClientHaveQuota(
+      dbInstance,
+      "client",
+      1
+    );
 
-  //   assert(doesClientHaveQuotaResponse);
-  // });
+    assert(doesClientHaveQuotaResponse);
+  });
   describe("should select an entry node", function () {
     it("should return an entry node", async function () {
       const spy = jest.spyOn(registeredNode, "getEligibleNode");
@@ -184,7 +172,7 @@ describe("test entry server", function () {
         .get("/api/request/entry-node")
         .send({ client: "client" });
 
-      assert.equal(requestResponse.body.peerId, createdNode.body.node?.id);
+      assert.equal(requestResponse.body.id, createdNode.body.node?.id);
       spy.mockRestore();
     });
     it("should fail if no entry node is selected", async function () {
