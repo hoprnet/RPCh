@@ -67,15 +67,6 @@ RUN  curl https://raw.githubusercontent.com/eficode/wait-for/v2.2.3/wait-for > /
 COPY --from=installer /app/apps/exit-node/package.json .
 COPY --from=installer /app .
 
-ENV DEBUG=${DEBUG:-"rpch*,-*verbose,-*metrics"}
-#Check if we can scrape the next 2 values from hopr playground
-ENV HOPRD_API_ENDPOINT=${HOPRD_API_ENDPOINT:-"http://hoprd:3001"}
-ENV HOPRD_API_TOKEN=${HOPRD_API_TOKEN:-"PleaseChangeMe"}
-ENV RPCH_PASSWORD=${RPCH_PASSWORD:-"PleaseChangeMe"}
-ENV RPCH_IDENTITY_DIR=${RPCH_IDENTITY_DIR:-}
-ENV RPCH_PRIVATE_KEY=${RPCH_PRIVATE_KEY:-}
-ENV RPCH_DATA_DIR=${RPCH_DATA_DIR:-}
-
 CMD ["node", "apps/exit-node/build/index.js"]
 
 ENTRYPOINT ["/sbin/tini", "--"]
