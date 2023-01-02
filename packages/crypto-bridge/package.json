@@ -1,0 +1,30 @@
+{
+  "name": "@rpch/crypto-bridge",
+  "version": "0.1.3",
+  "license": "LGPL-3.0",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "files": [
+    "nodejs/*",
+    "web/*"
+  ],
+  "scripts": {
+    "build": "rimraf index.js index.d.ts nodejs web && tsup",
+    "dev": "yarn build --watch",
+    "format": "prettier --check \"src/**/*.{ts,md}\"",
+    "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
+    "test": "jest --coverage"
+  },
+  "devDependencies": {
+    "@swc/core": "^1.3.21",
+    "rimraf": "^3.0.2",
+    "@rpch/configs-eslint": "*",
+    "@rpch/configs-jest": "*",
+    "@rpch/configs-prettier": "*",
+    "@rpch/configs-tsup": "*",
+    "@rpch/configs-typescript": "*"
+  },
+  "dependencies": {
+    "@rpch/crypto": "^0.3.0"
+  }
+}

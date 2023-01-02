@@ -1,21 +1,25 @@
 {
-  "name": "rpch",
+  "name": "@rpch/monorepo",
   "version": "0.0.0",
+  "license": "LGPL-3.0",
   "private": true,
   "workspaces": [
     "configs/*",
     "packages/*",
-    "apps/*"
+    "apps/*",
+    "devkit/*"
   ],
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
     "format": "turbo run format",
+    "format:fix": "turbo run format -- --check=false --write=true",
     "lint": "turbo run lint",
     "test": "turbo run test --",
-    "format:fix": "turbo run format -- --check=false --write=true"
+    "test:e2e": "turbo run start --filter @rpch/e2e"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.25.2",
     "turbo": "^1.6.3"
   },
   "engines": {

@@ -1,4 +1,6 @@
-import { type Response } from "rpch-common";
+import { type Response, utils } from "@rpch/common";
+
+export const createLogger = utils.LoggerFactory("ethers");
 
 export const parseResponse = (res: Response): Record<any, any> => {
   if (!res.body) throw Error(`Response's body is not parsable '${res.body}'`);

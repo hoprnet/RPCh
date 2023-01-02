@@ -1,8 +1,8 @@
 import { createLogger, createApiUrl, decodeIncomingBody } from "./utils";
-import WebSocket from "ws";
-import fetch from "node-fetch";
+import fetch from "cross-fetch";
+import WebSocket from "isomorphic-ws";
 
-const { log, logError, logVerbose } = createLogger(["common", "hoprd"]);
+const log = createLogger(["hoprd"]);
 
 /**
  * Send a segment to a HOPRd node.
@@ -28,7 +28,7 @@ export const sendMessage = async ({
   const body: { body: string; recipient: string; path?: string[] } = {
     body: message,
     recipient: destination,
-    path: [],
+    path: [], // using direct path, TODO: change once auto path is fixed
   };
 
   const response = await fetch(url, {
@@ -38,11 +38,11 @@ export const sendMessage = async ({
   });
 
   if (response.status === 202) {
-    logVerbose("send message to HOPRd node", message, destination);
+    log.verbose("send message to HOPRd node", message, destination);
     const text = await response.text();
     return text;
   } else {
-    logError(
+    log.error(
       "failed to send message to HOPRd node",
       response.status,
       await response.text()
@@ -68,28 +68,67 @@ export const createMessageListener = async (
   );
   const ws = new WebSocket(url);
 
-  ws.on("upgrade", () => {
-    log("Listening for incoming messages from HOPRd", url);
-  });
+  ws.onopen = () => {
+    log.normal("Listening for incoming messages from HOPRd", url);
+  };
 
-  ws.on("message", (data: { toString: () => string }) => {
-    const body = data.toString();
-    logVerbose("received body from HOPRd");
+  ws.onmessage = (event) => {
+    const body = event.data.toString();
+    // message received is an acknowledgement of a
+    // message we have send, we can safely ingore this
+    if (body.startsWith("ack:")) return;
+
+    log.verbose("received body from HOPRd", body);
 
     let message: string | undefined;
     try {
       message = decodeIncomingBody(body);
     } catch (error) {
-      logError(error);
+      log.error(error);
     }
     if (!message) return;
-    logVerbose("decoded received body", message);
+    log.verbose("decoded received body", message);
 
     onMessage(message);
-  });
+  };
 
   return () => {
-    log("Closing HOPRd listener");
+    log.normal("Closing HOPRd listener");
     ws.close();
   };
+};
+
+/**
+ * Send a segment to a HOPRd node.
+ */
+export const fetchPeerId = async ({
+  apiEndpoint,
+  apiToken,
+}: {
+  apiEndpoint: string;
+  apiToken: string | undefined;
+}): Promise<void | string> => {
+  const [url, headers] = createApiUrl(
+    "http",
+    apiEndpoint,
+    "/api/v2/account/addresses",
+    apiToken
+  );
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers,
+  });
+
+  if (response.status === 200) {
+    log.verbose("received addresses from HOPRd node");
+    const result: { native: string; hopr: string } = await response.json();
+    return result.hopr;
+  } else {
+    log.error(
+      "failed to get addresses from HOPRd node",
+      response.status,
+      await response.text()
+    );
+  }
 };

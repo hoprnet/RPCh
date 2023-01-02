@@ -1,7 +1,7 @@
 import assert from "assert";
 import nock from "nock";
 import * as exit from "./exit";
-import { fixtures } from "rpch-common";
+import * as fixtures from "@rpch/common/build/fixtures";
 
 describe("test exit.ts", function () {
   it("should send a request to a provider and receive a string", async function () {

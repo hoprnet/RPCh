@@ -1,51 +1,111 @@
 import assert from "assert";
+import * as crypto from "@rpch/crypto-bridge/nodejs";
 import Message from "./message";
 import Request from "./request";
-import { RPC_REQ_SMALL, PEER_ID_A as ORIGIN, PROVIDER } from "./fixtures";
+import {
+  PROVIDER,
+  RPC_REQ_SMALL,
+  HOPRD_PEER_ID_A as ENTRY_NODE_PEER_ID,
+  EXIT_NODE_HOPRD_PEER_ID_A as EXIT_NODE_HOPRD_PEER_ID,
+  EXIT_NODE_READ_IDENTITY_A as EXIT_NODE_READ_IDENTITY,
+  EXIT_NODE_WRITE_IDENTITY_A as EXIT_NODE_WRITE_IDENTITY,
+} from "./fixtures";
+
+const shouldBeAValidRequest = (
+  actual: Request,
+  expected: Pick<
+    Request,
+    | "provider"
+    | "body"
+    | "entryNodeDestination"
+    | "exitNodeDestination"
+    | "exitNodeIdentity"
+  >
+) => {
+  assert.equal(typeof actual.id, "number");
+  assert(actual.id > 0);
+  assert.equal(actual.provider, expected.provider);
+  assert.equal(actual.body, expected.body);
+  assert.equal(actual.entryNodeDestination, expected.entryNodeDestination);
+  assert.equal(actual.exitNodeDestination, expected.exitNodeDestination);
+  assert(!!actual.exitNodeIdentity);
+  assert(!!actual.session);
+  assert(actual.session.get_request_data().length > 0);
+};
+
+const shouldBeAValidRequestMessage = (
+  actual: Message,
+  expected: Pick<Message, "id">,
+  request: Request
+) => {
+  assert.equal(actual.id, expected.id);
+  const expectedPrefix = request.entryNodeDestination + "|";
+  assert(actual.body.startsWith(expectedPrefix));
+  assert(actual.body.length > expectedPrefix.length);
+};
 
 describe("test Request class", function () {
   it("should create request", function () {
-    const request = new Request(13, ORIGIN, PROVIDER, RPC_REQ_SMALL);
-    assert.equal(request.id, 13);
-    assert.equal(request.body, RPC_REQ_SMALL);
-    assert.equal(request.origin, ORIGIN);
-    assert.equal(request.provider, PROVIDER);
+    const request = Request.createRequest(
+      crypto,
+      PROVIDER,
+      RPC_REQ_SMALL,
+      ENTRY_NODE_PEER_ID,
+      EXIT_NODE_HOPRD_PEER_ID,
+      EXIT_NODE_READ_IDENTITY
+    );
+
+    shouldBeAValidRequest(request, {
+      provider: PROVIDER,
+      body: RPC_REQ_SMALL,
+      entryNodeDestination: ENTRY_NODE_PEER_ID,
+      exitNodeDestination: EXIT_NODE_HOPRD_PEER_ID,
+      exitNodeIdentity: EXIT_NODE_READ_IDENTITY,
+    });
   });
-  it("should create request from data", function () {
-    const request = Request.fromData(ORIGIN, PROVIDER, RPC_REQ_SMALL);
-    assert.equal(request.body, RPC_REQ_SMALL);
-    assert.equal(request.origin, ORIGIN);
-    assert.equal(request.provider, PROVIDER);
-  });
+
   it("should create message from request", function () {
-    const message = new Request(
-      13,
-      ORIGIN,
+    const request = Request.createRequest(
+      crypto,
       PROVIDER,
-      RPC_REQ_SMALL
-    ).toMessage();
-    assert.equal(message.id, 13);
-    assert.equal(
-      message.body,
-      `request|${ORIGIN}|${PROVIDER}|${RPC_REQ_SMALL}`
+      RPC_REQ_SMALL,
+      ENTRY_NODE_PEER_ID,
+      EXIT_NODE_HOPRD_PEER_ID,
+      EXIT_NODE_READ_IDENTITY
+    );
+
+    shouldBeAValidRequestMessage(
+      request.toMessage(),
+      { id: request.id },
+      request
     );
   });
+
   it("should create request from message", function () {
+    // created by exit node
     const request = Request.fromMessage(
-      new Message(13, `request|${ORIGIN}|${PROVIDER}|${RPC_REQ_SMALL}`)
+      crypto,
+      // created by client
+      Request.createRequest(
+        crypto,
+        PROVIDER,
+        RPC_REQ_SMALL,
+        ENTRY_NODE_PEER_ID,
+        EXIT_NODE_HOPRD_PEER_ID,
+        EXIT_NODE_READ_IDENTITY
+      ).toMessage(),
+      EXIT_NODE_HOPRD_PEER_ID,
+      EXIT_NODE_WRITE_IDENTITY,
+      BigInt(0),
+      () => {}
     );
-    assert.equal(request.body, RPC_REQ_SMALL);
-    assert.equal(request.origin, ORIGIN);
-    assert.equal(request.provider, PROVIDER);
-  });
-  it("should create response from request", function () {
-    const response = new Request(
-      13,
-      ORIGIN,
-      PROVIDER,
-      RPC_REQ_SMALL
-    ).createResponse("response");
-    assert.equal(response.id, 13);
-    assert.equal(response.body, "response");
+
+    shouldBeAValidRequest(request, {
+      provider: PROVIDER,
+      body: RPC_REQ_SMALL,
+      entryNodeDestination: ENTRY_NODE_PEER_ID,
+      exitNodeDestination: EXIT_NODE_HOPRD_PEER_ID,
+      exitNodeIdentity: EXIT_NODE_WRITE_IDENTITY,
+    });
   });
 });

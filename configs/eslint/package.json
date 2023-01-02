@@ -1,13 +1,15 @@
 {
-  "name": "rpch-configs-eslint",
+  "name": "@rpch/configs-eslint",
   "version": "0.0.0",
+  "license": "LGPL-3.0",
   "private": true,
   "main": "index.js",
   "dependencies": {
     "eslint": "^7.23.0",
-    "eslint-config-next": "13.0.0",
+    "eslint-config-next": "^13.0.0",
     "eslint-config-prettier": "^8.3.0",
-    "eslint-plugin-react": "7.31.8",
-    "eslint-config-turbo": "latest"
+    "eslint-config-turbo": "^0.0.7",
+    "eslint-plugin-react": "^7.31.8",
+    "next": "^13.0.6"
   }
 }

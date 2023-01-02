@@ -1,9 +1,10 @@
 {
-  "name": "rpch-exit-node",
-  "version": "0.0.0",
-  "license": "MIT",
+  "name": "@rpch/exit-node",
+  "version": "0.0.4",
+  "license": "LGPL-3.0",
+  "private": true,
   "scripts": {
-    "build": "rimraf build && tsup",
+    "build": "tsup",
     "dev": "yarn build --watch",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
@@ -11,16 +12,25 @@
     "start": "node build/index.js"
   },
   "devDependencies": {
+    "@types/leveldown": "^4.0.3",
+    "@types/levelup": "^5.1.2",
+    "@types/memdown": "^3.0.0",
     "@types/node-fetch": "2.6.2",
+    "@types/secp256k1": "^4.0.3",
+    "memdown": "^6.1.1",
     "nock": "^13.2.9",
-    "rpch-configs-eslint": "*",
-    "rpch-configs-jest": "*",
-    "rpch-configs-prettier": "*",
-    "rpch-configs-tsup": "*",
-    "rpch-configs-typescript": "*"
+    "@rpch/configs-eslint": "*",
+    "@rpch/configs-jest": "*",
+    "@rpch/configs-prettier": "*",
+    "@rpch/configs-tsup": "*",
+    "@rpch/configs-typescript": "*"
   },
   "dependencies": {
+    "ethers": "^5.7.2",
+    "leveldown": "^6.1.1",
+    "levelup": "^5.1.1",
     "node-fetch": "^2.6.2",
-    "rpch-common": "*"
+    "@rpch/common": "0.1.3",
+    "@rpch/crypto-bridge": "0.1.3"
   }
 }
