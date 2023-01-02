@@ -50,7 +50,7 @@
         "EXIT_NODE_PUB_KEY"
       ]
     },
-    "@rpch/funding-platform#build": {
+    "@rpch/funding-service#build": {
       "dependsOn": [
         "^build"
       ],
@@ -76,7 +76,7 @@
       ],
       "env": [
         "PORT",
-        "FUNDING_PLATFORM_URL",
+        "FUNDING_SERVICE_URL",
         "BALANCE_THRESHOLD",
         "CHANNELS_THRESHOLD",
         "BASE_QUOTA",

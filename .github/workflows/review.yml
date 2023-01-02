@@ -49,7 +49,7 @@ jobs:
     strategy:
       matrix:
         # TODO: dynamically get this list
-        apps: ["exit-node", "funding-platform", "discovery-platform"]
+        apps: ["exit-node", "funding-service", "discovery-platform"]
 
     steps:
       - name: Check out code

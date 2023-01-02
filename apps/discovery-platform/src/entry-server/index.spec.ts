@@ -7,24 +7,24 @@ import {
   CreateRegisteredNode,
   QueryRegisteredNode,
 } from "../registered-node/dto";
-import { FundingPlatformApi } from "../funding-platform-api";
+import { FundingServiceApi } from "../funding-service-api";
 import * as registeredNode from "../registered-node";
 import nock from "nock";
 import {
   getAccessTokenResponse,
   postFundingResponse,
-} from "../funding-platform-api/dto";
+} from "../funding-service-api/dto";
 import { MockPgInstanceSingleton } from "../db/index.spec";
 
-const FUNDING_PLATFORM_URL = "http://localhost:5000";
+const FUNDING_SERVICE_URL = "http://localhost:5000";
 const ACCESS_TOKEN = "ACCESS";
 const BASE_QUOTA = 1;
 const FAKE_ACCESS_TOKEN = "EcLjvxdALOT0eq18d8Gzz3DEr3AMG27NtL+++YPSZNE=";
 
 const nockFundingRequest = (peerId: string) =>
-  nock(FUNDING_PLATFORM_URL).post(`/api/request/funds/${peerId}`);
+  nock(FUNDING_SERVICE_URL).post(`/api/request/funds/${peerId}`);
 const nockGetApiAccessToken =
-  nock(FUNDING_PLATFORM_URL).get("/api/access-token");
+  nock(FUNDING_SERVICE_URL).get("/api/access-token");
 
 const mockNode = (peerId?: string, hasExitNode?: boolean) =>
   ({
@@ -49,15 +49,15 @@ describe("test entry server", function () {
 
   beforeEach(async function () {
     MockPgInstanceSingleton.getInitialState().restore();
-    const fundingPlatformApi = new FundingPlatformApi(
-      FUNDING_PLATFORM_URL,
+    const fundingServiceApi = new FundingServiceApi(
+      FUNDING_SERVICE_URL,
       dbInstance
     );
     app = entryServer({
       db: dbInstance,
       baseQuota: BASE_QUOTA,
       accessToken: ACCESS_TOKEN,
-      fundingPlatformApi,
+      fundingServiceApi,
     });
   });
 

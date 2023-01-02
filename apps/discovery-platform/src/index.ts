@@ -1,6 +1,6 @@
 import { DBInstance } from "./db";
 import { entryServer } from "./entry-server";
-import { FundingPlatformApi } from "./funding-platform-api";
+import { FundingServiceApi } from "./funding-service-api";
 import pgp from "pg-promise";
 import fs from "fs";
 
@@ -8,7 +8,7 @@ const {
   // Port that server will listen for requests
   PORT = 3000,
   // Api endpoint used for completing funding requests of registered nodes
-  FUNDING_PLATFORM_URL,
+  FUNDING_SERVICE_URL,
   // Access token used to connect to hoprd entry node
   HOPRD_ACCESS_TOKEN,
   // Database connection url
@@ -25,8 +25,8 @@ const main = () => {
   if (!HOPRD_ACCESS_TOKEN) {
     throw new Error('Missing "HOPRD_ACCESS_TOKEN" env variable');
   }
-  if (!FUNDING_PLATFORM_URL)
-    throw new Error('Missing "FUNDING_PLATFORM_API" env variable');
+  if (!FUNDING_SERVICE_URL)
+    throw new Error('Missing "FUNDING_SERVICE_API" env variable');
   if (!BALANCE_THRESHOLD)
     throw new Error('Missing "BALANCE_THRESHOLD" env variable');
   if (!CHANNELS_THRESHOLD)
@@ -45,14 +45,14 @@ const main = () => {
     accessToken: HOPRD_ACCESS_TOKEN,
     baseQuota: Number(BASE_QUOTA),
     db: dbInstance,
-    fundingPlatformUrl: FUNDING_PLATFORM_URL,
+    fundingServiceUrl: FUNDING_SERVICE_URL,
   });
 };
 
 const start = async (ops: {
   db: DBInstance;
   baseQuota: number;
-  fundingPlatformUrl: string;
+  fundingServiceUrl: string;
   accessToken: string;
 }) => {
   // create tables if they do not exist in the db
@@ -66,8 +66,8 @@ const start = async (ops: {
   await ops.db.connect();
 
   // init services
-  const fundingPlatformApi = new FundingPlatformApi(
-    ops.fundingPlatformUrl,
+  const fundingServiceApi = new FundingServiceApi(
+    ops.fundingServiceUrl,
     ops.db
   );
 
@@ -75,13 +75,13 @@ const start = async (ops: {
     db: ops.db,
     baseQuota: ops.baseQuota,
     accessToken: ops.accessToken,
-    fundingPlatformApi: fundingPlatformApi,
+    fundingServiceApi: fundingServiceApi,
   });
   server.listen(PORT);
 
   // keep track of all pending funding requests to update status or retry
   const checkForPendingRequests = setTimeout(async () => {
-    await fundingPlatformApi.checkForPendingRequests();
+    await fundingServiceApi.checkForPendingRequests();
   }, 1000);
 
   return () => {

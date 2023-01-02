@@ -3,7 +3,7 @@ import fs from "fs";
 import { IBackup, IMemoryDb, newDb } from "pg-mem";
 import * as db from ".";
 import { CreateAccessToken, generateAccessToken } from "../access-token";
-import { DBInstance } from "../db";
+import { DBInstance } from ".";
 import { CreateRequest, UpdateRequest } from "../request";
 
 export class MockPgInstanceSingleton {

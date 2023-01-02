@@ -13,7 +13,7 @@ import { getRegisteredNode, updateRegisteredNode } from "../registered-node";
 /**
  * API used to fund registered nodes, handles creating and keeping track of pending requests.
  */
-export class FundingPlatformApi {
+export class FundingServiceApi {
   // Access token used to authenticate with funding platform
   private accessToken: string | undefined;
   // Date when the current tokens expires

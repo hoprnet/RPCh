@@ -1,6 +1,6 @@
 import express from "express";
 import { DBInstance } from "../db";
-import { FundingPlatformApi } from "../funding-platform-api";
+import { FundingServiceApi } from "../funding-service-api";
 import { createQuota, getAllQuotasByClient, sumQuotas } from "../quota";
 import { CreateQuota } from "../quota/dto";
 import {
@@ -30,7 +30,7 @@ export const entryServer = (ops: {
   db: DBInstance;
   baseQuota: number;
   accessToken: string;
-  fundingPlatformApi: FundingPlatformApi;
+  fundingServiceApi: FundingServiceApi;
 }) => {
   app.use("/api", apiRouter);
   apiRouter.use(express.json());
@@ -59,7 +59,7 @@ export const entryServer = (ops: {
   });
 
   apiRouter.get("/funding-service/funds", async (req, res) => {
-    const funds = await ops.fundingPlatformApi.getAvailableFunds();
+    const funds = await ops.fundingServiceApi.getAvailableFunds();
     return res.json({ body: funds });
   });
 
@@ -95,7 +95,7 @@ export const entryServer = (ops: {
     // calculate how much should be funded to entry node
     const amountToFund = getRewardForNode(ops.baseQuota, selectedNode);
     // fund entry node
-    await ops.fundingPlatformApi.requestFunds(amountToFund, selectedNode);
+    await ops.fundingServiceApi.requestFunds(amountToFund, selectedNode);
 
     // create negative quota (showing that the client has used up initial quota)
     await createQuota(ops.db, {

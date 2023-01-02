@@ -1,5 +1,5 @@
 import assert from "assert";
-import { FundingPlatformApi } from ".";
+import { FundingServiceApi } from ".";
 import * as db from "../db";
 import nock from "nock";
 import {
@@ -10,16 +10,16 @@ import {
 import { QueryRegisteredNode } from "../registered-node/dto";
 import { MockPgInstanceSingleton } from "../db/index.spec";
 
-const FUNDING_PLATFORM_URL = "http://localhost:5000";
+const FUNDING_SERVICE_URL = "http://localhost:5000";
 const FAKE_ACCESS_TOKEN = "EcLjvxdALOT0eq18d8Gzz3DEr3AMG27NtL+++YPSZNE=";
 
 const nockGetApiAccessToken =
-  nock(FUNDING_PLATFORM_URL).get("/api/access-token");
+  nock(FUNDING_SERVICE_URL).get("/api/access-token");
 const nockFundingRequest = (id: string) =>
-  nock(FUNDING_PLATFORM_URL).post(`/api/request/funds/${id}`);
+  nock(FUNDING_SERVICE_URL).post(`/api/request/funds/${id}`);
 const nockRequestStatus = (requestId: number) =>
-  nock(FUNDING_PLATFORM_URL).get(`/api/request/status/${requestId}`);
-const nockGetFunds = nock(FUNDING_PLATFORM_URL).get("/api/funds");
+  nock(FUNDING_SERVICE_URL).get(`/api/request/status/${requestId}`);
+const nockGetFunds = nock(FUNDING_SERVICE_URL).get("/api/funds");
 
 const createMockNode = (peerId?: string) =>
   ({
@@ -32,7 +32,7 @@ const createMockNode = (peerId?: string) =>
   } as QueryRegisteredNode);
 
 describe("test funding platform api class", function () {
-  let fundingPlatformApi: FundingPlatformApi;
+  let fundingServiceApi: FundingServiceApi;
   let dbInstance: db.DBInstance;
 
   beforeAll(async function () {
@@ -42,10 +42,7 @@ describe("test funding platform api class", function () {
 
   beforeEach(function () {
     MockPgInstanceSingleton.getInitialState().restore();
-    fundingPlatformApi = new FundingPlatformApi(
-      FUNDING_PLATFORM_URL,
-      dbInstance
-    );
+    fundingServiceApi = new FundingServiceApi(FUNDING_SERVICE_URL, dbInstance);
   });
 
   it("should fetch access token and save it to instance", async function () {
@@ -55,7 +52,7 @@ describe("test funding platform api class", function () {
       expiredAt: new Date(Date.now()).toISOString(),
     } as getAccessTokenResponse);
     // @ts-ignore-next-line
-    const res = await fundingPlatformApi.fetchAccessToken();
+    const res = await fundingServiceApi.fetchAccessToken();
     // @ts-ignore-next-line
     assert.equal(res, FAKE_ACCESS_TOKEN);
   });
@@ -70,9 +67,9 @@ describe("test funding platform api class", function () {
         expiredAt: now.toISOString(),
       } as getAccessTokenResponse);
       // @ts-ignore-next-line
-      await fundingPlatformApi.fetchAccessToken();
+      await fundingServiceApi.fetchAccessToken();
       // @ts-ignore-next-line
-      const isTokenValid = fundingPlatformApi.accessTokenIsValid();
+      const isTokenValid = fundingServiceApi.accessTokenIsValid();
       assert(isTokenValid);
     });
     it("should return false if token is expired", async function () {
@@ -84,14 +81,14 @@ describe("test funding platform api class", function () {
         expiredAt: now.toISOString(),
       } as getAccessTokenResponse);
       // @ts-ignore-next-line
-      await fundingPlatformApi.fetchAccessToken();
+      await fundingServiceApi.fetchAccessToken();
       // @ts-ignore-next-line
-      const isTokenValid = fundingPlatformApi.accessTokenIsValid();
+      const isTokenValid = fundingServiceApi.accessTokenIsValid();
       assert(!isTokenValid);
     });
     it("should return false if token does not exist", function () {
       // @ts-ignore-next-line
-      const isTokenValid = fundingPlatformApi.accessTokenIsValid();
+      const isTokenValid = fundingServiceApi.accessTokenIsValid();
       assert(!isTokenValid);
     });
     it("should return false if has been exceeded max amount", async function () {
@@ -103,9 +100,9 @@ describe("test funding platform api class", function () {
         expiredAt: now.toISOString(),
       } as getAccessTokenResponse);
       // @ts-ignore-next-line
-      await fundingPlatformApi.fetchAccessToken();
+      await fundingServiceApi.fetchAccessToken();
       // @ts-ignore-next-line
-      const isTokenValid = fundingPlatformApi.accessTokenIsValid(10);
+      const isTokenValid = fundingServiceApi.accessTokenIsValid(10);
       assert(!isTokenValid);
     });
   });
@@ -114,17 +111,17 @@ describe("test funding platform api class", function () {
     now.setMinutes(now.getMinutes() + 30);
     const amountLeft = 30;
     // @ts-ignore
-    fundingPlatformApi.saveAccessToken({
+    fundingServiceApi.saveAccessToken({
       accessToken: FAKE_ACCESS_TOKEN,
       amountLeft: amountLeft,
       expiredAt: now.toISOString(),
     });
     // @ts-ignore
-    assert(fundingPlatformApi.accessToken, FAKE_ACCESS_TOKEN);
+    assert(fundingServiceApi.accessToken, FAKE_ACCESS_TOKEN);
     // @ts-ignore
-    assert(fundingPlatformApi.amountLeft, amountLeft);
+    assert(fundingServiceApi.amountLeft, amountLeft);
     // @ts-ignore
-    assert(fundingPlatformApi.expiredAt, now.toISOString());
+    assert(fundingServiceApi.expiredAt, now.toISOString());
   });
   it("should get access token", async function () {
     nockGetApiAccessToken.reply(200, {
@@ -134,7 +131,7 @@ describe("test funding platform api class", function () {
     } as getAccessTokenResponse);
 
     // @ts-ignore
-    const accessToken = await fundingPlatformApi.getAccessToken();
+    const accessToken = await fundingServiceApi.getAccessToken();
 
     assert.equal(accessToken, FAKE_ACCESS_TOKEN);
   });
@@ -155,13 +152,13 @@ describe("test funding platform api class", function () {
     } as postFundingResponse);
 
     await db.saveRegisteredNode(dbInstance, node);
-    const fundingResponse = await fundingPlatformApi.requestFunds(5, node);
+    const fundingResponse = await fundingServiceApi.requestFunds(5, node);
     const dbNode = await db.getRegisteredNode(dbInstance, "peer1");
 
     assert.equal(dbNode?.status, "FUNDING");
     assert.equal(
       // @ts-ignore
-      fundingPlatformApi.pendingRequests.get("peer1")?.requestId,
+      fundingServiceApi.pendingRequests.get("peer1")?.requestId,
       fundingResponse
     );
   });
@@ -185,22 +182,22 @@ describe("test funding platform api class", function () {
     } as getRequestStatusResponse);
 
     // @ts-ignore
-    const requestStatus = await fundingPlatformApi.getRequestStatus(requestId);
+    const requestStatus = await fundingServiceApi.getRequestStatus(requestId);
 
     assert.equal(requestStatus.status, "FRESH");
   });
   it("should save pending request", function () {
     // @ts-ignore
-    fundingPlatformApi.savePendingRequest("peer1", 123, 0);
+    fundingServiceApi.savePendingRequest("peer1", 123, 0);
 
     assert.equal(
       // @ts-ignore
-      fundingPlatformApi.pendingRequests.get("peer1")?.requestId,
+      fundingServiceApi.pendingRequests.get("peer1")?.requestId,
       123
     );
     assert.equal(
       // @ts-ignore
-      fundingPlatformApi.pendingRequests.get("peer1")?.amountOfRetries,
+      fundingServiceApi.pendingRequests.get("peer1")?.amountOfRetries,
       0
     );
   });
@@ -223,7 +220,7 @@ describe("test funding platform api class", function () {
 
       await db.saveRegisteredNode(dbInstance, node);
 
-      const fundingResponse = await fundingPlatformApi.requestFunds(5, node);
+      const fundingResponse = await fundingServiceApi.requestFunds(5, node);
 
       nockRequestStatus(fundingResponse).reply(200, {
         accessTokenHash: "hash",
@@ -235,12 +232,12 @@ describe("test funding platform api class", function () {
         status: "SUCCESS",
       } as getRequestStatusResponse);
 
-      await fundingPlatformApi.checkForPendingRequests();
+      await fundingServiceApi.checkForPendingRequests();
       const dbNode = await db.getRegisteredNode(dbInstance, node.id);
 
       assert.equal(
         // @ts-ignore
-        fundingPlatformApi.pendingRequests.has(node.peerId),
+        fundingServiceApi.pendingRequests.has(node.peerId),
         false
       );
       assert.equal(
@@ -272,7 +269,7 @@ describe("test funding platform api class", function () {
 
       await db.saveRegisteredNode(dbInstance, node);
 
-      const fundingResponse = await fundingPlatformApi.requestFunds(5, node);
+      const fundingResponse = await fundingServiceApi.requestFunds(5, node);
 
       nockRequestStatus(fundingResponse).reply(200, {
         accessTokenHash: "hash",
@@ -284,12 +281,12 @@ describe("test funding platform api class", function () {
         status: "PENDING",
       } as getRequestStatusResponse);
 
-      await fundingPlatformApi.checkForPendingRequests();
+      await fundingServiceApi.checkForPendingRequests();
       const dbNode = await db.getRegisteredNode(dbInstance, node.id);
 
       assert.equal(
         // @ts-ignore
-        fundingPlatformApi.pendingRequests.has(node.id),
+        fundingServiceApi.pendingRequests.has(node.id),
         true
       );
       assert.equal(
@@ -323,7 +320,7 @@ describe("test funding platform api class", function () {
 
       await db.saveRegisteredNode(dbInstance, node);
 
-      const fundingResponse = await fundingPlatformApi.requestFunds(5, node);
+      const fundingResponse = await fundingServiceApi.requestFunds(5, node);
 
       nockRequestStatus(fundingResponse).reply(200, {
         accessTokenHash: "hash",
@@ -335,17 +332,17 @@ describe("test funding platform api class", function () {
         status: "FAILED",
       } as getRequestStatusResponse);
 
-      await fundingPlatformApi.checkForPendingRequests();
+      await fundingServiceApi.checkForPendingRequests();
       const dbNode = await db.getRegisteredNode(dbInstance, node.id);
 
       assert.equal(
         // @ts-ignore
-        fundingPlatformApi.pendingRequests.has(node.id),
+        fundingServiceApi.pendingRequests.has(node.id),
         true
       );
       assert.equal(
         // @ts-ignore
-        fundingPlatformApi.pendingRequests.get(node.id)?.amountOfRetries,
+        fundingServiceApi.pendingRequests.get(node.id)?.amountOfRetries,
         1
       );
       assert.notEqual(dbNode?.status, "READY");
@@ -364,7 +361,7 @@ describe("test funding platform api class", function () {
       100: 4000,
     });
 
-    const funds = await fundingPlatformApi.getAvailableFunds();
+    const funds = await fundingServiceApi.getAvailableFunds();
 
     assert.equal(funds[80], 10);
   });
