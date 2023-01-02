@@ -1,6 +1,6 @@
 import { createLogger, createApiUrl, decodeIncomingBody } from "./utils";
-import WebSocket from "ws";
-import fetch from "node-fetch";
+import fetch from "cross-fetch";
+import WebSocket from "isomorphic-ws";
 
 const log = createLogger(["hoprd"]);
 
@@ -28,7 +28,7 @@ export const sendMessage = async ({
   const body: { body: string; recipient: string; path?: string[] } = {
     body: message,
     recipient: destination,
-    path: [],
+    path: [], // using direct path, TODO: change once auto path is fixed
   };
 
   const response = await fetch(url, {
@@ -68,13 +68,17 @@ export const createMessageListener = async (
   );
   const ws = new WebSocket(url);
 
-  ws.on("upgrade", () => {
+  ws.onopen = () => {
     log.normal("Listening for incoming messages from HOPRd", url);
-  });
+  };
 
-  ws.on("message", (data: { toString: () => string }) => {
-    const body = data.toString();
-    log.verbose("received body from HOPRd");
+  ws.onmessage = (event) => {
+    const body = event.data.toString();
+    // message received is an acknowledgement of a
+    // message we have send, we can safely ingore this
+    if (body.startsWith("ack:")) return;
+
+    log.verbose("received body from HOPRd", body);
 
     let message: string | undefined;
     try {
@@ -86,7 +90,7 @@ export const createMessageListener = async (
     log.verbose("decoded received body", message);
 
     onMessage(message);
-  });
+  };
 
   return () => {
     log.normal("Closing HOPRd listener");

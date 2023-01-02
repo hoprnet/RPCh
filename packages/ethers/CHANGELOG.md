@@ -1,5 +1,21 @@
 # @rpch/ethers
 
+## 0.1.3
+
+### Patch Changes
+
+- @rpch/common@0.1.3
+- @rpch/sdk@0.1.3
+
+## 0.1.2
+
+### Patch Changes
+
+- Introduce web compatibility and various improvements.
+- Updated dependencies
+  - @rpch/common@0.1.2
+  - @rpch/sdk@0.1.2
+
 ## 0.1.1
 
 ### Patch Changes

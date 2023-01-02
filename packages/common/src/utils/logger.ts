@@ -79,6 +79,7 @@ const withMetric = (logger: Debug.Debugger) => {
  */
 export default function CreateLoggerFactory(namespace: string) {
   const base = Debug(["rpch", namespace].join(LOG_SEPERATOR));
+  base.log = console.log.bind(console);
 
   /**
    * A function to create loggers.

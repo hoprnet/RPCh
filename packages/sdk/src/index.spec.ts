@@ -1,5 +1,6 @@
 import assert from "assert";
-import { Request, fixtures } from "@rpch/common";
+import { Request } from "@rpch/common";
+import * as fixtures from "@rpch/common/build/fixtures";
 import nock from "nock";
 import SDK, { type HoprSdkTempOps } from "./index";
 

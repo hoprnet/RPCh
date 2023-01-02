@@ -1,6 +1,6 @@
 import assert from "assert";
 import * as ethers from "@rpch/ethers";
-import { fixtures } from "@rpch/common";
+import * as fixtures from "@rpch/common/build/fixtures";
 
 const PROVIDER_URL = fixtures.PROVIDER;
 const DISCOVERY_PLATFORM_API_ENDPOINT = "http://discovery_platform";

@@ -1,5 +1,20 @@
 # @rpch/e2e
 
+## 0.0.4
+
+### Patch Changes
+
+- @rpch/common@0.1.3
+- @rpch/ethers@0.1.3
+
+## 0.0.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @rpch/common@0.1.2
+  - @rpch/ethers@0.1.2
+
 ## 0.0.2
 
 ### Patch Changes

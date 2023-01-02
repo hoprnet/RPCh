@@ -1,4 +1,5 @@
 import assert from "assert";
+import * as crypto from "@rpch/crypto-bridge/nodejs";
 import Message from "./message";
 import Request from "./request";
 import {
@@ -46,6 +47,7 @@ const shouldBeAValidRequestMessage = (
 describe("test Request class", function () {
   it("should create request", function () {
     const request = Request.createRequest(
+      crypto,
       PROVIDER,
       RPC_REQ_SMALL,
       ENTRY_NODE_PEER_ID,
@@ -64,6 +66,7 @@ describe("test Request class", function () {
 
   it("should create message from request", function () {
     const request = Request.createRequest(
+      crypto,
       PROVIDER,
       RPC_REQ_SMALL,
       ENTRY_NODE_PEER_ID,
@@ -81,8 +84,10 @@ describe("test Request class", function () {
   it("should create request from message", function () {
     // created by exit node
     const request = Request.fromMessage(
+      crypto,
       // created by client
       Request.createRequest(
+        crypto,
         PROVIDER,
         RPC_REQ_SMALL,
         ENTRY_NODE_PEER_ID,
