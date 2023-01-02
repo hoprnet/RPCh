@@ -67,7 +67,7 @@
         "TIMEOUT"
       ]
     },
-    "rpch-discovery-platform#build": {
+    "@rpch/discovery-platform#build": {
       "dependsOn": [
         "^build"
       ],

@@ -1,13 +1,10 @@
 import { gql } from "graphql-request";
 import fetch from "node-fetch";
-import { utils } from "rpch-common";
 import { QueryRegisteredNode } from "../registered-node/dto";
 import { GetAccountChannelsResponse } from "./dto";
+import { createLogger } from "../utils";
 
-const { logVerbose, logError } = utils.createLogger([
-  "discovery-platform",
-  "graph-api",
-]);
+const log = createLogger(["graph-api"]);
 
 const GRAPH_HOPR_URL =
   "https://api.thegraph.com/subgraphs/name/hoprnet/hopr-channels";
@@ -76,7 +73,7 @@ export const checkCommitment = async (ops: {
 
     const graphRes = (await channels.json()) as GetAccountChannelsResponse;
 
-    logVerbose([
+    log.verbose([
       "Received information from the graph",
       JSON.stringify(graphRes),
     ]);
@@ -88,7 +85,7 @@ export const checkCommitment = async (ops: {
 
     return false;
   } catch (e) {
-    logError(["Error querying the graph", e]);
+    log.error(["Error querying the graph", e]);
   }
 };
 
@@ -131,13 +128,13 @@ export const getUpdatedAccounts = async (blockNumber: number) => {
 
     const graphRes = (await channels.json()) as GetAccountChannelsResponse;
 
-    logVerbose([
+    log.verbose([
       "Received information from the graph",
       JSON.stringify(graphRes),
     ]);
 
     return graphRes;
   } catch (e) {
-    logError(["Error querying the graph", e]);
+    log.error(["Error querying the graph", e]);
   }
 };
