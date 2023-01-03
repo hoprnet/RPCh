@@ -47,8 +47,8 @@ RUN  curl https://raw.githubusercontent.com/eficode/wait-for/v2.2.3/wait-for > /
 
 COPY --from=installer /app/apps/funding-service/package.json .
 COPY --from=installer /app .
-
-ENV NODE_ENV=production
+COPY apps/funding-platform/src/blockchain/erc20-fixture.json /app/apps/funding-platform/build/blockchain
+COPY apps/funding-platform/dump.sql /app/
 
 CMD ["node", "apps/funding-service/build/index.js"]
 
