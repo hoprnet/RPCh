@@ -12,6 +12,9 @@
     "start": "./src/start.sh"
   },
   "devDependencies": {
+    "@rpch/configs-eslint": "*",
+    "@rpch/configs-prettier": "*",
+    "@rpch/configs-typescript": "*",
     "@types/async-retry": "^1.4.5",
     "async-retry": "^1.3.3",
     "ethers": "^5.7.2",

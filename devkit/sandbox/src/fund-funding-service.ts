@@ -8,6 +8,8 @@ import ethers from "ethers";
 import fetch from "node-fetch";
 import retry from "async-retry";
 
+// we do not run this build this file via turbo
+/* eslint-disable turbo/no-undeclared-env-vars */
 const {
   RPC_PROVIDER,
   FUNDING_HOPRD_API_ENDPOINT,
