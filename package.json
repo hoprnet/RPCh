@@ -18,6 +18,7 @@
     "test": "turbo run test --",
     "test:e2e": "turbo run start --filter @rpch/e2e"
   },
+  "dependencies": {},
   "devDependencies": {
     "@changesets/cli": "^2.25.2",
     "turbo": "^1.6.3"
@@ -25,6 +26,5 @@
   "engines": {
     "node": ">=16.0.0"
   },
-  "dependencies": {},
   "packageManager": "yarn@1.22.15"
 }

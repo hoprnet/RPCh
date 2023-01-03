@@ -1,0 +1,72 @@
+# docker-compose file that allows you locally host
+# the centralized apps that make RPCh work
+# DO NOT USE IN PRODUCTION
+# launches:
+#   - 1 funding service
+#   - 1 discovery platform
+#   - 1 postgres DB
+version: "3"
+
+volumes:
+  # postgres database
+  postgres-data:
+
+services:
+  postgres-db:
+    image: postgres:14.1-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+  funding-service:
+    build:
+      dockerfile: apps/funding-service/Dockerfile
+      context: ../../../
+    depends_on:
+      - postgres-db
+    restart: unless-stopped
+    environment:
+      - DEBUG=${DEBUG}
+      - SECRET_KEY=${SECRET_KEY}
+      - WALLET_PRIV_KEY=${WALLET_PRIV_KEY}
+      - DB_CONNECTION_URL=http://postgres-db:5432
+      - SMART_CONTRACT_ADDRESS=${SMART_CONTRACT_ADDRESS}
+    entrypoint:
+      [
+        "/bin/wait-for",
+        "http://${HOPRD_API_TOKEN}@pluto:13301/api/v2/account/addresses",
+        "-t",
+        "300",
+        "--",
+        "/sbin/tini",
+        "--",
+      ]
+    command: "pwd && bash devkit/sandbox/src/utils/start-funding-service.sh"
+  discovery-platform:
+    build:
+      dockerfile: apps/discovery-platform/Dockerfile
+      context: ../../../
+    depends_on:
+      - postgres-db
+    restart: unless-stopped
+    environment:
+      - DEBUG=${DEBUG}
+      - SECRET_KEY=${SECRET_KEY}
+      - WALLET_PRIV_KEY=${WALLET_PRIV_KEY}
+      - DB_CONNECTION_URL=http://postgres-db:5432
+      - SMART_CONTRACT_ADDRESS=${SMART_CONTRACT_ADDRESS}
+    entrypoint:
+      [
+        "/bin/wait-for",
+        "http://${HOPRD_API_TOKEN}@pluto:13301/api/v2/account/addresses",
+        "-t",
+        "300",
+        "--",
+        "/sbin/tini",
+        "--",
+      ]
+    command: "pwd && bash devkit/sandbox/src/utils/start-funding-service.sh"

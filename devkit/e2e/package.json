@@ -9,16 +9,13 @@
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
     "test": "exit 0",
-    "start": "bash e2e.sh"
+    "start": "bash src/start.sh"
   },
   "devDependencies": {
     "@rpch/configs-typescript": "*",
     "@rpch/configs-eslint": "*",
     "@rpch/configs-prettier": "*",
     "@rpch/configs-jest": "*",
-    "@rpch/configs-tsup": "*"
-  },
-  "dependencies": {
     "@rpch/ethers": "0.1.3",
     "@rpch/common": "0.1.3"
   }

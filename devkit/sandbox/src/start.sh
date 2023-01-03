@@ -4,14 +4,26 @@
 $(return >/dev/null 2>&1)
 test "$?" -eq "0" && { echo "This script should only be executed." >&2; exit 1; }
 
+# set working dir to this file's dir
+cd "$(dirname "$0")"
+
+cleanup() {
+	docker-compose --file ./src/nodes-docker-compose.yml down;
+	docker-compose --file ./src/central-docker-compose.yml down;
+	rm -f ./logs;
+	exit;
+}
+
 # If there's a fatal error or users Ctrl+C it will tear down setup
-trap 'docker compose -f ../sandbox/docker-compose.yml down; rm -f ./logs; exit' SIGINT SIGKILL SIGTERM ERR EXIT
+trap 'cleanup' SIGINT SIGKILL SIGTERM ERR EXIT
+
+echo "Starting 'nodes-docker-compose' and waiting for funding & open channels"
 
 #  Run docker compose as daemon
-docker compose -f ../sandbox/docker-compose.yml up -d --remove-orphans --build --force-recreate
+docker compose -f ./nodes-docker-compose.yml up -d --remove-orphans --build --force-recreate
 
 # Extract HOPRD_API_TOKEN from env file
-source ../sandbox/.env
+source ./.env
 
 logs1=""
 logs2=""
@@ -70,35 +82,26 @@ until [[ $pluto == true ]]; do
     if [[ ! -z "$logs_error" || ! -z "$segmentation_error" ]]; then
         echo "Unrecoverable error"
         echo "Exiting..."
-        docker compose -f ../sandbox/docker-compose.yml down
-        rm ./logs
+        source ./stop.sh
         exit
     fi
 
     [[ ! -z "$logs_pluto" ]] && pluto=true
 done
-echo "Done!"
 
-# Extract entry and exit node peer ids from pluto logs
-entry_node_peer_id=$(cat logs | grep "node1" -A 1 | grep "Peer Id" | awk '{ print $5 }')
-exit_node_peer_id=$(cat logs | grep "node5" -A 1 | grep "Peer Id" | awk '{ print $5 }')
-exit_node_pub_key=$(echo "$logs5" | grep "Running exit node with public key" | awk '{print $9}')
+echo "Done 'nodes-docker-compose', starting 'central-docker-compose'"
 
-echo "Found entry node peer id"
-echo $entry_node_peer_id
-echo "Found exit node peer id"
-echo $exit_node_peer_id
-echo "Found exit node public key"
-echo $exit_node_pub_key
+hoprTokenAddress=$( \
+    RPC_PROVIDER=http://localhost:8545 FUNDING_HOPRD_API_ENDPOINT=http://localhost:13301 \
+    FUNDING_HOPRD_API_TOKEN=${HOPRD_API_TOKEN} npx ts-node ./src/fund-funding-service.ts
+)
 
-# catch error if command fails
-set -Eeuo
-# Run tests with env variables
-ENTRY_NODE_PEER_ID="$entry_node_peer_id" EXIT_NODE_PEER_ID="$exit_node_peer_id" ENTRY_NODE_API_TOKEN="$HOPRD_API_TOKEN" \
-    EXIT_NODE_PUB_KEY="$exit_node_pub_key" npx jest --ci
-# stop catching
-set +Eeuo
+echo "hoprTokenAddress"
+echo $hoprTokenAddress
 
-# After tests exit tear down setup
-docker compose -f ../sandbox/docker-compose.yml down
-rm -f ./logs
+# eval $( \
+#     RPC_PROVIDER=http://localhost:8545 FUNDING_HOPRD_API_ENDPOINT=http://localhost:13301 \
+#     FUNDING_HOPRD_API_TOKEN=${HOPRD_API_TOKEN} npx ts-node ./fund-funding-service.ts
+# ) && node apps/funding-service/build/index.js
+
+# DEBUG=\"rpch*,-*metrics\" docker-compose --project-name sandbox --file ./src/docker-compose.yml up

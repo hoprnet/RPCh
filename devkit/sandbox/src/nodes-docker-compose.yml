@@ -1,10 +1,6 @@
-# docker-compose file that allows you locally host the RPCh ecosystem
+# docker-compose file that allows you locally host
+# 5 HOPRd nodes and 5 exit nodes attached to each other
 # DO NOT USE IN PRODUCTION
-# launches:
-#   - 5 HOPRd nodes (with interconnected HOPR channels)
-#   - 3 exit nodes (connected to HOPRd nodes 1,2,3,4,5)
-#   - 1 funding service
-#   - 1 discovery platform
 version: "3"
 
 volumes:
@@ -12,13 +8,11 @@ volumes:
   pluto-data:
   # exit node identity files
   exit-node-data:
-  # postgres database
-  postgres-data:
 
 x-exit-service: &exit
   build:
     dockerfile: apps/exit-node/Dockerfile
-    context: ../../
+    context: ../../../
   restart: unless-stopped
   volumes:
     - exit-node-data:/tmp
@@ -27,16 +21,6 @@ x-exit-service: &exit
   command: "node apps/exit-node/build/index.js"
 
 services:
-  postgres-db:
-    image: postgres:14.1-alpine
-    restart: always
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
   pluto:
     image: gcr.io/hoprassociation/hopr-pluto:v1.90.68@sha256:aa32cf496307a2f92d6aa965913e6e1c156b2bd5c9b41ae3657c9dfdf1d8c651
     restart: unless-stopped
@@ -51,31 +35,6 @@ services:
       - "8545:8545"
     environment:
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-  funding-service:
-    build:
-      dockerfile: apps/funding-service/Dockerfile
-      context: ../../
-    depends_on:
-      - postgres-db
-      - pluto
-    restart: unless-stopped
-    environment:
-      - DEBUG=${DEBUG}
-      - SECRET_KEY=${SECRET_KEY}
-      - WALLET_PRIV_KEY=${WALLET_PRIV_KEY}
-      - DB_CONNECTION_URL=${DB_CONNECTION_URL}
-      - SMART_CONTRACT_ADDRESS=${SMART_CONTRACT_ADDRESS}
-    entrypoint:
-      [
-        "/bin/wait-for",
-        "http://${HOPRD_API_TOKEN}@pluto:13301/api/v2/account/addresses",
-        "-t",
-        "300",
-        "--",
-        "/sbin/tini",
-        "--",
-      ]
-    command: "eval $(node ./scripts/create-and-fund-wallet.js) && node apps/funding-service/build/index.js"
   exit-1:
     <<: *exit
     environment:

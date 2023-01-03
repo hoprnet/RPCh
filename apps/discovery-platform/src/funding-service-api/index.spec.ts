@@ -31,7 +31,7 @@ const createMockNode = (peerId?: string) =>
     total_amount_funded: 0,
   } as QueryRegisteredNode);
 
-describe("test funding platform api class", function () {
+describe("test funding service api class", function () {
   let fundingServiceApi: FundingServiceApi;
   let dbInstance: db.DBInstance;
 
@@ -349,7 +349,7 @@ describe("test funding platform api class", function () {
       assert.equal(dbNode?.total_amount_funded, "0");
     });
   });
-  it("should get funding platform funds", async function () {
+  it("should get funding service funds", async function () {
     nockGetApiAccessToken.once().reply(200, {
       accessToken: FAKE_ACCESS_TOKEN,
       amountLeft: 10,

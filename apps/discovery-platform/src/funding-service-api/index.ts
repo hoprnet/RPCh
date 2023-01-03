@@ -14,7 +14,7 @@ import { getRegisteredNode, updateRegisteredNode } from "../registered-node";
  * API used to fund registered nodes, handles creating and keeping track of pending requests.
  */
 export class FundingServiceApi {
-  // Access token used to authenticate with funding platform
+  // Access token used to authenticate with funding service
   private accessToken: string | undefined;
   // Date when the current tokens expires
   private expiredAt: Date | undefined;
@@ -39,7 +39,7 @@ export class FundingServiceApi {
     this.amountLeft = ops.amountLeft;
   }
   /**
-   * Fetch from funding platform a new access token
+   * Fetch from funding service a new access token
    * @returns string
    */
   private async fetchAccessToken(): Promise<string> {
@@ -82,7 +82,7 @@ export class FundingServiceApi {
   }
 
   /**
-   * Create a new funding request in funding platform
+   * Create a new funding request in funding service
    * @param amount amount that should be funded to the node
    * @param node registered node that is going to receive the funding
    * @param prevRetries number of times funding request has failed
@@ -145,7 +145,7 @@ export class FundingServiceApi {
   }
 
   /**
-   * Get request status from funding platform
+   * Get request status from funding service
    * @param requestId
    */
   private async getRequestStatus(requestId: string) {
