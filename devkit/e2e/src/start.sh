@@ -9,7 +9,6 @@ cd "$(dirname "$0")"
 
 cleanup() {
   docker compose -f ../../sandbox/src/nodes-docker-compose.yml down;
-  rm -f ./logs;
   exit;
 }
 
@@ -17,6 +16,7 @@ cleanup() {
 trap 'cleanup' SIGINT SIGKILL SIGTERM ERR EXIT
 
 #  Run docker compose as daemon
+rm -f ./logs;
 docker compose -f ../../sandbox/src/nodes-docker-compose.yml up -d --remove-orphans --build --force-recreate
 
 # Extract HOPRD_API_TOKEN from env file

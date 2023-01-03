@@ -8,9 +8,8 @@ test "$?" -eq "0" && { echo "This script should only be executed." >&2; exit 1; 
 cd "$(dirname "$0")"
 
 cleanup() {
-	docker-compose --file ./src/nodes-docker-compose.yml down;
-	docker-compose --file ./src/central-docker-compose.yml down;
-	rm -f ./logs;
+	docker-compose --file ./nodes-docker-compose.yml down;
+	docker-compose --file ./central-docker-compose.yml down;
 	exit;
 }
 
@@ -20,6 +19,7 @@ trap 'cleanup' SIGINT SIGKILL SIGTERM ERR EXIT
 echo "Starting 'nodes-docker-compose' and waiting for funding & open channels"
 
 #  Run docker compose as daemon
+rm -f ./logs;
 docker compose -f ./nodes-docker-compose.yml up -d --remove-orphans --build --force-recreate
 
 # Extract HOPRD_API_TOKEN from env file
@@ -82,7 +82,7 @@ until [[ $pluto == true ]]; do
     if [[ ! -z "$logs_error" || ! -z "$segmentation_error" ]]; then
         echo "Unrecoverable error"
         echo "Exiting..."
-        source ./stop.sh
+        cleanup
         exit
     fi
 
@@ -91,6 +91,7 @@ done
 
 echo "Done 'nodes-docker-compose', starting 'central-docker-compose'"
 
+# fund funding-service wallet
 hoprTokenAddress=$( \
     RPC_PROVIDER=http://localhost:8545 FUNDING_HOPRD_API_ENDPOINT=http://localhost:13301 \
     FUNDING_HOPRD_API_TOKEN=${HOPRD_API_TOKEN} npx ts-node ./src/fund-funding-service.ts
