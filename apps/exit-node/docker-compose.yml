@@ -16,15 +16,15 @@ services:
     volumes:
       - hoprd-data:/tmp
     environment:
-      - HOPRD_ENVIRONMENT=${HOPRD_ENVIRONMENT}
       - HOPRD_HOST=0.0.0.0:9091
-      - HOPRD_ADMIN=true
-      - HOPRD_ADMIN_HOST=0.0.0.0
-      - HOPRD_API=true
       - HOPRD_API_HOST=0.0.0.0
+      - HOPRD_ADMIN_HOST=0.0.0.0
+      - HOPRD_ADMIN=true
+      - HOPRD_API=true
+      - HOPRD_INIT=true
+      - HOPRD_ENVIRONMENT=${HOPRD_ENVIRONMENT}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - HOPRD_PASSWORD=${HOPRD_PASSWORD}
-      - HOPRD_INIT=true
   exit-node:
     build:
       dockerfile: apps/exit-node/Dockerfile
@@ -35,8 +35,8 @@ services:
     volumes:
       - exit-node-data:/tmp
     environment:
-      - DEBUG=${DEBUG}
       - HOPRD_API_ENDPOINT=http://hoprd:3001
+      - DEBUG=${DEBUG}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - RPCH_PASSWORD=${RPCH_PASSWORD}
       - RPCH_IDENTITY_DIR=${RPCH_IDENTITY_DIR}
