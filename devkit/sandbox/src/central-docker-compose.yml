@@ -6,6 +6,7 @@
 #   - 1 discovery platform
 #   - 1 postgres DB
 version: "3"
+name: sandbox-central
 
 volumes:
   # postgres database
@@ -32,20 +33,9 @@ services:
     environment:
       - DEBUG=${DEBUG}
       - SECRET_KEY=${SECRET_KEY}
-      - WALLET_PRIV_KEY=${WALLET_PRIV_KEY}
+      - WALLET_PRIV_KEY=${FUNDING_SERVICE_PRIVATE_KEY}
       - DB_CONNECTION_URL=http://postgres-db:5432
       - SMART_CONTRACT_ADDRESS=${SMART_CONTRACT_ADDRESS}
-    entrypoint:
-      [
-        "/bin/wait-for",
-        "http://${HOPRD_API_TOKEN}@pluto:13301/api/v2/account/addresses",
-        "-t",
-        "300",
-        "--",
-        "/sbin/tini",
-        "--",
-      ]
-    command: "pwd && bash devkit/sandbox/src/utils/start-funding-service.sh"
   discovery-platform:
     build:
       dockerfile: apps/discovery-platform/Dockerfile
@@ -56,17 +46,6 @@ services:
     environment:
       - DEBUG=${DEBUG}
       - SECRET_KEY=${SECRET_KEY}
-      - WALLET_PRIV_KEY=${WALLET_PRIV_KEY}
       - DB_CONNECTION_URL=http://postgres-db:5432
-      - SMART_CONTRACT_ADDRESS=${SMART_CONTRACT_ADDRESS}
-    entrypoint:
-      [
-        "/bin/wait-for",
-        "http://${HOPRD_API_TOKEN}@pluto:13301/api/v2/account/addresses",
-        "-t",
-        "300",
-        "--",
-        "/sbin/tini",
-        "--",
-      ]
-    command: "pwd && bash devkit/sandbox/src/utils/start-funding-service.sh"
+      - FUNDING_SERVICE_URL=http://funding-service:3000
+      - HOPRD_ACCESS_TOKEN=${HOPRD_API_TOKEN}

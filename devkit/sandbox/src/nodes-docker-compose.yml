@@ -2,6 +2,7 @@
 # 5 HOPRd nodes and 5 exit nodes attached to each other
 # DO NOT USE IN PRODUCTION
 version: "3"
+name: sandbox-nodes
 
 volumes:
   # hoprd node identity files
@@ -41,7 +42,7 @@ services:
       - HOPRD_API_ENDPOINT=http://pluto:13301
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-      - RPCH_PASSWORD=${RPCH_PASSWORD}
+      - RPCH_PASSWORD=${RPCH_EXIT_NODE_PASSWORD}
     entrypoint:
       [
         "/bin/wait-for",
@@ -58,7 +59,7 @@ services:
       - HOPRD_API_ENDPOINT=http://pluto:13302
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-      - RPCH_PASSWORD=${RPCH_PASSWORD}
+      - RPCH_PASSWORD=${RPCH_EXIT_NODE_PASSWORD}
     entrypoint:
       [
         "/bin/wait-for",
@@ -75,7 +76,7 @@ services:
       - HOPRD_API_ENDPOINT=http://pluto:13303
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-      - RPCH_PASSWORD=${RPCH_PASSWORD}
+      - RPCH_PASSWORD=${RPCH_EXIT_NODE_PASSWORD}
     entrypoint:
       [
         "/bin/wait-for",
@@ -92,7 +93,7 @@ services:
       - HOPRD_API_ENDPOINT=http://pluto:13304
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-      - RPCH_PASSWORD=${RPCH_PASSWORD}
+      - RPCH_PASSWORD=${RPCH_EXIT_NODE_PASSWORD}
     entrypoint:
       [
         "/bin/wait-for",
@@ -109,7 +110,7 @@ services:
       - HOPRD_API_ENDPOINT=http://pluto:13305
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-      - RPCH_PASSWORD=${RPCH_PASSWORD}
+      - RPCH_PASSWORD=${RPCH_EXIT_NODE_PASSWORD}
     entrypoint:
       [
         "/bin/wait-for",

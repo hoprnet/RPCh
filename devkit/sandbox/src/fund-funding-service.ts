@@ -4,7 +4,6 @@
  * using one of our HOPRd nodes.
  * Prints our the private key of the wallet generated.
  */
-import ethers from "ethers";
 import fetch from "node-fetch";
 import retry from "async-retry";
 
@@ -14,9 +13,12 @@ const {
   RPC_PROVIDER,
   FUNDING_HOPRD_API_ENDPOINT,
   FUNDING_HOPRD_API_TOKEN,
+  NODE_ENV = "development",
   NATIVE_AMOUNT = "1",
   HOPR_AMOUNT = "1",
 } = process.env;
+
+const debug = NODE_ENV === "production" ? () => {} : console.log;
 
 // the address of the private key in `.env`
 const RECIPIENT = "0xDb8c54746a26Ab9Ac7ab512B827F6CDb1e555CaE";
@@ -74,7 +76,7 @@ const withdraw = async (
 };
 
 const main = async () => {
-  console.log("Pre-start", {
+  debug("Pre-start", {
     RPC_PROVIDER,
     FUNDING_HOPRD_API_ENDPOINT,
     FUNDING_HOPRD_API_TOKEN,
@@ -85,32 +87,29 @@ const main = async () => {
   // keep retrying until node has been funded
   await retry(
     async (bail) => {
+      debug("Trying to get balances");
       const balances = await getBalances();
 
       if (Number(balances.native) > 0 && Number(balances.hopr) > 0) {
         return true;
       } else {
+        debug("Not funded yet");
         bail(new Error("Node has not been funded"));
       }
     },
     {
-      retries: Infinity,
-      maxTimeout: 60e3,
+      retries: 10,
     }
   );
 
   const hoprTokenAddress = await getHoprTokenAddress();
-  console.log("HoprToken address is", hoprTokenAddress);
-
-  const provider = new ethers.providers.JsonRpcProvider(RPC_PROVIDER);
+  debug("HoprToken address is", hoprTokenAddress);
 
   const nativeTxHash = await withdraw("NATIVE", NATIVE_AMOUNT, RECIPIENT);
-  await provider.waitForTransaction(nativeTxHash);
-  console.log(`Funded ${NATIVE_AMOUNT} NATIVE in ${nativeTxHash}`);
+  debug(`Funded ${NATIVE_AMOUNT} NATIVE in ${nativeTxHash}`);
 
   const hoprTxHash = await withdraw("HOPR", HOPR_AMOUNT, RECIPIENT);
-  await provider.waitForTransaction(hoprTxHash);
-  console.log(`Funded ${HOPR_AMOUNT} HOPR in ${hoprTxHash}`);
+  debug(`Funded ${HOPR_AMOUNT} HOPR in ${hoprTxHash}`);
 
   return hoprTokenAddress;
 };

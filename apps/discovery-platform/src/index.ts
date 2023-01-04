@@ -14,9 +14,9 @@ const {
   // Database connection url
   DB_CONNECTION_URL,
   // Minimal amount of balance a account must have to show commitment
-  BALANCE_THRESHOLD,
+  BALANCE_THRESHOLD = 1,
   // Minimal amount of open channels a account must have to show commitment
-  CHANNELS_THRESHOLD,
+  CHANNELS_THRESHOLD = 1,
   // Unit amount of quotas a request costs
   BASE_QUOTA = 1,
 } = process.env;
@@ -27,10 +27,6 @@ const main = () => {
   }
   if (!FUNDING_SERVICE_URL)
     throw new Error('Missing "FUNDING_SERVICE_API" env variable');
-  if (!BALANCE_THRESHOLD)
-    throw new Error('Missing "BALANCE_THRESHOLD" env variable');
-  if (!CHANNELS_THRESHOLD)
-    throw new Error('Missing "CHANNELS_THRESHOLD" env variable');
   if (!DB_CONNECTION_URL) {
     throw new Error('Missing "DB_CONNECTION_URL" env variable');
   }
