@@ -13,7 +13,7 @@ start() {
 
     #  Run docker compose as daemon
     rm -f ./logs;
-    docker compose -f ./nodes-docker-compose.yml up -d
+    docker compose -f ./nodes-docker-compose.yml up -d --remove-orphans --build --force-recreate
 
     # Extract HOPRD_API_TOKEN from env file
     source ./.env
@@ -94,7 +94,8 @@ start() {
 
     echo "Found hoprTokenAddress = $hoprTokenAddress"
     echo "Starting 'central-docker-compose'"
-    SMART_CONTRACT_ADDRESS="$hoprTokenAddress" docker compose -f ./central-docker-compose.yml up -d
+    SMART_CONTRACT_ADDRESS="$hoprTokenAddress" \
+        docker compose -f ./central-docker-compose.yml up -d --remove-orphans --build --force-recreate
     echo "Done 'central-docker-compose'"
 
     echo "Sandbox is ready!"
