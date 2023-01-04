@@ -65,16 +65,6 @@ jest.mock("@rpch/common", () => ({
 }));
 
 describe("test index.ts", function () {
-  const provider = new RPChProvider(
-    PROVIDER_URL,
-    {
-      timeout: TIMEOUT,
-      discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
-    },
-    sdkStore.set,
-    sdkStore.get
-  );
-
   // pseudo responses from entry node
   fixtures
     .nockSendMessageApi(nock(ENTRY_NODE_API_ENDPOINT).persist())
@@ -99,6 +89,16 @@ describe("test index.ts", function () {
       },
     ])
     .persist();
+
+  const provider = new RPChProvider(
+    PROVIDER_URL,
+    {
+      timeout: TIMEOUT,
+      discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
+    },
+    sdkStore.set,
+    sdkStore.get
+  );
 
   beforeAll(async function () {
     await provider.sdk.start();

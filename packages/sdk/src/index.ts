@@ -93,6 +93,7 @@ export default class SDK {
     apiToken: string;
     peerId: string;
   }> {
+    log.verbose("Selecting entry node");
     const response: {
       hoprd_api_endpoint: string;
       hoprd_api_port: string;
@@ -110,6 +111,7 @@ export default class SDK {
       apiToken: response.accessToken,
       peerId: response.id,
     };
+    log.verbose("Selected entry node", this.entryNode);
     return this.entryNode;
   }
 
@@ -121,6 +123,7 @@ export default class SDK {
   private async selectExitNode(
     discoveryPlatformApiEndpoint: string
   ): Promise<ExitNode[]> {
+    log.verbose("Selecting exit node");
     const response: {
       exit_node_pub_key: string;
       id: string;
@@ -137,6 +140,7 @@ export default class SDK {
 
     this.exitNode =
       this.exitNodes[Math.floor(Math.random() * this.exitNodes.length)];
+    log.verbose("Selected exit node", this.exitNode);
     return this.exitNodes;
   }
 
