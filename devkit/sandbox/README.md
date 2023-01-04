@@ -18,10 +18,11 @@ This includes:
 1. Install
    - nodejs `v16`
    - latest version of `docker` and `docker-compose`
-2. Download dependencies with `yarn`
-3. Build everything with `yarn build`
-4. Navigate to `devkit/sandbox`
-5. Launch sandbox with `DEBUG="rpch*,-*metrics" docker-compose up`
+2. Clone this repository & go to commit `627a3f2a9930662a91bc913f558e6d7e7f89b17e`
+3. Download dependencies with `yarn`
+4. Build everything with `yarn build`
+5. Navigate to `devkit/sandbox`
+6. Launch sandbox with `DEBUG="rpch*,-*metrics" docker-compose up`
 
 ### Using it with Block Wallet
 
