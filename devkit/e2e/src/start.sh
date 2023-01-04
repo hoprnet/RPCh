@@ -5,10 +5,15 @@ $(return >/dev/null 2>&1)
 test "$?" -eq "0" && { echo "This script should only be executed." >&2; exit 1; }
 
 # set working dir to this file's dir
-cd "$(dirname "$0")"
+cd "$(dirname ${BASH_SOURCE[0]})"
 
-# starts sandbox & implements trap & start & stop
+# load sandbox's start & stop functions
 source ../../sandbox/src/common.sh
+
+# If there's a fatal error or users Ctrl+C it will tear down setup
+trap 'stop' SIGINT SIGKILL SIGTERM ERR EXIT
+
+# start sandbox
 start
 
 # Extract entry and exit node peer ids from pluto logs

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+cd "$(dirname ${BASH_SOURCE[0]})"
+
 stop() {
 	docker-compose --file ./nodes-docker-compose.yml down;
 	docker-compose --file ./central-docker-compose.yml down;
@@ -97,6 +99,3 @@ start() {
 
     echo "Sandbox is ready!"
 }
-
-# If there's a fatal error or users Ctrl+C it will tear down setup
-trap 'stop' SIGINT SIGKILL SIGTERM ERR
