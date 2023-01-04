@@ -95,7 +95,9 @@ const main = () => {
   const pgInstance = pgp();
   const connectionString: string = DB_CONNECTION_URL;
   // create table if the table does not exist
-  const dbInstance = pgInstance({ connectionString });
+  const dbInstance = pgInstance({
+    connectionString,
+  });
 
   start({
     entryServer: api,
