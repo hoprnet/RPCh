@@ -13,7 +13,7 @@ import {
   getWallet,
   sendTransaction,
   waitForTransaction,
-} from "./";
+} from ".";
 import * as erc20 from "./erc20-fixture.json";
 
 const INITIAL_AMOUNT = ethers.utils.parseEther("1000").toString();

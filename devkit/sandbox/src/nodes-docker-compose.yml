@@ -1,16 +1,18 @@
-# docker-compose file that allows you to run a cluster of HOPRd nodes and RPCh exit nodes
+# docker-compose file that allows you locally host
+# 5 HOPRd nodes and 5 exit nodes attached to each other
+# DO NOT USE IN PRODUCTION
 version: "3"
 
 volumes:
-  # hoprd node id files, which should be kept between restarts to not change
-  # peer ids all the time
+  # hoprd node identity files
   pluto-data:
+  # exit node identity files
   exit-node-data:
 
 x-exit-service: &exit
   build:
     dockerfile: apps/exit-node/Dockerfile
-    context: ../../
+    context: ../../../
   restart: unless-stopped
   volumes:
     - exit-node-data:/tmp
@@ -29,6 +31,8 @@ services:
       # the admin UI more easily
       - "13301-13305:13301-13305"
       - "19501-19505:19501-19505"
+      # local RPC port
+      - "8545:8545"
     environment:
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
   exit-1:
@@ -37,7 +41,7 @@ services:
       - HOPRD_API_ENDPOINT=http://pluto:13301
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-      - RPCH_PASSWORD=${RPCH_PASSWORD}
+      - RPCH_PASSWORD=${RPCH_EXIT_NODE_PASSWORD}
     entrypoint:
       [
         "/bin/wait-for",
@@ -54,7 +58,7 @@ services:
       - HOPRD_API_ENDPOINT=http://pluto:13302
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-      - RPCH_PASSWORD=${RPCH_PASSWORD}
+      - RPCH_PASSWORD=${RPCH_EXIT_NODE_PASSWORD}
     entrypoint:
       [
         "/bin/wait-for",
@@ -71,7 +75,7 @@ services:
       - HOPRD_API_ENDPOINT=http://pluto:13303
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-      - RPCH_PASSWORD=${RPCH_PASSWORD}
+      - RPCH_PASSWORD=${RPCH_EXIT_NODE_PASSWORD}
     entrypoint:
       [
         "/bin/wait-for",
@@ -88,7 +92,7 @@ services:
       - HOPRD_API_ENDPOINT=http://pluto:13304
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-      - RPCH_PASSWORD=${RPCH_PASSWORD}
+      - RPCH_PASSWORD=${RPCH_EXIT_NODE_PASSWORD}
     entrypoint:
       [
         "/bin/wait-for",
@@ -105,7 +109,7 @@ services:
       - HOPRD_API_ENDPOINT=http://pluto:13305
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-      - RPCH_PASSWORD=${RPCH_PASSWORD}
+      - RPCH_PASSWORD=${RPCH_EXIT_NODE_PASSWORD}
     entrypoint:
       [
         "/bin/wait-for",

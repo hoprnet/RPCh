@@ -1,6 +1,6 @@
 {
-  "name": "@rpch/e2e",
-  "version": "0.0.4",
+  "name": "@rpch/sandbox",
+  "version": "0.0.0",
   "private": true,
   "license": "LGPL-3.0",
   "scripts": {
@@ -9,14 +9,15 @@
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
     "test": "exit 0",
-    "start": "bash ./src/start.sh"
+    "start": "./src/start.sh",
+    "stop": "./src/stop.sh"
   },
   "devDependencies": {
-    "@rpch/configs-typescript": "*",
     "@rpch/configs-eslint": "*",
     "@rpch/configs-prettier": "*",
-    "@rpch/configs-jest": "*",
-    "@rpch/ethers": "0.1.3",
-    "@rpch/common": "0.1.3"
+    "@rpch/configs-typescript": "*",
+    "@types/async-retry": "^1.4.5",
+    "async-retry": "^1.3.3",
+    "node-fetch": "^2.6.0"
   }
 }

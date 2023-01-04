@@ -1,0 +1,35 @@
+{
+  "name": "@rpch/discovery-platform",
+  "version": "0.0.0",
+  "license": "LGPL-3.0",
+  "private": true,
+  "scripts": {
+    "build": "tsup",
+    "dev": "yarn build --watch",
+    "format": "prettier --check \"src/**/*.{ts,md}\"",
+    "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
+    "test": "jest --coverage",
+    "start": "node build/index.js"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.14",
+    "@types/node-fetch": "2.6.2",
+    "@types/supertest": "^2.0.12",
+    "nock": "^13.2.9",
+    "pg-mem": "^2.6.4",
+    "@rpch/configs-eslint": "*",
+    "@rpch/configs-jest": "*",
+    "@rpch/configs-prettier": "*",
+    "@rpch/configs-tsup": "*",
+    "@rpch/configs-typescript": "*",
+    "supertest": "^6.3.3"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "graphql": "^16.6.0",
+    "graphql-request": "^5.0.0",
+    "node-fetch": "^2.6.2",
+    "pg-promise": "^11.0.0",
+    "@rpch/common": "0.1.3"
+  }
+}
