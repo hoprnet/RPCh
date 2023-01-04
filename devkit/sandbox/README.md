@@ -18,11 +18,12 @@ This includes:
 1. Install
    - nodejs `v16`
    - latest version of `docker` and `docker-compose`
-2. Download dependencies with `yarn`
-3. Build everything with `yarn build`
-4. Navigate to `devkit/sandbox`
-5. Start sandbox with `yarn start`
-6. Stop sandbox with `yarn stop`
+2. Clone this repository
+3. Download dependencies with `yarn`
+4. Build everything with `yarn build`
+5. Navigate to `devkit/sandbox`
+6. Start sandbox with `yarn start`
+7. Stop sandbox with `yarn stop`
 
 ### Using it with Block Wallet
 
