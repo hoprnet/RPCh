@@ -2,7 +2,6 @@
 # 5 HOPRd nodes and 5 exit nodes attached to each other
 # DO NOT USE IN PRODUCTION
 version: "3"
-name: sandbox-nodes
 
 volumes:
   # hoprd node identity files

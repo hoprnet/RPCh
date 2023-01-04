@@ -5,9 +5,9 @@ DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)
 
 # stop sandbox
 stop() {
-	docker-compose --file $DIR/nodes-docker-compose.yml down;
-	docker-compose --file $DIR/central-docker-compose.yml down;
-	exit;
+    docker-compose --file $DIR/nodes-docker-compose.yml down;
+    docker-compose --file $DIR/central-docker-compose.yml down;
+    exit;
 }
 
 # start sandbox
@@ -16,7 +16,8 @@ start() {
 
     #  Run docker compose as daemon
     rm -f $DIR/logs;
-    docker compose -f $DIR/nodes-docker-compose.yml up -d --remove-orphans --build --force-recreate
+    docker compose -f $DIR/nodes-docker-compose.yml -p sandbox-nodes \
+        up -d --remove-orphans --build --force-recreate
 
     # Extract HOPRD_API_TOKEN from env file
     source $DIR/.env
@@ -98,7 +99,8 @@ start() {
 
     echo "Starting 'central-docker-compose'"
     SMART_CONTRACT_ADDRESS="$hoprTokenAddress" \
-        docker compose -f $DIR/central-docker-compose.yml up -d --remove-orphans --build --force-recreate
+        docker compose -f $DIR/central-docker-compose.yml -p sandbox-central \
+        up -d --remove-orphans --build --force-recreate
     echo "Done 'central-docker-compose'"
 
     echo "Sandbox is ready!"

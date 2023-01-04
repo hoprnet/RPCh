@@ -6,7 +6,6 @@
 #   - 1 discovery platform
 #   - 1 postgres DB
 version: "3"
-name: sandbox-central
 
 volumes:
   # postgres database
