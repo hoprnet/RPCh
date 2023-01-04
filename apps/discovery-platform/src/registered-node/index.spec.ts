@@ -18,11 +18,8 @@ const mockNode = (peerId?: string, hasExitNode?: boolean) =>
     hasExitNode: hasExitNode ?? true,
     peerId: peerId ?? "peerId",
     chainId: 100,
-    ports: {
-      exitNodePort: 3000,
-      hoprApiEndpoint: "localhost",
-      hoprApiPort: 5000,
-    },
+    hoprdApiEndpoint: "localhost",
+    hoprdApiPort: 5000,
   } as CreateRegisteredNode);
 
 describe("test registered node functions", function () {

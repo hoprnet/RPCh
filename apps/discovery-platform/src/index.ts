@@ -6,7 +6,7 @@ import fs from "fs";
 
 const {
   // Port that server will listen for requests
-  PORT = 3000,
+  PORT = 3020,
   // Api endpoint used for completing funding requests of registered nodes
   FUNDING_SERVICE_URL,
   // Access token used to connect to hoprd entry node

@@ -22,14 +22,17 @@ export const createRegisteredNode = async (
   dbInstance: db.DBInstance,
   node: CreateRegisteredNode
 ): Promise<boolean> => {
-  const newNode = {
+  const newNode: Omit<QueryRegisteredNode, "created_at" | "updated_at"> = {
     honesty_score: 0,
     total_amount_funded: 0,
     status: "FRESH",
     chain_id: Number(node.chainId),
+    hoprd_api_endpoint: node.hoprdApiEndpoint,
+    hoprd_api_port: node.hoprdApiPort,
+    exit_node_pub_key: node.exit_node_pub_key,
     has_exit_node: Boolean(node.hasExitNode),
     id: node.peerId,
-  } as QueryRegisteredNode;
+  };
 
   return await db.saveRegisteredNode(dbInstance, newNode);
 };
