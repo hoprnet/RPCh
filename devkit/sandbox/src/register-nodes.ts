@@ -81,9 +81,7 @@ const registerNode = async (
       hoprdApiPort,
       exit_node_pub_key,
     }),
-  })
-    .then((res) => res.json())
-    .then((res: any) => res.receipt as Promise<string>);
+  }).then((res) => res.json());
 };
 
 const main = async () => {
