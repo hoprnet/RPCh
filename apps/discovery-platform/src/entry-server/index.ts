@@ -38,13 +38,13 @@ export const entryServer = (ops: {
   apiRouter.use(express.json());
 
   apiRouter.post("/node/register", async (req, res) => {
+    log.verbose("/node/register", req.body);
     const node = req.body as CreateRegisteredNode;
     const registered = await createRegisteredNode(ops.db, node);
     return res.json({ body: registered });
   });
 
   apiRouter.get("/node", async (req, res) => {
-    log.verbose("/node", req.query);
     const { hasExitNode } = req.query;
     if (hasExitNode === "true") {
       const nodes = await getExitNodes(ops.db);
@@ -84,7 +84,8 @@ export const entryServer = (ops: {
       client,
       ops.baseQuota
     );
-    if (!doesClientHaveQuotaResponse) {
+    // TODO: reenable
+    if (false && !doesClientHaveQuotaResponse) {
       return res.status(400).json({
         body: "Client does not have enough quota",
       });

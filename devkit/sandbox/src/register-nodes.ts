@@ -9,7 +9,6 @@ import fetch from "node-fetch";
 // we do not run this build this file via turbo
 /* eslint-disable turbo/no-undeclared-env-vars */
 const {
-  RPC_PROVIDER = "http://localhost:8545",
   HOPRD_API_TOKEN,
   EXIT_NODE_PUB_KEY_1,
   EXIT_NODE_PUB_KEY_2,
@@ -69,6 +68,15 @@ const registerNode = async (
   exit_node_pub_key: string
 ): Promise<string> => {
   const url = new URL("/api/node/register", DP_API_ENDPOINT);
+  const body = {
+    hasExitNode: true,
+    peerId,
+    chainId: 100,
+    hoprdApiEndpoint,
+    hoprdApiPort,
+    exit_node_pub_key,
+  };
+  debug("Registering node", body);
 
   return fetch(url.toString(), {
     method: "POST",
@@ -86,7 +94,6 @@ const registerNode = async (
 
 const main = async () => {
   debug("Pre-start", {
-    RPC_PROVIDER,
     HOPRD_API_TOKEN,
     EXIT_NODE_PUB_KEY_1,
     EXIT_NODE_PUB_KEY_2,

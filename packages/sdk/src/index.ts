@@ -100,7 +100,16 @@ export default class SDK {
       accessToken: string;
       id: string;
     } = await fetch(
-      new URL("/request/entry-node", discoveryPlatformApiEndpoint).toString()
+      new URL("/request/entry-node", discoveryPlatformApiEndpoint).toString(),
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Accept-Content": "application/json",
+        },
+        body: JSON.stringify({
+          client: "BW",
+        }),
+      }
     ).then((res) => res.json());
 
     const apiEndpointUrl = new URL(response.hoprd_api_endpoint);

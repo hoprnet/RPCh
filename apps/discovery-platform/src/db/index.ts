@@ -1,8 +1,11 @@
 import { CreateQuota, QueryQuota } from "../quota/dto";
 import type { QueryRegisteredNode } from "../registered-node/dto";
 import pgp from "pg-promise";
+import { createLogger } from "../utils";
 
 export type DBInstance = pgp.IDatabase<{}>;
+
+const log = createLogger(["db"]);
 
 const TABLES = {
   REGISTERED_NODES: "registered_nodes",
@@ -55,8 +58,10 @@ export const saveRegisteredNode = async (
       status: node.status,
     };
     const dbRes = await dbInstance.one<QueryRegisteredNode>(text, values);
+    log.verbose("Response from DB", dbRes);
     return dbRes ? true : false;
   } catch (e) {
+    log.error(e);
     return false;
   }
 };
@@ -99,6 +104,7 @@ export const updateRegisteredNode = async (
     const dbRes = (await dbInstance.one(text, values)) as QueryRegisteredNode;
     return dbRes ? true : false;
   } catch (e) {
+    log.error(e);
     return false;
   }
 };
