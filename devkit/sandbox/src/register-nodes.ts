@@ -68,7 +68,7 @@ const registerNode = async (
   hoprdApiPort: number,
   exit_node_pub_key: string
 ): Promise<string> => {
-  const url = new URL("/node/register", DP_API_ENDPOINT);
+  const url = new URL("/api/node/register", DP_API_ENDPOINT);
 
   return fetch(url.toString(), {
     method: "POST",
