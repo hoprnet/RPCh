@@ -76,8 +76,10 @@ export const entryServer = (ops: {
     return res.json({ quota: createdQuota });
   });
 
-  apiRouter.get("/request/entry-node", async (req, res) => {
+  apiRouter.post("/request/entry-node", async (req, res) => {
     const { client } = req.body;
+    if (typeof client !== "string") throw Error("Client is not a string");
+
     // check if client has enough quota
     const doesClientHaveQuotaResponse = await doesClientHaveQuota(
       ops.db,

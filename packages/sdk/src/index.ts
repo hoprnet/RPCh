@@ -102,6 +102,7 @@ export default class SDK {
     } = await fetch(
       new URL("/request/entry-node", discoveryPlatformApiEndpoint).toString(),
       {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Accept-Content": "application/json",

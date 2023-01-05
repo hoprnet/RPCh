@@ -166,7 +166,7 @@ describe("test entry server", function () {
       } as postFundingResponse);
 
       const requestResponse = await request(app)
-        .get("/api/request/entry-node")
+        .post("/api/request/entry-node")
         .send({ client: "client" });
 
       assert.equal(requestResponse.body.id, createdNode.body.node?.id);
@@ -197,7 +197,7 @@ describe("test entry server", function () {
       } as postFundingResponse);
 
       const requestResponse = await request(app)
-        .get("/api/request/entry-node")
+        .post("/api/request/entry-node")
         .send({ client: "client" });
 
       assert.equal(requestResponse.body.body, "Could not find eligible node");
@@ -238,11 +238,11 @@ describe("test entry server", function () {
       } as postFundingResponse);
 
       await request(app)
-        .get("/api/request/entry-node")
+        .post("/api/request/entry-node")
         .send({ client: "newClient" });
 
       const requestResponse = await request(app)
-        .get("/api/request/entry-node")
+        .post("/api/request/entry-node")
         .send({ client: "newClient" });
 
       assert.equal(

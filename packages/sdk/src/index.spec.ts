@@ -42,7 +42,7 @@ const createSdkMock = (
     .reply(202, "someresponse");
 
   nock(DISCOVERY_PLATFORM_API_ENDPOINT)
-    .get("/request/entry-node")
+    .post("/request/entry-node")
     .reply(200, {
       hoprd_api_endpoint: ENTRY_NODE_API_ENDPOINT,
       hoprd_api_port: ENTRY_NODE_API_PORT,
