@@ -12,9 +12,11 @@ import {
   getRewardForNode,
 } from "../registered-node";
 import { CreateRegisteredNode } from "../registered-node/dto";
+import { createLogger } from "../utils";
 
 const app = express();
 const apiRouter = express.Router();
+const log = createLogger(["entry-server"]);
 
 export const doesClientHaveQuota = async (
   db: DBInstance,
@@ -42,6 +44,7 @@ export const entryServer = (ops: {
   });
 
   apiRouter.get("/node", async (req, res) => {
+    log.verbose("/node", req.query);
     const { hasExitNode } = req.query;
     if (hasExitNode === "true") {
       const nodes = await getExitNodes(ops.db);

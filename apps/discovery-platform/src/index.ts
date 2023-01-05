@@ -1,8 +1,11 @@
 import { DBInstance } from "./db";
 import { entryServer } from "./entry-server";
 import { FundingServiceApi } from "./funding-service-api";
+import { createLogger } from "./utils";
 import pgp from "pg-promise";
 import fs from "fs";
+
+const log = createLogger();
 
 const {
   // Port that server will listen for requests
@@ -75,7 +78,10 @@ const start = async (ops: {
     accessToken: ops.accessToken,
     fundingServiceApi: fundingServiceApi,
   });
-  server.listen(PORT);
+  // start listening at PORT for requests
+  server.listen(Number(PORT), "0.0.0.0", () => {
+    log.normal("entry server is up");
+  });
 
   // keep track of all pending funding requests to update status or retry
   const checkForPendingRequests = setTimeout(async () => {
