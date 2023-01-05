@@ -89,11 +89,11 @@ start() {
     echo "Done 'nodes-docker-compose'"
 
     # extract public keys
-    exit_node_pub_key_1=$(echo "$logs1" | grep "Running exit node 1 with public key" | awk '{print $9}')
-    exit_node_pub_key_2=$(echo "$logs2" | grep "Running exit node 2 with public key" | awk '{print $9}')
-    exit_node_pub_key_3=$(echo "$logs3" | grep "Running exit node 3 with public key" | awk '{print $9}')
-    exit_node_pub_key_4=$(echo "$logs4" | grep "Running exit node 4 with public key" | awk '{print $9}')
-    exit_node_pub_key_5=$(echo "$logs5" | grep "Running exit node 5 with public key" | awk '{print $9}')
+    exit_node_pub_key_1=$(echo "$logs1" | grep "Running exit node with public key" | awk '{print $9}')
+    exit_node_pub_key_2=$(echo "$logs2" | grep "Running exit node with public key" | awk '{print $9}')
+    exit_node_pub_key_3=$(echo "$logs3" | grep "Running exit node with public key" | awk '{print $9}')
+    exit_node_pub_key_4=$(echo "$logs4" | grep "Running exit node with public key" | awk '{print $9}')
+    exit_node_pub_key_5=$(echo "$logs5" | grep "Running exit node with public key" | awk '{print $9}')
 
     echo "Extracted public keys"
     echo "node1=$exit_node_pub_key_1"
