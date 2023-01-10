@@ -100,7 +100,10 @@ export default class SDK {
       accessToken: string;
       id: string;
     } = await fetch(
-      new URL("/request/entry-node", discoveryPlatformApiEndpoint).toString(),
+      new URL(
+        "/api/request/entry-node",
+        discoveryPlatformApiEndpoint
+      ).toString(),
       {
         method: "POST",
         headers: {
@@ -138,7 +141,10 @@ export default class SDK {
       exit_node_pub_key: string;
       id: string;
     }[] = await fetch(
-      new URL("/node?hasExitNode=true", discoveryPlatformApiEndpoint).toString()
+      new URL(
+        "/api/node?hasExitNode=true",
+        discoveryPlatformApiEndpoint
+      ).toString()
     ).then((res) => res.json());
 
     this.exitNodes = response.map((item) => ({

@@ -78,6 +78,7 @@ export const entryServer = (ops: {
 
   apiRouter.post("/request/entry-node", async (req, res) => {
     const { client } = req.body;
+    log.verbose("requesting entry node for client", client);
     if (typeof client !== "string") throw Error("Client is not a string");
 
     // check if client has enough quota
@@ -94,6 +95,7 @@ export const entryServer = (ops: {
     }
     // choose selected entry node
     const selectedNode = await getEligibleNode(ops.db);
+    log.verbose("selected entry node", selectedNode);
     if (!selectedNode) {
       return res.json({ body: "Could not find eligible node" });
     }

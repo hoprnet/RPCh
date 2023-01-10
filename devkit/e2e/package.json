@@ -9,7 +9,7 @@
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
     "test": "exit 0",
-    "start": "./src/start.sh"
+    "start": "bash ./src/start.sh"
   },
   "devDependencies": {
     "@rpch/configs-typescript": "*",
