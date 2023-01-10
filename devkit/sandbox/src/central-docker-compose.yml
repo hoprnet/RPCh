@@ -11,6 +11,7 @@ volumes:
   # postgres database
   postgres-data:
 
+
 services:
   postgres-db:
     image: postgres:14.1-alpine
@@ -31,6 +32,9 @@ services:
     restart: unless-stopped
     ports:
       - "3010:3010"
+    networks:
+      - default
+      - sandbox-nodes_default
     environment:
       - DEBUG=${DEBUG}
       - SECRET_KEY=${SECRET_KEY}
@@ -54,3 +58,7 @@ services:
       - FUNDING_SERVICE_URL=http://funding-service:3010
       - HOPRD_ACCESS_TOKEN=${HOPRD_API_TOKEN}
       - PORT=${DISCOVERY_PLATFORM_PORT}
+
+networks:
+  sandbox-nodes_default:
+    external: true

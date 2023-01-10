@@ -71,7 +71,7 @@ const registerNode = async (
   const body = {
     hasExitNode: true,
     peerId,
-    chainId: 100,
+    chainId: 1,
     hoprdApiEndpoint,
     hoprdApiPort,
     exit_node_pub_key,
