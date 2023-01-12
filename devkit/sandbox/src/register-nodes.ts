@@ -22,7 +22,6 @@ const {
 const DP_API_ENDPOINT = "http://localhost:3020";
 
 const debug = NODE_ENV === "production" ? () => {} : console.log;
-// const chainId = NODE_ENV === "production" ? 100 : 1;
 
 if (!HOPRD_API_TOKEN)
   throw Error("Missing env variable 'FUNDING_HOPRD_API_TOKEN'");
@@ -91,15 +90,7 @@ const registerNode = async (
   return fetch(url.toString(), {
     method: "POST",
     headers,
-    body: JSON.stringify({
-      hasExitNode: true,
-      peerId,
-      chainId: 100,
-      hoprdApiEndpoint,
-      hoprdApiPort,
-      exit_node_pub_key,
-      node_address,
-    }),
+    body: JSON.stringify(body),
   }).then((res) => res.json());
 };
 

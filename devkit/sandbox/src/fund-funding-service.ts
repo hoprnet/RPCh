@@ -14,8 +14,8 @@ const {
   FUNDING_HOPRD_API_ENDPOINT = "http://localhost:13301",
   FUNDING_HOPRD_API_TOKEN,
   NODE_ENV = "development",
-  NATIVE_AMOUNT = "10000",
-  HOPR_AMOUNT = "10000",
+  NATIVE_AMOUNT = String(1_000_000_000_000_000_000),
+  HOPR_AMOUNT = String(1_000_000_000_000_000_000),
 } = process.env;
 
 const debug = NODE_ENV === "production" ? () => {} : console.log;

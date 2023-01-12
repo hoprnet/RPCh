@@ -103,13 +103,17 @@ export class FundingServiceApi {
     try {
       const dbNode = await getRegisteredNode(this.db, node.id);
       if (!dbNode) throw new Error("Node is not registered");
-
+      log.verbose("requesting from funding service", {
+        amount: String(amount),
+        chainId: node.chain_id,
+      });
       const res = await fetch(
         `${this.url}/api/request/funds/${dbNode.node_address}`,
         {
           method: "POST",
           headers: {
             "x-access-token": this.accessToken!,
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             amount: String(amount),
@@ -117,7 +121,7 @@ export class FundingServiceApi {
           } as postFundingRequest),
         }
       );
-      log.verbose("REQUEST FUNDS:", await res.json());
+      log.verbose("funding response:", await res.json());
       await updateRegisteredNode(this.db, { ...dbNode, status: "FUNDING" });
 
       const { id: requestId, amountLeft } =

@@ -138,6 +138,8 @@ export const entryServer = (ops: {
         balances,
         frozenBalances
       );
+
+      // all balances are in wei
       return res.json({
         available: availableBalances,
         frozen: frozenBalances,

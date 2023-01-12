@@ -67,9 +67,7 @@ export const checkFreshRequests = async (ops: {
       amount: freshRequest.amount,
       id: freshRequest.id,
     });
-    log.verbose("GAS BALANCE: ", await provider.getBalance(address));
-    log.verbose("BALANCE: ", balance.toString());
-    log.verbose("AMOUNT TO SEND: ", freshRequest.amount);
+
     // sent transaction to fund request
     const { hash: txHash } = await sendTransaction({
       smartContractAddress:
@@ -78,7 +76,7 @@ export const checkFreshRequests = async (ops: {
         ],
       from: connectedSigner,
       to: freshRequest?.node_address,
-      amount: ethers.utils.parseEther(freshRequest.amount).toString(),
+      amount: freshRequest.amount,
     });
     // set request status to pending while it is confirmed or failed
     await ops.requestService.updateRequest(freshRequest.id, {

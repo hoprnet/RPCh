@@ -8,7 +8,7 @@
     "dev": "exit 0",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
-    "test": "exit 0",
+    "test": "jest",
     "start": "bash ./src/start.sh"
   },
   "devDependencies": {

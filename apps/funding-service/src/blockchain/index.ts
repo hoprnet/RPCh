@@ -13,7 +13,7 @@ const log = createLogger(["blockchain"]);
  * @param smartContractAddress string
  * @param from ethers Signer who will transfer the tokens
  * @param to address of who will receive the tokens
- * @param amount string
+ * @param amount string in wei
  * @returns transactionResponse
  */
 export const sendTransaction = async (params: {
