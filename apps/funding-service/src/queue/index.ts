@@ -26,6 +26,7 @@ export const checkFreshRequests = async (ops: {
 }) => {
   ops.changeState(true);
   let freshRequest: QueryRequest | undefined;
+  log.verbose("Starting to fulfill request: ", JSON.stringify(freshRequest));
   try {
     freshRequest = await ops.requestService.getOldestFreshRequest();
     if (!freshRequest) throw new CustomError("No pending fresh request");
@@ -66,6 +67,9 @@ export const checkFreshRequests = async (ops: {
       amount: freshRequest.amount,
       id: freshRequest.id,
     });
+    log.verbose("GAS BALANCE: ", await provider.getBalance(address));
+    log.verbose("BALANCE: ", balance.toString());
+    log.verbose("AMOUNT TO SEND: ", freshRequest.amount);
     // sent transaction to fund request
     const { hash: txHash } = await sendTransaction({
       smartContractAddress:

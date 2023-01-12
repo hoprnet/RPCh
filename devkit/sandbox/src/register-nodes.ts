@@ -5,6 +5,7 @@
  * Prints our the private key of the wallet generated.
  */
 import fetch from "node-fetch";
+import { keccak256 } from "js-sha3";
 
 // we do not run this build this file via turbo
 /* eslint-disable turbo/no-undeclared-env-vars */
@@ -21,6 +22,7 @@ const {
 const DP_API_ENDPOINT = "http://localhost:3020";
 
 const debug = NODE_ENV === "production" ? () => {} : console.log;
+// const chainId = NODE_ENV === "production" ? 100 : 1;
 
 if (!HOPRD_API_TOKEN)
   throw Error("Missing env variable 'FUNDING_HOPRD_API_TOKEN'");
@@ -61,11 +63,18 @@ const getPeerId = async (apiEndpoint: string): Promise<string> => {
     .then((res) => res.hopr);
 };
 
+const getAddressFromPublicKey = (publicKey: string): string => {
+  const publicKeyHash = keccak256(Buffer.from(publicKey.slice(2), "hex"));
+  const address = "0x" + publicKeyHash.slice(-40);
+  return address;
+};
+
 const registerNode = async (
   peerId: string,
   hoprdApiEndpoint: string,
   hoprdApiPort: number,
-  exit_node_pub_key: string
+  exit_node_pub_key: string,
+  node_address: string
 ): Promise<string> => {
   const url = new URL("/api/node/register", DP_API_ENDPOINT);
   const body = {
@@ -75,6 +84,7 @@ const registerNode = async (
     hoprdApiEndpoint,
     hoprdApiPort,
     exit_node_pub_key,
+    node_address,
   };
   debug("Registering node", body);
 
@@ -88,6 +98,7 @@ const registerNode = async (
       hoprdApiEndpoint,
       hoprdApiPort,
       exit_node_pub_key,
+      node_address,
     }),
   }).then((res) => res.json());
 };
@@ -105,10 +116,17 @@ const main = async () => {
   let port = 13300;
 
   for (const publicKey of publicKeys) {
+    const node_address = getAddressFromPublicKey(publicKey);
     const hoprdApiEndpoint = "http://localhost";
     const hoprdApiPort = ++port;
     const peerId = await getPeerId(hoprdApiEndpoint + ":" + hoprdApiPort);
-    await registerNode(peerId, hoprdApiEndpoint, hoprdApiPort, publicKey);
+    await registerNode(
+      peerId,
+      hoprdApiEndpoint,
+      hoprdApiPort,
+      publicKey,
+      node_address
+    );
   }
 };
 

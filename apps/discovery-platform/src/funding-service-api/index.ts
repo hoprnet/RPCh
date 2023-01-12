@@ -9,6 +9,9 @@ import { isExpired } from "../utils";
 import { QueryRegisteredNode } from "../registered-node/dto";
 import { DBInstance } from "../db";
 import { getRegisteredNode, updateRegisteredNode } from "../registered-node";
+import { createLogger } from "../utils";
+
+const log = createLogger(["funding-service-api"]);
 
 /**
  * API used to fund registered nodes, handles creating and keeping track of pending requests.
@@ -101,17 +104,20 @@ export class FundingServiceApi {
       const dbNode = await getRegisteredNode(this.db, node.id);
       if (!dbNode) throw new Error("Node is not registered");
 
-      const res = await fetch(`${this.url}/api/request/funds/${node.id}`, {
-        method: "POST",
-        headers: {
-          "x-access-token": this.accessToken!,
-        },
-        body: JSON.stringify({
-          amount: String(amount),
-          chainId: node.chain_id,
-        } as postFundingRequest),
-      });
-
+      const res = await fetch(
+        `${this.url}/api/request/funds/${dbNode.node_address}`,
+        {
+          method: "POST",
+          headers: {
+            "x-access-token": this.accessToken!,
+          },
+          body: JSON.stringify({
+            amount: String(amount),
+            chainId: node.chain_id,
+          } as postFundingRequest),
+        }
+      );
+      log.verbose("REQUEST FUNDS:", await res.json());
       await updateRegisteredNode(this.db, { ...dbNode, status: "FUNDING" });
 
       const { id: requestId, amountLeft } =

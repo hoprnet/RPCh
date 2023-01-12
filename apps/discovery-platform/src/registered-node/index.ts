@@ -33,6 +33,7 @@ export const createRegisteredNode = async (
     hoprd_api_endpoint: node.hoprdApiEndpoint,
     hoprd_api_port: node.hoprdApiPort,
     exit_node_pub_key: node.exit_node_pub_key,
+    node_address: node.node_address,
     has_exit_node: Boolean(node.hasExitNode),
     id: node.peerId,
   };
@@ -108,11 +109,12 @@ export const getEligibleNode = async (
  * @param node node that gave access for request
  * @returns number
  */
+// FIX: Puede que eesto sea mayor a lo que la persona tiene sin contar el gas price
 export const getRewardForNode = (
   baseQuota: number,
   node: QueryRegisteredNode
 ): number => {
   const extra = node.has_exit_node ? 0.1 * 2 : 0.1;
   const reward = baseQuota + extra;
-  return reward;
+  return reward / 3;
 };

@@ -105,6 +105,7 @@ CREATE TABLE public.registered_nodes (
     hoprd_api_endpoint character varying(255) NOT NULL,
     hoprd_api_port integer NOT NULL,
     exit_node_pub_key character varying(255),
+    node_address character varying(255) NOT NULL,
     total_amount_funded numeric NOT NULL,
     honesty_score numeric NOT NULL,
     reason character varying(255),

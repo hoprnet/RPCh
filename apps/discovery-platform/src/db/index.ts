@@ -42,9 +42,9 @@ export const saveRegisteredNode = async (
   node: Omit<QueryRegisteredNode, "created_at" | "updated_at">
 ): Promise<boolean> => {
   try {
-    const text = `INSERT INTO 
-    ${TABLES.REGISTERED_NODES} (has_exit_node, id, chain_id, hoprd_api_endpoint, hoprd_api_port, exit_node_pub_key, total_amount_funded, honesty_score, status)
-    VALUES ($<has_exit_node>, $<id>, $<chain_id>, $<hoprd_api_endpoint>, $<hoprd_api_port>, $<exit_node_pub_key>, $<total_amount_funded>, $<honesty_score>, $<status>)
+    const text = `INSERT INTO
+    ${TABLES.REGISTERED_NODES} (has_exit_node, id, chain_id, hoprd_api_endpoint, hoprd_api_port, exit_node_pub_key, node_address, total_amount_funded, honesty_score, status)
+    VALUES ($<has_exit_node>, $<id>, $<chain_id>, $<hoprd_api_endpoint>, $<hoprd_api_port>, $<exit_node_pub_key>, $<node_address>, $<total_amount_funded>, $<honesty_score>, $<status>)
     RETURNING *`;
     const values: Omit<QueryRegisteredNode, "created_at" | "updated_at"> = {
       has_exit_node: node.has_exit_node,
@@ -53,6 +53,7 @@ export const saveRegisteredNode = async (
       hoprd_api_endpoint: node.hoprd_api_endpoint,
       hoprd_api_port: node.hoprd_api_port,
       exit_node_pub_key: node.exit_node_pub_key,
+      node_address: node.node_address,
       total_amount_funded: node.total_amount_funded,
       honesty_score: node.honesty_score,
       status: node.status,
@@ -87,8 +88,8 @@ export const updateRegisteredNode = async (
 ): Promise<boolean> => {
   try {
     const text = `UPDATE ${TABLES.REGISTERED_NODES}
-    SET has_exit_node = $<has_exit_node>, chain_id = $<chain_id>, 
-    total_amount_funded = $<total_amount_funded>, honesty_score = $<honesty_score>, 
+    SET has_exit_node = $<has_exit_node>, chain_id = $<chain_id>,
+    total_amount_funded = $<total_amount_funded>, honesty_score = $<honesty_score>,
     reason = $<reason>, status = $<status>
     WHERE id = $<id>
     RETURNING *`;
@@ -155,7 +156,7 @@ export const updateQuota = async (
 ): Promise<QueryQuota> => {
   const text = `UPDATE ${TABLES.QUOTAS}
   SET client = $<client>, quota = $<quota>, action_taker = $<action_taker>
-  WHERE id = $<id> 
+  WHERE id = $<id>
   RETURNING *`;
   const values = {
     id: quota.id,

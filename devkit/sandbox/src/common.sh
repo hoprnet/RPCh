@@ -5,8 +5,8 @@ DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)
 
 # stop sandbox
 stop() {
-    docker-compose -f $DIR/nodes-docker-compose.yml -p sandbox-nodes down;
     docker-compose -f $DIR/central-docker-compose.yml -p sandbox-central down;
+    docker-compose -f $DIR/nodes-docker-compose.yml -p sandbox-nodes down;
     exit;
 }
 
