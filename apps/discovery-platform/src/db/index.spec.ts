@@ -41,19 +41,23 @@ export class MockPgInstanceSingleton {
   }
 }
 
-const createMockNode = (peerId?: string, hasExitNode?: boolean) =>
-  ({
-    chain_id: 100,
-    id: peerId ?? "peerId" + Math.floor(Math.random() * 100),
-    has_exit_node: hasExitNode ?? true,
-    hoprd_api_endpoint: "someendpoint",
-    hoprd_api_port: 1337,
-    honesty_score: 0,
-    status: "FRESH",
-    total_amount_funded: 0,
-    created_at: Date.now().toString(),
-    updated_at: Date.now().toString(),
-  } as QueryRegisteredNode);
+const createMockNode = (
+  peerId?: string,
+  hasExitNode?: boolean
+): QueryRegisteredNode => ({
+  chain_id: 100,
+  id: peerId ?? "peerId" + Math.floor(Math.random() * 100),
+  has_exit_node: hasExitNode ?? true,
+  hoprd_api_endpoint: "someendpoint",
+  node_address: "someaddress",
+  exit_node_pub_key: "somepubkey",
+  hoprd_api_port: 1337,
+  honesty_score: 0,
+  status: "FRESH",
+  total_amount_funded: 0,
+  created_at: Date.now().toString(),
+  updated_at: Date.now().toString(),
+});
 
 const createMockQuota = (params?: CreateQuota): CreateQuota => {
   return {

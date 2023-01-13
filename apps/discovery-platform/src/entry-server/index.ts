@@ -101,7 +101,12 @@ export const entryServer = (ops: {
     }
 
     // calculate how much should be funded to entry node
-    const amountToFund = getRewardForNode(ops.baseQuota, selectedNode);
+    const baseExtra = 1;
+    const amountToFund = getRewardForNode(
+      ops.baseQuota,
+      baseExtra,
+      selectedNode
+    );
     // fund entry node
     await ops.fundingServiceApi.requestFunds(amountToFund, selectedNode);
 

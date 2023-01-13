@@ -21,19 +21,23 @@ const ACCESS_TOKEN = "ACCESS";
 const BASE_QUOTA = 1;
 const FAKE_ACCESS_TOKEN = "EcLjvxdALOT0eq18d8Gzz3DEr3AMG27NtL+++YPSZNE=";
 
-const nockFundingRequest = (peerId: string) =>
-  nock(FUNDING_SERVICE_URL).post(`/api/request/funds/${peerId}`);
+const nockFundingRequest = (nodeAddress: string) =>
+  nock(FUNDING_SERVICE_URL).post(`/api/request/funds/${nodeAddress}`);
 const nockGetApiAccessToken =
   nock(FUNDING_SERVICE_URL).get("/api/access-token");
 
-const mockNode = (peerId?: string, hasExitNode?: boolean) =>
-  ({
-    hasExitNode: hasExitNode ?? true,
-    peerId: peerId ?? "peerId",
-    chainId: 100,
-    hoprdApiEndpoint: "localhost",
-    hoprdApiPort: 5000,
-  } as CreateRegisteredNode);
+const mockNode = (
+  peerId?: string,
+  hasExitNode?: boolean
+): CreateRegisteredNode => ({
+  hasExitNode: hasExitNode ?? true,
+  peerId: peerId ?? "peerId",
+  chainId: 100,
+  hoprdApiEndpoint: "localhost",
+  hoprdApiPort: 5000,
+  exit_node_pub_key: "somePubKey",
+  node_address: "someAddress",
+});
 
 describe("test entry server", function () {
   let dbInstance: DBInstance;
@@ -160,7 +164,7 @@ describe("test entry server", function () {
         return createdNode.body.node;
       });
 
-      nockFundingRequest(peerId).reply(200, {
+      nockFundingRequest(createdNode.body.node?.node_address!).reply(200, {
         amountLeft,
         id: requestId,
       } as postFundingResponse);
@@ -190,11 +194,6 @@ describe("test entry server", function () {
       });
 
       spy.mockImplementation(async () => undefined);
-
-      nockFundingRequest(peerId).reply(200, {
-        amountLeft,
-        id: requestId,
-      } as postFundingResponse);
 
       const requestResponse = await request(app)
         .post("/api/request/entry-node")
@@ -232,7 +231,7 @@ describe("test entry server", function () {
         return createdNode.body.node;
       });
 
-      nockFundingRequest(peerId).reply(200, {
+      nockFundingRequest(createdNode.body.node?.node_address!).reply(200, {
         amountLeft,
         id: requestId,
       } as postFundingResponse);

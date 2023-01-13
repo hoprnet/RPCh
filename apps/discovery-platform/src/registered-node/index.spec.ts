@@ -13,14 +13,18 @@ import { DBInstance } from "../db";
 import { CreateRegisteredNode } from "./dto";
 import { MockPgInstanceSingleton } from "../db/index.spec";
 
-const mockNode = (peerId?: string, hasExitNode?: boolean) =>
-  ({
-    hasExitNode: hasExitNode ?? true,
-    peerId: peerId ?? "peerId",
-    chainId: 100,
-    hoprdApiEndpoint: "localhost",
-    hoprdApiPort: 5000,
-  } as CreateRegisteredNode);
+const mockNode = (
+  peerId?: string,
+  hasExitNode?: boolean
+): CreateRegisteredNode => ({
+  hasExitNode: hasExitNode ?? true,
+  peerId: peerId ?? "peerId",
+  chainId: 100,
+  hoprdApiEndpoint: "localhost",
+  hoprdApiPort: 5000,
+  exit_node_pub_key: "somePubKey",
+  node_address: "someAddress",
+});
 
 describe("test registered node functions", function () {
   let dbInstance: DBInstance;
@@ -104,7 +108,7 @@ describe("test registered node functions", function () {
     const nonExit = await getRegisteredNode(dbInstance, "1");
     if (!nonExit) throw new Error("Failed to create non exit node in test");
 
-    const reward = getRewardForNode(baseQuota, nonExit);
+    const reward = getRewardForNode(baseQuota, 0.1, nonExit);
 
     assert.equal(reward, baseQuota + 0.1);
   });
@@ -114,7 +118,7 @@ describe("test registered node functions", function () {
     const nonExit = await getRegisteredNode(dbInstance, "1");
     if (!nonExit) throw new Error("Failed to create non exit node in test");
 
-    const reward = getRewardForNode(baseQuota, nonExit);
+    const reward = getRewardForNode(baseQuota, 0.1, nonExit);
 
     assert.equal(reward, baseQuota + 0.1 * 2);
   });

@@ -111,9 +111,10 @@ export const getEligibleNode = async (
  */
 export const getRewardForNode = (
   baseQuota: number,
+  baseExtra: number,
   node: QueryRegisteredNode
 ): number => {
-  const extra = node.has_exit_node ? 1 * 2 : 1;
+  const extra = node.has_exit_node ? baseExtra * 2 : baseExtra;
   const reward = baseQuota + extra;
   return reward;
 };
