@@ -121,11 +121,12 @@ export class FundingServiceApi {
           } as postFundingRequest),
         }
       );
-      log.verbose("funding response:", await res.json());
+      let fundingResponseJson = await res.json();
+      log.verbose("funding response:", fundingResponseJson);
       await updateRegisteredNode(this.db, { ...dbNode, status: "FUNDING" });
 
       const { id: requestId, amountLeft } =
-        (await res.json()) as postFundingResponse;
+        fundingResponseJson as postFundingResponse;
 
       this.amountLeft = amountLeft;
       this.savePendingRequest(node.id, requestId, prevRetries ?? 0);
