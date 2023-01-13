@@ -16,14 +16,6 @@ export class RPChProvider extends JsonRpcProvider {
   ) {
     super(url);
     this.sdk = new SDK(hoprSdkOps, setKeyVal, getKeyVal);
-    this.sdk
-      .start()
-      .then(() => {
-        log.verbose("ethers started");
-      })
-      .catch((error) => {
-        log.error(error);
-      });
   }
 
   public async send(method: string, params: Array<any>): Promise<any> {
