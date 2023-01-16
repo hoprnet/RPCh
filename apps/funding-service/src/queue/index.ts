@@ -26,17 +26,18 @@ export const checkFreshRequests = async (ops: {
 }) => {
   ops.changeState(true);
   let freshRequest: QueryRequest | undefined;
+  log.verbose("Starting to fulfill request: ", JSON.stringify(freshRequest));
   try {
     freshRequest = await ops.requestService.getOldestFreshRequest();
+    if (!freshRequest) throw new CustomError("No pending fresh request");
     log.normal(
       "handling request: ",
-      freshRequest?.id,
-      log.createMetric({ id: freshRequest?.id })
+      freshRequest.id,
+      log.createMetric({ id: freshRequest.id })
     );
     // check if request and signer are valid
-    if (!ops.signer) throw new CustomError("Missing signer  transaction");
-    if (!freshRequest) throw new CustomError("No pending fresh request");
-    if (!freshRequest?.chain_id)
+    if (!ops.signer) throw new CustomError("Missing signer transaction");
+    if (!freshRequest.chain_id)
       throw new CustomError("Request is missing chainId");
     // check if signer has enough to fund request
     const provider = ops.signer.provider
@@ -53,7 +54,8 @@ export const checkFreshRequests = async (ops: {
       address,
       provider
     );
-    if (balance < BigNumber.from(freshRequest.amount))
+
+    if (BigNumber.from(balance).lt(BigNumber.from(freshRequest.amount)))
       throw new CustomError(
         "Signer does not have enough balance to fund request"
       );
@@ -66,6 +68,7 @@ export const checkFreshRequests = async (ops: {
       amount: freshRequest.amount,
       id: freshRequest.id,
     });
+
     // sent transaction to fund request
     const { hash: txHash } = await sendTransaction({
       smartContractAddress:
@@ -74,7 +77,7 @@ export const checkFreshRequests = async (ops: {
         ],
       from: connectedSigner,
       to: freshRequest?.node_address,
-      amount: ethers.utils.parseEther(freshRequest.amount).toString(),
+      amount: freshRequest.amount,
     });
     // set request status to pending while it is confirmed or failed
     await ops.requestService.updateRequest(freshRequest.id, {
