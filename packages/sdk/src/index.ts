@@ -286,6 +286,12 @@ export default class SDK {
    */
   public createRequest(provider: string, body: string): Request {
     if (!this.isReady) throw Error("SDK not ready to create requests");
+    let entryNodeScore = this.reliabilityScore.getScore(this.entryNode!.peerId);
+    while (entryNodeScore < 0.7 && entryNodeScore !== 0.2) {
+      this.selectEntryNode(this.ops.discoveryPlatformApiEndpoint);
+      entryNodeScore = this.reliabilityScore.getScore(this.entryNode!.peerId);
+    }
+
     return Request.createRequest(
       this.crypto!,
       provider,
