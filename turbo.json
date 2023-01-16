@@ -50,7 +50,7 @@
         "EXIT_NODE_PUB_KEY"
       ]
     },
-    "@rpch/funding-platform#build": {
+    "@rpch/funding-service#build": {
       "dependsOn": [
         "^build"
       ],
@@ -65,6 +65,23 @@
         "CONFIRMATIONS",
         "MAX_AMOUNT_OF_TOKENS",
         "TIMEOUT"
+      ]
+    },
+    "@rpch/discovery-platform#build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "build/**"
+      ],
+      "env": [
+        "PORT",
+        "FUNDING_SERVICE_URL",
+        "BALANCE_THRESHOLD",
+        "CHANNELS_THRESHOLD",
+        "BASE_QUOTA",
+        "HOPRD_ACCESS_TOKEN",
+        "DB_CONNECTION_URL"
       ]
     },
     "dev": {

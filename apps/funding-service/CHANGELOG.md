@@ -1,4 +1,4 @@
-# @rpch/funding-platform
+# @rpch/funding-service
 
 ## 0.0.4
 

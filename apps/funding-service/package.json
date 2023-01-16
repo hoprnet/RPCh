@@ -1,10 +1,10 @@
 {
-  "name": "@rpch/funding-platform",
+  "name": "@rpch/funding-service",
   "version": "0.0.4",
   "license": "LGPL-3.0",
   "private": true,
   "scripts": {
-    "build": "rimraf build && tsup",
+    "build": "tsup",
     "dev": "yarn build --watch",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
