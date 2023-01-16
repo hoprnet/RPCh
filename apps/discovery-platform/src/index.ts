@@ -84,7 +84,8 @@ const start = async (ops: {
   });
 
   // keep track of all pending funding requests to update status or retry
-  const checkForPendingRequests = setTimeout(async () => {
+  const checkForPendingRequests = setInterval(async () => {
+    log.normal("tracking pending requests");
     await fundingServiceApi.checkForPendingRequests();
   }, 1000);
 

@@ -193,6 +193,7 @@ export class FundingServiceApi {
    * Goes through all pending requests and chooses to prune/retry/ignore
    */
   public async checkForPendingRequests() {
+    log.verbose("amount of pending requests", this.pendingRequests.size);
     for (const [
       peerId,
       { amountOfRetries, requestId },
