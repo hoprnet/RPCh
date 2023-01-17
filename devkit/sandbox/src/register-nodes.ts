@@ -72,8 +72,8 @@ const registerNode = async (
   peerId: string,
   hoprdApiEndpoint: string,
   hoprdApiPort: number,
-  exit_node_pub_key: string,
-  node_address: string
+  exitNodePubKey: string,
+  nativeAddress: string
 ): Promise<string> => {
   const url = new URL("/api/node/register", DP_API_ENDPOINT);
   const body = {
@@ -82,8 +82,8 @@ const registerNode = async (
     chainId: 1,
     hoprdApiEndpoint,
     hoprdApiPort,
-    exit_node_pub_key,
-    node_address,
+    exitNodePubKey,
+    nativeAddress,
   };
   debug("Registering node", body);
 
@@ -107,7 +107,7 @@ const main = async () => {
   let port = 13300;
 
   for (const publicKey of publicKeys) {
-    const node_address = getAddressFromPublicKey(publicKey);
+    const nativeAddress = getAddressFromPublicKey(publicKey);
     const hoprdApiEndpoint = "http://localhost";
     const hoprdApiPort = ++port;
     const peerId = await getPeerId(hoprdApiEndpoint + ":" + hoprdApiPort);
@@ -116,7 +116,7 @@ const main = async () => {
       hoprdApiEndpoint,
       hoprdApiPort,
       publicKey,
-      node_address
+      nativeAddress
     );
   }
 };

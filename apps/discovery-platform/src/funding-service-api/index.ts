@@ -108,7 +108,7 @@ export class FundingServiceApi {
         chainId: node.chain_id,
       });
       const res = await fetch(
-        `${this.url}/api/request/funds/${dbNode.node_address}`,
+        `${this.url}/api/request/funds/${dbNode.native_address}`,
         {
           method: "POST",
           headers: {

@@ -30,7 +30,7 @@ const createMockNode = (peerId?: string): QueryRegisteredNode => ({
   total_amount_funded: 0,
   hoprd_api_endpoint: "localhost",
   hoprd_api_port: 5000,
-  node_address: "someaddress",
+  native_address: "someaddress",
   exit_node_pub_key: "somepubkey",
   created_at: Date.now().toString(),
   updated_at: Date.now().toString(),
@@ -151,7 +151,7 @@ describe("test funding service api class", function () {
       expiredAt: new Date().toISOString(),
     } as getAccessTokenResponse);
 
-    nockFundingRequest(node.node_address).reply(200, {
+    nockFundingRequest(node.native_address).reply(200, {
       amountLeft,
       id: requestId,
     } as postFundingResponse);
@@ -218,7 +218,7 @@ describe("test funding service api class", function () {
         expiredAt: new Date().toISOString(),
       } as getAccessTokenResponse);
 
-      nockFundingRequest(node.node_address).reply(200, {
+      nockFundingRequest(node.native_address).reply(200, {
         amountLeft,
         id: requestId,
       } as postFundingResponse);
@@ -267,7 +267,7 @@ describe("test funding service api class", function () {
         expiredAt: new Date().toISOString(),
       } as getAccessTokenResponse);
 
-      nockFundingRequest(node.node_address).reply(200, {
+      nockFundingRequest(node.native_address).reply(200, {
         amountLeft,
         id: requestId,
       } as postFundingResponse);
@@ -316,7 +316,7 @@ describe("test funding service api class", function () {
         expiredAt: new Date().toISOString(),
       } as getAccessTokenResponse);
 
-      nockFundingRequest(node.node_address)
+      nockFundingRequest(node.native_address)
         .twice()
         .reply(200, {
           amountLeft,

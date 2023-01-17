@@ -35,8 +35,8 @@ const mockNode = (
   chainId: 100,
   hoprdApiEndpoint: "localhost",
   hoprdApiPort: 5000,
-  exit_node_pub_key: "somePubKey",
-  node_address: "someAddress",
+  exitNodePubKey: "somePubKey",
+  nativeAddress: "someAddress",
 });
 
 describe("test entry server", function () {
@@ -164,7 +164,7 @@ describe("test entry server", function () {
         return createdNode.body.node;
       });
 
-      nockFundingRequest(createdNode.body.node?.node_address!).reply(200, {
+      nockFundingRequest(createdNode.body.node?.native_address!).reply(200, {
         amountLeft,
         id: requestId,
       } as postFundingResponse);
@@ -231,7 +231,7 @@ describe("test entry server", function () {
         return createdNode.body.node;
       });
 
-      nockFundingRequest(createdNode.body.node?.node_address!).reply(200, {
+      nockFundingRequest(createdNode.body.node?.native_address!).reply(200, {
         amountLeft,
         id: requestId,
       } as postFundingResponse);

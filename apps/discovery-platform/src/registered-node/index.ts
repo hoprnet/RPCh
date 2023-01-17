@@ -32,8 +32,8 @@ export const createRegisteredNode = async (
     chain_id: Number(node.chainId),
     hoprd_api_endpoint: node.hoprdApiEndpoint,
     hoprd_api_port: node.hoprdApiPort,
-    exit_node_pub_key: node.exit_node_pub_key,
-    node_address: node.node_address,
+    exit_node_pub_key: node.exitNodePubKey,
+    native_address: node.nativeAddress,
     has_exit_node: Boolean(node.hasExitNode),
     id: node.peerId,
   };
