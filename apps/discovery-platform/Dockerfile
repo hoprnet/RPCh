@@ -49,8 +49,6 @@ COPY --from=installer /app/apps/discovery-platform/package.json .
 COPY --from=installer /app .
 COPY apps/discovery-platform/dump.sql /app/
 
-ENV NODE_ENV=production
-
 CMD ["node", "apps/discovery-platform/build/index.js"]
 
 ENTRYPOINT ["/sbin/tini", "--"]

@@ -56,6 +56,10 @@ export const checkCommitment = async (ops: {
   minChannels: number;
 }): Promise<boolean | undefined> => {
   try {
+    // Assume node has committed to hopr if it is running in development
+    // eslint-disable-next-line turbo/no-undeclared-env-vars
+    if (process.env.NODE_ENV === "development") return true;
+
     const variables = {
       id: ops.node.id,
     };
@@ -90,7 +94,8 @@ export const checkCommitment = async (ops: {
 };
 
 /**
- *
+ * checks if a node has a minimum balance in all open channels, also checks if user has more
+ * than a minimum amount of open channels
  * @param graphRes hopr channels subgraph response
  * @param minBalance Minimum balance needed for node to be considered committed
  * @param minChannels Minimum amount of open channels needed to be considered committed

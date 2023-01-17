@@ -95,14 +95,36 @@ export const getNonExitNodes = async (dbInstance: db.DBInstance) => {
 export const getEligibleNode = async (
   dbInstance: db.DBInstance
 ): Promise<QueryRegisteredNode | undefined> => {
-  const allNodes = await getRegisteredNodes(dbInstance);
+  const readyNodes = await getReadyNodes(dbInstance);
   // choose selected entry node
-  // const eligibleNodes = allNodes.filter((node) => node.status === "READY");
-  const selectedNode = allNodes.at(Math.floor(Math.random() * allNodes.length));
+  const selectedNode = readyNodes?.at(
+    Math.floor(Math.random() * readyNodes.length)
+  );
   // TODO: get access token of selected node
   return selectedNode;
 };
 
+/**
+ * Get registered nodes with status READY
+ * @param dbInstance
+ * @returns QueryRegisteredNode[] | null
+ */
+export const getReadyNodes = async (
+  dbInstance: db.DBInstance
+): Promise<QueryRegisteredNode[] | null> => {
+  return db.getNodesByStatus(dbInstance, "READY");
+};
+
+/**
+ * Get registered nodes with status FRESH
+ * @param dbInstance
+ * @returns QueryRegisteredNode[] | null
+ */
+export const getFreshNodes = async (
+  dbInstance: db.DBInstance
+): Promise<QueryRegisteredNode[] | null> => {
+  return db.getNodesByStatus(dbInstance, "FRESH");
+};
 /**
  * Calculate the reward that a given node should receive
  * @param baseQuota how much quota did the node allow

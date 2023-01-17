@@ -82,6 +82,21 @@ export const getRegisteredNode = async (
   return dbRes;
 };
 
+export const getNodesByStatus = async (
+  dbInstance: DBInstance,
+  status: QueryRegisteredNode["status"]
+): Promise<QueryRegisteredNode[] | null> => {
+  const text = `SELECT * FROM ${TABLES.REGISTERED_NODES} WHERE status=$<status>`;
+  const values = {
+    status: status,
+  };
+  const dbRes: QueryRegisteredNode[] | null = await dbInstance.manyOrNone(
+    text,
+    values
+  );
+  return dbRes;
+};
+
 export const updateRegisteredNode = async (
   dbInstance: DBInstance,
   updatedNode: QueryRegisteredNode

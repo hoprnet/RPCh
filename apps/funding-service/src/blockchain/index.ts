@@ -31,7 +31,7 @@ export const sendTransaction = async (params: {
   const txParams = [params.to, params.amount];
 
   const gasPrice = await contract.estimateGas;
-  log.verbose(gasPrice);
+
   const transactionResponse = await contract.transfer(...txParams);
 
   return transactionResponse;

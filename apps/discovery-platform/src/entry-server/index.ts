@@ -18,6 +18,9 @@ const app = express();
 const apiRouter = express.Router();
 const log = createLogger(["entry-server"]);
 
+// base amount of reward that a node will receive after completing a request
+const BASE_EXTRA = 1;
+
 export const doesClientHaveQuota = async (
   db: DBInstance,
   client: string,
@@ -87,8 +90,7 @@ export const entryServer = (ops: {
       client,
       ops.baseQuota
     );
-    // TODO: reenable
-    if (false && !doesClientHaveQuotaResponse) {
+    if (!doesClientHaveQuotaResponse) {
       return res.status(400).json({
         body: "Client does not have enough quota",
       });
@@ -101,10 +103,9 @@ export const entryServer = (ops: {
     }
 
     // calculate how much should be funded to entry node
-    const baseExtra = 1;
     const amountToFund = getRewardForNode(
       ops.baseQuota,
-      baseExtra,
+      BASE_EXTRA,
       selectedNode
     );
     // fund entry node

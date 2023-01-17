@@ -115,7 +115,7 @@ start() {
         docker compose -f $DIR/central-docker-compose.yml -p sandbox-central \
         up -d --remove-orphans --build --force-recreate
     echo "Done 'central-docker-compose'"
-
+    sleep 20
     # register nodes
     echo "Registering nodes to discovery-platform"
     hoprTokenAddress=$( \
@@ -128,6 +128,10 @@ start() {
         npx ts-node $DIR/register-nodes.ts
     )
     echo "Registered nodes to discovery-platform"
+    
+    echo "Adding quota to discovery-platform"
+    npx ts-node $DIR/add-quota.ts
+    echo "Added quota to client sandbox in discovery-platform"
 
     echo "Sandbox is ready!"
 }
