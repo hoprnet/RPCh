@@ -23,8 +23,8 @@ const mockNode = (
   chainId: 100,
   hoprdApiEndpoint: "localhost",
   hoprdApiPort: 5000,
-  exit_node_pub_key: "somePubKey",
-  node_address: "someAddress",
+  exitNodePubKey: "somePubKey",
+  nativeAddress: "someAddress",
 });
 
 describe("test registered node functions", function () {

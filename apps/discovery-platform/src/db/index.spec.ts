@@ -49,7 +49,7 @@ const createMockNode = (
   id: peerId ?? "peerId" + Math.floor(Math.random() * 100),
   has_exit_node: hasExitNode ?? true,
   hoprd_api_endpoint: "someendpoint",
-  node_address: "someaddress",
+  native_address: "someaddress",
   exit_node_pub_key: "somepubkey",
   hoprd_api_port: 1337,
   honesty_score: 0,

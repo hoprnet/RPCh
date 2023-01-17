@@ -111,7 +111,7 @@ export default class SDK {
           "Accept-Content": "application/json",
         },
         body: JSON.stringify({
-          client: "BW",
+          client: "sandbox",
         }),
       }
     ).then((res) => res.json());
