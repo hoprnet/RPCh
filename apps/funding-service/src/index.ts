@@ -74,7 +74,7 @@ const start = async (ops: {
         changeState: handleRunning,
       });
     }
-  }, 60e3);
+  }, 30e3);
   // start listening at PORT for requests
   app.listen(PORT, () => {
     log.normal("entry server is up");
