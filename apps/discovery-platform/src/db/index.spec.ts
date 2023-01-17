@@ -177,6 +177,20 @@ describe("test db functions", function () {
     const updatedQuota = await db.getQuota(dbInstance, createdQuota.id ?? 0);
     assert.equal(updatedQuota?.action_taker, "eve");
   });
+  it("should get only fresh nodes", async function () {
+    await db.saveRegisteredNode(dbInstance, createMockNode("peer1"));
+    const node = await db.getRegisteredNode(dbInstance, "peer1");
+    if (!node) throw new Error("Db could not save node");
+    await db.updateRegisteredNode(dbInstance, { ...node, status: "UNUSABLE" });
+    await db.saveRegisteredNode(dbInstance, createMockNode("peer2"));
+    await db.saveRegisteredNode(dbInstance, createMockNode("peer3"));
+
+    const freshNodes = await db.getNodesByStatus(dbInstance, "FRESH");
+    const unusableNodes = await db.getNodesByStatus(dbInstance, "UNUSABLE");
+
+    assert.equal(freshNodes?.length, 2);
+    assert.equal(unusableNodes?.length, 1);
+  });
   it("should delete quota", async function () {
     const mockQuota = createMockQuota({
       client: "client",
