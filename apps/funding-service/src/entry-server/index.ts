@@ -135,7 +135,6 @@ export const entryServer = (ops: {
     ),
     async (req, res) => {
       log.verbose(`GET /api/funds`);
-
       log.verbose(["getting funds for chains", [...validChainIds.keys()]]);
       const providers = await getProviders(Array.from(validChainIds.keys()));
       const balances = await getBalanceForAllChains(

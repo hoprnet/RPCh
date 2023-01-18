@@ -90,7 +90,6 @@ export const entryServer = (ops: {
 
   apiRouter.post("/request/entry-node", async (req, res) => {
     log.verbose(`POST /request/entry-node`, req.body);
-
     const { client } = req.body;
     log.verbose("requesting entry node for client", client);
     if (typeof client !== "string") throw Error("Client is not a string");
