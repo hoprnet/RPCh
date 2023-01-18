@@ -1,4 +1,8 @@
-# Sandbox
+# Sandbox v2
+
+<p align="center">
+  <img width="500" height="500" src="https://user-images.githubusercontent.com/1877679/213269429-3e17ce98-216d-40d9-8047-86a55413988d.png" alt="a [sandbox protected by a glass]::2 in a yellow solid background, in the sandbox you have foxes playing, digital drawing">
+</p>
 
 ## Description
 
