@@ -18,3 +18,7 @@ We have four main project folders:
 1. Install nodejs `v16`
 2. Download dependencies with `yarn`
 3. Build everything with `yarn build`
+
+### Try it out
+
+Checkout [Sandbox](https://github.com/Rpc-h/RPCh/tree/main/devkit/sandbox#sandbox) which lets you try RPCh locally via docker.
