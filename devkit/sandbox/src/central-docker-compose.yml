@@ -58,6 +58,7 @@ services:
       - FUNDING_SERVICE_URL=http://funding-service:3010
       - HOPRD_ACCESS_TOKEN=${HOPRD_API_TOKEN}
       - PORT=${DISCOVERY_PLATFORM_PORT}
+      - NODE_ENV=${NODE_ENV}
 
 networks:
   sandbox-nodes_default:

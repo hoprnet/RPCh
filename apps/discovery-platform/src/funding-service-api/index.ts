@@ -108,7 +108,7 @@ export class FundingServiceApi {
         chainId: node.chain_id,
       });
       const res = await fetch(
-        `${this.url}/api/request/funds/${dbNode.node_address}`,
+        `${this.url}/api/request/funds/${dbNode.native_address}`,
         {
           method: "POST",
           headers: {
@@ -193,6 +193,7 @@ export class FundingServiceApi {
    * Goes through all pending requests and chooses to prune/retry/ignore
    */
   public async checkForPendingRequests() {
+    log.verbose("amount of pending requests", this.pendingRequests.size);
     for (const [
       peerId,
       { amountOfRetries, requestId },

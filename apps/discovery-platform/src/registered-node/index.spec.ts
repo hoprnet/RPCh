@@ -8,6 +8,7 @@ import {
   updateRegisteredNode,
   getEligibleNode,
   getRewardForNode,
+  getFreshNodes,
 } from ".";
 import { DBInstance } from "../db";
 import { CreateRegisteredNode } from "./dto";
@@ -22,8 +23,8 @@ const mockNode = (
   chainId: 100,
   hoprdApiEndpoint: "localhost",
   hoprdApiPort: 5000,
-  exit_node_pub_key: "somePubKey",
-  node_address: "someAddress",
+  exitNodePubKey: "somePubKey",
+  nativeAddress: "someAddress",
 });
 
 describe("test registered node functions", function () {
@@ -84,6 +85,19 @@ describe("test registered node functions", function () {
 
     assert.equal(exitNodes.length, 2);
   });
+  it("should get all fresh nodes", async function () {
+    await createRegisteredNode(dbInstance, mockNode("1"));
+    const node = await getRegisteredNode(dbInstance, "1");
+    if (!node) throw new Error("Failed to create node");
+    await updateRegisteredNode(dbInstance, { ...node, status: "READY" });
+    const updatedNode = await getRegisteredNode(dbInstance, "1");
+    await createRegisteredNode(dbInstance, mockNode("2", true));
+    await createRegisteredNode(dbInstance, mockNode("3", true));
+
+    const freshNodes = await getFreshNodes(dbInstance);
+
+    assert.equal(freshNodes?.length, 2);
+  });
   it("should get eligible node", async function () {
     await createRegisteredNode(dbInstance, mockNode("1", false));
     await createRegisteredNode(dbInstance, mockNode("2", true));
@@ -97,10 +111,10 @@ describe("test registered node functions", function () {
       status: "READY",
     });
 
-    // const eligibleNode = await getEligibleNode(dbInstance);
+    const eligibleNode = await getEligibleNode(dbInstance);
 
-    // assert.equal(eligibleNode?.id, queryNode?.id);
-    // assert.equal(eligibleNode?.status, "READY");
+    assert.equal(eligibleNode?.id, queryNode?.id);
+    assert.equal(eligibleNode?.status, "READY");
   });
   it("should calculate reward for non exit node", async function () {
     const baseQuota = 1;

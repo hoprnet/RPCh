@@ -1,9 +1,11 @@
-import { DBInstance } from "./db";
+import { DBInstance, updateRegisteredNode } from "./db";
 import { entryServer } from "./entry-server";
 import { FundingServiceApi } from "./funding-service-api";
 import { createLogger } from "./utils";
 import pgp from "pg-promise";
 import fs from "fs";
+import { getFreshNodes, getRegisteredNodes } from "./registered-node";
+import { checkCommitment } from "./graph-api";
 
 const log = createLogger();
 
@@ -30,6 +32,7 @@ const main = () => {
   }
   if (!FUNDING_SERVICE_URL)
     throw new Error('Missing "FUNDING_SERVICE_API" env variable');
+
   if (!DB_CONNECTION_URL) {
     throw new Error('Missing "DB_CONNECTION_URL" env variable');
   }
@@ -84,12 +87,32 @@ const start = async (ops: {
   });
 
   // keep track of all pending funding requests to update status or retry
-  const checkForPendingRequests = setTimeout(async () => {
+  const checkForPendingRequests = setInterval(async () => {
+    log.normal("tracking pending requests");
     await fundingServiceApi.checkForPendingRequests();
+  }, 1000);
+
+  // check if fresh nodes have committed
+  const checkCommitmentForFreshNodes = setInterval(async () => {
+    log.normal("checking commitment of fresh nodes");
+    const freshNodes = await getFreshNodes(ops.db);
+
+    for (const node of freshNodes ?? []) {
+      const nodeIsCommitted = await checkCommitment({
+        node,
+        minBalance: Number(BALANCE_THRESHOLD),
+        minChannels: Number(CHANNELS_THRESHOLD),
+      });
+      if (nodeIsCommitted) {
+        log.verbose("new committed node", node.id);
+        await updateRegisteredNode(ops.db, { ...node, status: "READY" });
+      }
+    }
   }, 1000);
 
   return () => {
     clearInterval(checkForPendingRequests);
+    clearInterval(checkCommitmentForFreshNodes);
   };
 };
 

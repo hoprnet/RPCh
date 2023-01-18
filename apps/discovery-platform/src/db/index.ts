@@ -43,8 +43,8 @@ export const saveRegisteredNode = async (
 ): Promise<boolean> => {
   try {
     const text = `INSERT INTO
-    ${TABLES.REGISTERED_NODES} (has_exit_node, id, chain_id, hoprd_api_endpoint, hoprd_api_port, exit_node_pub_key, node_address, total_amount_funded, honesty_score, status)
-    VALUES ($<has_exit_node>, $<id>, $<chain_id>, $<hoprd_api_endpoint>, $<hoprd_api_port>, $<exit_node_pub_key>, $<node_address>, $<total_amount_funded>, $<honesty_score>, $<status>)
+    ${TABLES.REGISTERED_NODES} (has_exit_node, id, chain_id, hoprd_api_endpoint, hoprd_api_port, exit_node_pub_key, native_address, total_amount_funded, honesty_score, status)
+    VALUES ($<has_exit_node>, $<id>, $<chain_id>, $<hoprd_api_endpoint>, $<hoprd_api_port>, $<exit_node_pub_key>, $<native_address>, $<total_amount_funded>, $<honesty_score>, $<status>)
     RETURNING *`;
     const values: Omit<QueryRegisteredNode, "created_at" | "updated_at"> = {
       has_exit_node: node.has_exit_node,
@@ -53,7 +53,7 @@ export const saveRegisteredNode = async (
       hoprd_api_endpoint: node.hoprd_api_endpoint,
       hoprd_api_port: node.hoprd_api_port,
       exit_node_pub_key: node.exit_node_pub_key,
-      node_address: node.node_address,
+      native_address: node.native_address,
       total_amount_funded: node.total_amount_funded,
       honesty_score: node.honesty_score,
       status: node.status,
@@ -79,6 +79,21 @@ export const getRegisteredNode = async (
     text,
     values
   )) as QueryRegisteredNode;
+  return dbRes;
+};
+
+export const getNodesByStatus = async (
+  dbInstance: DBInstance,
+  status: QueryRegisteredNode["status"]
+): Promise<QueryRegisteredNode[] | null> => {
+  const text = `SELECT * FROM ${TABLES.REGISTERED_NODES} WHERE status=$<status>`;
+  const values = {
+    status: status,
+  };
+  const dbRes: QueryRegisteredNode[] | null = await dbInstance.manyOrNone(
+    text,
+    values
+  );
   return dbRes;
 };
 

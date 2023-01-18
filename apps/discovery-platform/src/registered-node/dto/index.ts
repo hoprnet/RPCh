@@ -7,8 +7,8 @@ type RegisteredNode = {
 export type CreateRegisteredNode = RegisteredNode & {
   hoprdApiEndpoint: string;
   hoprdApiPort: number;
-  exit_node_pub_key: string;
-  node_address: string;
+  exitNodePubKey: string;
+  nativeAddress: string;
 };
 
 export type QueryRegisteredNode = {
@@ -17,7 +17,7 @@ export type QueryRegisteredNode = {
   hoprd_api_endpoint: string;
   hoprd_api_port: number;
   exit_node_pub_key: string;
-  node_address: string;
+  native_address: string;
   chain_id: number;
   total_amount_funded: number;
   honesty_score: number;

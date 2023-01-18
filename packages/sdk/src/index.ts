@@ -111,7 +111,7 @@ export default class SDK {
           "Accept-Content": "application/json",
         },
         body: JSON.stringify({
-          client: "BW",
+          client: "sandbox",
         }),
       }
     ).then((res) => res.json());
@@ -147,10 +147,12 @@ export default class SDK {
       ).toString()
     ).then((res) => res.json());
 
-    this.exitNodes = response.map((item) => ({
-      peerId: item.id,
-      pubKey: item.exit_node_pub_key,
-    }));
+    this.exitNodes = response
+      .filter((item) => item.id !== this.entryNode?.peerId)
+      .map((item) => ({
+        peerId: item.id,
+        pubKey: item.exit_node_pub_key,
+      }));
 
     if (this.exitNodes.length === 0) throw Error("No exit nodes available");
 
