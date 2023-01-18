@@ -9,6 +9,9 @@ import { isExpired } from "../utils";
 import { QueryRegisteredNode } from "../registered-node/dto";
 import { DBInstance } from "../db";
 import { getRegisteredNode, updateRegisteredNode } from "../registered-node";
+import { createLogger } from "../utils";
+
+const log = createLogger(["funding-service-api"]);
 
 /**
  * API used to fund registered nodes, handles creating and keeping track of pending requests.
@@ -100,22 +103,30 @@ export class FundingServiceApi {
     try {
       const dbNode = await getRegisteredNode(this.db, node.id);
       if (!dbNode) throw new Error("Node is not registered");
-
-      const res = await fetch(`${this.url}/api/request/funds/${node.id}`, {
-        method: "POST",
-        headers: {
-          "x-access-token": this.accessToken!,
-        },
-        body: JSON.stringify({
-          amount: String(amount),
-          chainId: node.chain_id,
-        } as postFundingRequest),
+      log.verbose("requesting from funding service", {
+        amount: String(amount),
+        chainId: node.chain_id,
       });
-
+      const res = await fetch(
+        `${this.url}/api/request/funds/${dbNode.native_address}`,
+        {
+          method: "POST",
+          headers: {
+            "x-access-token": this.accessToken!,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            amount: String(amount),
+            chainId: node.chain_id,
+          } as postFundingRequest),
+        }
+      );
+      let fundingResponseJson = await res.json();
+      log.verbose("funding response:", fundingResponseJson);
       await updateRegisteredNode(this.db, { ...dbNode, status: "FUNDING" });
 
       const { id: requestId, amountLeft } =
-        (await res.json()) as postFundingResponse;
+        fundingResponseJson as postFundingResponse;
 
       this.amountLeft = amountLeft;
       this.savePendingRequest(node.id, requestId, prevRetries ?? 0);
@@ -182,6 +193,7 @@ export class FundingServiceApi {
    * Goes through all pending requests and chooses to prune/retry/ignore
    */
   public async checkForPendingRequests() {
+    log.verbose("amount of pending requests", this.pendingRequests.size);
     for (const [
       peerId,
       { amountOfRetries, requestId },

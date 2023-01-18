@@ -8,22 +8,24 @@ import {
   updateRegisteredNode,
   getEligibleNode,
   getRewardForNode,
+  getFreshNodes,
 } from ".";
 import { DBInstance } from "../db";
 import { CreateRegisteredNode } from "./dto";
 import { MockPgInstanceSingleton } from "../db/index.spec";
 
-const mockNode = (peerId?: string, hasExitNode?: boolean) =>
-  ({
-    hasExitNode: hasExitNode ?? true,
-    peerId: peerId ?? "peerId",
-    chainId: 100,
-    ports: {
-      exitNodePort: 3000,
-      hoprApiEndpoint: "localhost",
-      hoprApiPort: 5000,
-    },
-  } as CreateRegisteredNode);
+const mockNode = (
+  peerId?: string,
+  hasExitNode?: boolean
+): CreateRegisteredNode => ({
+  hasExitNode: hasExitNode ?? true,
+  peerId: peerId ?? "peerId",
+  chainId: 100,
+  hoprdApiEndpoint: "localhost",
+  hoprdApiPort: 5000,
+  exitNodePubKey: "somePubKey",
+  nativeAddress: "someAddress",
+});
 
 describe("test registered node functions", function () {
   let dbInstance: DBInstance;
@@ -83,6 +85,19 @@ describe("test registered node functions", function () {
 
     assert.equal(exitNodes.length, 2);
   });
+  it("should get all fresh nodes", async function () {
+    await createRegisteredNode(dbInstance, mockNode("1"));
+    const node = await getRegisteredNode(dbInstance, "1");
+    if (!node) throw new Error("Failed to create node");
+    await updateRegisteredNode(dbInstance, { ...node, status: "READY" });
+    const updatedNode = await getRegisteredNode(dbInstance, "1");
+    await createRegisteredNode(dbInstance, mockNode("2", true));
+    await createRegisteredNode(dbInstance, mockNode("3", true));
+
+    const freshNodes = await getFreshNodes(dbInstance);
+
+    assert.equal(freshNodes?.length, 2);
+  });
   it("should get eligible node", async function () {
     await createRegisteredNode(dbInstance, mockNode("1", false));
     await createRegisteredNode(dbInstance, mockNode("2", true));
@@ -107,7 +122,7 @@ describe("test registered node functions", function () {
     const nonExit = await getRegisteredNode(dbInstance, "1");
     if (!nonExit) throw new Error("Failed to create non exit node in test");
 
-    const reward = getRewardForNode(baseQuota, nonExit);
+    const reward = getRewardForNode(baseQuota, 0.1, nonExit);
 
     assert.equal(reward, baseQuota + 0.1);
   });
@@ -117,7 +132,7 @@ describe("test registered node functions", function () {
     const nonExit = await getRegisteredNode(dbInstance, "1");
     if (!nonExit) throw new Error("Failed to create non exit node in test");
 
-    const reward = getRewardForNode(baseQuota, nonExit);
+    const reward = getRewardForNode(baseQuota, 0.1, nonExit);
 
     assert.equal(reward, baseQuota + 0.1 * 2);
   });

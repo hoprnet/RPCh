@@ -32,7 +32,6 @@ export class RequestService {
   }): Promise<QueryRequest> {
     try {
       log.normal("Creating request...");
-      const now = new Date(Date.now());
       const createRequest: CreateRequest = {
         amount: params.amount,
         accessTokenHash: params.accessTokenHash,
@@ -41,6 +40,7 @@ export class RequestService {
         status: "FRESH",
       };
       const dbRes = await db.saveRequest(this.db, createRequest);
+      log.verbose("Created request", createRequest);
       return dbRes;
     } catch (e: any) {
       log.error("Failed to create request: ", e);

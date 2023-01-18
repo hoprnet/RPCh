@@ -10,12 +10,12 @@ import retry from "async-retry";
 // we do not run this build this file via turbo
 /* eslint-disable turbo/no-undeclared-env-vars */
 const {
-  RPC_PROVIDER,
-  FUNDING_HOPRD_API_ENDPOINT,
+  RPC_PROVIDER = "http://localhost:8545",
+  FUNDING_HOPRD_API_ENDPOINT = "http://localhost:13301",
   FUNDING_HOPRD_API_TOKEN,
   NODE_ENV = "development",
-  NATIVE_AMOUNT = "1",
-  HOPR_AMOUNT = "1",
+  NATIVE_AMOUNT = String(1_000_000_000_000_000_000),
+  HOPR_AMOUNT = String(1_000),
 } = process.env;
 
 const debug = NODE_ENV === "production" ? () => {} : console.log;

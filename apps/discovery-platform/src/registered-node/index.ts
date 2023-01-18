@@ -1,5 +1,8 @@
 import * as db from "../db";
 import { CreateRegisteredNode, QueryRegisteredNode } from "./dto";
+import { createLogger } from "../utils";
+
+const log = createLogger(["registered-node"]);
 
 /**
  * Get all registered nodes
@@ -22,14 +25,19 @@ export const createRegisteredNode = async (
   dbInstance: db.DBInstance,
   node: CreateRegisteredNode
 ): Promise<boolean> => {
-  const newNode = {
+  const newNode: Omit<QueryRegisteredNode, "created_at" | "updated_at"> = {
     honesty_score: 0,
     total_amount_funded: 0,
     status: "FRESH",
     chain_id: Number(node.chainId),
+    hoprd_api_endpoint: node.hoprdApiEndpoint,
+    hoprd_api_port: node.hoprdApiPort,
+    exit_node_pub_key: node.exitNodePubKey,
+    native_address: node.nativeAddress,
     has_exit_node: Boolean(node.hasExitNode),
     id: node.peerId,
-  } as QueryRegisteredNode;
+  };
+  log.verbose("Saving new registered node", newNode);
 
   return await db.saveRegisteredNode(dbInstance, newNode);
 };
@@ -87,16 +95,36 @@ export const getNonExitNodes = async (dbInstance: db.DBInstance) => {
 export const getEligibleNode = async (
   dbInstance: db.DBInstance
 ): Promise<QueryRegisteredNode | undefined> => {
-  const allNodes = await getRegisteredNodes(dbInstance);
+  const readyNodes = await getReadyNodes(dbInstance);
   // choose selected entry node
-  const eligibleNodes = allNodes.filter((node) => node.status === "READY");
-  const selectedNode = eligibleNodes.at(
-    Math.floor(Math.random() * eligibleNodes.length)
+  const selectedNode = readyNodes?.at(
+    Math.floor(Math.random() * readyNodes.length)
   );
   // TODO: get access token of selected node
   return selectedNode;
 };
 
+/**
+ * Get registered nodes with status READY
+ * @param dbInstance
+ * @returns QueryRegisteredNode[] | null
+ */
+export const getReadyNodes = async (
+  dbInstance: db.DBInstance
+): Promise<QueryRegisteredNode[] | null> => {
+  return db.getNodesByStatus(dbInstance, "READY");
+};
+
+/**
+ * Get registered nodes with status FRESH
+ * @param dbInstance
+ * @returns QueryRegisteredNode[] | null
+ */
+export const getFreshNodes = async (
+  dbInstance: db.DBInstance
+): Promise<QueryRegisteredNode[] | null> => {
+  return db.getNodesByStatus(dbInstance, "FRESH");
+};
 /**
  * Calculate the reward that a given node should receive
  * @param baseQuota how much quota did the node allow
@@ -105,9 +133,10 @@ export const getEligibleNode = async (
  */
 export const getRewardForNode = (
   baseQuota: number,
+  baseExtra: number,
   node: QueryRegisteredNode
 ): number => {
-  const extra = node.has_exit_node ? 0.1 * 2 : 0.1;
+  const extra = node.has_exit_node ? baseExtra * 2 : baseExtra;
   const reward = baseQuota + extra;
   return reward;
 };

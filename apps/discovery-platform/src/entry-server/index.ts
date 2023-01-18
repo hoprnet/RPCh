@@ -12,9 +12,14 @@ import {
   getRewardForNode,
 } from "../registered-node";
 import { CreateRegisteredNode } from "../registered-node/dto";
+import { createLogger } from "../utils";
 
 const app = express();
 const apiRouter = express.Router();
+const log = createLogger(["entry-server"]);
+
+// base amount of reward that a node will receive after completing a request
+const BASE_EXTRA = 1;
 
 export const doesClientHaveQuota = async (
   db: DBInstance,
@@ -36,6 +41,7 @@ export const entryServer = (ops: {
   apiRouter.use(express.json());
 
   apiRouter.post("/node/register", async (req, res) => {
+    log.verbose("/node/register", req.body);
     const node = req.body as CreateRegisteredNode;
     const registered = await createRegisteredNode(ops.db, node);
     return res.json({ body: registered });
@@ -73,8 +79,11 @@ export const entryServer = (ops: {
     return res.json({ quota: createdQuota });
   });
 
-  apiRouter.get("/request/entry-node", async (req, res) => {
+  apiRouter.post("/request/entry-node", async (req, res) => {
     const { client } = req.body;
+    log.verbose("requesting entry node for client", client);
+    if (typeof client !== "string") throw Error("Client is not a string");
+
     // check if client has enough quota
     const doesClientHaveQuotaResponse = await doesClientHaveQuota(
       ops.db,
@@ -88,12 +97,17 @@ export const entryServer = (ops: {
     }
     // choose selected entry node
     const selectedNode = await getEligibleNode(ops.db);
+    log.verbose("selected entry node", selectedNode);
     if (!selectedNode) {
       return res.json({ body: "Could not find eligible node" });
     }
 
     // calculate how much should be funded to entry node
-    const amountToFund = getRewardForNode(ops.baseQuota, selectedNode);
+    const amountToFund = getRewardForNode(
+      ops.baseQuota,
+      BASE_EXTRA,
+      selectedNode
+    );
     // fund entry node
     await ops.fundingServiceApi.requestFunds(amountToFund, selectedNode);
 
