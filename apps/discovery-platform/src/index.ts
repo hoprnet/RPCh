@@ -94,15 +94,19 @@ const start = async (ops: {
 
   // check if fresh nodes have committed
   const checkCommitmentForFreshNodes = setInterval(async () => {
-    log.normal("checking commitment of fresh nodes");
+    log.normal("tracking commitment for fresh nodes");
     const freshNodes = await getFreshNodes(ops.db);
 
     for (const node of freshNodes ?? []) {
+      log.verbose("checking commitment of fresh node", node);
+
       const nodeIsCommitted = await checkCommitment({
         node,
         minBalance: Number(BALANCE_THRESHOLD),
         minChannels: Number(CHANNELS_THRESHOLD),
       });
+
+      log.verbose("node commitment", nodeIsCommitted);
       if (nodeIsCommitted) {
         log.verbose("new committed node", node.id);
         await updateRegisteredNode(ops.db, { ...node, status: "READY" });

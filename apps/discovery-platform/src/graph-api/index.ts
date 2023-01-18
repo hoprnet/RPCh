@@ -56,6 +56,8 @@ export const checkCommitment = async (ops: {
   minChannels: number;
 }): Promise<boolean | undefined> => {
   try {
+    // eslint-disable-next-line turbo/no-undeclared-env-vars
+    log.verbose("check commitment environment", process.env.NODE_ENV);
     // Assume node has committed to hopr if it is running in development
     // eslint-disable-next-line turbo/no-undeclared-env-vars
     if (process.env.NODE_ENV === "development") return true;

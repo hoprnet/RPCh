@@ -59,7 +59,7 @@ export const saveRegisteredNode = async (
       status: node.status,
     };
     const dbRes = await dbInstance.one<QueryRegisteredNode>(text, values);
-    log.verbose("Response from DB", dbRes);
+    log.verbose("Created new registered node in DB", dbRes);
     return dbRes ? true : false;
   } catch (e) {
     log.error(e);

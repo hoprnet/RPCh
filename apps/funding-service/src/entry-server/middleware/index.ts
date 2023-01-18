@@ -1,7 +1,9 @@
 import { NextFunction, Request, Response } from "express";
 import { AccessTokenService } from "../../access-token";
 import { RequestService } from "../../request";
-import { isExpired } from "../../utils";
+import { isExpired, createLogger } from "../../utils";
+
+const log = createLogger(["entry-server", "middleware"]);
 
 /**
  * Middleware used to check if token has expired or has been used with too many requests
@@ -20,11 +22,13 @@ export const tokenIsValid =
   async (req: Request, res: Response, next: NextFunction) => {
     const accessTokenHash: string | undefined =
       req.headers["x-access-token"]?.toString();
+    log.verbose("validating token", accessTokenHash);
     if (!accessTokenHash) return res.status(400).json("Missing Access Token");
     const dbToken = await accessTokenService.getAccessToken(accessTokenHash);
     if (!dbToken) return res.status(404).json("Access Token does not exist");
 
     if (isExpired(dbToken.expired_at)) {
+      log.verbose("token has expired", accessTokenHash);
       return res.status(401).json("Access Token expired");
     }
 
@@ -36,6 +40,10 @@ export const tokenIsValid =
     });
 
     if (!hasEnough) {
+      log.verbose(
+        "exceeded max amount of tokens redeemed per access token",
+        accessTokenHash
+      );
       return res.status(401).json("Exceeded max amount of tokens redeemed");
     }
 
