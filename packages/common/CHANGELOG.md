@@ -1,5 +1,13 @@
 # @rpch/common
 
+## 0.1.4
+
+### Patch Changes
+
+- Release of Sandbox v2
+- Updated dependencies
+  - @rpch/crypto-bridge@0.1.4
+
 ## 0.1.3
 
 ### Patch Changes
