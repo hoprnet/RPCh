@@ -116,6 +116,7 @@ export default class SDK {
       }
     ).then((res) => res.json());
 
+    console.log(JSON.stringify(response));
     const apiEndpointUrl = new URL(response.hoprd_api_endpoint);
     apiEndpointUrl.port = response.hoprd_api_port;
 
@@ -278,8 +279,7 @@ export default class SDK {
   }
 
   /**
-   * Creates a Request instance that can be sent through the RPCh network
-   * @param origin
+   * Creates a Request instance that can be sent through the RPCh network\
    * @param provider
    * @param body
    * @returns Request
@@ -287,11 +287,15 @@ export default class SDK {
   public createRequest(provider: string, body: string): Request {
     if (!this.isReady) throw Error("SDK not ready to create requests");
     let entryNodeScore = this.reliabilityScore.getScore(this.entryNode!.peerId);
-    while (entryNodeScore < 0.7 && entryNodeScore !== 0.2) {
+    console.log(entryNodeScore);
+    let counter: number = 0;
+    while (entryNodeScore < 0.7 && entryNodeScore !== 0.2 && counter !== 3) {
       this.selectEntryNode(this.ops.discoveryPlatformApiEndpoint);
       entryNodeScore = this.reliabilityScore.getScore(this.entryNode!.peerId);
+      console.log(entryNodeScore);
+      counter++;
     }
-
+    console.log("pass");
     return Request.createRequest(
       this.crypto!,
       provider,
