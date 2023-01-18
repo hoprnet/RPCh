@@ -1,5 +1,13 @@
 # @rpch/common
 
+## 0.1.5
+
+### Patch Changes
+
+- Fix publishing bug
+- Updated dependencies
+  - @rpch/crypto-bridge@0.1.5
+
 ## 0.1.4
 
 ### Patch Changes
