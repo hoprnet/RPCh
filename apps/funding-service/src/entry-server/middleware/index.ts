@@ -18,7 +18,8 @@ export const tokenIsValid =
     requestFunds?: boolean
   ) =>
   async (req: Request, res: Response, next: NextFunction) => {
-    const accessTokenHash = req.headers["x-access-token"] as string;
+    const accessTokenHash: string | undefined =
+      req.headers["x-access-token"]?.toString();
     if (!accessTokenHash) return res.status(400).json("Missing Access Token");
     const dbToken = await accessTokenService.getAccessToken(accessTokenHash);
     if (!dbToken) return res.status(404).json("Access Token does not exist");

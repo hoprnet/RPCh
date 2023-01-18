@@ -42,7 +42,7 @@ export const entryServer = (ops: {
 
   apiRouter.post("/node/register", async (req, res) => {
     log.verbose("/node/register", req.body);
-    const node = req.body as CreateRegisteredNode;
+    const node: CreateRegisteredNode = req.body;
     const registered = await createRegisteredNode(ops.db, node);
     return res.json({ body: registered });
   });
@@ -59,8 +59,8 @@ export const entryServer = (ops: {
   });
 
   apiRouter.get("/node/:peerId", async (req, res) => {
-    const { peerId } = req.params;
-    const node = await getRegisteredNode(ops.db, peerId as string);
+    const { peerId }: { peerId: string } = req.params;
+    const node = await getRegisteredNode(ops.db, peerId);
     return res.json({ node });
   });
 
@@ -70,7 +70,7 @@ export const entryServer = (ops: {
   });
 
   apiRouter.post("/client/funds", async (req, res) => {
-    const { client, quota } = req.body as CreateQuota;
+    const { client, quota }: CreateQuota = req.body;
     const createdQuota = await createQuota(ops.db, {
       client,
       quota,

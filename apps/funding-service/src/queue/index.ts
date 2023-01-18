@@ -25,7 +25,7 @@ export const checkFreshRequests = async (ops: {
   changeState: (state: boolean) => void;
 }) => {
   ops.changeState(true);
-  let freshRequest: QueryRequest | undefined;
+  let freshRequest: QueryRequest | null | undefined;
   log.verbose("Starting to fulfill request: ", JSON.stringify(freshRequest));
   try {
     freshRequest = await ops.requestService.getOldestFreshRequest();

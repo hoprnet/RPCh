@@ -59,7 +59,11 @@ export const entryServer = (ops: {
       const nodeAddress = String(req.params.blockchainAddress);
       const amount = String(req.body.amount);
       const chainId = Number(req.body.chainId);
-      const accessTokenHash = req.headers["x-access-token"] as string;
+
+      // can be enforced because the existence is checked in the middleware
+      const accessTokenHash: string | undefined =
+        req.headers["x-access-token"]!.toString();
+
       const request = await ops.requestService.createRequest({
         nodeAddress,
         amount,

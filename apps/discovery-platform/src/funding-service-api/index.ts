@@ -47,7 +47,7 @@ export class FundingServiceApi {
    */
   private async fetchAccessToken(): Promise<string> {
     const res = await fetch(`${this.url}/api/access-token`);
-    const resJson = (await res.json()) as getAccessTokenResponse;
+    const resJson: getAccessTokenResponse = await res.json();
     this.saveAccessToken(resJson);
     return resJson.accessToken;
   }
@@ -107,6 +107,12 @@ export class FundingServiceApi {
         amount: String(amount),
         chainId: node.chain_id,
       });
+
+      const body: postFundingRequest = {
+        amount: String(amount),
+        chainId: node.chain_id,
+      };
+
       const res = await fetch(
         `${this.url}/api/request/funds/${dbNode.native_address}`,
         {
@@ -115,18 +121,15 @@ export class FundingServiceApi {
             "x-access-token": this.accessToken!,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            amount: String(amount),
-            chainId: node.chain_id,
-          } as postFundingRequest),
+          body: JSON.stringify(body),
         }
       );
       let fundingResponseJson = await res.json();
       log.verbose("funding response:", fundingResponseJson);
       await updateRegisteredNode(this.db, { ...dbNode, status: "FUNDING" });
 
-      const { id: requestId, amountLeft } =
-        fundingResponseJson as postFundingResponse;
+      const { id: requestId, amountLeft }: postFundingResponse =
+        fundingResponseJson;
 
       this.amountLeft = amountLeft;
       this.savePendingRequest(node.id, requestId, prevRetries ?? 0);
@@ -170,7 +173,7 @@ export class FundingServiceApi {
       },
     });
 
-    const resJson = (await res.json()) as getRequestStatusResponse;
+    const resJson: getRequestStatusResponse = await res.json();
 
     return resJson;
   }
