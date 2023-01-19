@@ -64,7 +64,10 @@
         "DB_CONNECTION_URL",
         "CONFIRMATIONS",
         "MAX_AMOUNT_OF_TOKENS",
-        "TIMEOUT"
+        "TIMEOUT",
+        "FORCE_CHAIN_ID",
+        "FORCE_CHAIN_URL",
+        "FORCE_SMART_CONTRACT_ADDRESS"
       ]
     },
     "@rpch/discovery-platform#build": {
@@ -81,7 +84,8 @@
         "CHANNELS_THRESHOLD",
         "BASE_QUOTA",
         "HOPRD_ACCESS_TOKEN",
-        "DB_CONNECTION_URL"
+        "DB_CONNECTION_URL",
+        "SKIP_CHECK_COMMITMENT"
       ]
     },
     "dev": {

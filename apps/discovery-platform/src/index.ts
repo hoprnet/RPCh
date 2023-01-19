@@ -4,52 +4,36 @@ import { FundingServiceApi } from "./funding-service-api";
 import { createLogger } from "./utils";
 import pgp from "pg-promise";
 import fs from "fs";
-import { getFreshNodes, getRegisteredNodes } from "./registered-node";
+import { getFreshNodes } from "./registered-node";
 import { checkCommitment } from "./graph-api";
+import * as constants from "./constants";
 
 const log = createLogger();
 
-const {
-  // Port that server will listen for requests
-  PORT = 3020,
-  // Api endpoint used for completing funding requests of registered nodes
-  FUNDING_SERVICE_URL,
-  // Access token used to connect to hoprd entry node
-  HOPRD_ACCESS_TOKEN,
-  // Database connection url
-  DB_CONNECTION_URL,
-  // Minimal amount of balance a account must have to show commitment
-  BALANCE_THRESHOLD = 1,
-  // Minimal amount of open channels a account must have to show commitment
-  CHANNELS_THRESHOLD = 1,
-  // Unit amount of quotas a request costs
-  BASE_QUOTA = 1,
-} = process.env;
-
 const main = () => {
-  if (!HOPRD_ACCESS_TOKEN) {
+  if (!constants.HOPRD_ACCESS_TOKEN) {
     throw new Error('Missing "HOPRD_ACCESS_TOKEN" env variable');
   }
-  if (!FUNDING_SERVICE_URL)
+  if (!constants.FUNDING_SERVICE_URL)
     throw new Error('Missing "FUNDING_SERVICE_API" env variable');
 
-  if (!DB_CONNECTION_URL) {
+  if (!constants.DB_CONNECTION_URL) {
     throw new Error('Missing "DB_CONNECTION_URL" env variable');
   }
 
   // init db
   const pgInstance = pgp();
-  const connectionString: string = DB_CONNECTION_URL;
+  const connectionString: string = constants.DB_CONNECTION_URL!;
   // create table if the table does not exist
   const dbInstance = pgInstance({
     connectionString,
   });
 
   start({
-    accessToken: HOPRD_ACCESS_TOKEN,
-    baseQuota: Number(BASE_QUOTA),
+    accessToken: constants.HOPRD_ACCESS_TOKEN!,
+    baseQuota: Number(constants.BASE_QUOTA),
     db: dbInstance,
-    fundingServiceUrl: FUNDING_SERVICE_URL,
+    fundingServiceUrl: constants.FUNDING_SERVICE_URL!,
   });
 };
 
@@ -82,7 +66,7 @@ const start = async (ops: {
     fundingServiceApi: fundingServiceApi,
   });
   // start listening at PORT for requests
-  server.listen(Number(PORT), "0.0.0.0", () => {
+  server.listen(Number(constants.PORT), "0.0.0.0", () => {
     log.normal("entry server is up");
   });
 
@@ -102,8 +86,8 @@ const start = async (ops: {
 
       const nodeIsCommitted = await checkCommitment({
         node,
-        minBalance: Number(BALANCE_THRESHOLD),
-        minChannels: Number(CHANNELS_THRESHOLD),
+        minBalance: Number(constants.BALANCE_THRESHOLD),
+        minChannels: Number(constants.CHANNELS_THRESHOLD),
       });
 
       log.verbose("node commitment", nodeIsCommitted);

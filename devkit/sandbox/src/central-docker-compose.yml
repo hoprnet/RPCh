@@ -40,7 +40,9 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - WALLET_PRIV_KEY=${FUNDING_SERVICE_PRIVATE_KEY}
       - DB_CONNECTION_URL=postgresql://postgres:postgres@postgres-db:5432
-      - SMART_CONTRACT_ADDRESS=${SMART_CONTRACT_ADDRESS}
+      - FORCE_SMART_CONTRACT_ADDRESS=${FORCE_SMART_CONTRACT_ADDRESS}
+      - FORCE_CHAIN_ID=${FORCE_CHAIN_ID}
+      - FORCE_CHAIN_URL=${FORCE_CHAIN_URL}
       - PORT=${FUNDING_SERVICE_PORT}
   discovery-platform:
     build:
@@ -58,7 +60,7 @@ services:
       - FUNDING_SERVICE_URL=http://funding-service:3010
       - HOPRD_ACCESS_TOKEN=${HOPRD_API_TOKEN}
       - PORT=${DISCOVERY_PLATFORM_PORT}
-      - NODE_ENV=${NODE_ENV}
+      - SKIP_CHECK_COMMITMENT=${SKIP_CHECK_COMMITMENT}
 
 networks:
   sandbox-nodes_default:

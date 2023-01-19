@@ -1,6 +1,7 @@
 import { ethers, Signer, Wallet, Contract } from "ethers";
-import { createLogger, validChainIds } from "../utils";
+import { createLogger } from "../utils";
 import * as erc20 from "./erc20-fixture.json";
+import * as constants from "../constants";
 
 const log = createLogger(["blockchain"]);
 
@@ -42,9 +43,10 @@ export const sendTransaction = async (params: {
  * @param chainId number
  */
 export const getProvider = async (chainId: number) => {
-  if (!validChainIds.has(chainId)) throw new Error("Chain not supported");
+  if (!constants.CONNECTION_INFO?.[chainId])
+    throw new Error("Chain not supported");
   const provider = new ethers.providers.JsonRpcProvider(
-    validChainIds.get(chainId)?.url
+    constants.CONNECTION_INFO[chainId]
   );
   return provider;
 };

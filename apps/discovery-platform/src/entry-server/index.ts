@@ -13,13 +13,11 @@ import {
 } from "../registered-node";
 import { CreateRegisteredNode } from "../registered-node/dto";
 import { createLogger } from "../utils";
+import * as constants from "../constants";
 
 const app = express();
 const apiRouter = express.Router();
 const log = createLogger(["entry-server"]);
-
-// base amount of reward that a node will receive after completing a request
-const BASE_EXTRA = 1;
 
 export const doesClientHaveQuota = async (
   db: DBInstance,
@@ -115,7 +113,7 @@ export const entryServer = (ops: {
     // calculate how much should be funded to entry node
     const amountToFund = getRewardForNode(
       ops.baseQuota,
-      BASE_EXTRA,
+      constants.BASE_EXTRA,
       selectedNode
     );
     // fund entry node

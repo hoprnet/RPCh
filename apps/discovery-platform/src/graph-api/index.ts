@@ -3,11 +3,9 @@ import fetch from "node-fetch";
 import { QueryRegisteredNode } from "../registered-node/dto";
 import { GetAccountChannelsResponse } from "./dto";
 import { createLogger } from "../utils";
+import * as constants from "../constants";
 
 const log = createLogger(["graph-api"]);
-
-const GRAPH_HOPR_URL =
-  "https://api.thegraph.com/subgraphs/name/hoprnet/hopr-channels";
 
 /**
  * Query to get info needed to know if a node is committed
@@ -57,16 +55,19 @@ export const checkCommitment = async (ops: {
 }): Promise<boolean | undefined> => {
   try {
     // eslint-disable-next-line turbo/no-undeclared-env-vars
-    log.verbose("check commitment environment", process.env.NODE_ENV);
+    log.verbose(
+      "check commitment environment",
+      constants.SKIP_CHECK_COMMITMENT
+    );
     // Assume node has committed to hopr if it is running in development
     // eslint-disable-next-line turbo/no-undeclared-env-vars
-    if (process.env.NODE_ENV === "development") return true;
+    if (Boolean(constants.SKIP_CHECK_COMMITMENT)) return true;
 
     const variables = {
       id: ops.node.id,
     };
     // make query
-    const channels = await fetch(GRAPH_HOPR_URL, {
+    const channels = await fetch(constants.SUBGRAPH_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -122,7 +123,7 @@ export const getUpdatedAccounts = async (blockNumber: number) => {
     const variables = {
       blockNumber,
     };
-    const channels = await fetch(GRAPH_HOPR_URL, {
+    const channels = await fetch(constants.SUBGRAPH_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
