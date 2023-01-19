@@ -43,12 +43,19 @@ RUN apk add --no-cache tini curl
 
 # this helper script can be used to ensure the hoprd node is running before starting
 RUN  curl https://raw.githubusercontent.com/eficode/wait-for/v2.2.3/wait-for > /bin/wait-for \
-  && chmod u+x /bin/wait-for
+  && chmod u+x /bin/wait-for \
+  && chmod o+x /bin/wait-for
 
 COPY --from=installer /app/apps/funding-service/package.json .
 COPY --from=installer /app .
 COPY apps/funding-service/src/blockchain/erc20-fixture.json /app/apps/funding-service/build/blockchain
 COPY apps/funding-service/dump.sql /app/
+
+# switch to normal user, to prevent dangerous root access
+RUN chown -R node:node .
+
+# finally set the non-root user so the process also run un-privilidged
+USER node
 
 CMD ["node", "apps/funding-service/build/index.js"]
 
