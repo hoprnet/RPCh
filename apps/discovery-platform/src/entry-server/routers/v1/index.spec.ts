@@ -138,11 +138,13 @@ describe("test v1 router", function () {
       const peerId = "entry";
       const requestId = 1;
 
-      nockGetApiAccessToken.reply(200, {
+      const replyBody: getAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
         amountLeft: 10,
         expiredAt: new Date().toISOString(),
-      } as getAccessTokenResponse);
+      };
+
+      nockGetApiAccessToken.reply(200, replyBody);
 
       await request(app).post("/client/funds").send({
         client: "client",
@@ -151,25 +153,27 @@ describe("test v1 router", function () {
 
       await request(app).post("/node/register").send(mockNode(peerId, true));
 
-      const createdNode = (await request(app).get(`/node/${peerId}`)) as {
+      const createdNode: {
         body: { node: QueryRegisteredNode | undefined };
-      };
+      } = await request(app).get(`/node/${peerId}`);
 
       spy.mockImplementation(async () => {
         return createdNode.body.node;
       });
 
-      nockFundingRequest(createdNode.body.node?.native_address!).reply(200, {
+      let postFundingResponse: postFundingResponse = {
         amountLeft,
         id: requestId,
-      } as postFundingResponse);
+      };
+
+      nockFundingRequest(createdNode.body.node?.native_address!).reply(
+        200,
+        postFundingResponse
+      );
 
       const requestResponse = await request(app)
         .post("/request/entry-node")
         .send({ client: "client" });
-
-      if (!requestResponse.body || !createdNode.body.node)
-        throw new Error("Could not create mock nodes");
 
       assert.equal(requestResponse.body.id, createdNode.body.node?.id);
       spy.mockRestore();
@@ -177,11 +181,13 @@ describe("test v1 router", function () {
     it("should fail if no entry node is selected", async function () {
       const spy = jest.spyOn(registeredNode, "getEligibleNode");
 
-      nockGetApiAccessToken.reply(200, {
+      const apiAccessTokenResponse: getAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
         amountLeft: 10,
         expiredAt: new Date().toISOString(),
-      } as getAccessTokenResponse);
+      };
+
+      nockGetApiAccessToken.reply(200, apiAccessTokenResponse);
 
       await request(app).post("/client/funds").send({
         client: "client",
@@ -203,11 +209,13 @@ describe("test v1 router", function () {
       const peerId = "entry";
       const requestId = 1;
 
-      nockGetApiAccessToken.reply(200, {
+      const apiTokenResponse: getAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
         amountLeft: 10,
         expiredAt: new Date().toISOString(),
-      } as getAccessTokenResponse);
+      };
+
+      nockGetApiAccessToken.reply(200, apiTokenResponse);
 
       await request(app).post("/client/funds").send({
         client: "newClient",
@@ -216,18 +224,23 @@ describe("test v1 router", function () {
 
       await request(app).post("/node/register").send(mockNode(peerId, true));
 
-      const createdNode = (await request(app).get(`/node/${peerId}`)) as {
+      const createdNode: {
         body: { node: QueryRegisteredNode | undefined };
-      };
+      } = await request(app).get(`/node/${peerId}`);
 
       spy.mockImplementation(async () => {
         return createdNode.body.node;
       });
 
-      nockFundingRequest(createdNode.body.node?.native_address!).reply(200, {
+      const fundingResponse: postFundingResponse = {
         amountLeft,
         id: requestId,
-      } as postFundingResponse);
+      };
+
+      nockFundingRequest(createdNode.body.node?.native_address!).reply(
+        200,
+        fundingResponse
+      );
 
       await request(app)
         .post("/request/entry-node")
