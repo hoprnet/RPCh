@@ -98,15 +98,14 @@ describe("test RequestService class", function () {
       requestService
     );
     if (!request) throw new Error("request was not created");
-    const updateRequest = {
+    const updateRequest: UpdateRequest = {
       accessTokenHash: request.access_token_hash,
       chainId: request.chain_id,
-      createdAt: request.created_at,
       id: request.id,
       nodeAddress: request.node_address,
       amount: String(2 * Number(MOCK_AMOUNT)),
       status: request.status,
-    } as UpdateRequest;
+    };
 
     await requestService.updateRequest(request.id, updateRequest);
 

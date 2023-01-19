@@ -72,11 +72,13 @@ describe("test entry server", function () {
     const peerId = "entry";
     const requestId = 1;
 
-    nockGetApiAccessToken.reply(200, {
+    const getAccessTokenBody: getAccessTokenResponse = {
       accessToken: FAKE_ACCESS_TOKEN,
       amountLeft: 10,
       expiredAt: new Date().toISOString(),
-    } as getAccessTokenResponse);
+    };
+
+    nockGetApiAccessToken.reply(200, getAccessTokenBody);
 
     await request(app).post("/api/v1/client/funds").send({
       client: "client",
@@ -87,18 +89,23 @@ describe("test entry server", function () {
       .post("/api/v1/node/register")
       .send(mockNode(peerId, true));
 
-    const createdNode = (await request(app).get(`/api/v1/node/${peerId}`)) as {
+    const createdNode: {
       body: { node: QueryRegisteredNode | undefined };
-    };
+    } = await request(app).get(`/api/v1/node/${peerId}`);
 
     spy.mockImplementation(async () => {
       return createdNode.body.node;
     });
 
-    nockFundingRequest(createdNode.body.node?.native_address!).reply(200, {
+    const fundingResponseBody: postFundingResponse = {
       amountLeft,
       id: requestId,
-    } as postFundingResponse);
+    };
+
+    nockFundingRequest(createdNode.body.node?.native_address!).reply(
+      200,
+      fundingResponseBody
+    );
 
     const requestResponse = await request(app)
       .post("/api/v1/request/entry-node")

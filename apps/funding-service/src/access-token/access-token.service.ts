@@ -61,7 +61,7 @@ export class AccessTokenService {
    */
   public getAccessToken(
     accessTokenHash: string
-  ): Promise<QueryAccessToken | undefined> {
+  ): Promise<QueryAccessToken | null> {
     return getAccessTokenDB(this.db, accessTokenHash);
   }
 
@@ -72,7 +72,7 @@ export class AccessTokenService {
    */
   public deleteAccessToken(
     accessTokenHash: string
-  ): Promise<QueryAccessToken | undefined> {
+  ): Promise<QueryAccessToken | null> {
     return deleteAccessTokenDB(this.db, accessTokenHash);
   }
 }

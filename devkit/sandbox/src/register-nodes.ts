@@ -58,8 +58,8 @@ const getPeerId = async (apiEndpoint: string): Promise<string> => {
     method: "GET",
     headers,
   })
-    .then((res) => res.json() as Promise<{ hopr: string; native: string }>)
-    .then((res) => res.hopr);
+    .then((res) => res.json())
+    .then((res: { hopr: string; native: string }) => res.hopr);
 };
 
 const getAddressFromPublicKey = (publicKey: string): string => {

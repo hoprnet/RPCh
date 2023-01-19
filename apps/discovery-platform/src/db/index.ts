@@ -17,7 +17,7 @@ export const getRegisteredNodes = async (
   dbInstance: DBInstance
 ): Promise<QueryRegisteredNode[]> => {
   const text = `SELECT * FROM ${TABLES.REGISTERED_NODES}`;
-  const dbRes = (await dbInstance.manyOrNone(text)) as QueryRegisteredNode[];
+  const dbRes: QueryRegisteredNode[] = await dbInstance.manyOrNone(text);
   return dbRes;
 };
 
@@ -25,7 +25,7 @@ export const getExitNodes = async (
   dbInstance: DBInstance
 ): Promise<QueryRegisteredNode[]> => {
   const text = `SELECT * FROM ${TABLES.REGISTERED_NODES} WHERE has_exit_node=true`;
-  const dbRes = (await dbInstance.manyOrNone(text)) as QueryRegisteredNode[];
+  const dbRes: QueryRegisteredNode[] = await dbInstance.manyOrNone(text);
   return dbRes;
 };
 
@@ -33,7 +33,7 @@ export const getNonExitNodes = async (
   dbInstance: DBInstance
 ): Promise<QueryRegisteredNode[]> => {
   const text = `SELECT * FROM ${TABLES.REGISTERED_NODES} WHERE has_exit_node=false`;
-  const dbRes = (await dbInstance.manyOrNone(text)) as QueryRegisteredNode[];
+  const dbRes: QueryRegisteredNode[] = await dbInstance.manyOrNone(text);
   return dbRes;
 };
 
@@ -59,7 +59,7 @@ export const saveRegisteredNode = async (
       status: node.status,
     };
     const dbRes = await dbInstance.one<QueryRegisteredNode>(text, values);
-    log.verbose("Response from DB", dbRes);
+    log.verbose("Created new registered node in DB", dbRes);
     return dbRes ? true : false;
   } catch (e) {
     log.error(e);
@@ -75,10 +75,10 @@ export const getRegisteredNode = async (
   const values = {
     peerId,
   };
-  const dbRes = (await dbInstance.oneOrNone(
+  const dbRes: QueryRegisteredNode | null = await dbInstance.oneOrNone(
     text,
     values
-  )) as QueryRegisteredNode;
+  );
   return dbRes;
 };
 
@@ -117,7 +117,10 @@ export const updateRegisteredNode = async (
       reason: updatedNode.reason,
       status: updatedNode.status,
     };
-    const dbRes = (await dbInstance.one(text, values)) as QueryRegisteredNode;
+    const dbRes: QueryRegisteredNode | null = await dbInstance.oneOrNone(
+      text,
+      values
+    );
     return dbRes ? true : false;
   } catch (e) {
     log.error(e);
@@ -137,19 +140,19 @@ export const createQuota = async (
     action_taker: quota.actionTaker,
   };
 
-  const dbRes = (await dbInstance.one(text, values)) as QueryQuota;
+  const dbRes: QueryQuota = await dbInstance.one(text, values);
   return dbRes;
 };
 
 export const getQuota = async (
   dbInstance: DBInstance,
   id: number
-): Promise<QueryQuota | undefined> => {
+): Promise<QueryQuota | null> => {
   const text = `SELECT * FROM ${TABLES.QUOTAS} WHERE id=$<id>`;
   const values = {
     id,
   };
-  const dbRes = (await dbInstance.oneOrNone(text, values)) as QueryQuota;
+  const dbRes: QueryQuota | null = await dbInstance.oneOrNone(text, values);
   return dbRes;
 };
 
@@ -161,14 +164,14 @@ export const getQuotasByClient = async (
   const values = {
     client,
   };
-  const dbRes = (await dbInstance.manyOrNone(text, values)) as QueryQuota[];
+  const dbRes: QueryQuota[] = await dbInstance.manyOrNone(text, values);
   return dbRes;
 };
 
 export const updateQuota = async (
   dbInstance: DBInstance,
   quota: QueryQuota
-): Promise<QueryQuota> => {
+): Promise<QueryQuota | null> => {
   const text = `UPDATE ${TABLES.QUOTAS}
   SET client = $<client>, quota = $<quota>, action_taker = $<action_taker>
   WHERE id = $<id>
@@ -179,18 +182,18 @@ export const updateQuota = async (
     action_taker: quota.action_taker,
     quota: quota.quota,
   };
-  const dbRes = (await dbInstance.oneOrNone(text, values)) as QueryQuota;
+  const dbRes: QueryQuota | null = await dbInstance.oneOrNone(text, values);
   return dbRes;
 };
 
 export const deleteQuota = async (
   dbInstance: DBInstance,
   id: number
-): Promise<QueryQuota | undefined> => {
+): Promise<QueryQuota | null> => {
   const text = `DELETE FROM ${TABLES.QUOTAS} WHERE id=$<id> RETURNING *`;
   const values = {
     id,
   };
-  const dbRes = (await dbInstance.oneOrNone(text, values)) as QueryQuota;
+  const dbRes: QueryQuota | null = await dbInstance.oneOrNone(text, values);
   return dbRes;
 };

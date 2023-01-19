@@ -28,6 +28,7 @@ export const entryServer = (ops: {
   app.use(express.json());
 
   app.get("/api/access-token", async (req, res) => {
+    log.verbose("GET /api/access-token");
     const accessToken = await ops.accessTokenService.createAccessToken({
       amount: ops.maxAmountOfTokens,
       timeout: ops.timeout,
@@ -51,6 +52,12 @@ export const entryServer = (ops: {
       true
     ),
     async (req, res) => {
+      log.verbose(
+        `POST /api/request/funds/:blockchainAddress`,
+        req.params,
+        req.body
+      );
+
       // check if validation failed
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -59,7 +66,11 @@ export const entryServer = (ops: {
       const nodeAddress = String(req.params.blockchainAddress);
       const amount = String(req.body.amount);
       const chainId = Number(req.body.chainId);
-      const accessTokenHash = req.headers["x-access-token"] as string;
+
+      // can be enforced because the existence is checked in the middleware
+      const accessTokenHash: string | undefined =
+        req.headers["x-access-token"]!.toString();
+
       const request = await ops.requestService.createRequest({
         nodeAddress,
         amount,
@@ -88,6 +99,7 @@ export const entryServer = (ops: {
       ops.maxAmountOfTokens
     ),
     async (req, res) => {
+      log.verbose(`GET /api/request/status`);
       const requests = await ops.requestService.getRequests();
       return res.status(200).json(requests);
     }
@@ -102,6 +114,7 @@ export const entryServer = (ops: {
       ops.maxAmountOfTokens
     ),
     async (req, res) => {
+      log.verbose(`GET /api/request/status/:requestId`, req.params);
       // check if validation failed
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -121,6 +134,7 @@ export const entryServer = (ops: {
       ops.maxAmountOfTokens
     ),
     async (req, res) => {
+      log.verbose(`GET /api/funds`);
       log.verbose(["getting funds for chains", [...validChainIds.keys()]]);
       const providers = await getProviders(Array.from(validChainIds.keys()));
       const balances = await getBalanceForAllChains(
