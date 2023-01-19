@@ -1,0 +1,123 @@
+import express from "express";
+import { DBInstance } from "../../../db";
+import { FundingServiceApi } from "../../../funding-service-api";
+import { createQuota, getAllQuotasByClient, sumQuotas } from "../../../quota";
+import { CreateQuota } from "../../../quota/dto";
+import {
+  createRegisteredNode,
+  getEligibleNode,
+  getExitNodes,
+  getNonExitNodes,
+  getRegisteredNode,
+  getRewardForNode,
+} from "../../../registered-node";
+import { CreateRegisteredNode } from "../../../registered-node/dto";
+import { createLogger } from "../../../utils";
+
+const log = createLogger(["entry-server", "router", "v1"]);
+
+// base amount of reward that a node will receive after completing a request
+const BASE_EXTRA = 1;
+
+export const doesClientHaveQuota = async (
+  db: DBInstance,
+  client: string,
+  baseQuota: number
+) => {
+  const allQuotasFromClient = await getAllQuotasByClient(db, client);
+  const sumOfClientsQuota = sumQuotas(allQuotasFromClient);
+  return sumOfClientsQuota >= baseQuota;
+};
+
+export const v1Router = (ops: {
+  db: DBInstance;
+  baseQuota: number;
+  accessToken: string;
+  fundingServiceApi: FundingServiceApi;
+}) => {
+  const router = express.Router();
+
+  router.use(express.json());
+
+  router.post("/node/register", async (req, res) => {
+    log.verbose("/node/register", req.body);
+    const node = req.body as CreateRegisteredNode;
+    const registered = await createRegisteredNode(ops.db, node);
+    return res.json({ body: registered });
+  });
+
+  router.get("/node", async (req, res) => {
+    const { hasExitNode } = req.query;
+    if (hasExitNode === "true") {
+      const nodes = await getExitNodes(ops.db);
+      return res.json(nodes);
+    } else {
+      const nodes = await getNonExitNodes(ops.db);
+      return res.json(nodes);
+    }
+  });
+
+  router.get("/node/:peerId", async (req, res) => {
+    const { peerId } = req.params;
+    const node = await getRegisteredNode(ops.db, peerId as string);
+    return res.json({ node });
+  });
+
+  router.get("/funding-service/funds", async (req, res) => {
+    const funds = await ops.fundingServiceApi.getAvailableFunds();
+    return res.json({ body: funds });
+  });
+
+  router.post("/client/funds", async (req, res) => {
+    const { client, quota } = req.body as CreateQuota;
+    const createdQuota = await createQuota(ops.db, {
+      client,
+      quota,
+      actionTaker: "discovery platform",
+    });
+    return res.json({ quota: createdQuota });
+  });
+
+  router.post("/request/entry-node", async (req, res) => {
+    const { client } = req.body;
+    log.verbose("requesting entry node for client", client);
+    if (typeof client !== "string") throw Error("Client is not a string");
+
+    // check if client has enough quota
+    const doesClientHaveQuotaResponse = await doesClientHaveQuota(
+      ops.db,
+      client,
+      ops.baseQuota
+    );
+    if (!doesClientHaveQuotaResponse) {
+      return res.status(400).json({
+        body: "Client does not have enough quota",
+      });
+    }
+    // choose selected entry node
+    const selectedNode = await getEligibleNode(ops.db);
+    log.verbose("selected entry node", selectedNode);
+    if (!selectedNode) {
+      return res.json({ body: "Could not find eligible node" });
+    }
+
+    // calculate how much should be funded to entry node
+    const amountToFund = getRewardForNode(
+      ops.baseQuota,
+      BASE_EXTRA,
+      selectedNode
+    );
+    // fund entry node
+    await ops.fundingServiceApi.requestFunds(amountToFund, selectedNode);
+
+    // create negative quota (showing that the client has used up initial quota)
+    await createQuota(ops.db, {
+      client,
+      quota: ops.baseQuota * -1,
+      actionTaker: "discovery platform",
+    });
+    return res.json({ ...selectedNode, accessToken: ops.accessToken });
+  });
+
+  return router;
+};
