@@ -72,7 +72,7 @@ export class RequestService {
    * @param requestId number
    * @returns Promise<QueryRequest>
    */
-  public async getRequest(requestId: number): Promise<QueryRequest> {
+  public async getRequest(requestId: number): Promise<QueryRequest | null> {
     return db.getRequest(this.db, requestId);
   }
 
@@ -85,9 +85,9 @@ export class RequestService {
   public async updateRequest(
     requestId: number,
     updateRequest: UpdateRequest
-  ): Promise<QueryRequest | undefined> {
+  ): Promise<QueryRequest | null | undefined> {
     try {
-      const request = { ...updateRequest, id: requestId } as UpdateRequest;
+      const request: UpdateRequest = { ...updateRequest, id: requestId };
       const updatedRequest = await db.updateRequest(this.db, request);
       return updatedRequest;
     } catch (e: any) {
@@ -117,7 +117,7 @@ export class RequestService {
   /**
    * Gets the oldest request with "FRESH" status
    */
-  public async getOldestFreshRequest(): Promise<QueryRequest> {
+  public async getOldestFreshRequest(): Promise<QueryRequest | null> {
     const oldestFreshRequest = await db.getOldestFreshRequest(this.db);
     return oldestFreshRequest;
   }

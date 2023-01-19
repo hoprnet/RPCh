@@ -24,15 +24,20 @@ const mockGraphResponse: (
   },
 });
 
-const createMockNode = (peerId?: string) =>
-  ({
-    chain_id: 100,
-    id: peerId ?? "peerId",
-    has_exit_node: true,
-    honesty_score: 0,
-    status: "FRESH",
-    total_amount_funded: 0,
-  } as QueryRegisteredNode);
+const createMockNode = (peerId?: string): QueryRegisteredNode => ({
+  chain_id: 100,
+  id: peerId ?? "peerId",
+  has_exit_node: true,
+  honesty_score: 0,
+  status: "FRESH",
+  total_amount_funded: 0,
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+  exit_node_pub_key: "somePubKey",
+  hoprd_api_endpoint: "someEndpoint",
+  hoprd_api_port: 0,
+  native_address: "someAddress",
+});
 
 describe("test graph api functions", function () {
   describe("validate node", function () {

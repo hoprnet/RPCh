@@ -116,7 +116,6 @@ export default class SDK {
       }
     ).then((res) => res.json());
 
-    console.log(JSON.stringify(response));
     const apiEndpointUrl = new URL(response.hoprd_api_endpoint);
     apiEndpointUrl.port = response.hoprd_api_port;
 

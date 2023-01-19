@@ -43,11 +43,18 @@ RUN apk add --no-cache tini curl
 
 # this helper script can be used to ensure the hoprd node is running before starting
 RUN  curl https://raw.githubusercontent.com/eficode/wait-for/v2.2.3/wait-for > /bin/wait-for \
-  && chmod u+x /bin/wait-for
+  && chmod u+x /bin/wait-for \
+  && chmod o+x /bin/wait-for
 
 COPY --from=installer /app/apps/discovery-platform/package.json .
 COPY --from=installer /app .
 COPY apps/discovery-platform/dump.sql /app/
+
+# switch to normal user, to prevent dangerous root access
+RUN chown -R node:node .
+
+# finally set the non-root user so the process also run un-privilidged
+USER node
 
 CMD ["node", "apps/discovery-platform/build/index.js"]
 

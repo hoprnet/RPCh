@@ -41,15 +41,19 @@ export const entryServer = (ops: {
   apiRouter.use(express.json());
 
   apiRouter.post("/node/register", async (req, res) => {
-    log.verbose("/node/register", req.body);
-    const node = req.body as CreateRegisteredNode;
+    log.verbose("POST /node/register", req.body);
+    const node: CreateRegisteredNode = req.body;
     const registered = await createRegisteredNode(ops.db, node);
     return res.json({ body: registered });
   });
 
   apiRouter.get("/node", async (req, res) => {
+    log.verbose("GET /node", req.body);
+
     const { hasExitNode } = req.query;
     if (hasExitNode === "true") {
+      log.verbose("GET /node", req.body);
+
       const nodes = await getExitNodes(ops.db);
       return res.json(nodes);
     } else {
@@ -59,27 +63,33 @@ export const entryServer = (ops: {
   });
 
   apiRouter.get("/node/:peerId", async (req, res) => {
-    const { peerId } = req.params;
-    const node = await getRegisteredNode(ops.db, peerId as string);
+    const { peerId }: { peerId: string } = req.params;
+    log.verbose(`GET /node/${peerId}`);
+    const node = await getRegisteredNode(ops.db, peerId);
     return res.json({ node });
   });
 
   apiRouter.get("/funding-service/funds", async (req, res) => {
+    log.verbose(`GET /funding-service/funds`);
+
     const funds = await ops.fundingServiceApi.getAvailableFunds();
     return res.json({ body: funds });
   });
 
   apiRouter.post("/client/funds", async (req, res) => {
-    const { client, quota } = req.body as CreateQuota;
+    log.verbose(`POST /client/funds`, req.body);
+
+    const { client, quota }: CreateQuota = req.body;
     const createdQuota = await createQuota(ops.db, {
       client,
       quota,
-      actionTaker: "discovery platform",
+      actionTaker: "discovery-platform",
     });
     return res.json({ quota: createdQuota });
   });
 
   apiRouter.post("/request/entry-node", async (req, res) => {
+    log.verbose(`POST /request/entry-node`, req.body);
     const { client } = req.body;
     log.verbose("requesting entry node for client", client);
     if (typeof client !== "string") throw Error("Client is not a string");

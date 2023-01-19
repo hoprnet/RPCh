@@ -25,10 +25,10 @@ export const checkFreshRequests = async (ops: {
   changeState: (state: boolean) => void;
 }) => {
   ops.changeState(true);
-  let freshRequest: QueryRequest | undefined;
-  log.verbose("Starting to fulfill request: ", JSON.stringify(freshRequest));
+  let freshRequest: QueryRequest | null | undefined;
   try {
     freshRequest = await ops.requestService.getOldestFreshRequest();
+    log.verbose("Starting to fulfill request: ", JSON.stringify(freshRequest));
     if (!freshRequest) throw new CustomError("No pending fresh request");
     log.normal(
       "handling request: ",
@@ -59,6 +59,7 @@ export const checkFreshRequests = async (ops: {
       throw new CustomError(
         "Signer does not have enough balance to fund request"
       );
+    log.verbose("Request is on the wire ", freshRequest.id);
     // set request status to pending while it is on the wire
     await ops.requestService.updateRequest(freshRequest.id, {
       status: "PENDING",
@@ -95,6 +96,12 @@ export const checkFreshRequests = async (ops: {
       provider,
       ops.confirmations
     );
+    log.verbose(
+      "Request has been confirmed",
+      freshRequest,
+      txReceipt.status === 1 ? "SUCCESS" : "FAILED"
+    );
+
     // update request to success or failed
     await ops.requestService.updateRequest(freshRequest.id, {
       status: txReceipt.status === 1 ? "SUCCESS" : "FAILED",
@@ -110,6 +117,7 @@ export const checkFreshRequests = async (ops: {
     if (freshRequest) {
       // check if request was rejected
       if (e instanceof CustomError) {
+        log.verbose("Request was rejected", freshRequest, e.message);
         // update request to rejected and why
         await ops.requestService.updateRequest(freshRequest?.id, {
           status: "REJECTED-DURING-PROCESSING",
@@ -121,6 +129,12 @@ export const checkFreshRequests = async (ops: {
           id: freshRequest.id,
         });
       } else {
+        log.verbose(
+          "Request failed during processing",
+          freshRequest,
+          e.message
+        );
+
         // update request to failed during processing and save the reason it unexpectedly failed
         await ops.requestService.updateRequest(freshRequest?.id, {
           status: "FAILED-DURING-PROCESSING",

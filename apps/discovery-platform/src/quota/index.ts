@@ -28,7 +28,7 @@ export const createQuota = async (
 export const getQuota = async (
   dbInstance: db.DBInstance,
   id: number
-): Promise<QueryQuota | undefined> => {
+): Promise<QueryQuota | null> => {
   return await db.getQuota(dbInstance, id);
 };
 
@@ -54,7 +54,7 @@ export const getAllQuotasByClient = async (
 export const updateQuota = async (
   dbInstance: db.DBInstance,
   quota: QueryQuota
-): Promise<QueryQuota> => {
+): Promise<QueryQuota | null> => {
   return await db.updateQuota(dbInstance, quota);
 };
 
@@ -67,7 +67,7 @@ export const updateQuota = async (
 export const deleteQuota = async (
   dbInstance: db.DBInstance,
   id: number
-): Promise<QueryQuota | undefined> => {
+): Promise<QueryQuota | null> => {
   return await db.deleteQuota(dbInstance, id);
 };
 

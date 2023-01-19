@@ -1,5 +1,23 @@
 # @rpch/sdk
 
+## 0.1.5
+
+### Patch Changes
+
+- Fix publishing bug
+- Updated dependencies
+  - @rpch/crypto-bridge@0.1.5
+  - @rpch/common@0.1.5
+
+## 0.1.4
+
+### Patch Changes
+
+- Release of Sandbox v2
+- Updated dependencies
+  - @rpch/crypto-bridge@0.1.4
+  - @rpch/common@0.1.4
+
 ## 0.1.3
 
 ### Patch Changes

@@ -41,7 +41,7 @@ const getBalances = async (): Promise<{ hopr: string; native: string }> => {
   return fetch(url.toString(), {
     method: "GET",
     headers,
-  }).then((res) => res.json() as Promise<{ hopr: string; native: string }>);
+  }).then((res) => res.json());
 };
 
 const getHoprTokenAddress = async (): Promise<string> => {
@@ -52,7 +52,7 @@ const getHoprTokenAddress = async (): Promise<string> => {
     headers,
   })
     .then((res) => res.json())
-    .then((res: any) => res.hoprToken as Promise<string>);
+    .then((res: any) => res.hoprToken);
 };
 
 const withdraw = async (
@@ -72,7 +72,7 @@ const withdraw = async (
     }),
   })
     .then((res) => res.json())
-    .then((res: any) => res.receipt as Promise<string>);
+    .then((res: { receipt: string }) => res.receipt);
 };
 
 const main = async () => {
