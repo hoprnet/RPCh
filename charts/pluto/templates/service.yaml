@@ -7,9 +7,29 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   ports:
-    - port: {{ .Values.service.port }}
-      targetPort: http
-      protocol: TCP
-      name: http
+    - port: 8545
+      name: "8545"
+
+    - port: 13301
+      name: "13301"
+    - port: 13302
+      name: "13302"
+    - port: 13303
+      name: "13303"
+    - port: 13304
+      name: "13304"
+    - port: 13305
+      name: "13305"
+
+    - port: 19501
+      name: "19501"
+    - port: 19502
+      name: "19502"
+    - port: 19503
+      name: "19503"
+    - port: 19504
+      name: "19504"
+    - port: 19505
+      name: "19505"
   selector:
     {{- include "pluto.selectorLabels" . | nindent 4 }}

@@ -20,7 +20,7 @@ SET default_table_access_method = heap;
 
 
 --
--- Name: funding_requests; Type: TABLE; Schema: public; Owner: postgres
+-- Name: funding_requests; Type: TABLE; Schema: public; Owner: postgresql
 --
 
 CREATE TABLE public.funding_requests (
@@ -32,10 +32,10 @@ CREATE TABLE public.funding_requests (
 );
 
 
-ALTER TABLE public.funding_requests OWNER TO postgres;
+ALTER TABLE public.funding_requests OWNER TO postgresql;
 
 --
--- Name: funding_requests_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: funding_requests_id_seq; Type: SEQUENCE; Schema: public; Owner: postgresql
 --
 
 CREATE SEQUENCE public.funding_requests_id_seq
@@ -47,17 +47,17 @@ CREATE SEQUENCE public.funding_requests_id_seq
     CACHE 1;
 
 
-ALTER SEQUENCE public.funding_requests_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.funding_requests_id_seq OWNER TO postgresql;
 
 --
--- Name: funding_requests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: funding_requests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgresql
 --
 
 ALTER SEQUENCE public.funding_requests_id_seq OWNED BY public.funding_requests.id;
 
 
 --
--- Name: quotas; Type: TABLE; Schema: public; Owner: postgres
+-- Name: quotas; Type: TABLE; Schema: public; Owner: postgresql
 --
 
 CREATE TABLE public.quotas (
@@ -70,10 +70,10 @@ CREATE TABLE public.quotas (
 );
 
 
-ALTER TABLE public.quotas OWNER TO postgres;
+ALTER TABLE public.quotas OWNER TO postgresql;
 
 --
--- Name: quotas_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: quotas_id_seq; Type: SEQUENCE; Schema: public; Owner: postgresql
 --
 
 CREATE SEQUENCE public.quotas_id_seq
@@ -85,17 +85,17 @@ CREATE SEQUENCE public.quotas_id_seq
     CACHE 1;
 
 
-ALTER SEQUENCE public.quotas_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.quotas_id_seq OWNER TO postgresql;
 
 --
--- Name: quotas_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: quotas_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgresql
 --
 
 ALTER SEQUENCE public.quotas_id_seq OWNED BY public.quotas.id;
 
 
 --
--- Name: registered_nodes; Type: TABLE; Schema: public; Owner: postgres
+-- Name: registered_nodes; Type: TABLE; Schema: public; Owner: postgresql
 --
 
 CREATE TABLE public.registered_nodes (
@@ -115,24 +115,24 @@ CREATE TABLE public.registered_nodes (
 );
 
 
-ALTER TABLE public.registered_nodes OWNER TO postgres;
+ALTER TABLE public.registered_nodes OWNER TO postgresql;
 
 --
--- Name: funding_requests id; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: funding_requests id; Type: DEFAULT; Schema: public; Owner: postgresql
 --
 
 ALTER TABLE ONLY public.funding_requests ALTER COLUMN id SET DEFAULT nextval('public.funding_requests_id_seq'::regclass);
 
 
 --
--- Name: quotas id; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: quotas id; Type: DEFAULT; Schema: public; Owner: postgresql
 --
 
 ALTER TABLE ONLY public.quotas ALTER COLUMN id SET DEFAULT nextval('public.quotas_id_seq'::regclass);
 
 
 --
--- Name: funding_requests funding_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: funding_requests funding_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: postgresql
 --
 
 ALTER TABLE ONLY public.funding_requests
@@ -140,7 +140,7 @@ ALTER TABLE ONLY public.funding_requests
 
 
 --
--- Name: quotas quotas_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: quotas quotas_pkey; Type: CONSTRAINT; Schema: public; Owner: postgresql
 --
 
 ALTER TABLE ONLY public.quotas
@@ -148,7 +148,7 @@ ALTER TABLE ONLY public.quotas
 
 
 --
--- Name: registered_nodes registered_nodes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: registered_nodes registered_nodes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgresql
 --
 
 ALTER TABLE ONLY public.registered_nodes

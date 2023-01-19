@@ -1,14 +1,12 @@
-# Default values for exit-node.
+# Default values for discovery-platform.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
 replicaCount: 1
 
-HOPRD_API_ENDPOINT: ""
-
 image:
-  repository: sitilge/exit-node
-  pullPolicy: IfNotPresent
+  repository: sitilge/discovery-platform
+  pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
 

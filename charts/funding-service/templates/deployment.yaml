@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "pluto.fullname" . }}
+  name: {{ include "funding-service.fullname" . }}
   labels:
-    {{- include "pluto.labels" . | nindent 4 }}
+    {{- include "funding-service.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "pluto.selectorLabels" . | nindent 6 }}
+      {{- include "funding-service.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -18,13 +18,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "pluto.selectorLabels" . | nindent 8 }}
+        {{- include "funding-service.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "pluto.serviceAccountName" . }}
+      serviceAccountName: {{ include "funding-service.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -34,22 +34,22 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-            - name: HOPRD_API_TOKEN
-              value: "^^awesomeHOPRr3l4y^^"
+            - name: DEBUG
+              value: "hopr*,rpch*,-*verbose,-*metrics"
+            - name: SECRET_KEY
+              value: "PleaseChangeMe"
+            - name: WALLET_PRIV_KEY
+              value: "0x97c7a7bdca6d4fdf1549f586971ff8744a70c5fd9b2a6d83d8dd1ca3d894a748"
+            - name: DB_CONNECTION_URL
+              value: "postgresql://postgresql:postgresql@postgresql.postgresql:5432"
+            - name: SMART_CONTRACT_ADDRESS
+              value: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+            - name: PORT
+              value: "3010"
           ports:
-            - containerPort: {{ .Values.service.port }}
-
-            - containerPort: 13301
-            - containerPort: 13302
-            - containerPort: 13303
-            - containerPort: 13304
-            - containerPort: 13305
-
-            - containerPort: 19501
-            - containerPort: 19502
-            - containerPort: 19503
-            - containerPort: 19504
-            - containerPort: 19505
+            - name: http
+              containerPort: 3010
+              protocol: TCP
 {{/*          livenessProbe:*/}}
 {{/*            httpGet:*/}}
 {{/*              path: /*/}}

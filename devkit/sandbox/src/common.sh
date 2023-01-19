@@ -102,6 +102,11 @@ start() {
     echo "node4=$exit_node_pub_key_4"
     echo "node5=$exit_node_pub_key_5"
 
+    #TODO - ts-node must be installed, get's silenced in the subshell otherwise
+    #TODO - yarn install on the root?
+
+    #TODO - the funding-service wallet hoprTokenAddress is: 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
+
     # fund funding-service wallet
     echo "Funding funding-service wallet"
     hoprTokenAddress=$( \
