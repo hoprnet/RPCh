@@ -61,9 +61,12 @@ describe("test entry server", function () {
   it("should not accept expired tokens", async function () {
     let spy = jest
       .spyOn(AccessTokenService.prototype, "getAccessToken")
-      .mockImplementation(
-        async (token) => ({ token, expired_at: new Date("2020-10-10") } as any)
-      );
+      .mockImplementation(async (token) => ({
+        token,
+        expired_at: new Date("2020-10-10").toISOString(),
+        id: 1,
+        created_at: new Date("2020-10-10").toISOString(),
+      }));
 
     const responseToken = await agent
       .get("/api/access-token")

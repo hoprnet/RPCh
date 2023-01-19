@@ -53,15 +53,13 @@ const mockCreateAccessToken = () => ({
   }),
 });
 
-const mockCreateRequest = (hash?: string) =>
-  ({
-    accessTokenHash: hash ?? "hash",
-    amount: "10",
-    chainId: 80,
-    nodeAddress: "address",
-    createdAt: new Date(Date.now()).toISOString(),
-    status: "FRESH",
-  } as CreateRequest);
+const mockCreateRequest = (hash?: string): CreateRequest => ({
+  accessTokenHash: hash ?? "hash",
+  amount: "10",
+  chainId: 80,
+  nodeAddress: "address",
+  status: "FRESH",
+});
 
 const createAccessTokenAndRequest = async (dbInstance: DBInstance) => {
   const createAccessToken: CreateAccessToken = mockCreateAccessToken();
@@ -187,17 +185,16 @@ describe("test db adapter functions", function () {
     const request = mockCreateRequest(createAccessToken.token);
     const queryRequest = await db.saveRequest(dbInstance, request);
 
-    const updateRequest = {
+    const updateRequest: UpdateRequest = {
       amount: "20",
       id: queryRequest.id,
       accessTokenHash: queryRequest.access_token_hash,
-      createdAt: queryRequest.created_at,
       nodeAddress: queryRequest.node_address,
       chainId: queryRequest.chain_id,
       status: queryRequest.status,
       reason: queryRequest.reason,
       transactionHash: queryRequest.transaction_hash,
-    } as UpdateRequest;
+    };
 
     await db.updateRequest(dbInstance, updateRequest);
 

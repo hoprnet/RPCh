@@ -66,6 +66,7 @@ const start = async (ops: {
   });
   // start queue that fulfills requests
   setInterval(() => {
+    log.normal("running queue for fresh requests");
     if (!running) {
       checkFreshRequests({
         requestService: requestService,

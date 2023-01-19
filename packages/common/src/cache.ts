@@ -33,7 +33,7 @@ export default class Cache {
   public onSegment(segment: Segment): void {
     // get segment entry with matching msgId, or create a new one
     const segmentEntry = this.segments.get(segment.msgId) || {
-      segments: [] as Segment[],
+      segments: [],
       receivedAt: new Date(),
     };
 
