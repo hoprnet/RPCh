@@ -158,7 +158,7 @@ export default class ReliabilityScore {
         this.score.set(peerId, score);
         log.normal("node %s has a %s realiability score", peerId, score);
       }
-      return this.score.get(peerId) || 0.2;
+      return this.score.get(peerId)!;
     } else {
       return 0.2;
     }
