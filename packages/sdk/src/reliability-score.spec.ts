@@ -82,10 +82,10 @@ describe("test reliability score class", () => {
     it.todo("should set metrics");
   });
   describe("scores:", () => {
-    it("should have a score of 0 for nonexistent peerIds", () => {
+    it("should have a score of 0.2 for nonexistent peerIds (fresh nodes)", () => {
       const score = reliabilityScore.getScore("nonexistentPeerId");
 
-      expect(score).toBe(0);
+      expect(score).toBe(0.2);
     });
     it("should have score of 0 for dishonest nodes", () => {
       addNumberOfMetrics(19, ENTRY_NODE_PEER_ID, "success");
