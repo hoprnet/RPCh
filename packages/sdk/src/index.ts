@@ -10,7 +10,7 @@ import {
 } from "@rpch/common";
 import { utils as etherUtils } from "ethers";
 import fetch from "cross-fetch";
-import ReliabilityScore from "./reliability-score";
+import ReliabilityScore, { Stats } from "./reliability-score";
 import RequestCache from "./request-cache";
 import { createLogger } from "./utils";
 
@@ -278,23 +278,22 @@ export default class SDK {
   }
 
   /**
-   * Creates a Request instance that can be sent through the RPCh network\
+   * Creates a Request instance that can be sent through the RPCh network
    * @param provider
    * @param body
    * @returns Request
    */
   public createRequest(provider: string, body: string): Request {
     if (!this.isReady) throw Error("SDK not ready to create requests");
-    let entryNodeScore = this.reliabilityScore.getScore(this.entryNode!.peerId);
-    console.log(entryNodeScore);
+    let entryNodeScore: number = this.reliabilityScore.getScore(
+      this.entryNode!.peerId
+    );
     let counter: number = 0;
     while (entryNodeScore < 0.7 && entryNodeScore !== 0.2 && counter !== 3) {
       this.selectEntryNode(this.ops.discoveryPlatformApiEndpoint);
       entryNodeScore = this.reliabilityScore.getScore(this.entryNode!.peerId);
-      console.log(entryNodeScore);
       counter++;
     }
-    console.log("pass");
     return Request.createRequest(
       this.crypto!,
       provider,
