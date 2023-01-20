@@ -61,7 +61,7 @@ export const checkCommitment = async (ops: {
     );
     // Assume node has committed to hopr if it is running in development
     // eslint-disable-next-line turbo/no-undeclared-env-vars
-    if (Boolean(constants.SKIP_CHECK_COMMITMENT)) return true;
+    if (constants.SKIP_CHECK_COMMITMENT) return true;
 
     const variables = {
       id: ops.node.id,

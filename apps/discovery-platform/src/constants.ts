@@ -13,9 +13,11 @@ const {
   CHANNELS_THRESHOLD = 1,
   // Unit amount of quotas a request costs
   BASE_QUOTA = 1,
-  // Skips commitment check making all fresh nodes go to ready
-  SKIP_CHECK_COMMITMENT = false,
 } = process.env;
+
+// Skips commitment check making all fresh nodes go to ready
+const SKIP_CHECK_COMMITMENT =
+  Boolean(process.env.SKIP_CHECK_COMMITMENT) ?? false;
 
 // Subgraph endpoint used to query node commitment
 const SUBGRAPH_URL =

@@ -42,7 +42,7 @@ services:
       - DB_CONNECTION_URL=postgresql://postgres:postgres@postgres-db:5432
       - FORCE_SMART_CONTRACT_ADDRESS=${FORCE_SMART_CONTRACT_ADDRESS}
       - FORCE_CHAIN_ID=${FORCE_CHAIN_ID}
-      - FORCE_CHAIN_URL=${FORCE_CHAIN_URL}
+      - FORCE_RPC_URL=${FORCE_RPC_URL}
       - PORT=${FUNDING_SERVICE_PORT}
   discovery-platform:
     build:
