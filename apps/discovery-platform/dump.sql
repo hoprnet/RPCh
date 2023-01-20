@@ -25,8 +25,9 @@ SET default_table_access_method = heap;
 
 CREATE TABLE public.funding_requests (
     id integer NOT NULL,
-    registered_node character varying(255) NOT NULL,
+    registered_node_id character varying(255) NOT NULL,
     request_id integer NOT NULL,
+    amount text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -154,6 +155,12 @@ ALTER TABLE ONLY public.quotas
 ALTER TABLE ONLY public.registered_nodes
     ADD CONSTRAINT registered_nodes_pkey PRIMARY KEY (id);
 
+--
+-- Name: funding_requests funding_requests_registered_node_id_fkey ; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.funding_requests
+    ADD CONSTRAINT funding_requests_registered_node_id_fkey FOREIGN KEY (registered_node_id) REFERENCES public.registered_nodes(id);
 
 --
 -- PostgreSQL database dump complete
