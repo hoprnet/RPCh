@@ -5,7 +5,7 @@
  * Prints our the private key of the wallet generated.
  */
 import fetch from "node-fetch";
-import { keccak256 } from "js-sha3";
+import { utils } from "ethers";
 
 // we do not run this build this file via turbo
 /* eslint-disable turbo/no-undeclared-env-vars */
@@ -62,12 +62,6 @@ const getPeerId = async (apiEndpoint: string): Promise<string> => {
     .then((res) => res.hopr);
 };
 
-const getAddressFromPublicKey = (publicKey: string): string => {
-  const publicKeyHash = keccak256(Buffer.from(publicKey.slice(2), "hex"));
-  const address = "0x" + publicKeyHash.slice(-40);
-  return address;
-};
-
 const registerNode = async (
   peerId: string,
   hoprdApiEndpoint: string,
@@ -107,7 +101,7 @@ const main = async () => {
   let port = 13300;
 
   for (const publicKey of publicKeys) {
-    const nativeAddress = getAddressFromPublicKey(publicKey);
+    const nativeAddress = utils.computeAddress(publicKey);
     const hoprdApiEndpoint = "http://localhost";
     const hoprdApiPort = ++port;
     const peerId = await getPeerId(hoprdApiEndpoint + ":" + hoprdApiPort);
