@@ -31,7 +31,7 @@ const main = () => {
 
   start({
     accessToken: constants.HOPRD_ACCESS_TOKEN!,
-    baseQuota: Number(constants.BASE_QUOTA),
+    baseQuota: constants.BASE_QUOTA,
     db: dbInstance,
     fundingServiceUrl: constants.FUNDING_SERVICE_URL!,
   });
@@ -66,7 +66,7 @@ const start = async (ops: {
     fundingServiceApi: fundingServiceApi,
   });
   // start listening at PORT for requests
-  server.listen(Number(constants.PORT), "0.0.0.0", () => {
+  server.listen(constants.PORT, "0.0.0.0", () => {
     log.normal("entry server is up");
   });
 
@@ -86,8 +86,8 @@ const start = async (ops: {
 
       const nodeIsCommitted = await checkCommitment({
         node,
-        minBalance: Number(constants.BALANCE_THRESHOLD),
-        minChannels: Number(constants.CHANNELS_THRESHOLD),
+        minBalance: constants.BALANCE_THRESHOLD,
+        minChannels: constants.CHANNELS_THRESHOLD,
       });
 
       log.verbose("node commitment", nodeIsCommitted);

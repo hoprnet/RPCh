@@ -7,14 +7,6 @@ const {
   WALLET_PRIV_KEY,
   // Postgres db connection url
   DB_CONNECTION_URL,
-  // Port that server will listen for requests
-  PORT = 3010,
-  // Number of confirmations that will be required for a transaction to be accepted
-  CONFIRMATIONS = 1,
-  // Max amount of tokens a access token can request
-  MAX_AMOUNT_OF_TOKENS = 100,
-  // Amount of milliseconds that a access token is valid
-  TIMEOUT = 30 * 60_000,
   // Custom chain id to complete funding
   FORCE_CHAIN_ID,
   // Custom chain url that will be used to create the provider to complete funding
@@ -24,6 +16,18 @@ const {
 } = process.env;
 
 const GNOSIS_CHAIN_ID = 100;
+
+// Port that server will listen for requests
+const PORT = Number(process.env.PORT) ?? 3010;
+
+// Number of confirmations that will be required for a transaction to be accepted
+const CONFIRMATIONS = Number(process.env.CONFIRMATIONS) ?? 1;
+
+// Max amount of tokens a access token can request
+const MAX_AMOUNT_OF_TOKENS = Number(process.env.MAX_AMOUNT_OF_TOKENS) ?? 100;
+
+// Amount of milliseconds that a access token is valid
+const TIMEOUT = Number(process.env.TIMEOUT) ?? 30 * 60_000;
 
 const CONNECTION_INFO: { [chainId: number]: ethers.utils.ConnectionInfo } = {
   [GNOSIS_CHAIN_ID]: { url: "https://rpc.gnosischain.com/" },

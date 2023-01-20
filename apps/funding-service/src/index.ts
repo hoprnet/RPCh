@@ -45,8 +45,8 @@ const start = async (ops: {
     accessTokenService,
     requestService,
     walletAddress: wallet.address,
-    maxAmountOfTokens: Number(constants.MAX_AMOUNT_OF_TOKENS),
-    timeout: Number(constants.TIMEOUT),
+    maxAmountOfTokens: constants.MAX_AMOUNT_OF_TOKENS,
+    timeout: constants.TIMEOUT,
   });
   // start queue that fulfills requests
   setInterval(() => {
@@ -89,7 +89,7 @@ const main = () => {
     db: dbInstance,
     privateKey: constants.WALLET_PRIV_KEY!,
     secretKey: constants.SECRET_KEY!,
-    confirmations: Number(constants.CONFIRMATIONS),
+    confirmations: constants.CONFIRMATIONS,
   });
 };
 

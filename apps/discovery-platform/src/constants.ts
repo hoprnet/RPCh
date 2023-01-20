@@ -1,23 +1,27 @@
 const {
-  // Port that server will listen for requests
-  PORT = 3020,
   // Api endpoint used for completing funding requests of registered nodes
   FUNDING_SERVICE_URL,
   // Access token used to connect to hoprd entry node
   HOPRD_ACCESS_TOKEN,
   // Database connection url
   DB_CONNECTION_URL,
-  // Minimal amount of balance a account must have to show commitment
-  BALANCE_THRESHOLD = 1,
-  // Minimal amount of open channels a account must have to show commitment
-  CHANNELS_THRESHOLD = 1,
-  // Unit amount of quotas a request costs
-  BASE_QUOTA = 1,
 } = process.env;
 
 // Skips commitment check making all fresh nodes go to ready
 const SKIP_CHECK_COMMITMENT =
   Boolean(process.env.SKIP_CHECK_COMMITMENT) ?? false;
+
+// Unit amount of quotas a request costs
+const BASE_QUOTA = Number(process.env.BASE_QUOTA) ?? 1;
+
+// Port that server will listen for requests
+const PORT = Number(process.env.PORT) ?? 3020;
+
+// Minimal amount of balance a account must have to show commitment
+const BALANCE_THRESHOLD = Number(process.env.BALANCE_THRESHOLD) ?? 1;
+
+// Minimal amount of open channels a account must have to show commitment
+const CHANNELS_THRESHOLD = Number(process.env.CHANNELS_THRESHOLD) ?? 1;
 
 // Subgraph endpoint used to query node commitment
 const SUBGRAPH_URL =
