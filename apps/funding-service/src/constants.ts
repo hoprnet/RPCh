@@ -18,16 +18,20 @@ const {
 const GNOSIS_CHAIN_ID = 100;
 
 // Port that server will listen for requests
-const PORT = Number(process.env.PORT) ?? 3010;
+const PORT = process.env.PORT ? Number(process.env.PORT) : 3010;
 
 // Number of confirmations that will be required for a transaction to be accepted
-const CONFIRMATIONS = Number(process.env.CONFIRMATIONS) ?? 1;
+const CONFIRMATIONS = process.env.CONFIRMATIONS
+  ? Number(process.env.CONFIRMATIONS)
+  : 1;
 
 // Max amount of tokens a access token can request
-const MAX_AMOUNT_OF_TOKENS = Number(process.env.MAX_AMOUNT_OF_TOKENS) ?? 100;
+const MAX_AMOUNT_OF_TOKENS = process.env.MAX_AMOUNT_OF_TOKENS
+  ? Number(process.env.MAX_AMOUNT_OF_TOKENS)
+  : 100;
 
 // Amount of milliseconds that a access token is valid
-const TIMEOUT = Number(process.env.TIMEOUT) ?? 30 * 60_000;
+const TIMEOUT = process.env.TIMEOUT ? Number(process.env.TIMEOUT) : 30 * 60_000;
 
 const CONNECTION_INFO: { [chainId: number]: ethers.utils.ConnectionInfo } = {
   [GNOSIS_CHAIN_ID]: { url: "https://primary.gnosis-chain.rpc.hoprtech.net" },
