@@ -21,7 +21,7 @@ start
 # catch error if command fails
 set -Eeuo pipefail
 # Run tests with env variables
-npx jest --ci --coverage || exit 1
+npx jest --ci || exit 1
 # stop catching
 set +Eeuo pipefail
 
