@@ -30,7 +30,7 @@ const MAX_AMOUNT_OF_TOKENS = Number(process.env.MAX_AMOUNT_OF_TOKENS) ?? 100;
 const TIMEOUT = Number(process.env.TIMEOUT) ?? 30 * 60_000;
 
 const CONNECTION_INFO: { [chainId: number]: ethers.utils.ConnectionInfo } = {
-  [GNOSIS_CHAIN_ID]: { url: "https://rpc.gnosischain.com/" },
+  [GNOSIS_CHAIN_ID]: { url: "https://primary.gnosis-chain.rpc.hoprtech.net" },
 };
 
 const SMART_CONTRACTS_PER_CHAIN: { [chainId: number]: string } = {

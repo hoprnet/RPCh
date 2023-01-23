@@ -8,8 +8,7 @@ const {
 } = process.env;
 
 // Skips commitment check making all fresh nodes go to ready
-const SKIP_CHECK_COMMITMENT =
-  Boolean(process.env.SKIP_CHECK_COMMITMENT) ?? false;
+const SKIP_CHECK_COMMITMENT = process.env.SKIP_CHECK_COMMITMENT === "true";
 
 // Unit amount of quotas a request costs
 const BASE_QUOTA = Number(process.env.BASE_QUOTA) ?? 1;
