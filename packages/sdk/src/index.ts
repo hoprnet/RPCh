@@ -101,7 +101,7 @@ export default class SDK {
       id: string;
     } = await fetch(
       new URL(
-        "/api/request/entry-node",
+        "/api/v1/request/entry-node",
         discoveryPlatformApiEndpoint
       ).toString(),
       {
@@ -142,7 +142,7 @@ export default class SDK {
       id: string;
     }[] = await fetch(
       new URL(
-        "/api/node?hasExitNode=true",
+        "/api/v1/node?hasExitNode=true",
         discoveryPlatformApiEndpoint
       ).toString()
     ).then((res) => res.json());

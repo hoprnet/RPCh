@@ -20,7 +20,7 @@ const headers = {
 };
 
 const addQuota = async (): Promise<string> => {
-  const url = new URL("/api/client/funds", DP_API_ENDPOINT);
+  const url = new URL("/api/v1/client/funds", DP_API_ENDPOINT);
   const body = {
     client: CLIENT,
     quota: QUOTA,
