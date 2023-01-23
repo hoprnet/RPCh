@@ -75,7 +75,7 @@ const registerNode = async (
   exitNodePubKey: string,
   nativeAddress: string
 ): Promise<string> => {
-  const url = new URL("/api/node/register", DP_API_ENDPOINT);
+  const url = new URL("/api/v1/node/register", DP_API_ENDPOINT);
   const body = {
     hasExitNode: true,
     peerId,
