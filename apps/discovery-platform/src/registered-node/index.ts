@@ -1,6 +1,7 @@
 import * as db from "../db";
 import { CreateRegisteredNode, QueryRegisteredNode } from "./dto";
 import { createLogger } from "../utils";
+import { utils } from "@rpch/common";
 
 const log = createLogger(["registered-node"]);
 
@@ -97,9 +98,7 @@ export const getEligibleNode = async (
 ): Promise<QueryRegisteredNode | undefined> => {
   const readyNodes = await getReadyNodes(dbInstance);
   // choose selected entry node
-  const selectedNode = readyNodes?.at(
-    Math.floor(Math.random() * readyNodes.length)
-  );
+  const selectedNode = utils.randomlySelectFromArray(readyNodes ?? []);
   // TODO: get access token of selected node
   return selectedNode;
 };

@@ -9,7 +9,7 @@ import type {
 } from "@rpch/crypto-bridge/nodejs";
 import Message from "./message";
 import {
-  generateRandomNumber,
+  generatePseudoRandomId,
   joinPartsToBody,
   splitBodyToParts,
 } from "./utils";
@@ -48,7 +48,7 @@ export default class Request {
     exitNodeDestination: string,
     exitNodeReadIdentity: Identity
   ): Request {
-    const id = generateRandomNumber();
+    const id = generatePseudoRandomId(1e6);
     const payload = joinPartsToBody(["request", provider, body]);
     const envelope = new crypto.Envelope(
       utils.toUtf8Bytes(payload),

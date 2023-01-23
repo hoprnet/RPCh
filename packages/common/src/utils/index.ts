@@ -41,6 +41,26 @@ export const generateRandomNumber = (): number => {
 };
 
 /**
+ * Pseudo generate random numbers giving a maximum
+ * @disclaimer Not suitable for crypto.
+ * @param maximum maximum number that the random number can be
+ * @returns a number from 0 to maximum number
+ */
+export const generatePseudoRandomId = (maximum: number) => {
+  return Math.floor(Math.random() * maximum);
+};
+
+/**
+ * Choose pseudo random element from an array
+ * @disclaimer Not suitable for crypto.
+ * @param arr array to choose random element
+ * @returns element from array
+ */
+export const randomlySelectFromArray = <T>(arr: T[]): T => {
+  return arr?.[Math.floor(Math.random() * arr.length)];
+};
+
+/**
  * Check whether given time has expired.
  * @returns whether item has expired
  */

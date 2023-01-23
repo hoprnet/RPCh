@@ -7,6 +7,7 @@ import {
   Response,
   Segment,
   hoprd,
+  utils,
 } from "@rpch/common";
 import { utils as etherUtils } from "ethers";
 import fetch from "cross-fetch";
@@ -156,8 +157,7 @@ export default class SDK {
 
     if (this.exitNodes.length === 0) throw Error("No exit nodes available");
 
-    this.exitNode =
-      this.exitNodes[Math.floor(Math.random() * this.exitNodes.length)];
+    this.exitNode = utils.randomlySelectFromArray(this.exitNodes);
     log.verbose("Selected exit node", this.exitNode);
     return this.exitNodes;
   }

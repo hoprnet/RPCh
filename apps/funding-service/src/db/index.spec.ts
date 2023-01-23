@@ -5,6 +5,7 @@ import * as db from ".";
 import { CreateAccessToken, generateAccessToken } from "../access-token";
 import { DBInstance } from ".";
 import { CreateRequest, UpdateRequest } from "../request";
+import { utils } from "@rpch/common";
 
 export class MockPgInstanceSingleton {
   private static pgInstance: IMemoryDb;
@@ -43,7 +44,7 @@ export class MockPgInstanceSingleton {
 }
 
 const mockCreateAccessToken = () => ({
-  id: Math.floor(Math.random() * 1e6),
+  id: utils.generatePseudoRandomId(1e6),
   createdAt: new Date(Date.now()).toISOString(),
   expiredAt: new Date(Date.now()).toISOString(),
   token: generateAccessToken({
