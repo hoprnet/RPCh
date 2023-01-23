@@ -5,6 +5,12 @@ import { createLogger } from "../utils";
 
 export type DBInstance = pgp.IDatabase<{}>;
 
+export type RegisteredNodeFilters = {
+  hasExitNode?: boolean;
+  excludeList?: string[];
+  status?: QueryRegisteredNode["status"];
+};
+
 const log = createLogger(["db"]);
 
 const TABLES = {
@@ -21,22 +27,38 @@ export const getRegisteredNodes = async (
   return dbRes;
 };
 
-export const getExitNodes = async (
-  dbInstance: DBInstance
-): Promise<QueryRegisteredNode[]> => {
-  const text = `SELECT * FROM ${TABLES.REGISTERED_NODES} WHERE has_exit_node=true`;
-  const dbRes: QueryRegisteredNode[] = await dbInstance.manyOrNone(text);
+export const getRegisteredNodesWithFilters = async (
+  dbInstance: DBInstance,
+  filters: RegisteredNodeFilters
+) => {
+  log.verbose("Querying for Registered nodes with filters", filters);
+  let baseText = `SELECT * FROM ${TABLES.REGISTERED_NODES} WHERE `;
+  let filtersText = [];
+  const values: { [key: string]: string } = {};
+
+  if (filters.excludeList !== undefined) {
+    filtersText.push("id NOT IN ($<list>)");
+    values["list"] = filters.excludeList.join(", ");
+  }
+  if (filters.hasExitNode !== undefined) {
+    filtersText.push("has_exit_node=$<exitNode>");
+    values["exitNode"] = String(filters.hasExitNode === true);
+  }
+  if (filters.status !== undefined) {
+    filtersText.push("status=$<status>");
+    values["status"] = String(filters.status);
+  }
+
+  const sqlText = baseText + filtersText.join(" AND ");
+
+  const dbRes: QueryRegisteredNode[] = await dbInstance.manyOrNone(
+    sqlText,
+    values
+  );
+  log.verbose("Registered nodes with filters query DB response", dbRes);
+
   return dbRes;
 };
-
-export const getNonExitNodes = async (
-  dbInstance: DBInstance
-): Promise<QueryRegisteredNode[]> => {
-  const text = `SELECT * FROM ${TABLES.REGISTERED_NODES} WHERE has_exit_node=false`;
-  const dbRes: QueryRegisteredNode[] = await dbInstance.manyOrNone(text);
-  return dbRes;
-};
-
 export const saveRegisteredNode = async (
   dbInstance: DBInstance,
   node: Omit<QueryRegisteredNode, "created_at" | "updated_at">
@@ -58,7 +80,7 @@ export const saveRegisteredNode = async (
       honesty_score: node.honesty_score,
       status: node.status,
     };
-    const dbRes = await dbInstance.one<QueryRegisteredNode>(text, values);
+    const dbRes: QueryRegisteredNode = await dbInstance.one(text, values);
     log.verbose("Created new registered node in DB", dbRes);
     return dbRes ? true : false;
   } catch (e) {
@@ -76,21 +98,6 @@ export const getRegisteredNode = async (
     peerId,
   };
   const dbRes: QueryRegisteredNode | null = await dbInstance.oneOrNone(
-    text,
-    values
-  );
-  return dbRes;
-};
-
-export const getNodesByStatus = async (
-  dbInstance: DBInstance,
-  status: QueryRegisteredNode["status"]
-): Promise<QueryRegisteredNode[] | null> => {
-  const text = `SELECT * FROM ${TABLES.REGISTERED_NODES} WHERE status=$<status>`;
-  const values = {
-    status: status,
-  };
-  const dbRes: QueryRegisteredNode[] | null = await dbInstance.manyOrNone(
     text,
     values
   );

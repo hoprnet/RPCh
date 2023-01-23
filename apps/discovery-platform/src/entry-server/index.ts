@@ -1,15 +1,14 @@
-import express from "express";
+import express, { Request } from "express";
 import { DBInstance } from "../db";
 import { FundingServiceApi } from "../funding-service-api";
 import { createQuota, getAllQuotasByClient, sumQuotas } from "../quota";
 import { CreateQuota } from "../quota/dto";
 import {
   createRegisteredNode,
-  getExitNodes,
-  getNonExitNodes,
   getRegisteredNode,
   getEligibleNode,
   getRewardForNode,
+  getRegisteredNodesWithFilters,
 } from "../registered-node";
 import { CreateRegisteredNode } from "../registered-node/dto";
 import { createLogger } from "../utils";
@@ -47,20 +46,24 @@ export const entryServer = (ops: {
     return res.json({ body: registered });
   });
 
-  apiRouter.get("/node", async (req, res) => {
-    log.verbose("GET /node", req.body);
+  apiRouter.get(
+    "/node",
+    async (
+      req: Request<{}, {}, {}, { excludeList?: string; hasExitNode?: string }>,
+      res
+    ) => {
+      log.verbose("GET /node", req.query);
 
-    const { hasExitNode } = req.query;
-    if (hasExitNode === "true") {
-      log.verbose("GET /node", req.body);
+      // example of query: ?hasExitNode=false&excludeList=id1,id2,id3
+      const { hasExitNode, excludeList } = req.query;
 
-      const nodes = await getExitNodes(ops.db);
-      return res.json(nodes);
-    } else {
-      const nodes = await getNonExitNodes(ops.db);
+      const nodes = await getRegisteredNodesWithFilters(ops.db, {
+        excludeList: excludeList?.split(", "),
+        hasExitNode: hasExitNode === "true",
+      });
       return res.json(nodes);
     }
-  });
+  );
 
   apiRouter.get("/node/:peerId", async (req, res) => {
     const { peerId }: { peerId: string } = req.params;
@@ -89,9 +92,14 @@ export const entryServer = (ops: {
   });
 
   apiRouter.post("/request/entry-node", async (req, res) => {
-    log.verbose(`POST /request/entry-node`, req.body);
-    const { client } = req.body;
+    log.verbose(`POST /request/entry-node`, req.body, req.params);
+    const { client, excludeList } = req.body;
+
     log.verbose("requesting entry node for client", client);
+    if (excludeList !== undefined) {
+      log.verbose("requesting entry node with exclude list", excludeList);
+    }
+
     if (typeof client !== "string") throw Error("Client is not a string");
 
     // check if client has enough quota
@@ -106,7 +114,7 @@ export const entryServer = (ops: {
       });
     }
     // choose selected entry node
-    const selectedNode = await getEligibleNode(ops.db);
+    const selectedNode = await getEligibleNode(ops.db, {});
     log.verbose("selected entry node", selectedNode);
     if (!selectedNode) {
       return res.json({ body: "Could not find eligible node" });

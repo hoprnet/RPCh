@@ -81,7 +81,7 @@ describe("test entry server", function () {
     assert.equal(createdNode.body.node.id, node.peerId);
   });
 
-  it("should get all nodes", async function () {
+  it("should get all nodes that are exit nodes", async function () {
     await request(app)
       .post("/api/node/register")
       .send(mockNode("notExit1", false));
@@ -91,11 +91,31 @@ describe("test entry server", function () {
     await request(app).post("/api/node/register").send(mockNode("exit3", true));
     await request(app).post("/api/node/register").send(mockNode("exit4", true));
 
+    const allExitNodes = await request(app).get(`/api/node?hasExitNode=true`);
+
+    assert(allExitNodes.body.length === 2);
+  });
+  it("should get all nodes that are not exit nodes and are not in the exclude list", async function () {
+    await request(app)
+      .post("/api/node/register")
+      .send(mockNode("notExit1", false));
+    await request(app)
+      .post("/api/node/register")
+      .send(mockNode("notExit2", false));
+    await request(app)
+      .post("/api/node/register")
+      .send(mockNode("notExit3", false));
+    await request(app).post("/api/node/register").send(mockNode("exit4", true));
+
     const allExitNodes = await request(app).get(
-      `/api/node?hasExitNode=${false}`
+      `/api/node?hasExitNode=${false}&excludeList=notExit2`
     );
 
-    assert(typeof allExitNodes.body === "object" && allExitNodes.body.length);
+    assert.equal(allExitNodes.body.length, 2);
+    assert.equal(
+      allExitNodes.body.findIndex((node: any) => node.id === "notExit2"),
+      -1
+    );
   });
 
   it("should add quota to a client", async function () {
@@ -182,6 +202,64 @@ describe("test entry server", function () {
 
       assert.equal(requestResponse.body.id, createdNode.body.node?.id);
       spy.mockRestore();
+    });
+    it("should return an entry node that is not in the exclude list", async function () {
+      const amountLeft = 10;
+      const peerId = "entry";
+      const requestId = 1;
+
+      const replyBody: getAccessTokenResponse = {
+        accessToken: FAKE_ACCESS_TOKEN,
+        amountLeft: 10,
+        expiredAt: new Date().toISOString(),
+      };
+
+      nockGetApiAccessToken.reply(200, replyBody);
+
+      await request(app).post("/api/client/funds").send({
+        client: "client",
+        quota: 1,
+      });
+
+      await request(app)
+        .post("/api/node/register")
+        .send(mockNode(peerId, true));
+
+      await request(app)
+        .post("/api/node/register")
+        .send(mockNode(peerId + "2", true));
+
+      const firstCreatedNode: {
+        body: { node: QueryRegisteredNode | undefined };
+      } = await request(app).get(`/api/node/${peerId}`);
+      const secondCreatedNode: {
+        body: { node: QueryRegisteredNode | undefined };
+      } = await request(app).get(`/api/node/${peerId + "2"}`);
+
+      await registeredNode.updateRegisteredNode(dbInstance, {
+        ...firstCreatedNode.body.node!,
+        status: "READY",
+      });
+      await registeredNode.updateRegisteredNode(dbInstance, {
+        ...secondCreatedNode.body.node!,
+        status: "READY",
+      });
+
+      let postFundingResponse: postFundingResponse = {
+        amountLeft,
+        id: requestId,
+      };
+
+      nockFundingRequest(secondCreatedNode.body.node?.native_address!).reply(
+        200,
+        postFundingResponse
+      );
+
+      const requestResponse = await request(app)
+        .post("/api/request/entry-node")
+        .send({ client: "client", excludeList: ["entry"] });
+
+      assert.equal(requestResponse.body.id, secondCreatedNode.body.node?.id);
     });
     it("should fail if no entry node is selected", async function () {
       const spy = jest.spyOn(registeredNode, "getEligibleNode");
