@@ -100,7 +100,9 @@ describe("test db functions", function () {
     await db.saveRegisteredNode(dbInstance, secondNode);
     await db.saveRegisteredNode(dbInstance, createMockNode());
 
-    const notExitNodes = await db.getNonExitNodes(dbInstance);
+    const notExitNodes = await db.getRegisteredNodesWithFilters(dbInstance, {
+      hasExitNode: false,
+    });
 
     assert.equal(notExitNodes.length, 2);
   });
@@ -111,7 +113,9 @@ describe("test db functions", function () {
     await db.saveRegisteredNode(dbInstance, secondNode);
     await db.saveRegisteredNode(dbInstance, createMockNode("peer2", false));
 
-    const exitNodes = await db.getExitNodes(dbInstance);
+    const exitNodes = await db.getRegisteredNodesWithFilters(dbInstance, {
+      hasExitNode: true,
+    });
 
     assert.equal(exitNodes.length, 2);
   });
@@ -121,6 +125,21 @@ describe("test db functions", function () {
     const node = await db.getRegisteredNode(dbInstance, "1");
 
     assert.equal(node?.id, "1");
+  });
+  it("should get all registered nodes except the ones in exclude list", async function () {
+    await db.saveRegisteredNode(dbInstance, createMockNode("1"));
+    await db.saveRegisteredNode(dbInstance, createMockNode("2"));
+    await db.saveRegisteredNode(dbInstance, createMockNode("3"));
+    const notExcludedNodes = await db.getRegisteredNodesWithFilters(
+      dbInstance,
+      { excludeList: ["2"] }
+    );
+    console.log(notExcludedNodes);
+    assert.equal(notExcludedNodes.length, 2);
+    assert.equal(
+      notExcludedNodes.findIndex((node) => node.id === "2"),
+      -1
+    );
   });
   it("should update node", async function () {
     await db.saveRegisteredNode(dbInstance, createMockNode("peer1"));
@@ -185,8 +204,12 @@ describe("test db functions", function () {
     await db.saveRegisteredNode(dbInstance, createMockNode("peer2"));
     await db.saveRegisteredNode(dbInstance, createMockNode("peer3"));
 
-    const freshNodes = await db.getNodesByStatus(dbInstance, "FRESH");
-    const unusableNodes = await db.getNodesByStatus(dbInstance, "UNUSABLE");
+    const freshNodes = await db.getRegisteredNodesWithFilters(dbInstance, {
+      status: "FRESH",
+    });
+    const unusableNodes = await db.getRegisteredNodesWithFilters(dbInstance, {
+      status: "UNUSABLE",
+    });
 
     assert.equal(freshNodes?.length, 2);
     assert.equal(unusableNodes?.length, 1);
