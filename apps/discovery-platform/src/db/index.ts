@@ -25,36 +25,30 @@ const TABLES = {
  */
 
 export const getRegisteredNodes = async (
-  dbInstance: DBInstance
-): Promise<QueryRegisteredNode[]> => {
-  const text = `SELECT * FROM ${TABLES.REGISTERED_NODES}`;
-  const dbRes: QueryRegisteredNode[] = await dbInstance.manyOrNone(text);
-  return dbRes;
-};
-
-export const getRegisteredNodesWithFilters = async (
   dbInstance: DBInstance,
-  filters: RegisteredNodeFilters
+  filters?: RegisteredNodeFilters
 ) => {
   log.verbose("Querying for Registered nodes with filters", filters);
-  let baseText = `SELECT * FROM ${TABLES.REGISTERED_NODES} WHERE `;
+  let baseText = `SELECT * FROM ${TABLES.REGISTERED_NODES}`;
   let filtersText = [];
   const values: { [key: string]: string } = {};
 
-  if (filters.excludeList !== undefined) {
+  if (filters?.excludeList !== undefined) {
     filtersText.push("id NOT IN ($<list>)");
     values["list"] = filters.excludeList.join(", ");
   }
-  if (filters.hasExitNode !== undefined) {
+  if (filters?.hasExitNode !== undefined) {
     filtersText.push("has_exit_node=$<exitNode>");
     values["exitNode"] = String(filters.hasExitNode === true);
   }
-  if (filters.status !== undefined) {
+  if (filters?.status !== undefined) {
     filtersText.push("status=$<status>");
     values["status"] = String(filters.status);
   }
 
-  const sqlText = baseText + filtersText.join(" AND ");
+  const sqlText = filtersText.length
+    ? baseText + " WHERE " + filtersText.join(" AND ")
+    : baseText;
 
   const dbRes: QueryRegisteredNode[] = await dbInstance.manyOrNone(
     sqlText,

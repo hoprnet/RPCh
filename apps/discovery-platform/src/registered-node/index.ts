@@ -5,17 +5,6 @@ import { createLogger } from "../utils";
 const log = createLogger(["registered-node"]);
 
 /**
- * Get all registered nodes
- * @param dbInstance DBinstance
- * @returns QueryRegisteredNode[]
- */
-export const getRegisteredNodes = async (
-  dbInstance: db.DBInstance
-): Promise<QueryRegisteredNode[]> => {
-  return await db.getRegisteredNodes(dbInstance);
-};
-
-/**
  * Saves a registered node in DB
  * @param dbInstance DBinstance
  * @param node CreateRegisteredNode
@@ -79,7 +68,7 @@ export const getEligibleNode = async (
   dbInstance: db.DBInstance,
   filters?: db.RegisteredNodeFilters
 ): Promise<QueryRegisteredNode | undefined> => {
-  const readyNodes = await getRegisteredNodesWithFilters(dbInstance, {
+  const readyNodes = await getRegisteredNodes(dbInstance, {
     ...filters,
     status: "READY",
   });
@@ -108,14 +97,14 @@ export const getRewardForNode = (
 };
 
 /**
- * Get all registered nodes with a set of filters
+ * Get all registered nodes with an optional set of filters
  * @param dbInstance DBinstance
  * @param filters possible ways to filter registered nodes
  * @returns QueryRegisteredNode[]
  */
-export const getRegisteredNodesWithFilters = async (
+export const getRegisteredNodes = async (
   dbInstance: db.DBInstance,
-  filters: db.RegisteredNodeFilters
+  filters?: db.RegisteredNodeFilters
 ): Promise<QueryRegisteredNode[]> => {
-  return await db.getRegisteredNodesWithFilters(dbInstance, filters);
+  return await db.getRegisteredNodes(dbInstance, filters);
 };

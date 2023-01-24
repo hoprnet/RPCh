@@ -100,7 +100,7 @@ describe("test db functions", function () {
     await db.saveRegisteredNode(dbInstance, secondNode);
     await db.saveRegisteredNode(dbInstance, createMockNode());
 
-    const notExitNodes = await db.getRegisteredNodesWithFilters(dbInstance, {
+    const notExitNodes = await db.getRegisteredNodes(dbInstance, {
       hasExitNode: false,
     });
 
@@ -113,7 +113,7 @@ describe("test db functions", function () {
     await db.saveRegisteredNode(dbInstance, secondNode);
     await db.saveRegisteredNode(dbInstance, createMockNode("peer2", false));
 
-    const exitNodes = await db.getRegisteredNodesWithFilters(dbInstance, {
+    const exitNodes = await db.getRegisteredNodes(dbInstance, {
       hasExitNode: true,
     });
 
@@ -130,10 +130,9 @@ describe("test db functions", function () {
     await db.saveRegisteredNode(dbInstance, createMockNode("1"));
     await db.saveRegisteredNode(dbInstance, createMockNode("2"));
     await db.saveRegisteredNode(dbInstance, createMockNode("3"));
-    const notExcludedNodes = await db.getRegisteredNodesWithFilters(
-      dbInstance,
-      { excludeList: ["2"] }
-    );
+    const notExcludedNodes = await db.getRegisteredNodes(dbInstance, {
+      excludeList: ["2"],
+    });
     console.log(notExcludedNodes);
     assert.equal(notExcludedNodes.length, 2);
     assert.equal(
@@ -204,10 +203,10 @@ describe("test db functions", function () {
     await db.saveRegisteredNode(dbInstance, createMockNode("peer2"));
     await db.saveRegisteredNode(dbInstance, createMockNode("peer3"));
 
-    const freshNodes = await db.getRegisteredNodesWithFilters(dbInstance, {
+    const freshNodes = await db.getRegisteredNodes(dbInstance, {
       status: "FRESH",
     });
-    const unusableNodes = await db.getRegisteredNodesWithFilters(dbInstance, {
+    const unusableNodes = await db.getRegisteredNodes(dbInstance, {
       status: "UNUSABLE",
     });
 

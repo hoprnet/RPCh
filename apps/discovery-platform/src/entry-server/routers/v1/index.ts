@@ -6,7 +6,7 @@ import { CreateQuota } from "../../../quota/dto";
 import {
   createRegisteredNode,
   getEligibleNode,
-  getRegisteredNodesWithFilters,
+  getRegisteredNodes,
   getRegisteredNode,
   getRewardForNode,
 } from "../../../registered-node";
@@ -54,7 +54,7 @@ export const v1Router = (ops: {
       log.verbose("GET /node", req.query);
 
       const { hasExitNode, excludeList } = req.query;
-      const nodes = await getRegisteredNodesWithFilters(ops.db, {
+      const nodes = await getRegisteredNodes(ops.db, {
         excludeList: excludeList?.split(", "),
         hasExitNode: hasExitNode === "true",
       });

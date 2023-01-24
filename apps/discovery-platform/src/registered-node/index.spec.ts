@@ -6,7 +6,6 @@ import {
   updateRegisteredNode,
   getEligibleNode,
   getRewardForNode,
-  getRegisteredNodesWithFilters,
 } from ".";
 import { DBInstance } from "../db";
 import { CreateRegisteredNode } from "./dto";
@@ -56,7 +55,7 @@ describe("test registered node functions", function () {
     await createRegisteredNode(dbInstance, mockNode("2"));
     await createRegisteredNode(dbInstance, mockNode("3"));
 
-    const notExcludedNodes = await getRegisteredNodesWithFilters(dbInstance, {
+    const notExcludedNodes = await getRegisteredNodes(dbInstance, {
       excludeList: ["2"],
     });
 
@@ -86,7 +85,7 @@ describe("test registered node functions", function () {
     await createRegisteredNode(dbInstance, mockNode("1", false));
     await createRegisteredNode(dbInstance, mockNode("2", true));
     await createRegisteredNode(dbInstance, mockNode("3", false));
-    const notExitNodes = await getRegisteredNodesWithFilters(dbInstance, {
+    const notExitNodes = await getRegisteredNodes(dbInstance, {
       hasExitNode: false,
     });
 
@@ -96,7 +95,7 @@ describe("test registered node functions", function () {
     await createRegisteredNode(dbInstance, mockNode("1", false));
     await createRegisteredNode(dbInstance, mockNode("2", true));
     await createRegisteredNode(dbInstance, mockNode("3", true));
-    const exitNodes = await getRegisteredNodesWithFilters(dbInstance, {
+    const exitNodes = await getRegisteredNodes(dbInstance, {
       hasExitNode: true,
     });
 
@@ -111,7 +110,7 @@ describe("test registered node functions", function () {
     await createRegisteredNode(dbInstance, mockNode("2", true));
     await createRegisteredNode(dbInstance, mockNode("3", true));
 
-    const freshNodes = await getRegisteredNodesWithFilters(dbInstance, {
+    const freshNodes = await getRegisteredNodes(dbInstance, {
       status: "FRESH",
     });
 
