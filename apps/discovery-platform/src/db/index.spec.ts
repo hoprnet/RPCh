@@ -4,6 +4,7 @@ import * as db from "./";
 import { CreateQuota } from "../quota/dto";
 import { IBackup, IMemoryDb, newDb } from "pg-mem";
 import fs from "fs";
+import { utils } from "@rpch/common";
 
 export class MockPgInstanceSingleton {
   private static pgInstance: IMemoryDb;
@@ -46,7 +47,7 @@ const createMockNode = (
   hasExitNode?: boolean
 ): QueryRegisteredNode => ({
   chain_id: 100,
-  id: peerId ?? "peerId" + Math.floor(Math.random() * 100),
+  id: peerId ?? "peerId" + utils.generatePseudoRandomId(1e6),
   has_exit_node: hasExitNode ?? true,
   hoprd_api_endpoint: "someendpoint",
   native_address: "someaddress",
