@@ -97,8 +97,10 @@ export const getEligibleNode = async (
   dbInstance: db.DBInstance
 ): Promise<QueryRegisteredNode | undefined> => {
   const readyNodes = await getReadyNodes(dbInstance);
+  if (!readyNodes || !readyNodes.length)
+    throw new Error("Can not get ready nodes");
   // choose selected entry node
-  const selectedNode = utils.randomlySelectFromArray(readyNodes ?? []);
+  const selectedNode = utils.randomlySelectFromArray(readyNodes);
   // TODO: get access token of selected node
   return selectedNode;
 };
