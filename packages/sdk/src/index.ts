@@ -88,7 +88,10 @@ export default class SDK {
    * @param discoveryPlatformApiEndpoint
    * @return entry node details
    */
-  private async selectEntryNode(discoveryPlatformApiEndpoint: string): Promise<{
+  private async selectEntryNode(
+    discoveryPlatformApiEndpoint: string,
+    exclusionList?: string[]
+  ): Promise<{
     apiEndpoint: string;
     apiToken: string;
     peerId: string;
@@ -101,7 +104,7 @@ export default class SDK {
       id: string;
     } = await fetch(
       new URL(
-        "/api/request/entry-node",
+        "/api/v1/request/entry-node",
         discoveryPlatformApiEndpoint
       ).toString(),
       {
@@ -112,6 +115,7 @@ export default class SDK {
         },
         body: JSON.stringify({
           client: "sandbox",
+          exclusionList,
         }),
       }
     ).then((res) => res.json());
@@ -142,7 +146,7 @@ export default class SDK {
       id: string;
     }[] = await fetch(
       new URL(
-        "/api/node?hasExitNode=true",
+        "/api/v1/node?hasExitNode=true",
         discoveryPlatformApiEndpoint
       ).toString()
     ).then((res) => res.json());
@@ -288,11 +292,14 @@ export default class SDK {
     let entryNodeScore: number = this.reliabilityScore.getScore(
       this.entryNode!.peerId
     );
-    let counter: number = 0;
-    while (entryNodeScore < 0.7 && entryNodeScore !== 0.2 && counter !== 3) {
-      this.selectEntryNode(this.ops.discoveryPlatformApiEndpoint);
+    const exclusionList: string[] = [];
+    while (entryNodeScore < 0.7 && entryNodeScore !== 0.2) {
+      exclusionList.push(this.entryNode!.peerId);
+      this.selectEntryNode(
+        this.ops.discoveryPlatformApiEndpoint,
+        exclusionList
+      );
       entryNodeScore = this.reliabilityScore.getScore(this.entryNode!.peerId);
-      counter++;
     }
     return Request.createRequest(
       this.crypto!,

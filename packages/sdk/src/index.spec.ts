@@ -42,7 +42,7 @@ const createSdkMock = (
     .reply(202, "someresponse");
 
   nock(DISCOVERY_PLATFORM_API_ENDPOINT)
-    .post("/api/request/entry-node")
+    .post("/api/v1/request/entry-node")
     .reply(200, {
       hoprd_api_endpoint: ENTRY_NODE_API_ENDPOINT,
       hoprd_api_port: ENTRY_NODE_API_PORT,
@@ -52,7 +52,7 @@ const createSdkMock = (
     .persist(true);
 
   nock(DISCOVERY_PLATFORM_API_ENDPOINT)
-    .get("/api/node?hasExitNode=true")
+    .get("/api/v1/node?hasExitNode=true")
     .reply(200, [
       {
         exit_node_pub_key: EXIT_NODE_PUB_KEY,
@@ -189,6 +189,56 @@ describe("test SDK class", function () {
       sdk.onRequestRemoval(largeResponse);
       assert.equal(addMetricMock.mock.calls.length, 1);
       assert(addMetricMock.mock.calls.at(0)?.includes("failed"));
+    });
+
+    describe("Should select reliable node", function () {
+      it("selects new node when selected node is dishonest", function () {
+        // Make original selected node have a low score
+        // @ts-ignore
+        sdk.reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, 1, "dishonest");
+        // @ts-ignore
+        sdk.reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, 1, "dishonest");
+
+        // select a new reliable node
+        // @ts-ignore
+        sdk.selectEntryNode = jest.fn(() => {
+          // @ts-ignore
+          sdk.entryNode = {
+            apiEndpoint: "reliableEndpoint",
+            apiToken: "reliableToken",
+            peerId: "reliablePeerId",
+          };
+        });
+        const request = sdk.createRequest(
+          fixtures.PROVIDER,
+          fixtures.RPC_REQ_LARGE
+        );
+
+        // @ts-ignore
+        assert.equal(sdk.selectEntryNode.mock.calls.length, 1);
+        assert.equal(request.entryNodeDestination, "reliablePeerId");
+      });
+
+      it("does not select new node when node is fresh", function () {
+        // @ts-ignore
+        const addMetricsEntryNode = jest.spyOn(sdk, "selectEntryNode");
+        sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE);
+        assert.equal(addMetricsEntryNode.mock.calls.length, 0);
+      });
+
+      it("does not select new node when node score is ok", function () {
+        // @ts-ignore
+        const addMetricsEntryNode = jest.spyOn(sdk, "selectEntryNode");
+        // @ts-ignore
+        sdk.reliabilityScore.FRESH_NODE_TRESHOLD = 1;
+        // @ts-ignore
+        sdk.reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, 1, "success");
+        // @ts-ignore
+        sdk.reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, 1, "success");
+
+        sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE);
+        assert.equal(addMetricsEntryNode.mock.calls.length, 0);
+      });
     });
 
     describe("should handle requests correctly when receiving a response", function () {
