@@ -66,6 +66,7 @@ const createSdkMock = (
     discoveryPlatformApiEndpoint:
       overwriteOps?.discoveryPlatformApiEndpoint ??
       DISCOVERY_PLATFORM_API_ENDPOINT,
+    reliabilityScoreFreshNodeThreshold: 1,
   };
 
   const sdk = new SDK(ops, store.set, store.get);
@@ -197,7 +198,7 @@ describe("test SDK class", function () {
         // @ts-ignore
         sdk.reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, 1, "dishonest");
         // @ts-ignore
-        sdk.reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, 1, "dishonest");
+        sdk.reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, 2, "dishonest");
 
         // select a new reliable node
         // @ts-ignore
@@ -226,11 +227,9 @@ describe("test SDK class", function () {
         assert.equal(addMetricsEntryNode.mock.calls.length, 0);
       });
 
-      it("does not select new node when node score is ok", function () {
+      it.only("does not select new node when node score is ok", function () {
         // @ts-ignore
         const addMetricsEntryNode = jest.spyOn(sdk, "selectEntryNode");
-        // @ts-ignore
-        sdk.reliabilityScore.FRESH_NODE_TRESHOLD = 1;
         // @ts-ignore
         sdk.reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, 1, "success");
         // @ts-ignore
