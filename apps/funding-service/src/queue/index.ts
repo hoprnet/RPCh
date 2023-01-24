@@ -6,7 +6,8 @@ import {
   waitForTransaction,
 } from "../blockchain";
 import { QueryRequest, RequestService } from "../request";
-import { CustomError, smartContractAddresses, createLogger } from "../utils";
+import { CustomError, createLogger } from "../utils";
+import * as constants from "../constants";
 
 const log = createLogger(["queue"]);
 
@@ -48,8 +49,8 @@ export const checkFreshRequests = async (ops: {
       : ops.signer.connect(provider);
     let address = await connectedSigner.getAddress();
     const balance = await getBalance(
-      smartContractAddresses?.[
-        freshRequest.chain_id as keyof typeof smartContractAddresses
+      constants.SMART_CONTRACTS_PER_CHAIN?.[
+        freshRequest.chain_id as keyof typeof constants.SMART_CONTRACTS_PER_CHAIN
       ],
       address,
       provider
@@ -73,8 +74,8 @@ export const checkFreshRequests = async (ops: {
     // sent transaction to fund request
     const { hash: txHash } = await sendTransaction({
       smartContractAddress:
-        smartContractAddresses?.[
-          freshRequest.chain_id as keyof typeof smartContractAddresses
+        constants.SMART_CONTRACTS_PER_CHAIN?.[
+          freshRequest.chain_id as keyof typeof constants.SMART_CONTRACTS_PER_CHAIN
         ],
       from: connectedSigner,
       to: freshRequest?.node_address,
