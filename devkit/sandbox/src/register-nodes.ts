@@ -108,7 +108,8 @@ const main = async () => {
 
   for (const publicKey of publicKeys) {
     const nativeAddress = getAddressFromPublicKey(publicKey);
-    const hoprdApiEndpoint = process.env.HOPRD_API_ENDPOINT ?? "http://localhost";
+    const hoprdApiEndpoint =
+      process.env.HOPRD_API_ENDPOINT ?? "http://localhost";
     const hoprdApiPort = ++port;
     const peerId = await getPeerId(hoprdApiEndpoint + ":" + hoprdApiPort);
     await registerNode(
