@@ -91,7 +91,11 @@ export const v1Router = (ops: {
     log.verbose(`POST /request/entry-node`, req.body);
     const { client } = req.body;
     log.verbose("requesting entry node for client", client);
-    if (typeof client !== "string") throw Error("Client is not a string");
+    if (typeof client !== "string") {
+      return res
+        .status(404)
+        .json({ body: "Expected client to be in the body" });
+    }
 
     // check if client has enough quota
     const doesClientHaveQuotaResponse = await doesClientHaveQuota(
@@ -100,7 +104,7 @@ export const v1Router = (ops: {
       ops.baseQuota
     );
     if (!doesClientHaveQuotaResponse) {
-      return res.status(400).json({
+      return res.status(403).json({
         body: "Client does not have enough quota",
       });
     }
@@ -108,7 +112,7 @@ export const v1Router = (ops: {
     const selectedNode = await getEligibleNode(ops.db);
     log.verbose("selected entry node", selectedNode);
     if (!selectedNode) {
-      return res.json({ body: "Could not find eligible node" });
+      return res.status(404).json({ body: "Could not find eligible node" });
     }
 
     // calculate how much should be funded to entry node

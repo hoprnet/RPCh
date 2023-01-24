@@ -94,12 +94,7 @@ export default class SDK {
     peerId: string;
   }> {
     log.verbose("Selecting entry node");
-    const response: {
-      hoprd_api_endpoint: string;
-      hoprd_api_port: string;
-      accessToken: string;
-      id: string;
-    } = await fetch(
+    const rawResponse: globalThis.Response = await fetch(
       new URL(
         "/api/v1/request/entry-node",
         discoveryPlatformApiEndpoint
@@ -114,7 +109,19 @@ export default class SDK {
           client: "sandbox",
         }),
       }
-    ).then((res) => res.json());
+    );
+
+    const response: {
+      hoprd_api_endpoint: string;
+      hoprd_api_port: string;
+      accessToken: string;
+      id: string;
+    } = await rawResponse.json();
+
+    if (rawResponse.status !== 200) {
+      log.error(response);
+      throw new Error("No entry node available");
+    }
 
     const apiEndpointUrl = new URL(response.hoprd_api_endpoint);
     apiEndpointUrl.port = response.hoprd_api_port;
