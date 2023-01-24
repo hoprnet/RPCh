@@ -2,9 +2,10 @@ import express from "express";
 import { AccessTokenService } from "../access-token";
 import { getBalanceForAllChains, getProviders } from "../blockchain";
 import { RequestService } from "../request";
-import { createLogger, smartContractAddresses, validChainIds } from "../utils";
+import { createLogger } from "../utils";
 import { tokenIsValid } from "./middleware";
 import { body, validationResult, param } from "express-validator";
+import * as constants from "../constants";
 
 const app = express();
 const log = createLogger(["entry-server"]);
@@ -135,10 +136,15 @@ export const entryServer = (ops: {
     ),
     async (req, res) => {
       log.verbose(`GET /api/funds`);
-      log.verbose(["getting funds for chains", [...validChainIds.keys()]]);
-      const providers = await getProviders(Array.from(validChainIds.keys()));
+      log.verbose([
+        "getting funds for chains",
+        [...Object.keys(constants.CONNECTION_INFO)],
+      ]);
+      const providers = await getProviders(
+        [...Object.keys(constants.CONNECTION_INFO)].map(Number)
+      );
       const balances = await getBalanceForAllChains(
-        smartContractAddresses,
+        constants.SMART_CONTRACTS_PER_CHAIN,
         ops.walletAddress,
         providers
       );
