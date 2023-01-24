@@ -1,0 +1,36 @@
+name: build
+
+inputs:
+  dockerfile:
+    required: true
+  image:
+    required: true
+  registry:
+    required: true
+  user:
+    required: true
+  secret:
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout the repository
+      uses: actions/checkout@master
+    - name: Calculate temporary variables
+      shell: sh
+      run: echo "SHORT_SHA=`git rev-parse --short HEAD`" >> $GITHUB_ENV
+    - name: Build ${{ inputs.app }} container image
+      uses: aevea/action-kaniko@master
+      with:
+        path: .
+        build_file: ${{ inputs.dockerfile }}
+        image: ${{ inputs.image }}
+        registry: ${{ inputs.registry }}
+        username: ${{ inputs.user }}
+        password: ${{ inputs.secret }}
+        cache: true
+        #TODO - move to the GCR when ready
+        cache_registry: sitilge/kaniko-cache
+        tag: ${{ env.SHORT_SHA }}
+        tag_with_latest: true

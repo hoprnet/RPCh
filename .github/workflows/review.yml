@@ -28,7 +28,7 @@ jobs:
           fetch-depth: 2
 
       - name: Build
-        uses: ./.github/actions/build-rpch
+        uses: ./.github/templates/build-rpch
         env:
           TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
           TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
@@ -41,24 +41,6 @@ jobs:
 
       - name: Run tests and coverage
         run: yarn test --ci
-
-  review-dockerfiles:
-    name: Review dockerfiles
-    timeout-minutes: 10
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # TODO: dynamically get this list
-        apps: ["exit-node", "funding-service", "discovery-platform"]
-
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 2
-
-      - name: Build Dockerfile
-        run: docker build -f ./apps/${{ matrix.apps }}/Dockerfile .
 
   review-configuration:
     name: Review configuration
@@ -79,7 +61,6 @@ jobs:
   review-e2e-test-results:
     needs:
       - review-source-code
-      - review-dockerfiles
       - review-configuration
     name: Review E2E test results
     timeout-minutes: 60
@@ -96,7 +77,7 @@ jobs:
           fetch-depth: 2
 
       - name: Build
-        uses: ./.github/actions/build-rpch
+        uses: ./.github/templates/build-rpch
         env:
           TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
           TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
@@ -128,7 +109,7 @@ jobs:
   #         fetch-depth: 2
 
   #     - name: Build
-  #       uses: ./.github/actions/build-rpch
+  #       uses: ./.github/templates/build-rpch
   #       env:
   #         TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
   #         TURBO_TEAM: ${{ secrets.TURBO_TEAM }}

@@ -1,0 +1,23 @@
+name: discovery-platform
+
+#TODO - check if we can somehow get over GitHub limitation of only one 'on' per workflow
+on:
+  push:
+    paths:
+      - apps/discovery-platform/**
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      #We need this to be checked out here as well
+      - name: Checkout the repository
+        uses: actions/checkout@master
+      - name: Build container image
+        uses: "./.github/templates/build-container"
+        with:
+          dockerfile: "apps/discovery-platform/Dockerfile"
+          image: "sitilge/discovery-platform"
+          registry: "docker.io"
+          user: ${{ secrets.CONTAINER_REGISTRY_USER }}
+          secret: ${{ secrets.CONTAINER_REGISTRY_SECRET }}
