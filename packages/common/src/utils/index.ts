@@ -59,7 +59,7 @@ export const generatePseudoRandomId = (maximum: number) => {
 export const randomlySelectFromArray = <T>(arr: T[]): T => {
   if (!Array.isArray(arr) || !arr.length)
     throw new Error("Can not select randomly from array with no content");
-  return arr?.[Math.floor(Math.random() * arr.length)];
+  return arr[Math.floor(Math.random() * arr.length)];
 };
 
 /**
