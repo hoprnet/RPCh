@@ -13,7 +13,7 @@ DIR_SANDBOX=$(realpath $DIR/../../sandbox/src)
 source $DIR_SANDBOX/common.sh
 
 # If there's a fatal error or users Ctrl+C it will tear down setup
-trap 'stop' SIGINT SIGKILL SIGTERM ERR EXIT
+trap 'stop; exit 1' SIGINT SIGKILL SIGTERM ERR EXIT
 
 # start sandbox
 start
@@ -21,7 +21,7 @@ start
 # catch error if command fails
 set -Eeuo pipefail
 # Run tests with env variables
-npx jest --ci
+npx jest --ci || exit 1
 # stop catching
 set +Eeuo pipefail
 

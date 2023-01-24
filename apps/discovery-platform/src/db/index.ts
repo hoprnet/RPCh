@@ -2,6 +2,7 @@ import { CreateQuota, QueryQuota } from "../quota/dto";
 import type { QueryRegisteredNode } from "../registered-node/dto";
 import pgp from "pg-promise";
 import { createLogger } from "../utils";
+import { QueryFundingRequest } from "../funding-requests/dto";
 
 export type DBInstance = pgp.IDatabase<{}>;
 
@@ -18,6 +19,10 @@ const TABLES = {
   FUNDING_REQUESTS: "funding_requests",
   QUOTAS: "quotas",
 };
+
+/**
+ * Registered Nodes DB functions
+ */
 
 export const getRegisteredNodes = async (
   dbInstance: DBInstance
@@ -135,6 +140,10 @@ export const updateRegisteredNode = async (
   }
 };
 
+/**
+ * Quota DB functions
+ */
+
 export const createQuota = async (
   dbInstance: DBInstance,
   quota: CreateQuota
@@ -202,5 +211,26 @@ export const deleteQuota = async (
     id,
   };
   const dbRes: QueryQuota | null = await dbInstance.oneOrNone(text, values);
+  return dbRes;
+};
+
+/**
+ * Funding Requests DB functions
+ */
+export const createFundingRequest = async (
+  dbInstance: DBInstance,
+  fundingRequest: Omit<QueryFundingRequest, "created_at" | "updated_at" | "id">
+): Promise<QueryFundingRequest> => {
+  const text = `INSERT INTO ${TABLES.FUNDING_REQUESTS} (id, registered_node_id, request_id, amount)
+  VALUES (default, $<registered_node_id>, $<request_id>, $<amount>) RETURNING *`;
+
+  const values: Omit<QueryFundingRequest, "created_at" | "updated_at" | "id"> =
+    {
+      registered_node_id: fundingRequest.registered_node_id,
+      request_id: fundingRequest.request_id,
+      amount: fundingRequest.amount,
+    };
+
+  const dbRes: QueryFundingRequest = await dbInstance.one(text, values);
   return dbRes;
 };

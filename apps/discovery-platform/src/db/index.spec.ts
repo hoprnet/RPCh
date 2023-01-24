@@ -226,4 +226,17 @@ describe("test db functions", function () {
     const deletedQuota = await db.getQuota(dbInstance, createdQuota.id ?? 0);
     assert.equal(deletedQuota, undefined);
   });
+  it("should save funding request", async function () {
+    await db.saveRegisteredNode(dbInstance, createMockNode("peer1"));
+    const node = await db.getRegisteredNode(dbInstance, "peer1");
+    if (!node) throw new Error("Db could not save node");
+
+    const createdFundedRequest = await db.createFundingRequest(dbInstance, {
+      registered_node_id: node.id,
+      request_id: Math.floor(Math.random() * 1e6),
+      amount: "1",
+    });
+
+    assert.equal(createdFundedRequest.registered_node_id, node.id);
+  });
 });

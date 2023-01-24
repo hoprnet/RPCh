@@ -39,9 +39,10 @@ Checkout [Sandbox](https://github.com/Rpc-h/RPCh/tree/main/devkit/sandbox#sandbo
 | 01/2023 | RPCh Sandbox v2          | 🟢     |
 | 01/2023 | RPCh base infrastructure | 🟡     |
 | 01/2023 | RPCh Alpha               | 🟡     |
-| 01/2022 | NIRP gnosis              | 🟡     |
-| 01/2022 | CORE capability api      | 🟡     |
+| 01/2023 | NIRP gnosis              | 🟡     |
+| 01/2023 | CORE capability api      | 🟡     |
+| 01/2023 | CORE promiscuous strategy | 🟡     |
 | 02/2023 | RPCh Beta                | ⚪️    |
 | 02/2023 | RPCh discovery platform  | 🟡     |
-| 02/2022 | NIRP mainnet             | ⚪️    |
+| 02/2023 | NIRP mainnet             | ⚪️    |
 | 02/2023 | RPCh v1                  | ⚪️    |

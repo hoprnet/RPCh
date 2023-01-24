@@ -10,6 +10,7 @@ import { QueryRegisteredNode } from "../registered-node/dto";
 import { DBInstance } from "../db";
 import { getRegisteredNode, updateRegisteredNode } from "../registered-node";
 import { createLogger } from "../utils";
+import { createFundingRequest } from "../funding-requests";
 
 const log = createLogger(["funding-service-api"]);
 
@@ -123,7 +124,6 @@ export class FundingServiceApi {
         amount: String(amount),
         chainId: node.chain_id,
       };
-
       const res = await fetch(
         `${this.url}/api/request/funds/${dbNode.native_address}`,
         {
@@ -135,12 +135,20 @@ export class FundingServiceApi {
           body: JSON.stringify(body),
         }
       );
+
       let fundingResponseJson = await res.json();
       log.verbose("funding service response", fundingResponseJson);
       await updateRegisteredNode(this.db, { ...dbNode, status: "FUNDING" });
 
       const { id: requestId, amountLeft }: postFundingResponse =
         fundingResponseJson;
+
+      // save funding request in db
+      await createFundingRequest(this.db, {
+        registeredNodeId: dbNode.id,
+        requestId,
+        amount: String(amount),
+      });
 
       this.amountLeft = amountLeft;
       this.savePendingRequest(node.id, requestId, prevRetries ?? 0);

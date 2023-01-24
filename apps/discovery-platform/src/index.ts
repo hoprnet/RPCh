@@ -4,7 +4,7 @@ import { FundingServiceApi } from "./funding-service-api";
 import { createLogger } from "./utils";
 import pgp from "pg-promise";
 import fs from "fs";
-import { getFreshNodes, getRegisteredNodes } from "./registered-node";
+import { getRegisteredNodesWithFilters } from "./registered-node";
 import { checkCommitment } from "./graph-api";
 
 const log = createLogger();
@@ -95,7 +95,9 @@ const start = async (ops: {
   // check if fresh nodes have committed
   const checkCommitmentForFreshNodes = setInterval(async () => {
     log.normal("tracking commitment for fresh nodes");
-    const freshNodes = await getFreshNodes(ops.db);
+    const freshNodes = await getRegisteredNodesWithFilters(ops.db, {
+      status: "FRESH",
+    });
 
     for (const node of freshNodes ?? []) {
       log.verbose("checking commitment of fresh node", node);
