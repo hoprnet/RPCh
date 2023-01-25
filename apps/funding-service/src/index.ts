@@ -7,25 +7,9 @@ import { checkFreshRequests } from "./queue";
 import { RequestService } from "./request";
 import { createLogger } from "./utils";
 import fs from "fs";
+import * as constants from "./constants";
 
 const log = createLogger();
-
-const {
-  // Secret key used for access token generation
-  SECRET_KEY,
-  // Wallet private key that will be completing the requests
-  WALLET_PRIV_KEY,
-  // Postgres db connection url
-  DB_CONNECTION_URL,
-  // Port that server will listen for requests
-  PORT = 3010,
-  // Number of confirmations that will be required for a transaction to be accepted
-  CONFIRMATIONS = 1,
-  // Max amount of tokens a access token can request
-  MAX_AMOUNT_OF_TOKENS = 100,
-  // Amount of milliseconds that a access token is valid
-  TIMEOUT = 30 * 60_000,
-} = process.env;
 
 // boolean flag that stops queue from running
 // while it is still waiting for a transaction
@@ -61,8 +45,8 @@ const start = async (ops: {
     accessTokenService,
     requestService,
     walletAddress: wallet.address,
-    maxAmountOfTokens: Number(MAX_AMOUNT_OF_TOKENS),
-    timeout: Number(TIMEOUT),
+    maxAmountOfTokens: constants.MAX_AMOUNT_OF_TOKENS,
+    timeout: constants.TIMEOUT,
   });
   // start queue that fulfills requests
   setInterval(() => {
@@ -77,24 +61,24 @@ const start = async (ops: {
     }
   }, 30e3);
   // start listening at PORT for requests
-  app.listen(PORT, () => {
+  app.listen(constants.PORT, () => {
     log.normal("entry server is up");
   });
 };
 
 const main = () => {
-  if (!SECRET_KEY) {
+  if (!constants.SECRET_KEY) {
     throw Error("env variable 'SECRET_KEY' not found");
   }
-  if (!WALLET_PRIV_KEY) {
+  if (!constants.WALLET_PRIV_KEY) {
     throw Error("env variable 'WALLET_PRIV_KEY' not found");
   }
-  if (!DB_CONNECTION_URL) {
+  if (!constants.DB_CONNECTION_URL) {
     throw Error("env variable 'DB_CONNECTION_URL' not found");
   }
   // init db
   const pgInstance = pgp();
-  const connectionString: string = DB_CONNECTION_URL;
+  const connectionString: string = constants.DB_CONNECTION_URL!;
   // create table if the table does not exist
   const dbInstance = pgInstance({
     connectionString,
@@ -103,9 +87,9 @@ const main = () => {
   start({
     entryServer: api,
     db: dbInstance,
-    privateKey: WALLET_PRIV_KEY,
-    secretKey: SECRET_KEY,
-    confirmations: Number(CONFIRMATIONS),
+    privateKey: constants.WALLET_PRIV_KEY!,
+    secretKey: constants.SECRET_KEY!,
+    confirmations: constants.CONFIRMATIONS,
   });
 };
 

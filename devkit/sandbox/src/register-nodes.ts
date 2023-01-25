@@ -19,7 +19,7 @@ const {
   NODE_ENV = "development",
 } = process.env;
 
-const DP_API_ENDPOINT = "http://localhost:3020";
+const DP_API_ENDPOINT = process.env.DP_API_ENDPOINT ?? "http://localhost:3020";
 
 const debug = NODE_ENV === "production" ? () => {} : console.log;
 
@@ -75,7 +75,7 @@ const registerNode = async (
   exitNodePubKey: string,
   nativeAddress: string
 ): Promise<string> => {
-  const url = new URL("/api/node/register", DP_API_ENDPOINT);
+  const url = new URL("/api/v1/node/register", DP_API_ENDPOINT);
   const body = {
     hasExitNode: true,
     peerId,
@@ -108,7 +108,8 @@ const main = async () => {
 
   for (const publicKey of publicKeys) {
     const nativeAddress = getAddressFromPublicKey(publicKey);
-    const hoprdApiEndpoint = "http://localhost";
+    const hoprdApiEndpoint =
+      process.env.HOPRD_API_ENDPOINT ?? "http://localhost";
     const hoprdApiPort = ++port;
     const peerId = await getPeerId(hoprdApiEndpoint + ":" + hoprdApiPort);
     await registerNode(

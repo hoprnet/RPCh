@@ -7,6 +7,7 @@ import {
   Response,
   Segment,
   hoprd,
+  utils,
 } from "@rpch/common";
 import { utils as etherUtils } from "ethers";
 import fetch from "cross-fetch";
@@ -101,7 +102,7 @@ export default class SDK {
       id: string;
     } = await fetch(
       new URL(
-        "/api/request/entry-node",
+        "/api/v1/request/entry-node",
         discoveryPlatformApiEndpoint
       ).toString(),
       {
@@ -142,7 +143,7 @@ export default class SDK {
       id: string;
     }[] = await fetch(
       new URL(
-        "/api/node?hasExitNode=true",
+        "/api/v1/node?hasExitNode=true",
         discoveryPlatformApiEndpoint
       ).toString()
     ).then((res) => res.json());
@@ -156,8 +157,7 @@ export default class SDK {
 
     if (this.exitNodes.length === 0) throw Error("No exit nodes available");
 
-    this.exitNode =
-      this.exitNodes[Math.floor(Math.random() * this.exitNodes.length)];
+    this.exitNode = utils.randomlySelectFromArray(this.exitNodes);
     log.verbose("Selected exit node", this.exitNode);
     return this.exitNodes;
   }

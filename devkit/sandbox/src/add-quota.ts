@@ -8,7 +8,7 @@ import fetch from "node-fetch";
 /* eslint-disable turbo/no-undeclared-env-vars */
 const { NODE_ENV = "development" } = process.env;
 
-const DP_API_ENDPOINT = "http://localhost:3020";
+const DP_API_ENDPOINT = process.env.DP_API_ENDPOINT ?? "http://localhost:3020";
 const CLIENT = "sandbox";
 const QUOTA = 1000;
 
@@ -20,7 +20,7 @@ const headers = {
 };
 
 const addQuota = async (): Promise<string> => {
-  const url = new URL("/api/client/funds", DP_API_ENDPOINT);
+  const url = new URL("/api/v1/client/funds", DP_API_ENDPOINT);
   const body = {
     client: CLIENT,
     quota: QUOTA,

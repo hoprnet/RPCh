@@ -111,7 +111,7 @@ start() {
     echo "Found hoprTokenAddress: $hoprTokenAddress"
 
     echo "Starting 'central-docker-compose'"
-    SMART_CONTRACT_ADDRESS="$hoprTokenAddress" \
+    FORCE_SMART_CONTRACT_ADDRESS="$hoprTokenAddress" \
         docker compose -f $DIR/central-docker-compose.yml -p sandbox-central \
         up -d --remove-orphans --build --force-recreate
     echo "Done 'central-docker-compose'"

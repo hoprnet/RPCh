@@ -4,6 +4,7 @@ import * as db from "./";
 import { CreateQuota } from "../quota/dto";
 import { IBackup, IMemoryDb, newDb } from "pg-mem";
 import fs from "fs";
+import { utils } from "@rpch/common";
 
 export class MockPgInstanceSingleton {
   private static pgInstance: IMemoryDb;
@@ -46,7 +47,7 @@ const createMockNode = (
   hasExitNode?: boolean
 ): QueryRegisteredNode => ({
   chain_id: 100,
-  id: peerId ?? "peerId" + Math.floor(Math.random() * 100),
+  id: peerId ?? "peerId" + utils.generatePseudoRandomId(1e6),
   has_exit_node: hasExitNode ?? true,
   hoprd_api_endpoint: "someendpoint",
   native_address: "someaddress",
@@ -202,5 +203,18 @@ describe("test db functions", function () {
     await db.deleteQuota(dbInstance, createdQuota.id);
     const deletedQuota = await db.getQuota(dbInstance, createdQuota.id ?? 0);
     assert.equal(deletedQuota, undefined);
+  });
+  it("should save funding request", async function () {
+    await db.saveRegisteredNode(dbInstance, createMockNode("peer1"));
+    const node = await db.getRegisteredNode(dbInstance, "peer1");
+    if (!node) throw new Error("Db could not save node");
+
+    const createdFundedRequest = await db.createFundingRequest(dbInstance, {
+      registered_node_id: node.id,
+      request_id: Math.floor(Math.random() * 1e6),
+      amount: "1",
+    });
+
+    assert.equal(createdFundedRequest.registered_node_id, node.id);
   });
 });

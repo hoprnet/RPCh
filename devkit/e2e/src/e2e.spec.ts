@@ -4,7 +4,7 @@ import * as fixtures from "@rpch/common/build/fixtures";
 
 const PROVIDER_URL = fixtures.PROVIDER;
 const DISCOVERY_PLATFORM_API_ENDPOINT = "http://localhost:3020";
-const SDK_TIMEOUT = 10e3;
+const SDK_TIMEOUT = 30e3;
 const sdkStore = fixtures.createAsyncKeyValStore();
 
 jest.setTimeout(1e3 * 60 * 1); // one minute

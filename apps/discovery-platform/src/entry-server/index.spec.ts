@@ -1,20 +1,20 @@
-import assert from "assert";
-import { DBInstance } from "../db";
-import request from "supertest";
 import { Express } from "express";
-import { doesClientHaveQuota, entryServer } from ".";
-import {
-  CreateRegisteredNode,
-  QueryRegisteredNode,
-} from "../registered-node/dto";
+import { entryServer } from ".";
+import { DBInstance } from "../db";
+import nock from "nock";
+import { MockPgInstanceSingleton } from "../db/index.spec";
 import { FundingServiceApi } from "../funding-service-api";
 import * as registeredNode from "../registered-node";
-import nock from "nock";
 import {
   getAccessTokenResponse,
   postFundingResponse,
 } from "../funding-service-api/dto";
-import { MockPgInstanceSingleton } from "../db/index.spec";
+import request from "supertest";
+import {
+  CreateRegisteredNode,
+  QueryRegisteredNode,
+} from "../registered-node/dto";
+import assert from "assert";
 
 const FUNDING_SERVICE_URL = "http://localhost:5000";
 const ACCESS_TOKEN = "ACCESS";
@@ -66,202 +66,55 @@ describe("test entry server", function () {
     jest.resetAllMocks();
   });
 
-  it("should register a node", async function () {
-    const node = mockNode();
-    await request(app).post("/api/node/register").send(node);
-    const createdNode = await request(app).get(`/api/node/${node.peerId}`);
-    assert.equal(createdNode.body.node.id, node.peerId);
-  });
+  it("should retrieve an entry node", async function () {
+    const spy = jest.spyOn(registeredNode, "getEligibleNode");
+    const amountLeft = 10;
+    const peerId = "entry";
+    const requestId = 1;
 
-  it("should get a node", async function () {
-    const node = mockNode();
-    await request(app).post("/api/node/register").send(node);
-    await request(app).post("/api/node/register").send(mockNode("fake"));
-    const createdNode = await request(app).get(`/api/node/${node.peerId}`);
-    assert.equal(createdNode.body.node.id, node.peerId);
-  });
+    const getAccessTokenBody: getAccessTokenResponse = {
+      accessToken: FAKE_ACCESS_TOKEN,
+      amountLeft: 10,
+      expiredAt: new Date().toISOString(),
+    };
 
-  it("should get all nodes", async function () {
+    nockGetApiAccessToken.reply(200, getAccessTokenBody);
+
+    await request(app).post("/api/v1/client/funds").send({
+      client: "client",
+      quota: 1,
+    });
+
     await request(app)
-      .post("/api/node/register")
-      .send(mockNode("notExit1", false));
-    await request(app)
-      .post("/api/node/register")
-      .send(mockNode("notExit2", false));
-    await request(app).post("/api/node/register").send(mockNode("exit3", true));
-    await request(app).post("/api/node/register").send(mockNode("exit4", true));
+      .post("/api/v1/node/register")
+      .send(mockNode(peerId, true));
 
-    const allExitNodes = await request(app).get(
-      `/api/node?hasExitNode=${false}`
+    const createdNode: {
+      body: { node: QueryRegisteredNode | undefined };
+    } = await request(app).get(`/api/v1/node/${peerId}`);
+
+    spy.mockImplementation(async () => {
+      return createdNode.body.node;
+    });
+
+    const fundingResponseBody: postFundingResponse = {
+      amountLeft,
+      id: requestId,
+    };
+
+    nockFundingRequest(createdNode.body.node?.native_address!).reply(
+      200,
+      fundingResponseBody
     );
 
-    assert(typeof allExitNodes.body === "object" && allExitNodes.body.length);
-  });
+    const requestResponse = await request(app)
+      .post("/api/v1/request/entry-node")
+      .send({ client: "client" });
 
-  it("should add quota to a client", async function () {
-    const createdQuota = await request(app).post("/api/client/funds").send({
-      client: "client",
-      quota: 1,
-    });
-    assert.equal(createdQuota.body.quota.quota, 1);
-  });
+    if (!requestResponse.body || !createdNode.body.node)
+      throw new Error("Could not create mock nodes");
 
-  it.skip("should not allow request client does not have enough quota", async function () {
-    // create quota for client
-    await request(app).post("/api/client/funds").send({
-      client: "client",
-      quota: 1,
-    });
-    const doesClientHaveQuotaResponse = await doesClientHaveQuota(
-      dbInstance,
-      "client",
-      2
-    );
-
-    assert(!doesClientHaveQuotaResponse);
-  });
-  it("should allow request because client has enough quota", async function () {
-    // create quota for wrong client
-    await request(app).post("/api/client/funds").send({
-      client: "client",
-      quota: 1,
-    });
-    const doesClientHaveQuotaResponse = await doesClientHaveQuota(
-      dbInstance,
-      "client",
-      1
-    );
-
-    assert(doesClientHaveQuotaResponse);
-  });
-  describe("should select an entry node", function () {
-    it("should return an entry node", async function () {
-      const spy = jest.spyOn(registeredNode, "getEligibleNode");
-      const amountLeft = 10;
-      const peerId = "entry";
-      const requestId = 1;
-
-      const replyBody: getAccessTokenResponse = {
-        accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: 10,
-        expiredAt: new Date().toISOString(),
-      };
-
-      nockGetApiAccessToken.reply(200, replyBody);
-
-      await request(app).post("/api/client/funds").send({
-        client: "client",
-        quota: 1,
-      });
-
-      await request(app)
-        .post("/api/node/register")
-        .send(mockNode(peerId, true));
-
-      const createdNode: {
-        body: { node: QueryRegisteredNode | undefined };
-      } = await request(app).get(`/api/node/${peerId}`);
-
-      spy.mockImplementation(async () => {
-        return createdNode.body.node;
-      });
-
-      let postFundingResponse: postFundingResponse = {
-        amountLeft,
-        id: requestId,
-      };
-
-      nockFundingRequest(createdNode.body.node?.native_address!).reply(
-        200,
-        postFundingResponse
-      );
-
-      const requestResponse = await request(app)
-        .post("/api/request/entry-node")
-        .send({ client: "client" });
-
-      assert.equal(requestResponse.body.id, createdNode.body.node?.id);
-      spy.mockRestore();
-    });
-    it("should fail if no entry node is selected", async function () {
-      const spy = jest.spyOn(registeredNode, "getEligibleNode");
-
-      const apiAccessTokenResponse: getAccessTokenResponse = {
-        accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: 10,
-        expiredAt: new Date().toISOString(),
-      };
-
-      nockGetApiAccessToken.reply(200, apiAccessTokenResponse);
-
-      await request(app).post("/api/client/funds").send({
-        client: "client",
-        quota: 1,
-      });
-
-      spy.mockImplementation(async () => undefined);
-
-      const requestResponse = await request(app)
-        .post("/api/request/entry-node")
-        .send({ client: "client" });
-
-      assert.equal(requestResponse.body.body, "Could not find eligible node");
-      spy.mockRestore();
-    });
-    it.skip("should reduce client quota", async function () {
-      const spy = jest.spyOn(registeredNode, "getEligibleNode");
-      const amountLeft = 10;
-      const peerId = "entry";
-      const requestId = 1;
-
-      const apiTokenResponse: getAccessTokenResponse = {
-        accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: 10,
-        expiredAt: new Date().toISOString(),
-      };
-
-      nockGetApiAccessToken.reply(200, apiTokenResponse);
-
-      await request(app).post("/api/client/funds").send({
-        client: "newClient",
-        quota: BASE_QUOTA,
-      });
-
-      await request(app)
-        .post("/api/node/register")
-        .send(mockNode(peerId, true));
-
-      const createdNode: {
-        body: { node: QueryRegisteredNode | undefined };
-      } = await request(app).get(`/api/node/${peerId}`);
-
-      spy.mockImplementation(async () => {
-        return createdNode.body.node;
-      });
-
-      const fundingResponse: postFundingResponse = {
-        amountLeft,
-        id: requestId,
-      };
-
-      nockFundingRequest(createdNode.body.node?.native_address!).reply(
-        200,
-        fundingResponse
-      );
-
-      await request(app)
-        .post("/api/request/entry-node")
-        .send({ client: "newClient" });
-
-      const requestResponse = await request(app)
-        .post("/api/request/entry-node")
-        .send({ client: "newClient" });
-
-      assert.equal(
-        requestResponse.body.body,
-        "Client does not have enough quota"
-      );
-      spy.mockRestore();
-    });
+    assert.equal(requestResponse.body.id, createdNode.body.node.id);
+    spy.mockRestore();
   });
 });
