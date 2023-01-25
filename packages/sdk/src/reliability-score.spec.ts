@@ -116,8 +116,9 @@ describe("test reliability score class", () => {
     });
 
     it("should get all scores", () => {
+      const DISHONEST_PEER_ID = "16Uiu2peerId2";
       reliabilityScore.addMetric("16Uiu2peerId1", 1, "success");
-      reliabilityScore.addMetric("16Uiu2peerId2", 2, "dishonest");
+      reliabilityScore.addMetric(DISHONEST_PEER_ID, 2, "dishonest");
       reliabilityScore.addMetric("16Uiu2peerId3", 3, "failed");
 
       const scores = reliabilityScore.getScores();
@@ -128,8 +129,13 @@ describe("test reliability score class", () => {
         expect(typeof item.peerId).toBe("string");
         expect(typeof item.score).toBe("number");
 
-        // because all 3 are fresh nodes
-        expect(item.score).toBe(0.2);
+        if (item.peerId === DISHONEST_PEER_ID) {
+          // node is dishonest
+          expect(item.score).toBe(0);
+        } else {
+          // nodes are fresh
+          expect(item.score).toBe(0.2);
+        }
       }
     });
   });
