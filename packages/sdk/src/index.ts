@@ -293,13 +293,21 @@ export default class SDK {
       this.entryNode!.peerId
     );
     const exclusionList: string[] = [];
-    if (entryNodeScore < 0.7 && entryNodeScore !== 0.2) {
+    if (
+      entryNodeScore < 0.7 &&
+      this.reliabilityScore.getStatus(this.entryNode!.peerId) === "NON_FRESH"
+    ) {
       log.verbose("node is not reliable enough. selecting new entry node");
       exclusionList.push(this.entryNode!.peerId);
-      await this.selectEntryNode(
-        this.ops.discoveryPlatformApiEndpoint,
-        exclusionList
-      );
+      try {
+        await this.selectEntryNode(
+          this.ops.discoveryPlatformApiEndpoint,
+          exclusionList
+        );
+      } catch (error) {
+        log.error("Couldn't find elegible node: ", error);
+        // dead-end
+      }
       log.verbose("got new entry node");
     }
     return Request.createRequest(
