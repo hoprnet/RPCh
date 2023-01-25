@@ -192,7 +192,7 @@ describe("test SDK class", function () {
       assert(addMetricMock.mock.calls.at(0)?.includes("failed"));
     });
 
-    it("should not error out when no entry node is available", async function () {
+    it("should throw error when no entry node is available", async function () {
       DP_NOCK.once().reply(404, {
         body: "someError",
       });
@@ -200,7 +200,17 @@ describe("test SDK class", function () {
       await expect(
         // @ts-ignore
         sdk.selectEntryNode(DISCOVERY_PLATFORM_API_ENDPOINT)
-      ).rejects.toThrow("No entry node available");
+      ).rejects.toThrow();
+    });
+
+    it("should not allow sending requests if sdk is deadlocked", async function () {
+      sdk.setDeadlock(10e6);
+      const [clientRequest] = fixtures.generateMockedFlow(3);
+      try {
+        await sdk.sendRequest(clientRequest);
+      } catch (e: any) {
+        expect(e.message).toMatch("SDK is deadlocked");
+      }
     });
 
     describe("should handle requests correctly when receiving a response", function () {

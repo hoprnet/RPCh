@@ -60,6 +60,8 @@ export default class SDK {
   private exitNode?: ExitNode;
   // stopMessageListener
   private stopMessageListener?: () => void;
+  // an epoch timestamp that stops creating requests until that time has passed
+  public deadlockTimestamp: number | undefined;
 
   constructor(
     private readonly ops: HoprSdkOps,
@@ -118,9 +120,10 @@ export default class SDK {
       id: string;
     } = await rawResponse.json();
 
+    // Check for error response
     if (rawResponse.status !== 200) {
-      log.error(response);
-      throw new Error("No entry node available");
+      log.error("Failed to request entry node", rawResponse.status, response);
+      throw new Error(`Failed to request entry node`);
     }
 
     const apiEndpointUrl = new URL(response.hoprd_api_endpoint);
@@ -306,12 +309,33 @@ export default class SDK {
   }
 
   /**
+   * Checks if sdk should be in deadlock
+   * @returns boolean
+   */
+  private isDeadlocked(): boolean {
+    if (!this.deadlockTimestamp) return false;
+    const now = Date.now();
+    return now < this.deadlockTimestamp;
+  }
+
+  /**
+   * Sets deadlock timestamp
+   * @param timeInMs number
+   */
+  public setDeadlock(timeInMs: number): void {
+    const now = Date.now();
+    this.deadlockTimestamp = timeInMs + now;
+    log.verbose("new deadlock timestamp", this.deadlockTimestamp);
+  }
+
+  /**
    * Sends a Request through the RPCh network
    * @param req Request
    * @returns Promise<Response>
    */
   public sendRequest(req: Request): Promise<Response> {
     if (!this.isReady) throw Error("SDK not ready to send requests");
+    if (this.isDeadlocked()) throw Error("SDK is deadlocked");
 
     return new Promise((resolve, reject) => {
       const message = req.toMessage();

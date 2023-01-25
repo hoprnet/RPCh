@@ -93,7 +93,7 @@ export const v1Router = (ops: {
     log.verbose("requesting entry node for client", client);
     if (typeof client !== "string") {
       return res
-        .status(404)
+        .status(400)
         .json({ body: "Expected client to be in the body" });
     }
 
