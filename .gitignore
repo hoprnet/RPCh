@@ -13,7 +13,8 @@ logs
 # builds
 .next/
 out/
-build
+apps/**/build
+packages/**/build
 
 # misc
 .DS_Store

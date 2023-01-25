@@ -28,7 +28,11 @@ describe("test reliability score class", () => {
     result: Result
   ) => {
     for (let count = 1; count <= amount; count++) {
-      reliabilityScore.addMetric(peerId, utils.generateRandomNumber(), result);
+      reliabilityScore.addMetric(
+        peerId,
+        utils.generatePseudoRandomId(1e6),
+        result
+      );
     }
   };
   describe("metrics:", () => {
