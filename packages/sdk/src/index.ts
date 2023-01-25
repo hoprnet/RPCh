@@ -299,6 +299,7 @@ export default class SDK {
    */
   public async createRequest(provider: string, body: string): Promise<Request> {
     if (!this.isReady) throw Error("SDK not ready to create requests");
+    if (this.isDeadlocked()) throw Error("SDK is deadlocked");
     let entryNodeScore: number = this.reliabilityScore.getScore(
       this.entryNode!.peerId
     );
@@ -316,7 +317,8 @@ export default class SDK {
         );
       } catch (error) {
         log.error("Couldn't find elegible node: ", error);
-        // dead-end
+        // Set a deadlock of a min
+        this.setDeadlock(1e3 * 60 * 1); // 1 min
       }
       log.verbose("got new entry node");
     }
@@ -343,7 +345,7 @@ export default class SDK {
   }
 
   /**
-   * Sets deadlock timestamp
+   * Sets timestamp by adding time now and received parameter
    * @param timeInMs number
    */
   public setDeadlock(timeInMs: number): void {

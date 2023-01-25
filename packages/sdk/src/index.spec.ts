@@ -255,6 +255,15 @@ describe("test SDK class", function () {
       ).rejects.toThrow();
     });
 
+    it("should not allow creating a request if sdk is deadlocked", async function () {
+      sdk.setDeadlock(10e6);
+      try {
+        await sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE);
+      } catch (e: any) {
+        expect(e.message).toMatch("SDK is deadlocked");
+      }
+    });
+
     it("should not allow sending requests if sdk is deadlocked", async function () {
       sdk.setDeadlock(10e6);
       const [clientRequest] = fixtures.generateMockedFlow(3);
