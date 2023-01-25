@@ -2,6 +2,8 @@ import { createLogger } from "./utils";
 
 const log = createLogger(["reliability-score"]);
 
+const FRESH_NODE_SCORE: number = 0.2;
+
 /**
  * Possible `result` values.
  * @type success: we have received an honest and valid response.
@@ -142,7 +144,7 @@ export default class ReliabilityScore {
       const failed = this.metrics.get(peerId)!.stats.failed;
 
       if (sent < this.FRESH_NODE_THRESHOLD) {
-        this.score.set(peerId, 0.2);
+        this.score.set(peerId, FRESH_NODE_SCORE);
         log.normal(
           "node %s is a fresh node with 0.2 realiability score",
           peerId
@@ -160,7 +162,7 @@ export default class ReliabilityScore {
       }
       return this.score.get(peerId)!;
     } else {
-      return 0.2;
+      return FRESH_NODE_SCORE;
     }
   }
 

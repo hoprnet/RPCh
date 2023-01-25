@@ -287,19 +287,20 @@ export default class SDK {
    * @param body
    * @returns Request
    */
-  public createRequest(provider: string, body: string): Request {
+  public async createRequest(provider: string, body: string): Promise<Request> {
     if (!this.isReady) throw Error("SDK not ready to create requests");
     let entryNodeScore: number = this.reliabilityScore.getScore(
       this.entryNode!.peerId
     );
     const exclusionList: string[] = [];
-    while (entryNodeScore < 0.7 && entryNodeScore !== 0.2) {
+    if (entryNodeScore < 0.7 && entryNodeScore !== 0.2) {
+      log.verbose("node is not reliable enough. selecting new entry node");
       exclusionList.push(this.entryNode!.peerId);
-      this.selectEntryNode(
+      await this.selectEntryNode(
         this.ops.discoveryPlatformApiEndpoint,
         exclusionList
       );
-      entryNodeScore = this.reliabilityScore.getScore(this.entryNode!.peerId);
+      log.verbose("got new entry node");
     }
     return Request.createRequest(
       this.crypto!,

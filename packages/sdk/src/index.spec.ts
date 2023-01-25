@@ -82,9 +82,12 @@ describe("test SDK class", function () {
       sdk = createSdkMock().sdk;
     });
 
-    it("should fail to create request", function () {
-      assert.throws(() => {
-        return sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE);
+    it("should fail to create request", async function () {
+      assert.throws(async () => {
+        return await sdk.createRequest(
+          fixtures.PROVIDER,
+          fixtures.RPC_REQ_LARGE
+        );
       }, "not ready");
     });
 
@@ -112,8 +115,8 @@ describe("test SDK class", function () {
       await sdk.stop();
     });
 
-    it("should create request", function () {
-      const request = sdk.createRequest(
+    it("should create request", async function () {
+      const request = await sdk.createRequest(
         fixtures.PROVIDER,
         fixtures.RPC_REQ_LARGE
       );
@@ -193,7 +196,7 @@ describe("test SDK class", function () {
     });
 
     describe("Should select reliable node", function () {
-      it("selects new node when selected node is dishonest", function () {
+      it("selects new node when selected node is dishonest", async function () {
         // Make original selected node have a low score
         // @ts-ignore
         sdk.reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, 1, "dishonest");
@@ -210,7 +213,7 @@ describe("test SDK class", function () {
             peerId: "reliablePeerId",
           };
         });
-        const request = sdk.createRequest(
+        const request = await sdk.createRequest(
           fixtures.PROVIDER,
           fixtures.RPC_REQ_LARGE
         );
@@ -220,14 +223,14 @@ describe("test SDK class", function () {
         assert.equal(request.entryNodeDestination, "reliablePeerId");
       });
 
-      it("does not select new node when node is fresh", function () {
+      it("does not select new node when node is fresh", async function () {
         // @ts-ignore
         const addMetricsEntryNode = jest.spyOn(sdk, "selectEntryNode");
-        sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE);
+        await sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE);
         assert.equal(addMetricsEntryNode.mock.calls.length, 0);
       });
 
-      it.only("does not select new node when node score is ok", function () {
+      it.only("does not select new node when node score is ok", async function () {
         // @ts-ignore
         const addMetricsEntryNode = jest.spyOn(sdk, "selectEntryNode");
         // @ts-ignore
@@ -235,7 +238,7 @@ describe("test SDK class", function () {
         // @ts-ignore
         sdk.reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, 1, "success");
 
-        sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE);
+        await sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE);
         assert.equal(addMetricsEntryNode.mock.calls.length, 0);
       });
     });
