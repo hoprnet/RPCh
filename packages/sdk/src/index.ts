@@ -48,7 +48,7 @@ export type ExitNode = {
  */
 export default class SDK {
   private crypto?: typeof RPChCryptoNode | typeof RPChCryptoWeb;
-  // single inverval for the SDK for things that need to be checked.
+  // single interval for the SDK for things that need to be checked.
   private interval?: NodeJS.Timer;
   private segmentCache: SegmentCache;
   private requestCache: RequestCache;
