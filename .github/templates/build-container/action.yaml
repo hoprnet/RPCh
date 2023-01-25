@@ -15,11 +15,10 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Checkout the repository
-      uses: actions/checkout@master
     - name: Calculate temporary variables
       shell: sh
       run: echo "SHORT_SHA=`git rev-parse --short HEAD`" >> $GITHUB_ENV
+
     - name: Build ${{ inputs.app }} container image
       uses: aevea/action-kaniko@master
       with:
