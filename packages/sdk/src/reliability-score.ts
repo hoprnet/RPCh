@@ -2,6 +2,8 @@ import { createLogger } from "./utils";
 
 const log = createLogger(["reliability-score"]);
 
+const FRESH_NODE_SCORE: number = 0.2;
+
 /**
  * Possible `result` values.
  * @type success: we have received an honest and valid response.
@@ -141,16 +143,16 @@ export default class ReliabilityScore {
       const dishonest = this.metrics.get(peerId)!.stats.dishonest;
       const failed = this.metrics.get(peerId)!.stats.failed;
 
-      if (sent < this.FRESH_NODE_THRESHOLD) {
-        this.score.set(peerId, 0.2);
-        log.normal(
-          "node %s is a fresh node with 0.2 realiability score",
-          peerId
-        );
-      } else if (dishonest > 0) {
+      if (dishonest > 0) {
         this.score.set(peerId, 0);
         log.normal(
           "node %s is a dishonest node with 0 reliability score",
+          peerId
+        );
+      } else if (sent < this.FRESH_NODE_THRESHOLD) {
+        this.score.set(peerId, FRESH_NODE_SCORE);
+        log.normal(
+          "node %s is a fresh node with 0.2 realiability score",
           peerId
         );
       } else {
@@ -158,9 +160,9 @@ export default class ReliabilityScore {
         this.score.set(peerId, score);
         log.normal("node %s has a %s realiability score", peerId, score);
       }
-      return this.score.get(peerId) || 0;
+      return this.score.get(peerId)!;
     } else {
-      return 0;
+      return FRESH_NODE_SCORE;
     }
   }
 
@@ -174,5 +176,14 @@ export default class ReliabilityScore {
       const score = this.getScore(peerId);
       return { peerId, score };
     });
+  }
+
+  public getStatus(peerId: string): "FRESH" | "NON_FRESH" {
+    const sent = this.metrics.get(peerId)?.sent || 0;
+    if (sent < this.FRESH_NODE_THRESHOLD) {
+      return "FRESH";
+    } else {
+      return "NON_FRESH";
+    }
   }
 }

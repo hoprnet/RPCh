@@ -11,7 +11,7 @@ import {
 } from "@rpch/common";
 import { utils as etherUtils } from "ethers";
 import fetch from "cross-fetch";
-import ReliabilityScore from "./reliability-score";
+import ReliabilityScore, { Stats } from "./reliability-score";
 import RequestCache from "./request-cache";
 import { createLogger } from "./utils";
 
@@ -49,7 +49,7 @@ export type ExitNode = {
  */
 export default class SDK {
   private crypto?: typeof RPChCryptoNode | typeof RPChCryptoWeb;
-  // single inverval for the SDK for things that need to be checked.
+  // single interval for the SDK for things that need to be checked.
   private interval?: NodeJS.Timer;
   private segmentCache: SegmentCache;
   private requestCache: RequestCache;
@@ -61,6 +61,8 @@ export default class SDK {
   private exitNode?: ExitNode;
   // stopMessageListener
   private stopMessageListener?: () => void;
+  // an epoch timestamp that stops creating requests until that time has passed
+  public deadlockTimestamp: number | undefined;
 
   constructor(
     private readonly ops: HoprSdkOps,
@@ -89,18 +91,16 @@ export default class SDK {
    * @param discoveryPlatformApiEndpoint
    * @return entry node details
    */
-  private async selectEntryNode(discoveryPlatformApiEndpoint: string): Promise<{
+  private async selectEntryNode(
+    discoveryPlatformApiEndpoint: string,
+    exclusionList?: string[]
+  ): Promise<{
     apiEndpoint: string;
     apiToken: string;
     peerId: string;
   }> {
     log.verbose("Selecting entry node");
-    const response: {
-      hoprd_api_endpoint: string;
-      hoprd_api_port: string;
-      accessToken: string;
-      id: string;
-    } = await fetch(
+    const rawResponse: globalThis.Response = await fetch(
       new URL(
         "/api/v1/request/entry-node",
         discoveryPlatformApiEndpoint
@@ -113,9 +113,23 @@ export default class SDK {
         },
         body: JSON.stringify({
           client: "sandbox",
+          exclusionList,
         }),
       }
-    ).then((res) => res.json());
+    );
+
+    const response: {
+      hoprd_api_endpoint: string;
+      hoprd_api_port: string;
+      accessToken: string;
+      id: string;
+    } = await rawResponse.json();
+
+    // Check for error response
+    if (rawResponse.status !== 200) {
+      log.error("Failed to request entry node", rawResponse.status, response);
+      throw new Error(`Failed to request entry node`);
+    }
 
     const apiEndpointUrl = new URL(response.hoprd_api_endpoint);
     apiEndpointUrl.port = response.hoprd_api_port;
@@ -279,13 +293,35 @@ export default class SDK {
 
   /**
    * Creates a Request instance that can be sent through the RPCh network
-   * @param origin
    * @param provider
    * @param body
    * @returns Request
    */
-  public createRequest(provider: string, body: string): Request {
+  public async createRequest(provider: string, body: string): Promise<Request> {
     if (!this.isReady) throw Error("SDK not ready to create requests");
+    if (this.isDeadlocked()) throw Error("SDK is deadlocked");
+    let entryNodeScore: number = this.reliabilityScore.getScore(
+      this.entryNode!.peerId
+    );
+    const exclusionList: string[] = [];
+    if (
+      entryNodeScore < 0.7 &&
+      this.reliabilityScore.getStatus(this.entryNode!.peerId) === "NON_FRESH"
+    ) {
+      log.verbose("node is not reliable enough. selecting new entry node");
+      exclusionList.push(this.entryNode!.peerId);
+      try {
+        await this.selectEntryNode(
+          this.ops.discoveryPlatformApiEndpoint,
+          exclusionList
+        );
+      } catch (error) {
+        log.error("Couldn't find elegible node: ", error);
+        // Set a deadlock of a min
+        this.setDeadlock(1e3 * 60 * 1); // 1 min
+      }
+      log.verbose("got new entry node");
+    }
     return Request.createRequest(
       this.crypto!,
       provider,
@@ -299,12 +335,33 @@ export default class SDK {
   }
 
   /**
+   * Checks if sdk should be in deadlock
+   * @returns boolean
+   */
+  private isDeadlocked(): boolean {
+    if (!this.deadlockTimestamp) return false;
+    const now = Date.now();
+    return now < this.deadlockTimestamp;
+  }
+
+  /**
+   * Sets timestamp by adding time now and received parameter
+   * @param timeInMs number
+   */
+  public setDeadlock(timeInMs: number): void {
+    const now = Date.now();
+    this.deadlockTimestamp = timeInMs + now;
+    log.verbose("new deadlock timestamp", this.deadlockTimestamp);
+  }
+
+  /**
    * Sends a Request through the RPCh network
    * @param req Request
    * @returns Promise<Response>
    */
   public sendRequest(req: Request): Promise<Response> {
     if (!this.isReady) throw Error("SDK not ready to send requests");
+    if (this.isDeadlocked()) throw Error("SDK is deadlocked");
 
     return new Promise((resolve, reject) => {
       const message = req.toMessage();

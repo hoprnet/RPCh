@@ -6,17 +6,6 @@ import { utils } from "@rpch/common";
 const log = createLogger(["registered-node"]);
 
 /**
- * Get all registered nodes
- * @param dbInstance DBinstance
- * @returns QueryRegisteredNode[]
- */
-export const getRegisteredNodes = async (
-  dbInstance: db.DBInstance
-): Promise<QueryRegisteredNode[]> => {
-  return await db.getRegisteredNodes(dbInstance);
-};
-
-/**
  * Saves a registered node in DB
  * @param dbInstance DBinstance
  * @param node CreateRegisteredNode
@@ -71,61 +60,25 @@ export const updateRegisteredNode = async (
 };
 
 /**
- * Get all registered nodes that are also exit nodes
- * @param dbInstance DBinstance
- * @returns QueryRegisteredNode[]
- */
-export const getExitNodes = async (dbInstance: db.DBInstance) => {
-  return await db.getExitNodes(dbInstance);
-};
-
-/**
- * Get all registered nodes that are not exit nodes
- * @param dbInstance DBinstance
- * @returns QueryRegisteredNode[]
- */
-export const getNonExitNodes = async (dbInstance: db.DBInstance) => {
-  return await db.getNonExitNodes(dbInstance);
-};
-
-/**
  * get node that will be used for that request
  * @param dbInstance DBinstance
+ * @param filters possible ways to filter registered nodes
  * @returns access token hash
  */
 export const getEligibleNode = async (
-  dbInstance: db.DBInstance
+  dbInstance: db.DBInstance,
+  filters?: db.RegisteredNodeFilters
 ): Promise<QueryRegisteredNode | undefined> => {
-  const readyNodes = await getReadyNodes(dbInstance);
-  if (!readyNodes || !readyNodes.length)
-    throw new Error("Can not get ready nodes");
+  const readyNodes = await getRegisteredNodes(dbInstance, {
+    ...filters,
+    status: "READY",
+  });
   // choose selected entry node
   const selectedNode = utils.randomlySelectFromArray(readyNodes);
   // TODO: get access token of selected node
   return selectedNode;
 };
 
-/**
- * Get registered nodes with status READY
- * @param dbInstance
- * @returns QueryRegisteredNode[] | null
- */
-export const getReadyNodes = async (
-  dbInstance: db.DBInstance
-): Promise<QueryRegisteredNode[] | null> => {
-  return db.getNodesByStatus(dbInstance, "READY");
-};
-
-/**
- * Get registered nodes with status FRESH
- * @param dbInstance
- * @returns QueryRegisteredNode[] | null
- */
-export const getFreshNodes = async (
-  dbInstance: db.DBInstance
-): Promise<QueryRegisteredNode[] | null> => {
-  return db.getNodesByStatus(dbInstance, "FRESH");
-};
 /**
  * Calculate the reward that a given node should receive
  * @param baseQuota how much quota did the node allow
@@ -140,4 +93,17 @@ export const getRewardForNode = (
   const extra = node.has_exit_node ? baseExtra * 2 : baseExtra;
   const reward = baseQuota + extra;
   return reward;
+};
+
+/**
+ * Get all registered nodes with an optional set of filters
+ * @param dbInstance DBinstance
+ * @param filters possible ways to filter registered nodes
+ * @returns QueryRegisteredNode[]
+ */
+export const getRegisteredNodes = async (
+  dbInstance: db.DBInstance,
+  filters?: db.RegisteredNodeFilters
+): Promise<QueryRegisteredNode[]> => {
+  return await db.getRegisteredNodes(dbInstance, filters);
 };

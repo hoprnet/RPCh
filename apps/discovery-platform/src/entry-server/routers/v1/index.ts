@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request } from "express";
 import { DBInstance } from "../../../db";
 import { FundingServiceApi } from "../../../funding-service-api";
 import { createQuota, getAllQuotasByClient, sumQuotas } from "../../../quota";
@@ -6,8 +6,7 @@ import { CreateQuota } from "../../../quota/dto";
 import {
   createRegisteredNode,
   getEligibleNode,
-  getExitNodes,
-  getNonExitNodes,
+  getRegisteredNodes,
   getRegisteredNode,
   getRewardForNode,
 } from "../../../registered-node";
@@ -46,20 +45,22 @@ export const v1Router = (ops: {
     return res.json({ body: registered });
   });
 
-  router.get("/node", async (req, res) => {
-    log.verbose("GET /node", req.body);
+  router.get(
+    "/node",
+    async (
+      req: Request<{}, {}, {}, { excludeList?: string; hasExitNode?: string }>,
+      res
+    ) => {
+      log.verbose("GET /node", req.query);
 
-    const { hasExitNode } = req.query;
-    if (hasExitNode === "true") {
-      log.verbose("GET /node", req.body);
-
-      const nodes = await getExitNodes(ops.db);
-      return res.json(nodes);
-    } else {
-      const nodes = await getNonExitNodes(ops.db);
+      const { hasExitNode, excludeList } = req.query;
+      const nodes = await getRegisteredNodes(ops.db, {
+        excludeList: excludeList?.split(", "),
+        hasExitNode: hasExitNode === "true",
+      });
       return res.json(nodes);
     }
-  });
+  );
 
   router.get("/node/:peerId", async (req, res) => {
     const { peerId }: { peerId: string } = req.params;
@@ -89,9 +90,14 @@ export const v1Router = (ops: {
 
   router.post("/request/entry-node", async (req, res) => {
     log.verbose(`POST /request/entry-node`, req.body);
-    const { client } = req.body;
+    const { client, excludeList } = req.body;
+
     log.verbose("requesting entry node for client", client);
-    if (typeof client !== "string") throw Error("Client is not a string");
+    if (typeof client !== "string") {
+      return res
+        .status(400)
+        .json({ body: "Expected client to be in the body" });
+    }
 
     // check if client has enough quota
     const doesClientHaveQuotaResponse = await doesClientHaveQuota(
@@ -100,15 +106,15 @@ export const v1Router = (ops: {
       ops.baseQuota
     );
     if (!doesClientHaveQuotaResponse) {
-      return res.status(400).json({
+      return res.status(403).json({
         body: "Client does not have enough quota",
       });
     }
     // choose selected entry node
-    const selectedNode = await getEligibleNode(ops.db);
+    const selectedNode = await getEligibleNode(ops.db, { excludeList });
     log.verbose("selected entry node", selectedNode);
     if (!selectedNode) {
-      return res.json({ body: "Could not find eligible node" });
+      return res.status(404).json({ body: "Could not find eligible node" });
     }
 
     // calculate how much should be funded to entry node
