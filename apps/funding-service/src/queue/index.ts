@@ -114,7 +114,6 @@ export const checkFreshRequests = async (ops: {
       id: freshRequest.id,
     });
   } catch (e: any) {
-    log.error("Could not fulfill request", e);
     if (freshRequest) {
       // check if request was rejected
       if (e instanceof CustomError) {
@@ -147,6 +146,8 @@ export const checkFreshRequests = async (ops: {
           id: freshRequest.id,
         });
       }
+    } else {
+      log.error("Could not fulfill request", e);
     }
   } finally {
     ops.changeState(false);
