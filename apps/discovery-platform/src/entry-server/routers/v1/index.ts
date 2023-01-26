@@ -248,11 +248,6 @@ export const v1Router = (ops: {
           return res.status(400).json({ errors: errors.array() });
         }
         const { client, excludeList } = req.body;
-        if (typeof client !== "string") {
-          return res
-            .status(400)
-            .json({ body: "Expected client to be in the body" });
-        }
 
         // check if client has enough quota
         const doesClientHaveQuotaResponse = await doesClientHaveQuota(
