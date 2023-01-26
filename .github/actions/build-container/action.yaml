@@ -33,4 +33,5 @@ runs:
         #TODO - move to the GCR when ready
         cache_registry: sitilge/kaniko-cache
         tag: ${{ env.SHORT_SHA }}
-        tag_with_latest: true
+        tag_with_latest: false
+        skip_unchanged_digest: true
