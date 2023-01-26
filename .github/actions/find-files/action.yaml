@@ -1,0 +1,19 @@
+name: "Find files"
+description: "Searches the monorepo and returns a JSON list of the location of the files"
+
+inputs:
+  file:
+    description: "File to search for"
+    required: true
+outputs:
+  results:
+    description: "JSON list of files found"
+    value: ${{ steps.find-files.outputs.list }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: find-files
+      id: find-files
+      shell: sh
+      run: echo "list=$(find . -name '${{ inputs.file }}' -not -path '*/node_modules/*')"

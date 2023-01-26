@@ -1,4 +1,5 @@
-name: build
+name: "Build container"
+description: "Build a container"
 
 inputs:
   dockerfile:
@@ -15,7 +16,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Calculate temporary variables
+    - name: Calculate SHORT_SHA
       shell: sh
       run: echo "SHORT_SHA=`git rev-parse --short HEAD`" >> $GITHUB_ENV
 
