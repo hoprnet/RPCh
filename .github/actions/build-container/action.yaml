@@ -34,4 +34,4 @@ runs:
         cache_registry: sitilge/kaniko-cache
         tag: ${{ env.SHORT_SHA }}
         tag_with_latest: false
-        skip_unchanged_digest: true
+        skip_unchanged_digest: false
