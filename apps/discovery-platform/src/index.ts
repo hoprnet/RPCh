@@ -76,7 +76,7 @@ const start = async (ops: {
       log.normal("tracking pending requests");
       await fundingServiceApi.checkForPendingRequests();
     } catch (e) {
-      log.error("Failed to track pending requests", JSON.stringify(e));
+      log.error("Failed to track pending requests", e);
     }
   }, 1000);
 
@@ -104,10 +104,7 @@ const start = async (ops: {
         }
       }
     } catch (e) {
-      log.error(
-        "Failed to check commitment for fresh nodes",
-        JSON.stringify(e)
-      );
+      log.error("Failed to check commitment for fresh nodes", e);
     }
   }, 1000);
 

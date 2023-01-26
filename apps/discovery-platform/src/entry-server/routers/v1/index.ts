@@ -143,7 +143,7 @@ export const v1Router = (ops: {
         const registered = await createRegisteredNode(ops.db, node);
         return res.json({ body: registered });
       } catch (e) {
-        log.error("Can not register node", JSON.stringify(e));
+        log.error("Can not register node", e);
         return res.status(500).json({ body: "Unexpected error" });
       }
     }
@@ -169,7 +169,7 @@ export const v1Router = (ops: {
         });
         return res.json(nodes);
       } catch (e) {
-        log.error("Can not get nodes", JSON.stringify(e));
+        log.error("Can not get nodes", e);
         return res.status(500).json({ body: "Unexpected error" });
       }
     }
@@ -189,7 +189,7 @@ export const v1Router = (ops: {
         const node = await getRegisteredNode(ops.db, peerId);
         return res.json({ node });
       } catch (e) {
-        log.error("Can not get node with id", JSON.stringify(e));
+        log.error("Can not get node with id", e);
         return res.status(500).json({ body: "Unexpected error" });
       }
     }
@@ -201,10 +201,7 @@ export const v1Router = (ops: {
       const funds = await ops.fundingServiceApi.getAvailableFunds();
       return res.json({ body: funds });
     } catch (e) {
-      log.error(
-        "Can not retrieve funds from funding service",
-        JSON.stringify(e)
-      );
+      log.error("Can not retrieve funds from funding service", e);
       return res.status(500).json({ body: "Unexpected error" });
     }
   });
@@ -228,7 +225,7 @@ export const v1Router = (ops: {
         });
         return res.json({ quota: createdQuota });
       } catch (e) {
-        log.error("Can not create funds", JSON.stringify(e));
+        log.error("Can not create funds", e);
         return res.status(500).json({ body: "Unexpected error" });
       }
     }
@@ -284,7 +281,7 @@ export const v1Router = (ops: {
         });
         return res.json({ ...selectedNode, accessToken: ops.accessToken });
       } catch (e) {
-        log.error("Can not retrieve entry node", JSON.stringify(e));
+        log.error("Can not retrieve entry node", e);
         return res.status(500).json({ body: "Unexpected error" });
       }
     }

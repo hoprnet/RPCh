@@ -147,7 +147,11 @@ export const checkFreshRequests = async (ops: {
         });
       }
     } else {
-      log.error("Could not fulfill request", e);
+      if (e instanceof CustomError) {
+        log.error("Could not fulfill pending request", e.message);
+      } else {
+        log.error("Unexpected error trying to fulfill pending request", e);
+      }
     }
   } finally {
     ops.changeState(false);

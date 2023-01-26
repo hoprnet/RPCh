@@ -42,7 +42,7 @@ export const entryServer = (ops: {
         amountLeft: ops.maxAmountOfTokens,
       });
     } catch (e) {
-      log.error("Can not create access token", JSON.stringify(e));
+      log.error("Can not create access token", e);
       return res.status(500).json({ body: "Unexpected error" });
     }
   });
@@ -96,7 +96,7 @@ export const entryServer = (ops: {
           amountLeft: ops.maxAmountOfTokens - amountUsed[chainId],
         });
       } catch (e) {
-        log.error("Can not request funding", JSON.stringify(e));
+        log.error("Can not request funding", e);
         return res.status(500).json({ body: "Unexpected error" });
       }
     }
@@ -115,7 +115,7 @@ export const entryServer = (ops: {
         const requests = await ops.requestService.getRequests();
         return res.status(200).json(requests);
       } catch (e) {
-        log.error("Can not get status for requests", JSON.stringify(e));
+        log.error("Can not get status for requests", e);
         return res.status(500).json({ body: "Unexpected error" });
       }
     }
@@ -141,7 +141,7 @@ export const entryServer = (ops: {
         const request = await ops.requestService.getRequest(requestId);
         return res.status(200).json(request);
       } catch (e) {
-        log.error("Can not get status for a single request", JSON.stringify(e));
+        log.error("Can not get status for a single request", e);
         return res.status(500).json({ body: "Unexpected error" });
       }
     }
@@ -186,7 +186,7 @@ export const entryServer = (ops: {
           frozen: frozenBalances,
         });
       } catch (e) {
-        log.error("Can not get status for a single request", JSON.stringify(e));
+        log.error("Can not get status for a single request", e);
         return res.status(500).json({ body: "Unexpected error" });
       }
     }
