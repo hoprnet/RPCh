@@ -152,13 +152,13 @@ export default class ReliabilityScore {
       } else if (sent < this.FRESH_NODE_THRESHOLD) {
         this.score.set(peerId, FRESH_NODE_SCORE);
         log.normal(
-          "node %s is a fresh node with 0.2 realiability score",
+          "node %s is a fresh node with 0.2 reliability score",
           peerId
         );
       } else {
         const score = (sent - failed) / sent;
         this.score.set(peerId, score);
-        log.normal("node %s has a %s realiability score", peerId, score);
+        log.normal("node %s has a %s reliability score", peerId, score);
       }
       return this.score.get(peerId)!;
     } else {
