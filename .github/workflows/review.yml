@@ -49,9 +49,20 @@ jobs:
     strategy:
       matrix:
         # TODO: dynamically get this list
-        workspace: ["apps", "devkit"]
-        projects:
-          ["exit-node", "funding-service", "discovery-platform", "sandbox"]
+        project:
+          - exit-node
+          - funding-service
+          - discovery-platform
+          - sandbox
+        include:
+          - project: exit-node
+            directory: apps
+          - project: funding-service
+            directory: apps
+          - project: discovery-platform
+            directory: apps
+          - project: sandbox
+            directory: devkit
 
     steps:
       - name: Check out code
@@ -60,11 +71,10 @@ jobs:
           fetch-depth: 2
 
       - name: Build container image
-        if: hashFiles(./${{ matrix.workspace }}/${{ matrix.projects }}/Dockerfile) !== ""
         uses: "./.github/actions/build-container"
         with:
-          dockerfile: "./${{ matrix.workspace }}/${{ matrix.projects }}/Dockerfile"
-          image: "sitilge/${{ matrix.projects }}"
+          dockerfile: "./${{ matrix.directory }}/${{ matrix.project }}/Dockerfile"
+          image: "sitilge/${{ matrix.project }}"
           registry: "docker.io"
           user: ${{ secrets.CONTAINER_REGISTRY_USER }}
           secret: ${{ secrets.CONTAINER_REGISTRY_SECRET }}
