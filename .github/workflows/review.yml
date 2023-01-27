@@ -24,8 +24,6 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 2
 
       - name: Build
         uses: ./.github/actions/build-rpch
@@ -42,6 +40,42 @@ jobs:
       - name: Run tests and coverage
         run: yarn test --ci
 
+  review-dockerfiles:
+    name: Review dockerfiles
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # TODO: dynamically get this list
+        project:
+          - exit-node
+          - funding-service
+          - discovery-platform
+          - sandbox
+        include:
+          - project: exit-node
+            directory: apps
+          - project: funding-service
+            directory: apps
+          - project: discovery-platform
+            directory: apps
+          - project: sandbox
+            directory: devkit
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Build container image
+        uses: "./.github/actions/build-container"
+        with:
+          dockerfile: "./${{ matrix.directory }}/${{ matrix.project }}/Dockerfile"
+          image: "sitilge/${{ matrix.project }}"
+          registry: "docker.io"
+          user: ${{ secrets.CONTAINER_REGISTRY_USER }}
+          secret: ${{ secrets.CONTAINER_REGISTRY_SECRET }}
+          tag_with_latest: ${{ startsWith(github.ref, 'main') }}
+
   review-configuration:
     name: Review configuration
     timeout-minutes: 10
@@ -50,17 +84,17 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 2
 
       - name: Review licenses
         run: >
           find . -name 'package.json' -not -path "*/node_modules/*" \
             -exec jq --arg license 'LGPL-3.0' -r '.license == $license' {} +\
             | grep "false" && exit 1 || echo success
+
   review-e2e-test-results:
     needs:
       - review-source-code
+      - review-dockerfiles
       - review-configuration
     name: Review E2E test results
     timeout-minutes: 60
@@ -73,8 +107,6 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 2
 
       - name: Build
         uses: ./.github/actions/build-rpch
@@ -105,8 +137,6 @@ jobs:
   #   steps:
   #     - name: Check out code
   #       uses: actions/checkout@v3
-  #       with:
-  #         fetch-depth: 2
 
   #     - name: Build
   #       uses: ./.github/actions/build-rpch
