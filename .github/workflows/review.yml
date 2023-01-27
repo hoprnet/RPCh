@@ -78,7 +78,7 @@ jobs:
           registry: "docker.io"
           user: ${{ secrets.CONTAINER_REGISTRY_USER }}
           secret: ${{ secrets.CONTAINER_REGISTRY_SECRET }}
-          tag_with_latest: startsWith(github.ref, 'main')
+          tag_with_latest: ${{ startsWith(github.ref, 'main') }}
 
   review-configuration:
     name: Review configuration
