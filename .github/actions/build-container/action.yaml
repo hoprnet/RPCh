@@ -12,6 +12,8 @@ inputs:
     required: true
   secret:
     required: true
+  tag_with_latest:
+    required: true
 
 runs:
   using: "composite"
@@ -33,5 +35,4 @@ runs:
         #TODO - move to the GCR when ready
         cache_registry: sitilge/kaniko-cache
         tag: ${{ env.SHORT_SHA }}
-        tag_with_latest: false
-        skip_unchanged_digest: false
+        tag_with_latest: ${{ inputs.tag_with_latest }}
