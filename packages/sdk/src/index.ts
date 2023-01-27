@@ -16,6 +16,7 @@ import RequestCache from "./request-cache";
 import { createLogger } from "./utils";
 
 const log = createLogger();
+const DEADLOCK_MS = 1e3 * 60 * 0.5; // 30s
 
 /**
  * HOPR SDK options.
@@ -323,8 +324,7 @@ export default class SDK {
         );
       } catch (error) {
         log.error("Couldn't find elegible node: ", error);
-        // Set a deadlock of a min
-        this.setDeadlock(1e3 * 60 * 1); // 1 min
+        this.setDeadlock(DEADLOCK_MS);
       }
       log.verbose("got new entry node");
     }
@@ -380,12 +380,26 @@ export default class SDK {
       const message = req.toMessage();
       const segments = message.toSegments();
       this.requestCache.addRequest(req, resolve, reject);
+
+      // TODO: remove once in Riga release
+      // ALPHA intermediate selection
+      const eligibleIntermediateNodes = this.exitNodes.filter((n) => {
+        return (
+          n.peerId !== this.entryNode!.peerId &&
+          n.peerId !== req.exitNodeDestination
+        );
+      });
+
       for (const segment of segments) {
         hoprd.sendMessage({
           apiEndpoint: this.entryNode!.apiEndpoint,
           apiToken: this.entryNode!.apiToken,
           message: segment.toString(),
           destination: req.exitNodeDestination,
+          intermediate:
+            eligibleIntermediateNodes.length > 0
+              ? utils.randomlySelectFromArray(eligibleIntermediateNodes).peerId
+              : undefined,
         });
       }
     });

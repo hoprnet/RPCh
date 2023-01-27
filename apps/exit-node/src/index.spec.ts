@@ -2,6 +2,7 @@ import assert from "assert";
 import * as fixtures from "@rpch/common/build/fixtures";
 import MemDown from "memdown";
 import { utils } from "ethers";
+import nock from "nock";
 import { start as startExitNode } from "./index";
 
 jest.mock("leveldown", () => MemDown);
@@ -12,6 +13,11 @@ const [clientRequest, , exitNodeResponse] = fixtures.generateMockedFlow(
   undefined,
   fixtures.RPC_RES_LARGE
 );
+
+nock("http://apiendpoint.com")
+  .get(/.*/)
+  .reply(200, { outgoing: ["1", "2"] })
+  .persist();
 
 const createMockedSetup = async () => {
   let triggerMessageListenerOnMessage: (message: string) => void = () => {};
@@ -44,7 +50,7 @@ const createMockedSetup = async () => {
     identityDir: "",
     password: "",
     dataDir: "",
-    apiEndpoint: "",
+    apiEndpoint: "http://apiendpoint.com",
     apiToken: "",
     timeout: 5e3,
   });
