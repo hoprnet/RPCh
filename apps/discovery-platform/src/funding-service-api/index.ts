@@ -60,11 +60,11 @@ export class FundingServiceApi {
    * @returns string
    */
   private async getAccessToken(amount?: number): Promise<string> {
-    if (!this.accessTokenIsValid(amount)) {
-      const accessToken = this.fetchAccessToken();
+    if (!this.accessToken || !this.accessTokenIsValid(amount)) {
+      const accessToken = await this.fetchAccessToken();
       return accessToken;
     } else {
-      return this.accessToken!;
+      return this.accessToken;
     }
   }
 
@@ -108,16 +108,14 @@ export class FundingServiceApi {
     node: QueryRegisteredNode,
     prevRetries?: number
   ) {
-    if (!this.accessTokenIsValid(amount)) {
-      await this.getAccessToken();
-    }
-
     try {
+      await this.getAccessToken();
       const dbNode = await getRegisteredNode(this.db, node.id);
       if (!dbNode) throw new Error("Node is not registered");
-      log.verbose("requesting from funding service", {
+      log.verbose("requesting to funding service", {
         amount: String(amount),
         chainId: node.chain_id,
+        peerId: node.id,
       });
 
       const body: postFundingRequest = {
@@ -143,6 +141,14 @@ export class FundingServiceApi {
       const { id: requestId, amountLeft }: postFundingResponse =
         fundingResponseJson;
 
+      if (!requestId) {
+        log.error(
+          "funding service did not reply with a request id",
+          fundingResponseJson
+        );
+        throw new Error("funding service did not reply with a request id");
+      }
+
       // save funding request in db
       await createFundingRequest(this.db, {
         registeredNodeId: dbNode.id,
@@ -162,9 +168,7 @@ export class FundingServiceApi {
    * Get available funds from funding service
    */
   public async getAvailableFunds() {
-    if (!this.accessTokenIsValid()) {
-      await this.getAccessToken();
-    }
+    await this.getAccessToken();
 
     const funds = await fetch(`${this.url}/api/funds`, {
       headers: {
@@ -182,9 +186,7 @@ export class FundingServiceApi {
    * @param requestId
    */
   private async getRequestStatus(requestId: string) {
-    if (!this.accessTokenIsValid()) {
-      await this.getAccessToken();
-    }
+    await this.getAccessToken();
 
     const res = await fetch(`${this.url}/api/request/status/${requestId}`, {
       headers: {
@@ -215,7 +217,12 @@ export class FundingServiceApi {
    * Goes through all pending requests and chooses to prune/retry/ignore
    */
   public async checkForPendingRequests() {
-    log.verbose("amount of pending requests", this.pendingRequests.size);
+    log.verbose(
+      "pending requests",
+      this.pendingRequests.size
+        ? [...this.pendingRequests.values()].map((req) => req.requestId)
+        : []
+    );
     for (const [
       peerId,
       { amountOfRetries, requestId },
@@ -226,18 +233,23 @@ export class FundingServiceApi {
 
       if (!node) throw new Error("Registered node does not exist");
 
+      log.verbose(
+        "pending funding request status and node",
+        request.status,
+        node
+      );
       // checks if it should prune
       if (
         request.status === "SUCCESS" ||
         request.status === "REJECTED-DURING-PROCESSING"
       ) {
-        log.verbose("request for node", node);
         await updateRegisteredNode(this.db, {
           ...node!,
           status: request.status === "SUCCESS" ? "READY" : "UNUSABLE",
           total_amount_funded:
             node.total_amount_funded + Number(request.amount),
         });
+        log.verbose("Request has been fulfilled", requestId, peerId);
         this.pendingRequests.delete(peerId);
 
         // check if it should retry
