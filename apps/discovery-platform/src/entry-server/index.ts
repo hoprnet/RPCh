@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request } from "express";
 import { DBInstance } from "../db";
 import { FundingServiceApi } from "../funding-service-api";
 import { v1Router } from "./routers/v1";

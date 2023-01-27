@@ -114,7 +114,6 @@ export const checkFreshRequests = async (ops: {
       id: freshRequest.id,
     });
   } catch (e: any) {
-    log.error(e);
     if (freshRequest) {
       // check if request was rejected
       if (e instanceof CustomError) {
@@ -146,6 +145,12 @@ export const checkFreshRequests = async (ops: {
           amount: freshRequest.amount,
           id: freshRequest.id,
         });
+      }
+    } else {
+      if (e instanceof CustomError) {
+        log.error("Could not fulfill pending request", e.message);
+      } else {
+        log.error("Unexpected error trying to fulfill pending request", e);
       }
     }
   } finally {

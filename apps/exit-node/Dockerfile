@@ -54,7 +54,7 @@ FROM --platform=linux/amd64 node:16-alpine AS runner
 
 WORKDIR /app
 
-RUN mkdir /app/db
+RUN mkdir -p /app/db
 # set volume which can be mapped by users on the host system
 VOLUME ["/app/db"]
 

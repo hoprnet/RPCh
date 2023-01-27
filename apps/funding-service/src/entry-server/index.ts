@@ -29,17 +29,22 @@ export const entryServer = (ops: {
   app.use(express.json());
 
   app.get("/api/access-token", async (req, res) => {
-    log.verbose("GET /api/access-token");
-    const accessToken = await ops.accessTokenService.createAccessToken({
-      amount: ops.maxAmountOfTokens,
-      timeout: ops.timeout,
-    });
-    return res.json({
-      accessToken: accessToken?.token,
-      expiredAt: accessToken?.expired_at,
-      createdAt: accessToken?.created_at,
-      amountLeft: ops.maxAmountOfTokens,
-    });
+    try {
+      log.verbose("GET /api/access-token");
+      const accessToken = await ops.accessTokenService.createAccessToken({
+        amount: ops.maxAmountOfTokens,
+        timeout: ops.timeout,
+      });
+      return res.json({
+        accessToken: accessToken?.token,
+        expiredAt: accessToken?.expired_at,
+        createdAt: accessToken?.created_at,
+        amountLeft: ops.maxAmountOfTokens,
+      });
+    } catch (e) {
+      log.error("Can not create access token", e);
+      return res.status(500).json({ body: "Unexpected error" });
+    }
   });
 
   app.post(
@@ -53,42 +58,47 @@ export const entryServer = (ops: {
       true
     ),
     async (req, res) => {
-      log.verbose(
-        `POST /api/request/funds/:blockchainAddress`,
-        req.params,
-        req.body
-      );
-
-      // check if validation failed
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-      }
-      const nodeAddress = String(req.params.blockchainAddress);
-      const amount = String(req.body.amount);
-      const chainId = Number(req.body.chainId);
-
-      // can be enforced because the existence is checked in the middleware
-      const accessTokenHash: string | undefined =
-        req.headers["x-access-token"]!.toString();
-
-      const request = await ops.requestService.createRequest({
-        nodeAddress,
-        amount,
-        accessTokenHash,
-        chainId,
-      });
-      const allUnresolvedAndSuccessfulRequestsByAccessToken =
-        await ops.requestService.getAllUnresolvedAndSuccessfulRequestsByAccessToken(
-          accessTokenHash
+      try {
+        log.verbose(
+          `POST /api/request/funds/:blockchainAddress`,
+          req.params,
+          req.body
         );
-      const amountUsed = ops.requestService.sumAmountOfRequests(
-        allUnresolvedAndSuccessfulRequestsByAccessToken
-      );
-      return res.json({
-        id: request.id,
-        amountLeft: ops.maxAmountOfTokens - amountUsed[chainId],
-      });
+
+        // check if validation failed
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+          return res.status(400).json({ errors: errors.array() });
+        }
+        const nodeAddress = String(req.params.blockchainAddress);
+        const amount = String(req.body.amount);
+        const chainId = Number(req.body.chainId);
+
+        // can be enforced because the existence is checked in the middleware
+        const accessTokenHash: string | undefined =
+          req.headers["x-access-token"]!.toString();
+
+        const request = await ops.requestService.createRequest({
+          nodeAddress,
+          amount,
+          accessTokenHash,
+          chainId,
+        });
+        const allUnresolvedAndSuccessfulRequestsByAccessToken =
+          await ops.requestService.getAllUnresolvedAndSuccessfulRequestsByAccessToken(
+            accessTokenHash
+          );
+        const amountUsed = ops.requestService.sumAmountOfRequests(
+          allUnresolvedAndSuccessfulRequestsByAccessToken
+        );
+        return res.json({
+          id: request.id,
+          amountLeft: ops.maxAmountOfTokens - amountUsed[chainId],
+        });
+      } catch (e) {
+        log.error("Can not request funding", e);
+        return res.status(500).json({ body: "Unexpected error" });
+      }
     }
   );
 
@@ -100,9 +110,14 @@ export const entryServer = (ops: {
       ops.maxAmountOfTokens
     ),
     async (req, res) => {
-      log.verbose(`GET /api/request/status`);
-      const requests = await ops.requestService.getRequests();
-      return res.status(200).json(requests);
+      try {
+        log.verbose(`GET /api/request/status`);
+        const requests = await ops.requestService.getRequests();
+        return res.status(200).json(requests);
+      } catch (e) {
+        log.error("Can not get status for requests", e);
+        return res.status(500).json({ body: "Unexpected error" });
+      }
     }
   );
 
@@ -115,15 +130,20 @@ export const entryServer = (ops: {
       ops.maxAmountOfTokens
     ),
     async (req, res) => {
-      log.verbose(`GET /api/request/status/:requestId`, req.params);
-      // check if validation failed
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
+      try {
+        log.verbose(`GET /api/request/status/:requestId`, req.params);
+        // check if validation failed
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+          return res.status(400).json({ errors: errors.array() });
+        }
+        const requestId = Number(req.params.requestId);
+        const request = await ops.requestService.getRequest(requestId);
+        return res.status(200).json(request);
+      } catch (e) {
+        log.error("Can not get status for a single request", e);
+        return res.status(500).json({ body: "Unexpected error" });
       }
-      const requestId = Number(req.params.requestId);
-      const request = await ops.requestService.getRequest(requestId);
-      return res.status(200).json(request);
     }
   );
 
@@ -135,35 +155,40 @@ export const entryServer = (ops: {
       ops.maxAmountOfTokens
     ),
     async (req, res) => {
-      log.verbose(`GET /api/funds`);
-      log.verbose([
-        "getting funds for chains",
-        [...Object.keys(constants.CONNECTION_INFO)],
-      ]);
-      const providers = await getProviders(
-        [...Object.keys(constants.CONNECTION_INFO)].map(Number)
-      );
-      const balances = await getBalanceForAllChains(
-        constants.SMART_CONTRACTS_PER_CHAIN,
-        ops.walletAddress,
-        providers
-      );
-      const compromisedRequests =
-        await ops.requestService.getAllUnresolvedRequests();
-      const frozenBalances = await ops.requestService.sumAmountOfRequests(
-        compromisedRequests ?? []
-      );
+      try {
+        log.verbose(`GET /api/funds`);
+        log.verbose([
+          "getting funds for chains",
+          [...Object.keys(constants.CONNECTION_INFO)],
+        ]);
+        const providers = await getProviders(
+          [...Object.keys(constants.CONNECTION_INFO)].map(Number)
+        );
+        const balances = await getBalanceForAllChains(
+          constants.SMART_CONTRACTS_PER_CHAIN,
+          ops.walletAddress,
+          providers
+        );
+        const compromisedRequests =
+          await ops.requestService.getAllUnresolvedRequests();
+        const frozenBalances = await ops.requestService.sumAmountOfRequests(
+          compromisedRequests ?? []
+        );
 
-      const availableBalances = ops.requestService.calculateAvailableFunds(
-        balances,
-        frozenBalances
-      );
+        const availableBalances = ops.requestService.calculateAvailableFunds(
+          balances,
+          frozenBalances
+        );
 
-      // all balances are in wei
-      return res.json({
-        available: availableBalances,
-        frozen: frozenBalances,
-      });
+        // all balances are in wei
+        return res.json({
+          available: availableBalances,
+          frozen: frozenBalances,
+        });
+      } catch (e) {
+        log.error("Can not get status for a single request", e);
+        return res.status(500).json({ body: "Unexpected error" });
+      }
     }
   );
 

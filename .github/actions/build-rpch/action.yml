@@ -1,4 +1,4 @@
-name: "Build"
+name: "Build RPCh monorepo"
 description: "Build the RPCh monorepo"
 
 runs:

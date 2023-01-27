@@ -128,7 +128,7 @@ start() {
         npx ts-node $DIR/register-nodes.ts
     )
     echo "Registered nodes to discovery-platform"
-    
+
     echo "Adding quota to discovery-platform"
     npx ts-node $DIR/add-quota.ts
     echo "Added quota to client sandbox in discovery-platform"

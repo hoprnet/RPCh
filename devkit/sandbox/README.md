@@ -35,6 +35,6 @@ You can try out the RPCh sandbox by setting up our forked version of Block Walle
 
 1. Install `git` and `make` on your machine
 2. Git clone [Rpc-h/extension-block-wallet](https://github.com/Rpc-h/extension-block-wallet)
-3. Checkout to branch `improve-rpch-ethers-implementation`
-4. Follow the setup instructions in the [README](https://github.com/Rpc-h/extension-block-wallet/tree/improve-rpch-ethers-implementation#getting-started)
+3. Checkout to branch `implement-ethers-adaptor`
+4. Follow the setup instructions in the [README](https://github.com/Rpc-h/extension-block-wallet/tree/implement-ethers-adaptor#getting-started)
 5. Add extension into your browser

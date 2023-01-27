@@ -1,14 +1,11 @@
 import assert from "assert";
 import {
   createRegisteredNode,
-  getExitNodes,
-  getNonExitNodes,
   getRegisteredNodes,
   getRegisteredNode,
   updateRegisteredNode,
   getEligibleNode,
   getRewardForNode,
-  getFreshNodes,
 } from ".";
 import { DBInstance } from "../db";
 import { CreateRegisteredNode } from "./dto";
@@ -45,13 +42,28 @@ describe("test registered node functions", function () {
     const createdNode = await getRegisteredNode(dbInstance, mockNode().peerId);
     assert.equal(createdNode?.id, mockNode().peerId);
   });
-  it("should get all registered node", async function () {
+  it("should get all registered nodes", async function () {
     await createRegisteredNode(dbInstance, mockNode("1"));
     await createRegisteredNode(dbInstance, mockNode("2"));
 
     const allNodes = await getRegisteredNodes(dbInstance);
 
     assert.equal(allNodes.length, 2);
+  });
+  it("should get all registered nodes except exclude list", async function () {
+    await createRegisteredNode(dbInstance, mockNode("1"));
+    await createRegisteredNode(dbInstance, mockNode("2"));
+    await createRegisteredNode(dbInstance, mockNode("3"));
+
+    const notExcludedNodes = await getRegisteredNodes(dbInstance, {
+      excludeList: ["2"],
+    });
+
+    assert.equal(notExcludedNodes.length, 2);
+    assert.equal(
+      notExcludedNodes.findIndex((node) => node.id === "2"),
+      -1
+    );
   });
   it("should get one registered node", async function () {
     await createRegisteredNode(dbInstance, mockNode("1"));
@@ -73,7 +85,9 @@ describe("test registered node functions", function () {
     await createRegisteredNode(dbInstance, mockNode("1", false));
     await createRegisteredNode(dbInstance, mockNode("2", true));
     await createRegisteredNode(dbInstance, mockNode("3", false));
-    const notExitNodes = await getNonExitNodes(dbInstance);
+    const notExitNodes = await getRegisteredNodes(dbInstance, {
+      hasExitNode: false,
+    });
 
     assert.equal(notExitNodes.length, 2);
   });
@@ -81,7 +95,9 @@ describe("test registered node functions", function () {
     await createRegisteredNode(dbInstance, mockNode("1", false));
     await createRegisteredNode(dbInstance, mockNode("2", true));
     await createRegisteredNode(dbInstance, mockNode("3", true));
-    const exitNodes = await getExitNodes(dbInstance);
+    const exitNodes = await getRegisteredNodes(dbInstance, {
+      hasExitNode: true,
+    });
 
     assert.equal(exitNodes.length, 2);
   });
@@ -94,7 +110,9 @@ describe("test registered node functions", function () {
     await createRegisteredNode(dbInstance, mockNode("2", true));
     await createRegisteredNode(dbInstance, mockNode("3", true));
 
-    const freshNodes = await getFreshNodes(dbInstance);
+    const freshNodes = await getRegisteredNodes(dbInstance, {
+      status: "FRESH",
+    });
 
     assert.equal(freshNodes?.length, 2);
   });

@@ -42,7 +42,7 @@ export class RPChProvider extends JsonRpcProvider {
       return this._cache[method];
     }
 
-    const rpchRequest = this.sdk.createRequest(
+    const rpchRequest = await this.sdk.createRequest(
       this.url,
       JSON.stringify(payload)
     );
