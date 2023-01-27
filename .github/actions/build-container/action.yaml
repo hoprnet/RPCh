@@ -1,4 +1,5 @@
-name: build
+name: "Build container"
+description: "Build a container"
 
 inputs:
   dockerfile:
@@ -11,16 +12,18 @@ inputs:
     required: true
   secret:
     required: true
+  tag_with_latest:
+    required: true
 
 runs:
   using: "composite"
   steps:
-    - name: Calculate temporary variables
+    - name: Calculate SHORT_SHA
       shell: sh
       run: echo "SHORT_SHA=`git rev-parse --short HEAD`" >> $GITHUB_ENV
 
     - name: Build ${{ inputs.app }} container image
-      uses: aevea/action-kaniko@master
+      uses: aevea/action-kaniko@v0.10.0
       with:
         path: .
         build_file: ${{ inputs.dockerfile }}
@@ -32,4 +35,4 @@ runs:
         #TODO - move to the GCR when ready
         cache_registry: sitilge/kaniko-cache
         tag: ${{ env.SHORT_SHA }}
-        tag_with_latest: true
+        tag_with_latest: ${{ inputs.tag_with_latest }}
