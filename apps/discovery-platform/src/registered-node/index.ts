@@ -73,10 +73,12 @@ export const getEligibleNode = async (
     ...filters,
     status: "READY",
   });
-  // choose selected entry node
-  const selectedNode = utils.randomlySelectFromArray(readyNodes);
-  // TODO: get access token of selected node
-  return selectedNode;
+  if (readyNodes.length) {
+    // choose selected entry node
+    const selectedNode = utils.randomlySelectFromArray(readyNodes);
+    // TODO: get access token of selected node
+    return selectedNode;
+  }
 };
 
 /**

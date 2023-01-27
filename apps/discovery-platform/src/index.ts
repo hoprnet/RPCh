@@ -72,31 +72,39 @@ const start = async (ops: {
 
   // keep track of all pending funding requests to update status or retry
   const checkForPendingRequests = setInterval(async () => {
-    log.normal("tracking pending requests");
-    await fundingServiceApi.checkForPendingRequests();
+    try {
+      log.normal("tracking pending requests");
+      await fundingServiceApi.checkForPendingRequests();
+    } catch (e) {
+      log.error("Failed to track pending requests", e);
+    }
   }, 1000);
 
   // check if fresh nodes have committed
   const checkCommitmentForFreshNodes = setInterval(async () => {
-    log.normal("tracking commitment for fresh nodes");
-    const freshNodes = await getRegisteredNodes(ops.db, {
-      status: "FRESH",
-    });
-
-    for (const node of freshNodes ?? []) {
-      log.verbose("checking commitment of fresh node", node);
-
-      const nodeIsCommitted = await checkCommitment({
-        node,
-        minBalance: constants.BALANCE_THRESHOLD,
-        minChannels: constants.CHANNELS_THRESHOLD,
+    try {
+      log.normal("tracking commitment for fresh nodes");
+      const freshNodes = await getRegisteredNodes(ops.db, {
+        status: "FRESH",
       });
 
-      log.verbose("node commitment", nodeIsCommitted);
-      if (nodeIsCommitted) {
-        log.verbose("new committed node", node.id);
-        await updateRegisteredNode(ops.db, { ...node, status: "READY" });
+      for (const node of freshNodes ?? []) {
+        log.verbose("checking commitment of fresh node", node);
+
+        const nodeIsCommitted = await checkCommitment({
+          node,
+          minBalance: constants.BALANCE_THRESHOLD,
+          minChannels: constants.CHANNELS_THRESHOLD,
+        });
+
+        log.verbose("node commitment", nodeIsCommitted);
+        if (nodeIsCommitted) {
+          log.verbose("new committed node", node.id);
+          await updateRegisteredNode(ops.db, { ...node, status: "READY" });
+        }
       }
+    } catch (e) {
+      log.error("Failed to check commitment for fresh nodes", e);
     }
   }, 1000);
 

@@ -341,6 +341,9 @@ export default class SDK {
   private isDeadlocked(): boolean {
     if (!this.deadlockTimestamp) return false;
     const now = Date.now();
+    if (now < this.deadlockTimestamp) {
+      log.verbose("SDK is deadlocked until", this.deadlockTimestamp);
+    }
     return now < this.deadlockTimestamp;
   }
 
