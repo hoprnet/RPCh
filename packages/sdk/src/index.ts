@@ -50,7 +50,7 @@ export type ExitNode = {
 export default class SDK {
   private crypto?: typeof RPChCryptoNode | typeof RPChCryptoWeb;
   // single interval for the SDK for things that need to be checked.
-  private interval?: NodeJS.Timer;
+  private intervals: NodeJS.Timer[] = [];
   private segmentCache: SegmentCache;
   private requestCache: RequestCache;
   private reliabilityScore: ReliabilityScore;
@@ -255,10 +255,18 @@ export default class SDK {
     }
 
     // check for expires caches every second
-    this.interval = setInterval(() => {
-      this.segmentCache.removeExpired(this.ops.timeout);
-      this.requestCache.removeExpired(this.ops.timeout);
-    }, 1e3);
+    this.intervals.push(
+      setInterval(() => {
+        this.segmentCache.removeExpired(this.ops.timeout);
+        this.requestCache.removeExpired(this.ops.timeout);
+      }, 1e3)
+    );
+    // update exit nodes every minute
+    this.intervals.push(
+      setInterval(() => {
+        this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint);
+      }, 60e3)
+    );
 
     await this.selectEntryNode(this.ops.discoveryPlatformApiEndpoint);
     await this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint);
@@ -284,7 +292,9 @@ export default class SDK {
    */
   public async stop(): Promise<void> {
     if (this.stopMessageListener) this.stopMessageListener();
-    clearInterval(this.interval);
+    for (const interval of this.intervals) {
+      clearInterval(interval);
+    }
   }
 
   /**
