@@ -380,6 +380,8 @@ export default class SDK {
           })
           .catch((e) => {
             log.error("failed to send message to hoprd", segment.toString(), e);
+            this.onRequestRemoval(req);
+            this.requestCache.removeRequest(req);
             reject("failed to send message to hoprd");
           });
       }
