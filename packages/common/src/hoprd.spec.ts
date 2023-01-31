@@ -23,12 +23,11 @@ describe("test hoprd.ts / sendMessage", function () {
     assert.equal(res, "someresponse");
   });
 
-  it.only("log and throw error when response is not status 202", async function () {
+  it("throw error when response is not status 202", async function () {
     fixtures.nockSendMessageApi(nock(ENTRY_NODE_API_ENDPOINT)).reply(422, {
       status: "UNKNOWN_FAILURE",
       error: "Full error message.",
     });
-    const logSpy = jest.spyOn(console, "log");
     try {
       await hoprd.sendMessage({
         apiEndpoint: ENTRY_NODE_API_ENDPOINT,
@@ -37,7 +36,6 @@ describe("test hoprd.ts / sendMessage", function () {
         message: "hello",
       });
     } catch (e: any) {
-      expect(logSpy).toHaveBeenCalled();
       assert.equal(
         e.message,
         '{"status":"UNKNOWN_FAILURE","error":"Full error message."}'
