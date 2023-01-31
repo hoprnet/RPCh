@@ -134,7 +134,6 @@ describe("test db functions", function () {
     const notExcludedNodes = await db.getRegisteredNodes(dbInstance, {
       excludeList: ["2"],
     });
-    console.log(notExcludedNodes);
     assert.equal(notExcludedNodes.length, 2);
     assert.equal(
       notExcludedNodes.findIndex((node) => node.id === "2"),

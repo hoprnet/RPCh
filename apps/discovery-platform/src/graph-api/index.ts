@@ -55,10 +55,7 @@ export const checkCommitment = async (ops: {
 }): Promise<boolean | undefined> => {
   try {
     // eslint-disable-next-line turbo/no-undeclared-env-vars
-    log.verbose(
-      "check commitment environment",
-      constants.SKIP_CHECK_COMMITMENT
-    );
+    log.verbose("skip check commitment", constants.SKIP_CHECK_COMMITMENT);
     // Assume node has committed to hopr if it is running in development
     // eslint-disable-next-line turbo/no-undeclared-env-vars
     if (constants.SKIP_CHECK_COMMITMENT) return true;
