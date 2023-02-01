@@ -10,7 +10,8 @@ const { NODE_ENV = "development" } = process.env;
 
 const DP_API_ENDPOINT = process.env.DP_API_ENDPOINT ?? "http://localhost:3020";
 const CLIENT = "sandbox";
-const QUOTA = 1000;
+// const QUOTA = 1000;
+const QUOTA = 999999999999
 
 const debug = NODE_ENV === "production" ? () => {} : console.log;
 

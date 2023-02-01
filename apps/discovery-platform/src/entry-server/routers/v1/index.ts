@@ -121,7 +121,7 @@ const isExcludeListSafe = (value: string) => {
 // Express Router
 export const v1Router = (ops: {
   db: DBInstance;
-  baseQuota: number;
+  baseQuota: bigint;
   accessToken: string;
   fundingServiceApi: FundingServiceApi;
 }) => {
@@ -276,7 +276,7 @@ export const v1Router = (ops: {
         // create negative quota (showing that the client has used up initial quota)
         await createQuota(ops.db, {
           client,
-          quota: ops.baseQuota * -1,
+          quota: ops.baseQuota * BigInt(-1),
           actionTaker: "discovery platform",
         });
         return res.json({ ...selectedNode, accessToken: ops.accessToken });
@@ -293,7 +293,7 @@ export const v1Router = (ops: {
 export const doesClientHaveQuota = async (
   db: DBInstance,
   client: string,
-  baseQuota: number
+  baseQuota: bigint
 ) => {
   const allQuotasFromClient = await getAllQuotasByClient(db, client);
   const sumOfClientsQuota = sumQuotas(allQuotasFromClient);

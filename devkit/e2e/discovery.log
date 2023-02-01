@@ -1,0 +1,283 @@
+2023-02-01T00:39:21.219Z rpch:discovery-platform entry server is up
+2023-02-01T00:39:22.219Z rpch:discovery-platform tracking pending requests
+2023-02-01T00:39:22.219Z rpch:discovery-platform:funding-service-api:verbose amount of pending requests 0
+2023-02-01T00:39:22.221Z rpch:discovery-platform tracking commitment for fresh nodes
+2023-02-01T00:39:22.222Z rpch:discovery-platform:db:verbose Querying for Registered nodes with filters { status: 'FRESH' }
+2023-02-01T00:39:22.238Z rpch:discovery-platform:db:verbose Registered nodes with filters query DB response []
+2023-02-01T00:39:23.220Z rpch:discovery-platform tracking pending requests
+2023-02-01T00:39:23.220Z rpch:discovery-platform:funding-service-api:verbose amount of pending requests 0
+2023-02-01T00:39:23.222Z rpch:discovery-platform tracking commitment for fresh nodes
+2023-02-01T00:39:23.222Z rpch:discovery-platform:db:verbose Querying for Registered nodes with filters { status: 'FRESH' }
+2023-02-01T00:39:23.225Z rpch:discovery-platform:db:verbose Registered nodes with filters query DB response []
+2023-02-01T00:39:24.220Z rpch:discovery-platform tracking pending requests
+2023-02-01T00:39:24.220Z rpch:discovery-platform:funding-service-api:verbose amount of pending requests 0
+2023-02-01T00:39:24.221Z rpch:discovery-platform tracking commitment for fresh nodes
+2023-02-01T00:39:24.221Z rpch:discovery-platform:db:verbose Querying for Registered nodes with filters { status: 'FRESH' }
+2023-02-01T00:39:24.223Z rpch:discovery-platform:db:verbose Registered nodes with filters query DB response []
+2023-02-01T00:39:25.222Z rpch:discovery-platform tracking pending requests
+2023-02-01T00:39:25.222Z rpch:discovery-platform:funding-service-api:verbose amount of pending requests 0
+2023-02-01T00:39:25.222Z rpch:discovery-platform tracking commitment for fresh nodes
+2023-02-01T00:39:25.222Z rpch:discovery-platform:db:verbose Querying for Registered nodes with filters { status: 'FRESH' }
+2023-02-01T00:39:25.225Z rpch:discovery-platform:db:verbose Registered nodes with filters query DB response []
+2023-02-01T00:39:26.223Z rpch:discovery-platform tracking pending requests
+2023-02-01T00:39:26.223Z rpch:discovery-platform:funding-service-api:verbose amount of pending requests 0
+2023-02-01T00:39:26.224Z rpch:discovery-platform tracking commitment for fresh nodes
+2023-02-01T00:39:26.224Z rpch:discovery-platform:db:verbose Querying for Registered nodes with filters { status: 'FRESH' }
+2023-02-01T00:39:26.225Z rpch:discovery-platform:db:verbose Registered nodes with filters query DB response []
+2023-02-01T00:39:27.225Z rpch:discovery-platform tracking pending requests
+2023-02-01T00:39:27.225Z rpch:discovery-platform:funding-service-api:verbose amount of pending requests 0
+2023-02-01T00:39:27.225Z rpch:discovery-platform tracking commitment for fresh nodes
+2023-02-01T00:39:27.225Z rpch:discovery-platform:db:verbose Querying for Registered nodes with filters { status: 'FRESH' }
+2023-02-01T00:39:27.226Z rpch:discovery-platform:db:verbose Registered nodes with filters query DB response []
+2023-02-01T00:39:28.226Z rpch:discovery-platform tracking pending requests
+2023-02-01T00:39:28.226Z rpch:discovery-platform:funding-service-api:verbose amount of pending requests 0
+2023-02-01T00:39:28.226Z rpch:discovery-platform tracking commitment for fresh nodes
+2023-02-01T00:39:28.227Z rpch:discovery-platform:db:verbose Querying for Registered nodes with filters { status: 'FRESH' }
+2023-02-01T00:39:28.228Z rpch:discovery-platform:db:verbose Registered nodes with filters query DB response []
+2023-02-01T00:39:29.227Z rpch:discovery-platform tracking pending requests
+2023-02-01T00:39:29.227Z rpch:discovery-platform:funding-service-api:verbose amount of pending requests 0
+2023-02-01T00:39:29.227Z rpch:discovery-platform tracking commitment for fresh nodes
+2023-02-01T00:39:29.228Z rpch:discovery-platform:db:verbose Querying for Registered nodes with filters { status: 'FRESH' }
+2023-02-01T00:39:29.230Z rpch:discovery-platform:db:verbose Registered nodes with filters query DB response []
+2023-02-01T00:39:30.227Z rpch:discovery-platform tracking pending requests
+2023-02-01T00:39:30.227Z rpch:discovery-platform:funding-service-api:verbose amount of pending requests 0
+2023-02-01T00:39:30.227Z rpch:discovery-platform tracking commitment for fresh nodes
+2023-02-01T00:39:30.228Z rpch:discovery-platform:db:verbose Querying for Registered nodes with filters { status: 'FRESH' }
+2023-02-01T00:39:30.229Z rpch:discovery-platform:db:verbose Registered nodes with filters query DB response []
+2023-02-01T00:39:31.229Z rpch:discovery-platform tracking pending requests
+2023-02-01T00:39:31.229Z rpch:discovery-platform:funding-service-api:verbose amount of pending requests 0
+2023-02-01T00:39:31.229Z rpch:discovery-platform tracking commitment for fresh nodes
+2023-02-01T00:39:31.229Z rpch:discovery-platform:db:verbose Querying for Registered nodes with filters { status: 'FRESH' }
+2023-02-01T00:39:31.232Z rpch:discovery-platform:db:verbose Registered nodes with filters query DB response []
+2023-02-01T00:39:32.229Z rpch:discovery-platform tracking pending requests
+2023-02-01T00:39:32.229Z rpch:discovery-platform:funding-service-api:verbose amount of pending requests 0
+2023-02-01T00:39:32.229Z rpch:discovery-platform tracking commitment for fresh nodes
+2023-02-01T00:39:32.230Z rpch:discovery-platform:db:verbose Querying for Registered nodes with filters { status: 'FRESH' }
+2023-02-01T00:39:32.231Z rpch:discovery-platform:db:verbose Registered nodes with filters query DB response []
+2023-02-01T00:39:33.231Z rpch:discovery-platform tracking pending requests
+2023-02-01T00:39:33.231Z rpch:discovery-platform:funding-service-api:verbose amount of pending requests 0
+2023-02-01T00:39:33.231Z rpch:discovery-platform tracking commitment for fresh nodes
+2023-02-01T00:39:33.231Z rpch:discovery-platform:db:verbose Querying for Registered nodes with filters { status: 'FRESH' }
+2023-02-01T00:39:33.233Z rpch:discovery-platform:db:verbose Registered nodes with filters query DB response []
+2023-02-01T00:39:34.232Z rpch:discovery-platform tracking pending requests
+2023-02-01T00:39:34.232Z rpch:discovery-platform:funding-service-api:verbose amount of pending requests 0
+2023-02-01T00:39:34.232Z rpch:discovery-platform tracking commitment for fresh nodes
+2023-02-01T00:39:34.232Z rpch:discovery-platform:db:verbose Querying for Registered nodes with filters { status: 'FRESH' }
+2023-02-01T00:39:34.233Z rpch:discovery-platform:db:verbose Registered nodes with filters query DB response []
+2023-02-01T00:39:35.234Z rpch:discovery-platform tracking pending requests
+2023-02-01T00:39:35.234Z rpch:discovery-platform:funding-service-api:verbose amount of pending requests 0
+2023-02-01T00:39:35.234Z rpch:discovery-platform tracking commitment for fresh nodes
+2023-02-01T00:39:35.234Z rpch:discovery-platform:db:verbose Querying for Registered nodes with filters { status: 'FRESH' }
+2023-02-01T00:39:35.236Z rpch:discovery-platform:db:verbose Registered nodes with filters query DB response []
+2023-02-01T00:39:36.234Z rpch:discovery-platform tracking pending requests
+2023-02-01T00:39:36.234Z rpch:discovery-platform:funding-service-api:verbose amount of pending requests 0
+2023-02-01T00:39:36.235Z rpch:discovery-platform tracking commitment for fresh nodes
+2023-02-01T00:39:36.235Z rpch:discovery-platform:db:verbose Querying for Registered nodes with filters { status: 'FRESH' }
+2023-02-01T00:39:36.236Z rpch:discovery-platform:db:verbose Registered nodes with filters query DB response []
+2023-02-01T00:39:37.236Z rpch:discovery-platform tracking pending requests
+2023-02-01T00:39:37.236Z rpch:discovery-platform:funding-service-api:verbose amount of pending requests 0
+2023-02-01T00:39:37.236Z rpch:discovery-platform tracking commitment for fresh nodes
+2023-02-01T00:39:37.236Z rpch:discovery-platform:db:verbose Querying for Registered nodes with filters { status: 'FRESH' }
+2023-02-01T00:39:37.238Z rpch:discovery-platform:db:verbose Registered nodes with filters query DB response []
+2023-02-01T00:39:38.236Z rpch:discovery-platform tracking pending requests
+2023-02-01T00:39:38.236Z rpch:discovery-platform:funding-service-api:verbose amount of pending requests 0
+2023-02-01T00:39:38.236Z rpch:discovery-platform tracking commitment for fresh nodes
+2023-02-01T00:39:38.237Z rpch:discovery-platform:db:verbose Querying for Registered nodes with filters { status: 'FRESH' }
+2023-02-01T00:39:38.238Z rpch:discovery-platform:db:verbose Registered nodes with filters query DB response []
+2023-02-01T00:39:39.238Z rpch:discovery-platform tracking pending requests
+2023-02-01T00:39:39.238Z rpch:discovery-platform:funding-service-api:verbose amount of pending requests 0
+2023-02-01T00:39:39.238Z rpch:discovery-platform tracking commitment for fresh nodes
+2023-02-01T00:39:39.238Z rpch:discovery-platform:db:verbose Querying for Registered nodes with filters { status: 'FRESH' }
+2023-02-01T00:39:39.239Z rpch:discovery-platform:db:verbose Registered nodes with filters query DB response []
+2023-02-01T00:39:40.239Z rpch:discovery-platform tracking pending requests
+2023-02-01T00:39:40.239Z rpch:discovery-platform:funding-service-api:verbose amount of pending requests 0
+2023-02-01T00:39:40.239Z rpch:discovery-platform tracking commitment for fresh nodes
+2023-02-01T00:39:40.239Z rpch:discovery-platform:db:verbose Querying for Registered nodes with filters { status: 'FRESH' }
+2023-02-01T00:39:40.240Z rpch:discovery-platform:db:verbose Registered nodes with filters query DB response []
+2023-02-01T00:39:41.240Z rpch:discovery-platform tracking pending requests
+2023-02-01T00:39:41.240Z rpch:discovery-platform:funding-service-api:verbose amount of pending requests 0
+2023-02-01T00:39:41.240Z rpch:discovery-platform tracking commitment for fresh nodes
+2023-02-01T00:39:41.240Z rpch:discovery-platform:db:verbose Querying for Registered nodes with filters { status: 'FRESH' }
+2023-02-01T00:39:41.241Z rpch:discovery-platform:db:verbose Registered nodes with filters query DB response []
+2023-02-01T00:39:42.240Z rpch:discovery-platform tracking pending requests
+2023-02-01T00:39:42.240Z rpch:discovery-platform:funding-service-api:verbose amount of pending requests 0
+2023-02-01T00:39:42.241Z rpch:discovery-platform tracking commitment for fresh nodes
+2023-02-01T00:39:42.241Z rpch:discovery-platform:db:verbose Querying for Registered nodes with filters { status: 'FRESH' }
+2023-02-01T00:39:42.242Z rpch:discovery-platform:db:verbose Registered nodes with filters query DB response []
+2023-02-01T00:39:42.511Z rpch:discovery-platform:entry-server:router:v1:verbose POST /node/register {
+  hasExitNode: true,
+  peerId: '16Uiu2HAmNJ32pjEupRjzbdT8U2rNw2oPaL9DQA73ijmQ1VGt44yR',
+  chainId: 1,
+  hoprdApiEndpoint: 'http://localhost',
+  hoprdApiPort: 13301,
+  exitNodePubKey: '0x02fa8d8be51974708d9093012696eeecd54aa006c004bb05284e8646f03de9cbec',
+  nativeAddress: '0xcbe70b068ede7b9007601ed7fb2bb88d1302eeb9'
+}
+2023-02-01T00:39:42.512Z rpch:discovery-platform:registered-node:verbose Saving new registered node {
+  honesty_score: 0,
+  total_amount_funded: 0n,
+  status: 'FRESH',
+  chain_id: 1,
+  hoprd_api_endpoint: 'http://localhost',
+  hoprd_api_port: 13301,
+  exit_node_pub_key: '0x02fa8d8be51974708d9093012696eeecd54aa006c004bb05284e8646f03de9cbec',
+  native_address: '0xcbe70b068ede7b9007601ed7fb2bb88d1302eeb9',
+  has_exit_node: true,
+  id: '16Uiu2HAmNJ32pjEupRjzbdT8U2rNw2oPaL9DQA73ijmQ1VGt44yR'
+}
+2023-02-01T00:39:42.515Z rpch:discovery-platform:db:error error: duplicate key value violates unique constraint "registered_nodes_pkey"
+    at Parser.parseErrorMessage (/app/node_modules/pg-protocol/dist/parser.js:287:98)
+    at Parser.handlePacket (/app/node_modules/pg-protocol/dist/parser.js:126:29)
+    at Parser.parse (/app/node_modules/pg-protocol/dist/parser.js:39:38)
+    at Socket.<anonymous> (/app/node_modules/pg-protocol/dist/index.js:11:42)
+    at Socket.emit (node:events:513:28)
+    at addChunk (node:internal/streams/readable:315:12)
+    at readableAddChunk (node:internal/streams/readable:289:9)
+    at Socket.Readable.push (node:internal/streams/readable:228:10)
+    at TCP.onStreamRead (node:internal/stream_base_commons:190:23)
+2023-02-01T00:39:42.530Z rpch:discovery-platform:entry-server:router:v1:verbose POST /node/register {
+  hasExitNode: true,
+  peerId: '16Uiu2HAmAQuuS13FwoBusw5ASjtxXkAsrTTwo3f8h51UYWrXkKm4',
+  chainId: 1,
+  hoprdApiEndpoint: 'http://localhost',
+  hoprdApiPort: 13302,
+  exitNodePubKey: '0x027aa80705e05c628b98fe8904f9d7cd3364818b81febc64a659d30935ec6b058a',
+  nativeAddress: '0xdf8e30a7e08512e3d86f98aa2e27c5eccf34decd'
+}
+2023-02-01T00:39:42.530Z rpch:discovery-platform:registered-node:verbose Saving new registered node {
+  honesty_score: 0,
+  total_amount_funded: 0n,
+  status: 'FRESH',
+  chain_id: 1,
+  hoprd_api_endpoint: 'http://localhost',
+  hoprd_api_port: 13302,
+  exit_node_pub_key: '0x027aa80705e05c628b98fe8904f9d7cd3364818b81febc64a659d30935ec6b058a',
+  native_address: '0xdf8e30a7e08512e3d86f98aa2e27c5eccf34decd',
+  has_exit_node: true,
+  id: '16Uiu2HAmAQuuS13FwoBusw5ASjtxXkAsrTTwo3f8h51UYWrXkKm4'
+}
+2023-02-01T00:39:42.532Z rpch:discovery-platform:db:error error: duplicate key value violates unique constraint "registered_nodes_pkey"
+    at Parser.parseErrorMessage (/app/node_modules/pg-protocol/dist/parser.js:287:98)
+    at Parser.handlePacket (/app/node_modules/pg-protocol/dist/parser.js:126:29)
+    at Parser.parse (/app/node_modules/pg-protocol/dist/parser.js:39:38)
+    at Socket.<anonymous> (/app/node_modules/pg-protocol/dist/index.js:11:42)
+    at Socket.emit (node:events:513:28)
+    at addChunk (node:internal/streams/readable:315:12)
+    at readableAddChunk (node:internal/streams/readable:289:9)
+    at Socket.Readable.push (node:internal/streams/readable:228:10)
+    at TCP.onStreamRead (node:internal/stream_base_commons:190:23)
+2023-02-01T00:39:42.541Z rpch:discovery-platform:entry-server:router:v1:verbose POST /node/register {
+  hasExitNode: true,
+  peerId: '16Uiu2HAmMTCReHuMbAZbxKgTWNFmmpN6y7QMHqify75qg8EqPQoP',
+  chainId: 1,
+  hoprdApiEndpoint: 'http://localhost',
+  hoprdApiPort: 13303,
+  exitNodePubKey: '0x0214ad7471d077e1721980c5005e4d758e8ab18ee3e50d40c43512e0bda3453d51',
+  nativeAddress: '0x8475dfa59b16a94efbfb34543d911e07aad42016'
+}
+2023-02-01T00:39:42.542Z rpch:discovery-platform:registered-node:verbose Saving new registered node {
+  honesty_score: 0,
+  total_amount_funded: 0n,
+  status: 'FRESH',
+  chain_id: 1,
+  hoprd_api_endpoint: 'http://localhost',
+  hoprd_api_port: 13303,
+  exit_node_pub_key: '0x0214ad7471d077e1721980c5005e4d758e8ab18ee3e50d40c43512e0bda3453d51',
+  native_address: '0x8475dfa59b16a94efbfb34543d911e07aad42016',
+  has_exit_node: true,
+  id: '16Uiu2HAmMTCReHuMbAZbxKgTWNFmmpN6y7QMHqify75qg8EqPQoP'
+}
+2023-02-01T00:39:42.543Z rpch:discovery-platform:db:error error: duplicate key value violates unique constraint "registered_nodes_pkey"
+    at Parser.parseErrorMessage (/app/node_modules/pg-protocol/dist/parser.js:287:98)
+    at Parser.handlePacket (/app/node_modules/pg-protocol/dist/parser.js:126:29)
+    at Parser.parse (/app/node_modules/pg-protocol/dist/parser.js:39:38)
+    at Socket.<anonymous> (/app/node_modules/pg-protocol/dist/index.js:11:42)
+    at Socket.emit (node:events:513:28)
+    at addChunk (node:internal/streams/readable:315:12)
+    at readableAddChunk (node:internal/streams/readable:289:9)
+    at Socket.Readable.push (node:internal/streams/readable:228:10)
+    at TCP.onStreamRead (node:internal/stream_base_commons:190:23)
+2023-02-01T00:39:42.554Z rpch:discovery-platform:entry-server:router:v1:verbose POST /node/register {
+  hasExitNode: true,
+  peerId: '16Uiu2HAmCSUsQRr5nLGSdTXNDfzduVesjdrY6kYcagtr9deKEsoC',
+  chainId: 1,
+  hoprdApiEndpoint: 'http://localhost',
+  hoprdApiPort: 13304,
+  exitNodePubKey: '0x032445a809f2e568cf0196f94d55cc2d372adbf1be39397ca802a8f9f9dbdb99d7',
+  nativeAddress: '0x6bb77e64c7e6ed3134a7422ffde756edb793f3c6'
+}
+2023-02-01T00:39:42.554Z rpch:discovery-platform:registered-node:verbose Saving new registered node {
+  honesty_score: 0,
+  total_amount_funded: 0n,
+  status: 'FRESH',
+  chain_id: 1,
+  hoprd_api_endpoint: 'http://localhost',
+  hoprd_api_port: 13304,
+  exit_node_pub_key: '0x032445a809f2e568cf0196f94d55cc2d372adbf1be39397ca802a8f9f9dbdb99d7',
+  native_address: '0x6bb77e64c7e6ed3134a7422ffde756edb793f3c6',
+  has_exit_node: true,
+  id: '16Uiu2HAmCSUsQRr5nLGSdTXNDfzduVesjdrY6kYcagtr9deKEsoC'
+}
+2023-02-01T00:39:42.556Z rpch:discovery-platform:db:error error: duplicate key value violates unique constraint "registered_nodes_pkey"
+    at Parser.parseErrorMessage (/app/node_modules/pg-protocol/dist/parser.js:287:98)
+    at Parser.handlePacket (/app/node_modules/pg-protocol/dist/parser.js:126:29)
+    at Parser.parse (/app/node_modules/pg-protocol/dist/parser.js:39:38)
+    at Socket.<anonymous> (/app/node_modules/pg-protocol/dist/index.js:11:42)
+    at Socket.emit (node:events:513:28)
+    at addChunk (node:internal/streams/readable:315:12)
+    at readableAddChunk (node:internal/streams/readable:289:9)
+    at Socket.Readable.push (node:internal/streams/readable:228:10)
+    at TCP.onStreamRead (node:internal/stream_base_commons:190:23)
+2023-02-01T00:39:42.566Z rpch:discovery-platform:entry-server:router:v1:verbose POST /node/register {
+  hasExitNode: true,
+  peerId: '16Uiu2HAkz6Whkhuok6TR9VvUHDGHMsEBvPBARUnS1ob9WWgAE1UD',
+  chainId: 1,
+  hoprdApiEndpoint: 'http://localhost',
+  hoprdApiPort: 13305,
+  exitNodePubKey: '0x027e13aff7c1aeed7fc4fe1e245fd077888361d2393797215e9fb5989b436b3a20',
+  nativeAddress: '0xe4abba2beaad9904b5d78344d13a7ecd1b6a7d7d'
+}
+2023-02-01T00:39:42.566Z rpch:discovery-platform:registered-node:verbose Saving new registered node {
+  honesty_score: 0,
+  total_amount_funded: 0n,
+  status: 'FRESH',
+  chain_id: 1,
+  hoprd_api_endpoint: 'http://localhost',
+  hoprd_api_port: 13305,
+  exit_node_pub_key: '0x027e13aff7c1aeed7fc4fe1e245fd077888361d2393797215e9fb5989b436b3a20',
+  native_address: '0xe4abba2beaad9904b5d78344d13a7ecd1b6a7d7d',
+  has_exit_node: true,
+  id: '16Uiu2HAkz6Whkhuok6TR9VvUHDGHMsEBvPBARUnS1ob9WWgAE1UD'
+}
+2023-02-01T00:39:42.567Z rpch:discovery-platform:db:error error: duplicate key value violates unique constraint "registered_nodes_pkey"
+    at Parser.parseErrorMessage (/app/node_modules/pg-protocol/dist/parser.js:287:98)
+    at Parser.handlePacket (/app/node_modules/pg-protocol/dist/parser.js:126:29)
+    at Parser.parse (/app/node_modules/pg-protocol/dist/parser.js:39:38)
+    at Socket.<anonymous> (/app/node_modules/pg-protocol/dist/index.js:11:42)
+    at Socket.emit (node:events:513:28)
+    at addChunk (node:internal/streams/readable:315:12)
+    at readableAddChunk (node:internal/streams/readable:289:9)
+    at Socket.Readable.push (node:internal/streams/readable:228:10)
+    at TCP.onStreamRead (node:internal/stream_base_commons:190:23)
+2023-02-01T00:39:43.248Z rpch:discovery-platform tracking pending requests
+2023-02-01T00:39:43.248Z rpch:discovery-platform:funding-service-api:verbose amount of pending requests 0
+2023-02-01T00:39:43.248Z rpch:discovery-platform tracking commitment for fresh nodes
+2023-02-01T00:39:43.248Z rpch:discovery-platform:db:verbose Querying for Registered nodes with filters { status: 'FRESH' }
+2023-02-01T00:39:43.250Z rpch:discovery-platform:db:verbose Registered nodes with filters query DB response []
+2023-02-01T00:39:44.248Z rpch:discovery-platform tracking pending requests
+2023-02-01T00:39:44.248Z rpch:discovery-platform:funding-service-api:verbose amount of pending requests 0
+2023-02-01T00:39:44.248Z rpch:discovery-platform tracking commitment for fresh nodes
+2023-02-01T00:39:44.248Z rpch:discovery-platform:db:verbose Querying for Registered nodes with filters { status: 'FRESH' }
+2023-02-01T00:39:44.249Z rpch:discovery-platform:db:verbose Registered nodes with filters query DB response []
+2023-02-01T00:39:44.483Z rpch:discovery-platform:entry-server:router:v1:verbose POST /client/funds { client: 'sandbox', quota: 999999999999 }
+2023-02-01T00:39:45.249Z rpch:discovery-platform tracking pending requests
+2023-02-01T00:39:45.249Z rpch:discovery-platform:funding-service-api:verbose amount of pending requests 0
+2023-02-01T00:39:45.249Z rpch:discovery-platform tracking commitment for fresh nodes
+2023-02-01T00:39:45.249Z rpch:discovery-platform:db:verbose Querying for Registered nodes with filters { status: 'FRESH' }
+2023-02-01T00:39:45.250Z rpch:discovery-platform:db:verbose Registered nodes with filters query DB response []
+2023-02-01T00:39:46.250Z rpch:discovery-platform tracking pending requests
+2023-02-01T00:39:46.250Z rpch:discovery-platform:funding-service-api:verbose amount of pending requests 0
+2023-02-01T00:39:46.251Z rpch:discovery-platform tracking commitment for fresh nodes
+2023-02-01T00:39:46.251Z rpch:discovery-platform:db:verbose Querying for Registered nodes with filters { status: 'FRESH' }
+2023-02-01T00:39:46.252Z rpch:discovery-platform:db:verbose Registered nodes with filters query DB response []
+2023-02-01T00:39:46.481Z rpch:discovery-platform:entry-server:router:v1:verbose POST /request/entry-node { client: 'sandbox' }

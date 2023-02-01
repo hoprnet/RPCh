@@ -11,15 +11,15 @@ const {
 const SKIP_CHECK_COMMITMENT = process.env.SKIP_CHECK_COMMITMENT === "true";
 
 // Unit amount of quotas a request costs
-const BASE_QUOTA = process.env.BASE_QUOTA ? Number(process.env.BASE_QUOTA) : 1;
+const BASE_QUOTA = process.env.BASE_QUOTA ? BigInt(process.env.BASE_QUOTA) : BigInt(1);
 
 // Port that server will listen for requests
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3020;
 
 // Minimal amount of balance a account must have to show commitment
 const BALANCE_THRESHOLD = process.env.BALANCE_THRESHOLD
-  ? Number(process.env.BALANCE_THRESHOLD)
-  : 1;
+  ? BigInt(process.env.BALANCE_THRESHOLD)
+  : BigInt(1);
 
 // Minimal amount of open channels a account must have to show commitment
 const CHANNELS_THRESHOLD = process.env.CHANNELS_THRESHOLD

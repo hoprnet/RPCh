@@ -64,7 +64,7 @@ ALTER SEQUENCE public.funding_requests_id_seq OWNED BY public.funding_requests.i
 CREATE TABLE public.quotas (
     id integer NOT NULL,
     client character varying(255) NOT NULL,
-    quota integer NOT NULL,
+    quota numeric(50,18) NOT NULL,
     action_taker character varying(255) NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
@@ -107,7 +107,7 @@ CREATE TABLE public.registered_nodes (
     hoprd_api_port integer NOT NULL,
     exit_node_pub_key character varying(255),
     native_address character varying(255) NOT NULL,
-    total_amount_funded numeric NOT NULL,
+    total_amount_funded numeric(50,18) NOT NULL,
     honesty_score numeric NOT NULL,
     reason character varying(255),
     status character varying(255) NOT NULL,

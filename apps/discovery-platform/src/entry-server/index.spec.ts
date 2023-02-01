@@ -18,7 +18,7 @@ import assert from "assert";
 
 const FUNDING_SERVICE_URL = "http://localhost:5000";
 const ACCESS_TOKEN = "ACCESS";
-const BASE_QUOTA = 1;
+const BASE_QUOTA = BigInt(1);
 const FAKE_ACCESS_TOKEN = "EcLjvxdALOT0eq18d8Gzz3DEr3AMG27NtL+++YPSZNE=";
 
 const nockFundingRequest = (nodeAddress: string) =>
@@ -74,7 +74,7 @@ describe("test entry server", function () {
 
     const getAccessTokenBody: getAccessTokenResponse = {
       accessToken: FAKE_ACCESS_TOKEN,
-      amountLeft: 10,
+      amountLeft: BigInt(10),
       expiredAt: new Date().toISOString(),
     };
 

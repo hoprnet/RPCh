@@ -55,7 +55,7 @@ const createMockNode = (
   hoprd_api_port: 1337,
   honesty_score: 0,
   status: "FRESH",
-  total_amount_funded: 0,
+  total_amount_funded: BigInt(0),
   created_at: Date.now().toString(),
   updated_at: Date.now().toString(),
 });
@@ -64,7 +64,7 @@ const createMockQuota = (params?: CreateQuota): CreateQuota => {
   return {
     actionTaker: params?.actionTaker ?? "discovery-platform",
     client: params?.client ?? "client",
-    quota: params?.quota ?? 1,
+    quota: params?.quota ?? BigInt(1),
   };
 };
 
@@ -168,7 +168,7 @@ describe("test db functions", function () {
     const mockQuota = createMockQuota({
       client: "client",
       actionTaker: "discovery",
-      quota: 10,
+      quota: BigInt(10),
     });
     await db.createQuota(dbInstance, mockQuota);
     await db.createQuota(dbInstance, mockQuota);
@@ -177,7 +177,7 @@ describe("test db functions", function () {
       createMockQuota({
         actionTaker: "discovery",
         client: "other client",
-        quota: 20,
+        quota: BigInt(20),
       })
     );
 
@@ -188,7 +188,7 @@ describe("test db functions", function () {
     const mockQuota = createMockQuota({
       client: "client",
       actionTaker: "discovery",
-      quota: 10,
+      quota: BigInt(10),
     });
     const createdQuota = await db.createQuota(dbInstance, mockQuota);
 
@@ -218,7 +218,7 @@ describe("test db functions", function () {
     const mockQuota = createMockQuota({
       client: "client",
       actionTaker: "discovery",
-      quota: 10,
+      quota: BigInt(10),
     });
     const createdQuota = await db.createQuota(dbInstance, mockQuota);
     if (!createdQuota.id) throw new Error("Could not create mock quota");

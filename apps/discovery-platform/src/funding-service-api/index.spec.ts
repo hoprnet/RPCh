@@ -26,7 +26,7 @@ now.setMinutes(now.getMinutes() + 30);
 
 const successfulGetApiAccessTokenBody: getAccessTokenResponse = {
   accessToken: FAKE_ACCESS_TOKEN,
-  amountLeft: 10,
+  amountLeft: BigInt(10),
   expiredAt: now.toISOString(),
 };
 
@@ -36,7 +36,7 @@ const createMockNode = (peerId?: string): QueryRegisteredNode => ({
   has_exit_node: true,
   honesty_score: 0,
   status: "FRESH",
-  total_amount_funded: 0,
+  total_amount_funded: BigInt(0),
   hoprd_api_endpoint: "localhost",
   hoprd_api_port: 5000,
   native_address: "someaddress",
@@ -81,7 +81,7 @@ describe("test funding service api class", function () {
       now.setMinutes(now.getMinutes() - 30);
       const expiredAccessTokenResponse: getAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: 10,
+        amountLeft: BigInt(10),
         expiredAt: now.toISOString(),
       };
       nockGetApiAccessToken.reply(200, expiredAccessTokenResponse);
@@ -99,7 +99,7 @@ describe("test funding service api class", function () {
     it("should return false if has been exceeded max amount", async function () {
       const exceededAccessTokenResponse: getAccessTokenResponse = {
         ...successfulGetApiAccessTokenBody,
-        amountLeft: 0,
+        amountLeft: BigInt(0),
       };
       nockGetApiAccessToken.reply(200, exceededAccessTokenResponse);
       // @ts-ignore-next-line
@@ -116,7 +116,7 @@ describe("test funding service api class", function () {
     // @ts-ignore
     fundingServiceApi.saveAccessToken({
       accessToken: FAKE_ACCESS_TOKEN,
-      amountLeft: amountLeft,
+      amountLeft: BigInt(amountLeft),
       expiredAt: now.toISOString(),
     });
     // @ts-ignore
@@ -129,7 +129,7 @@ describe("test funding service api class", function () {
   it("should get access token", async function () {
     const getAccessTokenResponse: getAccessTokenResponse = {
       accessToken: FAKE_ACCESS_TOKEN,
-      amountLeft: 10,
+      amountLeft: BigInt(10),
       expiredAt: new Date(Date.now()).toISOString(),
     };
     nockGetApiAccessToken.reply(200, getAccessTokenResponse);
@@ -146,7 +146,7 @@ describe("test funding service api class", function () {
 
     const getAccessTokenResponse: getAccessTokenResponse = {
       accessToken: FAKE_ACCESS_TOKEN,
-      amountLeft: 10,
+      amountLeft: BigInt(10),
       expiredAt: new Date(Date.now()).toISOString(),
     };
     nockGetApiAccessToken.reply(200, getAccessTokenResponse);
@@ -159,7 +159,7 @@ describe("test funding service api class", function () {
     nockFundingRequest(node.native_address).reply(200, postFundingResponseBody);
 
     await db.saveRegisteredNode(dbInstance, node);
-    const fundingResponse = await fundingServiceApi.requestFunds(5, node);
+    const fundingResponse = await fundingServiceApi.requestFunds(BigInt(5), node);
     const dbNode = await db.getRegisteredNode(dbInstance, "peer1");
 
     assert.equal(dbNode?.status, "FUNDING");
@@ -176,7 +176,7 @@ describe("test funding service api class", function () {
 
     const freshGetRequestStatusBody: getRequestStatusResponse = {
       accessTokenHash: "hash",
-      amount: "10",
+      amount: BigInt(10),
       chainId: 10,
       createdAt: new Date(),
       nodeAddress: "peer",
@@ -226,11 +226,11 @@ describe("test funding service api class", function () {
 
       await db.saveRegisteredNode(dbInstance, node);
 
-      const fundingResponse = await fundingServiceApi.requestFunds(5, node);
+      const fundingResponse = await fundingServiceApi.requestFunds(BigInt(5), node);
 
       const successfulGetRequestStatusBody: getRequestStatusResponse = {
         accessTokenHash: "hash",
-        amount: "5",
+        amount: BigInt(5),
         chainId: node.chain_id,
         createdAt: new Date(),
         nodeAddress: node.id,
@@ -281,11 +281,11 @@ describe("test funding service api class", function () {
 
       await db.saveRegisteredNode(dbInstance, node);
 
-      const fundingResponse = await fundingServiceApi.requestFunds(5, node);
+      const fundingResponse = await fundingServiceApi.requestFunds(BigInt(5), node);
 
       const successfulGetRequestStatusBody: getRequestStatusResponse = {
         accessTokenHash: "hash",
-        amount: "5",
+        amount: BigInt(5),
         chainId: node.chain_id,
         createdAt: new Date(),
         nodeAddress: node.id,
@@ -337,11 +337,11 @@ describe("test funding service api class", function () {
 
       await db.saveRegisteredNode(dbInstance, node);
 
-      const fundingResponse = await fundingServiceApi.requestFunds(5, node);
+      const fundingResponse = await fundingServiceApi.requestFunds(BigInt(5), node);
 
       const failedGetRequestStatusBody: getRequestStatusResponse = {
         accessTokenHash: "hash",
-        amount: "5",
+        amount: BigInt(5),
         chainId: node.chain_id,
         createdAt: new Date(),
         nodeAddress: node.id,

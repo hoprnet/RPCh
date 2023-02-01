@@ -50,7 +50,7 @@ const getAccountsFromBlockChange = gql`
  */
 export const checkCommitment = async (ops: {
   node: QueryRegisteredNode;
-  minBalance: number;
+  minBalance: bigint;
   minChannels: number;
 }): Promise<boolean | undefined> => {
   try {
@@ -106,12 +106,12 @@ export const checkCommitment = async (ops: {
  */
 export const validateNode = (
   graphRes: GetAccountChannelsResponse,
-  minBalance: number,
+  minBalance: bigint,
   minChannels: number
 ): boolean => {
   const sumOfBalance = graphRes.data.account.fromChannels.reduce(
     (acc, channel) => acc + channel.balance,
-    0
+    BigInt(0)
   );
   const amountOfOpenChannels = graphRes.data.account.fromChannels.length;
   return amountOfOpenChannels >= minChannels && sumOfBalance >= minBalance;

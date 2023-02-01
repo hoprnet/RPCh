@@ -60,6 +60,7 @@ export const doesAccessTokenHaveEnoughBalance = async (params: {
   maxAmountOfTokens: number;
   requestAmount?: number;
 }): Promise<Boolean> => {
+  // return true; // TODO: Trying to by pass this fot local tests
   const requestsByAccessToken =
     await params.requestService.getRequestsByAccessToken(params.token);
   const totalRequests = requestsByAccessToken?.filter(

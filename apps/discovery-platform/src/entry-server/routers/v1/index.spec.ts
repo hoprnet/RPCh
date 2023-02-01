@@ -18,7 +18,7 @@ import {
 
 const FUNDING_SERVICE_URL = "http://localhost:5000";
 const ACCESS_TOKEN = "ACCESS";
-const BASE_QUOTA = 1;
+const BASE_QUOTA = BigInt(1);
 const FAKE_ACCESS_TOKEN = "EcLjvxdALOT0eq18d8Gzz3DEr3AMG27NtL+++YPSZNE=";
 
 const nockFundingRequest = (nodeAddress: string) =>
@@ -129,7 +129,7 @@ describe("test v1 router", function () {
     const doesClientHaveQuotaResponse = await doesClientHaveQuota(
       dbInstance,
       "client",
-      2
+      BigInt(2)
     );
 
     assert(!doesClientHaveQuotaResponse);
@@ -143,7 +143,7 @@ describe("test v1 router", function () {
     const doesClientHaveQuotaResponse = await doesClientHaveQuota(
       dbInstance,
       "client",
-      1
+      BigInt(1)
     );
 
     assert(doesClientHaveQuotaResponse);
@@ -157,7 +157,7 @@ describe("test v1 router", function () {
 
       const replyBody: getAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: 10,
+        amountLeft: BigInt(10),
         expiredAt: new Date().toISOString(),
       };
 
@@ -202,7 +202,7 @@ describe("test v1 router", function () {
 
       const replyBody: getAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: 10,
+        amountLeft: BigInt(10),
         expiredAt: new Date().toISOString(),
       };
 
@@ -256,7 +256,7 @@ describe("test v1 router", function () {
 
       const apiAccessTokenResponse: getAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: 10,
+        amountLeft: BigInt(10),
         expiredAt: new Date().toISOString(),
       };
 
@@ -284,7 +284,7 @@ describe("test v1 router", function () {
 
       const apiTokenResponse: getAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: 10,
+        amountLeft: BigInt(10),
         expiredAt: new Date().toISOString(),
       };
 

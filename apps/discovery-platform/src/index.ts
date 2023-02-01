@@ -39,7 +39,7 @@ const main = () => {
 
 const start = async (ops: {
   db: DBInstance;
-  baseQuota: number;
+  baseQuota: bigint;
   fundingServiceUrl: string;
   accessToken: string;
 }) => {

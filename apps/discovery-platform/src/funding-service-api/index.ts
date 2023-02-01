@@ -23,7 +23,7 @@ export class FundingServiceApi {
   // Date when the current tokens expires
   private expiredAt: Date | undefined;
   // Maximum amount that the current token can request
-  private amountLeft: number | undefined;
+  private amountLeft: bigint | undefined;
   // Map of all pending requests
   private pendingRequests: Map<
     //peerId
@@ -59,7 +59,7 @@ export class FundingServiceApi {
    * @param amount
    * @returns string
    */
-  private async getAccessToken(amount?: number): Promise<string> {
+  private async getAccessToken(amount?: bigint): Promise<string> {
     if (!this.accessTokenIsValid(amount)) {
       const accessToken = this.fetchAccessToken();
       return accessToken;
@@ -73,7 +73,7 @@ export class FundingServiceApi {
    * @param amount
    * @returns boolean
    */
-  private accessTokenIsValid(amount?: number): boolean {
+  private accessTokenIsValid(amount?: bigint): boolean {
     if (!this.accessToken || !this.amountLeft || !this.expiredAt) {
       log.verbose("Access token for discovery platform does not exist");
       return false;
@@ -100,11 +100,11 @@ export class FundingServiceApi {
    * Create a new funding request in funding service
    * @param amount amount that should be funded to the node
    * @param node registered node that is going to receive the funding
-   * @param prevRetries number of times funding request has failed
+   * @param prevRetries bigint of times funding request has failed
    * @returns
    */
   public async requestFunds(
-    amount: number,
+    amount: bigint,
     node: QueryRegisteredNode,
     prevRetries?: number
   ) {
@@ -236,7 +236,7 @@ export class FundingServiceApi {
           ...node!,
           status: request.status === "SUCCESS" ? "READY" : "UNUSABLE",
           total_amount_funded:
-            Number(node.total_amount_funded) + Number(request.amount),
+            BigInt(node.total_amount_funded) + BigInt(request.amount),
         });
         this.pendingRequests.delete(peerId);
 
@@ -247,7 +247,7 @@ export class FundingServiceApi {
       ) {
         log.verbose("retrying request for node", node);
         const requestId = await this.requestFunds(
-          Number(request.amount),
+          BigInt(request.amount),
           node!
         );
         this.savePendingRequest(node.id, requestId, amountOfRetries + 1);

@@ -13,7 +13,7 @@ const createMockQuota = (params?: CreateQuota): CreateQuota => {
   return {
     actionTaker: params?.actionTaker ?? "discovery-platform",
     client: params?.client ?? "client",
-    quota: params?.quota ?? 1,
+    quota: params?.quota ?? BigInt(1),
   };
 };
 
@@ -46,7 +46,7 @@ describe("test quota functions", function () {
     const mockQuota = createMockQuota({
       client: "client",
       actionTaker: "discovery",
-      quota: 10,
+      quota: BigInt(10),
     });
     await createQuota(dbInstance, mockQuota);
     await createQuota(dbInstance, mockQuota);
@@ -55,7 +55,7 @@ describe("test quota functions", function () {
       createMockQuota({
         actionTaker: "discovery",
         client: "other client",
-        quota: 20,
+        quota: BigInt(20),
       })
     );
 
@@ -66,7 +66,7 @@ describe("test quota functions", function () {
     const mockQuota = createMockQuota({
       client: "client",
       actionTaker: "discovery",
-      quota: 10,
+      quota: BigInt(10),
     });
     const createdQuota = await createQuota(dbInstance, mockQuota);
     await updateQuota(dbInstance, { ...createdQuota, action_taker: "eve" });
@@ -77,7 +77,7 @@ describe("test quota functions", function () {
     const mockQuota = createMockQuota({
       client: "client",
       actionTaker: "discovery",
-      quota: 10,
+      quota: BigInt(10),
     });
     const createdQuota = await createQuota(dbInstance, mockQuota);
     if (!createdQuota.id) throw new Error("Could not create mock quota");
@@ -90,7 +90,7 @@ describe("test quota functions", function () {
     const mockQuota = createMockQuota({
       client: "client",
       actionTaker: "discovery",
-      quota: baseQuota,
+      quota: BigInt(baseQuota),
     });
     await createQuota(dbInstance, mockQuota);
     await createQuota(dbInstance, mockQuota);
