@@ -271,7 +271,10 @@ export const v1Router = (ops: {
           selectedNode
         );
         // fund entry node
-        await ops.fundingServiceApi.requestFunds(amountToFund, selectedNode);
+        await ops.fundingServiceApi.requestFunds({
+          amount: amountToFund,
+          node: selectedNode,
+        });
 
         // create negative quota (showing that the client has used up initial quota)
         await createQuota(ops.db, {
