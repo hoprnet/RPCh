@@ -26,10 +26,12 @@ export class FundingServiceApi {
   private amountLeft: number | undefined;
   // Map of all pending requests
   private pendingRequests: Map<
-    //peerId
-    string,
-    { amountOfRetries: number; requestId: number }
+    //requestId
+    number,
+    { amountOfRetries: number; previousRequestId: number; peerId: string }
   > = new Map();
+  // Amount of times a request can fail and be sent again
+  private maxAmountOfRetries = 3;
 
   constructor(private url: string, private db: DBInstance) {}
 
@@ -60,11 +62,11 @@ export class FundingServiceApi {
    * @returns string
    */
   private async getAccessToken(amount?: number): Promise<string> {
-    if (!this.accessTokenIsValid(amount)) {
-      const accessToken = this.fetchAccessToken();
+    if (!this.accessToken || !this.accessTokenIsValid(amount)) {
+      const accessToken = await this.fetchAccessToken();
       return accessToken;
     } else {
-      return this.accessToken!;
+      return this.accessToken;
     }
   }
 
@@ -103,21 +105,21 @@ export class FundingServiceApi {
    * @param prevRetries number of times funding request has failed
    * @returns
    */
-  public async requestFunds(
-    amount: number,
-    node: QueryRegisteredNode,
-    prevRetries?: number
-  ) {
-    if (!this.accessTokenIsValid(amount)) {
-      await this.getAccessToken();
-    }
-
+  public async requestFunds(params: {
+    amount: number;
+    node: QueryRegisteredNode;
+    previousRequestId?: number;
+    amountOfRetries?: number;
+  }) {
     try {
+      await this.getAccessToken();
+      const { amount, node } = params;
       const dbNode = await getRegisteredNode(this.db, node.id);
       if (!dbNode) throw new Error("Node is not registered");
-      log.verbose("requesting from funding service", {
+      log.verbose("requesting to funding service", {
         amount: String(amount),
         chainId: node.chain_id,
+        peerId: node.id,
       });
 
       const body: postFundingRequest = {
@@ -143,6 +145,14 @@ export class FundingServiceApi {
       const { id: requestId, amountLeft }: postFundingResponse =
         fundingResponseJson;
 
+      if (!requestId) {
+        log.error(
+          "funding service did not reply with a request id",
+          fundingResponseJson
+        );
+        throw new Error("funding service did not reply with a request id");
+      }
+
       // save funding request in db
       await createFundingRequest(this.db, {
         registeredNodeId: dbNode.id,
@@ -151,7 +161,12 @@ export class FundingServiceApi {
       });
 
       this.amountLeft = amountLeft;
-      this.savePendingRequest(node.id, requestId, prevRetries ?? 0);
+      this.savePendingRequest({
+        requestId,
+        peerId: node.id,
+        previousRequestId: params.previousRequestId,
+        amountOfRetries: params.amountOfRetries,
+      });
       return requestId;
     } catch (e: any) {
       throw new Error(e.message);
@@ -162,9 +177,7 @@ export class FundingServiceApi {
    * Get available funds from funding service
    */
   public async getAvailableFunds() {
-    if (!this.accessTokenIsValid()) {
-      await this.getAccessToken();
-    }
+    await this.getAccessToken();
 
     const funds = await fetch(`${this.url}/api/funds`, {
       headers: {
@@ -182,9 +195,7 @@ export class FundingServiceApi {
    * @param requestId
    */
   private async getRequestStatus(requestId: string) {
-    if (!this.accessTokenIsValid()) {
-      await this.getAccessToken();
-    }
+    await this.getAccessToken();
 
     const res = await fetch(`${this.url}/api/request/status/${requestId}`, {
       headers: {
@@ -200,14 +211,16 @@ export class FundingServiceApi {
   /**
    * Save new request to pending requests so we can track it
    */
-  private savePendingRequest(
-    peerId: string,
-    requestId: number,
-    amountOfRetries: number
-  ) {
-    this.pendingRequests.set(peerId, {
-      amountOfRetries: amountOfRetries,
-      requestId: requestId,
+  private savePendingRequest(params: {
+    requestId: number;
+    peerId: string;
+    previousRequestId?: number;
+    amountOfRetries?: number;
+  }) {
+    this.pendingRequests.set(params.requestId, {
+      previousRequestId: params.previousRequestId ?? 0,
+      amountOfRetries: params.amountOfRetries ?? 0,
+      peerId: params.peerId,
     });
   }
 
@@ -215,42 +228,77 @@ export class FundingServiceApi {
    * Goes through all pending requests and chooses to prune/retry/ignore
    */
   public async checkForPendingRequests() {
-    log.verbose("amount of pending requests", this.pendingRequests.size);
+    log.verbose(
+      "pending requests",
+      this.pendingRequests.size ? [...this.pendingRequests.keys()] : []
+    );
+    const snapshotPendingRequests = [...this.pendingRequests.entries()];
     for (const [
-      peerId,
-      { amountOfRetries, requestId },
-    ] of this.pendingRequests.entries()) {
+      requestId,
+      { amountOfRetries, previousRequestId, peerId },
+    ] of snapshotPendingRequests) {
       log.verbose("handling pending request", requestId);
       const request = await this.getRequestStatus(String(requestId));
       const node = await getRegisteredNode(this.db, peerId);
 
       if (!node) throw new Error("Registered node does not exist");
 
+      log.verbose(
+        `request id: ${requestId} is in status ${request.status}
+        for node ${node.id}`
+      );
+
       // checks if it should prune
       if (
         request.status === "SUCCESS" ||
         request.status === "REJECTED-DURING-PROCESSING"
       ) {
-        log.verbose("request for node", node);
         await updateRegisteredNode(this.db, {
-          ...node!,
+          ...node,
           status: request.status === "SUCCESS" ? "READY" : "UNUSABLE",
           total_amount_funded:
             node.total_amount_funded + Number(request.amount),
         });
-        this.pendingRequests.delete(peerId);
+        log.verbose(
+          "request has been fulfilled",
+          request.status,
+          requestId,
+          peerId
+        );
+        this.pendingRequests.delete(requestId);
 
         // check if it should retry
       } else if (
         request.status === "FAILED" ||
         request.status === "FAILED-DURING-PROCESSING"
       ) {
-        log.verbose("retrying request for node", node);
-        const requestId = await this.requestFunds(
-          Number(request.amount),
-          node!
-        );
-        this.savePendingRequest(node.id, requestId, amountOfRetries + 1);
+        if (amountOfRetries < this.maxAmountOfRetries) {
+          log.verbose("retrying request for node", node);
+          const previousRequestId = requestId;
+          const newRequestId = await this.requestFunds({
+            amount: Number(request.amount),
+            node: node,
+            amountOfRetries: amountOfRetries + 1,
+            previousRequestId,
+          });
+          log.verbose(
+            `deleting old request id ${previousRequestId} because 
+            request will be fulfilled with request id ${newRequestId}`
+          );
+          this.pendingRequests.delete(previousRequestId);
+          this.savePendingRequest({
+            peerId: node.id,
+            requestId: newRequestId,
+            amountOfRetries: amountOfRetries + 1,
+            previousRequestId,
+          });
+        } else {
+          log.error(
+            `could not fund node ${node.id} with request id ${requestId} 
+            and previous request id ${previousRequestId}`
+          );
+          this.pendingRequests.delete(requestId);
+        }
       }
     }
   }
