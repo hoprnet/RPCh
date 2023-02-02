@@ -18,6 +18,7 @@ describe("test hoprd.ts / sendMessage", function () {
       apiToken: ENTRY_NODE_API_TOKEN,
       destination: EXIT_NODE_PEER_ID,
       message: "hello",
+      path: [],
     });
     assert.equal(res, "someresponse");
   });
@@ -33,6 +34,7 @@ describe("test hoprd.ts / sendMessage", function () {
       apiToken: ENTRY_NODE_API_TOKEN,
       destination: EXIT_NODE_PEER_ID,
       message: "hello",
+      path: [],
     });
     assert.equal(res, undefined);
   });
