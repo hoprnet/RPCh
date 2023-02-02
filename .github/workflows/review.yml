@@ -37,7 +37,7 @@ jobs:
       - name: Review linting
         run: yarn lint
 
-      - name: Review dependancies
+      - name: Review dependencies
         run: yarn depcheck
 
       - name: Run tests and coverage
