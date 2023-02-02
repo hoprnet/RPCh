@@ -371,12 +371,19 @@ export default class SDK {
       const segments = message.toSegments();
       this.requestCache.addRequest(req, resolve, reject);
       for (const segment of segments) {
-        hoprd.sendMessage({
-          apiEndpoint: this.entryNode!.apiEndpoint,
-          apiToken: this.entryNode!.apiToken,
-          message: segment.toString(),
-          destination: this.exitNode!.peerId,
-        });
+        hoprd
+          .sendMessage({
+            apiEndpoint: this.entryNode!.apiEndpoint,
+            apiToken: this.entryNode!.apiToken,
+            message: segment.toString(),
+            destination: this.exitNode!.peerId,
+          })
+          .catch((e) => {
+            log.error("failed to send message to hoprd", segment.toString(), e);
+            this.onRequestRemoval(req);
+            this.requestCache.removeRequest(req);
+            reject("failed to send message to hoprd");
+          });
       }
     });
   }
