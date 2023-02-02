@@ -257,7 +257,7 @@ export class FundingServiceApi {
           ...node,
           status: request.status === "SUCCESS" ? "READY" : "UNUSABLE",
           total_amount_funded:
-            node.total_amount_funded + Number(request.amount),
+            Number(node.total_amount_funded) + Number(request.amount),
         });
         log.verbose(
           "request has been fulfilled",
