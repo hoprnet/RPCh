@@ -6,7 +6,6 @@ version: "3"
 volumes:
   # hoprd node identity files
   pluto-data: # exit node identity files
-
   exit-node-data:
 
 x-exit-service: &exit

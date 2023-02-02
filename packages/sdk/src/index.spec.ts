@@ -18,15 +18,9 @@ jest.mock("@rpch/common", () => ({
   ...jest.requireActual("@rpch/common"),
   hoprd: {
     sendMessage: jest.fn(async () => "MOCK_SEND_MSG_RESPONSE"),
-    createMessageListener: jest.fn(
-      async (
-        _apiEndpoint: string,
-        _apiToken: string,
-        _onMessage: (message: string) => void
-      ) => {
-        return () => {};
-      }
-    ),
+    createMessageListener: jest.fn(async () => {
+      return () => {};
+    }),
   },
 }));
 
@@ -46,9 +40,11 @@ const createSdkMock = (
 } => {
   const store = fixtures.createAsyncKeyValStore();
 
-  fixtures
-    .nockSendMessageApi(nock(ENTRY_NODE_API_ENDPOINT).persist(true))
-    .reply(202, "someresponse");
+  // send message to entry node
+  nock(ENTRY_NODE_API_ENDPOINT)
+    .post("/api/v2/messages")
+    .reply(202, "someresponse")
+    .persist();
 
   const ops: HoprSdkOps = {
     timeout: overwriteOps?.timeout ?? TIMEOUT,
