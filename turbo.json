@@ -98,9 +98,6 @@
       "outputs": []
     },
     "lint": {
-      "dependsOn": [
-        "format"
-      ],
       "outputs": []
     },
     "test": {

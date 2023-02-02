@@ -8,7 +8,7 @@
     "build": "tsup",
     "dev": "yarn build --watch",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
-    "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
+    "lint": "eslint \"src/**/*.ts*\"",
     "test": "jest --coverage"
   },
   "devDependencies": {
@@ -20,7 +20,6 @@
     "nock": "^13.2.9"
   },
   "dependencies": {
-    "@rpch/common": "0.1.5",
     "@rpch/crypto-bridge": "0.1.5",
     "cross-fetch": "^3.1.5",
     "peer-id": "^0.16.0"

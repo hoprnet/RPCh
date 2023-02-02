@@ -8,7 +8,7 @@
     "build": "tsup",
     "dev": "yarn build --watch",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
-    "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
+    "lint": "eslint \"src/**/*.ts*\"",
     "test": "jest --coverage"
   },
   "devDependencies": {
