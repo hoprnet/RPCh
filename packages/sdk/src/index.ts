@@ -381,25 +381,12 @@ export default class SDK {
       const segments = message.toSegments();
       this.requestCache.addRequest(req, resolve, reject);
 
-      // TODO: remove once in Riga release
-      // ALPHA intermediate selection
-      const eligibleIntermediateNodes = this.exitNodes.filter((n) => {
-        return (
-          n.peerId !== this.entryNode!.peerId &&
-          n.peerId !== req.exitNodeDestination
-        );
-      });
-
       for (const segment of segments) {
         hoprd.sendMessage({
           apiEndpoint: this.entryNode!.apiEndpoint,
           apiToken: this.entryNode!.apiToken,
           message: segment.toString(),
           destination: req.exitNodeDestination,
-          intermediate:
-            eligibleIntermediateNodes.length > 0
-              ? utils.randomlySelectFromArray(eligibleIntermediateNodes).peerId
-              : undefined,
         });
       }
     });

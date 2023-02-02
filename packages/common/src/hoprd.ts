@@ -12,13 +12,13 @@ export const sendMessage = async ({
   apiToken,
   message,
   destination,
-  intermediate,
+  path,
 }: {
   apiEndpoint: string;
   apiToken: string | undefined;
   message: string;
   destination: string;
-  intermediate?: string;
+  path?: string[];
 }): Promise<void | string> => {
   const [url, headers] = createApiUrl(
     "http",
@@ -30,8 +30,20 @@ export const sendMessage = async ({
   const body: { body: string; recipient: string; path?: string[] } = {
     body: message,
     recipient: destination,
-    path: intermediate ? [intermediate] : undefined,
+    path,
   };
+
+  log.verbose(
+    "sending message to HOPRd node",
+    message,
+    destination,
+    "with path",
+    path && path.length > 0
+      ? path.join("-")
+      : path && path.length === 0
+      ? "direct"
+      : "auto-path"
+  );
 
   const response = await fetch(url, {
     method: "POST",
@@ -45,7 +57,7 @@ export const sendMessage = async ({
       message,
       destination,
       "with path",
-      body.path ? body.path.join("-") : "auto-path"
+      path && path.length > 0 ? path.join("-") : "direct"
     );
     const text = await response.text();
     return text;

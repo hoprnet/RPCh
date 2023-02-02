@@ -33,50 +33,6 @@ const {
 const DEFAULT_IDENTITY_DIR = path.join(process.cwd(), ".identity");
 const DEFAULT_DATA_DIR = path.join(process.cwd(), "db");
 
-/**
- * Fetch PeerIds which we have an outgoing channel with.
- * @returns list of PeerIds
- */
-const fetchMyOutgoingPeers = async ({
-  apiEndpoint,
-  apiToken,
-}: {
-  apiEndpoint: string;
-  apiToken: string | undefined;
-}): Promise<string[]> => {
-  const [url, headers] = utils.createApiUrl(
-    "http",
-    apiEndpoint,
-    "/api/v2/channels",
-    apiToken
-  );
-
-  const response = await fetch(url, {
-    method: "GET",
-    headers,
-  });
-
-  if (response.status === 200) {
-    log.verbose("received addresses from HOPRd node");
-    const result: {
-      outgoing: {
-        channelId: string;
-        peerId: string;
-        status: string;
-        balance: string;
-      }[];
-    } = await response.json();
-    return result.outgoing.map((channel) => channel.peerId);
-  } else {
-    log.error(
-      "failed to fetch channels from HOPRd node",
-      response.status,
-      await response.text()
-    );
-    throw Error("failed to fetch channels from HOPRd node");
-  }
-};
-
 export const start = async (ops: {
   exit: {
     sendRpcRequest: typeof exit.sendRpcRequest;
@@ -138,21 +94,11 @@ export const start = async (ops: {
         response
       );
       for (const segment of rpchResponse.toMessage().toSegments()) {
-        // TODO: remove once in Riga release
-        // ALPHA intermediate selection
-        const eligibleIntermediateNodes = peers.filter(
-          (p) => p !== rpchRequest.entryNodeDestination
-        );
-
         ops.hoprd.sendMessage({
           apiEndpoint: ops.apiEndpoint,
           apiToken: ops.apiToken,
           message: segment.toString(),
           destination: rpchRequest.entryNodeDestination,
-          intermediate:
-            eligibleIntermediateNodes.length > 0
-              ? utils.randomlySelectFromArray(eligibleIntermediateNodes)
-              : undefined,
         });
       }
     } catch (error) {
@@ -182,33 +128,12 @@ export const start = async (ops: {
   log.verbose("Got identity");
   log.normal("Running exit node with public key", publicKey);
 
-  // TODO: remove once in Riga release
-  // keep a list of peers updated
-  let peers: string[] = [];
-  const updatePeerList = async () => {
-    try {
-      const newPeers = await fetchMyOutgoingPeers({
-        apiEndpoint: ops.apiEndpoint,
-        apiToken: ops.apiToken,
-      });
-      if (newPeers.length > 0) {
-        peers = newPeers;
-      }
-    } catch {}
-  };
-  await updatePeerList();
-
   const cache = new Cache(onMessage);
   const intervals: NodeJS.Timer[] = [];
   intervals.push(
     setInterval(() => {
       cache.removeExpired(ops.timeout);
     }, 1000)
-  );
-  intervals.push(
-    setInterval(() => {
-      updatePeerList();
-    }, 60e3)
   );
 
   const stopMessageListening = await ops.hoprd.createMessageListener(
