@@ -25,6 +25,12 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
+      - name: Build
+        uses: ./.github/actions/build-rpch
+        env:
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+
       - name: Review formatting
         run: yarn format
 
@@ -33,12 +39,6 @@ jobs:
 
       - name: Review dependancies
         run: yarn depcheck
-
-      - name: Build
-        uses: ./.github/actions/build-rpch
-        env:
-          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
       - name: Run tests and coverage
         run: yarn test --ci
