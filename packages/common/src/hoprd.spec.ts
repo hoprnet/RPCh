@@ -6,8 +6,8 @@ import * as fixtures from "./fixtures";
 const ENTRY_NODE_API_ENDPOINT = "http://entry_node";
 const ENTRY_NODE_API_TOKEN = "12345";
 const EXIT_NODE_PEER_ID = fixtures.EXIT_NODE_HOPRD_PEER_ID_A;
-const NOCK_SEND_MESSAGE = nock(ENTRY_NODE_API_ENDPOINT).post(
-  "/api/v2/messages"
+const NOCK_SEND_MESSAGE = nock(ENTRY_NODE_API_ENDPOINT).post((uri) =>
+  uri.includes("/api/v2/messages")
 );
 
 describe("test hoprd.ts / sendMessage", function () {
