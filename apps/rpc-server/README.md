@@ -17,12 +17,10 @@ After building the image, you will be able to run it with: \
 
 ```sh
 docker run \
--e HOPRD_API_ENDPOINT="<YOUR HOPRD API ENDPOINT>" \
--e HOPRD_API_TOKEN="<YOUR HOPRD API TOKEN>" \
 -e DEBUG="rpch*,-*verbose,-*metrics" \
--e RPCH_PASSWORD="PleaseChangeMe" \
--e RPCH_IDENTITY_DIR= \
--e RPCH_PRIVATE_KEY= \
--e RPCH_DATA_DIR= \
+-e RESPONSE_TIMEOUT= \
+-e DISCOVERY_PLATFORM_API_ENDPOINT= \
+-e PORT= \
+-e DATA_DIR= \
 exit-node
 ```
