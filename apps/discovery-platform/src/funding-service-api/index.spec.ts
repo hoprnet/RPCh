@@ -172,6 +172,39 @@ describe("test funding service api class", function () {
       true
     );
   });
+  it("should not change state if requesting funds failed", async function () {
+    const node = createMockNode("peer1");
+    const amountLeft = 10;
+    const requestId = 123;
+
+    const getAccessTokenResponse: getAccessTokenResponse = {
+      accessToken: FAKE_ACCESS_TOKEN,
+      amountLeft: 10,
+      expiredAt: new Date(Date.now()).toISOString(),
+    };
+    nockGetApiAccessToken.reply(200, getAccessTokenResponse);
+
+    const postFundingResponseBody: Object = {
+      body: "any error",
+    };
+
+    nockFundingRequest(node.native_address).reply(400, postFundingResponseBody);
+
+    await db.saveRegisteredNode(dbInstance, node);
+    try {
+      const fundingResponse = await fundingServiceApi.requestFunds({
+        amount: 5,
+        node,
+      });
+    } catch (e) {
+      let message = "Unknown Error";
+      if (e instanceof Error) message = e.message;
+      const dbNode = await db.getRegisteredNode(dbInstance, "peer1");
+
+      assert.notEqual(dbNode?.status, "FUNDING");
+      expect(message).toContain("funding request failed");
+    }
+  });
   it("should get request status", async function () {
     const requestId = 123;
 
@@ -327,7 +360,7 @@ describe("test funding service api class", function () {
         "0"
       );
     });
-    it.only("should retry request if request failed and delete after 3 times", async function () {
+    it("should retry request if request failed and delete after 3 times", async function () {
       // @ts-ignore
       fundingServiceApi.maxAmountOfRetries = 1;
       const node = createMockNode("peer1");

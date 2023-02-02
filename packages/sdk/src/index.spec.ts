@@ -227,7 +227,7 @@ describe("test SDK class", function () {
         assert.equal(addMetricsEntryNode.mock.calls.length, 0);
       });
 
-      it.only("does not select new node when node score is ok", async function () {
+      it("does not select new node when node score is ok", async function () {
         // @ts-ignore
         const addMetricsEntryNode = jest.spyOn(sdk, "selectEntryNode");
         // @ts-ignore

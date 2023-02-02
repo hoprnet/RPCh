@@ -140,18 +140,15 @@ export class FundingServiceApi {
 
       let fundingResponseJson = await res.json();
       log.verbose("funding service response", fundingResponseJson);
-      await updateRegisteredNode(this.db, { ...dbNode, status: "FUNDING" });
-
       const { id: requestId, amountLeft }: postFundingResponse =
         fundingResponseJson;
 
       if (!requestId) {
-        log.error(
-          "funding service did not reply with a request id",
-          fundingResponseJson
-        );
-        throw new Error("funding service did not reply with a request id");
+        log.error("funding request failed", fundingResponseJson);
+        throw new Error("funding request failed: " + fundingResponseJson);
       }
+
+      await updateRegisteredNode(this.db, { ...dbNode, status: "FUNDING" });
 
       // save funding request in db
       await createFundingRequest(this.db, {
