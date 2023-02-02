@@ -1,5 +1,6 @@
+import type { Server } from "http";
 import * as path from "path";
-import levelup from "levelup";
+import levelup, { type LevelUp } from "levelup";
 import leveldown from "leveldown";
 import RPChSDK from "@rpch/sdk";
 import * as server from "./server";
@@ -14,57 +15,76 @@ const {
   DISCOVERY_PLATFORM_API_ENDPOINT,
 } = process.env;
 
-export const start = async (ops: {
-  server: {
-    createServer: typeof server.createServer;
-  };
-  dataDir: string;
-  timeout: number;
-  discoveryPlatformApiEndpoint: string;
-}): Promise<() => void> => {
-  const sdk = new RPChSDK(
-    {
-      timeout: ops.timeout,
-      discoveryPlatformApiEndpoint: ops.discoveryPlatformApiEndpoint,
-    },
-    async (clientId, counter) => {
-      await db.put(clientId, counter);
-    },
-    async (clientId) => {
-      try {
-        const val = await db.get(clientId);
-        return val.toString();
-      } catch {
-        return "0";
+export class RPCServer {
+  private db: LevelUp;
+  public sdk?: RPChSDK;
+  public server?: Server;
+  private stopServer?: () => void;
+
+  constructor(
+    private dataDir: string,
+    private timeout: number,
+    private discoveryPlatformApiEndpoint: string
+  ) {
+    log.verbose("Initializing DB at", this.dataDir);
+    this.db = levelup(leveldown(this.dataDir));
+  }
+
+  public async start() {
+    log.verbose("Initializing RPCh SDK", {
+      timeout: this.timeout,
+      discoveryPlatformApiEndpoint: this.discoveryPlatformApiEndpoint,
+    });
+    this.sdk = new RPChSDK(
+      {
+        timeout: this.timeout,
+        discoveryPlatformApiEndpoint: this.discoveryPlatformApiEndpoint,
+      },
+      async (clientId, counter) => {
+        await this.db.put(clientId, counter);
+      },
+      async (clientId) => {
+        try {
+          const val = await this.db.get(clientId);
+          return val.toString();
+        } catch {
+          return "0";
+        }
       }
-    }
-  );
+    );
+    await this.sdk.start();
 
-  log.verbose("Initializing DB at", ops.dataDir);
-  const db = levelup(leveldown(ops.dataDir));
-
-  log.normal("Starting rpc-server");
-  const stopServer = ops.server.createServer(
-    "0.0.0.0",
-    Number(PORT),
-    async (body, response, exitProvider) => {
-      try {
-        const rpcRequest = await sdk.createRequest(exitProvider, body);
-        const rpcResponse = await sdk.sendRequest(rpcRequest);
-        response.write(rpcResponse.body);
-        response.statusCode = 200;
-        response.end();
-      } catch {
-        response.statusCode = 400;
-        response.end();
+    log.normal("Starting rpc-server");
+    const result = server.createServer(
+      "0.0.0.0",
+      Number(PORT),
+      async (body, response, exitProvider) => {
+        try {
+          if (!this.sdk) throw Error("SDK not initialized");
+          const rpcRequest = await this.sdk.createRequest(exitProvider, body);
+          const rpcResponse = await this.sdk.sendRequest(rpcRequest);
+          response.write(rpcResponse.body);
+          response.statusCode = 200;
+          response.end();
+        } catch {
+          response.statusCode = 400;
+          response.end();
+        }
       }
-    }
-  );
+    );
+    this.server = result.server;
+    this.stopServer = result.stop;
+  }
 
-  return () => {
-    stopServer();
-  };
-};
+  public async stop() {
+    if (this.sdk) {
+      await this.sdk.stop();
+    }
+    if (this.stopServer) {
+      this.stopServer();
+    }
+  }
+}
 
 // if this file is the entrypoint of the nodejs process
 if (require.main === module) {
@@ -79,10 +99,10 @@ if (require.main === module) {
 
   log.normal("Starting rpc-server");
 
-  start({
-    server,
-    dataDir: DATA_DIR,
-    timeout: RESPONSE_TIMEOUT,
-    discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
-  }).catch((error) => log.error(error));
+  const rpcServer = new RPCServer(
+    DATA_DIR,
+    RESPONSE_TIMEOUT,
+    DISCOVERY_PLATFORM_API_ENDPOINT
+  );
+  rpcServer.start().catch((error) => log.error(error));
 }

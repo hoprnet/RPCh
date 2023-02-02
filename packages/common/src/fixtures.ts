@@ -182,15 +182,6 @@ export function generateMockedFlow(
 }
 
 /**
- * Given a nock scope, make it only resolve to requests
- * matching HOPRd's message API.
- * @param nock
- */
-export const nockSendMessageApi = (nock: Nock.Scope): Nock.Interceptor => {
-  return nock.post((uri) => uri.includes("/api/v2/messages"));
-};
-
-/**
  * Create a key val store with async methods.
  * Used to mock storage operations.
  */

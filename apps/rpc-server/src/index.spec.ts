@@ -1,84 +1,67 @@
 import assert from "assert";
-import * as fixtures from "@rpch/common/build/fixtures";
 import MemDown from "memdown";
-import { utils } from "ethers";
-import { start as startExitNode } from "./index";
+import supertest from "supertest";
+import { RPCServer } from ".";
+import mockSdk from "@rpch/sdk/build/index.mock";
 
 jest.mock("leveldown", () => MemDown);
-
-const [clientRequest, , exitNodeResponse] = fixtures.generateMockedFlow(
-  3,
-  fixtures.RPC_REQ_LARGE,
-  undefined,
-  fixtures.RPC_RES_LARGE
-);
-
-const createMockedSetup = async () => {
-  let triggerMessageListenerOnMessage: (message: string) => void = () => {};
-  const exit = {
-    sendRpcRequest: jest.fn(async () => {
-      return exitNodeResponse.body;
-    }),
-  };
-  const hoprd = {
+// mock HOPRd interactions
+jest.mock("@rpch/common", () => ({
+  ...jest.requireActual("@rpch/common"),
+  hoprd: {
     sendMessage: jest.fn(async () => "MOCK_SEND_MSG_RESPONSE"),
-    createMessageListener: jest.fn(
-      async (
-        _apiEndpoint: string,
-        _apiToken: string,
-        onMessage: (message: string) => void
-      ) => {
-        triggerMessageListenerOnMessage = onMessage;
-        return () => {};
-      }
-    ),
-    fetchPeerId: jest.fn(
-      async () => exitNodeResponse.request.exitNodeDestination
-    ),
-  };
+    createMessageListener: jest.fn(async () => {
+      return () => {};
+    }),
+  },
+}));
 
-  const stopExitNode = await startExitNode({
-    exit,
-    hoprd,
-    privateKey: utils.arrayify(fixtures.EXIT_NODE_PRIV_KEY_A),
-    identityDir: "",
-    password: "",
-    dataDir: "",
-    apiEndpoint: "",
-    apiToken: "",
-    timeout: 5e3,
-  });
-
-  return {
-    triggerMessageListenerOnMessage,
-    exit,
-    hoprd,
-    stopExitNode,
-  };
-};
+const DISCOVERY_PLATFORM_API_ENDPOINT = "http://discovery_platform";
+const TIMEOUT = 5e3;
 
 describe("test index.ts", function () {
-  it("should call all the right methods when a Request is received", async function () {
-    const mock = await createMockedSetup();
+  let rpcServer: RPCServer;
+  let request: supertest.SuperTest<supertest.Test>;
 
-    // send Request segments into Cache
-    for (const segment of clientRequest.toMessage().toSegments()) {
-      mock.triggerMessageListenerOnMessage(segment.toString());
-    }
+  beforeAll(async function () {
+    rpcServer = new RPCServer("", TIMEOUT, DISCOVERY_PLATFORM_API_ENDPOINT);
+    await rpcServer.start();
 
-    // wait for sendRpcRequest to be called
-    while (mock.exit.sendRpcRequest.mock.calls.length === 0) {
-      await fixtures.wait(1);
-    }
+    // hook to emulate responses from the exit node
+    if (!rpcServer.sdk) throw Error("SDK not initialized");
+    if (!rpcServer.server) throw Error("Server not initialized");
+    rpcServer.sdk = mockSdk(rpcServer.sdk);
+    request = supertest(rpcServer.server);
+  });
 
-    // Cache should trigger `onMessage` which would then call `sendRpcRequest`
-    assert.equal(mock.exit.sendRpcRequest.mock.calls.length, 1);
-    // Response is now created, check if Response segments match our mocked Response
-    assert.equal(
-      mock.hoprd.sendMessage.mock.calls.length,
-      clientRequest.toMessage().toSegments().length
-    );
+  afterAll(async function () {
+    await rpcServer.stop();
+  });
 
-    mock.stopExitNode();
+  it("should fail when no provider is added", async function () {
+    await request
+      .post("/")
+      .send(JSON.stringify({ id: "1", method: "eth_chainId" }))
+      .expect(422);
+  });
+
+  it("should get chain id", async function () {
+    const response = await request
+      .post("/?exit-provider=someprovider")
+      .send(JSON.stringify({ id: "1", method: "eth_chainId" }))
+      .expect(200);
+
+    const json = JSON.parse(response.text);
+    assert.equal(json.result, "0x01");
+  });
+
+  it("should get block number", async function () {
+    const response = await request
+      .post("/?exit-provider=someprovider")
+      .send(JSON.stringify({ id: "2", method: "eth_blockNumber" }))
+      .expect(200);
+
+    const json = JSON.parse(response.text);
+    assert.equal(json.result, "0x17f88c8");
   });
 });

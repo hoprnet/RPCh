@@ -23,7 +23,10 @@ export const createServer = (
     exitProvider: string,
     exitPeerId?: string
   ) => void
-): (() => void) => {
+): {
+  server: http.Server;
+  stop: () => void;
+} => {
   const server = http.createServer((req, res) => {
     req.on("data", (data) => {
       let exitProvider: string | undefined;
@@ -55,8 +58,11 @@ export const createServer = (
     log.normal(`HORP rpc-server is listening on ${host}:${port}`);
   });
 
-  return () => {
-    log.normal("Closing rpc-server");
-    server.close();
+  return {
+    server,
+    stop: () => {
+      log.normal("Closing rpc-server");
+      server.close();
+    },
   };
 };

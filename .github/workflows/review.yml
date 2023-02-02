@@ -51,6 +51,7 @@ jobs:
           - exit-node
           - funding-service
           - discovery-platform
+          - rpc-server
           - sandbox
         include:
           - project: exit-node
@@ -58,6 +59,8 @@ jobs:
           - project: funding-service
             directory: apps
           - project: discovery-platform
+            directory: apps
+          - project: rpc-server
             directory: apps
           - project: sandbox
             directory: devkit
