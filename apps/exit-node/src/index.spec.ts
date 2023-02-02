@@ -44,7 +44,7 @@ const createMockedSetup = async () => {
     identityDir: "",
     password: "",
     dataDir: "",
-    apiEndpoint: "",
+    apiEndpoint: "http://entry_node",
     apiToken: "",
     timeout: 5e3,
   });

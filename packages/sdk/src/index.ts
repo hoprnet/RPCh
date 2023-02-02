@@ -16,6 +16,7 @@ import RequestCache from "./request-cache";
 import { createLogger } from "./utils";
 
 const log = createLogger();
+const DEADLOCK_MS = 1e3 * 60 * 0.5; // 30s
 
 /**
  * HOPR SDK options.
@@ -50,7 +51,7 @@ export type ExitNode = {
 export default class SDK {
   private crypto?: typeof RPChCryptoNode | typeof RPChCryptoWeb;
   // single interval for the SDK for things that need to be checked.
-  private interval?: NodeJS.Timer;
+  private intervals: NodeJS.Timer[] = [];
   private segmentCache: SegmentCache;
   private requestCache: RequestCache;
   private reliabilityScore: ReliabilityScore;
@@ -58,7 +59,6 @@ export default class SDK {
   private entryNode?: EntryNode;
   // available exit nodes
   private exitNodes: ExitNode[] = [];
-  private exitNode?: ExitNode;
   // stopMessageListener
   private stopMessageListener?: () => void;
   // an epoch timestamp that stops creating requests until that time has passed
@@ -83,7 +83,7 @@ export default class SDK {
    * @return true if SDK is ready to send requests
    */
   public get isReady(): boolean {
-    return !!this.entryNode && this.exitNodes.length > 0 && !!this.exitNode;
+    return !!this.entryNode && this.exitNodes.length > 0;
   }
 
   /**
@@ -148,10 +148,10 @@ export default class SDK {
    * @param discoveryPlatformApiEndpoint
    * @returns list of exit nodes
    */
-  private async selectExitNode(
+  private async fetchExitNodes(
     discoveryPlatformApiEndpoint: string
   ): Promise<ExitNode[]> {
-    log.verbose("Selecting exit node");
+    log.verbose("Fetching exit nodes");
     const response: {
       exit_node_pub_key: string;
       id: string;
@@ -162,17 +162,14 @@ export default class SDK {
       ).toString()
     ).then((res) => res.json());
 
-    this.exitNodes = response
-      .filter((item) => item.id !== this.entryNode?.peerId)
-      .map((item) => ({
-        peerId: item.id,
-        pubKey: item.exit_node_pub_key,
-      }));
+    this.exitNodes = response.map((item) => ({
+      peerId: item.id,
+      pubKey: item.exit_node_pub_key,
+    }));
 
     if (this.exitNodes.length === 0) throw Error("No exit nodes available");
 
-    this.exitNode = utils.randomlySelectFromArray(this.exitNodes);
-    log.verbose("Selected exit node", this.exitNode);
+    log.verbose("Fetched exit nodes", this.exitNodes.length);
     return this.exitNodes;
   }
 
@@ -259,13 +256,21 @@ export default class SDK {
     }
 
     // check for expires caches every second
-    this.interval = setInterval(() => {
-      this.segmentCache.removeExpired(this.ops.timeout);
-      this.requestCache.removeExpired(this.ops.timeout);
-    }, 1e3);
+    this.intervals.push(
+      setInterval(() => {
+        this.segmentCache.removeExpired(this.ops.timeout);
+        this.requestCache.removeExpired(this.ops.timeout);
+      }, 1e3)
+    );
+    // update exit nodes every minute
+    this.intervals.push(
+      setInterval(() => {
+        this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint);
+      }, 60e3)
+    );
 
     await this.selectEntryNode(this.ops.discoveryPlatformApiEndpoint);
-    await this.selectExitNode(this.ops.discoveryPlatformApiEndpoint);
+    await this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint);
     this.stopMessageListener = await hoprd.createMessageListener(
       this.entryNode!.apiEndpoint,
       this.entryNode!.apiToken,
@@ -288,7 +293,9 @@ export default class SDK {
    */
   public async stop(): Promise<void> {
     if (this.stopMessageListener) this.stopMessageListener();
-    clearInterval(this.interval);
+    for (const interval of this.intervals) {
+      clearInterval(interval);
+    }
   }
 
   /**
@@ -317,20 +324,23 @@ export default class SDK {
         );
       } catch (error) {
         log.error("Couldn't find elegible node: ", error);
-        // Set a deadlock of a min
-        this.setDeadlock(1e3 * 60 * 1); // 1 min
+        this.setDeadlock(DEADLOCK_MS);
       }
       log.verbose("got new entry node");
     }
+
+    // exclude entry node
+    const eligibleExitNodes = this.exitNodes.filter(
+      (node) => node.peerId !== this.entryNode?.peerId
+    );
+    const exitNode = utils.randomlySelectFromArray(eligibleExitNodes);
     return Request.createRequest(
       this.crypto!,
       provider,
       body,
       this.entryNode!.peerId,
-      this.exitNode!.peerId,
-      this.crypto!.Identity.load_identity(
-        etherUtils.arrayify(this.exitNode!.pubKey)
-      )
+      exitNode.peerId,
+      this.crypto!.Identity.load_identity(etherUtils.arrayify(exitNode.pubKey))
     );
   }
 
@@ -370,13 +380,15 @@ export default class SDK {
       const message = req.toMessage();
       const segments = message.toSegments();
       this.requestCache.addRequest(req, resolve, reject);
+
       for (const segment of segments) {
         hoprd
           .sendMessage({
             apiEndpoint: this.entryNode!.apiEndpoint,
             apiToken: this.entryNode!.apiToken,
             message: segment.toString(),
-            destination: this.exitNode!.peerId,
+            destination: req.exitNodeDestination,
+            path: [],
           })
           .catch((e) => {
             log.error("failed to send message to hoprd", segment.toString(), e);

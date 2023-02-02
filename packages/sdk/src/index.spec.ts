@@ -30,7 +30,11 @@ jest.mock("@rpch/common", () => ({
   },
 }));
 
-const DP_NOCK = nock(DISCOVERY_PLATFORM_API_ENDPOINT).post(
+const DP_GET_NODES = nock(DISCOVERY_PLATFORM_API_ENDPOINT).get(
+  "/api/v1/node?hasExitNode=true"
+);
+
+const DP_REQ_ENTRY_NOCK = nock(DISCOVERY_PLATFORM_API_ENDPOINT).post(
   "/api/v1/request/entry-node"
 );
 
@@ -89,26 +93,22 @@ describe("test SDK class", function () {
     let ops: HoprSdkOps;
     let sdk: SDK;
 
-    let nockExitNodes = nock(DISCOVERY_PLATFORM_API_ENDPOINT)
-      .get("/api/v1/node?hasExitNode=true")
-      .reply(200, [
-        {
-          exit_node_pub_key: EXIT_NODE_PUB_KEY,
-          id: EXIT_NODE_PEER_ID,
-        },
-      ])
-      .persist(true);
-
     beforeEach(async function () {
       const mock = createSdkMock();
       ops = mock.ops;
       sdk = mock.sdk;
-      DP_NOCK.thrice().reply(200, {
+      DP_REQ_ENTRY_NOCK.thrice().reply(200, {
         hoprd_api_endpoint: ENTRY_NODE_API_ENDPOINT,
         hoprd_api_port: ENTRY_NODE_API_PORT,
         accessToken: ENTRY_NODE_API_TOKEN,
         id: ENTRY_NODE_PEER_ID,
       });
+      DP_GET_NODES.reply(200, [
+        {
+          exit_node_pub_key: EXIT_NODE_PUB_KEY,
+          id: EXIT_NODE_PEER_ID,
+        },
+      ]).persist(true);
       await sdk.start();
     });
 
@@ -196,7 +196,7 @@ describe("test SDK class", function () {
       assert(addMetricMock.mock.calls.at(0)?.includes("failed"));
     });
 
-    describe("Should select reliable node", function () {
+    describe("should select reliable node", function () {
       it("selects new node when selected node is dishonest", async function () {
         // Make original selected node have a low score
         // @ts-ignore
@@ -244,8 +244,15 @@ describe("test SDK class", function () {
       });
     });
 
+    it("should fetch exit nodes", async function () {
+      // @ts-ignore
+      assert.equal(sdk.fetchExitNodes.mock.calls.length, 1);
+      // @ts-ignore
+      assert.equal(sdk.exitNodes.length, 1);
+    });
+
     it("should throw error when no entry node is available", async function () {
-      DP_NOCK.once().reply(404, {
+      DP_REQ_ENTRY_NOCK.once().reply(404, {
         body: "someError",
       });
 
