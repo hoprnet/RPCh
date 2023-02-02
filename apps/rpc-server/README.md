@@ -18,9 +18,10 @@ After building the image, you will be able to run it with: \
 ```sh
 docker run \
 -e DEBUG="rpch*,-*verbose,-*metrics" \
--e RESPONSE_TIMEOUT= \
--e DISCOVERY_PLATFORM_API_ENDPOINT= \
--e PORT= \
--e DATA_DIR= \
+-e RESPONSE_TIMEOUT=10000 \
+-e DISCOVERY_PLATFORM_API_ENDPOINT=http://localhost:3020 \
+-e PORT=8080 \
+-e DATA_DIR=app \
+--network=host \
 rpc-server
 ```
