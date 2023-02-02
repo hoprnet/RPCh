@@ -22,5 +22,5 @@ docker run \
 -e DISCOVERY_PLATFORM_API_ENDPOINT= \
 -e PORT= \
 -e DATA_DIR= \
-exit-node
+rpc-server
 ```

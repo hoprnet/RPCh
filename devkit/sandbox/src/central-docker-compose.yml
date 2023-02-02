@@ -11,7 +11,6 @@ volumes:
   # postgres database
   postgres-data:
 
-
 services:
   postgres-db:
     image: postgres:14.1-alpine
