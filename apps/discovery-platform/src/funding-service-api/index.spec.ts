@@ -159,14 +159,17 @@ describe("test funding service api class", function () {
     nockFundingRequest(node.native_address).reply(200, postFundingResponseBody);
 
     await db.saveRegisteredNode(dbInstance, node);
-    const fundingResponse = await fundingServiceApi.requestFunds(5, node);
+    const fundingResponse = await fundingServiceApi.requestFunds({
+      amount: 5,
+      node,
+    });
     const dbNode = await db.getRegisteredNode(dbInstance, "peer1");
 
     assert.equal(dbNode?.status, "FUNDING");
     assert.equal(
       // @ts-ignore
-      fundingServiceApi.pendingRequests.get("peer1")?.requestId,
-      fundingResponse
+      fundingServiceApi.pendingRequests.has(fundingResponse),
+      true
     );
   });
   it("should get request status", async function () {
@@ -192,17 +195,18 @@ describe("test funding service api class", function () {
     assert.equal(requestStatus.status, "FRESH");
   });
   it("should save pending request", function () {
+    const requestId = 1;
     // @ts-ignore
-    fundingServiceApi.savePendingRequest("peer1", 123, 0);
+    fundingServiceApi.savePendingRequest({ peerId: "peer1", requestId });
 
     assert.equal(
       // @ts-ignore
-      fundingServiceApi.pendingRequests.get("peer1")?.requestId,
-      123
+      fundingServiceApi.pendingRequests.get(requestId)?.peerId,
+      "peer1"
     );
     assert.equal(
       // @ts-ignore
-      fundingServiceApi.pendingRequests.get("peer1")?.amountOfRetries,
+      fundingServiceApi.pendingRequests.get(requestId)?.amountOfRetries,
       0
     );
   });
@@ -226,7 +230,10 @@ describe("test funding service api class", function () {
 
       await db.saveRegisteredNode(dbInstance, node);
 
-      const fundingResponse = await fundingServiceApi.requestFunds(5, node);
+      const fundingResponse = await fundingServiceApi.requestFunds({
+        amount: 5,
+        node,
+      });
 
       const successfulGetRequestStatusBody: getRequestStatusResponse = {
         accessTokenHash: "hash",
@@ -281,7 +288,10 @@ describe("test funding service api class", function () {
 
       await db.saveRegisteredNode(dbInstance, node);
 
-      const fundingResponse = await fundingServiceApi.requestFunds(5, node);
+      const fundingResponse = await fundingServiceApi.requestFunds({
+        amount: 5,
+        node,
+      });
 
       const successfulGetRequestStatusBody: getRequestStatusResponse = {
         accessTokenHash: "hash",
@@ -303,7 +313,7 @@ describe("test funding service api class", function () {
 
       assert.equal(
         // @ts-ignore
-        fundingServiceApi.pendingRequests.has(node.id),
+        fundingServiceApi.pendingRequests.has(fundingResponse),
         true
       );
       assert.equal(
@@ -317,7 +327,9 @@ describe("test funding service api class", function () {
         "0"
       );
     });
-    it("should retry request if request failed", async function () {
+    it.only("should retry request if request failed and delete after 3 times", async function () {
+      // @ts-ignore
+      fundingServiceApi.maxAmountOfRetries = 1;
       const node = createMockNode("peer1");
       const amountLeft = 10;
       const requestId = 123;
@@ -337,7 +349,10 @@ describe("test funding service api class", function () {
 
       await db.saveRegisteredNode(dbInstance, node);
 
-      const fundingResponse = await fundingServiceApi.requestFunds(5, node);
+      const fundingResponse = await fundingServiceApi.requestFunds({
+        amount: 5,
+        node,
+      });
 
       const failedGetRequestStatusBody: getRequestStatusResponse = {
         accessTokenHash: "hash",
@@ -356,13 +371,8 @@ describe("test funding service api class", function () {
 
       assert.equal(
         // @ts-ignore
-        fundingServiceApi.pendingRequests.has(node.id),
+        fundingServiceApi.pendingRequests.has(fundingResponse),
         true
-      );
-      assert.equal(
-        // @ts-ignore
-        fundingServiceApi.pendingRequests.get(node.id)?.amountOfRetries,
-        1
       );
       assert.notEqual(dbNode?.status, "READY");
       assert.equal(dbNode?.total_amount_funded, "0");

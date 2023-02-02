@@ -42,11 +42,13 @@ export const sendMessage = async ({
     const text = await response.text();
     return text;
   } else {
+    let errorMessage = await response.text();
     log.error(
       "failed to send message to HOPRd node",
       response.status,
-      await response.text()
+      errorMessage
     );
+    throw new Error(errorMessage);
   }
 };
 
