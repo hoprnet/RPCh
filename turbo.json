@@ -88,6 +88,20 @@
         "SKIP_CHECK_COMMITMENT"
       ]
     },
+    "@rpch/rpc-server#build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "build/**"
+      ],
+      "env": [
+        "PORT",
+        "DATA_DIR",
+        "RESPONSE_TIMEOUT",
+        "DISCOVERY_PLATFORM_API_ENDPOINT"
+      ]
+    },
     "dev": {
       "dependsOn": [
         "^build"
@@ -98,9 +112,6 @@
       "outputs": []
     },
     "lint": {
-      "dependsOn": [
-        "format"
-      ],
       "outputs": []
     },
     "test": {

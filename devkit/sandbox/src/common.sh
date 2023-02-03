@@ -5,19 +5,23 @@ DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)
 
 # stop sandbox
 stop() {
-    docker-compose -f $DIR/central-docker-compose.yml -p sandbox-central down;
-    docker-compose -f $DIR/nodes-docker-compose.yml -p sandbox-nodes down;
-    exit;
+    echo "Stopping 'central-docker-compose'"
+    docker compose -f $DIR/central-docker-compose.yml -p sandbox-central down -v;
+    echo "Stopping 'nodes-docker-compose'"
+    docker compose -f $DIR/nodes-docker-compose.yml -p sandbox-nodes down -v;
 }
 
 # start sandbox
 start() {
+    # stop if already running
+    stop
+
     echo "Starting 'nodes-docker-compose' and waiting for funding & open channels"
 
     #  Run docker compose as daemon
     rm -f $DIR/logs;
     docker compose -f $DIR/nodes-docker-compose.yml -p sandbox-nodes \
-        up -d --remove-orphans --build --force-recreate
+        up -d --remove-orphans --build --force-recreate --renew-anon-volumes
 
     # Extract HOPRD_API_TOKEN from env file
     source $DIR/.env

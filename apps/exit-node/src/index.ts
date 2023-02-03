@@ -16,6 +16,7 @@ import * as exit from "./exit";
 import * as identity from "./identity";
 import { createLogger } from "./utils";
 import PeerId from "peer-id";
+import fetch from "node-fetch";
 
 const log = createLogger();
 
@@ -98,6 +99,7 @@ export const start = async (ops: {
           apiToken: ops.apiToken,
           message: segment.toString(),
           destination: rpchRequest.entryNodeDestination,
+          path: [],
         });
       }
     } catch (error) {
@@ -128,9 +130,12 @@ export const start = async (ops: {
   log.normal("Running exit node with public key", publicKey);
 
   const cache = new Cache(onMessage);
-  const interval: NodeJS.Timer = setInterval(() => {
-    cache.removeExpired(ops.timeout);
-  }, 1000);
+  const intervals: NodeJS.Timer[] = [];
+  intervals.push(
+    setInterval(() => {
+      cache.removeExpired(ops.timeout);
+    }, 1000)
+  );
 
   const stopMessageListening = await ops.hoprd.createMessageListener(
     ops.apiEndpoint,
@@ -149,7 +154,9 @@ export const start = async (ops: {
   );
 
   return () => {
-    clearInterval(interval);
+    for (const interval of intervals) {
+      clearInterval(interval);
+    }
     stopMessageListening();
   };
 };

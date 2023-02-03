@@ -12,11 +12,13 @@ export const sendMessage = async ({
   apiToken,
   message,
   destination,
+  path,
 }: {
   apiEndpoint: string;
   apiToken: string | undefined;
   message: string;
   destination: string;
+  path?: string[];
 }): Promise<void | string> => {
   const [url, headers] = createApiUrl(
     "http",
@@ -28,8 +30,20 @@ export const sendMessage = async ({
   const body: { body: string; recipient: string; path?: string[] } = {
     body: message,
     recipient: destination,
-    path: [], // using direct path, TODO: change once auto path is fixed
+    path,
   };
+
+  log.verbose(
+    "sending message to HOPRd node",
+    message,
+    destination,
+    "with path",
+    path && path.length > 0
+      ? path.join("-")
+      : path && path.length === 0
+      ? "direct"
+      : "auto-path"
+  );
 
   const response = await fetch(url, {
     method: "POST",
@@ -38,7 +52,13 @@ export const sendMessage = async ({
   });
 
   if (response.status === 202) {
-    log.verbose("send message to HOPRd node", message, destination);
+    log.verbose(
+      "send message to HOPRd node",
+      message,
+      destination,
+      "with path",
+      path && path.length > 0 ? path.join("-") : "direct"
+    );
     const text = await response.text();
     return text;
   } else {
