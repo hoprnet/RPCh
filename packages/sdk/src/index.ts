@@ -266,21 +266,7 @@ export default class SDK {
 
     await this.selectEntryNode(this.ops.discoveryPlatformApiEndpoint);
     await this.selectExitNode(this.ops.discoveryPlatformApiEndpoint);
-    this.stopMessageListener = await hoprd.createMessageListener(
-      this.entryNode!.apiEndpoint,
-      this.entryNode!.apiToken,
-      (message) => {
-        try {
-          const segment = Segment.fromString(message);
-          this.segmentCache.onSegment(segment);
-        } catch (e) {
-          log.verbose(
-            "rejected received data from HOPRd: not a valid segment",
-            message
-          );
-        }
-      }
-    );
+    await this.getMessageListener();
   }
 
   /**
@@ -291,9 +277,8 @@ export default class SDK {
     clearInterval(this.interval);
   }
 
-  private async refreshMessageListener(): Promise<void> {
+  private async getMessageListener(): Promise<void> {
     if (this.stopMessageListener) this.stopMessageListener();
-    // check for expires caches every second
     this.stopMessageListener = await hoprd.createMessageListener(
       this.entryNode!.apiEndpoint,
       this.entryNode!.apiToken,
