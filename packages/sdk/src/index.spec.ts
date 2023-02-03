@@ -17,7 +17,7 @@ const EXIT_NODE_PUB_KEY = fixtures.EXIT_NODE_PUB_KEY_A;
 jest.mock("@rpch/common", () => ({
   ...jest.requireActual("@rpch/common"),
   hoprd: {
-    sendMessage: jest.fn(async () => "MOCK_SEND_MSG_RESPONSE"),
+    ...jest.requireActual("@rpch/common").hoprd,
     createMessageListener: jest.fn(async () => {
       return () => {};
     }),
@@ -32,6 +32,10 @@ const DP_REQ_ENTRY_NOCK = nock(DISCOVERY_PLATFORM_API_ENDPOINT).post(
   "/api/v1/request/entry-node"
 );
 
+const HOPRD_SEND_MESSAGE_NOCK = nock(ENTRY_NODE_API_ENDPOINT).post(
+  "/api/v2/messages"
+);
+
 const createSdkMock = (
   overwriteOps?: Partial<HoprSdkOps>
 ): {
@@ -39,12 +43,6 @@ const createSdkMock = (
   ops: HoprSdkOps;
 } => {
   const store = fixtures.createAsyncKeyValStore();
-
-  // send message to entry node
-  nock(ENTRY_NODE_API_ENDPOINT)
-    .post("/api/v2/messages")
-    .reply(202, "someresponse")
-    .persist();
 
   const ops: HoprSdkOps = {
     timeout: overwriteOps?.timeout ?? TIMEOUT,
@@ -97,6 +95,7 @@ describe("test SDK class", function () {
         accessToken: ENTRY_NODE_API_TOKEN,
         id: ENTRY_NODE_PEER_ID,
       });
+
       DP_GET_NODES.reply(200, [
         {
           exit_node_pub_key: EXIT_NODE_PUB_KEY,
@@ -122,6 +121,8 @@ describe("test SDK class", function () {
     });
 
     it("should send request and return response", function (done) {
+      HOPRD_SEND_MESSAGE_NOCK.reply(202, "someresponse");
+
       const [clientRequest, , exitNodeResponse] =
         fixtures.generateMockedFlow(3);
 
@@ -138,6 +139,8 @@ describe("test SDK class", function () {
     });
 
     it("should call `addMetric` when `onMessage` is triggered", async function () {
+      HOPRD_SEND_MESSAGE_NOCK.reply(202, "someresponse");
+
       //@ts-ignore
       const addMetricMock = jest.spyOn(sdk.reliabilityScore, "addMetric");
 
@@ -169,6 +172,8 @@ describe("test SDK class", function () {
     });
 
     it("should call addMetric when onRequestRemoval is triggered", function () {
+      HOPRD_SEND_MESSAGE_NOCK.reply(202, "someresponse");
+
       const [largeRequest, , largeResponse] = fixtures.generateMockedFlow(
         3,
         fixtures.RPC_REQ_LARGE,
@@ -273,8 +278,18 @@ describe("test SDK class", function () {
       } catch (e: any) {
         expect(e.message).toMatch("SDK is deadlocked");
       }
+      sdk.setDeadlock(0);
     });
-
+    it("should not save request to requestCache if request to hoprd fails", async function () {
+      HOPRD_SEND_MESSAGE_NOCK.reply(400, "error");
+      const [clientRequest] = fixtures.generateMockedFlow(3);
+      try {
+        await sdk.sendRequest(clientRequest);
+      } catch (e: any) {
+        // @ts-ignore
+        assert.equal(sdk.requestCache.getRequest(clientRequest.id), undefined);
+      }
+    });
     describe("should handle requests correctly when receiving a response", function () {
       it("should remove request with matching response", async function () {
         const [clientRequest, , exitNodeResponse] =
