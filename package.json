@@ -15,16 +15,18 @@
     "format": "turbo run format",
     "format:fix": "turbo run format -- --check=false --write=true",
     "lint": "turbo run lint",
+    "depcheck": "check-dependency-version-consistency",
     "test": "turbo run test --",
     "test:e2e": "turbo run start --filter @rpch/e2e"
   },
   "dependencies": {},
   "devDependencies": {
     "@changesets/cli": "^2.25.2",
+    "check-dependency-version-consistency": "^3.0.3",
     "turbo": "^1.6.3"
   },
   "engines": {
     "node": ">=16.0.0"
   },
-  "packageManager": "yarn@1.22.15"
+  "packageManager": "yarn@1.22.19"
 }

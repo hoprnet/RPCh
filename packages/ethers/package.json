@@ -8,18 +8,20 @@
     "build": "tsup",
     "dev": "yarn build --watch",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
-    "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
+    "lint": "eslint \"src/**/*.ts*\"",
     "test": "jest --coverage"
   },
   "devDependencies": {
-    "@rpch/configs-typescript": "*",
     "@rpch/configs-eslint": "*",
-    "@rpch/configs-prettier": "*",
     "@rpch/configs-jest": "*",
+    "@rpch/configs-prettier": "*",
     "@rpch/configs-tsup": "*",
+    "@rpch/configs-typescript": "*",
     "nock": "^13.2.9"
   },
   "dependencies": {
+    "@ethersproject/properties": "^5.7.0",
+    "@ethersproject/providers": "^5.7.2",
     "@rpch/common": "0.1.5",
     "@rpch/sdk": "0.1.5"
   },

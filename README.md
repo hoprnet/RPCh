@@ -25,24 +25,29 @@ Checkout [Sandbox](https://github.com/Rpc-h/RPCh/tree/main/devkit/sandbox#sandbo
 
 ### Roadmap
 
-| Target  | Task                     | Status |
-| ------- | ------------------------ | ------ |
-| 11/2022 | @rpch/commons            | 🟢     |
-| 11/2022 | CORE multi-hop support   | 🔴     |
-| 12/2022 | @rpch/ethers             | 🟢     |
-| 12/2022 | RPCh exit node           | 🟢     |
-| 12/2022 | RPCh funding service     | 🟢     |
-| 12/2022 | @rpch/crypto             | 🟢     |
-| 01/2023 | @rpch/sdk                | 🟢     |
-| 01/2023 | Block Wallet integration | 🟢     |
-| 01/2023 | RPCh Sandbox v1          | 🟢     |
-| 01/2023 | RPCh Sandbox v2          | 🟢     |
-| 01/2023 | RPCh base infrastructure | 🟡     |
-| 01/2023 | RPCh Alpha               | 🟡     |
-| 01/2023 | NIRP gnosis              | 🟡     |
-| 01/2023 | CORE capability api      | 🟡     |
+| Target  | Task                      | Status |
+| ------- | ------------------------- | ------ |
+| 11/2022 | @rpch/commons             | 🟢     |
+| 11/2022 | CORE multi-hop support    | 🔴     |
+| 12/2022 | @rpch/ethers              | 🟢     |
+| 12/2022 | RPCh exit node            | 🟢     |
+| 12/2022 | RPCh funding service      | 🟢     |
+| 12/2022 | @rpch/crypto              | 🟢     |
+| 01/2023 | @rpch/sdk                 | 🟢     |
+| 01/2023 | Block Wallet integration  | 🟢     |
+| 01/2023 | RPCh Sandbox v1           | 🟢     |
+| 01/2023 | RPCh Sandbox v2           | 🟢     |
+| 01/2023 | RPCh base infrastructure  | 🟡     |
+| 01/2023 | RPCh Alpha                | 🟡     |
+| 01/2023 | NIRP gnosis               | 🟡     |
+| 01/2023 | CORE capability api       | 🟡     |
 | 01/2023 | CORE promiscuous strategy | 🟡     |
-| 02/2023 | RPCh Beta                | ⚪️    |
-| 02/2023 | RPCh discovery platform  | 🟡     |
-| 02/2023 | NIRP mainnet             | ⚪️    |
-| 02/2023 | RPCh v1                  | ⚪️    |
+| 02/2023 | RPCh Beta                 | ⚪️    |
+| 02/2023 | RPCh discovery platform   | 🟡     |
+| 02/2023 | NIRP mainnet              | ⚪️    |
+| 02/2023 | RPCh v1                   | ⚪️    |
+
+### For developers
+
+- coverage: currently we can generate coverage reports for each project, but we do not have a threshold set in which we would fail our CI
+- dependency check: we currently use `check-dependency-version-consistency` to ensure consistency between the dependency version, future plan is to use `depcheck` for every project to ensure all libraries are correctly added per `package.json`
