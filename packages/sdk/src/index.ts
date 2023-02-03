@@ -291,6 +291,26 @@ export default class SDK {
     clearInterval(this.interval);
   }
 
+  private async refreshMessageListener(): Promise<void> {
+    if (this.stopMessageListener) this.stopMessageListener();
+    // check for expires caches every second
+    this.stopMessageListener = await hoprd.createMessageListener(
+      this.entryNode!.apiEndpoint,
+      this.entryNode!.apiToken,
+      (message) => {
+        try {
+          const segment = Segment.fromString(message);
+          this.segmentCache.onSegment(segment);
+        } catch (e) {
+          log.verbose(
+            "rejected received data from HOPRd: not a valid segment",
+            message
+          );
+        }
+      }
+    );
+  }
+
   /**
    * Creates a Request instance that can be sent through the RPCh network
    * @param provider
@@ -315,6 +335,7 @@ export default class SDK {
           this.ops.discoveryPlatformApiEndpoint,
           exclusionList
         );
+        this.refreshMessageListener();
       } catch (error) {
         log.error("Couldn't find elegible node: ", error);
         // Set a deadlock of a min
