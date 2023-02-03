@@ -327,7 +327,7 @@ export default class SDK {
           this.ops.discoveryPlatformApiEndpoint,
           exclusionList
         );
-        this.getMessageListener();
+        await this.getMessageListener();
       } catch (error) {
         log.error("Couldn't find elegible node: ", error);
         this.setDeadlock(DEADLOCK_MS);
