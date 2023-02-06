@@ -3,6 +3,7 @@ import type { QueryRegisteredNode } from "../registered-node/dto";
 import pgp from "pg-promise";
 import { createLogger } from "../utils";
 import { QueryFundingRequest } from "../funding-requests/dto";
+import { CreateClient, QueryClient } from "../client/dto";
 
 export type DBInstance = pgp.IDatabase<{}>;
 
@@ -18,6 +19,7 @@ const TABLES = {
   REGISTERED_NODES: "registered_nodes",
   FUNDING_REQUESTS: "funding_requests",
   QUOTAS: "quotas",
+  CLIENTS: "clients",
 };
 
 /**
@@ -170,7 +172,7 @@ export const getQuotasByClient = async (
   dbInstance: DBInstance,
   client: string
 ): Promise<QueryQuota[]> => {
-  const text = `SELECT * FROM ${TABLES.QUOTAS} WHERE client=$<client>`;
+  const text = `SELECT * FROM ${TABLES.QUOTAS} WHERE client_id=$<client>`;
   const values = {
     client,
   };
@@ -183,7 +185,7 @@ export const updateQuota = async (
   quota: QueryQuota
 ): Promise<QueryQuota | null> => {
   const text = `UPDATE ${TABLES.QUOTAS}
-  SET client = $<client>, quota = $<quota>, action_taker = $<action_taker>
+  SET client_id = $<client_id>, quota = $<quota>, action_taker = $<action_taker>
   WHERE id = $<id>
   RETURNING *`;
   const values: Omit<QueryQuota, "created_at" | "updated_at"> = {
@@ -226,5 +228,66 @@ export const createFundingRequest = async (
     };
 
   const dbRes: QueryFundingRequest = await dbInstance.one(text, values);
+  return dbRes;
+};
+
+/**
+ * Client DB functions
+ */
+
+export const createClient = async (
+  dbInstance: DBInstance,
+  client: CreateClient
+): Promise<QueryClient> => {
+  const text = `INSERT INTO ${TABLES.CLIENTS} (id, payment, labels)
+  VALUES ($<id>, $<payment>, $<labels>) RETURNING *`;
+  const values: CreateClient = {
+    id: client.id,
+    payment: client.payment,
+    labels: client.labels ?? [],
+  };
+
+  const dbRes: QueryClient = await dbInstance.one(text, values);
+  return dbRes;
+};
+
+export const getClient = async (
+  dbInstance: DBInstance,
+  id: string
+): Promise<QueryClient | null> => {
+  const text = `SELECT * FROM ${TABLES.CLIENTS} WHERE id=$<id>`;
+  const values = {
+    id,
+  };
+  const dbRes: QueryClient | null = await dbInstance.oneOrNone(text, values);
+  return dbRes;
+};
+
+export const updateClient = async (
+  dbInstance: DBInstance,
+  client: QueryClient
+): Promise<QueryClient | null> => {
+  const text = `UPDATE ${TABLES.CLIENTS}
+  SET id = $<id>, payment = $<payment>, labels = $<labels>
+  WHERE id = $<id>
+  RETURNING *`;
+  const values: Omit<QueryClient, "created_at" | "updated_at"> = {
+    id: client.id,
+    payment: client.payment,
+    labels: client.labels,
+  };
+  const dbRes: QueryClient | null = await dbInstance.oneOrNone(text, values);
+  return dbRes;
+};
+
+export const deleteClient = async (
+  dbInstance: DBInstance,
+  id: string
+): Promise<QueryClient | null> => {
+  const text = `DELETE FROM ${TABLES.CLIENTS} WHERE id=$<id> RETURNING *`;
+  const values = {
+    id,
+  };
+  const dbRes: QueryClient | null = await dbInstance.oneOrNone(text, values);
   return dbRes;
 };
