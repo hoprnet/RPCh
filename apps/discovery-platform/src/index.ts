@@ -114,4 +114,7 @@ const start = async (ops: {
   };
 };
 
-main();
+// if this file is the entrypoint of the nodejs process
+if (require.main === module) {
+  main();
+}

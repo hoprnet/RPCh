@@ -13,7 +13,7 @@ export const createQuota = async (
 ): Promise<QueryQuota> => {
   const dbQuota: CreateQuota = {
     actionTaker: quota.actionTaker,
-    client: quota.client,
+    clientId: quota.clientId,
     quota: quota.quota,
   };
   return await db.createQuota(dbInstance, dbQuota);

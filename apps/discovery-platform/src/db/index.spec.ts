@@ -63,7 +63,7 @@ const createMockNode = (
 const createMockQuota = (params?: CreateQuota): CreateQuota => {
   return {
     actionTaker: params?.actionTaker ?? "discovery-platform",
-    client: params?.client ?? "client",
+    clientId: params?.clientId ?? "client",
     quota: params?.quota ?? 1,
   };
 };
@@ -165,7 +165,7 @@ describe("test db functions", function () {
   });
   it("should get quotas by client", async function () {
     const mockQuota = createMockQuota({
-      client: "client",
+      clientId: "client",
       actionTaker: "discovery",
       quota: 10,
     });
@@ -175,7 +175,7 @@ describe("test db functions", function () {
       dbInstance,
       createMockQuota({
         actionTaker: "discovery",
-        client: "other client",
+        clientId: "other client",
         quota: 20,
       })
     );
@@ -185,7 +185,7 @@ describe("test db functions", function () {
   });
   it("should update quota", async function () {
     const mockQuota = createMockQuota({
-      client: "client",
+      clientId: "client",
       actionTaker: "discovery",
       quota: 10,
     });
@@ -215,7 +215,7 @@ describe("test db functions", function () {
   });
   it("should delete quota", async function () {
     const mockQuota = createMockQuota({
-      client: "client",
+      clientId: "client",
       actionTaker: "discovery",
       quota: 10,
     });

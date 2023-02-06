@@ -142,12 +142,12 @@ export const createQuota = async (
   dbInstance: DBInstance,
   quota: CreateQuota
 ): Promise<QueryQuota> => {
-  const text = `INSERT INTO ${TABLES.QUOTAS} (id, client, quota, action_taker)
-  VALUES (default, $<client>, $<quota>, $<action_taker>) RETURNING *`;
-  const values = {
-    client: quota.client,
+  const text = `INSERT INTO ${TABLES.QUOTAS} (id, client_id, quota, action_taker)
+  VALUES (default, $<clientId>, $<quota>, $<actionTaker>) RETURNING *`;
+  const values: CreateQuota = {
+    clientId: quota.clientId,
     quota: quota.quota,
-    action_taker: quota.actionTaker,
+    actionTaker: quota.actionTaker,
   };
 
   const dbRes: QueryQuota = await dbInstance.one(text, values);
@@ -186,9 +186,9 @@ export const updateQuota = async (
   SET client = $<client>, quota = $<quota>, action_taker = $<action_taker>
   WHERE id = $<id>
   RETURNING *`;
-  const values = {
+  const values: Omit<QueryQuota, "created_at" | "updated_at"> = {
     id: quota.id,
-    client: quota.client,
+    client_id: quota.client_id,
     action_taker: quota.action_taker,
     quota: quota.quota,
   };

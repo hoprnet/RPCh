@@ -217,9 +217,9 @@ export const v1Router = (ops: {
         if (!errors.isEmpty()) {
           return res.status(400).json({ errors: errors.array() });
         }
-        const { client, quota }: CreateQuota = req.body;
+        const { clientId, quota }: CreateQuota = req.body;
         const createdQuota = await createQuota(ops.db, {
-          client,
+          clientId,
           quota,
           actionTaker: "discovery-platform",
         });
@@ -278,7 +278,7 @@ export const v1Router = (ops: {
 
         // create negative quota (showing that the client has used up initial quota)
         await createQuota(ops.db, {
-          client,
+          clientId: client,
           quota: ops.baseQuota * -1,
           actionTaker: "discovery platform",
         });
