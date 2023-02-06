@@ -89,75 +89,80 @@ describe("test db functions", function () {
     MockPgInstanceSingleton.getInitialState().restore();
   });
 
-  it("should save registered node", async function () {
-    const node = createMockNode();
-    const savedNode = await db.saveRegisteredNode(dbInstance, node);
-    if (!savedNode) throw new Error("Db could not save node");
-    const dbNode = await db.getRegisteredNode(dbInstance, node.id);
-    assert.equal(dbNode?.id, node.id);
-  });
-  it("should get all registered nodes", async function () {
-    await db.saveRegisteredNode(dbInstance, createMockNode("1"));
-    await db.saveRegisteredNode(dbInstance, createMockNode("2"));
-    const allNodes = await db.getRegisteredNodes(dbInstance);
-
-    assert.equal(allNodes.length, 2);
-  });
-  it("should get all nodes that are not exit nodes", async function () {
-    const firstNode = createMockNode("peer1", false);
-    await db.saveRegisteredNode(dbInstance, firstNode);
-    const secondNode = createMockNode("peer2", false);
-    await db.saveRegisteredNode(dbInstance, secondNode);
-    await db.saveRegisteredNode(dbInstance, createMockNode());
-
-    const notExitNodes = await db.getRegisteredNodes(dbInstance, {
-      hasExitNode: false,
+  describe("registered node table", function () {
+    it("should save registered node", async function () {
+      const node = createMockNode();
+      const savedNode = await db.saveRegisteredNode(dbInstance, node);
+      if (!savedNode) throw new Error("Db could not save node");
+      const dbNode = await db.getRegisteredNode(dbInstance, node.id);
+      assert.equal(dbNode?.id, node.id);
     });
+    it("should get all registered nodes", async function () {
+      await db.saveRegisteredNode(dbInstance, createMockNode("1"));
+      await db.saveRegisteredNode(dbInstance, createMockNode("2"));
+      const allNodes = await db.getRegisteredNodes(dbInstance);
 
-    assert.equal(notExitNodes.length, 2);
-  });
-  it("should get all nodes that are not exit nodes", async function () {
-    const firstNode = createMockNode("peer1", true);
-    await db.saveRegisteredNode(dbInstance, firstNode);
-    const secondNode = createMockNode("peer2", true);
-    await db.saveRegisteredNode(dbInstance, secondNode);
-    await db.saveRegisteredNode(dbInstance, createMockNode("peer2", false));
-
-    const exitNodes = await db.getRegisteredNodes(dbInstance, {
-      hasExitNode: true,
+      assert.equal(allNodes.length, 2);
     });
+    it("should get all nodes that are not exit nodes", async function () {
+      const firstNode = createMockNode("peer1", false);
+      await db.saveRegisteredNode(dbInstance, firstNode);
+      const secondNode = createMockNode("peer2", false);
+      await db.saveRegisteredNode(dbInstance, secondNode);
+      await db.saveRegisteredNode(dbInstance, createMockNode());
 
-    assert.equal(exitNodes.length, 2);
-  });
-  it("should get one registered node", async function () {
-    await db.saveRegisteredNode(dbInstance, createMockNode("1"));
-    await db.saveRegisteredNode(dbInstance, createMockNode("2"));
-    const node = await db.getRegisteredNode(dbInstance, "1");
+      const notExitNodes = await db.getRegisteredNodes(dbInstance, {
+        hasExitNode: false,
+      });
 
-    assert.equal(node?.id, "1");
-  });
-  it("should get all registered nodes except the ones in exclude list", async function () {
-    await db.saveRegisteredNode(dbInstance, createMockNode("1"));
-    await db.saveRegisteredNode(dbInstance, createMockNode("2"));
-    await db.saveRegisteredNode(dbInstance, createMockNode("3"));
-    const notExcludedNodes = await db.getRegisteredNodes(dbInstance, {
-      excludeList: ["2"],
+      assert.equal(notExitNodes.length, 2);
     });
-    assert.equal(notExcludedNodes.length, 2);
-    assert.equal(
-      notExcludedNodes.findIndex((node) => node.id === "2"),
-      -1
-    );
-  });
-  it("should update node", async function () {
-    await db.saveRegisteredNode(dbInstance, createMockNode("peer1"));
-    const node = await db.getRegisteredNode(dbInstance, "peer1");
-    if (!node) throw new Error("Db could not save node");
+    it("should get all nodes that are not exit nodes", async function () {
+      const firstNode = createMockNode("peer1", true);
+      await db.saveRegisteredNode(dbInstance, firstNode);
+      const secondNode = createMockNode("peer2", true);
+      await db.saveRegisteredNode(dbInstance, secondNode);
+      await db.saveRegisteredNode(dbInstance, createMockNode("peer2", false));
 
-    await db.updateRegisteredNode(dbInstance, { ...node, status: "UNUSABLE" });
-    const updatedNode = await db.getRegisteredNode(dbInstance, "peer1");
+      const exitNodes = await db.getRegisteredNodes(dbInstance, {
+        hasExitNode: true,
+      });
 
-    assert.equal(updatedNode?.status, "UNUSABLE");
+      assert.equal(exitNodes.length, 2);
+    });
+    it("should get one registered node", async function () {
+      await db.saveRegisteredNode(dbInstance, createMockNode("1"));
+      await db.saveRegisteredNode(dbInstance, createMockNode("2"));
+      const node = await db.getRegisteredNode(dbInstance, "1");
+
+      assert.equal(node?.id, "1");
+    });
+    it("should get all registered nodes except the ones in exclude list", async function () {
+      await db.saveRegisteredNode(dbInstance, createMockNode("1"));
+      await db.saveRegisteredNode(dbInstance, createMockNode("2"));
+      await db.saveRegisteredNode(dbInstance, createMockNode("3"));
+      const notExcludedNodes = await db.getRegisteredNodes(dbInstance, {
+        excludeList: ["2"],
+      });
+      assert.equal(notExcludedNodes.length, 2);
+      assert.equal(
+        notExcludedNodes.findIndex((node) => node.id === "2"),
+        -1
+      );
+    });
+    it("should update node", async function () {
+      await db.saveRegisteredNode(dbInstance, createMockNode("peer1"));
+      const node = await db.getRegisteredNode(dbInstance, "peer1");
+      if (!node) throw new Error("Db could not save node");
+
+      await db.updateRegisteredNode(dbInstance, {
+        ...node,
+        status: "UNUSABLE",
+      });
+      const updatedNode = await db.getRegisteredNode(dbInstance, "peer1");
+
+      assert.equal(updatedNode?.status, "UNUSABLE");
+    });
   });
   describe("client table", function () {
     it("should create client", async function () {
