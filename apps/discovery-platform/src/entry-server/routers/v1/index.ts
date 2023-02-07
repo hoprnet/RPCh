@@ -20,6 +20,7 @@ import {
 } from "../../../registered-node";
 import { CreateRegisteredNode } from "../../../registered-node/dto";
 import { createLogger } from "../../../utils";
+import { createClient, getClient, updateClient } from "../../../client";
 
 const log = createLogger(["entry-server", "router", "v1"]);
 
@@ -195,8 +196,8 @@ export const v1Router = (ops: {
     }
   );
 
-  router.get("/funding-service/funds", async (req, res) => {
-    log.verbose(`GET /funding-service/funds`);
+  router.get("/funding-service/quota", async (req, res) => {
+    log.verbose(`GET /funding-service/quota`);
     try {
       const funds = await ops.fundingServiceApi.getAvailableFunds();
       return res.json({ body: funds });
@@ -206,20 +207,33 @@ export const v1Router = (ops: {
     }
   });
 
+  // DISCLAIMER: can be exploited to allow client to use infinite funds
   router.post(
-    "/client/funds",
+    "/client/quota",
     body("client").exists().bail().isAlphanumeric(),
     body("quota").exists().bail().isNumeric(),
     async (req, res) => {
       try {
-        log.verbose(`POST /client/funds`, req.body);
+        log.verbose(`POST /client/quota`, req.body);
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
           return res.status(400).json({ errors: errors.array() });
         }
         const { client: clientId, quota } = req.body;
+        // check if client exists
+        let dbClient = await getClient(ops.db, clientId);
+        if (!dbClient) {
+          // create client id it does not exist
+          dbClient = await createClient(ops.db, {
+            id: clientId,
+            payment: "premium",
+          });
+        } else if (dbClient.payment === "trial") {
+          // update client to premium of it was previously trial
+          await updateClient(ops.db, { ...dbClient, payment: "premium" });
+        }
         const createdQuota = await createQuota(ops.db, {
-          clientId,
+          clientId: dbClient.id,
           quota,
           actionTaker: "discovery-platform",
         });
@@ -230,6 +244,12 @@ export const v1Router = (ops: {
       }
     }
   );
+
+  router.get("/request/trial", (req, res) => {
+    log.verbose("GET /request/trial", req.query);
+    const { label } = req.query;
+    // create trial client
+  });
 
   router.post(
     "/request/entry-node",

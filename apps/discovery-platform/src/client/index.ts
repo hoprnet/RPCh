@@ -13,6 +13,18 @@ export const createClient = async (
   return await db.createClient(dbInstance, dbQuota);
 };
 
+export const createTrialClient = async (
+  dbInstance: db.DBInstance,
+  client: CreateClient
+): Promise<QueryClient> => {
+  const dbQuota: CreateClient = {
+    id: client.id,
+    payment: "trial",
+    labels: client.labels ?? [],
+  };
+  return await db.createClient(dbInstance, dbQuota);
+};
+
 export const getClient = async (
   dbInstance: db.DBInstance,
   id: string

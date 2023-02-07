@@ -80,8 +80,7 @@ describe("test entry server", function () {
     };
 
     nockGetApiAccessToken.reply(200, getAccessTokenBody);
-    await createClient(dbInstance, { id: "client", payment: "premium" });
-    await request(app).post("/api/v1/client/funds").send({
+    await request(app).post("/api/v1/client/quota").send({
       client: "client",
       quota: 1,
     });
