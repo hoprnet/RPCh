@@ -49,9 +49,8 @@ describe("test AccessTokenService class", function () {
     if (!dbAccessToken)
       throw new Error("Could not find access token in test db");
 
-    assert(
-      new Date(dbAccessToken.expired_at).valueOf() ===
-        expectedExpireDate.valueOf()
+    expect(new Date(dbAccessToken.expired_at).valueOf()).toBeCloseTo(
+      expectedExpireDate.valueOf()
     );
   });
   it("should get access token", async function () {

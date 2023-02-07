@@ -55,7 +55,8 @@ const createSdkMock = (
   };
 
   const sdk = new SDK(ops, store.set, store.get);
-
+  // @ts-ignore
+  jest.spyOn(sdk, "fetchExitNodes");
   return { sdk, ops };
 };
 
@@ -68,20 +69,17 @@ describe("test SDK class", function () {
     });
 
     it("should fail to create request", async function () {
-      assert.throws(async () => {
-        return await sdk.createRequest(
-          fixtures.PROVIDER,
-          fixtures.RPC_REQ_LARGE
-        );
-      }, "not ready");
+      await expect(
+        sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE)
+      ).rejects.toThrow("SDK not ready to create requests");
     });
 
-    it("should fail to send request", function () {
+    it("should fail to send request", async function () {
       const request = fixtures.createMockedFlow().next().value as Request;
 
-      assert.throws(() => {
-        return sdk.sendRequest(request);
-      }, "not ready");
+      await expect(sdk.sendRequest(request)).rejects.toThrow(
+        "SDK not ready to send requests"
+      );
     });
   });
 
@@ -227,7 +225,7 @@ describe("test SDK class", function () {
         assert.equal(addMetricsEntryNode.mock.calls.length, 0);
       });
 
-      it.only("does not select new node when node score is ok", async function () {
+      it("does not select new node when node score is ok", async function () {
         // @ts-ignore
         const addMetricsEntryNode = jest.spyOn(sdk, "selectEntryNode");
         // @ts-ignore
