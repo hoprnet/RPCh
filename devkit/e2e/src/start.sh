@@ -18,12 +18,8 @@ trap 'stop; exit 1' SIGINT SIGKILL SIGTERM ERR EXIT
 # start sandbox
 start
 
-# catch error if command fails
-set -Eeuo pipefail
 # Run tests with env variables
 npx jest --ci || exit 1
-# stop catching
-set +Eeuo pipefail
 
 # After tests exit tear down setup
 stop
