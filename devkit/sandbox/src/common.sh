@@ -98,7 +98,7 @@ start() {
         -H "Content-Type: application/json"
         -d '{
             "hoprdEndpoint": '"$HOPRD_API_ENDPOINT_1"',
-            "hoprdToken": '"$HOPRD_API_TOKEN_1"',
+            "hoprdToken": '"$HOPRD_API_TOKEN"',
             "nativeAmount": '"$NATIVE_AMOUNT"',
             "hoprAmount": '"$HOPR_AMOUNT"',
             "recipient": '"$FUNDING_SERVICE_ADDRESS"'
@@ -106,7 +106,7 @@ start() {
 
     # get HOPR Token address
     hoprTokenAddress=$(
-        curl -sbH "Accept: application/json" "http://localhost:3030/get-hoprd-token-address?hoprdEndpoint=$HOPRD_API_ENDPOINT_1&hoprdToken=$HOPRD_API_TOKEN_1"
+        curl -sbH "Accept: application/json" "http://localhost:3030/get-hoprd-token-address?hoprdEndpoint=$HOPRD_API_ENDPOINT_1&hoprdToken=$HOPRD_API_TOKEN"
     )
     echo "Found hoprTokenAddress: $hoprTokenAddress"
 
@@ -124,35 +124,44 @@ start() {
         -d '{
             "discoveryPlatformEndpoint": '"$DISCOVERY_PLATFORM_ENDPOINT"',
             "hoprdApiEndpoint1": '"$HOPRD_API_ENDPOINT_1"',
-            "hoprdApiToken1": '"$HOPRD_API_TOKEN_1"',
+            "hoprdApiToken1": '"$HOPRD_API_TOKEN"',
             "exitNodePubKey1": '"$EXIT_NODE_PUB_KEY_1"',
             "hoprdApiEndpoint2": '"$HOPRD_API_ENDPOINT_2"',
-            "hoprdApiToken2": '"$HOPRD_API_TOKEN_2"',
+            "hoprdApiToken2": '"$HOPRD_API_TOKEN"',
             "exitNodePubKey2": '"$EXIT_NODE_PUB_KEY_2"',
             "hoprdApiEndpoint3": '"$HOPRD_API_ENDPOINT_3"',
-            "hoprdApiToken3": '"$HOPRD_API_TOKEN_3"',
+            "hoprdApiToken3": '"$HOPRD_API_TOKEN"',
             "exitNodePubKey3": '"$EXIT_NODE_PUB_KEY_3"',
             "hoprdApiEndpoint4": '"$HOPRD_API_ENDPOINT_4"',
-            "hoprdApiToken4": '"$HOPRD_API_TOKEN_4"',
+            "hoprdApiToken4": '"$HOPRD_API_TOKEN"',
             "exitNodePubKey4": '"$EXIT_NODE_PUB_KEY_4"',
             "hoprdApiEndpoint5": '"$HOPRD_API_ENDPOINT_5"',
-            "hoprdApiToken5": '"$HOPRD_API_TOKEN_5"',
+            "hoprdApiToken5": '"$HOPRD_API_TOKEN"',
             "exitNodePubKey5": '"$EXIT_NODE_PUB_KEY_5"'
         }'
     echo "Registered nodes to discovery-platform"
 
     # add quota to client 'sandbox'
-    echo "Adding quota to discovery-platform"
+    echo "Adding quota to 'sandbox' in 'discovery-platform'"
     curl -X POST "http://localhost:3030/add-quota" 
         -H "Content-Type: application/json"
         -d '{
-            "hoprdEndpoint": '"$HOPRD_API_ENDPOINT_1"',
-            "hoprdToken": '"$HOPRD_API_TOKEN_1"',
-            "nativeAmount": '"$NATIVE_AMOUNT"',
-            "hoprAmount": '"$HOPR_AMOUNT"',
-            "recipient": '"$FUNDING_SERVICE_ADDRESS"'
+            "discoveryPlatformEndpoint": '"$DISCOVERY_PLATFORM_ENDPOINT"',
+            "client": "sandbox",
+            "quota": "500"
         }'
-    echo "Added quota to client sandbox in discovery-platform"
+    echo "Added quota to client 'sandbox' in 'discovery-platform'"
+
+    # add quota to client 'trial'
+    echo "Adding quota to 'trial' in 'discovery-platform'"
+    curl -X POST "http://localhost:3030/add-quota" 
+        -H "Content-Type: application/json"
+        -d '{
+            "discoveryPlatformEndpoint": '"$DISCOVERY_PLATFORM_ENDPOINT"',
+            "client": "trial",
+            "quota": "500"
+        }'
+    echo "Added quota to client 'trial' in 'discovery-platform'"
 
     echo "Sandbox is ready!"
 }
