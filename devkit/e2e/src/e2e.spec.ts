@@ -12,6 +12,7 @@ describe("e2e tests", function () {
   const provider = new ethers.RPChProvider(
     PROVIDER_URL,
     {
+      client: "sandbox",
       timeout: SDK_TIMEOUT,
       discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
     },
