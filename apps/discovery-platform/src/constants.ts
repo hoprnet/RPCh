@@ -1,8 +1,6 @@
 const {
   // Api endpoint used for completing funding requests of registered nodes
   FUNDING_SERVICE_URL,
-  // Access token used to connect to hoprd entry node
-  HOPRD_ACCESS_TOKEN,
   // Database connection url
   DB_CONNECTION_URL,
 } = process.env;
@@ -36,7 +34,6 @@ const BASE_EXTRA = 1;
 export {
   PORT,
   FUNDING_SERVICE_URL,
-  HOPRD_ACCESS_TOKEN,
   DB_CONNECTION_URL,
   BALANCE_THRESHOLD,
   CHANNELS_THRESHOLD,

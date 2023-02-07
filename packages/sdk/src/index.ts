@@ -22,6 +22,7 @@ const DEADLOCK_MS = 1e3 * 60 * 0.5; // 30s
  * HOPR SDK options.
  */
 export type HoprSdkOps = {
+  client: string;
   timeout: number;
   discoveryPlatformApiEndpoint: string;
   reliabilityScoreFreshNodeThreshold?: number;
@@ -112,7 +113,7 @@ export default class SDK {
           "Accept-Content": "application/json",
         },
         body: JSON.stringify({
-          client: "sandbox",
+          client: this.ops.client,
           exclusionList,
         }),
       }
@@ -120,7 +121,6 @@ export default class SDK {
 
     const response: {
       hoprd_api_endpoint: string;
-      hoprd_api_port: string;
       accessToken: string;
       id: string;
     } = await rawResponse.json();
@@ -132,7 +132,6 @@ export default class SDK {
     }
 
     const apiEndpointUrl = new URL(response.hoprd_api_endpoint);
-    apiEndpointUrl.port = response.hoprd_api_port;
 
     this.entryNode = {
       apiEndpoint: apiEndpointUrl.toString(),

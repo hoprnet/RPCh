@@ -36,13 +36,12 @@ services:
       - sandbox-nodes_default
     environment:
       - DEBUG=${DEBUG}
+      - PORT=3010
       - SECRET_KEY=${SECRET_KEY}
       - WALLET_PRIV_KEY=${FUNDING_SERVICE_PRIVATE_KEY}
       - DB_CONNECTION_URL=postgresql://postgres:postgres@postgres-db:5432
-      - FORCE_SMART_CONTRACT_ADDRESS=${FORCE_SMART_CONTRACT_ADDRESS}
-      - FORCE_CHAIN_ID=${FORCE_CHAIN_ID}
-      - FORCE_RPC_URL=${FORCE_RPC_URL}
-      - PORT=${FUNDING_SERVICE_PORT}
+      - FORCE_CHAIN_ID=1
+      - FORCE_RPC_URL=${RPC_PROVIDER}
   discovery-platform:
     build:
       dockerfile: apps/discovery-platform/Dockerfile
@@ -54,10 +53,10 @@ services:
       - "3020:3020"
     environment:
       - DEBUG=${DEBUG}
+      - PORT=3020
       - SECRET_KEY=${SECRET_KEY}
       - DB_CONNECTION_URL=postgresql://postgres:postgres@postgres-db:5432
       - FUNDING_SERVICE_URL=http://funding-service:3010
-      - HOPRD_ACCESS_TOKEN=${HOPRD_API_TOKEN}
       - PORT=${DISCOVERY_PLATFORM_PORT}
       - SKIP_CHECK_COMMITMENT=${SKIP_CHECK_COMMITMENT}
 

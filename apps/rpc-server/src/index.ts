@@ -10,9 +10,10 @@ const log = createLogger();
 
 const {
   DATA_DIR = path.join(process.cwd(), "db"),
-  PORT = 3003,
+  PORT = 3040,
   RESPONSE_TIMEOUT: RESPONSE_TIMEOUT_STR = "10000",
   DISCOVERY_PLATFORM_API_ENDPOINT,
+  CLIENT,
 } = process.env;
 
 export class RPCServer {
@@ -24,7 +25,8 @@ export class RPCServer {
   constructor(
     private dataDir: string,
     private timeout: number,
-    private discoveryPlatformApiEndpoint: string
+    private discoveryPlatformApiEndpoint: string,
+    private client: string
   ) {
     log.verbose("Initializing DB at", this.dataDir);
     this.db = levelup(leveldown(this.dataDir));
@@ -37,6 +39,7 @@ export class RPCServer {
     });
     this.sdk = new RPChSDK(
       {
+        client: this.client,
         timeout: this.timeout,
         discoveryPlatformApiEndpoint: this.discoveryPlatformApiEndpoint,
       },
@@ -97,12 +100,17 @@ if (require.main === module) {
     throw Error("env variable 'DISCOVERY_PLATFORM_API_ENDPOINT' is not set");
   }
 
+  if (!CLIENT) {
+    throw Error("env variable 'CLIENT' is not set");
+  }
+
   log.normal("Starting rpc-server");
 
   const rpcServer = new RPCServer(
     DATA_DIR,
     RESPONSE_TIMEOUT,
-    DISCOVERY_PLATFORM_API_ENDPOINT
+    DISCOVERY_PLATFORM_API_ENDPOINT,
+    CLIENT
   );
   rpcServer.start().catch((error) => log.error(error));
 }

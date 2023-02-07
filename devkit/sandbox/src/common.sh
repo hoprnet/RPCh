@@ -16,7 +16,7 @@ start() {
     # stop if already running
     stop
 
-    echo "Starting 'nodes-docker-compose' and waiting for funding & open channels"
+    echo "Starting 'nodes-docker-compose' including 'manager'. Waiting for funding & open channels"
 
     #  Run docker compose as daemon
     rm -f $DIR/logs;

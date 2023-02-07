@@ -47,6 +47,7 @@ const createSdkMock = (
     .persist();
 
   const ops: HoprSdkOps = {
+    client: "",
     timeout: overwriteOps?.timeout ?? TIMEOUT,
     discoveryPlatformApiEndpoint:
       overwriteOps?.discoveryPlatformApiEndpoint ??

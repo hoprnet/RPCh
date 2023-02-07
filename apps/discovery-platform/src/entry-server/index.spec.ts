@@ -17,7 +17,6 @@ import {
 import assert from "assert";
 
 const FUNDING_SERVICE_URL = "http://localhost:5000";
-const ACCESS_TOKEN = "ACCESS";
 const BASE_QUOTA = 1;
 const FAKE_ACCESS_TOKEN = "EcLjvxdALOT0eq18d8Gzz3DEr3AMG27NtL+++YPSZNE=";
 
@@ -33,8 +32,8 @@ const mockNode = (
   hasExitNode: hasExitNode ?? true,
   peerId: peerId ?? "peerId",
   chainId: 100,
-  hoprdApiEndpoint: "localhost",
-  hoprdApiPort: 5000,
+  hoprdApiEndpoint: "localhost:5000",
+  hoprdApiToken: "someToken",
   exitNodePubKey: "somePubKey",
   nativeAddress: "someAddress",
 });
@@ -57,7 +56,6 @@ describe("test entry server", function () {
     app = entryServer({
       db: dbInstance,
       baseQuota: BASE_QUOTA,
-      accessToken: ACCESS_TOKEN,
       fundingServiceApi,
     });
   });

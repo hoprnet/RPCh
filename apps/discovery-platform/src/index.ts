@@ -11,9 +11,6 @@ import * as constants from "./constants";
 const log = createLogger();
 
 const main = () => {
-  if (!constants.HOPRD_ACCESS_TOKEN) {
-    throw new Error('Missing "HOPRD_ACCESS_TOKEN" env variable');
-  }
   if (!constants.FUNDING_SERVICE_URL)
     throw new Error('Missing "FUNDING_SERVICE_API" env variable');
 
@@ -30,7 +27,6 @@ const main = () => {
   });
 
   start({
-    accessToken: constants.HOPRD_ACCESS_TOKEN!,
     baseQuota: constants.BASE_QUOTA,
     db: dbInstance,
     fundingServiceUrl: constants.FUNDING_SERVICE_URL!,
@@ -41,7 +37,6 @@ const start = async (ops: {
   db: DBInstance;
   baseQuota: number;
   fundingServiceUrl: string;
-  accessToken: string;
 }) => {
   // create tables if they do not exist in the db
   const schemaSql = fs.readFileSync("dump.sql", "utf8").toString();
@@ -62,7 +57,6 @@ const start = async (ops: {
   const server = entryServer({
     db: ops.db,
     baseQuota: ops.baseQuota,
-    accessToken: ops.accessToken,
     fundingServiceApi: fundingServiceApi,
   });
   // start listening at PORT for requests

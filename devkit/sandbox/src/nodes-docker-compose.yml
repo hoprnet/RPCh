@@ -20,6 +20,18 @@ x-exit-service: &exit
   command: "node apps/exit-node/build/index.js"
 
 services:
+  manager:
+    build:
+      dockerfile: devkit/manager/Dockerfile
+      context: ../../../
+    restart: unless-stopped
+    ports:
+      - "3030:3030"
+    networks:
+      - default
+      - sandbox-nodes_default
+    environment:
+      - DEBUG=${DEBUG}
   pluto:
     image: gcr.io/hoprassociation/hopr-pluto:v1.90.69@sha256:f698950f67f7f995400b5f4c8379e700ef8fe93fab4f27913b9ec545df08b992
     restart: unless-stopped

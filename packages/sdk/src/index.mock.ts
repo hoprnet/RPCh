@@ -5,8 +5,7 @@ import * as crypto from "@rpch/crypto/nodejs";
 import SDK from ".";
 
 export const DISCOVERY_PLATFORM_API_ENDPOINT = "http://discovery_platform";
-export const ENTRY_NODE_API_ENDPOINT = "http://entry_node";
-export const ENTRY_NODE_API_PORT = "1337";
+export const ENTRY_NODE_API_ENDPOINT = "http://entry_node:12345";
 export const ENTRY_NODE_API_TOKEN = "12345";
 export const ENTRY_NODE_PEER_ID = fixtures.HOPRD_PEER_ID_A;
 export const EXIT_NODE_PEER_ID = fixtures.EXIT_NODE_HOPRD_PEER_ID_A;
@@ -24,7 +23,7 @@ nock(DISCOVERY_PLATFORM_API_ENDPOINT)
   .post("/api/v1/request/entry-node")
   .reply(200, {
     hoprd_api_endpoint: ENTRY_NODE_API_ENDPOINT,
-    hoprd_api_port: ENTRY_NODE_API_PORT,
+    hoprd_api_token: ENTRY_NODE_API_TOKEN,
     accessToken: ENTRY_NODE_API_TOKEN,
     id: ENTRY_NODE_PEER_ID,
   })
