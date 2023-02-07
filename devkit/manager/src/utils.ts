@@ -84,3 +84,22 @@ export async function getPeerId(
     .then((res) => res.json())
     .then((res: { hopr: string; native: string }) => res.hopr);
 }
+
+export async function getInfo(
+  hoprdEndpoint: string,
+  hoprdToken: string
+): Promise<{ hoprToken: string }> {
+  const [url, headers] = utils.createApiUrl(
+    "http",
+    hoprdEndpoint,
+    "/api/v2/node/info",
+    hoprdToken
+  );
+
+  return fetch(url.toString(), {
+    method: "GET",
+    headers,
+  })
+    .then((res) => res.json())
+    .then((res: { hoprToken: string }) => res);
+}

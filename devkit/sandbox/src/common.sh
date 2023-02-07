@@ -92,25 +92,21 @@ start() {
 
     echo "Done 'nodes-docker-compose'"
 
-    # extract public keys
-    exit_node_pub_key_1=$(echo "$logs1" | grep "Running exit node with public key" | awk '{print $9}')
-    exit_node_pub_key_2=$(echo "$logs2" | grep "Running exit node with public key" | awk '{print $9}')
-    exit_node_pub_key_3=$(echo "$logs3" | grep "Running exit node with public key" | awk '{print $9}')
-    exit_node_pub_key_4=$(echo "$logs4" | grep "Running exit node with public key" | awk '{print $9}')
-    exit_node_pub_key_5=$(echo "$logs5" | grep "Running exit node with public key" | awk '{print $9}')
-
-    echo "Extracted public keys"
-    echo "node1=$exit_node_pub_key_1"
-    echo "node2=$exit_node_pub_key_2"
-    echo "node3=$exit_node_pub_key_3"
-    echo "node4=$exit_node_pub_key_4"
-    echo "node5=$exit_node_pub_key_5"
-
     # fund funding-service wallet
     echo "Funding funding-service wallet"
-    hoprTokenAddress=$( \
-        NODE_ENV=production FUNDING_HOPRD_API_TOKEN=${HOPRD_API_TOKEN} \
-        npx ts-node $DIR/fund-funding-service.ts
+    curl -X POST "http://localhost:3030/fund-via-hoprd" 
+        -H "Content-Type: application/json"
+        -d '{
+            "hoprdEndpoint": '"$HOPRD_API_ENDPOINT_1"',
+            "hoprdToken": '"$HOPRD_API_TOKEN_1"',
+            "nativeAmount": '"$NATIVE_AMOUNT"',
+            "hoprAmount": '"$HOPR_AMOUNT"',
+            "recipient": '"$FUNDING_SERVICE_ADDRESS"'
+        }'
+
+    # get HOPR Token address
+    hoprTokenAddress=$(
+        curl -sbH "Accept: application/json" "http://localhost:3030/get-hoprd-token-address?hoprdEndpoint=$HOPRD_API_ENDPOINT_1&hoprdToken=$HOPRD_API_TOKEN_1"
     )
     echo "Found hoprTokenAddress: $hoprTokenAddress"
 
@@ -120,21 +116,42 @@ start() {
         up -d --remove-orphans --build --force-recreate
     echo "Done 'central-docker-compose'"
     sleep 20
+
     # register nodes
     echo "Registering nodes to discovery-platform"
-    hoprTokenAddress=$( \
-        NODE_ENV=production HOPRD_API_TOKEN=${HOPRD_API_TOKEN} \
-        EXIT_NODE_PUB_KEY_1=${exit_node_pub_key_1} \
-        EXIT_NODE_PUB_KEY_2=${exit_node_pub_key_2} \
-        EXIT_NODE_PUB_KEY_3=${exit_node_pub_key_3} \
-        EXIT_NODE_PUB_KEY_4=${exit_node_pub_key_4} \
-        EXIT_NODE_PUB_KEY_5=${exit_node_pub_key_5} \
-        npx ts-node $DIR/register-nodes.ts
-    )
+    curl -X POST "http://localhost:3030/register-exit-nodes" 
+        -H "Content-Type: application/json"
+        -d '{
+            "discoveryPlatformEndpoint": '"$DISCOVERY_PLATFORM_ENDPOINT"',
+            "hoprdApiEndpoint1": '"$HOPRD_API_ENDPOINT_1"',
+            "hoprdApiToken1": '"$HOPRD_API_TOKEN_1"',
+            "exitNodePubKey1": '"$EXIT_NODE_PUB_KEY_1"',
+            "hoprdApiEndpoint2": '"$HOPRD_API_ENDPOINT_2"',
+            "hoprdApiToken2": '"$HOPRD_API_TOKEN_2"',
+            "exitNodePubKey2": '"$EXIT_NODE_PUB_KEY_2"',
+            "hoprdApiEndpoint3": '"$HOPRD_API_ENDPOINT_3"',
+            "hoprdApiToken3": '"$HOPRD_API_TOKEN_3"',
+            "exitNodePubKey3": '"$EXIT_NODE_PUB_KEY_3"',
+            "hoprdApiEndpoint4": '"$HOPRD_API_ENDPOINT_4"',
+            "hoprdApiToken4": '"$HOPRD_API_TOKEN_4"',
+            "exitNodePubKey4": '"$EXIT_NODE_PUB_KEY_4"',
+            "hoprdApiEndpoint5": '"$HOPRD_API_ENDPOINT_5"',
+            "hoprdApiToken5": '"$HOPRD_API_TOKEN_5"',
+            "exitNodePubKey5": '"$EXIT_NODE_PUB_KEY_5"'
+        }'
     echo "Registered nodes to discovery-platform"
 
+    # add quota to client 'sandbox'
     echo "Adding quota to discovery-platform"
-    npx ts-node $DIR/add-quota.ts
+    curl -X POST "http://localhost:3030/add-quota" 
+        -H "Content-Type: application/json"
+        -d '{
+            "hoprdEndpoint": '"$HOPRD_API_ENDPOINT_1"',
+            "hoprdToken": '"$HOPRD_API_TOKEN_1"',
+            "nativeAmount": '"$NATIVE_AMOUNT"',
+            "hoprAmount": '"$HOPR_AMOUNT"',
+            "recipient": '"$FUNDING_SERVICE_ADDRESS"'
+        }'
     echo "Added quota to client sandbox in discovery-platform"
 
     echo "Sandbox is ready!"

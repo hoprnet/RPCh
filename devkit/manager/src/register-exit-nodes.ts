@@ -43,39 +43,40 @@ async function registerNode(
 }
 
 export default async function main(
-  DISCOVERY_PLATFORM_ENDPOINT: string,
-  HOPRD_API_ENDPOINT_1: string,
-  HOPRD_API_TOKEN_1: string,
-  EXIT_NODE_PUB_KEY_1: string,
-  HOPRD_API_ENDPOINT_2: string,
-  HOPRD_API_TOKEN_2: string,
-  EXIT_NODE_PUB_KEY_2: string,
-  HOPRD_API_ENDPOINT_3: string,
-  HOPRD_API_TOKEN_3: string,
-  EXIT_NODE_PUB_KEY_3: string,
-  HOPRD_API_ENDPOINT_4: string,
-  HOPRD_API_TOKEN_4: string,
-  EXIT_NODE_PUB_KEY_4: string,
-  HOPRD_API_ENDPOINT_5: string,
-  HOPRD_API_TOKEN_5: string,
-  EXIT_NODE_PUB_KEY_5: string
+  discoveryPlatformEndpoint: string,
+  hoprdApiEndpoint1: string,
+  hoprdApiToken1: string,
+  exitNodePubKey1: string,
+  hoprdApiEndpoint2: string,
+  hoprdApiToken2: string,
+  exitNodePubKey2: string,
+  hoprdApiEndpoint3: string,
+  hoprdApiToken3: string,
+  exitNodePubKey3: string,
+  hoprdApiEndpoint4: string,
+  hoprdApiToken4: string,
+  exitNodePubKey4: string,
+  hoprdApiEndpoint5: string,
+  hoprdApiToken5: string,
+  exitNodePubKey5: string
 ): Promise<void> {
   log.normal("Registering exit nodes", {
-    HOPRD_API_ENDPOINT_1,
-    HOPRD_API_TOKEN_1,
-    EXIT_NODE_PUB_KEY_1,
-    HOPRD_API_ENDPOINT_2,
-    HOPRD_API_TOKEN_2,
-    EXIT_NODE_PUB_KEY_2,
-    HOPRD_API_ENDPOINT_3,
-    HOPRD_API_TOKEN_3,
-    EXIT_NODE_PUB_KEY_3,
-    HOPRD_API_ENDPOINT_4,
-    HOPRD_API_TOKEN_4,
-    EXIT_NODE_PUB_KEY_4,
-    HOPRD_API_ENDPOINT_5,
-    HOPRD_API_TOKEN_5,
-    EXIT_NODE_PUB_KEY_5,
+    discoveryPlatformEndpoint,
+    hoprdApiEndpoint1,
+    hoprdApiToken1,
+    exitNodePubKey1,
+    hoprdApiEndpoint2,
+    hoprdApiToken2,
+    exitNodePubKey2,
+    hoprdApiEndpoint3,
+    hoprdApiToken3,
+    exitNodePubKey3,
+    hoprdApiEndpoint4,
+    hoprdApiToken4,
+    exitNodePubKey4,
+    hoprdApiEndpoint5,
+    hoprdApiToken5,
+    exitNodePubKey5,
   });
   const groups: {
     hoprdApiEndpoint: string;
@@ -83,29 +84,29 @@ export default async function main(
     exitNodePubKey: string;
   }[] = [
     {
-      hoprdApiEndpoint: HOPRD_API_ENDPOINT_1,
-      hoprdApiToken: HOPRD_API_TOKEN_1,
-      exitNodePubKey: EXIT_NODE_PUB_KEY_1,
+      hoprdApiEndpoint: hoprdApiEndpoint1,
+      hoprdApiToken: hoprdApiToken1,
+      exitNodePubKey: exitNodePubKey1,
     },
     {
-      hoprdApiEndpoint: HOPRD_API_ENDPOINT_2,
-      hoprdApiToken: HOPRD_API_TOKEN_2,
-      exitNodePubKey: EXIT_NODE_PUB_KEY_2,
+      hoprdApiEndpoint: hoprdApiEndpoint2,
+      hoprdApiToken: hoprdApiToken2,
+      exitNodePubKey: exitNodePubKey2,
     },
     {
-      hoprdApiEndpoint: HOPRD_API_ENDPOINT_3,
-      hoprdApiToken: HOPRD_API_TOKEN_3,
-      exitNodePubKey: EXIT_NODE_PUB_KEY_3,
+      hoprdApiEndpoint: hoprdApiEndpoint3,
+      hoprdApiToken: hoprdApiToken3,
+      exitNodePubKey: exitNodePubKey3,
     },
     {
-      hoprdApiEndpoint: HOPRD_API_ENDPOINT_4,
-      hoprdApiToken: HOPRD_API_TOKEN_4,
-      exitNodePubKey: EXIT_NODE_PUB_KEY_4,
+      hoprdApiEndpoint: hoprdApiEndpoint4,
+      hoprdApiToken: hoprdApiToken4,
+      exitNodePubKey: exitNodePubKey4,
     },
     {
-      hoprdApiEndpoint: HOPRD_API_ENDPOINT_5,
-      hoprdApiToken: HOPRD_API_TOKEN_5,
-      exitNodePubKey: EXIT_NODE_PUB_KEY_5,
+      hoprdApiEndpoint: hoprdApiEndpoint5,
+      hoprdApiToken: hoprdApiToken5,
+      exitNodePubKey: exitNodePubKey5,
     },
   ];
 
@@ -116,7 +117,7 @@ export default async function main(
       nodes.hoprdApiToken
     );
     await registerNode(
-      DISCOVERY_PLATFORM_ENDPOINT,
+      discoveryPlatformEndpoint,
       hoprdPeerId,
       nodes.hoprdApiEndpoint,
       nodes.hoprdApiToken,

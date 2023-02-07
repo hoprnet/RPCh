@@ -24,7 +24,7 @@ describe("test index.ts", function () {
   let request: supertest.SuperTest<supertest.Test>;
 
   beforeAll(async function () {
-    rpcServer = new RPCServer("", TIMEOUT, DISCOVERY_PLATFORM_API_ENDPOINT);
+    rpcServer = new RPCServer("", TIMEOUT, DISCOVERY_PLATFORM_API_ENDPOINT, "");
     await rpcServer.start();
 
     // hook to emulate responses from the exit node

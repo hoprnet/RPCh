@@ -59,6 +59,7 @@ services:
       - FUNDING_SERVICE_URL=http://funding-service:3010
       - PORT=${DISCOVERY_PLATFORM_PORT}
       - SKIP_CHECK_COMMITMENT=${SKIP_CHECK_COMMITMENT}
+      - FORCE_SMART_CONTRACT_ADDRESS=${FORCE_SMART_CONTRACT_ADDRESS}
 
 networks:
   sandbox-nodes_default:
