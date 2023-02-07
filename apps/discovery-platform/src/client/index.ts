@@ -8,7 +8,7 @@ export const createClient = async (
   const dbQuota: CreateClient = {
     id: client.id,
     payment: client.payment,
-    labels: client.labels,
+    labels: client.labels ?? [],
   };
   return await db.createClient(dbInstance, dbQuota);
 };

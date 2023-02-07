@@ -217,7 +217,7 @@ export const v1Router = (ops: {
         if (!errors.isEmpty()) {
           return res.status(400).json({ errors: errors.array() });
         }
-        const { clientId, quota }: CreateQuota = req.body;
+        const { client: clientId, quota } = req.body;
         const createdQuota = await createQuota(ops.db, {
           clientId,
           quota,

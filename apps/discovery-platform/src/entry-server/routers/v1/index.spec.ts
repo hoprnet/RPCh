@@ -15,6 +15,7 @@ import {
   CreateRegisteredNode,
   QueryRegisteredNode,
 } from "../../../registered-node/dto";
+import { createClient } from "../../../client";
 
 const FUNDING_SERVICE_URL = "http://localhost:5000";
 const ACCESS_TOKEN = "ACCESS";
@@ -113,6 +114,7 @@ describe("test v1 router", function () {
   });
 
   it("should add quota to a client", async function () {
+    await createClient(dbInstance, { id: "client", payment: "premium" });
     const createdQuota = await request(app).post("/client/funds").send({
       client: "client",
       quota: 1,
@@ -121,6 +123,7 @@ describe("test v1 router", function () {
   });
 
   it.skip("should not allow request client does not have enough quota", async function () {
+    await createClient(dbInstance, { id: "client", payment: "premium" });
     // create quota for client
     await request(app).post("/client/funds").send({
       client: "client",
@@ -132,9 +135,10 @@ describe("test v1 router", function () {
       2
     );
 
-    assert(!doesClientHaveQuotaResponse);
+    assert.equal(doesClientHaveQuotaResponse, false);
   });
   it("should allow request because client has enough quota", async function () {
+    await createClient(dbInstance, { id: "client", payment: "premium" });
     // create quota for wrong client
     await request(app).post("/client/funds").send({
       client: "client",
@@ -146,7 +150,7 @@ describe("test v1 router", function () {
       1
     );
 
-    assert(doesClientHaveQuotaResponse);
+    assert.equal(doesClientHaveQuotaResponse, true);
   });
   describe("should select an entry node", function () {
     it("should return an entry node", async function () {
@@ -162,7 +166,7 @@ describe("test v1 router", function () {
       };
 
       nockGetApiAccessToken.reply(200, replyBody);
-
+      await createClient(dbInstance, { id: "client", payment: "premium" });
       await request(app).post("/client/funds").send({
         client: "client",
         quota: 1,
@@ -207,7 +211,7 @@ describe("test v1 router", function () {
       };
 
       nockGetApiAccessToken.reply(200, replyBody);
-
+      await createClient(dbInstance, { id: "client", payment: "premium" });
       await request(app).post("/client/funds").send({
         client: "client",
         quota: 1,
@@ -261,7 +265,7 @@ describe("test v1 router", function () {
       };
 
       nockGetApiAccessToken.reply(200, apiAccessTokenResponse);
-
+      await createClient(dbInstance, { id: "client", payment: "premium" });
       await request(app).post("/client/funds").send({
         client: "client",
         quota: 1,

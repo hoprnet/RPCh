@@ -3,6 +3,7 @@ import * as db from "../db";
 import { CreateClient } from "./dto";
 import { createClient, updateClient, deleteClient, getClient } from "./index";
 import { MockPgInstanceSingleton } from "../db/index.spec";
+import { createQuota } from "../quota";
 
 const createMockClient = (params?: CreateClient): CreateClient => {
   return {
@@ -44,10 +45,10 @@ describe("test quota functions", function () {
     assert.equal(queryClient?.id, createdClient.id);
     assert.equal(queryClient?.payment, createdClient.payment);
   });
-  it("should update quota", async function () {
+  it("should update client", async function () {
     const mockClient = createMockClient();
     const createdClient = await createClient(dbInstance, mockClient);
-    await db.updateClient(dbInstance, {
+    await updateClient(dbInstance, {
       ...createdClient,
       labels: ["eth"],
     });
@@ -55,7 +56,7 @@ describe("test quota functions", function () {
     assert.equal(queryClient?.id, mockClient.id);
     assert.deepEqual(queryClient?.labels, ["eth"]);
   });
-  it("should delete quota", async function () {
+  it("should delete client", async function () {
     const mockClient = createMockClient({
       id: "client",
       payment: "premium",
@@ -63,9 +64,8 @@ describe("test quota functions", function () {
     });
     const createdClient = await createClient(dbInstance, mockClient);
     if (!createdClient.id) throw new Error("Could not create mock client");
-    await db.deleteClient(dbInstance, createdClient.id);
+    await deleteClient(dbInstance, createdClient.id);
     const deletedClient = await getClient(dbInstance, createdClient.id);
     assert.equal(deletedClient, undefined);
   });
-  it.skip("should get sum of all quotas", async function () {});
 });

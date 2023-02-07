@@ -8,6 +8,7 @@ import {
   updateQuota,
 } from "./index";
 import { MockPgInstanceSingleton } from "../db/index.spec";
+import { createClient } from "../client";
 
 const createMockQuota = (params?: CreateQuota): CreateQuota => {
   return {
@@ -27,6 +28,7 @@ describe("test quota functions", function () {
 
   beforeEach(async function () {
     MockPgInstanceSingleton.getInitialState().restore();
+    await createClient(dbInstance, { id: "client", payment: "premium" });
   });
 
   it("should create quota", async function () {
@@ -43,6 +45,8 @@ describe("test quota functions", function () {
     assert.equal(queryQuota?.client_id, createdQuota.client_id);
   });
   it("should get quotas by client", async function () {
+    // create client to create mocks with it
+    await createClient(dbInstance, { id: "other client", payment: "premium" });
     const mockQuota = createMockQuota({
       clientId: "client",
       actionTaker: "discovery",

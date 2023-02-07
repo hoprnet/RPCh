@@ -244,7 +244,7 @@ export const createClient = async (
   const values: CreateClient = {
     id: client.id,
     payment: client.payment,
-    labels: client.labels ?? [],
+    labels: client.labels,
   };
 
   const dbRes: QueryClient = await dbInstance.one(text, values);
