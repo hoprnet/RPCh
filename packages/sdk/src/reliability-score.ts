@@ -88,6 +88,12 @@ export default class ReliabilityScore {
    */
   public addMetric(peerId: string, requestId: number, result: Result) {
     let nodeMetrics = this.metrics.get(peerId);
+    log.verbose(
+      "node: %s, requestId: %s, result: %s",
+      peerId,
+      requestId,
+      result
+    );
 
     if (!nodeMetrics) {
       nodeMetrics = {
