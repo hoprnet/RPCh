@@ -5,6 +5,6 @@
   "private": true,
   "main": "index.js",
   "dependencies": {
-    "tsup": "^6.5.0"
+    "tsup": "6.5.0"
   }
 }
