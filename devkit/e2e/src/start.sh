@@ -13,7 +13,7 @@ DIR_SANDBOX=$(realpath $DIR/../../sandbox/src)
 source $DIR_SANDBOX/common.sh
 
 # If there's a fatal error or users Ctrl+C it will tear down setup
-trap 'stop; exit 1' SIGINT SIGKILL SIGTERM ERR EXIT
+trap 'stop; exit 1' SIGINT SIGKILL SIGTERM ERR
 
 # start sandbox
 start
