@@ -371,7 +371,7 @@ export default class SDK {
    * @param req Request
    * @returns Promise<Response>
    */
-  public sendRequest(req: Request): Promise<Response> {
+  public async sendRequest(req: Request): Promise<Response> {
     if (!this.isReady) throw Error("SDK not ready to send requests");
     if (this.isDeadlocked()) throw Error("SDK is deadlocked");
 
