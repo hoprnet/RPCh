@@ -50,7 +50,7 @@ services:
       - HOPRD_API_ENDPOINT=http://pluto:13301
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-      - RPCH_PASSWORD=${RPCH_EXIT_NODE_PASSWORD}
+      - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_1}
     entrypoint:
       [
         "/bin/wait-for",
@@ -67,7 +67,7 @@ services:
       - HOPRD_API_ENDPOINT=http://pluto:13302
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-      - RPCH_PASSWORD=${RPCH_EXIT_NODE_PASSWORD}
+      - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_2}
     entrypoint:
       [
         "/bin/wait-for",
@@ -84,7 +84,7 @@ services:
       - HOPRD_API_ENDPOINT=http://pluto:13303
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-      - RPCH_PASSWORD=${RPCH_EXIT_NODE_PASSWORD}
+      - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_3}
     entrypoint:
       [
         "/bin/wait-for",
@@ -101,7 +101,7 @@ services:
       - HOPRD_API_ENDPOINT=http://pluto:13304
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-      - RPCH_PASSWORD=${RPCH_EXIT_NODE_PASSWORD}
+      - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_4}
     entrypoint:
       [
         "/bin/wait-for",
@@ -118,7 +118,7 @@ services:
       - HOPRD_API_ENDPOINT=http://pluto:13305
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-      - RPCH_PASSWORD=${RPCH_EXIT_NODE_PASSWORD}
+      - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_5}
     entrypoint:
       [
         "/bin/wait-for",
