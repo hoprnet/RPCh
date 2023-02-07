@@ -246,7 +246,6 @@ export const createClient = async (
     payment: client.payment,
     labels: client.labels,
   };
-
   const dbRes: QueryClient = await dbInstance.one(text, values);
   return dbRes;
 };

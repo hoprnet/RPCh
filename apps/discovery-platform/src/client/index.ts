@@ -1,5 +1,8 @@
 import * as db from "../db";
+import { randomWords } from "../utils";
 import { CreateClient, QueryClient } from "./dto";
+
+const AMOUNT_OF_RANDOM_WORDS_FOR_TRIAL_ID = 5;
 
 export const createClient = async (
   dbInstance: db.DBInstance,
@@ -15,12 +18,16 @@ export const createClient = async (
 
 export const createTrialClient = async (
   dbInstance: db.DBInstance,
-  client: CreateClient
+  labels: string[]
 ): Promise<QueryClient> => {
+  const randomWordsId = randomWords(AMOUNT_OF_RANDOM_WORDS_FOR_TRIAL_ID).join(
+    "-"
+  );
+
   const dbQuota: CreateClient = {
-    id: client.id,
+    id: randomWordsId,
     payment: "trial",
-    labels: client.labels ?? [],
+    labels: labels ?? [],
   };
   return await db.createClient(dbInstance, dbQuota);
 };

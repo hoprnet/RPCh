@@ -3,6 +3,7 @@ import express, { Express } from "express";
 import nock from "nock";
 import request from "supertest";
 import { doesClientHaveQuota, v1Router } from ".";
+import { getClient } from "../../../client";
 import { DBInstance } from "../../../db";
 import { MockPgInstanceSingleton } from "../../../db/index.spec";
 import { FundingServiceApi } from "../../../funding-service-api";
@@ -10,12 +11,12 @@ import {
   getAccessTokenResponse,
   postFundingResponse,
 } from "../../../funding-service-api/dto";
+import { getAllQuotasByClient, sumQuotas } from "../../../quota";
 import * as registeredNode from "../../../registered-node";
 import {
   CreateRegisteredNode,
   QueryRegisteredNode,
 } from "../../../registered-node/dto";
-import { createClient } from "../../../client";
 
 const FUNDING_SERVICE_URL = "http://localhost:5000";
 const ACCESS_TOKEN = "ACCESS";
@@ -121,7 +122,7 @@ describe("test v1 router", function () {
     assert.equal(createdQuota.body.quota.quota, 1);
   });
 
-  it.skip("should not allow request client does not have enough quota", async function () {
+  it("should not allow request client does not have enough quota", async function () {
     // create quota for client
     await request(app).post("/client/quota").send({
       client: "client",
@@ -148,6 +149,13 @@ describe("test v1 router", function () {
     );
 
     assert.equal(doesClientHaveQuotaResponse, true);
+  });
+  it("should create trial client", async function () {
+    const response = await request(app).get("/request/trial?label=devcon");
+    const dbClient = await getClient(dbInstance, response.body.client);
+    assert.equal(dbClient?.payment, "trial");
+    assert.deepEqual(dbClient?.labels, ["devcon"]);
+    assert.equal(!!response.body.client, true);
   });
   describe("should select an entry node", function () {
     it("should return an entry node", async function () {
@@ -274,7 +282,7 @@ describe("test v1 router", function () {
       assert.equal(requestResponse.body.body, "Could not find eligible node");
       spy.mockRestore();
     });
-    it.skip("should reduce client quota", async function () {
+    it("should reduce client quota", async function () {
       const spy = jest.spyOn(registeredNode, "getEligibleNode");
       const amountLeft = 10;
       const peerId = "entry";
@@ -325,6 +333,66 @@ describe("test v1 router", function () {
         requestResponse.body.body,
         "Client does not have enough quota"
       );
+      spy.mockRestore();
+    });
+    it("should reduce trial client quota if client is in trial mode", async function () {
+      const spy = jest.spyOn(registeredNode, "getEligibleNode");
+      const amountLeft = 10;
+      const peerId = "entry";
+      const requestId = 1;
+
+      const apiTokenResponse: getAccessTokenResponse = {
+        accessToken: FAKE_ACCESS_TOKEN,
+        amountLeft: 10,
+        expiredAt: new Date().toISOString(),
+      };
+
+      nockGetApiAccessToken.reply(200, apiTokenResponse);
+
+      const responseRequestTrialClient = await request(app).get(
+        "/request/trial"
+      );
+      const trialClientId: string = responseRequestTrialClient.body.client;
+
+      await request(app).post("/client/quota").send({
+        client: "trial",
+        quota: BASE_QUOTA,
+      });
+
+      await request(app).post("/node/register").send(mockNode(peerId, true));
+
+      const createdNode: {
+        body: { node: QueryRegisteredNode | undefined };
+      } = await request(app).get(`/node/${peerId}`);
+
+      spy.mockImplementation(async () => {
+        return createdNode.body.node;
+      });
+
+      const fundingResponse: postFundingResponse = {
+        amountLeft,
+        id: requestId,
+      };
+
+      nockFundingRequest(createdNode.body.node?.native_address!).reply(
+        200,
+        fundingResponse
+      );
+
+      const trialClientQuotaBefore = sumQuotas(
+        await getAllQuotasByClient(dbInstance, "trial")
+      );
+
+      const requestResponse = await request(app)
+        .post("/request/entry-node")
+        .send({ client: trialClientId });
+
+      const trialClientQuotaAfter = sumQuotas(
+        await getAllQuotasByClient(dbInstance, "trial")
+      );
+
+      expect(trialClientQuotaAfter).toBeLessThan(trialClientQuotaBefore);
+      expect(requestResponse.body).toHaveProperty("id");
       spy.mockRestore();
     });
   });

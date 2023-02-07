@@ -1,9 +1,8 @@
 import assert from "assert";
 import * as db from "../db";
-import { CreateClient } from "./dto";
-import { createClient, updateClient, deleteClient, getClient } from "./index";
 import { MockPgInstanceSingleton } from "../db/index.spec";
-import { createQuota } from "../quota";
+import { CreateClient } from "./dto";
+import { createClient, deleteClient, getClient, updateClient } from "./index";
 
 const createMockClient = (params?: CreateClient): CreateClient => {
   return {
