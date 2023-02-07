@@ -203,8 +203,8 @@ export const v1Router = (ops: {
     }
   );
 
-  router.get("/funding-service/quota", async (req, res) => {
-    log.verbose(`GET /funding-service/quota`);
+  router.get("/funding-service/funds", async (req, res) => {
+    log.verbose(`GET /funding-service/funds`);
     try {
       const funds = await ops.fundingServiceApi.getAvailableFunds();
       return res.json({ body: funds });
@@ -217,7 +217,7 @@ export const v1Router = (ops: {
   // DISCLAIMER: can be exploited to allow client to use infinite funds
   router.post(
     "/client/quota",
-    body("client").exists().bail().isAlphanumeric(),
+    body("client").exists(),
     body("quota").exists().bail().isNumeric(),
     async (req, res) => {
       try {

@@ -36,28 +36,6 @@ CREATE TABLE public.funding_requests (
 ALTER TABLE public.funding_requests OWNER TO postgres;
 
 --
--- Name: funding_requests_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.funding_requests_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE public.funding_requests_id_seq OWNER TO postgres;
-
---
--- Name: funding_requests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.funding_requests_id_seq OWNED BY public.funding_requests.id;
-
-
---
 -- Name: clients; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -66,7 +44,7 @@ CREATE TYPE public.payment_type AS ENUM ('trial', 'premium');
 CREATE TABLE public.clients (
     id character varying(255) PRIMARY KEY,
     labels text[],
-    payment payment_type NOT NULL,
+    payment public.payment_type NOT NULL,
     created_at timestamptz DEFAULT now() NOT NULL,
     updated_at timestamptz DEFAULT now() NOT NULL
 );
@@ -114,12 +92,6 @@ CREATE TABLE public.registered_nodes (
 
 
 ALTER TABLE public.registered_nodes OWNER TO postgres;
-
---
--- Name: funding_requests id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.funding_requests ALTER COLUMN id SET DEFAULT nextval('public.funding_requests_id_seq'::regclass);
 
 --
 -- Name: funding_requests funding_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
