@@ -4,6 +4,12 @@ import { CreateClient, QueryClient } from "./dto";
 
 const AMOUNT_OF_RANDOM_WORDS_FOR_TRIAL_ID = 5;
 
+/**
+ * Saves a client in DB
+ * @param dbInstance DBInstance
+ * @param client CreateClient
+ * @returns QueryClient
+ */
 export const createClient = async (
   dbInstance: db.DBInstance,
   client: CreateClient
@@ -32,6 +38,12 @@ export const createTrialClient = async (
   return await db.createClient(dbInstance, dbQuota);
 };
 
+/**
+ * Get a client that matches id
+ * @param dbInstance DBInstance
+ * @param id string
+ * @returns QueryClient | null
+ */
 export const getClient = async (
   dbInstance: db.DBInstance,
   id: string
@@ -39,6 +51,12 @@ export const getClient = async (
   return await db.getClient(dbInstance, id);
 };
 
+/**
+ * Update client in DB
+ * @param dbInstance DBInstance
+ * @param client QueryClient
+ * @returns QueryClient
+ */
 export const updateClient = async (
   dbInstance: db.DBInstance,
   client: QueryClient
@@ -46,6 +64,12 @@ export const updateClient = async (
   return await db.updateClient(dbInstance, client);
 };
 
+/**
+ * Delete client with matching id
+ * @param dbInstance DBInstance
+ * @param id string
+ * @returns QueryClient | null
+ */
 export const deleteClient = async (
   dbInstance: db.DBInstance,
   id: string
