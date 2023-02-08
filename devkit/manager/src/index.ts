@@ -12,6 +12,8 @@ const { PORT = 3030 } = process.env;
 const log = createLogger();
 const app = express();
 
+log.verbose("Running 'manager' with ENV", { PORT });
+
 // parse JSON bodies
 app.use(express.json());
 

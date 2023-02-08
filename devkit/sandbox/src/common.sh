@@ -3,6 +3,11 @@
 # path to this file
 DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)
 
+# safe curl: error when response status code is >400
+scurl() {
+    curl --silent --show-error --fail "$@"
+}
+
 # stop sandbox
 stop() {
     echo "Stopping 'central-docker-compose'"
@@ -94,19 +99,19 @@ start() {
 
     # fund funding-service wallet
     echo "Funding funding-service wallet"
-    curl -X POST "http://localhost:3030/fund-via-hoprd" 
-        -H "Content-Type: application/json"
+    scurl -X POST "http://127.0.0.1:3030/fund-via-hoprd" \
+        -H "Content-Type: application/json" \
         -d '{
-            "hoprdEndpoint": '"$HOPRD_API_ENDPOINT_1"',
-            "hoprdToken": '"$HOPRD_API_TOKEN"',
-            "nativeAmount": '"$NATIVE_AMOUNT"',
-            "hoprAmount": '"$HOPR_AMOUNT"',
-            "recipient": '"$FUNDING_SERVICE_ADDRESS"'
+            "hoprdEndpoint": "'$HOPRD_API_ENDPOINT_1'",
+            "hoprdToken": "'$HOPRD_API_TOKEN'",
+            "nativeAmount": "'$NATIVE_AMOUNT'",
+            "hoprAmount": "'$HOPR_AMOUNT'",
+            "recipient": "'$FUNDING_SERVICE_ADDRESS'"
         }'
 
     # get HOPR Token address
     hoprTokenAddress=$(
-        curl -sbH "Accept: application/json" "http://localhost:3030/get-hoprd-token-address?hoprdEndpoint=$HOPRD_API_ENDPOINT_1&hoprdToken=$HOPRD_API_TOKEN"
+        scurl -sbH "Accept: application/json" "http://127.0.0.1:3030/get-hoprd-token-address?hoprdEndpoint=$HOPRD_API_ENDPOINT_1&hoprdToken=$HOPRD_API_TOKEN"
     )
     echo "Found hoprTokenAddress: $hoprTokenAddress"
 
@@ -119,34 +124,34 @@ start() {
 
     # register nodes
     echo "Registering nodes to discovery-platform"
-    curl -X POST "http://localhost:3030/register-exit-nodes" 
-        -H "Content-Type: application/json"
+    scurl -X POST "http://127.0.0.1:3030/register-exit-nodes" \
+        -H "Content-Type: application/json" \
         -d '{
-            "discoveryPlatformEndpoint": '"$DISCOVERY_PLATFORM_ENDPOINT"',
-            "hoprdApiEndpoint1": '"$HOPRD_API_ENDPOINT_1"',
-            "hoprdApiToken1": '"$HOPRD_API_TOKEN"',
-            "exitNodePubKey1": '"$EXIT_NODE_PUB_KEY_1"',
-            "hoprdApiEndpoint2": '"$HOPRD_API_ENDPOINT_2"',
-            "hoprdApiToken2": '"$HOPRD_API_TOKEN"',
-            "exitNodePubKey2": '"$EXIT_NODE_PUB_KEY_2"',
-            "hoprdApiEndpoint3": '"$HOPRD_API_ENDPOINT_3"',
-            "hoprdApiToken3": '"$HOPRD_API_TOKEN"',
-            "exitNodePubKey3": '"$EXIT_NODE_PUB_KEY_3"',
-            "hoprdApiEndpoint4": '"$HOPRD_API_ENDPOINT_4"',
-            "hoprdApiToken4": '"$HOPRD_API_TOKEN"',
-            "exitNodePubKey4": '"$EXIT_NODE_PUB_KEY_4"',
-            "hoprdApiEndpoint5": '"$HOPRD_API_ENDPOINT_5"',
-            "hoprdApiToken5": '"$HOPRD_API_TOKEN"',
-            "exitNodePubKey5": '"$EXIT_NODE_PUB_KEY_5"'
+            "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
+            "hoprdApiEndpoint1": "'$HOPRD_API_ENDPOINT_1'",
+            "hoprdApiToken1": "'$HOPRD_API_TOKEN'",
+            "exitNodePubKey1": "'$EXIT_NODE_PUB_KEY_1'",
+            "hoprdApiEndpoint2": "'$HOPRD_API_ENDPOINT_2'",
+            "hoprdApiToken2": "'$HOPRD_API_TOKEN'",
+            "exitNodePubKey2": "'$EXIT_NODE_PUB_KEY_2'",
+            "hoprdApiEndpoint3": "'$HOPRD_API_ENDPOINT_3'",
+            "hoprdApiToken3": "'$HOPRD_API_TOKEN'",
+            "exitNodePubKey3": "'$EXIT_NODE_PUB_KEY_3'",
+            "hoprdApiEndpoint4": "'$HOPRD_API_ENDPOINT_4'",
+            "hoprdApiToken4": "'$HOPRD_API_TOKEN'",
+            "exitNodePubKey4": "'$EXIT_NODE_PUB_KEY_4'",
+            "hoprdApiEndpoint5": "'$HOPRD_API_ENDPOINT_5'",
+            "hoprdApiToken5": "'$HOPRD_API_TOKEN'",
+            "exitNodePubKey5": "'$EXIT_NODE_PUB_KEY_5'"
         }'
     echo "Registered nodes to discovery-platform"
 
     # add quota to client 'sandbox'
     echo "Adding quota to 'sandbox' in 'discovery-platform'"
-    curl -X POST "http://localhost:3030/add-quota" 
-        -H "Content-Type: application/json"
+    scurl -X POST "http://127.0.0.1:3030/add-quota" \
+        -H "Content-Type: application/json" \
         -d '{
-            "discoveryPlatformEndpoint": '"$DISCOVERY_PLATFORM_ENDPOINT"',
+            "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
             "client": "sandbox",
             "quota": "500"
         }'
@@ -154,10 +159,10 @@ start() {
 
     # add quota to client 'trial'
     echo "Adding quota to 'trial' in 'discovery-platform'"
-    curl -X POST "http://localhost:3030/add-quota" 
-        -H "Content-Type: application/json"
+    curl -X POST "http://127.0.0.1:3030/add-quota" \
+        -H "Content-Type: application/json" \
         -d '{
-            "discoveryPlatformEndpoint": '"$DISCOVERY_PLATFORM_ENDPOINT"',
+            "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
             "client": "trial",
             "quota": "500"
         }'

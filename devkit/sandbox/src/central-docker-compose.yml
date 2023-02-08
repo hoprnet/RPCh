@@ -57,7 +57,6 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - DB_CONNECTION_URL=postgresql://postgres:postgres@postgres-db:5432
       - FUNDING_SERVICE_URL=http://funding-service:3010
-      - PORT=${DISCOVERY_PLATFORM_PORT}
       - SKIP_CHECK_COMMITMENT=${SKIP_CHECK_COMMITMENT}
       - FORCE_SMART_CONTRACT_ADDRESS=${FORCE_SMART_CONTRACT_ADDRESS}
 
