@@ -21,7 +21,7 @@ x-exit-service: &exit
 
 services:
   pluto:
-    image: gcr.io/hoprassociation/hopr-pluto:v1.92.5-next.3@sha256:15281c65bc28f0b65598d0eb14874d5b43d31663473a99073bb1465e2409eedb
+    image: gcr.io/hoprassociation/hopr-pluto:v1.92.7@sha256:1ae8c8602cf9183ee44f46b0bf12b977d75ae08a2bff22f67bd2cedb5f7db253
     restart: unless-stopped
     volumes:
       - pluto-data:/tmp
