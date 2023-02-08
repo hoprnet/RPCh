@@ -43,7 +43,7 @@ export const entryServer = (ops: {
       });
     } catch (e) {
       log.error("Can not create access token", e);
-      return res.status(500).json({ body: "Unexpected error" });
+      return res.status(500).json({ errors: "Unexpected error" });
     }
   });
 
@@ -97,7 +97,7 @@ export const entryServer = (ops: {
         });
       } catch (e) {
         log.error("Can not request funding", e);
-        return res.status(500).json({ body: "Unexpected error" });
+        return res.status(500).json({ errors: "Unexpected error" });
       }
     }
   );
@@ -116,7 +116,7 @@ export const entryServer = (ops: {
         return res.status(200).json(requests);
       } catch (e) {
         log.error("Can not get status for requests", e);
-        return res.status(500).json({ body: "Unexpected error" });
+        return res.status(500).json({ errors: "Unexpected error" });
       }
     }
   );
@@ -142,7 +142,7 @@ export const entryServer = (ops: {
         return res.status(200).json(request);
       } catch (e) {
         log.error("Can not get status for a single request", e);
-        return res.status(500).json({ body: "Unexpected error" });
+        return res.status(500).json({ errors: "Unexpected error" });
       }
     }
   );
@@ -187,7 +187,7 @@ export const entryServer = (ops: {
         });
       } catch (e) {
         log.error("Can not get status for a single request", e);
-        return res.status(500).json({ body: "Unexpected error" });
+        return res.status(500).json({ errors: "Unexpected error" });
       }
     }
   );

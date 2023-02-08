@@ -297,7 +297,7 @@ describe("test v1 router", function () {
         .post("/request/entry-node")
         .send({ client: "client" });
 
-      assert.equal(requestResponse.body.body, "Could not find eligible node");
+      assert.equal(requestResponse.body.errors, "Could not find eligible node");
       spy.mockRestore();
     });
     it("should reduce client quota", async function () {

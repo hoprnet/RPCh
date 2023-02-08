@@ -152,7 +152,7 @@ export const v1Router = (ops: {
         return res.json({ body: registered });
       } catch (e) {
         log.error("Can not register node", e);
-        return res.status(500).json({ body: "Unexpected error" });
+        return res.status(500).json({ errors: "Unexpected error" });
       }
     }
   );
@@ -178,7 +178,7 @@ export const v1Router = (ops: {
         return res.json(nodes);
       } catch (e) {
         log.error("Can not get nodes", e);
-        return res.status(500).json({ body: "Unexpected error" });
+        return res.status(500).json({ errors: "Unexpected error" });
       }
     }
   );
@@ -198,7 +198,7 @@ export const v1Router = (ops: {
         return res.json({ node });
       } catch (e) {
         log.error("Can not get node with id", e);
-        return res.status(500).json({ body: "Unexpected error" });
+        return res.status(500).json({ errors: "Unexpected error" });
       }
     }
   );
@@ -210,7 +210,7 @@ export const v1Router = (ops: {
       return res.json({ body: funds });
     } catch (e) {
       log.error("Can not retrieve funds from funding service", e);
-      return res.status(500).json({ body: "Unexpected error" });
+      return res.status(500).json({ errors: "Unexpected error" });
     }
   });
 
@@ -247,7 +247,7 @@ export const v1Router = (ops: {
         return res.json({ quota: createdQuota });
       } catch (e) {
         log.error("Can not create funds", e);
-        return res.status(500).json({ body: "Unexpected error" });
+        return res.status(500).json({ errors: "Unexpected error" });
       }
     }
   );
@@ -274,7 +274,7 @@ export const v1Router = (ops: {
         return res.json({ client: trialClient.id });
       } catch (e) {
         log.error("Can not create trial client", e);
-        return res.status(500).json({ body: "Unexpected error" });
+        return res.status(500).json({ errors: "Unexpected error" });
       }
     }
   );
@@ -305,7 +305,7 @@ export const v1Router = (ops: {
         if (!dbClient) {
           log.verbose("db client does not exist", client);
           return res.status(404).json({
-            body: "Client does not exist",
+            errors: "Client does not exist",
           });
         }
 
@@ -324,7 +324,9 @@ export const v1Router = (ops: {
         const selectedNode = await getEligibleNode(ops.db, { excludeList });
         log.verbose("selected entry node", selectedNode);
         if (!selectedNode) {
-          return res.status(404).json({ body: "Could not find eligible node" });
+          return res
+            .status(404)
+            .json({ errors: "Could not find eligible node" });
         }
 
         // calculate how much should be funded to entry node
@@ -348,7 +350,7 @@ export const v1Router = (ops: {
         return res.json({ ...selectedNode, accessToken: ops.accessToken });
       } catch (e) {
         log.error("Can not retrieve entry node", e);
-        return res.status(500).json({ body: "Unexpected error" });
+        return res.status(500).json({ errors: "Unexpected error" });
       }
     }
   );
