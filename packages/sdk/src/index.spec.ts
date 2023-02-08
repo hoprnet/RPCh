@@ -1,5 +1,5 @@
 import assert from "assert";
-import { Request } from "@rpch/common";
+import { Request, hoprd } from "@rpch/common";
 import * as fixtures from "@rpch/common/build/fixtures";
 import nock from "nock";
 import SDK, { type HoprSdkOps } from "./index";
@@ -107,6 +107,7 @@ describe("test SDK class", function () {
 
     afterEach(async function () {
       await sdk.stop();
+      jest.clearAllMocks();
     });
 
     it("should create request", async function () {
@@ -290,6 +291,50 @@ describe("test SDK class", function () {
         assert.equal(sdk.requestCache.getRequest(clientRequest.id), undefined);
       }
     });
+
+    it("should call the stopMessageListener if entry node changes", async function () {
+      // @ts-ignore
+      const stopMessageListenerMetric = jest.spyOn(sdk, "stopMessageListener");
+      // @ts-ignore
+      sdk.reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, 1, "dishonest");
+      // @ts-ignore
+      sdk.reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, 2, "dishonest");
+
+      // Check that before node is seen as not reliable enough, messageListener isn't stopped
+      assert.equal(stopMessageListenerMetric.mock.calls.length, 0);
+      const request = await sdk.createRequest(
+        fixtures.PROVIDER,
+        fixtures.RPC_REQ_LARGE
+      );
+
+      // After createRequest, node should not be reliable enough and messageListener
+      // should've been stopped to refresh entry node
+      assert.equal(stopMessageListenerMetric.mock.calls.length, 1);
+    });
+
+    it("should call the createMessageListener one more time if entry node changes", async function () {
+      // @ts-ignore
+      const createMessageListenerMetric = jest.spyOn(
+        hoprd,
+        "createMessageListener"
+      );
+      // @ts-ignore
+      sdk.reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, 1, "dishonest");
+      // @ts-ignore
+      sdk.reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, 2, "dishonest");
+
+      // createMessageListener should have been called once (when sdk starts)
+      assert.equal(createMessageListenerMetric.mock.calls.length, 1);
+      const request = await sdk.createRequest(
+        fixtures.PROVIDER,
+        fixtures.RPC_REQ_LARGE
+      );
+
+      // createMessageListener should have 2 calls after stopping the previous
+      // from old entry node and creating new one with new entry node
+      assert.equal(createMessageListenerMetric.mock.calls.length, 2);
+    });
+
     describe("should handle requests correctly when receiving a response", function () {
       it("should remove request with matching response", async function () {
         const [clientRequest, , exitNodeResponse] =
