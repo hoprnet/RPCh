@@ -15,6 +15,7 @@ import {
   QueryRegisteredNode,
 } from "../registered-node/dto";
 import assert from "assert";
+import { createClient } from "../client";
 
 const FUNDING_SERVICE_URL = "http://localhost:5000";
 const ACCESS_TOKEN = "ACCESS";
@@ -79,8 +80,7 @@ describe("test entry server", function () {
     };
 
     nockGetApiAccessToken.reply(200, getAccessTokenBody);
-
-    await request(app).post("/api/v1/client/funds").send({
+    await request(app).post("/api/v1/client/quota").send({
       client: "client",
       quota: 1,
     });

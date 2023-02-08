@@ -8,11 +8,12 @@ import {
   updateQuota,
 } from "./index";
 import { MockPgInstanceSingleton } from "../db/index.spec";
+import { createClient } from "../client";
 
 const createMockQuota = (params?: CreateQuota): CreateQuota => {
   return {
     actionTaker: params?.actionTaker ?? "discovery-platform",
-    client: params?.client ?? "client",
+    clientId: params?.clientId ?? "client",
     quota: params?.quota ?? 1,
   };
 };
@@ -27,6 +28,7 @@ describe("test quota functions", function () {
 
   beforeEach(async function () {
     MockPgInstanceSingleton.getInitialState().restore();
+    await createClient(dbInstance, { id: "client", payment: "premium" });
   });
 
   it("should create quota", async function () {
@@ -40,11 +42,13 @@ describe("test quota functions", function () {
     await createQuota(dbInstance, createMockQuota());
     const queryQuota = await db.getQuota(dbInstance, createdQuota.id ?? 0);
     assert.equal(queryQuota?.quota, createdQuota.quota);
-    assert.equal(queryQuota?.client, createdQuota.client);
+    assert.equal(queryQuota?.client_id, createdQuota.client_id);
   });
   it("should get quotas by client", async function () {
+    // create client to create mocks with it
+    await createClient(dbInstance, { id: "other client", payment: "premium" });
     const mockQuota = createMockQuota({
-      client: "client",
+      clientId: "client",
       actionTaker: "discovery",
       quota: 10,
     });
@@ -54,7 +58,7 @@ describe("test quota functions", function () {
       dbInstance,
       createMockQuota({
         actionTaker: "discovery",
-        client: "other client",
+        clientId: "other client",
         quota: 20,
       })
     );
@@ -64,7 +68,7 @@ describe("test quota functions", function () {
   });
   it("should update quota", async function () {
     const mockQuota = createMockQuota({
-      client: "client",
+      clientId: "client",
       actionTaker: "discovery",
       quota: 10,
     });
@@ -75,7 +79,7 @@ describe("test quota functions", function () {
   });
   it("should delete quota", async function () {
     const mockQuota = createMockQuota({
-      client: "client",
+      clientId: "client",
       actionTaker: "discovery",
       quota: 10,
     });
@@ -88,7 +92,7 @@ describe("test quota functions", function () {
   it("should sum all quotas", async function () {
     const baseQuota = 10;
     const mockQuota = createMockQuota({
-      client: "client",
+      clientId: "client",
       actionTaker: "discovery",
       quota: baseQuota,
     });

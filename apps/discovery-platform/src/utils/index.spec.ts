@@ -1,5 +1,5 @@
 import assert from "assert";
-import { isExpired } from "./index";
+import { isExpired, randomWords } from "./index";
 
 describe("test utils file", function () {
   describe("isExpired function", function () {
@@ -20,6 +20,11 @@ describe("test utils file", function () {
       const res = isExpired(futureDate);
       jest.useRealTimers();
       assert(!res);
+    });
+    it("should return random array of words", function () {
+      const firstWords = randomWords(5);
+      const secondWords = randomWords(5);
+      assert.notDeepEqual(firstWords, secondWords);
     });
   });
 });
