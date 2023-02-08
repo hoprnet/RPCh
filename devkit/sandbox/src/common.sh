@@ -5,7 +5,7 @@ DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)
 
 # safe curl: error when response status code is >400
 scurl() {
-    curl --silent --show-error --fail "$@"
+    curl --silent --show-error --fail "$@" || exit 1
 }
 
 # stop sandbox
@@ -14,6 +14,7 @@ stop() {
     docker compose -f $DIR/central-docker-compose.yml -p sandbox-central down -v;
     echo "Stopping 'nodes-docker-compose'"
     docker compose -f $DIR/nodes-docker-compose.yml -p sandbox-nodes down -v;
+    rm -f $DIR/logs;
 }
 
 # start sandbox
@@ -24,7 +25,6 @@ start() {
     echo "Starting 'nodes-docker-compose' including 'manager'. Waiting for funding & open channels"
 
     #  Run docker compose as daemon
-    rm -f $DIR/logs;
     docker compose -f $DIR/nodes-docker-compose.yml -p sandbox-nodes \
         up -d --remove-orphans --build --force-recreate --renew-anon-volumes
 
