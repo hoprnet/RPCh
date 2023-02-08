@@ -7,7 +7,7 @@ volumes:
 
 services:
   hoprd:
-    image: gcr.io/hoprassociation/hoprd:v1.90.69@sha256:edb35bec4c10c5fec5f39f55bdce103200f5936df0fd31a12b82f8ae254602a1
+    image: gcr.io/hoprassociation/hoprd:v1.92.7@sha256:df351b4287c8b69b08d1871e74fc2dbdcc5da17b2bee021405ae9faf4cc94f15
     restart: unless-stopped
     ports:
       - "3000:3000"
