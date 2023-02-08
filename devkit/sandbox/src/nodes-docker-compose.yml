@@ -15,6 +15,8 @@ x-exit-service: &exit
   restart: unless-stopped
   volumes:
     - exit-node-data:/tmp
+  networks:
+    - sandbox
   depends_on:
     - pluto
   command: "node apps/exit-node/build/index.js"
@@ -27,11 +29,13 @@ services:
     restart: unless-stopped
     ports:
       - "3030:3030"
+    networks:
+      - sandbox
     environment:
       - DEBUG=${DEBUG}
       - PORT=3030
   pluto:
-    image: gcr.io/hoprassociation/hopr-pluto:v1.90.69@sha256:f698950f67f7f995400b5f4c8379e700ef8fe93fab4f27913b9ec545df08b992
+    image: gcr.io/hoprassociation/hopr-pluto:v1.92.7@sha256:1ae8c8602cf9183ee44f46b0bf12b977d75ae08a2bff22f67bd2cedb5f7db253
     restart: unless-stopped
     volumes:
       - pluto-data:/tmp
@@ -42,6 +46,8 @@ services:
       - "19501-19505:19501-19505"
       # local RPC port
       - "8545:8545"
+    networks:
+      - sandbox
     environment:
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
   exit-1:
@@ -129,3 +135,10 @@ services:
         "/sbin/tini",
         "--",
       ]
+
+# since this file is run first,
+# we create the sandbox network
+networks:
+  sandbox:
+    name: sandbox
+    driver: bridge

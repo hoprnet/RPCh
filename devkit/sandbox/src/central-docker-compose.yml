@@ -20,6 +20,8 @@ services:
       - POSTGRES_PASSWORD=postgres
     ports:
       - "5432:5432"
+    networks:
+      - sandbox-proxy
     volumes:
       - postgres-data:/var/lib/postgresql/data
   funding-service:
@@ -32,8 +34,7 @@ services:
     ports:
       - "3010:3010"
     networks:
-      - default
-      - sandbox-nodes_default
+      - sandbox-proxy
     environment:
       - DEBUG=${DEBUG}
       - PORT=3010
@@ -51,6 +52,8 @@ services:
     restart: unless-stopped
     ports:
       - "3020:3020"
+    networks:
+      - sandbox-proxy
     environment:
       - DEBUG=${DEBUG}
       - PORT=3020
@@ -60,6 +63,9 @@ services:
       - SKIP_CHECK_COMMITMENT=${SKIP_CHECK_COMMITMENT}
       - FORCE_SMART_CONTRACT_ADDRESS=${FORCE_SMART_CONTRACT_ADDRESS}
 
+# we create a proxy to the sandbox
+# network created in 'nodes-docker-compose'
 networks:
-  sandbox-nodes_default:
-    external: true
+  sandbox-proxy:
+    external:
+      name: sandbox
