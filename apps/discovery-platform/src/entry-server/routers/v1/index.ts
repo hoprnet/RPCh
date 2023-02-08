@@ -78,14 +78,13 @@ const registerNodeSchema: Record<keyof CreateRegisteredNode, ParamSchema> = {
     },
     isString: true,
   },
-  hoprdApiPort: {
+  hoprdApiToken: {
     in: "body",
     exists: {
-      errorMessage: "Expected hoprdApiPort to be in the body",
+      errorMessage: "Expected hoprdApiToken to be in the body",
       bail: true,
     },
-    isNumeric: true,
-    toInt: true,
+    isString: true,
   },
   nativeAddress: {
     in: "body",
@@ -130,7 +129,6 @@ const isListSafe = (value: string) => {
 export const v1Router = (ops: {
   db: DBInstance;
   baseQuota: number;
-  accessToken: string;
   fundingServiceApi: FundingServiceApi;
 }) => {
   const router = express.Router();
@@ -345,7 +343,10 @@ export const v1Router = (ops: {
           quota: ops.baseQuota * -1,
           actionTaker: "discovery platform",
         });
-        return res.json({ ...selectedNode, accessToken: ops.accessToken });
+        return res.json({
+          ...selectedNode,
+          accessToken: selectedNode.hoprd_api_token,
+        });
       } catch (e) {
         log.error("Can not retrieve entry node", e);
         return res.status(500).json({ body: "Unexpected error" });

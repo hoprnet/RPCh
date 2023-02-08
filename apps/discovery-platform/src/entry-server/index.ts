@@ -8,13 +8,11 @@ const app = express();
 export const entryServer = (ops: {
   db: DBInstance;
   baseQuota: number;
-  accessToken: string;
   fundingServiceApi: FundingServiceApi;
 }) => {
   app.use(
     "/api/v1",
     v1Router({
-      accessToken: ops.accessToken,
       baseQuota: ops.baseQuota,
       db: ops.db,
       fundingServiceApi: ops.fundingServiceApi,

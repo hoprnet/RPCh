@@ -16,6 +16,7 @@ logs
 out/
 apps/**/build
 packages/**/build
+devkit/**/build
 
 # misc
 .DS_Store

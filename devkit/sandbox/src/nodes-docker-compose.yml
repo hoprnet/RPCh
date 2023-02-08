@@ -15,11 +15,25 @@ x-exit-service: &exit
   restart: unless-stopped
   volumes:
     - exit-node-data:/tmp
+  networks:
+    - sandbox
   depends_on:
     - pluto
   command: "node apps/exit-node/build/index.js"
 
 services:
+  manager:
+    build:
+      dockerfile: devkit/manager/Dockerfile
+      context: ../../../
+    restart: unless-stopped
+    ports:
+      - "3030:3030"
+    networks:
+      - sandbox
+    environment:
+      - DEBUG=${DEBUG}
+      - PORT=3030
   pluto:
     image: gcr.io/hoprassociation/hopr-pluto:v1.92.7@sha256:1ae8c8602cf9183ee44f46b0bf12b977d75ae08a2bff22f67bd2cedb5f7db253
     restart: unless-stopped
@@ -32,6 +46,8 @@ services:
       - "19501-19505:19501-19505"
       # local RPC port
       - "8545:8545"
+    networks:
+      - sandbox
     environment:
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
   exit-1:
@@ -40,7 +56,7 @@ services:
       - HOPRD_API_ENDPOINT=http://pluto:13301
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-      - RPCH_PASSWORD=${RPCH_EXIT_NODE_PASSWORD}
+      - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_1}
     entrypoint:
       [
         "/bin/wait-for",
@@ -57,7 +73,7 @@ services:
       - HOPRD_API_ENDPOINT=http://pluto:13302
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-      - RPCH_PASSWORD=${RPCH_EXIT_NODE_PASSWORD}
+      - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_2}
     entrypoint:
       [
         "/bin/wait-for",
@@ -74,7 +90,7 @@ services:
       - HOPRD_API_ENDPOINT=http://pluto:13303
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-      - RPCH_PASSWORD=${RPCH_EXIT_NODE_PASSWORD}
+      - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_3}
     entrypoint:
       [
         "/bin/wait-for",
@@ -91,7 +107,7 @@ services:
       - HOPRD_API_ENDPOINT=http://pluto:13304
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-      - RPCH_PASSWORD=${RPCH_EXIT_NODE_PASSWORD}
+      - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_4}
     entrypoint:
       [
         "/bin/wait-for",
@@ -108,7 +124,7 @@ services:
       - HOPRD_API_ENDPOINT=http://pluto:13305
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-      - RPCH_PASSWORD=${RPCH_EXIT_NODE_PASSWORD}
+      - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_5}
     entrypoint:
       [
         "/bin/wait-for",
@@ -119,3 +135,10 @@ services:
         "/sbin/tini",
         "--",
       ]
+
+# since this file is run first,
+# we create the sandbox network
+networks:
+  sandbox:
+    name: sandbox
+    driver: bridge

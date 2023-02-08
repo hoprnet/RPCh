@@ -16,7 +16,6 @@ import * as exit from "./exit";
 import * as identity from "./identity";
 import { createLogger } from "./utils";
 import PeerId from "peer-id";
-import fetch from "node-fetch";
 
 const log = createLogger();
 

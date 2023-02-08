@@ -34,8 +34,8 @@ const createMockNode = (peerId?: string): QueryRegisteredNode => ({
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
   exit_node_pub_key: "somePubKey",
-  hoprd_api_endpoint: "someEndpoint",
-  hoprd_api_port: 0,
+  hoprd_api_endpoint: "someEndpoint:0",
+  hoprd_api_token: "someToken",
   native_address: "someAddress",
 });
 

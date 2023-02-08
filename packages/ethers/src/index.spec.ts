@@ -23,6 +23,7 @@ describe("test index.ts", function () {
   const provider = new RPChProvider(
     PROVIDER_URL,
     {
+      client: "",
       timeout: TIMEOUT,
       discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
     },

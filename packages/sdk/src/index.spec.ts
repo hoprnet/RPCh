@@ -45,6 +45,7 @@ const createSdkMock = (
   const store = fixtures.createAsyncKeyValStore();
 
   const ops: HoprSdkOps = {
+    client: "",
     timeout: overwriteOps?.timeout ?? TIMEOUT,
     discoveryPlatformApiEndpoint:
       overwriteOps?.discoveryPlatformApiEndpoint ??

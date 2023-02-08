@@ -21,7 +21,7 @@ export const createRegisteredNode = async (
     status: "FRESH",
     chain_id: Number(node.chainId),
     hoprd_api_endpoint: node.hoprdApiEndpoint,
-    hoprd_api_port: node.hoprdApiPort,
+    hoprd_api_token: node.hoprdApiToken,
     exit_node_pub_key: node.exitNodePubKey,
     native_address: node.nativeAddress,
     has_exit_node: Boolean(node.hasExitNode),
@@ -76,7 +76,7 @@ export const getEligibleNode = async (
   if (readyNodes.length) {
     // choose selected entry node
     const selectedNode = utils.randomlySelectFromArray(readyNodes);
-    // TODO: get access token of selected node
+    // TODO: get access token of selected node from capability based API
     return selectedNode;
   }
 };

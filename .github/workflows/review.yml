@@ -55,7 +55,7 @@ jobs:
           - funding-service
           - discovery-platform
           - rpc-server
-          - sandbox
+          - manager
         include:
           - project: exit-node
             directory: apps
@@ -65,7 +65,7 @@ jobs:
             directory: apps
           - project: rpc-server
             directory: apps
-          - project: sandbox
+          - project: manager
             directory: devkit
 
     steps:

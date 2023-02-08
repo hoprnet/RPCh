@@ -18,8 +18,8 @@ const mockNode = (
   hasExitNode: hasExitNode ?? true,
   peerId: peerId ?? "peerId",
   chainId: 100,
-  hoprdApiEndpoint: "localhost",
-  hoprdApiPort: 5000,
+  hoprdApiEndpoint: "localhost:5000",
+  hoprdApiToken: "someToken",
   exitNodePubKey: "somePubKey",
   nativeAddress: "someAddress",
 });

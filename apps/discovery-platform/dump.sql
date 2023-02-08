@@ -79,7 +79,7 @@ CREATE TABLE public.registered_nodes (
     has_exit_node boolean DEFAULT false NOT NULL,
     chain_id integer NOT NULL,
     hoprd_api_endpoint character varying(255) NOT NULL,
-    hoprd_api_port integer NOT NULL,
+    hoprd_api_token character varying(255) NOT NULL,
     exit_node_pub_key character varying(255),
     native_address character varying(255) NOT NULL,
     total_amount_funded numeric NOT NULL,

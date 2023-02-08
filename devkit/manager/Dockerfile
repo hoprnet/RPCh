@@ -15,7 +15,7 @@ RUN yarn global add turbo
 COPY . .
 
 # Generate a partial monorepo with a pruned lockfile for the target workspace.
-RUN turbo prune --scope="@rpch/sandbox" --docker
+RUN turbo prune --scope="@rpch/manager" --docker
 
 # Add lockfile and package.json's of isolated subworkspace.
 FROM node:16-alpine AS installer
@@ -32,8 +32,7 @@ RUN yarn install
 # Build the project.
 COPY --from=builder /app/out/full .
 COPY turbo.json turbo.json
-# runs using ts-node
-# RUN yarn run build --scope="@rpch/sandbox"
+RUN yarn run build --scope="@rpch/manager"
 
 #  Copy only the necesary files to run the app.
 FROM node:16-alpine AS runner
@@ -46,9 +45,8 @@ RUN apk add --no-cache tini curl
 RUN  curl https://raw.githubusercontent.com/eficode/wait-for/v2.2.3/wait-for > /bin/wait-for \
   && chmod u+x /bin/wait-for
 
-COPY --from=installer /app/devkit/sandbox/package.json .
+COPY --from=installer /app/devkit/manager/package.json .
 COPY --from=installer /app .
 
-# we are not running anything
-# CMD ["node", "devkit/sandbox/build/index.js"]
-# ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["node", "devkit/manager/build/index.js"]
+ENTRYPOINT ["/sbin/tini", "--"]

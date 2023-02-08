@@ -83,7 +83,6 @@
         "BALANCE_THRESHOLD",
         "CHANNELS_THRESHOLD",
         "BASE_QUOTA",
-        "HOPRD_ACCESS_TOKEN",
         "DB_CONNECTION_URL",
         "SKIP_CHECK_COMMITMENT"
       ]
@@ -99,7 +98,8 @@
         "PORT",
         "DATA_DIR",
         "RESPONSE_TIMEOUT",
-        "DISCOVERY_PLATFORM_API_ENDPOINT"
+        "DISCOVERY_PLATFORM_API_ENDPOINT",
+        "CLIENT"
       ]
     },
     "dev": {
