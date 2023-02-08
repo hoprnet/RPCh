@@ -25,7 +25,7 @@ export default async function main(
   const [url, headers] = utils.createApiUrl(
     "http",
     discoveryPlatformEndpoint,
-    "/api/v1/client/funds"
+    "/api/v1/client/quota"
   );
 
   const result = await fetch(url.toString(), {

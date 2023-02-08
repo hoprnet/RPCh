@@ -1,5 +1,5 @@
 import { utils } from "@rpch/common";
-
+import { words } from "./words";
 export const createLogger = utils.LoggerFactory("discovery-platform");
 
 export const isExpired = (expireAt: string) => {
@@ -7,4 +7,10 @@ export const isExpired = (expireAt: string) => {
     return true;
   }
   return false;
+};
+
+export const randomWords = (num: number): string[] => {
+  return Array.from({ length: num }).map(() =>
+    utils.randomlySelectFromArray(words)
+  );
 };

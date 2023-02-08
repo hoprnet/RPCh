@@ -1,16 +1,21 @@
 import express, { Request, Response } from "express";
 import {
   ParamSchema,
-  Schema,
   body,
   checkSchema,
   param,
+  query,
   validationResult,
 } from "express-validator";
+import {
+  createClient,
+  createTrialClient,
+  getClient,
+  updateClient,
+} from "../../../client";
 import { DBInstance } from "../../../db";
 import { FundingServiceApi } from "../../../funding-service-api";
 import { createQuota, getAllQuotasByClient, sumQuotas } from "../../../quota";
-import { CreateQuota } from "../../../quota/dto";
 import {
   createRegisteredNode,
   getEligibleNode,
@@ -25,6 +30,9 @@ const log = createLogger(["entry-server", "router", "v1"]);
 
 // base amount of reward that a node will receive after completing a request
 const BASE_EXTRA = 1;
+
+// client id fto fund trial clients
+const TRIAL_CLIENT_ID = "trial";
 
 // Sanitization and Validation
 const registerNodeSchema: Record<keyof CreateRegisteredNode, ParamSchema> = {
@@ -97,7 +105,7 @@ const getNodeSchema: Record<
     in: "query",
     custom: {
       options: (value) => {
-        return isExcludeListSafe(value);
+        return isListSafe(value);
       },
     },
   },
@@ -108,8 +116,8 @@ const getNodeSchema: Record<
   },
 };
 
-const isExcludeListSafe = (value: string) => {
-  // check that the exclude list only has ids and commas
+const isListSafe = (value: string) => {
+  // check that the list only has ids and commas
   const noSpecialCharsRegex = /^[a-zA-Z0-9]+$/;
   if (noSpecialCharsRegex.test(value)) return true;
 
@@ -204,20 +212,33 @@ export const v1Router = (ops: {
     }
   });
 
+  // DISCLAIMER: can be exploited to allow client to use infinite funds
   router.post(
-    "/client/funds",
-    body("client").exists().bail().isAlphanumeric(),
+    "/client/quota",
+    body("client").exists(),
     body("quota").exists().bail().isNumeric(),
     async (req, res) => {
       try {
-        log.verbose(`POST /client/funds`, req.body);
+        log.verbose(`POST /client/quota`, req.body);
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
           return res.status(400).json({ errors: errors.array() });
         }
-        const { client, quota }: CreateQuota = req.body;
+        const { client: clientId, quota } = req.body;
+        // check if client exists
+        let dbClient = await getClient(ops.db, clientId);
+        if (!dbClient) {
+          // create client id it does not exist
+          dbClient = await createClient(ops.db, {
+            id: clientId,
+            payment: "premium",
+          });
+        } else if (dbClient.payment === "trial") {
+          // update client to premium of it was previously trial
+          await updateClient(ops.db, { ...dbClient, payment: "premium" });
+        }
         const createdQuota = await createQuota(ops.db, {
-          client,
+          clientId: dbClient.id,
           quota,
           actionTaker: "discovery-platform",
         });
@@ -229,25 +250,67 @@ export const v1Router = (ops: {
     }
   );
 
+  router.get(
+    "/request/trial",
+    query("label")
+      .optional()
+      .custom((value) => isListSafe(value)),
+    async (req: Request<{}, {}, {}, { label?: string }>, res: Response) => {
+      try {
+        log.verbose("GET /request/trial", req.query);
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+          log.verbose("validation error", errors.array());
+          return res.status(400).json({ errors: errors.array() });
+        }
+        const { label } = req.query;
+        // create trial client
+        const trialClient = await createTrialClient(
+          ops.db,
+          label ? label.split(",") : []
+        );
+        return res.json({ client: trialClient.id });
+      } catch (e) {
+        log.error("Can not create trial client", e);
+        return res.status(500).json({ body: "Unexpected error" });
+      }
+    }
+  );
+
   router.post(
     "/request/entry-node",
-    body("client").exists().bail().isAlphanumeric(),
+    body("client").exists(),
     body("excludeList")
       .optional()
-      .custom((value) => isExcludeListSafe(value)),
+      .custom((value) => isListSafe(value)),
     async (req, res) => {
       try {
         log.verbose(`POST /request/entry-node`, req.body);
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
+          log.verbose("validation error", errors.array());
           return res.status(400).json({ errors: errors.array() });
         }
         const { client, excludeList } = req.body;
 
+        let dbClient = await getClient(ops.db, client);
+
+        // set db client to trial client if it is in trial mode
+        if (dbClient?.payment === "trial") {
+          dbClient = await getClient(ops.db, TRIAL_CLIENT_ID);
+        }
+
+        if (!dbClient) {
+          log.verbose("db client does not exist", client);
+          return res.status(404).json({
+            body: "Client does not exist",
+          });
+        }
+
         // check if client has enough quota
         const doesClientHaveQuotaResponse = await doesClientHaveQuota(
           ops.db,
-          client,
+          dbClient.id,
           ops.baseQuota
         );
         if (!doesClientHaveQuotaResponse) {
@@ -276,7 +339,7 @@ export const v1Router = (ops: {
 
         // create negative quota (showing that the client has used up initial quota)
         await createQuota(ops.db, {
-          client,
+          clientId: dbClient.id,
           quota: ops.baseQuota * -1,
           actionTaker: "discovery platform",
         });

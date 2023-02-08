@@ -139,6 +139,24 @@ export default class SDK {
       peerId: response.id,
     };
     log.verbose("Selected entry node", this.entryNode);
+
+    // Refresh messageListener
+    if (this.stopMessageListener) this.stopMessageListener();
+    this.stopMessageListener = await hoprd.createMessageListener(
+      this.entryNode!.apiEndpoint,
+      this.entryNode!.apiToken,
+      (message) => {
+        try {
+          const segment = Segment.fromString(message);
+          this.segmentCache.onSegment(segment);
+        } catch (e) {
+          log.verbose(
+            "rejected received data from HOPRd: not a valid segment",
+            message
+          );
+        }
+      }
+    );
     return this.entryNode;
   }
 
@@ -270,21 +288,6 @@ export default class SDK {
 
     await this.selectEntryNode(this.ops.discoveryPlatformApiEndpoint);
     await this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint);
-    this.stopMessageListener = await hoprd.createMessageListener(
-      this.entryNode!.apiEndpoint,
-      this.entryNode!.apiToken,
-      (message) => {
-        try {
-          const segment = Segment.fromString(message);
-          this.segmentCache.onSegment(segment);
-        } catch (e) {
-          log.verbose(
-            "rejected received data from HOPRd: not a valid segment",
-            message
-          );
-        }
-      }
-    );
   }
 
   /**

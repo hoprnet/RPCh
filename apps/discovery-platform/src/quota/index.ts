@@ -13,7 +13,7 @@ export const createQuota = async (
 ): Promise<QueryQuota> => {
   const dbQuota: CreateQuota = {
     actionTaker: quota.actionTaker,
-    client: quota.client,
+    clientId: quota.clientId,
     quota: quota.quota,
   };
   return await db.createQuota(dbInstance, dbQuota);
@@ -23,7 +23,7 @@ export const createQuota = async (
  * Get a quota that matches id
  * @param dbInstance DBInstance
  * @param id string
- * @returns QueryQuota | undefined
+ * @returns QueryQuota | null
  */
 export const getQuota = async (
   dbInstance: db.DBInstance,
@@ -62,7 +62,7 @@ export const updateQuota = async (
  * Delete quota with matching id
  * @param dbInstance DBInstance
  * @param id string
- * @returns QueryQuota | undefined
+ * @returns QueryQuota | null
  */
 export const deleteQuota = async (
   dbInstance: db.DBInstance,
