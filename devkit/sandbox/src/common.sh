@@ -128,19 +128,19 @@ start() {
         -H "Content-Type: application/json" \
         -d '{
             "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
-            "hoprdApiEndpoint1": "'$HOPRD_API_ENDPOINT_1'",
+            "hoprdApiEndpoint1": "'$HOPRD_API_ENDPOINT_1_EXT'",
             "hoprdApiToken1": "'$HOPRD_API_TOKEN'",
             "exitNodePubKey1": "'$EXIT_NODE_PUB_KEY_1'",
-            "hoprdApiEndpoint2": "'$HOPRD_API_ENDPOINT_2'",
+            "hoprdApiEndpoint2": "'$HOPRD_API_ENDPOINT_2_EXT'",
             "hoprdApiToken2": "'$HOPRD_API_TOKEN'",
             "exitNodePubKey2": "'$EXIT_NODE_PUB_KEY_2'",
-            "hoprdApiEndpoint3": "'$HOPRD_API_ENDPOINT_3'",
+            "hoprdApiEndpoint3": "'$HOPRD_API_ENDPOINT_3_EXT'",
             "hoprdApiToken3": "'$HOPRD_API_TOKEN'",
             "exitNodePubKey3": "'$EXIT_NODE_PUB_KEY_3'",
-            "hoprdApiEndpoint4": "'$HOPRD_API_ENDPOINT_4'",
+            "hoprdApiEndpoint4": "'$HOPRD_API_ENDPOINT_4_EXT'",
             "hoprdApiToken4": "'$HOPRD_API_TOKEN'",
             "exitNodePubKey4": "'$EXIT_NODE_PUB_KEY_4'",
-            "hoprdApiEndpoint5": "'$HOPRD_API_ENDPOINT_5'",
+            "hoprdApiEndpoint5": "'$HOPRD_API_ENDPOINT_5_EXT'",
             "hoprdApiToken5": "'$HOPRD_API_TOKEN'",
             "exitNodePubKey5": "'$EXIT_NODE_PUB_KEY_5'"
         }'
