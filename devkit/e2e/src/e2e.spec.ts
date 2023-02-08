@@ -43,4 +43,9 @@ describe("e2e tests", function () {
     );
     assert.equal(balance._isBigNumber, true);
   });
+
+  it("should get network version", async function () {
+    const network = await provider.send("net_version", []);
+    assert.equal(network, 100);
+  });
 });
