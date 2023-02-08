@@ -6,7 +6,7 @@ Lastly, when a new node is registered in the discovery platform, the discovery p
 
 ## Run with Docker
 
-To be able to run the funding platform with Docker, you first need to build the image, for that, we will use the following command
+To be able to run the discovery platform with Docker, you first need to build the image, for that, we will use the following command
 
 ```sh
 docker build -t discovery-platform -f Dockerfile ../../
