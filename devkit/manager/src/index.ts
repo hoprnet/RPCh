@@ -30,7 +30,7 @@ app.post("/add-quota", async (req, res) => {
     await addQuota(discoveryPlatformEndpoint, client, quota);
     return res.sendStatus(200);
   } catch (error) {
-    log.error("Could not 'add-quota'", error)
+    log.error("Could not 'add-quota'", error);
     return res.sendStatus(500);
   }
 });
@@ -49,7 +49,7 @@ app.post("/fund-via-hoprd", async (req, res) => {
     );
     return res.sendStatus(200);
   } catch (error) {
-    log.error("Could not 'fund-via-hoprd'", error)
+    log.error("Could not 'fund-via-hoprd'", error);
     return res.sendStatus(500);
   }
 });
@@ -61,7 +61,7 @@ app.get("/get-hoprd-token-address", async (req, res) => {
     const tokenAddress = await getHOPRdTokenAddress(hoprdEndpoint, hoprdToken);
     return res.status(200).send(tokenAddress);
   } catch (error) {
-    log.error("Could not 'get-hoprd-token-address'", error)
+    log.error("Could not 'get-hoprd-token-address'", error);
     return res.sendStatus(500);
   }
 });
@@ -107,7 +107,7 @@ app.post("/register-exit-nodes", async (req, res) => {
     );
     return res.sendStatus(200);
   } catch (error) {
-    log.error("Could not 'register-exit-nodes'", error)
+    log.error("Could not 'register-exit-nodes'", error);
     return res.sendStatus(500);
   }
 });
