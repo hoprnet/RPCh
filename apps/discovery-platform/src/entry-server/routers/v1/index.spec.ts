@@ -157,6 +157,24 @@ describe("test v1 router", function () {
     assert.deepEqual(dbClient?.labels, ["devcon"]);
     assert.equal(!!response.body.client, true);
   });
+  it("should turn client into premium when adding quota", async function () {
+    const spy = jest.spyOn(registeredNode, "getEligibleNode");
+
+    const responseRequestTrialClient = await request(app).get("/request/trial");
+    const trialClientId: string = responseRequestTrialClient.body.client;
+
+    await request(app)
+      .post("/client/quota")
+      .send({ client: trialClientId, quota: BASE_QUOTA });
+
+    const dbTrialClientAfterAddingQuota = await getClient(
+      dbInstance,
+      trialClientId
+    );
+
+    expect(dbTrialClientAfterAddingQuota?.payment).toEqual("premium");
+    spy.mockRestore();
+  });
   describe("should select an entry node", function () {
     it("should return an entry node", async function () {
       const spy = jest.spyOn(registeredNode, "getEligibleNode");
@@ -335,7 +353,7 @@ describe("test v1 router", function () {
       );
       spy.mockRestore();
     });
-    it("should reduce trial client quota if client is in trial mode", async function () {
+    it("should be able to use trial mode client and reduce quota", async function () {
       const spy = jest.spyOn(registeredNode, "getEligibleNode");
       const amountLeft = 10;
       const peerId = "entry";
