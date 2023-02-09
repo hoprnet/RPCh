@@ -1,4 +1,4 @@
-import ethers from "ethers";
+import { Wallet, Contract, providers, utils } from "ethers";
 import { createLogger } from "./utils";
 
 const log = createLogger(["register-hoprd-nodes"]);
@@ -14,7 +14,7 @@ const log = createLogger(["register-hoprd-nodes"]);
  */
 export default async function main(
   privateKey: string,
-  provider: string,
+  providerStr: string,
   nftAddress: string,
   nftId: string,
   stakeAddress: string,
@@ -22,7 +22,7 @@ export default async function main(
   peerIds: string[]
 ): Promise<void> {
   log.normal("Register HOPRd nodes", {
-    provider,
+    provider: providerStr,
     nftAddress,
     nftId,
     stakeAddress,
@@ -30,9 +30,14 @@ export default async function main(
     peerIds,
   });
 
-  const wallet = new ethers.Wallet(privateKey).connect(
-    new ethers.providers.JsonRpcProvider(provider)
-  );
+  const provider = new providers.JsonRpcProvider(providerStr);
+  const wallet = new Wallet(privateKey).connect(provider);
+
+  // check if wallet has enough balance to do transactions
+  const walletBalance = await wallet.getBalance();
+  if (walletBalance.lt(utils.parseEther("0.1"))) {
+    throw Error("Wallet balance is less than 0.1");
+  }
 
   const nftContract = getNFTAddress(nftAddress).connect(wallet);
   const stakeContract = getStakeContract(stakeAddress).connect(wallet);
@@ -87,25 +92,25 @@ export default async function main(
   log.normal(`Registered '${unregisteredPeerIds.length}' nodes`);
 }
 
-function getNFTAddress(address: string): ethers.Contract {
+function getNFTAddress(address: string): Contract {
   const abi = [
-    "balanceOf(address)",
-    "tokenOfOwnerByIndex(address,uint256)",
-    "tokenURI(uint256)",
-    "safeTransferFrom(address,address,uint256)",
-    "ownerOf(uint256)",
+    "function safeTransferFrom(address,address,uint256)",
+    "function ownerOf(uint256)",
   ];
-  return new ethers.Contract(address, abi);
+  return new Contract(address, abi);
 }
 
-function getStakeContract(address: string): ethers.Contract {
+function getStakeContract(address: string): Contract {
   const abi = [
     "function isNftTypeAndRankRedeemed2(uint256,string,address) view returns (bool)",
   ];
-  return new ethers.Contract(address, abi);
+  return new Contract(address, abi);
 }
 
-function getRegisterContract(address: string): ethers.Contract {
-  const abi = ["isNodeRegisteredAndEligible(string)", "selfRegister(string[])"];
-  return new ethers.Contract(address, abi);
+function getRegisterContract(address: string): Contract {
+  const abi = [
+    "function isNodeRegisteredAndEligible(string) view returns (bool)",
+    "function selfRegister(string[])",
+  ];
+  return new Contract(address, abi);
 }
