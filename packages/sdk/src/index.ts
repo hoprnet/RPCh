@@ -232,6 +232,17 @@ export default class SDK {
       })
     );
 
+    // @ts-ignore
+    this.requestCache.requests.forEach((value, key) => {
+      log.verbose(
+        `entry: ${key}. Request: ${JSON.stringify(
+          value.request
+        )} createdAt: ${JSON.stringify(
+          value.createdAt
+        )} resolve: ${JSON.stringify(value.resolve)} reject: ${value.reject}`
+      );
+    });
+
     match.resolve(response);
     this.reliabilityScore.addMetric(
       match.request.entryNodeDestination,
@@ -249,6 +260,17 @@ export default class SDK {
    * @param req Request received from cache module.
    */
   private onRequestRemoval(req: Request): void {
+    // @ts-ignore
+    this.requestCache.requests.forEach((value, key) => {
+      log.verbose(
+        `entry: ${key}. Request: ${JSON.stringify(
+          value.request
+        )} createdAt: ${JSON.stringify(
+          value.createdAt
+        )} resolve: ${JSON.stringify(value.resolve)} reject: ${value.reject}`
+      );
+    });
+    log.verbose(`request id: ${req.id}, expired!`);
     this.reliabilityScore.addMetric(req.entryNodeDestination, req.id, "failed");
     log.normal("request %s expired", req.id);
   }

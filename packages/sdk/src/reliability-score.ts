@@ -125,6 +125,12 @@ export default class ReliabilityScore {
       } reliability score: ${this.getScore(peerId)}`
     );
 
+    log.verbose(
+      `node: ${peerId.substring(peerId.length - 5)} stats: ${JSON.stringify(
+        this.getResultsStats(peerId)
+      )}`
+    );
+
     // Remove all responses except those with a dishonest result.
     if (nodeMetrics.sent > this.MAX_RESPONSES) {
       const [lastRequestId, lastResponse] = Array.from(
