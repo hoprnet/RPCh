@@ -53,6 +53,11 @@ export default async function main(
     );
 
     if (needs.gt(0)) {
+      // check if balance has enough balanace
+      if (needs.gt(await wallet.getBalance())) {
+        throw Error(`Wallet balance is less than ${needs.toString()} NATIVE`);
+      }
+
       log.normal(`Funding recipient with '${nativeAmount}' NATIVE`);
       const tx = await wallet.sendTransaction({
         to: recipient,
@@ -84,6 +89,11 @@ export default async function main(
     );
 
     if (needs.gt(0)) {
+      // check if balance has enough balanace
+      if (needs.gt(await tokenContract?.balanceOf(wallet.address))) {
+        throw Error(`Wallet balance is less than ${needs.toString()} HOPR`);
+      }
+
       log.normal(`Funding recipient with '${hoprAmount}' HOPR`);
       const tx = await tokenContract?.transfer(recipient, needs);
       await tx.wait(2);

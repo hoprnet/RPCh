@@ -103,3 +103,32 @@ export async function getInfo(
     .then((res) => res.json())
     .then((res: { hoprToken: string }) => res);
 }
+
+export async function openChannel(
+  hoprdEndpoint: string,
+  hoprdToken: string,
+  hoprAmount: string,
+  counterpartyPeerId: string
+) {
+  const [url, headers] = utils.createApiUrl(
+    "http",
+    hoprdEndpoint,
+    "/api/v2/channels",
+    hoprdToken
+  );
+
+  const response = await fetch(url.toString(), {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      peerId: counterpartyPeerId,
+      amount: hoprAmount,
+    }),
+  });
+
+  if (response.status !== 201 && response.status !== 409) {
+    throw Error(
+      `Failed to open channel from '${hoprdEndpoint}' to '${counterpartyPeerId}'`
+    );
+  }
+}

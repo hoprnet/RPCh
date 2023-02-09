@@ -3,6 +3,7 @@ import addQuota from "./add-quota";
 import fundViaHOPRd from "./fund-via-hoprd";
 import fundViaWallet from "./fund-via-wallet";
 import getHOPRdTokenAddress from "./get-hoprd-token-address";
+import openChannel from "./open-channel";
 import registerExitNodes from "./register-exit-nodes";
 import registerHoprdNodes from "./register-hoprd-nodes";
 import { createLogger } from "./utils";
@@ -90,6 +91,24 @@ app.get("/get-hoprd-token-address", async (req, res) => {
     return res.status(200).send(tokenAddress);
   } catch (error) {
     log.error("Could not 'get-hoprd-token-address'", error);
+    return res.sendStatus(500);
+  }
+});
+
+app.post("/open-channel", async (req, res) => {
+  const { hoprdEndpoint, hoprdToken, hoprAmount, counterpartyPeerId } =
+    req.body as any;
+
+  try {
+    await openChannel(
+      hoprdEndpoint,
+      hoprdToken,
+      hoprAmount,
+      counterpartyPeerId
+    );
+    return res.sendStatus(200);
+  } catch (error) {
+    log.error("Could not 'open-channel'", error);
     return res.sendStatus(500);
   }
 });
