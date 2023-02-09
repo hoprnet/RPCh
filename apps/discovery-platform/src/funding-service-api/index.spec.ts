@@ -360,7 +360,7 @@ describe("test funding service api class", function () {
         "0"
       );
     });
-    it("should retry request if request failed and delete after 3 times", async function () {
+    it("should retry request if it failed", async function () {
       // @ts-ignore
       fundingServiceApi.maxAmountOfRetries = 1;
       const node = createMockNode("peer1");
@@ -408,6 +408,64 @@ describe("test funding service api class", function () {
         true
       );
       assert.notEqual(dbNode?.status, "READY");
+      assert.equal(dbNode?.total_amount_funded, "0");
+    });
+    it("should go to status 'READY' after max retries", async function () {
+      const testMaxAmountOfRetries = 1;
+      // @ts-ignore
+      fundingServiceApi.maxAmountOfRetries = testMaxAmountOfRetries;
+
+      const node = createMockNode("peer1");
+      const amountLeft = 10;
+      const requestId = 123;
+
+      const successfulPostFundingBody: postFundingResponse = {
+        amountLeft,
+        id: requestId,
+      };
+
+      nockGetApiAccessToken
+        .times(testMaxAmountOfRetries + 1)
+        .reply(200, successfulGetApiAccessTokenBody);
+
+      nockFundingRequest(node.native_address)
+        .times(testMaxAmountOfRetries + 1)
+        .reply(200, successfulPostFundingBody);
+
+      await db.saveRegisteredNode(dbInstance, node);
+
+      const fundingResponse = await fundingServiceApi.requestFunds({
+        amount: 5,
+        node,
+      });
+
+      const failedGetRequestStatusBody: getRequestStatusResponse = {
+        accessTokenHash: "hash",
+        amount: "5",
+        chainId: node.chain_id,
+        createdAt: new Date(),
+        nodeAddress: node.id,
+        requestId,
+        status: "FAILED",
+      };
+
+      nockRequestStatus(fundingResponse)
+        .times(testMaxAmountOfRetries + 1)
+        .reply(200, failedGetRequestStatusBody);
+
+      // check for pending requests 1 more than the max amount so it can fail completely
+      for (const _ of Array.from({ length: testMaxAmountOfRetries + 1 })) {
+        await fundingServiceApi.checkForPendingRequests();
+      }
+
+      const dbNode = await db.getRegisteredNode(dbInstance, node.id);
+
+      assert.equal(
+        // @ts-ignore
+        fundingServiceApi.pendingRequests.has(fundingResponse),
+        false
+      );
+      assert.equal(dbNode?.status, "READY");
       assert.equal(dbNode?.total_amount_funded, "0");
     });
   });
