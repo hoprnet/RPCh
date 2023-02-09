@@ -28,6 +28,7 @@ export default async function main(
     hoprdToken,
     nativeAmount,
     hoprAmount,
+    recipient
   });
 
   // keep retrying until node has been funded

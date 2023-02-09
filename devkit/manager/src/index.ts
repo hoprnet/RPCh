@@ -1,8 +1,10 @@
 import express from "express";
 import addQuota from "./add-quota";
 import fundViaHOPRd from "./fund-via-hoprd";
+import fundViaWallet from "./fund-via-wallet";
 import getHOPRdTokenAddress from "./get-hoprd-token-address";
 import registerExitNodes from "./register-exit-nodes";
+import registerHoprdNodes from "./register-hoprd-nodes";
 import { createLogger } from "./utils";
 
 // we do not run this build this file via turbo
@@ -50,6 +52,32 @@ app.post("/fund-via-hoprd", async (req, res) => {
     return res.sendStatus(200);
   } catch (error) {
     log.error("Could not 'fund-via-hoprd'", error);
+    return res.sendStatus(500);
+  }
+});
+
+app.post("/fund-via-wallet", async (req, res) => {
+  const {
+    privateKey,
+    provider,
+    hoprTokenAddress,
+    nativeAmount,
+    hoprAmount,
+    recipient,
+  } = req.body as any;
+
+  try {
+    await fundViaWallet(
+      privateKey,
+      provider,
+      hoprTokenAddress,
+      nativeAmount,
+      hoprAmount,
+      recipient
+    );
+    return res.sendStatus(200);
+  } catch (error) {
+    log.error("Could not 'fund-via-wallet'", error);
     return res.sendStatus(500);
   }
 });
@@ -118,6 +146,34 @@ app.post("/register-exit-nodes", async (req, res) => {
     return res.sendStatus(200);
   } catch (error) {
     log.error("Could not 'register-exit-nodes'", error);
+    return res.sendStatus(500);
+  }
+});
+
+app.post("/register-hoprd-nodes", async (req, res) => {
+  const {
+    privateKey,
+    provider,
+    nftAddress,
+    nftId,
+    stakeAddress,
+    registerAddress,
+    peerIds,
+  } = req.body as any;
+
+  try {
+    await registerHoprdNodes(
+      privateKey,
+      provider,
+      nftAddress,
+      nftId,
+      stakeAddress,
+      registerAddress,
+      peerIds
+    );
+    return res.sendStatus(200);
+  } catch (error) {
+    log.error("Could not 'register-hoprd-nodes'", error);
     return res.sendStatus(500);
   }
 });
