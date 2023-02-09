@@ -33,7 +33,7 @@ async function registerNode(
     body: JSON.stringify({
       hasExitNode: true,
       peerId: hoprdPeerId,
-      chainId: 1,
+      chainId: 31337,
       hoprdApiEndpoint,
       hoprdApiToken,
       exitNodePubKey,

@@ -41,8 +41,10 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - WALLET_PRIV_KEY=${FUNDING_SERVICE_PRIVATE_KEY}
       - DB_CONNECTION_URL=postgresql://postgres:postgres@postgres-db:5432
-      - FORCE_CHAIN_ID=1
+      - FORCE_CHAIN_ID=31337
       - FORCE_RPC_URL=${RPC_PROVIDER}
+      - FORCE_SMART_CONTRACT_ADDRESS=${FORCE_SMART_CONTRACT_ADDRESS}
+
   discovery-platform:
     build:
       dockerfile: apps/discovery-platform/Dockerfile
@@ -61,7 +63,6 @@ services:
       - DB_CONNECTION_URL=postgresql://postgres:postgres@postgres-db:5432
       - FUNDING_SERVICE_URL=http://funding-service:3010
       - SKIP_CHECK_COMMITMENT=${SKIP_CHECK_COMMITMENT}
-      - FORCE_SMART_CONTRACT_ADDRESS=${FORCE_SMART_CONTRACT_ADDRESS}
 
 # we create a proxy to the sandbox
 # network created in 'nodes-docker-compose'
