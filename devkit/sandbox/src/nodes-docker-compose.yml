@@ -35,7 +35,7 @@ services:
       - DEBUG=${DEBUG}
       - PORT=3030
   pluto:
-    image: gcr.io/hoprassociation/hopr-pluto:staging-riga
+    image: gcr.io/hoprassociation/hopr-pluto:sha256:f799490f1ada2482abac727eeed76f54796ce3eda4fefec4ce579349d8ef718b
     restart: unless-stopped
     volumes:
       - pluto-data:/tmp
