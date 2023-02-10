@@ -295,6 +295,10 @@ export class FundingServiceApi {
             and previous request id ${previousRequestId}`
           );
           this.pendingRequests.delete(requestId);
+          await updateRegisteredNode(this.db, {
+            ...node,
+            status: "READY",
+          });
         }
       }
     }

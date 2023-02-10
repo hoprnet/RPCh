@@ -1,8 +1,11 @@
 import express from "express";
-import addQuota from "./add-quota";
-import fundViaHOPRd from "./fund-via-hoprd";
-import getHOPRdTokenAddress from "./get-hoprd-token-address";
-import registerExitNodes from "./register-exit-nodes";
+import * as hoprd from "./hoprd";
+import addQuota from "./tasks/add-quota";
+import fundHoprdNodes from "./tasks/fund-hoprd-nodes";
+import fundViaHOPRd from "./tasks/fund-via-hoprd";
+import openChannels from "./tasks/open-channels";
+import registerExitNodes from "./tasks/register-exit-nodes";
+import registerHoprdNodes from "./tasks/register-hoprd-nodes";
 import { createLogger } from "./utils";
 
 // we do not run this build this file via turbo
@@ -35,6 +38,32 @@ app.post("/add-quota", async (req, res) => {
   }
 });
 
+app.post("/fund-hoprd-nodes", async (req, res) => {
+  const {
+    privateKey,
+    provider,
+    hoprTokenAddress,
+    nativeAmount,
+    hoprAmount,
+    recipients,
+  } = req.body as any;
+
+  try {
+    await fundHoprdNodes(
+      privateKey,
+      provider,
+      hoprTokenAddress,
+      nativeAmount,
+      hoprAmount,
+      recipients
+    );
+    return res.sendStatus(200);
+  } catch (error) {
+    log.error("Could not 'fund-hoprd-nodes'", error);
+    return res.sendStatus(500);
+  }
+});
+
 app.post("/fund-via-hoprd", async (req, res) => {
   const { hoprdEndpoint, hoprdToken, nativeAmount, hoprAmount, recipient } =
     req.body as any;
@@ -58,10 +87,48 @@ app.get("/get-hoprd-token-address", async (req, res) => {
   const { hoprdEndpoint, hoprdToken } = req.query as any;
 
   try {
-    const tokenAddress = await getHOPRdTokenAddress(hoprdEndpoint, hoprdToken);
+    const tokenAddress = await hoprd
+      .getInfo(hoprdEndpoint, hoprdToken)
+      .then((res) => res.hoprToken);
     return res.status(200).send(tokenAddress);
   } catch (error) {
     log.error("Could not 'get-hoprd-token-address'", error);
+    return res.sendStatus(500);
+  }
+});
+
+app.post("/open-channels", async (req, res) => {
+  const {
+    hoprAmount,
+    hoprdApiEndpoint1,
+    hoprdApiToken1,
+    hoprdApiEndpoint2,
+    hoprdApiToken2,
+    hoprdApiEndpoint3,
+    hoprdApiToken3,
+    hoprdApiEndpoint4,
+    hoprdApiToken4,
+    hoprdApiEndpoint5,
+    hoprdApiToken5,
+  } = req.body as any;
+
+  try {
+    await openChannels(
+      hoprAmount,
+      hoprdApiEndpoint1,
+      hoprdApiToken1,
+      hoprdApiEndpoint2,
+      hoprdApiToken2,
+      hoprdApiEndpoint3,
+      hoprdApiToken3,
+      hoprdApiEndpoint4,
+      hoprdApiToken4,
+      hoprdApiEndpoint5,
+      hoprdApiToken5
+    );
+    return res.sendStatus(200);
+  } catch (error) {
+    log.error("Could not 'open-channels'", error);
     return res.sendStatus(500);
   }
 });
@@ -118,6 +185,34 @@ app.post("/register-exit-nodes", async (req, res) => {
     return res.sendStatus(200);
   } catch (error) {
     log.error("Could not 'register-exit-nodes'", error);
+    return res.sendStatus(500);
+  }
+});
+
+app.post("/register-hoprd-nodes", async (req, res) => {
+  const {
+    privateKey,
+    provider,
+    nftAddress,
+    nftId,
+    stakeAddress,
+    registerAddress,
+    peerIds,
+  } = req.body as any;
+
+  try {
+    await registerHoprdNodes(
+      privateKey,
+      provider,
+      nftAddress,
+      nftId,
+      stakeAddress,
+      registerAddress,
+      peerIds
+    );
+    return res.sendStatus(200);
+  } catch (error) {
+    log.error("Could not 'register-hoprd-nodes'", error);
     return res.sendStatus(500);
   }
 });
