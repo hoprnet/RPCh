@@ -1,5 +1,5 @@
 import { Wallet, Contract, providers, BigNumber, utils } from "ethers";
-import { createLogger } from "./utils";
+import { createLogger } from "../utils";
 
 const log = createLogger(["fund-via-wallet"]);
 

@@ -1,6 +1,6 @@
 import fetch from "node-fetch";
 import { utils } from "@rpch/common";
-import { createLogger } from "./utils";
+import { createLogger } from "../utils";
 
 const log = createLogger(["add-quota"]);
 

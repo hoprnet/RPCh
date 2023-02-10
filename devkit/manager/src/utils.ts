@@ -1,134 +1,45 @@
-import fetch from "node-fetch";
+import { Contract } from "ethers";
 import { utils } from "@rpch/common";
 
 export const createLogger = utils.LoggerFactory("sandbox");
 
-export async function getBalances(
-  hoprdEndpoint: string,
-  hoprdToken: string
-): Promise<{ hopr: string; native: string }> {
-  const [url, headers] = utils.createApiUrl(
-    "http",
-    hoprdEndpoint,
-    "/api/v2/account/balances",
-    hoprdToken
-  );
-
-  return fetch(url, {
-    method: "GET",
-    headers,
-  }).then((res) => res.json());
+/**
+ * Get an instance of the smart contract.
+ * @notice Does not support the full ABI
+ * @param address
+ * @returns instance of the smart contract
+ */
+export function getNFTAddress(address: string): Contract {
+  const abi = [
+    "function safeTransferFrom(address,address,uint256)",
+    "function ownerOf(uint256)",
+  ];
+  return new Contract(address, abi);
 }
 
-export async function getHoprTokenAddress(
-  hoprdEndpoint: string,
-  hoprdToken: string
-): Promise<string> {
-  const [url, headers] = utils.createApiUrl(
-    "http",
-    hoprdEndpoint,
-    "/api/v2/node/info",
-    hoprdToken
-  );
-
-  return fetch(url.toString(), {
-    method: "GET",
-    headers,
-  })
-    .then((res) => res.json())
-    .then((res: any) => res.hoprToken);
+/**
+ * Get an instance of the smart contract.
+ * @notice Does not support the full ABI
+ * @param address
+ * @returns instance of the smart contract
+ */
+export function getStakeContract(address: string): Contract {
+  const abi = [
+    "function isNftTypeAndRankRedeemed2(uint256,string,address) view returns (bool)",
+  ];
+  return new Contract(address, abi);
 }
 
-export async function withdraw(
-  hoprdEndpoint: string,
-  hoprdToken: string,
-  currency: "NATIVE" | "HOPR",
-  amount: string,
-  recipient: string
-) {
-  const [url, headers] = utils.createApiUrl(
-    "http",
-    hoprdEndpoint,
-    "/api/v2/account/withdraw",
-    hoprdToken
-  );
-
-  return fetch(url.toString(), {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      currency,
-      amount,
-      recipient,
-    }),
-  })
-    .then((res) => res.json())
-    .then((res: { receipt: string }) => res.receipt);
-}
-
-export async function getPeerId(
-  hoprdEndpoint: string,
-  hoprdToken: string
-): Promise<string> {
-  const [url, headers] = utils.createApiUrl(
-    "http",
-    hoprdEndpoint,
-    "/api/v2/account/addresses",
-    hoprdToken
-  );
-
-  return fetch(url.toString(), {
-    method: "GET",
-    headers,
-  })
-    .then((res) => res.json())
-    .then((res: { hopr: string; native: string }) => res.hopr);
-}
-
-export async function getInfo(
-  hoprdEndpoint: string,
-  hoprdToken: string
-): Promise<{ hoprToken: string }> {
-  const [url, headers] = utils.createApiUrl(
-    "http",
-    hoprdEndpoint,
-    "/api/v2/node/info",
-    hoprdToken
-  );
-
-  return fetch(url.toString(), {
-    method: "GET",
-    headers,
-  })
-    .then((res) => res.json())
-    .then((res: { hoprToken: string }) => res);
-}
-
-export async function openChannel(
-  hoprdEndpoint: string,
-  hoprdToken: string,
-  hoprAmount: string,
-  counterpartyPeerId: string
-) {
-  const [url, headers] = utils.createApiUrl(
-    "http",
-    hoprdEndpoint,
-    "/api/v2/channels",
-    hoprdToken
-  );
-
-  const response = await fetch(url.toString(), {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      peerId: counterpartyPeerId,
-      amount: hoprAmount,
-    }),
-  });
-
-  if (response.status !== 201 && response.status !== 409) {
-    throw Error(
-      `Failed to open channel from '${hoprdEndpoint}' to '${counterpartyPeerId}'`
-    );
-  }
+/**
+ * Get an instance of the smart contract.
+ * @notice Does not support the full ABI
+ * @param address
+ * @returns instance of the smart contract
+ */
+export function getRegisterContract(address: string): Contract {
+  const abi = [
+    "function isNodeRegisteredAndEligible(string) view returns (bool)",
+    "function selfRegister(string[])",
+  ];
+  return new Contract(address, abi);
 }
