@@ -1,11 +1,10 @@
 import express from "express";
-import addQuota from "./add-quota";
-import fundViaHOPRd from "./fund-via-hoprd";
-import fundViaWallet from "./fund-via-wallet";
-import getHOPRdTokenAddress from "./get-hoprd-token-address";
-import openChannel from "./open-channel";
-import registerExitNodes from "./register-exit-nodes";
-import registerHoprdNodes from "./register-hoprd-nodes";
+import * as hoprd from "./hoprd";
+import addQuota from "./tasks/add-quota";
+import fundHoprdNodes from "./tasks/fund-hoprd-nodes";
+import fundViaHOPRd from "./tasks/fund-via-hoprd";
+import registerExitNodes from "./tasks/register-exit-nodes";
+import registerHoprdNodes from "./tasks/register-hoprd-nodes";
 import { createLogger } from "./utils";
 
 // we do not run this build this file via turbo
@@ -38,6 +37,32 @@ app.post("/add-quota", async (req, res) => {
   }
 });
 
+app.post("/fund-hoprd-nodes", async (req, res) => {
+  const {
+    privateKey,
+    provider,
+    hoprTokenAddress,
+    nativeAmount,
+    hoprAmount,
+    recipients,
+  } = req.body as any;
+
+  try {
+    await fundHoprdNodes(
+      privateKey,
+      provider,
+      hoprTokenAddress,
+      nativeAmount,
+      hoprAmount,
+      recipients
+    );
+    return res.sendStatus(200);
+  } catch (error) {
+    log.error("Could not 'fund-hoprd-nodes'", error);
+    return res.sendStatus(500);
+  }
+});
+
 app.post("/fund-via-hoprd", async (req, res) => {
   const { hoprdEndpoint, hoprdToken, nativeAmount, hoprAmount, recipient } =
     req.body as any;
@@ -57,58 +82,16 @@ app.post("/fund-via-hoprd", async (req, res) => {
   }
 });
 
-app.post("/fund-via-wallet", async (req, res) => {
-  const {
-    privateKey,
-    provider,
-    hoprTokenAddress,
-    nativeAmount,
-    hoprAmount,
-    recipient,
-  } = req.body as any;
-
-  try {
-    await fundViaWallet(
-      privateKey,
-      provider,
-      hoprTokenAddress,
-      nativeAmount,
-      hoprAmount,
-      recipient
-    );
-    return res.sendStatus(200);
-  } catch (error) {
-    log.error("Could not 'fund-via-wallet'", error);
-    return res.sendStatus(500);
-  }
-});
-
 app.get("/get-hoprd-token-address", async (req, res) => {
   const { hoprdEndpoint, hoprdToken } = req.query as any;
 
   try {
-    const tokenAddress = await getHOPRdTokenAddress(hoprdEndpoint, hoprdToken);
+    const tokenAddress = await hoprd
+      .getInfo(hoprdEndpoint, hoprdToken)
+      .then((res) => res.hoprToken);
     return res.status(200).send(tokenAddress);
   } catch (error) {
     log.error("Could not 'get-hoprd-token-address'", error);
-    return res.sendStatus(500);
-  }
-});
-
-app.post("/open-channel", async (req, res) => {
-  const { hoprdEndpoint, hoprdToken, hoprAmount, counterpartyPeerId } =
-    req.body as any;
-
-  try {
-    await openChannel(
-      hoprdEndpoint,
-      hoprdToken,
-      hoprAmount,
-      counterpartyPeerId
-    );
-    return res.sendStatus(200);
-  } catch (error) {
-    log.error("Could not 'open-channel'", error);
     return res.sendStatus(500);
   }
 });

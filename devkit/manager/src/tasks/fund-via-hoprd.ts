@@ -1,10 +1,6 @@
 import retry from "async-retry";
-import {
-  createLogger,
-  getBalances,
-  getHoprTokenAddress,
-  withdraw,
-} from "./utils";
+import { getBalances, getInfo, withdraw } from "../hoprd";
+import { createLogger } from "../utils";
 
 const log = createLogger(["fund-via-hoprd"]);
 
@@ -49,7 +45,9 @@ export default async function main(
     }
   );
 
-  const hoprTokenAddress = await getHoprTokenAddress(hoprdEndpoint, hoprdToken);
+  const hoprTokenAddress = await getInfo(hoprdEndpoint, hoprdToken).then(
+    (res) => res.hoprToken
+  );
   log.normal("HoprToken address is", hoprTokenAddress);
 
   const nativeTxHash = await withdraw(

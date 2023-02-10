@@ -1,5 +1,10 @@
-import { Wallet, Contract, providers, utils } from "ethers";
-import { createLogger } from "./utils";
+import { Wallet, providers, utils } from "ethers";
+import {
+  createLogger,
+  getNFTAddress,
+  getStakeContract,
+  getRegisterContract,
+} from "../utils";
 
 const log = createLogger(["register-hoprd-nodes"]);
 
@@ -90,27 +95,4 @@ export default async function main(
   const tx = await registerContract?.selfRegister(unregisteredPeerIds);
   await tx.wait(2);
   log.normal(`Registered '${unregisteredPeerIds.length}' nodes`);
-}
-
-function getNFTAddress(address: string): Contract {
-  const abi = [
-    "function safeTransferFrom(address,address,uint256)",
-    "function ownerOf(uint256)",
-  ];
-  return new Contract(address, abi);
-}
-
-function getStakeContract(address: string): Contract {
-  const abi = [
-    "function isNftTypeAndRankRedeemed2(uint256,string,address) view returns (bool)",
-  ];
-  return new Contract(address, abi);
-}
-
-function getRegisterContract(address: string): Contract {
-  const abi = [
-    "function isNodeRegisteredAndEligible(string) view returns (bool)",
-    "function selfRegister(string[])",
-  ];
-  return new Contract(address, abi);
 }
