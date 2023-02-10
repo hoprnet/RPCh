@@ -120,15 +120,13 @@ export default class ReliabilityScore {
     );
 
     log.verbose(
-      `node: ${peerId.substring(peerId.length - 5)} request number: ${
+      `node: ${peerId} request number: ${
         this.metrics.get(peerId)?.sent
       } reliability score: ${this.getScore(peerId)}`
     );
 
     log.verbose(
-      `node: ${peerId.substring(peerId.length - 5)} stats: ${JSON.stringify(
-        this.getResultsStats(peerId)
-      )}`
+      `node: ${peerId} stats: ${JSON.stringify(this.getResultsStats(peerId))}`
     );
 
     // Remove all responses except those with a dishonest result.

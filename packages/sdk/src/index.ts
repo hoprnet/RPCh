@@ -232,17 +232,6 @@ export default class SDK {
       })
     );
 
-    // @ts-ignore
-    this.requestCache.requests.forEach((value, key) => {
-      log.verbose(
-        `entry: ${key}. Request: ${JSON.stringify(
-          value.request
-        )} createdAt: ${JSON.stringify(
-          value.createdAt
-        )} resolve: ${JSON.stringify(value.resolve)} reject: ${value.reject}`
-      );
-    });
-
     match.resolve(response);
     this.reliabilityScore.addMetric(
       match.request.entryNodeDestination,
@@ -261,16 +250,6 @@ export default class SDK {
    */
   private onRequestRemoval(req: Request): void {
     // @ts-ignore
-    this.requestCache.requests.forEach((value, key) => {
-      log.verbose(
-        `entry: ${key}. Request: ${JSON.stringify(
-          value.request
-        )} createdAt: ${JSON.stringify(
-          value.createdAt
-        )} resolve: ${JSON.stringify(value.resolve)} reject: ${value.reject}`
-      );
-    });
-    log.verbose(`request id: ${req.id}, expired!`);
     this.reliabilityScore.addMetric(req.entryNodeDestination, req.id, "failed");
     log.normal("request %s expired", req.id);
   }
@@ -400,13 +379,13 @@ export default class SDK {
     if (!this.isReady) throw Error("SDK not ready to send requests");
     if (this.isDeadlocked()) throw Error("SDK is deadlocked");
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       const message = req.toMessage();
       const segments = message.toSegments();
       this.requestCache.addRequest(req, resolve, reject);
       let requestHasFailed = false;
       for (const segment of segments) {
-        hoprd
+        await hoprd
           .sendMessage({
             apiEndpoint: this.entryNode!.apiEndpoint,
             apiToken: this.entryNode!.apiToken,
@@ -419,6 +398,7 @@ export default class SDK {
             requestHasFailed = true;
           });
       }
+
       if (requestHasFailed) {
         this.onRequestRemoval(req);
         this.requestCache.removeRequest(req);
