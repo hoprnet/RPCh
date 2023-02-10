@@ -64,6 +64,8 @@ export default class SDK {
   private stopMessageListener?: () => void;
   // an epoch timestamp that stops creating requests until that time has passed
   public deadlockTimestamp: number | undefined;
+  // toggle to not select entry nodes while another one is being selected
+  private selectingEntryNode: boolean | undefined;
 
   constructor(
     private readonly ops: HoprSdkOps,
@@ -310,6 +312,8 @@ export default class SDK {
   public async createRequest(provider: string, body: string): Promise<Request> {
     if (!this.isReady) throw Error("SDK not ready to create requests");
     if (this.isDeadlocked()) throw Error("SDK is deadlocked");
+    if (this.selectingEntryNode) throw Error("SDK is selecting entry node");
+
     let entryNodeScore: number = this.reliabilityScore.getScore(
       this.entryNode!.peerId
     );
@@ -321,12 +325,15 @@ export default class SDK {
       log.verbose("node is not reliable enough. selecting new entry node");
       exclusionList.push(this.entryNode!.peerId);
       try {
+        this.selectingEntryNode = true;
         await this.selectEntryNode(
           this.ops.discoveryPlatformApiEndpoint,
           exclusionList
         );
+        this.selectingEntryNode = false;
       } catch (error) {
         log.error("Couldn't find elegible node: ", error);
+        this.selectingEntryNode = false;
         this.setDeadlock(DEADLOCK_MS);
       }
       log.verbose("got new entry node");
