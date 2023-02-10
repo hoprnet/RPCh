@@ -23,13 +23,15 @@ export const tokenIsValid =
     const accessTokenHash: string | undefined =
       req.headers["x-access-token"]?.toString();
     log.verbose("validating token", accessTokenHash);
-    if (!accessTokenHash) return res.status(400).json("Missing Access Token");
+    if (!accessTokenHash)
+      return res.status(400).json({ errors: "Missing Access Token" });
     const dbToken = await accessTokenService.getAccessToken(accessTokenHash);
-    if (!dbToken) return res.status(404).json("Access Token does not exist");
+    if (!dbToken)
+      return res.status(404).json({ errors: "Access Token does not exist" });
 
     if (isExpired(dbToken.expired_at)) {
       log.verbose("token has expired", accessTokenHash);
-      return res.status(401).json("Access Token expired");
+      return res.status(401).json({ errors: "Access Token expired" });
     }
 
     const hasEnough = await doesAccessTokenHaveEnoughBalance({
@@ -44,7 +46,9 @@ export const tokenIsValid =
         "exceeded max amount of tokens redeemed per access token",
         accessTokenHash
       );
-      return res.status(401).json("Exceeded max amount of tokens redeemed");
+      return res
+        .status(401)
+        .json({ errors: "Exceeded max amount of tokens redeemed" });
     }
 
     next();
