@@ -416,8 +416,11 @@ export default class SDK {
           })
           .catch((e) => {
             log.error("failed to send message to hoprd", segment.toString(), e);
-            this.onRequestRemoval(req);
-            this.requestCache.removeRequest(req);
+            // check if requests exists to not bloat stats
+            if (this.requestCache.getRequest(req.id)) {
+              this.onRequestRemoval(req);
+              this.requestCache.removeRequest(req);
+            }
             reject("failed to send message to hoprd");
           });
       }
