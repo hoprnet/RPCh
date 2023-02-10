@@ -1,7 +1,8 @@
 import fetch from "node-fetch";
 import { utils as ethersUtils } from "ethers";
 import { utils } from "@rpch/common";
-import { createLogger, getPeerId } from "./utils";
+import { getAddresses } from "../hoprd";
+import { createLogger } from "../utils";
 
 const log = createLogger(["register-exit-nodes"]);
 
@@ -128,10 +129,10 @@ export default async function main(
 
   for (const nodes of groups) {
     const exitNodeAddress = ethersUtils.computeAddress(nodes.exitNodePubKey);
-    const hoprdPeerId = await getPeerId(
+    const hoprdPeerId = await getAddresses(
       nodes.hoprdApiEndpoint,
       nodes.hoprdApiToken
-    );
+    ).then((res) => res.hopr);
     await registerNode(
       discoveryPlatformEndpoint,
       hoprdPeerId,
