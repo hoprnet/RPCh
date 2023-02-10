@@ -404,7 +404,7 @@ export default class SDK {
       const message = req.toMessage();
       const segments = message.toSegments();
       this.requestCache.addRequest(req, resolve, reject);
-
+      let requestHasFailed = false;
       for (const segment of segments) {
         hoprd
           .sendMessage({
@@ -416,13 +416,13 @@ export default class SDK {
           })
           .catch((e) => {
             log.error("failed to send message to hoprd", segment.toString(), e);
-            // check if requests exists to not bloat stats
-            if (this.requestCache.getRequest(req.id)) {
-              this.onRequestRemoval(req);
-              this.requestCache.removeRequest(req);
-            }
-            reject("failed to send message to hoprd");
+            requestHasFailed = true;
           });
+      }
+      if (requestHasFailed) {
+        this.onRequestRemoval(req);
+        this.requestCache.removeRequest(req);
+        reject("failed to send message to hoprd");
       }
     });
   }
