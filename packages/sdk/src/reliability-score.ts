@@ -104,14 +104,20 @@ export default class ReliabilityScore {
       };
       this.metrics.set(peerId, nodeMetrics);
     }
-
+    // this is adding a response per request
     nodeMetrics.responses.set(requestId, {
       createdAt: new Date(),
       result,
     });
 
+    // this is adding a sent per message
     nodeMetrics.sent += 1;
     nodeMetrics.stats = this.getResultsStats(peerId);
+
+    // where do we should we call this?
+    // messages.length > requests.length
+    // since we use the stats the calculate the score what we really calculate is: (messages sent - requests failed)/ messages sent
+    // this is pretty nice of us
 
     log.verbose(
       "node: %s has a reliability score of %s",
@@ -183,6 +189,13 @@ export default class ReliabilityScore {
           peerId
         );
       } else {
+        // This should be (successful - failed / sent )
+        // the reason is that when a node is turned off
+        // sent will increase but successful will not
+
+        // eg: sent: 21 {successful: 0, dishonest: 0, failed: 5} -> score 21 - 5 / 21
+        // eventually the requests should expire and the score should go to a normal state but this can take long
+
         const score = (sent - failed) / sent;
         this.score.set(peerId, score);
         log.normal("node %s has a %s reliability score", peerId, score);
