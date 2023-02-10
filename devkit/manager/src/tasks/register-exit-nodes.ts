@@ -45,97 +45,64 @@ async function registerNode(
 
 export default async function main(
   discoveryPlatformEndpoint: string,
-  hoprdApiEndpoint1: string,
-  hoprdApiEndpoint1Ext: string,
-  hoprdApiToken1: string,
-  exitNodePubKey1: string,
-  hoprdApiEndpoint2: string,
-  hoprdApiEndpoint2Ext: string,
-  hoprdApiToken2: string,
-  exitNodePubKey2: string,
-  hoprdApiEndpoint3: string,
-  hoprdApiEndpoint3Ext: string,
-  hoprdApiToken3: string,
-  exitNodePubKey3: string,
-  hoprdApiEndpoint4: string,
-  hoprdApiEndpoint4Ext: string,
-  hoprdApiToken4: string,
-  exitNodePubKey4: string,
-  hoprdApiEndpoint5: string,
-  hoprdApiEndpoint5Ext: string,
-  hoprdApiToken5: string,
-  exitNodePubKey5: string
+  hoprdApiEndpoints: string[],
+  hoprdApiEndpointsExt: string[],
+  hoprdApiTokens: string[],
+  exitNodePubKeys: string[]
 ): Promise<void> {
   log.normal("Registering exit nodes", {
     discoveryPlatformEndpoint,
-    hoprdApiEndpoint1,
-    hoprdApiEndpoint1Ext,
-    hoprdApiToken1,
-    exitNodePubKey1,
-    hoprdApiEndpoint2,
-    hoprdApiEndpoint2Ext,
-    hoprdApiToken2,
-    exitNodePubKey2,
-    hoprdApiEndpoint3,
-    hoprdApiEndpoint3Ext,
-    hoprdApiToken3,
-    exitNodePubKey3,
-    hoprdApiEndpoint4,
-    hoprdApiEndpoint4Ext,
-    hoprdApiToken4,
-    exitNodePubKey4,
-    hoprdApiEndpoint5,
-    hoprdApiEndpoint5Ext,
-    hoprdApiToken5,
-    exitNodePubKey5,
+    hoprdApiEndpoints,
+    hoprdApiEndpointsExt,
+    hoprdApiTokens,
+    exitNodePubKeys,
   });
+
+  if (
+    [
+      hoprdApiEndpointsExt.length,
+      hoprdApiTokens.length,
+      exitNodePubKeys.length,
+    ].some((length) => length !== hoprdApiEndpoints.length)
+  ) {
+    throw Error(
+      `Lengths of 'hoprdApiEndpoints', 'hoprdApiEndpointsExt', 'hoprdApiTokens', 'exitNodePubKeys' do no match`
+    );
+  }
+
   const groups: {
     hoprdApiEndpoint: string;
     hoprdApiEndpointExt: string;
     hoprdApiToken: string;
     exitNodePubKey: string;
-  }[] = [
-    {
-      hoprdApiEndpoint: hoprdApiEndpoint1,
-      hoprdApiEndpointExt: hoprdApiEndpoint1Ext,
-      hoprdApiToken: hoprdApiToken1,
-      exitNodePubKey: exitNodePubKey1,
-    },
-    {
-      hoprdApiEndpoint: hoprdApiEndpoint2,
-      hoprdApiEndpointExt: hoprdApiEndpoint2Ext,
-      hoprdApiToken: hoprdApiToken2,
-      exitNodePubKey: exitNodePubKey2,
-    },
-    {
-      hoprdApiEndpoint: hoprdApiEndpoint3,
-      hoprdApiEndpointExt: hoprdApiEndpoint3Ext,
-      hoprdApiToken: hoprdApiToken3,
-      exitNodePubKey: exitNodePubKey3,
-    },
-    {
-      hoprdApiEndpoint: hoprdApiEndpoint4,
-      hoprdApiEndpointExt: hoprdApiEndpoint4Ext,
-      hoprdApiToken: hoprdApiToken4,
-      exitNodePubKey: exitNodePubKey4,
-    },
-    {
-      hoprdApiEndpoint: hoprdApiEndpoint5,
-      hoprdApiEndpointExt: hoprdApiEndpoint5Ext,
-      hoprdApiToken: hoprdApiToken5,
-      exitNodePubKey: exitNodePubKey5,
-    },
-  ];
+    hoprdPeerId: string;
+  }[] = [];
+
+  // get PeerIds in parallel and fill in groups object
+  await Promise.all(
+    hoprdApiEndpoints.map(async (hoprdApiEndpoint, index) => {
+      const hoprdApiEndpointExt = hoprdApiEndpointsExt[index];
+      const hoprdApiToken = hoprdApiTokens[index];
+      const exitNodePubKey = exitNodePubKeys[index];
+      const hoprdPeerId = await getAddresses(
+        hoprdApiEndpoint,
+        hoprdApiToken
+      ).then((res) => res.hopr);
+      groups.push({
+        hoprdApiEndpoint,
+        hoprdApiEndpointExt,
+        hoprdApiToken,
+        exitNodePubKey,
+        hoprdPeerId,
+      });
+    })
+  );
 
   for (const nodes of groups) {
     const exitNodeAddress = ethersUtils.computeAddress(nodes.exitNodePubKey);
-    const hoprdPeerId = await getAddresses(
-      nodes.hoprdApiEndpoint,
-      nodes.hoprdApiToken
-    ).then((res) => res.hopr);
     await registerNode(
       discoveryPlatformEndpoint,
-      hoprdPeerId,
+      nodes.hoprdPeerId,
       nodes.hoprdApiEndpointExt,
       nodes.hoprdApiToken,
       nodes.exitNodePubKey,

@@ -3,6 +3,7 @@ import * as hoprd from "./hoprd";
 import addQuota from "./tasks/add-quota";
 import fundHoprdNodes from "./tasks/fund-hoprd-nodes";
 import fundViaHOPRd from "./tasks/fund-via-hoprd";
+import fundViaWallet from "./tasks/fund-via-wallet";
 import openChannels from "./tasks/open-channels";
 import registerExitNodes from "./tasks/register-exit-nodes";
 import registerHoprdNodes from "./tasks/register-hoprd-nodes";
@@ -83,6 +84,32 @@ app.post("/fund-via-hoprd", async (req, res) => {
   }
 });
 
+app.post("/fund-via-wallet", async (req, res) => {
+  const {
+    privateKey,
+    provider,
+    hoprTokenAddress,
+    nativeAmount,
+    hoprAmount,
+    recipient,
+  } = req.body as any;
+
+  try {
+    await fundViaWallet(
+      privateKey,
+      provider,
+      hoprTokenAddress,
+      nativeAmount,
+      hoprAmount,
+      recipient
+    );
+    return res.sendStatus(200);
+  } catch (error) {
+    log.error("Could not 'fund-via-wallet'", error);
+    return res.sendStatus(500);
+  }
+});
+
 app.get("/get-hoprd-token-address", async (req, res) => {
   const { hoprdEndpoint, hoprdToken } = req.query as any;
 
@@ -98,34 +125,10 @@ app.get("/get-hoprd-token-address", async (req, res) => {
 });
 
 app.post("/open-channels", async (req, res) => {
-  const {
-    hoprAmount,
-    hoprdApiEndpoint1,
-    hoprdApiToken1,
-    hoprdApiEndpoint2,
-    hoprdApiToken2,
-    hoprdApiEndpoint3,
-    hoprdApiToken3,
-    hoprdApiEndpoint4,
-    hoprdApiToken4,
-    hoprdApiEndpoint5,
-    hoprdApiToken5,
-  } = req.body as any;
+  const { hoprAmount, hoprdApiEndpoints, hoprdTokens } = req.body as any;
 
   try {
-    await openChannels(
-      hoprAmount,
-      hoprdApiEndpoint1,
-      hoprdApiToken1,
-      hoprdApiEndpoint2,
-      hoprdApiToken2,
-      hoprdApiEndpoint3,
-      hoprdApiToken3,
-      hoprdApiEndpoint4,
-      hoprdApiToken4,
-      hoprdApiEndpoint5,
-      hoprdApiToken5
-    );
+    await openChannels(hoprAmount, hoprdApiEndpoints, hoprdTokens);
     return res.sendStatus(200);
   } catch (error) {
     log.error("Could not 'open-channels'", error);
@@ -136,51 +139,19 @@ app.post("/open-channels", async (req, res) => {
 app.post("/register-exit-nodes", async (req, res) => {
   const {
     discoveryPlatformEndpoint,
-    hoprdApiEndpoint1,
-    hoprdApiEndpoint1Ext,
-    hoprdApiToken1,
-    exitNodePubKey1,
-    hoprdApiEndpoint2,
-    hoprdApiEndpoint2Ext,
-    hoprdApiToken2,
-    exitNodePubKey2,
-    hoprdApiEndpoint3,
-    hoprdApiEndpoint3Ext,
-    hoprdApiToken3,
-    exitNodePubKey3,
-    hoprdApiEndpoint4,
-    hoprdApiEndpoint4Ext,
-    hoprdApiToken4,
-    exitNodePubKey4,
-    hoprdApiEndpoint5,
-    hoprdApiEndpoint5Ext,
-    hoprdApiToken5,
-    exitNodePubKey5,
+    hoprdApiEndpoints,
+    hoprdApiEndpointsExt,
+    hoprdApiTokens,
+    exitNodePubKeys,
   } = req.body as any;
 
   try {
     await registerExitNodes(
       discoveryPlatformEndpoint,
-      hoprdApiEndpoint1,
-      hoprdApiEndpoint1Ext,
-      hoprdApiToken1,
-      exitNodePubKey1,
-      hoprdApiEndpoint2,
-      hoprdApiEndpoint2Ext,
-      hoprdApiToken2,
-      exitNodePubKey2,
-      hoprdApiEndpoint3,
-      hoprdApiEndpoint3Ext,
-      hoprdApiToken3,
-      exitNodePubKey3,
-      hoprdApiEndpoint4,
-      hoprdApiEndpoint4Ext,
-      hoprdApiToken4,
-      exitNodePubKey4,
-      hoprdApiEndpoint5,
-      hoprdApiEndpoint5Ext,
-      hoprdApiToken5,
-      exitNodePubKey5
+      hoprdApiEndpoints,
+      hoprdApiEndpointsExt,
+      hoprdApiTokens,
+      exitNodePubKeys
     );
     return res.sendStatus(200);
   } catch (error) {
@@ -196,7 +167,7 @@ app.post("/register-hoprd-nodes", async (req, res) => {
     nftAddress,
     nftId,
     stakeAddress,
-    registerAddress,
+    registryAddress,
     peerIds,
   } = req.body as any;
 
@@ -207,7 +178,7 @@ app.post("/register-hoprd-nodes", async (req, res) => {
       nftAddress,
       nftId,
       stakeAddress,
-      registerAddress,
+      registryAddress,
       peerIds
     );
     return res.sendStatus(200);
