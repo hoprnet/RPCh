@@ -3,6 +3,7 @@ import * as hoprd from "./hoprd";
 import addQuota from "./tasks/add-quota";
 import fundHoprdNodes from "./tasks/fund-hoprd-nodes";
 import fundViaHOPRd from "./tasks/fund-via-hoprd";
+import openChannels from "./tasks/open-channels";
 import registerExitNodes from "./tasks/register-exit-nodes";
 import registerHoprdNodes from "./tasks/register-hoprd-nodes";
 import { createLogger } from "./utils";
@@ -92,6 +93,42 @@ app.get("/get-hoprd-token-address", async (req, res) => {
     return res.status(200).send(tokenAddress);
   } catch (error) {
     log.error("Could not 'get-hoprd-token-address'", error);
+    return res.sendStatus(500);
+  }
+});
+
+app.post("/open-channels", async (req, res) => {
+  const {
+    hoprAmount,
+    hoprdApiEndpoint1,
+    hoprdApiToken1,
+    hoprdApiEndpoint2,
+    hoprdApiToken2,
+    hoprdApiEndpoint3,
+    hoprdApiToken3,
+    hoprdApiEndpoint4,
+    hoprdApiToken4,
+    hoprdApiEndpoint5,
+    hoprdApiToken5,
+  } = req.body as any;
+
+  try {
+    await openChannels(
+      hoprAmount,
+      hoprdApiEndpoint1,
+      hoprdApiToken1,
+      hoprdApiEndpoint2,
+      hoprdApiToken2,
+      hoprdApiEndpoint3,
+      hoprdApiToken3,
+      hoprdApiEndpoint4,
+      hoprdApiToken4,
+      hoprdApiEndpoint5,
+      hoprdApiToken5
+    );
+    return res.sendStatus(200);
+  } catch (error) {
+    log.error("Could not 'open-channels'", error);
     return res.sendStatus(500);
   }
 });

@@ -20,6 +20,7 @@ async function openChannels(
   });
 
   for (const counterparty of counterparties) {
+    log.verbose(`Open channel from '${hoprdApiEndpoint}' to '${counterparty}'`);
     await retry(
       async function attemptToOpenChannel() {
         await openChannel(
