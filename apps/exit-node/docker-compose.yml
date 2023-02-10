@@ -7,7 +7,7 @@ volumes:
 
 services:
   hoprd:
-    image: gcr.io/hoprassociation/hoprd:v1.92.7@sha256:df351b4287c8b69b08d1871e74fc2dbdcc5da17b2bee021405ae9faf4cc94f15
+    image: gcr.io/hoprassociation/hopr-pluto:staging-riga
     restart: unless-stopped
     ports:
       - "3000:3000"
