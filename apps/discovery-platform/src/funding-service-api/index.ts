@@ -31,7 +31,7 @@ export class FundingServiceApi {
     { amountOfRetries: number; previousRequestId: number; peerId: string }
   > = new Map();
   // Amount of times a request can fail and be sent again
-  private maxAmountOfRetries = 0;
+  private maxAmountOfRetries = 3;
 
   constructor(private url: string, private db: DBInstance) {}
 
