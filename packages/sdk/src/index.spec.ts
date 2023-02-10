@@ -293,6 +293,26 @@ describe("test SDK class", function () {
       }
     });
 
+    it("should add only one failed request to metrics if hoprd fails", async function () {
+      HOPRD_SEND_MESSAGE_NOCK.reply(400, "error");
+      const request = fixtures.createMockedFlow(fixtures.RPC_REQ_LARGE).next()
+        .value as Request;
+      try {
+        await sdk.sendRequest(request);
+      } catch (e: any) {
+        assert.equal(
+          // @ts-ignore
+          sdk.reliabilityScore.metrics.get(sdk.entryNode?.peerId)?.stats.failed,
+          1
+        );
+      }
+      assert.equal(
+        // @ts-ignore
+        sdk.reliabilityScore.metrics.get(sdk.entryNode?.peerId)?.sent,
+        1
+      );
+    });
+
     it("should call the stopMessageListener if entry node changes", async function () {
       // @ts-ignore
       const stopMessageListenerMetric = jest.spyOn(sdk, "stopMessageListener");

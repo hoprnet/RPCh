@@ -113,6 +113,22 @@ export default class ReliabilityScore {
     nodeMetrics.sent += 1;
     nodeMetrics.stats = this.getResultsStats(peerId);
 
+    log.verbose(
+      "node: %s has a reliability score of %s",
+      peerId,
+      this.getScore(peerId)
+    );
+
+    log.verbose(
+      `node: ${peerId} request number: ${
+        this.metrics.get(peerId)?.sent
+      } reliability score: ${this.getScore(peerId)}`
+    );
+
+    log.verbose(
+      `node: ${peerId} stats: ${JSON.stringify(this.getResultsStats(peerId))}`
+    );
+
     // Remove all responses except those with a dishonest result.
     if (nodeMetrics.sent > this.MAX_RESPONSES) {
       const [lastRequestId, lastResponse] = Array.from(
@@ -134,6 +150,9 @@ export default class ReliabilityScore {
         "node %s exceeded the max number of responses possible. Recalculating score",
         peerId,
         log.createMetric({ peerId: peerId })
+      );
+      log.verbose(
+        `NODE ${peerId} SCORE AFTER RECALCULATION: ${this.getScore(peerId)}`
       );
     }
   }

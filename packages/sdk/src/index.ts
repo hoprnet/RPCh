@@ -249,6 +249,7 @@ export default class SDK {
    * @param req Request received from cache module.
    */
   private onRequestRemoval(req: Request): void {
+    // @ts-ignore
     this.reliabilityScore.addMetric(req.entryNodeDestination, req.id, "failed");
     log.normal("request %s expired", req.id);
   }
@@ -378,13 +379,13 @@ export default class SDK {
     if (!this.isReady) throw Error("SDK not ready to send requests");
     if (this.isDeadlocked()) throw Error("SDK is deadlocked");
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       const message = req.toMessage();
       const segments = message.toSegments();
       this.requestCache.addRequest(req, resolve, reject);
-
+      let requestHasFailed = false;
       for (const segment of segments) {
-        hoprd
+        await hoprd
           .sendMessage({
             apiEndpoint: this.entryNode!.apiEndpoint,
             apiToken: this.entryNode!.apiToken,
@@ -394,10 +395,14 @@ export default class SDK {
           })
           .catch((e) => {
             log.error("failed to send message to hoprd", segment.toString(), e);
-            this.onRequestRemoval(req);
-            this.requestCache.removeRequest(req);
-            reject("failed to send message to hoprd");
+            requestHasFailed = true;
           });
+      }
+
+      if (requestHasFailed) {
+        this.onRequestRemoval(req);
+        this.requestCache.removeRequest(req);
+        reject("failed to send message to hoprd");
       }
     });
   }

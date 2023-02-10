@@ -138,5 +138,17 @@ describe("test reliability score class", () => {
         }
       }
     });
+
+    it("should reset scores after treshold", () => {
+      addNumberOfMetrics(70, ENTRY_NODE_PEER_ID, "success");
+      addNumberOfMetrics(30, ENTRY_NODE_PEER_ID, "failed");
+      const beforeRecalculationScore =
+        reliabilityScore.getScore(ENTRY_NODE_PEER_ID);
+      reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, 1, "success");
+      const afterRecalculationScore =
+        reliabilityScore.getScore(ENTRY_NODE_PEER_ID);
+      expect(afterRecalculationScore).toBe(0.2);
+      expect(afterRecalculationScore).toBeLessThan(beforeRecalculationScore);
+    });
   });
 });
