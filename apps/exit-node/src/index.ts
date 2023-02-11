@@ -99,6 +99,7 @@ export const start = async (ops: {
           message: segment.toString(),
           destination: rpchRequest.entryNodeDestination,
           path: [],
+          hops: 1,
         });
       }
     } catch (error) {

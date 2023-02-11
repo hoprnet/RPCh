@@ -13,12 +13,14 @@ export const sendMessage = async ({
   message,
   destination,
   path,
+  hops,
 }: {
   apiEndpoint: string;
   apiToken: string | undefined;
   message: string;
   destination: string;
   path?: string[];
+  hops?: number;
 }): Promise<void | string> => {
   const [url, headers] = createApiUrl(
     "http",
@@ -27,10 +29,16 @@ export const sendMessage = async ({
     apiToken
   );
 
-  const body: { body: string; recipient: string; path?: string[] } = {
+  const body: {
+    body: string;
+    recipient: string;
+    path?: string[];
+    hops?: number;
+  } = {
     body: message,
     recipient: destination,
     path,
+    hops,
   };
 
   log.verbose(

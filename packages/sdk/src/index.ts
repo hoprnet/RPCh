@@ -399,6 +399,7 @@ export default class SDK {
             message: segment.toString(),
             destination: req.exitNodeDestination,
             path: [],
+            hops: 1,
           })
           .catch((e) => {
             log.error("failed to send message to hoprd", segment.toString(), e);
