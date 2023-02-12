@@ -16,7 +16,7 @@ export const tokenIsValid =
   (
     accessTokenService: AccessTokenService,
     requestService: RequestService,
-    maxAmountOfTokens: number,
+    maxAmountOfTokens: bigint,
     requestFunds?: boolean
   ) =>
   async (req: Request, res: Response, next: NextFunction) => {
@@ -38,7 +38,7 @@ export const tokenIsValid =
       requestService,
       maxAmountOfTokens,
       token: dbToken.token,
-      requestAmount: requestFunds ? Number(req.body.amount) : 0,
+      requestAmount: requestFunds ? BigInt(req.body.amount) : BigInt(0),
     });
 
     if (!hasEnough) {
@@ -61,8 +61,8 @@ export const tokenIsValid =
 export const doesAccessTokenHaveEnoughBalance = async (params: {
   requestService: RequestService;
   token: string;
-  maxAmountOfTokens: number;
-  requestAmount?: number;
+  maxAmountOfTokens: bigint;
+  requestAmount?: bigint;
 }): Promise<Boolean> => {
   const requestsByAccessToken =
     await params.requestService.getRequestsByAccessToken(params.token);
@@ -73,10 +73,13 @@ export const doesAccessTokenHaveEnoughBalance = async (params: {
       req.status !== "REJECTED-DURING-PROCESSING"
   );
   const sumOfTokensTotalPossibleRequests =
-    totalRequests?.reduce((prev, next) => prev + Number(next.amount), 0) ?? 0;
+    totalRequests?.reduce(
+      (prev, next) => prev + BigInt(next.amount),
+      BigInt(0)
+    ) ?? BigInt(0);
 
   const tokenBalanceWithRequestAmount =
-    sumOfTokensTotalPossibleRequests + (params.requestAmount ?? 0);
+    sumOfTokensTotalPossibleRequests + (params.requestAmount ?? BigInt(0));
   if (params.maxAmountOfTokens < tokenBalanceWithRequestAmount) {
     return false;
   }

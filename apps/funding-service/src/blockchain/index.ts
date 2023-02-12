@@ -21,7 +21,7 @@ export const sendTransaction = async (params: {
   smartContractAddress: string;
   from: Signer;
   to: string;
-  amount: string;
+  amount: bigint;
 }): Promise<ethers.providers.TransactionResponse> => {
   const contract = new Contract(
     params.smartContractAddress,
@@ -117,7 +117,7 @@ export const getBalanceForAllChains = async (
   walletAddress: string,
   providers: ethers.providers.JsonRpcProvider[]
 ) => {
-  const balances: { [chainId: number]: number } = {};
+  const balances: { [chainId: number]: bigint } = {};
   for (const provider of providers) {
     log.verbose(["fetching balance for provider", provider.connection.url]);
     const balance = await getBalance(
@@ -125,7 +125,7 @@ export const getBalanceForAllChains = async (
       walletAddress,
       provider
     );
-    balances[provider.network.chainId] = Number(balance.toString());
+    balances[provider.network.chainId] = BigInt(balance.toString());
   }
   return balances;
 };

@@ -67,13 +67,13 @@ describe("test entry server", function () {
 
   it("should retrieve an entry node", async function () {
     const spy = jest.spyOn(registeredNode, "getEligibleNode");
-    const amountLeft = 10;
+    const amountLeft = BigInt(10);
     const peerId = "entry";
     const requestId = 1;
 
     const getAccessTokenBody: getAccessTokenResponse = {
       accessToken: FAKE_ACCESS_TOKEN,
-      amountLeft: 10,
+      amountLeft: BigInt(10),
       expiredAt: new Date().toISOString(),
     };
 

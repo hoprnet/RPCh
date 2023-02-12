@@ -9,7 +9,7 @@ import { createHmac, randomInt } from "crypto";
  */
 export const generateAccessToken = (params: {
   expiredAt: Date;
-  amount: number;
+  amount: bigint;
   secretKey: string;
 }): string => {
   const createdAt = new Date(Date.now());

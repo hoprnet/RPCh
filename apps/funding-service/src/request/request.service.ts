@@ -26,7 +26,7 @@ export class RequestService {
    */
   public async createRequest(params: {
     nodeAddress: string;
-    amount: string;
+    amount: bigint;
     chainId: number;
     accessTokenHash: string;
   }): Promise<QueryRequest> {

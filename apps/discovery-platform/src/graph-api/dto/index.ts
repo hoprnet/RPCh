@@ -3,7 +3,7 @@ export type GetAccountChannelsResponse = {
     account: {
       fromChannels: {
         id: string;
-        balance: number;
+        balance: bigint;
       }[];
     };
   };
@@ -12,7 +12,7 @@ export type GetAccountChannelsResponse = {
 export type getAccountsFromBlockChangeResponse = {
   data: {
     account: {
-      balance: number;
+      balance: bigint;
     };
   }[];
 };

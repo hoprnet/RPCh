@@ -16,7 +16,7 @@ import {
 } from ".";
 import * as erc20 from "./erc20-fixture.json";
 
-const INITIAL_AMOUNT = ethers.utils.parseEther("1000").toString();
+const INITIAL_AMOUNT = ethers.utils.parseEther("1000").toBigInt();
 const TOKEN_NAME = "CUSTOM TOKEN";
 const DECIMAL_UNITS = "18";
 const TOKEN_SYMBOL = "TKN";
@@ -52,7 +52,7 @@ describe("test Blockchain class", function () {
       smartContractAddress: contract.address,
       from: owner,
       to: receiver.address,
-      amount: ethers.utils.parseEther("10").toString(),
+      amount: ethers.utils.parseEther("10").toBigInt(),
     });
     assert.notEqual(transactionHash, undefined);
   });
@@ -62,7 +62,7 @@ describe("test Blockchain class", function () {
       smartContractAddress: contract.address,
       from: owner,
       to: receiver.address,
-      amount: "10",
+      amount: BigInt("10"),
     });
     const receipt = await getReceiptOfTransaction(provider, transactionHash);
     const possibleStatus = [0, 1];
@@ -87,7 +87,7 @@ describe("test Blockchain class", function () {
       smartContractAddress: contract.address,
       from: owner,
       to: receiver.address,
-      amount: "10",
+      amount: BigInt("10"),
     });
     const [receipt] = await Promise.all([
       waitForTransaction(transactionHash, provider, confirmations),
