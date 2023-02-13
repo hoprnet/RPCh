@@ -23,7 +23,7 @@ export class FundingServiceApi {
   // Date when the current tokens expires
   private expiredAt: Date | undefined;
   // Maximum amount that the current token can request
-  private amountLeft: BigInt | undefined;
+  private amountLeft: bigint | undefined;
   // Map of all pending requests
   private pendingRequests: Map<
     //requestId
@@ -42,7 +42,7 @@ export class FundingServiceApi {
   private saveAccessToken(ops: getAccessTokenResponse): void {
     (this.accessToken = ops.accessToken),
       (this.expiredAt = new Date(ops.expiredAt));
-    this.amountLeft = ops.amountLeft;
+    this.amountLeft = BigInt(ops.amountLeft);
   }
   /**
    * Fetch from funding service a new access token
@@ -61,7 +61,7 @@ export class FundingServiceApi {
    * @param amount
    * @returns string
    */
-  private async getAccessToken(amount?: BigInt): Promise<string> {
+  private async getAccessToken(amount?: bigint): Promise<string> {
     if (!this.accessToken || !this.accessTokenIsValid(amount)) {
       const accessToken = await this.fetchAccessToken();
       return accessToken;
@@ -75,7 +75,7 @@ export class FundingServiceApi {
    * @param amount
    * @returns boolean
    */
-  private accessTokenIsValid(amount?: BigInt): boolean {
+  private accessTokenIsValid(amount?: bigint): boolean {
     if (!this.accessToken || !this.amountLeft || !this.expiredAt) {
       log.verbose("Access token for discovery platform does not exist");
       return false;

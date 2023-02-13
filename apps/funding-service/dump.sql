@@ -60,7 +60,7 @@ CREATE TABLE public.requests (
     created_at timestamp without time zone DEFAULT now(),
     updated_at timestamp without time zone DEFAULT now(),
     node_address text NOT NULL,
-    amount numeric(78) NOT NULL,
+    amount numeric(78,0) NOT NULL,
     transaction_hash text,
     chain_id integer NOT NULL,
     reason text,

@@ -73,15 +73,17 @@ describe("test entry server", function () {
 
     const getAccessTokenBody: getAccessTokenResponse = {
       accessToken: FAKE_ACCESS_TOKEN,
-      amountLeft: BigInt(10),
+      amountLeft: BigInt(10).toString(),
       expiredAt: new Date().toISOString(),
     };
 
     nockGetApiAccessToken.reply(200, getAccessTokenBody);
-    await request(app).post("/api/v1/client/quota").send({
-      client: "client",
-      quota: 1,
-    });
+    await request(app)
+      .post("/api/v1/client/quota")
+      .send({
+        client: "client",
+        quota: BigInt(1),
+      });
 
     await request(app)
       .post("/api/v1/node/register")

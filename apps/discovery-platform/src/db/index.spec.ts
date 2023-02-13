@@ -14,6 +14,17 @@ export class MockPgInstanceSingleton {
 
   private constructor() {
     let instance = newDb();
+    instance.public.interceptQueries((sql) => {
+      const newSql = sql.replace(
+        /\bnumeric\s*\(\s*\d+\s*,\s*\d+\s*\)/g,
+        "float"
+      );
+      if (sql !== newSql) {
+        return instance.public.many(newSql);
+      }
+      // proceed to actual SQL execution for other requests.
+      return null;
+    });
     instance.public.none(fs.readFileSync("dump.sql", "utf8"));
     MockPgInstanceSingleton.pgInstance = instance;
     MockPgInstanceSingleton.initialDbState =

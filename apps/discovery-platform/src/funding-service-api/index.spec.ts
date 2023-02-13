@@ -26,7 +26,7 @@ now.setMinutes(now.getMinutes() + 30);
 
 const successfulGetApiAccessTokenBody: getAccessTokenResponse = {
   accessToken: FAKE_ACCESS_TOKEN,
-  amountLeft: BigInt(10),
+  amountLeft: "10",
   expiredAt: now.toISOString(),
 };
 
@@ -81,7 +81,7 @@ describe("test funding service api class", function () {
       now.setMinutes(now.getMinutes() - 30);
       const expiredAccessTokenResponse: getAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: BigInt(10),
+        amountLeft: "10",
         expiredAt: now.toISOString(),
       };
       nockGetApiAccessToken.reply(200, expiredAccessTokenResponse);
@@ -99,7 +99,7 @@ describe("test funding service api class", function () {
     it("should return false if has been exceeded max amount", async function () {
       const exceededAccessTokenResponse: getAccessTokenResponse = {
         ...successfulGetApiAccessTokenBody,
-        amountLeft: BigInt(0),
+        amountLeft: "0",
       };
       nockGetApiAccessToken.reply(200, exceededAccessTokenResponse);
       // @ts-ignore-next-line
@@ -116,7 +116,7 @@ describe("test funding service api class", function () {
     // @ts-ignore
     fundingServiceApi.saveAccessToken({
       accessToken: FAKE_ACCESS_TOKEN,
-      amountLeft: amountLeft,
+      amountLeft: amountLeft.toString(),
       expiredAt: now.toISOString(),
     });
     // @ts-ignore
@@ -129,7 +129,7 @@ describe("test funding service api class", function () {
   it("should get access token", async function () {
     const getAccessTokenResponse: getAccessTokenResponse = {
       accessToken: FAKE_ACCESS_TOKEN,
-      amountLeft: BigInt(10),
+      amountLeft: "10",
       expiredAt: new Date(Date.now()).toISOString(),
     };
     nockGetApiAccessToken.reply(200, getAccessTokenResponse);
@@ -146,7 +146,7 @@ describe("test funding service api class", function () {
 
     const getAccessTokenResponse: getAccessTokenResponse = {
       accessToken: FAKE_ACCESS_TOKEN,
-      amountLeft: BigInt(10),
+      amountLeft: "10",
       expiredAt: new Date(Date.now()).toISOString(),
     };
     nockGetApiAccessToken.reply(200, getAccessTokenResponse);
@@ -179,7 +179,7 @@ describe("test funding service api class", function () {
 
     const getAccessTokenResponse: getAccessTokenResponse = {
       accessToken: FAKE_ACCESS_TOKEN,
-      amountLeft: BigInt(10),
+      amountLeft: "10",
       expiredAt: new Date(Date.now()).toISOString(),
     };
     nockGetApiAccessToken.reply(200, getAccessTokenResponse);
