@@ -9,7 +9,7 @@ import { RequestService } from "../request";
 import { entryServer } from ".";
 
 const SECRET_KEY = "SECRET";
-const MAX_AMOUNT_OF_TOKENS = 40;
+const MAX_AMOUNT_OF_TOKENS = BigInt(40);
 const TIMEOUT = 30 * 60_000;
 
 describe("test entry server", function () {
@@ -102,7 +102,7 @@ describe("test entry server", function () {
 
     await agent
       .post("/api/request/funds/0x0000000000000000")
-      .send({ amount: MAX_AMOUNT_OF_TOKENS - 1, chainId: 80 })
+      .send({ amount: MAX_AMOUNT_OF_TOKENS - BigInt(1), chainId: 80 })
       .set("Accept", "application/json")
       .set("x-access-token", responseToken.body.accessToken);
 
@@ -121,7 +121,7 @@ describe("test entry server", function () {
 
     const resFunding = await agent
       .post("/api/request/funds/0x0000000000000000")
-      .send({ amount: MAX_AMOUNT_OF_TOKENS - 10, chainId: 80 })
+      .send({ amount: MAX_AMOUNT_OF_TOKENS - BigInt(10), chainId: 80 })
       .set("Accept", "application/json")
       .set("x-access-token", responseToken.body.accessToken);
 

@@ -23,7 +23,7 @@ export const entryServer = (ops: {
   accessTokenService: AccessTokenService;
   requestService: RequestService;
   walletAddress: string;
-  maxAmountOfTokens: number;
+  maxAmountOfTokens: bigint;
   timeout: number;
 }) => {
   app.use(express.json());
@@ -71,7 +71,7 @@ export const entryServer = (ops: {
           return res.status(400).json({ errors: errors.array() });
         }
         const nodeAddress = String(req.params.blockchainAddress);
-        const amount = String(req.body.amount);
+        const amount = BigInt(req.body.amount);
         const chainId = Number(req.body.chainId);
 
         // can be enforced because the existence is checked in the middleware

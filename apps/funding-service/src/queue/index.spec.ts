@@ -14,7 +14,7 @@ const MOCK_AMOUNT = "1000";
 const MOCK_CHAIN_ID = 31337;
 const MOCK_TIMEOUT = 3_000;
 
-const INITIAL_AMOUNT = ethers.utils.parseEther(MOCK_AMOUNT).toString();
+const INITIAL_AMOUNT = ethers.utils.parseEther(MOCK_AMOUNT).toBigInt();
 
 jest.mock("../blockchain", () => {
   return {
@@ -30,12 +30,12 @@ const createAccessTokenAndRequest = async (
   requestService: RequestService,
   params?: {
     nodeAddress: string;
-    amount: string;
+    amount: bigint;
     chainId: number;
   }
 ) => {
   const queryToken = await accessTokenService.createAccessToken({
-    amount: Number(MOCK_AMOUNT),
+    amount: BigInt(MOCK_AMOUNT),
     timeout: MOCK_TIMEOUT,
   });
   if (!queryToken) throw new Error("Failed to create test token");
@@ -44,7 +44,7 @@ const createAccessTokenAndRequest = async (
       ? { ...params, accessTokenHash: queryToken.token }
       : {
           accessTokenHash: queryToken.token,
-          amount: MOCK_AMOUNT,
+          amount: BigInt(MOCK_AMOUNT),
           chainId: MOCK_CHAIN_ID,
           nodeAddress: MOCK_ADDRESS,
         }
@@ -122,7 +122,7 @@ describe("test index.ts", function () {
       {
         amount: ethers.utils
           .parseEther(String(Number(MOCK_AMOUNT) + 1))
-          .toString(),
+          .toBigInt(),
         chainId: provider.network.chainId,
         nodeAddress: MOCK_ADDRESS,
       }
