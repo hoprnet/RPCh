@@ -407,7 +407,6 @@ export default class SDK {
           apiToken: this.entryNode!.apiToken,
           message: segment.toString(),
           destination: req.exitNodeDestination,
-          path: [],
           hops: 1,
         });
       });
