@@ -29,7 +29,7 @@ import { createLogger } from "../../../utils";
 const log = createLogger(["entry-server", "router", "v1"]);
 
 // base amount of reward that a node will receive after completing a request
-const BASE_EXTRA = 1;
+const BASE_EXTRA = BigInt(1);
 
 // client id fto fund trial clients
 const TRIAL_CLIENT_ID = "trial";
@@ -128,7 +128,7 @@ const isListSafe = (value: string) => {
 // Express Router
 export const v1Router = (ops: {
   db: DBInstance;
-  baseQuota: number;
+  baseQuota: bigint;
   fundingServiceApi: FundingServiceApi;
 }) => {
   const router = express.Router();
@@ -342,7 +342,7 @@ export const v1Router = (ops: {
         // create negative quota (showing that the client has used up initial quota)
         await createQuota(ops.db, {
           clientId: dbClient.id,
-          quota: ops.baseQuota * -1,
+          quota: ops.baseQuota * BigInt(-1),
           actionTaker: "discovery platform",
         });
         return res.json({
@@ -362,7 +362,7 @@ export const v1Router = (ops: {
 export const doesClientHaveQuota = async (
   db: DBInstance,
   client: string,
-  baseQuota: number
+  baseQuota: bigint
 ) => {
   const allQuotasFromClient = await getAllQuotasByClient(db, client);
   const sumOfClientsQuota = sumQuotas(allQuotasFromClient);

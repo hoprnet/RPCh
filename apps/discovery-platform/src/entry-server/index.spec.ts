@@ -18,7 +18,7 @@ import assert from "assert";
 import { createClient } from "../client";
 
 const FUNDING_SERVICE_URL = "http://localhost:5000";
-const BASE_QUOTA = 1;
+const BASE_QUOTA = BigInt(1);
 const FAKE_ACCESS_TOKEN = "EcLjvxdALOT0eq18d8Gzz3DEr3AMG27NtL+++YPSZNE=";
 
 const nockFundingRequest = (nodeAddress: string) =>

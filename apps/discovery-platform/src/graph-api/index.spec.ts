@@ -9,10 +9,10 @@ const GRAPH_HOPR_URL =
 
 const mockGraphResponse: (
   numOfChannels: number,
-  balancePerChannel: number
+  balancePerChannel: bigint
 ) => GetAccountChannelsResponse = (
   numOfChannels: number,
-  balancePerChannel: number
+  balancePerChannel: bigint
 ) => ({
   data: {
     account: {
@@ -30,7 +30,7 @@ const createMockNode = (peerId?: string): QueryRegisteredNode => ({
   has_exit_node: true,
   honesty_score: 0,
   status: "FRESH",
-  total_amount_funded: 0,
+  total_amount_funded: BigInt(0),
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
   exit_node_pub_key: "somePubKey",
@@ -45,7 +45,7 @@ describe("test graph api functions", function () {
       const MIN_BALANCE = 1;
       const MIN_CHANNELS_OPEN = 5;
       const isValidated = validateNode(
-        mockGraphResponse(3, 1),
+        mockGraphResponse(3, BigInt(1)),
         MIN_BALANCE,
         MIN_CHANNELS_OPEN
       );
@@ -55,7 +55,7 @@ describe("test graph api functions", function () {
       const MIN_BALANCE = 4;
       const MIN_CHANNELS_OPEN = 5;
       const isValidated = validateNode(
-        mockGraphResponse(3, 1),
+        mockGraphResponse(3, BigInt(1)),
         MIN_BALANCE,
         MIN_CHANNELS_OPEN
       );
@@ -65,7 +65,7 @@ describe("test graph api functions", function () {
       const MIN_BALANCE = 4;
       const MIN_CHANNELS_OPEN = 3;
       const isValidated = validateNode(
-        mockGraphResponse(3, 2),
+        mockGraphResponse(3, BigInt(2)),
         MIN_BALANCE,
         MIN_CHANNELS_OPEN
       );
@@ -77,9 +77,11 @@ describe("test graph api functions", function () {
       const node: QueryRegisteredNode = createMockNode();
       const MIN_BALANCE = 1;
       const MIN_CHANNELS_OPEN = 5;
-      nock(GRAPH_HOPR_URL).post(/.*/).reply(200, mockGraphResponse(3, 1), {
-        "content-type": "application/json",
-      });
+      nock(GRAPH_HOPR_URL)
+        .post(/.*/)
+        .reply(200, mockGraphResponse(3, BigInt(1)), {
+          "content-type": "application/json",
+        });
       const isCommitted = await checkCommitment({
         node,
         minBalance: MIN_BALANCE,
@@ -91,9 +93,11 @@ describe("test graph api functions", function () {
       const node: QueryRegisteredNode = createMockNode();
       const MIN_BALANCE = 1;
       const MIN_CHANNELS_OPEN = 5;
-      nock(GRAPH_HOPR_URL).post(/.*/).reply(200, mockGraphResponse(5, 1), {
-        "content-type": "application/json",
-      });
+      nock(GRAPH_HOPR_URL)
+        .post(/.*/)
+        .reply(200, mockGraphResponse(5, BigInt(1)), {
+          "content-type": "application/json",
+        });
       const isCommitted = await checkCommitment({
         node,
         minBalance: MIN_BALANCE,

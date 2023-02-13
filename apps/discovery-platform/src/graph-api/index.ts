@@ -108,7 +108,7 @@ export const validateNode = (
 ): boolean => {
   const sumOfBalance = graphRes.data.account.fromChannels.reduce(
     (acc, channel) => acc + channel.balance,
-    0
+    BigInt(0)
   );
   const amountOfOpenChannels = graphRes.data.account.fromChannels.length;
   return amountOfOpenChannels >= minChannels && sumOfBalance >= minBalance;

@@ -44,7 +44,7 @@ describe("test Blockchain class", function () {
   it("should get balance", async function () {
     const [owner] = accounts;
     const balance = await getBalance(contract.address, owner.address, provider);
-    assert.equal(balance.toString(), INITIAL_AMOUNT);
+    assert.equal(balance, INITIAL_AMOUNT);
   });
   it("should send transaction and receive transaction response", async () => {
     const [owner, receiver] = accounts;
@@ -121,7 +121,7 @@ describe("test Blockchain class", function () {
       [provider]
     );
 
-    assert.equal(keyedBalance[provider.network.chainId], balance.toString());
+    assert.equal(keyedBalance[provider.network.chainId], balance);
   });
   // TODO: Add tests for smart contract reverts
   it.todo("should fail if smart contract is reverted");

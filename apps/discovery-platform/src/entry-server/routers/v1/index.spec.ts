@@ -19,7 +19,7 @@ import {
 } from "../../../registered-node/dto";
 
 const FUNDING_SERVICE_URL = "http://localhost:5000";
-const BASE_QUOTA = 1;
+const BASE_QUOTA = BigInt(1);
 const FAKE_ACCESS_TOKEN = "EcLjvxdALOT0eq18d8Gzz3DEr3AMG27NtL+++YPSZNE=";
 
 const nockFundingRequest = (nodeAddress: string) =>
@@ -129,7 +129,7 @@ describe("test v1 router", function () {
     const doesClientHaveQuotaResponse = await doesClientHaveQuota(
       dbInstance,
       "client",
-      2
+      BigInt(2)
     );
 
     assert.equal(doesClientHaveQuotaResponse, false);
@@ -143,7 +143,7 @@ describe("test v1 router", function () {
     const doesClientHaveQuotaResponse = await doesClientHaveQuota(
       dbInstance,
       "client",
-      1
+      BigInt(1)
     );
 
     assert.equal(doesClientHaveQuotaResponse, true);
@@ -176,13 +176,13 @@ describe("test v1 router", function () {
   describe("should select an entry node", function () {
     it("should return an entry node", async function () {
       const spy = jest.spyOn(registeredNode, "getEligibleNode");
-      const amountLeft = 10;
+      const amountLeft = BigInt(10);
       const peerId = "entry";
       const requestId = 1;
 
       const replyBody: getAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: 10,
+        amountLeft: BigInt(10),
         expiredAt: new Date().toISOString(),
       };
 
@@ -220,13 +220,13 @@ describe("test v1 router", function () {
       spy.mockRestore();
     });
     it("should return an entry node that is not in the exclude list", async function () {
-      const amountLeft = 10;
+      const amountLeft = BigInt(10);
       const peerId = "entry";
       const requestId = 1;
 
       const replyBody: getAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: 10,
+        amountLeft: BigInt(10),
         expiredAt: new Date().toISOString(),
       };
 
@@ -279,7 +279,7 @@ describe("test v1 router", function () {
 
       const apiAccessTokenResponse: getAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: 10,
+        amountLeft: BigInt(10),
         expiredAt: new Date().toISOString(),
       };
 
@@ -300,13 +300,13 @@ describe("test v1 router", function () {
     });
     it("should reduce client quota", async function () {
       const spy = jest.spyOn(registeredNode, "getEligibleNode");
-      const amountLeft = 10;
+      const amountLeft = BigInt(10);
       const peerId = "entry";
       const requestId = 1;
 
       const apiTokenResponse: getAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: 10,
+        amountLeft: BigInt(10),
         expiredAt: new Date().toISOString(),
       };
 
@@ -353,13 +353,13 @@ describe("test v1 router", function () {
     });
     it("should be able to use trial mode client and reduce quota", async function () {
       const spy = jest.spyOn(registeredNode, "getEligibleNode");
-      const amountLeft = 10;
+      const amountLeft = BigInt(10);
       const peerId = "entry";
       const requestId = 1;
 
       const apiTokenResponse: getAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: 10,
+        amountLeft: BigInt(10),
         expiredAt: new Date().toISOString(),
       };
 
