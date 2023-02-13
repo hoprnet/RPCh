@@ -23,7 +23,7 @@ export default async function main(
   nftAddress: string,
   nftId: string,
   stakeAddress: string,
-  registerAddress: string,
+  registryAddress: string,
   peerIds: string[]
 ): Promise<void> {
   log.normal("Register HOPRd nodes", {
@@ -31,7 +31,7 @@ export default async function main(
     nftAddress,
     nftId,
     stakeAddress,
-    registerAddress,
+    registryAddress,
     peerIds,
   });
 
@@ -46,7 +46,7 @@ export default async function main(
 
   const nftContract = getNFTAddress(nftAddress).connect(wallet);
   const stakeContract = getStakeContract(stakeAddress).connect(wallet);
-  const registerContract = getRegisterContract(registerAddress).connect(wallet);
+  const registerContract = getRegisterContract(registryAddress).connect(wallet);
 
   // check which peerids are not registered
   const unregisteredPeerIds: string[] = [];

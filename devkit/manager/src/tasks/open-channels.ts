@@ -1,6 +1,4 @@
-import fetch from "node-fetch";
 import retry from "async-retry";
-import { utils } from "@rpch/common";
 import { getAddresses, openChannel } from "../hoprd";
 import { createLogger } from "../utils";
 
@@ -39,70 +37,40 @@ async function openChannels(
 
 export default async function main(
   hoprAmount: string,
-  hoprdApiEndpoint1: string,
-  hoprdApiToken1: string,
-  hoprdApiEndpoint2: string,
-  hoprdApiToken2: string,
-  hoprdApiEndpoint3: string,
-  hoprdApiToken3: string,
-  hoprdApiEndpoint4: string,
-  hoprdApiToken4: string,
-  hoprdApiEndpoint5: string,
-  hoprdApiToken5: string
+  hoprdApiEndpoints: string[],
+  hoprdApiTokens: string[]
 ): Promise<void> {
   log.normal("Open channels", {
     hoprAmount,
-    hoprdApiEndpoint1,
-    hoprdApiToken1,
-    hoprdApiEndpoint2,
-    hoprdApiToken2,
-    hoprdApiEndpoint3,
-    hoprdApiToken3,
-    hoprdApiEndpoint4,
-    hoprdApiToken4,
-    hoprdApiEndpoint5,
-    hoprdApiToken5,
+    hoprdApiEndpoints,
+    hoprdApiTokens,
   });
-  const groupsNoPeerId: {
+
+  if (hoprdApiEndpoints.length !== hoprdApiTokens.length) {
+    throw Error(
+      `Length of 'hoprdApiEndpoints'='${hoprdApiEndpoints.length}' does not match length of 'hoprdApiTokens'='${hoprdApiTokens.length}'`
+    );
+  }
+
+  const groups: {
     hoprdApiEndpoint: string;
     hoprdApiToken: string;
-  }[] = [
-    {
-      hoprdApiEndpoint: hoprdApiEndpoint1,
-      hoprdApiToken: hoprdApiToken1,
-    },
-    {
-      hoprdApiEndpoint: hoprdApiEndpoint2,
-      hoprdApiToken: hoprdApiToken2,
-    },
-    {
-      hoprdApiEndpoint: hoprdApiEndpoint3,
-      hoprdApiToken: hoprdApiToken3,
-    },
-    {
-      hoprdApiEndpoint: hoprdApiEndpoint4,
-      hoprdApiToken: hoprdApiToken4,
-    },
-    {
-      hoprdApiEndpoint: hoprdApiEndpoint5,
-      hoprdApiToken: hoprdApiToken5,
-    },
-  ];
+    hoprdPeerId: string;
+  }[] = [];
 
-  // get the peerids of the nodes
-  const hoprdPeerIds = await Promise.all(
-    groupsNoPeerId.map((grp) =>
-      getAddresses(grp.hoprdApiEndpoint, grp.hoprdApiToken).then(
-        (res) => res.hopr
-      )
-    )
+  // get PeerIds in parallel and fill in groups object
+  await Promise.all(
+    hoprdApiEndpoints.map(async (hoprdApiEndpoint, index) => {
+      const hoprdApiToken = hoprdApiTokens[index];
+      const hoprdPeerId = await getAddresses(
+        hoprdApiEndpoint,
+        hoprdApiToken
+      ).then((res) => res.hopr);
+      groups.push({ hoprdApiEndpoint, hoprdApiToken, hoprdPeerId });
+    })
   );
 
-  const groups = groupsNoPeerId.map((grp, index) => ({
-    ...grp,
-    hoprPeerId: hoprdPeerIds[index],
-  }));
-
+  // initiate channel opening for all nodes in parallel
   await Promise.all(
     groups.map((grp) =>
       openChannels(
@@ -111,8 +79,8 @@ export default async function main(
         grp.hoprdApiToken,
         // filter out self and get list of counterparties
         groups
-          .map((grp2) => grp2.hoprPeerId)
-          .filter((hoprPeerId) => hoprPeerId !== grp.hoprPeerId)
+          .map((grp2) => grp2.hoprdPeerId)
+          .filter((hoprdPeerId) => hoprdPeerId !== grp.hoprdPeerId)
       )
     )
   );
