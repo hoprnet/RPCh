@@ -28,9 +28,9 @@ app.use((req, _res, next) => {
 });
 
 app.post("/add-quota", async (req, res) => {
-  const { discoveryPlatformEndpoint, client, quota } = req.body as any;
-
   try {
+    const { discoveryPlatformEndpoint, client, quota } = req.body as any;
+
     await addQuota(discoveryPlatformEndpoint, client, quota);
     return res.sendStatus(200);
   } catch (error) {
@@ -40,16 +40,16 @@ app.post("/add-quota", async (req, res) => {
 });
 
 app.post("/fund-hoprd-nodes", async (req, res) => {
-  const {
-    privateKey,
-    provider,
-    hoprTokenAddress,
-    nativeAmount,
-    hoprAmount,
-    recipients,
-  } = req.body as any;
-
   try {
+    const {
+      privateKey,
+      provider,
+      hoprTokenAddress,
+      nativeAmount,
+      hoprAmount,
+      recipients,
+    } = req.body as any;
+
     await fundHoprdNodes(
       privateKey,
       provider,
@@ -66,10 +66,10 @@ app.post("/fund-hoprd-nodes", async (req, res) => {
 });
 
 app.post("/fund-via-hoprd", async (req, res) => {
-  const { hoprdEndpoint, hoprdToken, nativeAmount, hoprAmount, recipient } =
-    req.body as any;
-
   try {
+    const { hoprdEndpoint, hoprdToken, nativeAmount, hoprAmount, recipient } =
+      req.body as any;
+
     await fundViaHOPRd(
       hoprdEndpoint,
       hoprdToken,
@@ -85,16 +85,16 @@ app.post("/fund-via-hoprd", async (req, res) => {
 });
 
 app.post("/fund-via-wallet", async (req, res) => {
-  const {
-    privateKey,
-    provider,
-    hoprTokenAddress,
-    nativeAmount,
-    hoprAmount,
-    recipient,
-  } = req.body as any;
-
   try {
+    const {
+      privateKey,
+      provider,
+      hoprTokenAddress,
+      nativeAmount,
+      hoprAmount,
+      recipient,
+    } = req.body as any;
+
     await fundViaWallet(
       privateKey,
       provider,
@@ -111,9 +111,9 @@ app.post("/fund-via-wallet", async (req, res) => {
 });
 
 app.get("/get-hoprd-token-address", async (req, res) => {
-  const { hoprdEndpoint, hoprdToken } = req.query as any;
-
   try {
+    const { hoprdEndpoint, hoprdToken } = req.query as any;
+
     const tokenAddress = await hoprd
       .getInfo(hoprdEndpoint, hoprdToken)
       .then((res) => res.hoprToken);
@@ -124,10 +124,51 @@ app.get("/get-hoprd-token-address", async (req, res) => {
   }
 });
 
-app.post("/open-channels", async (req, res) => {
-  const { hoprAmount, hoprdApiEndpoints, hoprdTokens } = req.body as any;
-
+app.get("/get-hoprds-addresses", async (req, res) => {
   try {
+    const { hoprdApiEndpoints, hoprdApiTokens } = req.query as {
+      hoprdApiEndpoints: string[];
+      hoprdApiTokens: string[];
+    };
+
+    if (hoprdApiEndpoints.length !== hoprdApiTokens.length) {
+      throw Error(
+        `Lengths of 'hoprdApiEndpoints' and 'hoprdApiTokens' do no match`
+      );
+    }
+
+    const results = await Promise.all(
+      hoprdApiEndpoints.map(async (endpoint, index) => {
+        return await hoprd.getAddresses(endpoint, hoprdApiTokens[index]);
+      })
+    );
+
+    const { hopr, native } = results.reduce<{
+      hopr: string[];
+      native: string[];
+    }>(
+      (result, addresses) => {
+        result.hopr.push(addresses.hopr);
+        result.native.push(addresses.native);
+        return result;
+      },
+      {
+        hopr: [],
+        native: [],
+      }
+    );
+
+    return res.status(200).send({ hopr, native });
+  } catch (error) {
+    log.error("Could not 'get-hoprd-token-address'", error);
+    return res.sendStatus(500);
+  }
+});
+
+app.post("/open-channels", async (req, res) => {
+  try {
+    const { hoprAmount, hoprdApiEndpoints, hoprdTokens } = req.body as any;
+
     await openChannels(hoprAmount, hoprdApiEndpoints, hoprdTokens);
     return res.sendStatus(200);
   } catch (error) {
@@ -137,15 +178,15 @@ app.post("/open-channels", async (req, res) => {
 });
 
 app.post("/register-exit-nodes", async (req, res) => {
-  const {
-    discoveryPlatformEndpoint,
-    hoprdApiEndpoints,
-    hoprdApiEndpointsExt,
-    hoprdApiTokens,
-    exitNodePubKeys,
-  } = req.body as any;
-
   try {
+    const {
+      discoveryPlatformEndpoint,
+      hoprdApiEndpoints,
+      hoprdApiEndpointsExt,
+      hoprdApiTokens,
+      exitNodePubKeys,
+    } = req.body as any;
+
     await registerExitNodes(
       discoveryPlatformEndpoint,
       hoprdApiEndpoints,
@@ -161,17 +202,17 @@ app.post("/register-exit-nodes", async (req, res) => {
 });
 
 app.post("/register-hoprd-nodes", async (req, res) => {
-  const {
-    privateKey,
-    provider,
-    nftAddress,
-    nftId,
-    stakeAddress,
-    registryAddress,
-    peerIds,
-  } = req.body as any;
-
   try {
+    const {
+      privateKey,
+      provider,
+      nftAddress,
+      nftId,
+      stakeAddress,
+      registryAddress,
+      peerIds,
+    } = req.body as any;
+
     await registerHoprdNodes(
       privateKey,
       provider,
