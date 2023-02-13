@@ -110,29 +110,6 @@ start() {
             "recipient": "'$FUNDING_SERVICE_ADDRESS'"
         }'
 
-    # get HOPRd nodes' addresses
-    hoprdAddresses=$(
-        scurl -X POST "http://127.0.0.1:3030/get-hoprds-addresses" \
-            -H "Content-Type: application/json" \
-            -d '{
-                "hoprdApiEndpoints": [
-                    "'$HOPRD_API_ENDPOINT_1'",
-                    "'$HOPRD_API_ENDPOINT_2'",
-                    "'$HOPRD_API_ENDPOINT_3'",
-                    "'$HOPRD_API_ENDPOINT_4'",
-                    "'$HOPRD_API_ENDPOINT_5'"
-                ],
-                "hoprdApiTokens": [
-                    "'$HOPRD_API_TOKEN'",
-                    "'$HOPRD_API_TOKEN'",
-                    "'$HOPRD_API_TOKEN'",
-                    "'$HOPRD_API_TOKEN'",
-                    "'$HOPRD_API_TOKEN'"
-                ]
-            }'
-    )
-    echo "Received hoprdAddresses: $hoprdAddresses"   
-
     # get HOPR Token address
     hoprTokenAddress=$(
         scurl -sbH "Accept: application/json" "http://127.0.0.1:3030/get-hoprd-token-address?hoprdEndpoint=$HOPRD_API_ENDPOINT_1&hoprdToken=$HOPRD_API_TOKEN"
@@ -172,6 +149,13 @@ start() {
                 "'$HOPRD_API_TOKEN'",
                 "'$HOPRD_API_TOKEN'",
                 "'$HOPRD_API_TOKEN'"
+            ],
+            "exitNodePubKeys": [
+                "'$EXIT_NODE_PUB_KEY_1'",
+                "'$EXIT_NODE_PUB_KEY_2'",
+                "'$EXIT_NODE_PUB_KEY_3'",
+                "'$EXIT_NODE_PUB_KEY_4'",
+                "'$EXIT_NODE_PUB_KEY_5'"
             ]
         }'
     echo "Registered nodes to discovery-platform"
