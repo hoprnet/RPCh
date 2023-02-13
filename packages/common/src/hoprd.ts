@@ -61,11 +61,15 @@ export const sendMessage = async ({
 
   if (response.status === 202) {
     log.verbose(
-      "send message to HOPRd node",
+      "sent message to HOPRd node",
       message,
       destination,
       "with path",
-      path && path.length > 0 ? path.join("-") : "direct"
+      path && path.length > 0
+        ? path.join("-")
+        : path && path.length === 0
+        ? "direct"
+        : "auto-path"
     );
     const text = await response.text();
     return text;

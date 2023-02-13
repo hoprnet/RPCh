@@ -98,7 +98,6 @@ export const start = async (ops: {
           apiToken: ops.apiToken,
           message: segment.toString(),
           destination: rpchRequest.entryNodeDestination,
-          path: [],
           hops: 1,
         });
       }
