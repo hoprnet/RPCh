@@ -15,6 +15,7 @@ stop() {
     echo "Stopping 'nodes-docker-compose'"
     docker compose -f $DIR/nodes-docker-compose.yml -p sandbox-nodes down -v;
     rm -f $DIR/logs;
+    echo "Sandbox has stopped!"
 }
 
 # start sandbox
@@ -109,11 +110,34 @@ start() {
             "recipient": "'$FUNDING_SERVICE_ADDRESS'"
         }'
 
+    # get HOPRd nodes' addresses
+    hoprdAddresses=$(
+        scurl -X POST "http://127.0.0.1:3030/get-hoprds-addresses" \
+            -H "Content-Type: application/json" \
+            -d '{
+                "hoprdApiEndpoints": [
+                    "'$HOPRD_API_ENDPOINT_1'",
+                    "'$HOPRD_API_ENDPOINT_2'",
+                    "'$HOPRD_API_ENDPOINT_3'",
+                    "'$HOPRD_API_ENDPOINT_4'",
+                    "'$HOPRD_API_ENDPOINT_5'"
+                ],
+                "hoprdApiTokens": [
+                    "'$HOPRD_API_TOKEN'",
+                    "'$HOPRD_API_TOKEN'",
+                    "'$HOPRD_API_TOKEN'",
+                    "'$HOPRD_API_TOKEN'",
+                    "'$HOPRD_API_TOKEN'"
+                ]
+            }'
+    )
+    echo "Received hoprdAddresses: $hoprdAddresses"   
+
     # get HOPR Token address
     hoprTokenAddress=$(
         scurl -sbH "Accept: application/json" "http://127.0.0.1:3030/get-hoprd-token-address?hoprdEndpoint=$HOPRD_API_ENDPOINT_1&hoprdToken=$HOPRD_API_TOKEN"
     )
-    echo "Found hoprTokenAddress: $hoprTokenAddress"
+    echo "Received hoprTokenAddress: $hoprTokenAddress"
 
     echo "Starting 'central-docker-compose'"
     FORCE_SMART_CONTRACT_ADDRESS="$hoprTokenAddress" \
@@ -174,5 +198,5 @@ start() {
         }'
     echo "Added quota to client 'trial' in 'discovery-platform'"
 
-    echo "Sandbox is ready!"
+    echo "Sandbox has started!"
 }

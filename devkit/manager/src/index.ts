@@ -124,9 +124,9 @@ app.get("/get-hoprd-token-address", async (req, res) => {
   }
 });
 
-app.get("/get-hoprds-addresses", async (req, res) => {
+app.post("/get-hoprds-addresses", async (req, res) => {
   try {
-    const { hoprdApiEndpoints, hoprdApiTokens } = req.query as {
+    const { hoprdApiEndpoints, hoprdApiTokens } = req.body as {
       hoprdApiEndpoints: string[];
       hoprdApiTokens: string[];
     };
