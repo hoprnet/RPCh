@@ -40,6 +40,7 @@ describe("test entry server", function () {
     agent = request(app);
   });
 
+  // FIXME:
   it("should return token", async function () {
     return await agent
       .get("/api/access-token")
@@ -47,6 +48,7 @@ describe("test entry server", function () {
       .expect("Content-Type", /json/)
       .expect(200);
   });
+  // FIXME:
   it("should accept valid tokens", async function () {
     const responseToken = await agent
       .get("/api/access-token")

@@ -17,7 +17,7 @@ export const generateAccessToken = (params: {
     entropy: randomInt(1e6),
     createdAt: createdAt.valueOf(),
     expiredAt: params.expiredAt.valueOf(),
-    amount: params.amount,
+    amount: params.amount.toString(),
   };
   const accessToken = createHmac("sha256", params.secretKey)
     .update(JSON.stringify(message))

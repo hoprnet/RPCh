@@ -188,7 +188,7 @@ export class RequestService {
       const sumOfRequestsByChainId: { [chainId: number]: bigint } = {};
       for (const chainId in requestsGroupedByChainId) {
         const sumOfRequests = requestsGroupedByChainId[chainId].reduce(
-          (prev, next) => prev + next.amount,
+          (prev, next) => BigInt(prev) + BigInt(next.amount),
           BigInt(0)
         );
         sumOfRequestsByChainId[chainId] = sumOfRequests;

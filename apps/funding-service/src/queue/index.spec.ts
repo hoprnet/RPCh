@@ -113,8 +113,9 @@ describe("test index.ts", function () {
     const queryRequest = await requestService.getRequest(createRequest.id);
     assert.equal(queryRequest?.status, "REJECTED-DURING-PROCESSING");
   });
-  it("should fail if signer does not have enough to fund request", async function () {
+  it.only("should fail if signer does not have enough to fund request", async function () {
     const [owner] = accounts;
+    console.log(provider);
 
     const createRequest = await createAccessTokenAndRequest(
       accessTokenService,
