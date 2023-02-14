@@ -263,11 +263,6 @@ describe("test funding service api class", function () {
       // get 3 access tokens
       nockGetApiAccessToken.times(3).reply(200, getAccessTokenResponse);
 
-      const postFundingResponseBody: postFundingResponse = {
-        amountLeft,
-        id: requestId,
-      };
-
       // fail first time
       nockFundingRequest(node.native_address).reply(500, "Error");
 
