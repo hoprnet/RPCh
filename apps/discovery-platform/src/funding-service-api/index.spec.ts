@@ -59,189 +59,230 @@ describe("test funding service api class", function () {
     fundingServiceApi = new FundingServiceApi(FUNDING_SERVICE_URL, dbInstance);
   });
 
-  it("should fetch access token and save it to instance", async function () {
-    nockGetApiAccessToken.reply(200, successfulGetApiAccessTokenBody);
-    // @ts-ignore-next-line
-    const res = await fundingServiceApi.fetchAccessToken();
-    // @ts-ignore-next-line
-    assert.equal(res, FAKE_ACCESS_TOKEN);
-  });
-
-  describe("validate token", function () {
-    it("should return true if token is valid", async function () {
+  describe("should handle access token", function () {
+    it("should fetch access token and save it to instance", async function () {
       nockGetApiAccessToken.reply(200, successfulGetApiAccessTokenBody);
       // @ts-ignore-next-line
-      await fundingServiceApi.fetchAccessToken();
+      const res = await fundingServiceApi.fetchAccessToken();
       // @ts-ignore-next-line
-      const isTokenValid = fundingServiceApi.accessTokenIsValid();
-      assert(isTokenValid);
+      assert.equal(res, FAKE_ACCESS_TOKEN);
     });
-    it("should return false if token is expired", async function () {
+
+    describe("validate token", function () {
+      it("should return true if token is valid", async function () {
+        nockGetApiAccessToken.reply(200, successfulGetApiAccessTokenBody);
+        // @ts-ignore-next-line
+        await fundingServiceApi.fetchAccessToken();
+        // @ts-ignore-next-line
+        const isTokenValid = fundingServiceApi.accessTokenIsValid();
+        assert(isTokenValid);
+      });
+      it("should return false if token is expired", async function () {
+        const now = new Date(Date.now());
+        now.setMinutes(now.getMinutes() - 30);
+        const expiredAccessTokenResponse: getAccessTokenResponse = {
+          accessToken: FAKE_ACCESS_TOKEN,
+          amountLeft: 10,
+          expiredAt: now.toISOString(),
+        };
+        nockGetApiAccessToken.reply(200, expiredAccessTokenResponse);
+        // @ts-ignore-next-line
+        await fundingServiceApi.fetchAccessToken();
+        // @ts-ignore-next-line
+        const isTokenValid = fundingServiceApi.accessTokenIsValid();
+        assert(!isTokenValid);
+      });
+      it("should return false if token does not exist", function () {
+        // @ts-ignore-next-line
+        const isTokenValid = fundingServiceApi.accessTokenIsValid();
+        assert(!isTokenValid);
+      });
+      it("should return false if has been exceeded max amount", async function () {
+        const exceededAccessTokenResponse: getAccessTokenResponse = {
+          ...successfulGetApiAccessTokenBody,
+          amountLeft: 0,
+        };
+        nockGetApiAccessToken.reply(200, exceededAccessTokenResponse);
+        // @ts-ignore-next-line
+        await fundingServiceApi.fetchAccessToken();
+        // @ts-ignore-next-line
+        const isTokenValid = fundingServiceApi.accessTokenIsValid(10);
+        assert(!isTokenValid);
+      });
+    });
+    it("should save access token", function () {
       const now = new Date(Date.now());
-      now.setMinutes(now.getMinutes() - 30);
-      const expiredAccessTokenResponse: getAccessTokenResponse = {
+      now.setMinutes(now.getMinutes() + 30);
+      const amountLeft = 30;
+      // @ts-ignore
+      fundingServiceApi.saveAccessToken({
+        accessToken: FAKE_ACCESS_TOKEN,
+        amountLeft: amountLeft,
+        expiredAt: now.toISOString(),
+      });
+      // @ts-ignore
+      assert(fundingServiceApi.accessToken, FAKE_ACCESS_TOKEN);
+      // @ts-ignore
+      assert(fundingServiceApi.amountLeft, amountLeft);
+      // @ts-ignore
+      assert(fundingServiceApi.expiredAt, now.toISOString());
+    });
+    it("should get access token", async function () {
+      const getAccessTokenResponse: getAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
         amountLeft: 10,
-        expiredAt: now.toISOString(),
+        expiredAt: new Date(Date.now()).toISOString(),
       };
-      nockGetApiAccessToken.reply(200, expiredAccessTokenResponse);
-      // @ts-ignore-next-line
-      await fundingServiceApi.fetchAccessToken();
-      // @ts-ignore-next-line
-      const isTokenValid = fundingServiceApi.accessTokenIsValid();
-      assert(!isTokenValid);
-    });
-    it("should return false if token does not exist", function () {
-      // @ts-ignore-next-line
-      const isTokenValid = fundingServiceApi.accessTokenIsValid();
-      assert(!isTokenValid);
-    });
-    it("should return false if has been exceeded max amount", async function () {
-      const exceededAccessTokenResponse: getAccessTokenResponse = {
-        ...successfulGetApiAccessTokenBody,
-        amountLeft: 0,
-      };
-      nockGetApiAccessToken.reply(200, exceededAccessTokenResponse);
-      // @ts-ignore-next-line
-      await fundingServiceApi.fetchAccessToken();
-      // @ts-ignore-next-line
-      const isTokenValid = fundingServiceApi.accessTokenIsValid(10);
-      assert(!isTokenValid);
-    });
-  });
-  it("should save access token", function () {
-    const now = new Date(Date.now());
-    now.setMinutes(now.getMinutes() + 30);
-    const amountLeft = 30;
-    // @ts-ignore
-    fundingServiceApi.saveAccessToken({
-      accessToken: FAKE_ACCESS_TOKEN,
-      amountLeft: amountLeft,
-      expiredAt: now.toISOString(),
-    });
-    // @ts-ignore
-    assert(fundingServiceApi.accessToken, FAKE_ACCESS_TOKEN);
-    // @ts-ignore
-    assert(fundingServiceApi.amountLeft, amountLeft);
-    // @ts-ignore
-    assert(fundingServiceApi.expiredAt, now.toISOString());
-  });
-  it("should get access token", async function () {
-    const getAccessTokenResponse: getAccessTokenResponse = {
-      accessToken: FAKE_ACCESS_TOKEN,
-      amountLeft: 10,
-      expiredAt: new Date(Date.now()).toISOString(),
-    };
-    nockGetApiAccessToken.reply(200, getAccessTokenResponse);
+      nockGetApiAccessToken.reply(200, getAccessTokenResponse);
 
-    // @ts-ignore
-    const accessToken = await fundingServiceApi.getAccessToken();
-
-    assert.equal(accessToken, FAKE_ACCESS_TOKEN);
-  });
-  it("should request funds", async function () {
-    const node = createMockNode("peer1");
-    const amountLeft = 10;
-    const requestId = 123;
-
-    const getAccessTokenResponse: getAccessTokenResponse = {
-      accessToken: FAKE_ACCESS_TOKEN,
-      amountLeft: 10,
-      expiredAt: new Date(Date.now()).toISOString(),
-    };
-    nockGetApiAccessToken.reply(200, getAccessTokenResponse);
-
-    const postFundingResponseBody: postFundingResponse = {
-      amountLeft,
-      id: requestId,
-    };
-
-    nockFundingRequest(node.native_address).reply(200, postFundingResponseBody);
-
-    await db.saveRegisteredNode(dbInstance, node);
-    const fundingResponse = await fundingServiceApi.requestFunds({
-      amount: 5,
-      node,
-    });
-    const dbNode = await db.getRegisteredNode(dbInstance, "peer1");
-
-    assert.equal(dbNode?.status, "FUNDING");
-    assert.equal(
       // @ts-ignore
-      fundingServiceApi.pendingRequests.has(fundingResponse),
-      true
-    );
+      const accessToken = await fundingServiceApi.getAccessToken();
+
+      assert.equal(accessToken, FAKE_ACCESS_TOKEN);
+    });
   });
-  it("should not change state if requesting funds failed", async function () {
-    const node = createMockNode("peer1");
-    const amountLeft = 10;
-    const requestId = 123;
 
-    const getAccessTokenResponse: getAccessTokenResponse = {
-      accessToken: FAKE_ACCESS_TOKEN,
-      amountLeft: 10,
-      expiredAt: new Date(Date.now()).toISOString(),
-    };
-    nockGetApiAccessToken.reply(200, getAccessTokenResponse);
+  describe("should request funds to funding service", function () {
+    it("save request and change node to state FUNDING if successful", async function () {
+      const node = createMockNode("peer1");
+      const amountLeft = 10;
+      const requestId = 123;
 
-    const postFundingResponseBody: Object = {
-      body: "any error",
-    };
+      const getAccessTokenResponse: getAccessTokenResponse = {
+        accessToken: FAKE_ACCESS_TOKEN,
+        amountLeft: 10,
+        expiredAt: new Date(Date.now()).toISOString(),
+      };
+      nockGetApiAccessToken.reply(200, getAccessTokenResponse);
 
-    nockFundingRequest(node.native_address).reply(400, postFundingResponseBody);
+      const postFundingResponseBody: postFundingResponse = {
+        amountLeft,
+        id: requestId,
+      };
 
-    await db.saveRegisteredNode(dbInstance, node);
-    try {
+      nockFundingRequest(node.native_address).reply(
+        200,
+        postFundingResponseBody
+      );
+
+      await db.saveRegisteredNode(dbInstance, node);
       const fundingResponse = await fundingServiceApi.requestFunds({
         amount: 5,
         node,
       });
-    } catch (e) {
-      let message = "Unknown Error";
-      if (e instanceof Error) message = e.message;
       const dbNode = await db.getRegisteredNode(dbInstance, "peer1");
 
-      assert.notEqual(dbNode?.status, "FUNDING");
-      expect(message).toContain("funding request failed");
-    }
-  });
-  it("should get request status", async function () {
-    const requestId = 123;
+      assert.equal(dbNode?.status, "FUNDING");
+      assert.equal(
+        // @ts-ignore
+        fundingServiceApi.pendingRequests.has(fundingResponse),
+        true
+      );
+    });
+    it("should not change state if requesting funds failed", async function () {
+      const node = createMockNode("peer1");
+      const amountLeft = 10;
+      const requestId = 123;
 
-    nockGetApiAccessToken.reply(200, successfulGetApiAccessTokenBody);
+      const getAccessTokenResponse: getAccessTokenResponse = {
+        accessToken: FAKE_ACCESS_TOKEN,
+        amountLeft: 10,
+        expiredAt: new Date(Date.now()).toISOString(),
+      };
+      nockGetApiAccessToken.reply(200, getAccessTokenResponse);
 
-    const freshGetRequestStatusBody: getRequestStatusResponse = {
-      accessTokenHash: "hash",
-      amount: "10",
-      chainId: 10,
-      createdAt: new Date(),
-      nodeAddress: "peer",
-      requestId,
-      status: "FRESH",
-    };
+      const postFundingResponseBody: Object = {
+        body: "any error",
+      };
 
-    nockRequestStatus(requestId).reply(200, freshGetRequestStatusBody);
+      nockFundingRequest(node.native_address).reply(
+        400,
+        postFundingResponseBody
+      );
 
-    // @ts-ignore
-    const requestStatus = await fundingServiceApi.getRequestStatus(requestId);
+      await db.saveRegisteredNode(dbInstance, node);
+      try {
+        const fundingResponse = await fundingServiceApi.requestFunds({
+          amount: 5,
+          node,
+        });
+      } catch (e) {
+        let message = "Unknown Error";
+        if (e instanceof Error) message = e.message;
+        const dbNode = await db.getRegisteredNode(dbInstance, "peer1");
 
-    assert.equal(requestStatus.status, "FRESH");
-  });
-  it("should save pending request", function () {
-    const requestId = 1;
-    // @ts-ignore
-    fundingServiceApi.savePendingRequest({ peerId: "peer1", requestId });
+        assert.notEqual(dbNode?.status, "FUNDING");
+        expect(message).toContain("funding request failed");
+      }
+    });
+    it("should retry request to funding service if access token is invalid", async function () {
+      const node = createMockNode("peer1");
+      const amountLeft = 10;
+      const requestId = 123;
 
-    assert.equal(
-      // @ts-ignore
-      fundingServiceApi.pendingRequests.get(requestId)?.peerId,
-      "peer1"
-    );
-    assert.equal(
-      // @ts-ignore
-      fundingServiceApi.pendingRequests.get(requestId)?.amountOfRetries,
-      0
-    );
+      const getAccessTokenResponse: getAccessTokenResponse = {
+        accessToken: FAKE_ACCESS_TOKEN,
+        amountLeft: 10,
+        expiredAt: new Date(Date.now()).toISOString(),
+      };
+      // get 3 access tokens
+      nockGetApiAccessToken.times(3).reply(200, getAccessTokenResponse);
+
+      const postFundingResponseBody: postFundingResponse = {
+        amountLeft,
+        id: requestId,
+      };
+
+      // fail 2 times request then on third it should pass
+      nockFundingRequest(node.native_address).reply(401, "Unauthorized");
+      nockFundingRequest(node.native_address).reply(401, "Unauthorized");
+      nockFundingRequest(node.native_address).reply(
+        200,
+        postFundingResponseBody
+      );
+
+      await db.saveRegisteredNode(dbInstance, node);
+      const fundingResponse = await fundingServiceApi.fetchRequestFunds(
+        node,
+        5,
+        { minTimeout: 100 }
+      );
+
+      assert.deepEqual(await fundingResponse.json(), postFundingResponseBody);
+    });
+    it("should fail and throw error if funding service returns status code 500", async function () {
+      const node = createMockNode("peer1");
+      const amountLeft = 10;
+      const requestId = 123;
+
+      const getAccessTokenResponse: getAccessTokenResponse = {
+        accessToken: FAKE_ACCESS_TOKEN,
+        amountLeft: 10,
+        expiredAt: new Date(Date.now()).toISOString(),
+      };
+      // get 3 access tokens
+      nockGetApiAccessToken.times(3).reply(200, getAccessTokenResponse);
+
+      const postFundingResponseBody: postFundingResponse = {
+        amountLeft,
+        id: requestId,
+      };
+
+      // fail first time
+      nockFundingRequest(node.native_address).reply(500, "Error");
+
+      await db.saveRegisteredNode(dbInstance, node);
+      try {
+        // should fail and throw error
+        const fundingResponse = await fundingServiceApi.fetchRequestFunds(
+          node,
+          5,
+          { minTimeout: 100 }
+        );
+      } catch (e: any) {
+        assert.equal(e.message, "funding request failed");
+      }
+    });
   });
   describe("check pending requests", function () {
     it("should update db and delete request from pending request if it passed successfully", async function () {
@@ -468,6 +509,44 @@ describe("test funding service api class", function () {
       assert.equal(dbNode?.status, "READY");
       assert.equal(dbNode?.total_amount_funded, "0");
     });
+  });
+  it("should get request status from funding service", async function () {
+    const requestId = 123;
+
+    nockGetApiAccessToken.reply(200, successfulGetApiAccessTokenBody);
+
+    const freshGetRequestStatusBody: getRequestStatusResponse = {
+      accessTokenHash: "hash",
+      amount: "10",
+      chainId: 10,
+      createdAt: new Date(),
+      nodeAddress: "peer",
+      requestId,
+      status: "FRESH",
+    };
+
+    nockRequestStatus(requestId).reply(200, freshGetRequestStatusBody);
+
+    // @ts-ignore
+    const requestStatus = await fundingServiceApi.getRequestStatus(requestId);
+
+    assert.equal(requestStatus.status, "FRESH");
+  });
+  it("should save pending request", function () {
+    const requestId = 1;
+    // @ts-ignore
+    fundingServiceApi.savePendingRequest({ peerId: "peer1", requestId });
+
+    assert.equal(
+      // @ts-ignore
+      fundingServiceApi.pendingRequests.get(requestId)?.peerId,
+      "peer1"
+    );
+    assert.equal(
+      // @ts-ignore
+      fundingServiceApi.pendingRequests.get(requestId)?.amountOfRetries,
+      0
+    );
   });
   it("should get funding service funds", async function () {
     nockGetApiAccessToken.once().reply(200, successfulGetApiAccessTokenBody);
