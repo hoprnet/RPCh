@@ -71,6 +71,7 @@ describe("test index.ts", function () {
     requestService = new RequestService(dbInstance);
     accounts = await ethers.getSigners();
     provider = ethers.provider;
+    await provider.getNetwork();
     requestService = new RequestService(dbInstance);
   });
   it("should handle fresh requests", async function () {
@@ -115,15 +116,12 @@ describe("test index.ts", function () {
   });
   it.only("should fail if signer does not have enough to fund request", async function () {
     const [owner] = accounts;
-    console.log(provider);
 
     const createRequest = await createAccessTokenAndRequest(
       accessTokenService,
       requestService,
       {
-        amount: ethers.utils
-          .parseEther(String(Number(MOCK_AMOUNT) + 1))
-          .toBigInt(),
+        amount: BigInt(MOCK_AMOUNT) + BigInt(1000000000000),
         chainId: provider.network.chainId,
         nodeAddress: MOCK_ADDRESS,
       }

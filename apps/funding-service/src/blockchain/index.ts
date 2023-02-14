@@ -126,7 +126,7 @@ export const getBalanceForAllChains = async (
       walletAddress,
       provider
     );
-    balances[provider.network.chainId] = BigInt(balance.toString());
+    balances[provider.network.chainId] = BigInt(balance);
   }
   return balances;
 };

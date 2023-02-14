@@ -56,7 +56,7 @@ export const checkFreshRequests = async (ops: {
       provider
     );
 
-    if (BigNumber.from(balance).lt(BigNumber.from(freshRequest.amount)))
+    if (BigInt(balance) < BigInt(freshRequest.amount))
       throw new CustomError(
         "Signer does not have enough balance to fund request"
       );
