@@ -35,7 +35,7 @@ const main = () => {
 
 const start = async (ops: {
   db: DBInstance;
-  baseQuota: number;
+  baseQuota: bigint;
   fundingServiceUrl: string;
 }) => {
   // create tables if they do not exist in the db

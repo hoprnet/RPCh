@@ -9,7 +9,9 @@ const {
 const SKIP_CHECK_COMMITMENT = process.env.SKIP_CHECK_COMMITMENT === "true";
 
 // Unit amount of quotas a request costs
-const BASE_QUOTA = process.env.BASE_QUOTA ? Number(process.env.BASE_QUOTA) : 1;
+const BASE_QUOTA = process.env.BASE_QUOTA
+  ? BigInt(process.env.BASE_QUOTA)
+  : BigInt(1);
 
 // Port that server will listen for requests
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3020;
