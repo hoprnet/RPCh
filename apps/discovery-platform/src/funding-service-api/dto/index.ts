@@ -5,17 +5,17 @@ export type getAccessTokenResponse = {
 };
 
 export type postFundingRequest = {
-  amount: bigint;
+  amount: string;
   chainId: number;
 };
 
 export type postFundingResponse = {
   id: number;
-  amountLeft: bigint;
+  amountLeft: string;
 };
 
 export type getRequestStatusResponse = {
-  amount: bigint;
+  amount: string;
   accessTokenHash: string;
   nodeAddress: string;
   chainId: number;

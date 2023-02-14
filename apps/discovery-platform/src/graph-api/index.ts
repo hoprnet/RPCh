@@ -6,6 +6,9 @@ import { createLogger } from "../utils";
 import * as constants from "../constants";
 
 const log = createLogger(["graph-api"]);
+// @ts-ignore
+const replacer = (key, value) =>
+  typeof value === "bigint" ? value.toString() : value;
 
 /**
  * Query to get info needed to know if a node is committed
@@ -79,7 +82,7 @@ export const checkCommitment = async (ops: {
 
     log.verbose([
       "Received information from the graph",
-      JSON.stringify(graphRes),
+      JSON.stringify(graphRes, replacer),
     ]);
 
     // check if it has enough balance and enough open channels
@@ -107,8 +110,8 @@ export const validateNode = (
   minChannels: number
 ): boolean => {
   const sumOfBalance = graphRes.data.account.fromChannels.reduce(
-    (acc, channel) => acc + channel.balance,
-    BigInt(0)
+    (acc, channel) => acc + Number(channel.balance),
+    0
   );
   const amountOfOpenChannels = graphRes.data.account.fromChannels.length;
   return amountOfOpenChannels >= minChannels && sumOfBalance >= minBalance;
@@ -125,10 +128,13 @@ export const getUpdatedAccounts = async (blockNumber: number) => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        query: getAccountsFromBlockChange,
-        variables,
-      }),
+      body: JSON.stringify(
+        {
+          query: getAccountsFromBlockChange,
+          variables,
+        },
+        replacer
+      ),
     });
 
     const graphRes: GetAccountChannelsResponse = await channels.json();

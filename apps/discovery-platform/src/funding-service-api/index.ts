@@ -23,7 +23,7 @@ export class FundingServiceApi {
   // Date when the current tokens expires
   private expiredAt: Date | undefined;
   // Maximum amount that the current token can request
-  private amountLeft: bigint | undefined;
+  private amountLeft: string | undefined;
   // Map of all pending requests
   private pendingRequests: Map<
     //requestId
@@ -42,7 +42,7 @@ export class FundingServiceApi {
   private saveAccessToken(ops: getAccessTokenResponse): void {
     (this.accessToken = ops.accessToken),
       (this.expiredAt = new Date(ops.expiredAt));
-    this.amountLeft = BigInt(ops.amountLeft);
+    this.amountLeft = ops.amountLeft;
   }
   /**
    * Fetch from funding service a new access token
@@ -89,7 +89,7 @@ export class FundingServiceApi {
 
       return false;
     }
-    if (amount && this.amountLeft < amount) {
+    if (amount && BigInt(this.amountLeft) < amount) {
       log.verbose(
         "Access token for discovery platform has exceeded how many amount that it can reclaim"
       );
@@ -123,7 +123,7 @@ export class FundingServiceApi {
       });
 
       const body: postFundingRequest = {
-        amount: amount,
+        amount: amount.toString(),
         chainId: node.chain_id,
       };
       const res = await fetch(
@@ -253,7 +253,8 @@ export class FundingServiceApi {
         await updateRegisteredNode(this.db, {
           ...node,
           status: request.status === "SUCCESS" ? "READY" : "UNUSABLE",
-          total_amount_funded: node.total_amount_funded + request.amount,
+          total_amount_funded:
+            BigInt(node.total_amount_funded) + BigInt(request.amount),
         });
         log.verbose(
           "request has been fulfilled",
@@ -272,7 +273,7 @@ export class FundingServiceApi {
           log.verbose("retrying request for node", node);
           const previousRequestId = requestId;
           const newRequestId = await this.requestFunds({
-            amount: request.amount,
+            amount: BigInt(request.amount),
             node: node,
             amountOfRetries: amountOfRetries + 1,
             previousRequestId,
