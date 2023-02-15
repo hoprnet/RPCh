@@ -59,6 +59,10 @@ describe("test funding service api class", function () {
     fundingServiceApi = new FundingServiceApi(FUNDING_SERVICE_URL, dbInstance);
   });
 
+  afterEach(function () {
+    nock.cleanAll();
+  });
+
   describe("should handle access token", function () {
     it("should fetch access token and save it to instance", async function () {
       nockGetApiAccessToken.reply(200, successfulGetApiAccessTokenBody);
@@ -202,7 +206,7 @@ describe("test funding service api class", function () {
 
       await db.saveRegisteredNode(dbInstance, node);
       try {
-        const fundingResponse = await fundingServiceApi.requestFunds({
+        await fundingServiceApi.requestFunds({
           amount: 5,
           node,
         });
@@ -225,8 +229,8 @@ describe("test funding service api class", function () {
         amountLeft: 10,
         expiredAt: new Date(Date.now()).toISOString(),
       };
-      // get 3 access tokens
-      nockGetApiAccessToken.times(3).reply(200, getAccessTokenResponse);
+
+      nockGetApiAccessToken.times(6).reply(200, getAccessTokenResponse);
 
       const postFundingResponseBody: postFundingResponse = {
         amountLeft,
@@ -242,6 +246,7 @@ describe("test funding service api class", function () {
       );
 
       await db.saveRegisteredNode(dbInstance, node);
+
       const fundingResponse = await fundingServiceApi.fetchRequestFunds(
         node,
         5,
@@ -252,16 +257,17 @@ describe("test funding service api class", function () {
     });
     it("should fail and throw error if funding service returns status code 500", async function () {
       const node = createMockNode("peer1");
-      const amountLeft = 10;
-      const requestId = 123;
+
+      await db.saveRegisteredNode(dbInstance, node);
 
       const getAccessTokenResponse: getAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
         amountLeft: 10,
         expiredAt: new Date(Date.now()).toISOString(),
       };
-      // get 3 access tokens
-      nockGetApiAccessToken.times(3).reply(200, getAccessTokenResponse);
+
+      // get access token
+      nockGetApiAccessToken.times(1).reply(200, getAccessTokenResponse);
 
       // fail first time
       nockFundingRequest(node.native_address).reply(500, "Error");
@@ -285,7 +291,9 @@ describe("test funding service api class", function () {
       const amountLeft = 10;
       const requestId = 123;
 
-      nockGetApiAccessToken.twice().reply(200, successfulGetApiAccessTokenBody);
+      nockGetApiAccessToken
+        .times(10)
+        .reply(200, successfulGetApiAccessTokenBody);
 
       const successfulPostFundingBody: postFundingResponse = {
         amountLeft,

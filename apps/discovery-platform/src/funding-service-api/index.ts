@@ -296,7 +296,8 @@ export class FundingServiceApi {
     opts?: retry.Options | undefined
   ): Promise<Response> {
     const res = await retry(
-      async (bail) => {
+      async (bail, attempt) => {
+        log.verbose({ attempt });
         await this.getAccessToken(amount);
         const body: postFundingRequest = {
           amount: String(amount),
@@ -315,8 +316,6 @@ export class FundingServiceApi {
           }
         );
 
-        log.verbose(res, res.status, res.status === 500);
-
         if (401 === res.status) {
           await this.fetchAccessToken();
           throw new Error("access token is no longer valid");
@@ -324,7 +323,7 @@ export class FundingServiceApi {
 
         if (500 === res.status || 400 == res.status || 404 === res.status) {
           // don't retry upon 500, 400 or 404
-          log.error("funding request failed", await res.text());
+          log.error("funding request failed", res.status, await res.text());
           bail(new Error("funding request failed"));
           return;
         }
