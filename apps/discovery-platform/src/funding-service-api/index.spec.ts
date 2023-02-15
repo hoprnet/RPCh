@@ -230,6 +230,7 @@ describe("test funding service api class", function () {
         expiredAt: new Date(Date.now()).toISOString(),
       };
 
+      // all access tokens expire straight away so it calls for access token 2 per run
       nockGetApiAccessToken.times(6).reply(200, getAccessTokenResponse);
 
       const postFundingResponseBody: postFundingResponse = {
@@ -291,9 +292,7 @@ describe("test funding service api class", function () {
       const amountLeft = 10;
       const requestId = 123;
 
-      nockGetApiAccessToken
-        .times(10)
-        .reply(200, successfulGetApiAccessTokenBody);
+      nockGetApiAccessToken.twice().reply(200, successfulGetApiAccessTokenBody);
 
       const successfulPostFundingBody: postFundingResponse = {
         amountLeft,
