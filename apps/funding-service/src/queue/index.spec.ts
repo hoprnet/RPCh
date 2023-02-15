@@ -38,6 +38,11 @@ const createAccessTokenAndRequest = async (
     amount: BigInt(MOCK_AMOUNT),
     timeout: MOCK_TIMEOUT,
   });
+
+  // @ts-ignore
+  const replacer = (_, value) =>
+    typeof value === "bigint" ? value.toString() : value;
+  console.log(`PARAMS: ${JSON.stringify(params, replacer)}`);
   if (!queryToken) throw new Error("Failed to create test token");
   const queryRequest = await requestService.createRequest(
     params
@@ -121,7 +126,7 @@ describe("test index.ts", function () {
       accessTokenService,
       requestService,
       {
-        amount: BigInt(MOCK_AMOUNT) + BigInt(1000000000000),
+        amount: BigInt(MOCK_AMOUNT) + BigInt("20000000000000000000000"),
         chainId: provider.network.chainId,
         nodeAddress: MOCK_ADDRESS,
       }
