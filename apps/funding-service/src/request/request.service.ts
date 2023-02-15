@@ -19,7 +19,7 @@ export class RequestService {
   /**
    * Saves a Request in DB
    * @param nodeAddress node peer id
-   * @param amount string representing the amount that will be funded
+   * @param amount bigint amount that will be funded
    * @param chainId chain on which the transaction will execute
    * @param accessTokenHash hash that created this request
    * @returns Promise<QueryRequest>
@@ -216,7 +216,7 @@ export class RequestService {
     const availableBalances: { [chainId: number]: bigint } = {};
     for (const chainId in balances) {
       const totalBalance = balances[chainId];
-      const frozenBalance = frozenBalances[Number(chainId)] ?? 0;
+      const frozenBalance = frozenBalances[Number(chainId)] ?? BigInt(0);
       const availableBalance = totalBalance - frozenBalance;
       availableBalances[Number(chainId)] = availableBalance;
     }

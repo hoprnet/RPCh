@@ -39,7 +39,7 @@ export const entryServer = (ops: {
         accessToken: accessToken?.token,
         expiredAt: accessToken?.expired_at,
         createdAt: accessToken?.created_at,
-        amountLeft: ops.maxAmountOfTokens,
+        amountLeft: ops.maxAmountOfTokens.toString(),
       });
     } catch (e) {
       log.error("Can not create access token", e);
@@ -93,7 +93,7 @@ export const entryServer = (ops: {
         );
         return res.json({
           id: request.id,
-          amountLeft: ops.maxAmountOfTokens - amountUsed[chainId],
+          amountLeft: String(ops.maxAmountOfTokens - amountUsed[chainId]),
         });
       } catch (e) {
         log.error("Can not request funding", e);
@@ -113,7 +113,14 @@ export const entryServer = (ops: {
       try {
         log.verbose(`GET /api/request/status`);
         const requests = await ops.requestService.getRequests();
-        return res.status(200).json(requests);
+        const requestsWithAmountAsString = requests.map((request) => {
+          return {
+            ...request,
+            amount: request.amount.toString(),
+          };
+        });
+
+        return res.status(200).json(requestsWithAmountAsString);
       } catch (e) {
         log.error("Can not get status for requests", e);
         return res.status(500).json({ errors: "Unexpected error" });
@@ -139,7 +146,13 @@ export const entryServer = (ops: {
         }
         const requestId = Number(req.params.requestId);
         const request = await ops.requestService.getRequest(requestId);
-        return res.status(200).json(request);
+        let requestWithAmountAsString;
+        if (request)
+          requestWithAmountAsString = {
+            ...request,
+            amount: request.amount.toString(),
+          };
+        return res.status(200).json(requestWithAmountAsString);
       } catch (e) {
         log.error("Can not get status for a single request", e);
         return res.status(500).json({ errors: "Unexpected error" });

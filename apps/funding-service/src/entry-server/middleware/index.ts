@@ -34,6 +34,11 @@ export const tokenIsValid =
       return res.status(401).json({ errors: "Access Token expired" });
     }
 
+    if (requestFunds && req.body.amount === undefined) {
+      log.verbose("missing funding amount");
+      return res.status(400).json({ errors: "Missing funding amount" });
+    }
+
     const hasEnough = await doesAccessTokenHaveEnoughBalance({
       requestService,
       maxAmountOfTokens,
@@ -74,7 +79,7 @@ export const doesAccessTokenHaveEnoughBalance = async (params: {
   );
   const sumOfTokensTotalPossibleRequests =
     totalRequests?.reduce(
-      (prev, next) => prev + BigInt(next.amount),
+      (prev, next) => BigInt(prev) + BigInt(next.amount),
       BigInt(0)
     ) ?? BigInt(0);
 
