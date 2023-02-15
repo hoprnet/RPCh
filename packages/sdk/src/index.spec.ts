@@ -243,6 +243,38 @@ describe("test SDK class", function () {
         await sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE);
         assert.equal(addMetricsEntryNode.mock.calls.length, 0);
       });
+
+      it("should not select more than one entry node at a time", async function () {
+        // Make original selected node have a low score
+        // @ts-ignore
+        sdk.reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, 1, "dishonest");
+        // @ts-ignore
+        sdk.reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, 2, "dishonest");
+
+        // select a new reliable node
+        // @ts-ignore
+        sdk.selectEntryNode = jest.fn(() => {
+          // @ts-ignore
+          sdk.entryNode = {
+            apiEndpoint: "reliableEndpoint",
+            apiToken: "reliableToken",
+            peerId: "reliablePeerId",
+          };
+        });
+
+        // send bulk requests
+        try {
+          await Promise.all([
+            sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE),
+            sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE),
+            sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE),
+          ]);
+        } catch (e: any) {
+          assert.equal(e.message, "SDK is selecting entry node");
+          // @ts-ignore
+          assert.equal(sdk.selectEntryNode.mock.calls.length, 1);
+        }
+      });
     });
 
     it("should fetch exit nodes", async function () {

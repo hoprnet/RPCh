@@ -15,6 +15,7 @@ stop() {
     echo "Stopping 'nodes-docker-compose'"
     docker compose -f $DIR/nodes-docker-compose.yml -p sandbox-nodes down -v;
     rm -f $DIR/logs;
+    echo "Sandbox has stopped!"
 }
 
 # start sandbox
@@ -113,7 +114,7 @@ start() {
     hoprTokenAddress=$(
         scurl -sbH "Accept: application/json" "http://127.0.0.1:3030/get-hoprd-token-address?hoprdEndpoint=$HOPRD_API_ENDPOINT_1&hoprdToken=$HOPRD_API_TOKEN"
     )
-    echo "Found hoprTokenAddress: $hoprTokenAddress"
+    echo "Received hoprTokenAddress: $hoprTokenAddress"
 
     echo "Starting 'central-docker-compose'"
     FORCE_SMART_CONTRACT_ADDRESS="$hoprTokenAddress" \
@@ -128,26 +129,34 @@ start() {
         -H "Content-Type: application/json" \
         -d '{
             "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
-            "hoprdApiEndpoint1": "'$HOPRD_API_ENDPOINT_1'",
-            "hoprdApiEndpoint1Ext": "'$HOPRD_API_ENDPOINT_1_EXT'",
-            "hoprdApiToken1": "'$HOPRD_API_TOKEN'",
-            "exitNodePubKey1": "'$EXIT_NODE_PUB_KEY_1'",
-            "hoprdApiEndpoint2": "'$HOPRD_API_ENDPOINT_2'",
-            "hoprdApiEndpoint2Ext": "'$HOPRD_API_ENDPOINT_2_EXT'",
-            "hoprdApiToken2": "'$HOPRD_API_TOKEN'",
-            "exitNodePubKey2": "'$EXIT_NODE_PUB_KEY_2'",
-            "hoprdApiEndpoint3": "'$HOPRD_API_ENDPOINT_3'",
-            "hoprdApiEndpoint3Ext": "'$HOPRD_API_ENDPOINT_3_EXT'",
-            "hoprdApiToken3": "'$HOPRD_API_TOKEN'",
-            "exitNodePubKey3": "'$EXIT_NODE_PUB_KEY_3'",
-            "hoprdApiEndpoint4": "'$HOPRD_API_ENDPOINT_4'",
-            "hoprdApiEndpoint4Ext": "'$HOPRD_API_ENDPOINT_4_EXT'",
-            "hoprdApiToken4": "'$HOPRD_API_TOKEN'",
-            "exitNodePubKey4": "'$EXIT_NODE_PUB_KEY_4'",
-            "hoprdApiEndpoint5": "'$HOPRD_API_ENDPOINT_5'",
-            "hoprdApiEndpoint5Ext": "'$HOPRD_API_ENDPOINT_5_EXT'",
-            "hoprdApiToken5": "'$HOPRD_API_TOKEN'",
-            "exitNodePubKey5": "'$EXIT_NODE_PUB_KEY_5'"
+            "hoprdApiEndpoints": [
+                "'$HOPRD_API_ENDPOINT_1'",
+                "'$HOPRD_API_ENDPOINT_2'",
+                "'$HOPRD_API_ENDPOINT_3'",
+                "'$HOPRD_API_ENDPOINT_4'",
+                "'$HOPRD_API_ENDPOINT_5'"
+            ],
+            "hoprdApiEndpointsExt": [
+                "'$HOPRD_API_ENDPOINT_1_EXT'",
+                "'$HOPRD_API_ENDPOINT_2_EXT'",
+                "'$HOPRD_API_ENDPOINT_3_EXT'",
+                "'$HOPRD_API_ENDPOINT_4_EXT'",
+                "'$HOPRD_API_ENDPOINT_5_EXT'"
+            ],
+            "hoprdApiTokens": [
+                "'$HOPRD_API_TOKEN'",
+                "'$HOPRD_API_TOKEN'",
+                "'$HOPRD_API_TOKEN'",
+                "'$HOPRD_API_TOKEN'",
+                "'$HOPRD_API_TOKEN'"
+            ],
+            "exitNodePubKeys": [
+                "'$EXIT_NODE_PUB_KEY_1'",
+                "'$EXIT_NODE_PUB_KEY_2'",
+                "'$EXIT_NODE_PUB_KEY_3'",
+                "'$EXIT_NODE_PUB_KEY_4'",
+                "'$EXIT_NODE_PUB_KEY_5'"
+            ]
         }'
     echo "Registered nodes to discovery-platform"
 
@@ -173,5 +182,5 @@ start() {
         }'
     echo "Added quota to client 'trial' in 'discovery-platform'"
 
-    echo "Sandbox is ready!"
+    echo "Sandbox has started!"
 }
