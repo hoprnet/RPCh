@@ -8,6 +8,7 @@ const log = createLogger(["register-exit-nodes"]);
 
 async function registerNode(
   discoveryPlatformEndpoint: string,
+  chainId: string,
   hoprdPeerId: string,
   hoprdApiEndpoint: string,
   hoprdApiToken: string,
@@ -16,6 +17,7 @@ async function registerNode(
 ): Promise<void> {
   log.verbose("Registering node", {
     discoveryPlatformEndpoint,
+    chainId,
     hoprdPeerId,
     hoprdApiEndpoint,
     hoprdApiToken,
@@ -34,7 +36,7 @@ async function registerNode(
     body: JSON.stringify({
       hasExitNode: true,
       peerId: hoprdPeerId,
-      chainId: 31337,
+      chainId,
       hoprdApiEndpoint,
       hoprdApiToken,
       exitNodePubKey,
@@ -45,6 +47,7 @@ async function registerNode(
 
 export default async function main(
   discoveryPlatformEndpoint: string,
+  chainId: string,
   hoprdApiEndpoints: string[],
   hoprdApiEndpointsExt: string[],
   hoprdApiTokens: string[],
@@ -52,6 +55,7 @@ export default async function main(
 ): Promise<void> {
   log.normal("Registering exit nodes", {
     discoveryPlatformEndpoint,
+    chainId,
     hoprdApiEndpoints,
     hoprdApiEndpointsExt,
     hoprdApiTokens,
@@ -76,6 +80,7 @@ export default async function main(
     hoprdApiToken: string;
     exitNodePubKey: string;
     hoprdPeerId: string;
+    chainId: string;
   }[] = [];
 
   // get PeerIds in parallel and fill in groups object
@@ -94,6 +99,7 @@ export default async function main(
         hoprdApiToken,
         exitNodePubKey,
         hoprdPeerId,
+        chainId,
       });
     })
   );
@@ -102,6 +108,7 @@ export default async function main(
     const exitNodeAddress = ethersUtils.computeAddress(nodes.exitNodePubKey);
     await registerNode(
       discoveryPlatformEndpoint,
+      chainId,
       nodes.hoprdPeerId,
       nodes.hoprdApiEndpointExt,
       nodes.hoprdApiToken,
