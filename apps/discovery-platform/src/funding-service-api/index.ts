@@ -1,4 +1,4 @@
-import fetch from "node-fetch";
+import fetch, { Response } from "node-fetch";
 import {
   getAccessTokenResponse,
   getRequestStatusResponse,
@@ -11,6 +11,7 @@ import { DBInstance } from "../db";
 import { getRegisteredNode, updateRegisteredNode } from "../registered-node";
 import { createLogger } from "../utils";
 import { createFundingRequest } from "../funding-requests";
+import retry from "async-retry";
 
 const log = createLogger(["funding-service-api"]);
 
@@ -112,41 +113,24 @@ export class FundingServiceApi {
     amountOfRetries?: number;
   }) {
     try {
-      await this.getAccessToken();
       const { amount, node } = params;
       const dbNode = await getRegisteredNode(this.db, node.id);
       if (!dbNode) throw new Error("Node is not registered");
+
       log.verbose("requesting to funding service", {
-        amount: String(amount),
-        chainId: node.chain_id,
-        peerId: node.id,
+        amount: amount.toString(),
+        chainId: dbNode.chain_id,
+        peerId: dbNode.id,
       });
 
-      const body: postFundingRequest = {
-        amount: amount.toString(),
-        chainId: node.chain_id,
-      };
-      const res = await fetch(
-        `${this.url}/api/request/funds/${dbNode.native_address}`,
-        {
-          method: "POST",
-          headers: {
-            "x-access-token": this.accessToken!,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(body),
-        }
-      );
+      const res = await this.fetchRequestFunds(dbNode, amount);
 
       let fundingResponseJson = await res.json();
+
       log.verbose("funding service response", fundingResponseJson);
+
       const { id: requestId, amountLeft }: postFundingResponse =
         fundingResponseJson;
-
-      if (!requestId) {
-        log.error("funding request failed", fundingResponseJson);
-        throw new Error("funding request failed: " + fundingResponseJson);
-      }
 
       await updateRegisteredNode(this.db, { ...dbNode, status: "FUNDING" });
 
@@ -158,12 +142,14 @@ export class FundingServiceApi {
       });
 
       this.amountLeft = amountLeft;
+
       this.savePendingRequest({
         requestId,
         peerId: node.id,
         previousRequestId: params.previousRequestId,
         amountOfRetries: params.amountOfRetries,
       });
+
       return requestId;
     } catch (e: any) {
       throw new Error(e.message);
@@ -302,5 +288,58 @@ export class FundingServiceApi {
         }
       }
     }
+  }
+
+  public async fetchRequestFunds(
+    dbNode: QueryRegisteredNode,
+    amount: bigint,
+    opts?: retry.Options | undefined
+  ): Promise<Response> {
+    const res = await retry(
+      async (bail, attempt) => {
+        log.verbose({ attempt });
+        await this.getAccessToken(amount);
+        const body: postFundingRequest = {
+          amount: amount.toString(),
+          chainId: dbNode.chain_id,
+        };
+        // if anything throws, we retry
+        const res = await fetch(
+          `${this.url}/api/request/funds/${dbNode.native_address}`,
+          {
+            method: "POST",
+            headers: {
+              "x-access-token": this.accessToken!,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(body),
+          }
+        );
+
+        if (401 === res.status) {
+          await this.fetchAccessToken();
+          throw new Error("access token is no longer valid");
+        }
+
+        if (500 === res.status || 400 == res.status || 404 === res.status) {
+          // don't retry upon 500, 400 or 404
+          log.error("funding request failed", res.status, await res.text());
+          bail(new Error("funding request failed"));
+          return;
+        }
+
+        return res;
+      },
+      {
+        retries: 3,
+        ...opts,
+      }
+    );
+
+    if (!res) {
+      throw new Error("funding request failed");
+    }
+
+    return res;
   }
 }
