@@ -56,11 +56,6 @@ export const checkFreshRequests = async (ops: {
       provider
     );
 
-    console.log(
-      `AQUI: ${balance.toString()} | ${freshRequest.amount.toString()} => ${
-        balance < freshRequest.amount
-      }`
-    );
     if (BigInt(balance) < BigInt(freshRequest.amount))
       throw new CustomError(
         "Signer does not have enough balance to fund request"
@@ -72,7 +67,7 @@ export const checkFreshRequests = async (ops: {
       accessTokenHash: freshRequest.access_token_hash,
       nodeAddress: freshRequest.node_address,
       chainId: freshRequest.chain_id,
-      amount: freshRequest.amount,
+      amount: BigInt(freshRequest.amount),
       id: freshRequest.id,
     });
 
@@ -84,7 +79,7 @@ export const checkFreshRequests = async (ops: {
         ],
       from: connectedSigner,
       to: freshRequest?.node_address,
-      amount: freshRequest.amount,
+      amount: BigInt(freshRequest.amount),
     });
     // set request status to pending while it is confirmed or failed
     await ops.requestService.updateRequest(freshRequest.id, {
@@ -93,7 +88,7 @@ export const checkFreshRequests = async (ops: {
       accessTokenHash: freshRequest.access_token_hash,
       nodeAddress: freshRequest.node_address,
       chainId: freshRequest.chain_id,
-      amount: freshRequest.amount,
+      amount: BigInt(freshRequest.amount),
       id: freshRequest.id,
     });
     // wait for transaction to reach a certain amount of confirmations
@@ -115,7 +110,7 @@ export const checkFreshRequests = async (ops: {
       accessTokenHash: freshRequest.access_token_hash,
       nodeAddress: freshRequest.node_address,
       chainId: freshRequest.chain_id,
-      amount: freshRequest.amount,
+      amount: BigInt(freshRequest.amount),
       id: freshRequest.id,
     });
   } catch (e: any) {
@@ -130,7 +125,7 @@ export const checkFreshRequests = async (ops: {
           accessTokenHash: freshRequest.access_token_hash,
           nodeAddress: freshRequest.node_address,
           chainId: freshRequest.chain_id,
-          amount: freshRequest.amount,
+          amount: BigInt(freshRequest.amount),
           id: freshRequest.id,
         });
       } else {
@@ -147,7 +142,7 @@ export const checkFreshRequests = async (ops: {
           accessTokenHash: freshRequest.access_token_hash,
           nodeAddress: freshRequest.node_address,
           chainId: freshRequest.chain_id,
-          amount: freshRequest.amount,
+          amount: BigInt(freshRequest.amount),
           id: freshRequest.id,
         });
       }

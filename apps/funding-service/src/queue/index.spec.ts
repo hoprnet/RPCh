@@ -39,10 +39,6 @@ const createAccessTokenAndRequest = async (
     timeout: MOCK_TIMEOUT,
   });
 
-  // @ts-ignore
-  const replacer = (_, value) =>
-    typeof value === "bigint" ? value.toString() : value;
-  console.log(`PARAMS: ${JSON.stringify(params, replacer)}`);
   if (!queryToken) throw new Error("Failed to create test token");
   const queryRequest = await requestService.createRequest(
     params
