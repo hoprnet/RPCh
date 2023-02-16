@@ -98,7 +98,7 @@ export const start = async (ops: {
           apiToken: ops.apiToken,
           message: segment.toString(),
           destination: rpchRequest.entryNodeDestination,
-          hops: 1,
+          path: [],
         });
       }
     } catch (error) {
