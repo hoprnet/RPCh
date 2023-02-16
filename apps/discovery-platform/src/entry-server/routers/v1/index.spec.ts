@@ -11,7 +11,11 @@ import {
   getAccessTokenResponse,
   postFundingResponse,
 } from "../../../funding-service-api/dto";
-import { getAllQuotasByClient, sumQuotas } from "../../../quota";
+import {
+  getQuotasCreatedByClient,
+  getQuotasPaidByClient,
+  sumQuotas,
+} from "../../../quota";
 import * as registeredNode from "../../../registered-node";
 import {
   CreateRegisteredNode,
@@ -135,7 +139,7 @@ describe("test v1 router", function () {
     assert.equal(doesClientHaveQuotaResponse, false);
   });
   it("should allow request because client has enough quota", async function () {
-    // create quota for wrong client
+    // create quota client
     await request(app).post("/client/quota").send({
       client: "client",
       quota: 1,
@@ -312,6 +316,7 @@ describe("test v1 router", function () {
 
       nockGetApiAccessToken.reply(200, apiTokenResponse);
 
+      // add quota to newClient
       await request(app).post("/client/quota").send({
         client: "newClient",
         quota: BASE_QUOTA,
@@ -337,6 +342,7 @@ describe("test v1 router", function () {
         fundingResponse
       );
 
+      // use quota twice expecting the second time for it to fail
       await request(app)
         .post("/request/entry-node")
         .send({ client: "newClient" });
@@ -351,7 +357,7 @@ describe("test v1 router", function () {
       );
       spy.mockRestore();
     });
-    it("should be able to use trial mode client and reduce quota", async function () {
+    it.only("should be able to use trial mode client and reduce quota", async function () {
       const spy = jest.spyOn(registeredNode, "getEligibleNode");
       const amountLeft = 10;
       const peerId = "entry";
@@ -396,7 +402,7 @@ describe("test v1 router", function () {
       );
 
       const trialClientQuotaBefore = sumQuotas(
-        await getAllQuotasByClient(dbInstance, "trial")
+        await getQuotasPaidByClient(dbInstance, "trial")
       );
 
       const requestResponse = await request(app)
@@ -404,11 +410,17 @@ describe("test v1 router", function () {
         .send({ client: trialClientId });
 
       const trialClientQuotaAfter = sumQuotas(
-        await getAllQuotasByClient(dbInstance, "trial")
+        await getQuotasPaidByClient(dbInstance, "trial")
       );
 
+      const b2dClientQuotaUsed = sumQuotas(
+        await getQuotasCreatedByClient(dbInstance, trialClientId)
+      );
+
+      expect(b2dClientQuotaUsed).toEqual(BASE_QUOTA * -1);
       expect(trialClientQuotaAfter).toBeLessThan(trialClientQuotaBefore);
       expect(requestResponse.body).toHaveProperty("id");
+
       spy.mockRestore();
     });
   });

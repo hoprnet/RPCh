@@ -66,6 +66,7 @@ const createMockQuota = (params?: CreateQuota): CreateQuota => {
     actionTaker: params?.actionTaker ?? "discovery-platform",
     clientId: params?.clientId ?? "client",
     quota: params?.quota ?? 1,
+    paidBy: params?.paidBy ?? "client",
   };
 };
 
@@ -228,16 +229,19 @@ describe("test db functions", function () {
       assert.equal(queryQuota?.quota, mockQuota.quota);
       assert.equal(queryQuota?.action_taker, mockQuota.actionTaker);
     });
-    it("should get quotas by client", async function () {
+    it("should get quotas created by client", async function () {
+      // create client
       const mockClient = createMockClient({
         id: "other client",
         payment: "premium",
       });
       const otherClient = await db.createClient(dbInstance, mockClient);
+      // create quota for client but paid by other client
       const mockQuota = createMockQuota({
         clientId: "client",
         actionTaker: "discovery",
         quota: 10,
+        paidBy: "other client",
       });
       await db.createQuota(dbInstance, mockQuota);
       await db.createQuota(dbInstance, mockQuota);
@@ -247,17 +251,48 @@ describe("test db functions", function () {
           actionTaker: "discovery",
           clientId: otherClient.id,
           quota: 20,
+          paidBy: "other client",
         })
       );
 
-      const quotas = await db.getQuotasByClient(dbInstance, "client");
+      const quotas = await db.getQuotasCreatedByClient(dbInstance, "client");
       assert.equal(quotas.length, 2);
+    });
+    it("should get quotas paid by client", async function () {
+      // create client
+      const mockClient = createMockClient({
+        id: "other client",
+        payment: "premium",
+      });
+      const otherClient = await db.createClient(dbInstance, mockClient);
+      // create quotas that are used by 'client' and paid by 'other client'
+      const mockQuota = createMockQuota({
+        clientId: "client",
+        actionTaker: "discovery",
+        quota: 10,
+        paidBy: "other client",
+      });
+      await db.createQuota(dbInstance, mockQuota);
+      await db.createQuota(dbInstance, mockQuota);
+      await db.createQuota(
+        dbInstance,
+        createMockQuota({
+          actionTaker: "discovery",
+          clientId: otherClient.id,
+          quota: 20,
+          paidBy: "other client",
+        })
+      );
+
+      const quotas = await db.getQuotasPaidByClient(dbInstance, "other client");
+      assert.equal(quotas.length, 3);
     });
     it("should update quota", async function () {
       const mockQuota = createMockQuota({
         clientId: "client",
         actionTaker: "discovery",
         quota: 10,
+        paidBy: "client",
       });
       const createdQuota = await db.createQuota(dbInstance, mockQuota);
 
@@ -294,6 +329,7 @@ describe("test db functions", function () {
         clientId: "client",
         actionTaker: "discovery",
         quota: 10,
+        paidBy: "client",
       });
       const createdQuota = await db.createQuota(dbInstance, mockQuota);
       if (!createdQuota.id) throw new Error("Could not create mock quota");

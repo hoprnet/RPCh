@@ -15,6 +15,7 @@ export const createQuota = async (
     actionTaker: quota.actionTaker,
     clientId: quota.clientId,
     quota: quota.quota,
+    paidBy: quota.paidBy,
   };
   return await db.createQuota(dbInstance, dbQuota);
 };
@@ -33,16 +34,29 @@ export const getQuota = async (
 };
 
 /**
- * Get all quotas created for a specific client
+ * Get all quotas paid by a specific client
  * @param dbInstance DBInstance
  * @param client string
  * @returns QueryQuota[]
  */
-export const getAllQuotasByClient = async (
+export const getQuotasPaidByClient = async (
   dbInstance: db.DBInstance,
   client: string
 ): Promise<QueryQuota[]> => {
-  return await db.getQuotasByClient(dbInstance, client);
+  return await db.getQuotasPaidByClient(dbInstance, client);
+};
+
+/**
+ * Get all quotas created by a specific client
+ * @param dbInstance DBInstance
+ * @param client string
+ * @returns QueryQuota[]
+ */
+export const getQuotasCreatedByClient = async (
+  dbInstance: db.DBInstance,
+  client: string
+): Promise<QueryQuota[]> => {
+  return await db.getQuotasCreatedByClient(dbInstance, client);
 };
 
 /**

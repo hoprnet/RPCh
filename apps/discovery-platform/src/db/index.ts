@@ -144,12 +144,13 @@ export const createQuota = async (
   dbInstance: DBInstance,
   quota: CreateQuota
 ): Promise<QueryQuota> => {
-  const text = `INSERT INTO ${TABLES.QUOTAS} (id, client_id, quota, action_taker)
-  VALUES (default, $<clientId>, $<quota>, $<actionTaker>) RETURNING *`;
+  const text = `INSERT INTO ${TABLES.QUOTAS} (id, client_id, paid_by, quota, action_taker)
+  VALUES (default, $<clientId>, $<paidBy>, $<quota>, $<actionTaker>) RETURNING *`;
   const values: CreateQuota = {
     clientId: quota.clientId,
     quota: quota.quota,
     actionTaker: quota.actionTaker,
+    paidBy: quota.paidBy,
   };
 
   const dbRes: QueryQuota = await dbInstance.one(text, values);
@@ -168,13 +169,25 @@ export const getQuota = async (
   return dbRes;
 };
 
-export const getQuotasByClient = async (
+export const getQuotasCreatedByClient = async (
   dbInstance: DBInstance,
-  client: string
+  clientId: string
 ): Promise<QueryQuota[]> => {
-  const text = `SELECT * FROM ${TABLES.QUOTAS} WHERE client_id=$<client>`;
+  const text = `SELECT * FROM ${TABLES.QUOTAS} WHERE client_id=$<clientId>`;
   const values = {
-    client,
+    clientId,
+  };
+  const dbRes: QueryQuota[] = await dbInstance.manyOrNone(text, values);
+  return dbRes;
+};
+
+export const getQuotasPaidByClient = async (
+  dbInstance: DBInstance,
+  clientId: string
+): Promise<QueryQuota[]> => {
+  const text = `SELECT * FROM ${TABLES.QUOTAS} WHERE paid_by=$<clientId>`;
+  const values = {
+    clientId,
   };
   const dbRes: QueryQuota[] = await dbInstance.manyOrNone(text, values);
   return dbRes;
@@ -185,7 +198,7 @@ export const updateQuota = async (
   quota: QueryQuota
 ): Promise<QueryQuota | null> => {
   const text = `UPDATE ${TABLES.QUOTAS}
-  SET client_id = $<client_id>, quota = $<quota>, action_taker = $<action_taker>
+  SET client_id = $<client_id>, paid_by = $<paid_by>, quota = $<quota>, action_taker = $<action_taker>
   WHERE id = $<id>
   RETURNING *`;
   const values: Omit<QueryQuota, "created_at" | "updated_at"> = {
@@ -193,6 +206,7 @@ export const updateQuota = async (
     client_id: quota.client_id,
     action_taker: quota.action_taker,
     quota: quota.quota,
+    paid_by: quota.paid_by,
   };
   const dbRes: QueryQuota | null = await dbInstance.oneOrNone(text, values);
   return dbRes;
