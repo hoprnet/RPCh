@@ -1,5 +1,14 @@
 # @rpch/sdk
 
+## 0.1.6
+
+### Patch Changes
+
+- Preparation release for Alpha
+- Updated dependencies
+  - @rpch/crypto-bridge@0.1.6
+  - @rpch/common@0.1.6
+
 ## 0.1.5
 
 ### Patch Changes

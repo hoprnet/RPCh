@@ -16,7 +16,7 @@
     "@rpch/configs-eslint": "*",
     "@rpch/configs-prettier": "*",
     "@rpch/configs-jest": "*",
-    "@rpch/ethers": "0.1.5",
-    "@rpch/common": "0.1.5"
+    "@rpch/ethers": "0.1.6",
+    "@rpch/common": "0.1.6"
   }
 }

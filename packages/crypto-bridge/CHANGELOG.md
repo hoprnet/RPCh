@@ -1,5 +1,11 @@
 # @rpch/crypto-bridge
 
+## 0.1.6
+
+### Patch Changes
+
+- Preparation release for Alpha
+
 ## 0.1.5
 
 ### Patch Changes
