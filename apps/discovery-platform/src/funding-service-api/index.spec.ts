@@ -152,7 +152,7 @@ describe("test funding service api class", function () {
     it("should return false if has been exceeded max amount", async function () {
       const exceededAccessTokenResponse: getAccessTokenResponse = {
         ...successfulGetApiAccessTokenBody,
-        amountLeft: BigInt("0").toString(),
+        amountLeft: "0",
       };
       nockGetApiAccessToken.reply(200, exceededAccessTokenResponse);
       // @ts-ignore-next-line
@@ -165,7 +165,7 @@ describe("test funding service api class", function () {
   it("should save access token", function () {
     const now = new Date(Date.now());
     now.setMinutes(now.getMinutes() + 30);
-    const amountLeft = BigInt(30).toString();
+    const amountLeft = "30";
     // @ts-ignore
     fundingServiceApi.saveAccessToken({
       accessToken: FAKE_ACCESS_TOKEN,
@@ -182,7 +182,7 @@ describe("test funding service api class", function () {
   it("should get access token", async function () {
     const getAccessTokenResponse: getAccessTokenResponse = {
       accessToken: FAKE_ACCESS_TOKEN,
-      amountLeft: BigInt("10").toString(),
+      amountLeft: "10",
       expiredAt: new Date(Date.now()).toISOString(),
     };
     nockGetApiAccessToken.reply(200, getAccessTokenResponse);
@@ -334,7 +334,7 @@ describe("test funding service api class", function () {
   describe("check pending requests", function () {
     it("should update db and delete request from pending request if it passed successfully", async function () {
       const node = createMockNode("peer1");
-      const amountLeft = BigInt(10).toString();
+      const amountLeft = "10";
       const requestId = 123;
 
       nockGetApiAccessToken.twice().reply(200, successfulGetApiAccessTokenBody);
@@ -358,7 +358,7 @@ describe("test funding service api class", function () {
 
       const successfulGetRequestStatusBody: getRequestStatusResponse = {
         accessTokenHash: "hash",
-        amount: BigInt("5").toString(),
+        amount: "5",
         chainId: node.chain_id,
         createdAt: new Date(),
         nodeAddress: node.id,
@@ -392,7 +392,7 @@ describe("test funding service api class", function () {
     });
     it("should not do anything if request is still pending", async function () {
       const node = createMockNode("peer1");
-      const amountLeft = BigInt(10).toString();
+      const amountLeft = "10";
       const requestId = 123;
 
       nockGetApiAccessToken.twice().reply(200, successfulGetApiAccessTokenBody);
@@ -416,7 +416,7 @@ describe("test funding service api class", function () {
 
       const successfulGetRequestStatusBody: getRequestStatusResponse = {
         accessTokenHash: "hash",
-        amount: BigInt("5").toString(),
+        amount: "5",
         chainId: node.chain_id,
         createdAt: new Date(),
         nodeAddress: node.id,
@@ -452,7 +452,7 @@ describe("test funding service api class", function () {
       // @ts-ignore
       fundingServiceApi.maxAmountOfRetries = 1;
       const node = createMockNode("peer1");
-      const amountLeft = BigInt(10).toString();
+      const amountLeft = "10";
       const requestId = 123;
 
       nockGetApiAccessToken
@@ -477,7 +477,7 @@ describe("test funding service api class", function () {
 
       const failedGetRequestStatusBody: getRequestStatusResponse = {
         accessTokenHash: "hash",
-        amount: BigInt("5").toString(),
+        amount: "5",
         chainId: node.chain_id,
         createdAt: new Date(),
         nodeAddress: node.id,
@@ -504,7 +504,7 @@ describe("test funding service api class", function () {
       fundingServiceApi.maxAmountOfRetries = testMaxAmountOfRetries;
 
       const node = createMockNode("peer1");
-      const amountLeft = BigInt(10).toString();
+      const amountLeft = "10";
       const requestId = 123;
 
       const successfulPostFundingBody: postFundingResponse = {
@@ -529,7 +529,7 @@ describe("test funding service api class", function () {
 
       const failedGetRequestStatusBody: getRequestStatusResponse = {
         accessTokenHash: "hash",
-        amount: BigInt("5").toString(),
+        amount: "5",
         chainId: node.chain_id,
         createdAt: new Date(),
         nodeAddress: node.id,
