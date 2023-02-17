@@ -1,5 +1,14 @@
 # @rpch/ethers
 
+## 0.1.6
+
+### Patch Changes
+
+- Preparation release for Alpha
+- Updated dependencies
+  - @rpch/common@0.1.6
+  - @rpch/sdk@0.1.6
+
 ## 0.1.5
 
 ### Patch Changes
