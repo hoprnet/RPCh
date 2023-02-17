@@ -1643,7 +1643,7 @@
   resolved "https://registry.yarnpkg.com/@protobufjs/utf8/-/utf8-1.1.0.tgz#a777360b5b39a1a2e5106f8e858f2fd2d060c570"
   integrity sha512-Vvn3zZrhQZkkBE8LSuW3em98c0FwgO4nxzv6OdSxPKJIEKY2bGbHn+mhGIPerzI4twdxaP8/0+06HBpwf345Lw==
 
-"@rpch/crypto@^0.3.1":
+"@rpch/crypto@^0.3.0":
   version "0.3.1"
   resolved "https://registry.yarnpkg.com/@rpch/crypto/-/crypto-0.3.1.tgz#84f4a04981c23385fa53cc8b7718e07fce195ac4"
   integrity sha512-jmQA1L+pwK08pOs/Lu8FwHpAdNRGitj77J5jvgkVuZSVBlmPYLlnxoA7+4ZoyStJ/puGulPZW2WBFejJMPQc7Q==
