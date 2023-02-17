@@ -314,12 +314,41 @@ describe("test SDK class", function () {
       }
       sdk.setDeadlock(0);
     });
+
+    it("should handle failed request", async function () {
+      HOPRD_SEND_MESSAGE_NOCK.reply(400, "error");
+      const [clientRequest] = fixtures.generateMockedFlow(3);
+      const resolveFunc = jest.fn(() => {});
+      const rejectFunc = jest.fn(() => {});
+
+      // @ts-ignore
+      sdk.requestCache.addRequest(clientRequest, resolveFunc, rejectFunc);
+
+      // call function to handle request failed
+      sdk.handleFailedRequest(clientRequest);
+
+      // should reject promise
+      assert.equal(rejectFunc.mock.calls.length, 1);
+
+      // request should not be in request cache
+      // @ts-ignore
+      assert.equal(sdk.requestCache.getRequest(clientRequest.id), undefined);
+
+      // should add failed metric
+      assert.equal(
+        // @ts-ignore
+        sdk.reliabilityScore.metrics.get(sdk.entryNode?.peerId)?.stats.failed,
+        1
+      );
+    });
+
     it("should not save request to requestCache if request to hoprd fails", async function () {
       HOPRD_SEND_MESSAGE_NOCK.reply(400, "error");
       const [clientRequest] = fixtures.generateMockedFlow(3);
       try {
         await sdk.sendRequest(clientRequest);
       } catch (e: any) {
+        // this will run if request is rejected
         // @ts-ignore
         assert.equal(sdk.requestCache.getRequest(clientRequest.id), undefined);
       }
