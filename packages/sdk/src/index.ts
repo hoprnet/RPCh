@@ -1,5 +1,6 @@
-import type * as RPChCryptoNode from "@rpch/crypto-bridge/nodejs";
-import type * as RPChCryptoWeb from "@rpch/crypto-bridge/web";
+import type * as RPChCryptoNode from "@rpch/crypto-bridge/build/nodejs";
+import type * as RPChCryptoWeb from "@rpch/crypto-bridge/build/web";
+import type * as RPChCryptoNoModules from "@rpch/crypto-bridge/build/no-modules";
 import {
   Cache as SegmentCache,
   Message,
@@ -27,6 +28,7 @@ export type HoprSdkOps = {
   discoveryPlatformApiEndpoint: string;
   reliabilityScoreFreshNodeThreshold?: number;
   reliabilityScoreMaxResponses?: number;
+  forceRpchCryptoModule?: "web" | "nodejs" | "no-modules";
 };
 
 /**
@@ -262,14 +264,26 @@ export default class SDK {
   public async start(): Promise<void> {
     if (this.isReady) return;
 
-    if (typeof window === "undefined") {
+    // if nodejs is forced or derived
+    if (
+      this.ops.forceRpchCryptoModule === "nodejs" ||
+      (!this.ops.forceRpchCryptoModule && typeof window === "undefined")
+    ) {
       log.verbose("Using 'node' RPCh crypto implementation");
       this.crypto =
-        require("@rpch/crypto-bridge/nodejs") as typeof RPChCryptoNode;
-    } else {
+        require("@rpch/crypto-bridge/build/nodejs") as typeof RPChCryptoNode;
+    }
+    // if no-modules if forced
+    else if (this.ops.forceRpchCryptoModule === "no-modules") {
+      this.crypto = (await import(
+        "@rpch/crypto-bridge/build/no-modules"
+      )) as typeof RPChCryptoNoModules;
+    }
+    // default to web
+    else {
       log.verbose("Using 'web' RPCh crypto implementation");
       this.crypto = (await import(
-        "@rpch/crypto-bridge/web"
+        "@rpch/crypto-bridge/build/web"
       )) as typeof RPChCryptoWeb;
       // @ts-expect-error
       await this.crypto.init();

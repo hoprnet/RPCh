@@ -11,7 +11,7 @@ import {
   hoprd,
   utils,
 } from "@rpch/common";
-import * as crypto from "@rpch/crypto-bridge/nodejs";
+import * as crypto from "@rpch/crypto-bridge/build/nodejs";
 import * as exit from "./exit";
 import * as identity from "./identity";
 import { createLogger } from "./utils";

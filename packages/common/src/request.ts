@@ -6,7 +6,7 @@ import type {
   unbox_request,
   Session,
   Identity,
-} from "@rpch/crypto-bridge/nodejs";
+} from "@rpch/crypto-bridge/build/nodejs";
 import Message from "./message";
 import {
   generatePseudoRandomId,
