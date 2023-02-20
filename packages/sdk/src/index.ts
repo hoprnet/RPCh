@@ -1,6 +1,5 @@
-import type * as RPChCryptoNode from "@rpch/crypto-bridge/build/nodejs";
-import type * as RPChCryptoWeb from "@rpch/crypto-bridge/build/web";
-import type * as RPChCryptoNoModules from "@rpch/crypto-bridge/build/no-modules";
+// @ts-ignore
+import * as RPChCryptoNoModules from "@rpch/crypto-bridge/build/no-modules";
 import {
   Cache as SegmentCache,
   Message,
@@ -29,6 +28,7 @@ export type HoprSdkOps = {
   reliabilityScoreFreshNodeThreshold?: number;
   reliabilityScoreMaxResponses?: number;
   forceRpchCryptoModule?: "web" | "nodejs" | "no-modules";
+  noModulesWasmLoader?: () => Promise<any>;
 };
 
 /**
@@ -52,7 +52,7 @@ export type ExitNode = {
  * Send traffic through the RPCh network
  */
 export default class SDK {
-  private crypto?: typeof RPChCryptoNode | typeof RPChCryptoWeb;
+  private crypto?: any;
   // single interval for the SDK for things that need to be checked.
   private intervals: NodeJS.Timer[] = [];
   private segmentCache: SegmentCache;
@@ -264,30 +264,46 @@ export default class SDK {
   public async start(): Promise<void> {
     if (this.isReady) return;
 
-    // if nodejs is forced or derived
-    if (
-      this.ops.forceRpchCryptoModule === "nodejs" ||
-      (!this.ops.forceRpchCryptoModule && typeof window === "undefined")
-    ) {
-      log.verbose("Using 'node' RPCh crypto implementation");
-      this.crypto =
-        require("@rpch/crypto-bridge/build/nodejs") as typeof RPChCryptoNode;
+    if (!this.ops.noModulesWasmLoader) {
+      throw Error("A wasm loader must be provided when 'no-modules' is used");
     }
-    // if no-modules if forced
-    else if (this.ops.forceRpchCryptoModule === "no-modules") {
-      this.crypto = (await import(
-        "@rpch/crypto-bridge/build/no-modules"
-      )) as typeof RPChCryptoNoModules;
-    }
-    // default to web
-    else {
-      log.verbose("Using 'web' RPCh crypto implementation");
-      this.crypto = (await import(
-        "@rpch/crypto-bridge/build/web"
-      )) as typeof RPChCryptoWeb;
-      // @ts-expect-error
-      await this.crypto.init();
-    }
+    this.crypto = RPChCryptoNoModules;
+    const wasmModule = await this.ops.noModulesWasmLoader();
+    // @ts-ignore
+    this.crypto.initSync(wasmModule);
+    this.crypto.set_panic_hook();
+
+    // // if nodejs is forced or derived
+    // if (
+    //   this.ops.forceRpchCryptoModule === "nodejs" ||
+    //   (!this.ops.forceRpchCryptoModule && typeof window === "undefined")
+    // ) {
+    //   log.verbose("Using 'node' RPCh crypto implementation");
+    //   this.crypto =
+    //     require("@rpch/crypto-bridge/build/nodejs") as typeof RPChCryptoNode;
+    // }
+    // // if no-modules if forced
+    // else if (this.ops.forceRpchCryptoModule === "no-modules") {
+    //   if (!this.ops.noModulesWasmLoader) {
+    //     throw Error("A wasm loader must be provided when 'no-modules' is used");
+    //   }
+    //   this.crypto = (await import(
+    //     // @ts-expect-error
+    //     "@rpch/crypto-bridge/build/no-modules"
+    //   )) as typeof RPChCryptoNode;
+    //   const wasmModule = await this.ops.noModulesWasmLoader();
+    //   // @ts-ignore
+    //   this.crypto.initSync(wasmModule);
+    // }
+    // // default to web
+    // else {
+    //   log.verbose("Using 'web' RPCh crypto implementation");
+    //   this.crypto = (await import(
+    //     "@rpch/crypto-bridge/build/web"
+    //   )) as typeof RPChCryptoWeb;
+    //   // @ts-expect-error
+    //   await this.crypto.init();
+    // }
 
     // check for expires caches every second
     this.intervals.push(
