@@ -208,41 +208,50 @@ export default class SDK {
       return;
     }
 
-    const counter = await this.getKeyVal(
-      match.request.exitNodeDestination
-    ).then((k) => BigInt(k || "0"));
+    try {
+      const counter = await this.getKeyVal(
+        match.request.exitNodeDestination
+      ).then((k) => BigInt(k || "0"));
 
-    // construct Response from Message
-    const response = Response.fromMessage(
-      this.crypto!,
-      match.request,
-      message,
-      counter,
-      (exitNodeId, counter) => {
-        this.setKeyVal(exitNodeId, counter.toString());
-      }
-    );
+      // construct Response from Message
+      const response = Response.fromMessage(
+        this.crypto!,
+        match.request,
+        message,
+        counter,
+        (exitNodeId, counter) => {
+          this.setKeyVal(exitNodeId, counter.toString());
+        }
+      );
 
-    const responseTime = Date.now() - match.createdAt.getTime();
-    log.verbose(
-      "response time for request %s: %s ms",
-      match.request.id,
-      responseTime,
-      log.createMetric({
-        id: match.request.id,
-        responseTime: responseTime,
-      })
-    );
+      const responseTime = Date.now() - match.createdAt.getTime();
+      log.verbose(
+        "response time for request %s: %s ms",
+        match.request.id,
+        responseTime,
+        log.createMetric({
+          id: match.request.id,
+          responseTime: responseTime,
+        })
+      );
 
-    match.resolve(response);
-    this.reliabilityScore.addMetric(
-      match.request.entryNodeDestination,
-      match.request.id,
-      "success"
-    );
-    this.requestCache.removeRequest(match.request);
+      match.resolve(response);
+      this.reliabilityScore.addMetric(
+        match.request.entryNodeDestination,
+        match.request.id,
+        "success"
+      );
+      this.requestCache.removeRequest(match.request);
 
-    log.verbose("responded to %s with %s", match.request.body, response.body);
+      log.verbose("responded to %s with %s", match.request.body, response.body);
+    } catch (e) {
+      log.error(
+        "failed to decrypt message id %s with body",
+        message.id,
+        message.body
+      );
+      this.handleFailedRequest(match.request);
+    }
   }
 
   /**
@@ -254,6 +263,19 @@ export default class SDK {
     // @ts-ignore
     this.reliabilityScore.addMetric(req.entryNodeDestination, req.id, "failed");
     log.normal("request %s expired", req.id);
+  }
+
+  /**
+   * Remove request from requestCache and add failed metric
+   * @param req Request
+   * @returns void
+   */
+  public handleFailedRequest(req: Request) {
+    // add metric failed metric
+    this.onRequestRemoval(req);
+    // reject request promise
+    this.requestCache.getRequest(req.id)?.reject("request failed");
+    this.requestCache.removeRequest(req);
   }
 
   /**
@@ -421,16 +443,12 @@ export default class SDK {
 
         if (rejectedResults.length > 0) {
           // If any promises were rejected, remove request from cache and reject promise
-          this.onRequestRemoval(req);
-          this.requestCache.removeRequest(req);
-          reject("failed to send message to hoprd");
+          this.handleFailedRequest(req);
         }
       } catch (e) {
         // If there was an error sending the request, remove request from cache and reject promise
         log.error("failed to send message to hoprd", e);
-        this.onRequestRemoval(req);
-        this.requestCache.removeRequest(req);
-        reject("failed to send message to hoprd");
+        this.handleFailedRequest(req);
       }
     });
   }
