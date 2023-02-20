@@ -1,5 +1,6 @@
 {
   "extends": "@rpch/configs-typescript/nodejs.json",
-  "include": ["src"],
+  "include": ["src",    "src/**/*.sql"
+],
   "exclude": ["node_modules"]
 }

@@ -1,5 +1,6 @@
 --
 -- PostgreSQL database dump
+-- INITIAL SCHEMA BEFORE MIGRATIONS RUN BEFORE ALL MIGRATIONS
 --
 
 -- Dumped from database version 15.1 (Debian 15.1-1.pgdg110+1)
@@ -58,14 +59,11 @@ ALTER TABLE public.clients OWNER TO postgres;
 CREATE TABLE public.quotas (
     id serial PRIMARY KEY,
     client_id character varying(255) NOT NULL,
-    paid_by character varying(255) NOT NULL,
     quota integer NOT NULL,
     action_taker character varying(255) NOT NULL,
     created_at timestamptz DEFAULT now() NOT NULL,
     updated_at timestamptz DEFAULT now() NOT NULL,
     CONSTRAINT quotas_client_id_fkey FOREIGN KEY (client_id)
-        REFERENCES public.clients (id),
-    CONSTRAINT quotas_paid_by_fkey FOREIGN KEY (paid_by)
         REFERENCES public.clients (id)
 );
 
