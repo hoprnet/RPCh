@@ -327,17 +327,19 @@ export const v1Router = (ops: {
             .json({ errors: "Could not find eligible node" });
         }
 
-        // calculate how much should be funded to entry node
-        const amountToFund = getRewardForNode(
-          ops.baseQuota,
-          BASE_EXTRA,
-          selectedNode
-        );
-        // fund entry node
-        await ops.fundingServiceApi.requestFunds({
-          amount: amountToFund,
-          node: selectedNode,
-        });
+        // DISCLAIMER: ACTIVATE THIS WHEN FUNDING IS STABLE
+        // // calculate how much should be funded to entry node
+        // const amountToFund = getRewardForNode(
+        //   ops.baseQuota,
+        //   BASE_EXTRA,
+        //   selectedNode
+        // );
+
+        // // fund entry node
+        // await ops.fundingServiceApi.requestFunds({
+        //   amount: amountToFund,
+        //   node: selectedNode,
+        // });
 
         // create negative quota (showing that the client has used up initial quota)
         await createQuota(ops.db, {

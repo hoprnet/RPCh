@@ -116,7 +116,8 @@ describe("test registered node functions", function () {
 
     assert.equal(freshNodes?.length, 2);
   });
-  it("should get eligible node", async function () {
+  // DISCLAIMER: ACTIVATE THIS WHEN FUNDING IS STABLE
+  it.skip("should get eligible node", async function () {
     await createRegisteredNode(dbInstance, mockNode("1", false));
     await createRegisteredNode(dbInstance, mockNode("2", true));
     await createRegisteredNode(dbInstance, mockNode("3", true));
