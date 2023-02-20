@@ -1,5 +1,14 @@
 # @rpch/ethers
 
+## 0.1.7-blockwallet.0
+
+### Patch Changes
+
+- BlockWallet compatibility update
+- Updated dependencies
+  - @rpch/common@0.1.7-blockwallet.0
+  - @rpch/sdk@0.1.7-blockwallet.0
+
 ## 0.1.6
 
 ### Patch Changes

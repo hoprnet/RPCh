@@ -1,6 +1,6 @@
 {
   "name": "@rpch/ethers",
-  "version": "0.1.6",
+  "version": "0.1.7-blockwallet.0",
   "license": "LGPL-3.0",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
@@ -22,8 +22,8 @@
   "dependencies": {
     "@ethersproject/properties": "^5.7.0",
     "@ethersproject/providers": "^5.7.2",
-    "@rpch/common": "0.1.6",
-    "@rpch/sdk": "0.1.6"
+    "@rpch/common": "0.1.7-blockwallet.0",
+    "@rpch/sdk": "0.1.7-blockwallet.0"
   },
   "peerDependencies": {
     "ethers": "^5.7.2"

@@ -1,0 +1,25 @@
+{
+  "mode": "pre",
+  "tag": "blockwallet",
+  "initialVersions": {
+    "@rpch/discovery-platform": "0.0.3",
+    "@rpch/exit-node": "0.0.7",
+    "@rpch/funding-service": "0.0.7",
+    "@rpch/rpc-server": "0.0.1",
+    "@rpch/configs-eslint": "0.0.0",
+    "@rpch/configs-jest": "0.0.0",
+    "@rpch/configs-prettier": "0.0.0",
+    "@rpch/configs-tsup": "0.0.0",
+    "@rpch/configs-typescript": "0.0.0",
+    "@rpch/e2e": "0.0.4",
+    "@rpch/manager": "0.0.1",
+    "@rpch/sandbox": "0.0.0",
+    "@rpch/common": "0.1.6",
+    "@rpch/crypto-bridge": "0.1.6",
+    "@rpch/ethers": "0.1.6",
+    "@rpch/sdk": "0.1.6"
+  },
+  "changesets": [
+    "silver-bees-itch"
+  ]
+}

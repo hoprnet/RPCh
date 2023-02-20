@@ -1,5 +1,12 @@
 # @rpch/funding-service
 
+## 0.0.8-blockwallet.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @rpch/common@0.1.7-blockwallet.0
+
 ## 0.0.7
 
 ### Patch Changes

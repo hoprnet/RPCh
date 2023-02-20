@@ -1,5 +1,13 @@
 # @rpch/common
 
+## 0.1.7-blockwallet.0
+
+### Patch Changes
+
+- BlockWallet compatibility update
+- Updated dependencies
+  - @rpch/crypto-bridge@0.1.7-blockwallet.0
+
 ## 0.1.6
 
 ### Patch Changes
