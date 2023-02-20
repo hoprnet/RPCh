@@ -8,6 +8,7 @@
     "dev": "yarn build --watch",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "eslint \"src/**/*.ts*\"",
+    "migrate": "node-pg-migrate --migration-file-language ts",
     "test": "jest --coverage",
     "start": "node build/index.js"
   },
@@ -33,6 +34,8 @@
     "graphql": "^16.6.0",
     "graphql-request": "^5.0.0",
     "node-fetch": "^2.6.2",
+    "node-pg-migrate": "^6.2.2",
+    "pg": "^8.9.0",
     "pg-promise": "^11.0.0"
   }
 }

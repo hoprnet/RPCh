@@ -7,6 +7,8 @@ import fs from "fs";
 import { getRegisteredNodes } from "./registered-node";
 import { checkCommitment } from "./graph-api";
 import * as constants from "./constants";
+import migrate from "node-pg-migrate";
+import path from "path";
 
 const log = createLogger();
 
@@ -39,14 +41,25 @@ const start = async (ops: {
   fundingServiceUrl: string;
 }) => {
   // create tables if they do not exist in the db
-  const schemaSql = fs.readFileSync("dump.sql", "utf8").toString();
-  const existingTables = await ops.db.manyOrNone(
-    "SELECT * FROM information_schema.tables WHERE table_name IN ('funding_requests', 'quotas', 'registered_nodes', 'clients')"
-  );
-  if (!existingTables.length) {
-    await ops.db.none(schemaSql);
-  }
-  await ops.db.connect();
+  // const schemaSql = fs.readFileSync("dump.sql", "utf8").toString();
+  // const existingTables = await ops.db.manyOrNone(
+  //   "SELECT * FROM information_schema.tables WHERE table_name IN ('funding_requests', 'quotas', 'registered_nodes', 'clients')"
+  // );
+  // if (!existingTables.length) {
+  //   await ops.db.none(schemaSql);
+  // }
+  // await ops.db.connect();
+
+  const migrationsDirectory = path.join(__dirname, "migrations");
+  // run all migrations in dir
+  await migrate({
+    schema: "public",
+    direction: "up",
+    count: Infinity,
+    databaseUrl: constants.DB_CONNECTION_URL!,
+    migrationsTable: "migrations",
+    dir: migrationsDirectory,
+  });
 
   // init services
   const fundingServiceApi = new FundingServiceApi(
