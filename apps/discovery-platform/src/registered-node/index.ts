@@ -71,6 +71,7 @@ export const getEligibleNode = async (
 ): Promise<QueryRegisteredNode | undefined> => {
   const readyNodes = await getRegisteredNodes(dbInstance, {
     ...filters,
+    status: "READY",
   });
   if (readyNodes.length) {
     // choose selected entry node
