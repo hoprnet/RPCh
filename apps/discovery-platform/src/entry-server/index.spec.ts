@@ -18,7 +18,7 @@ import assert from "assert";
 import { createClient } from "../client";
 
 const FUNDING_SERVICE_URL = "http://localhost:5000";
-const BASE_QUOTA = 1;
+const BASE_QUOTA = BigInt(1);
 const FAKE_ACCESS_TOKEN = "EcLjvxdALOT0eq18d8Gzz3DEr3AMG27NtL+++YPSZNE=";
 
 const nockFundingRequest = (nodeAddress: string) =>
@@ -67,21 +67,23 @@ describe("test entry server", function () {
 
   it("should retrieve an entry node", async function () {
     const spy = jest.spyOn(registeredNode, "getEligibleNode");
-    const amountLeft = 10;
+    const amountLeft = BigInt(10).toString();
     const peerId = "entry";
     const requestId = 1;
 
     const getAccessTokenBody: getAccessTokenResponse = {
       accessToken: FAKE_ACCESS_TOKEN,
-      amountLeft: 10,
+      amountLeft: BigInt(10).toString(),
       expiredAt: new Date().toISOString(),
     };
 
     nockGetApiAccessToken.reply(200, getAccessTokenBody);
-    await request(app).post("/api/v1/client/quota").send({
-      client: "client",
-      quota: 1,
-    });
+    await request(app)
+      .post("/api/v1/client/quota")
+      .send({
+        client: "client",
+        quota: BigInt(1).toString(),
+      });
 
     await request(app)
       .post("/api/v1/node/register")

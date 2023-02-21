@@ -3,9 +3,10 @@ import { AccessTokenService } from "../access-token";
 import { getBalanceForAllChains, getProviders } from "../blockchain";
 import { RequestService } from "../request";
 import { createLogger } from "../utils";
-import { tokenIsValid } from "./middleware";
-import { body, validationResult, param } from "express-validator";
+import { tokenIsValid, validateAmountAndToken } from "./middleware";
+import { validationResult, param } from "express-validator";
 import * as constants from "../constants";
+import { utils } from "@rpch/common";
 
 const app = express();
 const log = createLogger(["entry-server"]);
@@ -23,10 +24,11 @@ export const entryServer = (ops: {
   accessTokenService: AccessTokenService;
   requestService: RequestService;
   walletAddress: string;
-  maxAmountOfTokens: number;
+  maxAmountOfTokens: bigint;
   timeout: number;
 }) => {
   app.use(express.json());
+  app.set("json replacer", utils.bigIntReplacer);
 
   app.get("/api/access-token", async (req, res) => {
     try {
@@ -39,7 +41,7 @@ export const entryServer = (ops: {
         accessToken: accessToken?.token,
         expiredAt: accessToken?.expired_at,
         createdAt: accessToken?.created_at,
-        amountLeft: ops.maxAmountOfTokens,
+        amountLeft: ops.maxAmountOfTokens.toString(),
       });
     } catch (e) {
       log.error("Can not create access token", e);
@@ -49,15 +51,8 @@ export const entryServer = (ops: {
 
   app.post(
     "/api/request/funds/:blockchainAddress",
-    body("amount").notEmpty().bail().isNumeric({ no_symbols: true }),
-    body("chainId").notEmpty().bail().isNumeric(),
-    tokenIsValid(
-      ops.accessTokenService,
-      ops.requestService,
-      ops.maxAmountOfTokens,
-      true
-    ),
-    async (req, res) => {
+    validateAmountAndToken(ops),
+    async (req: express.Request, res: express.Response) => {
       try {
         log.verbose(
           `POST /api/request/funds/:blockchainAddress`,
@@ -71,7 +66,7 @@ export const entryServer = (ops: {
           return res.status(400).json({ errors: errors.array() });
         }
         const nodeAddress = String(req.params.blockchainAddress);
-        const amount = String(req.body.amount);
+        const amount = BigInt(req.body.amount);
         const chainId = Number(req.body.chainId);
 
         // can be enforced because the existence is checked in the middleware
@@ -93,7 +88,7 @@ export const entryServer = (ops: {
         );
         return res.json({
           id: request.id,
-          amountLeft: ops.maxAmountOfTokens - amountUsed[chainId],
+          amountLeft: String(ops.maxAmountOfTokens - amountUsed[chainId]),
         });
       } catch (e) {
         log.error("Can not request funding", e);
@@ -113,6 +108,7 @@ export const entryServer = (ops: {
       try {
         log.verbose(`GET /api/request/status`);
         const requests = await ops.requestService.getRequests();
+
         return res.status(200).json(requests);
       } catch (e) {
         log.error("Can not get status for requests", e);
@@ -179,12 +175,14 @@ export const entryServer = (ops: {
           balances,
           frozenBalances
         );
-
+        const replacer = (_: any, value: any) =>
+          typeof value === "bigint" ? value.toString() : value;
         // all balances are in wei
-        return res.json({
-          available: availableBalances,
-          frozen: frozenBalances,
-        });
+        const jsonString = JSON.stringify(
+          { availableBalances, frozenBalances },
+          replacer
+        );
+        return res.json(JSON.parse(jsonString));
       } catch (e) {
         log.error("Can not get status for a single request", e);
         return res.status(500).json({ errors: "Unexpected error" });

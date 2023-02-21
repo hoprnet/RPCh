@@ -38,7 +38,7 @@ describe("test funding requests functions", function () {
     if (!createdNode) throw new Error("Failed to query created node");
 
     const createdFundedRequest = await createFundingRequest(dbInstance, {
-      amount: "1",
+      amount: BigInt("1"),
       registeredNodeId: createdNode.id,
       requestId: Math.floor(Math.random() * 1e6),
     });

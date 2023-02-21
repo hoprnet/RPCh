@@ -4,7 +4,7 @@ import { QueryRegisteredNode } from "../registered-node/dto";
 import { GetAccountChannelsResponse } from "./dto";
 import { createLogger } from "../utils";
 import * as constants from "../constants";
-
+import { utils } from "@rpch/common";
 const log = createLogger(["graph-api"]);
 
 /**
@@ -79,7 +79,7 @@ export const checkCommitment = async (ops: {
 
     log.verbose([
       "Received information from the graph",
-      JSON.stringify(graphRes),
+      JSON.stringify(graphRes, utils.bigIntReplacer),
     ]);
 
     // check if it has enough balance and enough open channels
@@ -107,7 +107,7 @@ export const validateNode = (
   minChannels: number
 ): boolean => {
   const sumOfBalance = graphRes.data.account.fromChannels.reduce(
-    (acc, channel) => acc + channel.balance,
+    (acc, channel) => acc + Number(channel.balance),
     0
   );
   const amountOfOpenChannels = graphRes.data.account.fromChannels.length;
@@ -125,10 +125,13 @@ export const getUpdatedAccounts = async (blockNumber: number) => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        query: getAccountsFromBlockChange,
-        variables,
-      }),
+      body: JSON.stringify(
+        {
+          query: getAccountsFromBlockChange,
+          variables,
+        },
+        utils.bigIntReplacer
+      ),
     });
 
     const graphRes: GetAccountChannelsResponse = await channels.json();

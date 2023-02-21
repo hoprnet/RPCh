@@ -11,6 +11,7 @@ import {
 } from "@rpch/common";
 import { utils as etherUtils } from "ethers";
 import fetch from "cross-fetch";
+import retry from "async-retry";
 import ReliabilityScore, { Stats } from "./reliability-score";
 import RequestCache from "./request-cache";
 import { createLogger } from "./utils";
@@ -102,64 +103,71 @@ export default class SDK {
     apiToken: string;
     peerId: string;
   }> {
-    log.verbose("Selecting entry node");
-    const rawResponse: globalThis.Response = await fetch(
-      new URL(
-        "/api/v1/request/entry-node",
-        discoveryPlatformApiEndpoint
-      ).toString(),
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept-Content": "application/json",
-        },
-        body: JSON.stringify({
-          client: this.ops.client,
-          exclusionList,
-        }),
-      }
-    );
-
-    const response: {
-      hoprd_api_endpoint: string;
-      accessToken: string;
-      id: string;
-    } = await rawResponse.json();
-
-    // Check for error response
-    if (rawResponse.status !== 200) {
-      log.error("Failed to request entry node", rawResponse.status, response);
-      throw new Error(`Failed to request entry node`);
-    }
-
-    const apiEndpointUrl = new URL(response.hoprd_api_endpoint);
-
-    this.entryNode = {
-      apiEndpoint: apiEndpointUrl.toString(),
-      apiToken: response.accessToken,
-      peerId: response.id,
-    };
-    log.verbose("Selected entry node", this.entryNode);
-
-    // Refresh messageListener
-    if (this.stopMessageListener) this.stopMessageListener();
-    this.stopMessageListener = await hoprd.createMessageListener(
-      this.entryNode!.apiEndpoint,
-      this.entryNode!.apiToken,
-      (message) => {
-        try {
-          const segment = Segment.fromString(message);
-          this.segmentCache.onSegment(segment);
-        } catch (e) {
-          log.verbose(
-            "rejected received data from HOPRd: not a valid segment",
-            message
-          );
+    try {
+      this.selectingEntryNode = true;
+      log.verbose("Selecting entry node");
+      const rawResponse: globalThis.Response = await fetch(
+        new URL(
+          "/api/v1/request/entry-node",
+          discoveryPlatformApiEndpoint
+        ).toString(),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept-Content": "application/json",
+          },
+          body: JSON.stringify({
+            client: this.ops.client,
+            exclusionList,
+          }),
         }
+      );
+
+      const response: {
+        hoprd_api_endpoint: string;
+        accessToken: string;
+        id: string;
+      } = await rawResponse.json();
+
+      // Check for error response
+      if (rawResponse.status !== 200) {
+        log.error("Failed to request entry node", rawResponse.status, response);
+        throw new Error(`Failed to request entry node`);
       }
-    );
-    return this.entryNode;
+
+      const apiEndpointUrl = new URL(response.hoprd_api_endpoint);
+
+      this.entryNode = {
+        apiEndpoint: apiEndpointUrl.toString(),
+        apiToken: response.accessToken,
+        peerId: response.id,
+      };
+      log.verbose("Selected entry node", this.entryNode);
+
+      // Refresh messageListener
+      if (this.stopMessageListener) this.stopMessageListener();
+      this.stopMessageListener = await hoprd.createMessageListener(
+        this.entryNode!.apiEndpoint,
+        this.entryNode!.apiToken,
+        (message) => {
+          try {
+            const segment = Segment.fromString(message);
+            this.segmentCache.onSegment(segment);
+          } catch (e) {
+            log.verbose(
+              "rejected received data from HOPRd: not a valid segment",
+              message
+            );
+          }
+        }
+      );
+      return this.entryNode;
+    } catch (error) {
+      throw error;
+    } finally {
+      this.selectingEntryNode = false;
+    }
   }
 
   /**
@@ -208,41 +216,50 @@ export default class SDK {
       return;
     }
 
-    const counter = await this.getKeyVal(
-      match.request.exitNodeDestination
-    ).then((k) => BigInt(k || "0"));
+    try {
+      const counter = await this.getKeyVal(
+        match.request.exitNodeDestination
+      ).then((k) => BigInt(k || "0"));
 
-    // construct Response from Message
-    const response = Response.fromMessage(
-      this.crypto!,
-      match.request,
-      message,
-      counter,
-      (exitNodeId, counter) => {
-        this.setKeyVal(exitNodeId, counter.toString());
-      }
-    );
+      // construct Response from Message
+      const response = Response.fromMessage(
+        this.crypto!,
+        match.request,
+        message,
+        counter,
+        (exitNodeId, counter) => {
+          this.setKeyVal(exitNodeId, counter.toString());
+        }
+      );
 
-    const responseTime = Date.now() - match.createdAt.getTime();
-    log.verbose(
-      "response time for request %s: %s ms",
-      match.request.id,
-      responseTime,
-      log.createMetric({
-        id: match.request.id,
-        responseTime: responseTime,
-      })
-    );
+      const responseTime = Date.now() - match.createdAt.getTime();
+      log.verbose(
+        "response time for request %s: %s ms",
+        match.request.id,
+        responseTime,
+        log.createMetric({
+          id: match.request.id,
+          responseTime: responseTime,
+        })
+      );
 
-    match.resolve(response);
-    this.reliabilityScore.addMetric(
-      match.request.entryNodeDestination,
-      match.request.id,
-      "success"
-    );
-    this.requestCache.removeRequest(match.request);
+      match.resolve(response);
+      this.reliabilityScore.addMetric(
+        match.request.entryNodeDestination,
+        match.request.id,
+        "success"
+      );
+      this.requestCache.removeRequest(match.request);
 
-    log.verbose("responded to %s with %s", match.request.body, response.body);
+      log.verbose("responded to %s with %s", match.request.body, response.body);
+    } catch (e) {
+      log.error(
+        "failed to decrypt message id %s with body",
+        message.id,
+        message.body
+      );
+      this.handleFailedRequest(match.request);
+    }
   }
 
   /**
@@ -254,6 +271,19 @@ export default class SDK {
     // @ts-ignore
     this.reliabilityScore.addMetric(req.entryNodeDestination, req.id, "failed");
     log.normal("request %s expired", req.id);
+  }
+
+  /**
+   * Remove request from requestCache and add failed metric
+   * @param req Request
+   * @returns void
+   */
+  public handleFailedRequest(req: Request) {
+    // add metric failed metric
+    this.onRequestRemoval(req);
+    // reject request promise
+    this.requestCache.getRequest(req.id)?.reject("request failed");
+    this.requestCache.removeRequest(req);
   }
 
   /**
@@ -275,6 +305,28 @@ export default class SDK {
       await this.crypto.init();
     }
 
+    // fetch required data from discovery platform
+    await retry(
+      () => this.selectEntryNode(this.ops.discoveryPlatformApiEndpoint),
+      {
+        retries: 5,
+        onRetry: (e, attempt) => {
+          log.error("Error while selecting entry node", e);
+          log.verbose("Retrying to select entry node, attempt:", attempt);
+        },
+      }
+    );
+    await retry(
+      () => this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint),
+      {
+        retries: 5,
+        onRetry: (e, attempt) => {
+          log.error("Error while fetching exit nodes", e);
+          log.verbose("Retrying to fetch exit nodes, attempt:", attempt);
+        },
+      }
+    );
+
     // check for expires caches every second
     this.intervals.push(
       setInterval(() => {
@@ -288,9 +340,6 @@ export default class SDK {
         this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint);
       }, 60e3)
     );
-
-    await this.selectEntryNode(this.ops.discoveryPlatformApiEndpoint);
-    await this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint);
   }
 
   /**
@@ -325,15 +374,12 @@ export default class SDK {
       log.verbose("node is not reliable enough. selecting new entry node");
       exclusionList.push(this.entryNode!.peerId);
       try {
-        this.selectingEntryNode = true;
         await this.selectEntryNode(
           this.ops.discoveryPlatformApiEndpoint,
           exclusionList
         );
-        this.selectingEntryNode = false;
       } catch (error) {
-        log.error("Couldn't find elegible node: ", error);
-        this.selectingEntryNode = false;
+        log.error("Couldn't find new entry node: ", error);
         this.setDeadlock(DEADLOCK_MS);
       }
       log.verbose("got new entry node");
@@ -421,16 +467,12 @@ export default class SDK {
 
         if (rejectedResults.length > 0) {
           // If any promises were rejected, remove request from cache and reject promise
-          this.onRequestRemoval(req);
-          this.requestCache.removeRequest(req);
-          reject("failed to send message to hoprd");
+          this.handleFailedRequest(req);
         }
       } catch (e) {
         // If there was an error sending the request, remove request from cache and reject promise
         log.error("failed to send message to hoprd", e);
-        this.onRequestRemoval(req);
-        this.requestCache.removeRequest(req);
-        reject("failed to send message to hoprd");
+        this.handleFailedRequest(req);
       }
     });
   }

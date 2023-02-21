@@ -82,6 +82,78 @@ describe("test SDK class", function () {
     });
   });
 
+  describe("started unstable", function () {
+    let mock: ReturnType<typeof createSdkMock>;
+
+    beforeEach(async function () {
+      mock = createSdkMock();
+    });
+
+    afterEach(async function () {
+      await mock.sdk.stop();
+      jest.clearAllMocks();
+    });
+
+    it("should select entry node after 2 tries", async function () {
+      //@ts-ignore
+      const selectEntryNodeMock = jest.spyOn(mock.sdk, "selectEntryNode");
+
+      DP_GET_NODES.reply(200, [
+        {
+          exit_node_pub_key: EXIT_NODE_PUB_KEY,
+          id: EXIT_NODE_PEER_ID,
+        },
+      ]);
+
+      // fail 3 times, work after wards
+      nock(DISCOVERY_PLATFORM_API_ENDPOINT)
+        .post("/api/v1/request/entry-node")
+        .once()
+        .reply(500)
+        .post("/api/v1/request/entry-node")
+        .once()
+        .reply(200, {
+          hoprd_api_endpoint: ENTRY_NODE_API_ENDPOINT,
+          hoprd_api_port: ENTRY_NODE_API_PORT,
+          accessToken: ENTRY_NODE_API_TOKEN,
+          id: ENTRY_NODE_PEER_ID,
+        });
+
+      await mock.sdk.start();
+
+      assert.equal(selectEntryNodeMock.mock.calls.length, 2);
+    });
+
+    it("should fetch exit nodes after 2 tries", async function () {
+      //@ts-ignore
+      const fetchExitNodesMock = jest.spyOn(mock.sdk, "fetchExitNodes");
+
+      DP_REQ_ENTRY_NOCK.reply(200, {
+        hoprd_api_endpoint: ENTRY_NODE_API_ENDPOINT,
+        hoprd_api_port: ENTRY_NODE_API_PORT,
+        accessToken: ENTRY_NODE_API_TOKEN,
+        id: ENTRY_NODE_PEER_ID,
+      });
+
+      nock(DISCOVERY_PLATFORM_API_ENDPOINT)
+        .get("/api/v1/node?hasExitNode=true")
+        .once()
+        .reply(500)
+        .get("/api/v1/node?hasExitNode=true")
+        .once()
+        .reply(200, [
+          {
+            exit_node_pub_key: EXIT_NODE_PUB_KEY,
+            id: EXIT_NODE_PEER_ID,
+          },
+        ]);
+
+      await mock.sdk.start();
+
+      assert.equal(fetchExitNodesMock.mock.calls.length, 2);
+    });
+  });
+
   describe("started", function () {
     let ops: HoprSdkOps;
     let sdk: SDK;
@@ -314,12 +386,41 @@ describe("test SDK class", function () {
       }
       sdk.setDeadlock(0);
     });
+
+    it("should handle failed request", async function () {
+      HOPRD_SEND_MESSAGE_NOCK.reply(400, "error");
+      const [clientRequest] = fixtures.generateMockedFlow(3);
+      const resolveFunc = jest.fn(() => {});
+      const rejectFunc = jest.fn(() => {});
+
+      // @ts-ignore
+      sdk.requestCache.addRequest(clientRequest, resolveFunc, rejectFunc);
+
+      // call function to handle request failed
+      sdk.handleFailedRequest(clientRequest);
+
+      // should reject promise
+      assert.equal(rejectFunc.mock.calls.length, 1);
+
+      // request should not be in request cache
+      // @ts-ignore
+      assert.equal(sdk.requestCache.getRequest(clientRequest.id), undefined);
+
+      // should add failed metric
+      assert.equal(
+        // @ts-ignore
+        sdk.reliabilityScore.metrics.get(sdk.entryNode?.peerId)?.stats.failed,
+        1
+      );
+    });
+
     it("should not save request to requestCache if request to hoprd fails", async function () {
       HOPRD_SEND_MESSAGE_NOCK.reply(400, "error");
       const [clientRequest] = fixtures.generateMockedFlow(3);
       try {
         await sdk.sendRequest(clientRequest);
       } catch (e: any) {
+        // this will run if request is rejected
         // @ts-ignore
         assert.equal(sdk.requestCache.getRequest(clientRequest.id), undefined);
       }

@@ -7,7 +7,7 @@ const app = express();
 
 export const entryServer = (ops: {
   db: DBInstance;
-  baseQuota: number;
+  baseQuota: bigint;
   fundingServiceApi: FundingServiceApi;
 }) => {
   app.use(

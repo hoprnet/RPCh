@@ -6,6 +6,8 @@ import { IBackup, IMemoryDb, newDb } from "pg-mem";
 import { utils } from "@rpch/common";
 import { CreateClient, QueryClient } from "../client/dto";
 import path from "path";
+import * as fixtures from "@rpch/common/build/fixtures";
+
 export class MockPgInstanceSingleton {
   private static pgInstance: IMemoryDb;
   private static dbInstance: db.DBInstance;
@@ -17,6 +19,7 @@ export class MockPgInstanceSingleton {
     const migrationsDirectory = path.join(__dirname, "../../migrations");
     let instance = newDb();
     await instance.public.migrate({ migrationsPath: migrationsDirectory });
+    fixtures.withQueryIntercept(instance);
     MockPgInstanceSingleton.pgInstance = instance;
     MockPgInstanceSingleton.initialDbState =
       MockPgInstanceSingleton.pgInstance.backup();
@@ -61,7 +64,7 @@ const createMockNode = (
   hoprd_api_token: "sometoken",
   honesty_score: 0,
   status: "FRESH",
-  total_amount_funded: 0,
+  total_amount_funded: BigInt(0),
   created_at: Date.now().toString(),
   updated_at: Date.now().toString(),
 });
@@ -70,8 +73,12 @@ const createMockQuota = (params?: CreateQuota): CreateQuota => {
   return {
     actionTaker: params?.actionTaker ?? "discovery-platform",
     clientId: params?.clientId ?? "client",
+<<<<<<< HEAD
     quota: params?.quota ?? 1,
     paidBy: params?.paidBy ?? "client",
+=======
+    quota: params?.quota ?? BigInt(1),
+>>>>>>> origin
   };
 };
 
@@ -245,8 +252,12 @@ describe("test db functions", function () {
       const mockQuota = createMockQuota({
         clientId: "client",
         actionTaker: "discovery",
+<<<<<<< HEAD
         quota: 10,
         paidBy: "other client",
+=======
+        quota: BigInt(10),
+>>>>>>> origin
       });
       await db.createQuota(dbInstance, mockQuota);
       await db.createQuota(dbInstance, mockQuota);
@@ -255,8 +266,12 @@ describe("test db functions", function () {
         createMockQuota({
           actionTaker: "discovery",
           clientId: otherClient.id,
+<<<<<<< HEAD
           quota: 20,
           paidBy: "other client",
+=======
+          quota: BigInt(20),
+>>>>>>> origin
         })
       );
 
@@ -296,8 +311,12 @@ describe("test db functions", function () {
       const mockQuota = createMockQuota({
         clientId: "client",
         actionTaker: "discovery",
+<<<<<<< HEAD
         quota: 10,
         paidBy: "client",
+=======
+        quota: BigInt(10),
+>>>>>>> origin
       });
       const createdQuota = await db.createQuota(dbInstance, mockQuota);
 
@@ -333,8 +352,12 @@ describe("test db functions", function () {
       const mockQuota = createMockQuota({
         clientId: "client",
         actionTaker: "discovery",
+<<<<<<< HEAD
         quota: 10,
         paidBy: "client",
+=======
+        quota: BigInt(10),
+>>>>>>> origin
       });
       const createdQuota = await db.createQuota(dbInstance, mockQuota);
       if (!createdQuota.id) throw new Error("Could not create mock quota");
@@ -350,7 +373,7 @@ describe("test db functions", function () {
       const createdFundedRequest = await db.createFundingRequest(dbInstance, {
         registered_node_id: node.id,
         request_id: Math.floor(Math.random() * 1e6),
-        amount: "1",
+        amount: BigInt("1"),
       });
 
       assert.equal(createdFundedRequest.registered_node_id, node.id);

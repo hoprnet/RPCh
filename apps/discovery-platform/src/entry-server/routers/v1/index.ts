@@ -24,12 +24,12 @@ import {
   getRewardForNode,
 } from "../../../registered-node";
 import { CreateRegisteredNode } from "../../../registered-node/dto";
-import { createLogger } from "../../../utils";
+import { createLogger, isListSafe } from "../../../utils";
 
 const log = createLogger(["entry-server", "router", "v1"]);
 
 // base amount of reward that a node will receive after completing a request
-const BASE_EXTRA = 1;
+const BASE_EXTRA = BigInt(1);
 
 // payment mode when quota is paid by trial
 const TRIAL_PAYMENT_MODE = "trial";
@@ -119,19 +119,10 @@ const getNodeSchema: Record<
   },
 };
 
-const isListSafe = (value: string) => {
-  // check that the list only has ids and commas
-  const noSpecialCharsRegex = /^[a-zA-Z0-9]+$/;
-  if (noSpecialCharsRegex.test(value)) return true;
-
-  const alphanumericCommaRegex = /^[a-zA-Z0-9,]+$/;
-  return alphanumericCommaRegex.test(value);
-};
-
 // Express Router
 export const v1Router = (ops: {
   db: DBInstance;
-  baseQuota: number;
+  baseQuota: bigint;
   fundingServiceApi: FundingServiceApi;
 }) => {
   const router = express.Router();
@@ -331,22 +322,24 @@ export const v1Router = (ops: {
             .json({ errors: "Could not find eligible node" });
         }
 
-        // calculate how much should be funded to entry node
-        const amountToFund = getRewardForNode(
-          ops.baseQuota,
-          BASE_EXTRA,
-          selectedNode
-        );
-        // fund entry node
-        await ops.fundingServiceApi.requestFunds({
-          amount: amountToFund,
-          node: selectedNode,
-        });
+        // DISCLAIMER: ACTIVATE THIS WHEN FUNDING IS STABLE
+        // // calculate how much should be funded to entry node
+        // const amountToFund = getRewardForNode(
+        //   ops.baseQuota,
+        //   BASE_EXTRA,
+        //   selectedNode
+        // );
+
+        // // fund entry node
+        // await ops.fundingServiceApi.requestFunds({
+        //   amount: amountToFund,
+        //   node: selectedNode,
+        // });
 
         // create negative quota (showing that the client has used up initial quota)
         await createQuota(ops.db, {
           clientId: dbClient.id,
-          quota: ops.baseQuota * -1,
+          quota: ops.baseQuota * BigInt(-1),
           actionTaker: "discovery platform",
           paidBy: paidById,
         });
@@ -368,7 +361,7 @@ export const v1Router = (ops: {
 export const doesClientHaveQuota = async (
   db: DBInstance,
   client: string,
-  baseQuota: number
+  baseQuota: bigint
 ) => {
   const allQuotasFromClient = await getQuotasPaidByClient(db, client);
   const sumOfClientsQuota = sumQuotas(allQuotasFromClient);

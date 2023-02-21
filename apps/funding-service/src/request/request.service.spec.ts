@@ -8,7 +8,7 @@ import { MockPgInstanceSingleton } from "../db/index.spec";
 
 const SECRET_KEY = "SECRET";
 const MOCK_ADDRESS = "0xA10AA7711FD1FA48ACAE6FF00FCB63B0F6AD055F";
-const MOCK_AMOUNT = "100";
+const MOCK_AMOUNT = BigInt("100");
 const MOCK_CHAIN_ID = 80;
 const MOCK_TIMEOUT = 3000;
 
@@ -24,12 +24,12 @@ const createAccessTokenAndRequest = async (
   requestService: RequestService,
   params?: {
     nodeAddress: string;
-    amount: string;
+    amount: bigint;
     chainId: number;
   }
 ) => {
   const queryToken = await accessTokenService.createAccessToken({
-    amount: Number(MOCK_AMOUNT),
+    amount: MOCK_AMOUNT,
     timeout: MOCK_TIMEOUT,
   });
   if (!queryToken) throw new Error("Failed to create test token");
@@ -101,7 +101,7 @@ describe("test RequestService class", function () {
       chainId: request.chain_id,
       id: request.id,
       nodeAddress: request.node_address,
-      amount: String(2 * Number(MOCK_AMOUNT)),
+      amount: BigInt(2 * Number(MOCK_AMOUNT)),
       status: request.status,
     };
 

@@ -1,5 +1,5 @@
 import assert from "assert";
-import { isExpired, randomWords } from "./index";
+import { isExpired, randomWords, isListSafe } from "./index";
 
 describe("test utils file", function () {
   describe("isExpired function", function () {
@@ -25,6 +25,11 @@ describe("test utils file", function () {
       const firstWords = randomWords(5);
       const secondWords = randomWords(5);
       assert.notDeepEqual(firstWords, secondWords);
+    });
+  });
+  describe("isListSafe function", function () {
+    it("should pass following values", function () {
+      assert(isListSafe("abcd,a_b-cd"));
     });
   });
 });

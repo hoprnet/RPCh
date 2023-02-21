@@ -27,8 +27,8 @@ const CONFIRMATIONS = process.env.CONFIRMATIONS
 
 // Max amount of tokens a access token can request
 const MAX_AMOUNT_OF_TOKENS = process.env.MAX_AMOUNT_OF_TOKENS
-  ? Number(process.env.MAX_AMOUNT_OF_TOKENS)
-  : 100;
+  ? BigInt(process.env.MAX_AMOUNT_OF_TOKENS)
+  : BigInt(100);
 
 // Amount of milliseconds that a access token is valid
 const TIMEOUT = process.env.TIMEOUT ? Number(process.env.TIMEOUT) : 30 * 60_000;

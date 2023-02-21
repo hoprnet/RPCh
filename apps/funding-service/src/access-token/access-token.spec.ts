@@ -1,7 +1,7 @@
 import { generateAccessToken } from "./access-token";
 import assert from "assert";
 
-const MOCK_MAX_AMOUNT = 20;
+const MOCK_MAX_AMOUNT = BigInt(20);
 const MOCK_SECRET_KEY = "SECRET_KEY";
 const MOCK_ACCESS_TOKEN_PARAMS = {
   amount: MOCK_MAX_AMOUNT,

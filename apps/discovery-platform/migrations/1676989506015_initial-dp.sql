@@ -32,7 +32,7 @@ CREATE TABLE public.funding_requests (
     id serial NOT NULL,
     registered_node_id character varying(255) NOT NULL,
     request_id integer NOT NULL,
-    amount text NOT NULL,
+    amount numeric(78,0) NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -63,7 +63,7 @@ ALTER TABLE public.clients OWNER TO postgres;
 CREATE TABLE public.quotas (
     id serial PRIMARY KEY,
     client_id character varying(255) NOT NULL,
-    quota integer NOT NULL,
+    quota numeric(78,0) NOT NULL,
     action_taker character varying(255) NOT NULL,
     created_at timestamptz DEFAULT now() NOT NULL,
     updated_at timestamptz DEFAULT now() NOT NULL,
@@ -86,7 +86,7 @@ CREATE TABLE public.registered_nodes (
     hoprd_api_token character varying(255) NOT NULL,
     exit_node_pub_key character varying(255),
     native_address character varying(255) NOT NULL,
-    total_amount_funded numeric NOT NULL,
+    total_amount_funded numeric(78,0) NOT NULL,
     honesty_score numeric NOT NULL,
     reason character varying(255),
     status character varying(255) NOT NULL,

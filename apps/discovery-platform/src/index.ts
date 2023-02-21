@@ -34,7 +34,7 @@ const main = () => {
 
 const start = async (ops: {
   db: DBInstance;
-  baseQuota: number;
+  baseQuota: bigint;
   fundingServiceUrl: string;
 }) => {
   await ops.db.connect();
@@ -57,15 +57,16 @@ const start = async (ops: {
     log.normal("entry server is up");
   });
 
-  // keep track of all pending funding requests to update status or retry
-  const checkForPendingRequests = setInterval(async () => {
-    try {
-      log.normal("tracking pending requests");
-      await fundingServiceApi.checkForPendingRequests();
-    } catch (e) {
-      log.error("Failed to track pending requests", e);
-    }
-  }, 1000);
+  // DISCLAIMER: ACTIVATE THIS WHEN FUNDING IS STABLE
+  // // keep track of all pending funding requests to update status or retry
+  // const checkForPendingRequests = setInterval(async () => {
+  //   try {
+  //     log.normal("tracking pending requests");
+  //     await fundingServiceApi.checkForPendingRequests();
+  //   } catch (e) {
+  //     log.error("Failed to track pending requests", e);
+  //   }
+  // }, 1000);
 
   // check if fresh nodes have committed
   const checkCommitmentForFreshNodes = setInterval(async () => {
@@ -96,7 +97,7 @@ const start = async (ops: {
   }, 1000);
 
   return () => {
-    clearInterval(checkForPendingRequests);
+    // clearInterval(checkForPendingRequests);
     clearInterval(checkCommitmentForFreshNodes);
   };
 };

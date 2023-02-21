@@ -43,8 +43,8 @@ jobs:
       - name: Run tests and coverage
         run: yarn test --ci
 
-  review-dockerfiles:
-    name: Review dockerfiles
+  container-image:
+    name: Build and push container image
     timeout-minutes: 10
     runs-on: ubuntu-latest
     strategy:
@@ -72,15 +72,25 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
-      - name: Build container image
-        uses: "./.github/actions/build-container"
+      - name: Calculate environment variables
+        shell: sh
+        run: echo "SHORT_SHA=`git rev-parse --short HEAD`" >> $GITHUB_ENV
+
+      - name: Login to GCP
+        id: gcloud
+        uses: elgohr/gcloud-login-action@v1 #TODO - v2 is bugged, unable to get outputs
+        with:
+          account_key: ${{ secrets.GOOGLE_CREDENTIALS }}
+
+      - name: Build and push the container image
+        uses: elgohr/Publish-Docker-Github-Action@v5
         with:
           dockerfile: "./${{ matrix.directory }}/${{ matrix.project }}/Dockerfile"
-          image: "sitilge/${{ matrix.project }}"
-          registry: "docker.io"
-          user: ${{ secrets.CONTAINER_REGISTRY_USER }}
-          secret: ${{ secrets.CONTAINER_REGISTRY_SECRET }}
-          tag_with_latest: ${{ startsWith(github.ref, 'main') }}
+          name: ${{ secrets.GOOGLE_PROJECT }}/${{ secrets.GOOGLE_REPOSITORY }}/${{ matrix.project }}
+          registry: ${{ secrets.GOOGLE_REGION }}-docker.pkg.dev
+          username: ${{ steps.gcloud.outputs.username }}
+          password: ${{ steps.gcloud.outputs.password }}
+          tags: "${{ env.SHORT_SHA }}"
 
   review-configuration:
     name: Review configuration
@@ -100,7 +110,7 @@ jobs:
   review-e2e-test-results:
     needs:
       - review-source-code
-      - review-dockerfiles
+      - container-image
       - review-configuration
     name: Review E2E test results
     timeout-minutes: 60

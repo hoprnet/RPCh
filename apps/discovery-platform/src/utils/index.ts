@@ -14,3 +14,15 @@ export const randomWords = (num: number): string[] => {
     utils.randomlySelectFromArray(words)
   );
 };
+
+/**
+ * Check if given value is safe as a list input.
+ *  - alphanumeric
+ *  - commas, dashes, underscores
+ * @param value
+ * @returns true if safe
+ */
+export const isListSafe = (value: string): boolean => {
+  const regexp = /^[\w\-_,]*$/;
+  return regexp.test(value);
+};
