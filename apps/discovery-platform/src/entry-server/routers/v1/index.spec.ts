@@ -49,7 +49,7 @@ describe("test v1 router", function () {
   let app: Express;
 
   beforeAll(async function () {
-    dbInstance = MockPgInstanceSingleton.getDbInstance();
+    dbInstance = await MockPgInstanceSingleton.getDbInstance();
     MockPgInstanceSingleton.getInitialState();
   });
 
@@ -421,7 +421,7 @@ describe("test v1 router", function () {
         await getQuotasCreatedByClient(dbInstance, trialClientId)
       );
 
-      expect(b2dClientQuotaUsed).toEqual(BASE_QUOTA * -1);
+      expect(b2dClientQuotaUsed).toEqual(BASE_QUOTA * BigInt(-1));
       expect(trialClientQuotaAfter).toBeLessThan(trialClientQuotaBefore);
       expect(requestResponse.body).toHaveProperty("id");
 

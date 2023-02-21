@@ -19,8 +19,8 @@ export class MockPgInstanceSingleton {
   private async createInstance() {
     const migrationsDirectory = path.join(__dirname, "../../migrations");
     let instance = newDb();
-    await instance.public.migrate({ migrationsPath: migrationsDirectory });
     fixtures.withQueryIntercept(instance);
+    await instance.public.migrate({ migrationsPath: migrationsDirectory });
     MockPgInstanceSingleton.pgInstance = instance;
     MockPgInstanceSingleton.initialDbState =
       MockPgInstanceSingleton.pgInstance.backup();

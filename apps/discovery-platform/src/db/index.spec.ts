@@ -18,8 +18,8 @@ export class MockPgInstanceSingleton {
   private async createInstance() {
     const migrationsDirectory = path.join(__dirname, "../../migrations");
     let instance = newDb();
-    await instance.public.migrate({ migrationsPath: migrationsDirectory });
     fixtures.withQueryIntercept(instance);
+    await instance.public.migrate({ migrationsPath: migrationsDirectory });
     MockPgInstanceSingleton.pgInstance = instance;
     MockPgInstanceSingleton.initialDbState =
       MockPgInstanceSingleton.pgInstance.backup();
@@ -73,12 +73,8 @@ const createMockQuota = (params?: CreateQuota): CreateQuota => {
   return {
     actionTaker: params?.actionTaker ?? "discovery-platform",
     clientId: params?.clientId ?? "client",
-<<<<<<< HEAD
-    quota: params?.quota ?? 1,
     paidBy: params?.paidBy ?? "client",
-=======
     quota: params?.quota ?? BigInt(1),
->>>>>>> origin
   };
 };
 
@@ -252,12 +248,8 @@ describe("test db functions", function () {
       const mockQuota = createMockQuota({
         clientId: "client",
         actionTaker: "discovery",
-<<<<<<< HEAD
-        quota: 10,
         paidBy: "other client",
-=======
         quota: BigInt(10),
->>>>>>> origin
       });
       await db.createQuota(dbInstance, mockQuota);
       await db.createQuota(dbInstance, mockQuota);
@@ -266,12 +258,8 @@ describe("test db functions", function () {
         createMockQuota({
           actionTaker: "discovery",
           clientId: otherClient.id,
-<<<<<<< HEAD
-          quota: 20,
           paidBy: "other client",
-=======
           quota: BigInt(20),
->>>>>>> origin
         })
       );
 
@@ -289,7 +277,7 @@ describe("test db functions", function () {
       const mockQuota = createMockQuota({
         clientId: "client",
         actionTaker: "discovery",
-        quota: 10,
+        quota: BigInt(10),
         paidBy: "other client",
       });
       await db.createQuota(dbInstance, mockQuota);
@@ -299,7 +287,7 @@ describe("test db functions", function () {
         createMockQuota({
           actionTaker: "discovery",
           clientId: otherClient.id,
-          quota: 20,
+          quota: BigInt(20),
           paidBy: "other client",
         })
       );
@@ -311,12 +299,8 @@ describe("test db functions", function () {
       const mockQuota = createMockQuota({
         clientId: "client",
         actionTaker: "discovery",
-<<<<<<< HEAD
-        quota: 10,
         paidBy: "client",
-=======
         quota: BigInt(10),
->>>>>>> origin
       });
       const createdQuota = await db.createQuota(dbInstance, mockQuota);
 
@@ -352,12 +336,8 @@ describe("test db functions", function () {
       const mockQuota = createMockQuota({
         clientId: "client",
         actionTaker: "discovery",
-<<<<<<< HEAD
-        quota: 10,
         paidBy: "client",
-=======
         quota: BigInt(10),
->>>>>>> origin
       });
       const createdQuota = await db.createQuota(dbInstance, mockQuota);
       if (!createdQuota.id) throw new Error("Could not create mock quota");
