@@ -8,7 +8,7 @@
     "dev": "yarn build --watch",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "eslint \"src/**/*.ts*\"",
-    "migrate": "node-pg-migrate --migration-file-language ts",
+    "migrate": "node-pg-migrate --migration-file-language sql",
     "test": "jest --coverage",
     "start": "node build/index.js"
   },

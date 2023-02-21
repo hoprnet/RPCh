@@ -1,4 +1,9 @@
-import { DBInstance, updateRegisteredNode } from "./db";
+import {
+  DBInstance,
+  runInitialSqlDump,
+  runMigrations,
+  updateRegisteredNode,
+} from "./db";
 import { entryServer } from "./entry-server";
 import { FundingServiceApi } from "./funding-service-api";
 import { createLogger } from "./utils";
@@ -6,9 +11,6 @@ import pgp from "pg-promise";
 import { getRegisteredNodes } from "./registered-node";
 import { checkCommitment } from "./graph-api";
 import * as constants from "./constants";
-import migrate from "node-pg-migrate";
-import path from "path";
-import { runInitialSqlDump } from "./migrations/initial";
 
 const log = createLogger();
 
@@ -41,21 +43,8 @@ const start = async (ops: {
   fundingServiceUrl: string;
 }) => {
   await ops.db.connect();
-  // should only run first time
-  await runInitialSqlDump(ops.db);
-
-  // run migrations
-  const migrationsDirectory = path.join(__dirname, "migrations");
-  await migrate({
-    schema: "public",
-    direction: "up",
-    count: Infinity,
-    databaseUrl: constants.DB_CONNECTION_URL!,
-    migrationsTable: "migrations",
-    dir: migrationsDirectory,
-    // Ignore all typescript def files and initial dump
-    ignorePattern: "^.*.ts$|^initial..*$",
-  });
+  // run db migrations but filters out initial migration
+  await runMigrations(constants.DB_CONNECTION_URL!);
 
   // init services
   const fundingServiceApi = new FundingServiceApi(

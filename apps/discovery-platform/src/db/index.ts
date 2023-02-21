@@ -4,6 +4,9 @@ import pgp from "pg-promise";
 import { createLogger } from "../utils";
 import { QueryFundingRequest } from "../funding-requests/dto";
 import { CreateClient, QueryClient } from "../client/dto";
+import fs from "fs";
+import migrate from "node-pg-migrate";
+import path from "path";
 
 export type DBInstance = pgp.IDatabase<{}>;
 
@@ -20,6 +23,36 @@ const TABLES = {
   FUNDING_REQUESTS: "funding_requests",
   QUOTAS: "quotas",
   CLIENTS: "clients",
+};
+
+/**
+ * SQL Manager / Migrations and initial dump functions
+ */
+
+export const runInitialSqlDump = async (db: DBInstance) => {
+  // create tables if they do not exist in the db
+  const schemaSql = fs.readFileSync("dump.sql", "utf8").toString();
+  // checks if initial tables exists
+  const existingTables = await db.manyOrNone(
+    "SELECT * FROM information_schema.tables WHERE table_name IN ('funding_requests', 'quotas', 'registered_nodes', 'clients')"
+  );
+  if (!existingTables.length) {
+    await db.none(schemaSql);
+  }
+};
+
+export const runMigrations = async (dbUrl: string) => {
+  const migrationsDirectory = path.join(__dirname, "../../migrations");
+
+  await migrate({
+    schema: "public",
+    direction: "up",
+    count: Infinity,
+    databaseUrl: dbUrl,
+    migrationsTable: "migrations",
+    verbose: true,
+    dir: migrationsDirectory,
+  });
 };
 
 /**

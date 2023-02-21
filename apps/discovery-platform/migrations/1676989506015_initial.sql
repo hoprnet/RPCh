@@ -6,6 +6,10 @@
 -- Dumped from database version 15.1 (Debian 15.1-1.pgdg110+1)
 -- Dumped by pg_dump version 15.1 (Debian 15.1-1.pgdg110+1)
 
+--------------------------------------------------------------------------------
+-- Up Migration
+--------------------------------------------------------------------------------
+
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -114,6 +118,3 @@ ALTER TABLE ONLY public.registered_nodes
 ALTER TABLE ONLY public.funding_requests
     ADD CONSTRAINT funding_requests_registered_node_id_fkey FOREIGN KEY (registered_node_id) REFERENCES public.registered_nodes(id);
 
---
--- PostgreSQL database dump complete
---

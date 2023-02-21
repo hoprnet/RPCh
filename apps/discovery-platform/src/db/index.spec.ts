@@ -6,29 +6,35 @@ import { IBackup, IMemoryDb, newDb } from "pg-mem";
 import fs from "fs";
 import { utils } from "@rpch/common";
 import { CreateClient, QueryClient } from "../client/dto";
-
+import path from "path";
 export class MockPgInstanceSingleton {
   private static pgInstance: IMemoryDb;
   private static dbInstance: db.DBInstance;
   private static initialDbState: IBackup;
 
-  private constructor() {
+  private constructor() {}
+
+  private async createInstance() {
+    const migrationsDirectory = path.join(__dirname, "../../migrations");
     let instance = newDb();
-    instance.public.none(fs.readFileSync("dump.sql", "utf8"));
+    await instance.public.migrate({ migrationsPath: migrationsDirectory });
     MockPgInstanceSingleton.pgInstance = instance;
     MockPgInstanceSingleton.initialDbState =
       MockPgInstanceSingleton.pgInstance.backup();
     return MockPgInstanceSingleton.pgInstance;
   }
 
-  public static getInstance(): IMemoryDb {
-    return MockPgInstanceSingleton.pgInstance ?? new this();
+  public static async getInstance(): Promise<IMemoryDb> {
+    if (!MockPgInstanceSingleton.pgInstance) {
+      await new this().createInstance();
+    }
+    return MockPgInstanceSingleton.pgInstance;
   }
 
-  public static getDbInstance(): db.DBInstance {
+  public static async getDbInstance(): Promise<db.DBInstance> {
     if (!MockPgInstanceSingleton.dbInstance) {
-      MockPgInstanceSingleton.dbInstance =
-        this.getInstance().adapters.createPgPromise();
+      const instance = await this.getInstance();
+      MockPgInstanceSingleton.dbInstance = instance.adapters.createPgPromise();
     }
     return MockPgInstanceSingleton.dbInstance;
   }
@@ -82,7 +88,7 @@ describe("test db functions", function () {
   let dbInstance: db.DBInstance;
 
   beforeAll(async function () {
-    dbInstance = MockPgInstanceSingleton.getDbInstance();
+    dbInstance = await MockPgInstanceSingleton.getDbInstance();
     MockPgInstanceSingleton.getInitialState();
   });
 
