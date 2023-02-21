@@ -49,7 +49,7 @@ RUN  curl https://raw.githubusercontent.com/eficode/wait-for/v2.2.3/wait-for > /
 COPY --from=installer /app/apps/funding-service/package.json .
 COPY --from=installer /app .
 COPY apps/funding-service/src/blockchain/erc20-fixture.json /app/apps/funding-service/build/blockchain
-COPY apps/funding-service/dump.sql /app/
+COPY apps/discovery-platform/migrations/ /app
 
 # switch to normal user, to prevent dangerous root access
 RUN chown -R node:node .

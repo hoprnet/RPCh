@@ -22,8 +22,6 @@ export const tokenIsValid =
     requestFunds?: boolean
   ) =>
   async (req: Request, res: Response, next: NextFunction) => {
-    console.log(JSON.stringify(req.body));
-
     const accessTokenHash: string | undefined =
       req.headers["x-access-token"]?.toString();
     log.verbose("validating token", accessTokenHash);
@@ -37,11 +35,6 @@ export const tokenIsValid =
       log.verbose("token has expired", accessTokenHash);
       return res.status(401).json({ errors: "Access Token expired" });
     }
-    console.log(JSON.stringify(req.body), utils.bigIntReplacer);
-    // if (requestFunds && req.body.amount === undefined) {
-    //   log.verbose("missing funding amount");
-    //   return res.status(400).json({ errors: "Missing funding amount" });
-    // }
 
     const hasEnough = await doesAccessTokenHaveEnoughBalance({
       requestService,

@@ -18,11 +18,9 @@ describe("test entry server", function () {
   let requestService: RequestService;
   let app: Express | undefined;
   let agent: request.SuperTest<request.Test>;
-  let pgInstance: IMemoryDb;
 
   beforeAll(async function () {
-    pgInstance = MockPgInstanceSingleton.getInstance();
-    dbInstance = MockPgInstanceSingleton.getDbInstance();
+    dbInstance = await MockPgInstanceSingleton.getDbInstance();
     MockPgInstanceSingleton.getInitialState();
   });
 

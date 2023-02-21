@@ -1,9 +1,8 @@
-import { DBInstance, updateRegisteredNode } from "./db";
+import { DBInstance, runMigrations, updateRegisteredNode } from "./db";
 import { entryServer } from "./entry-server";
 import { FundingServiceApi } from "./funding-service-api";
 import { createLogger } from "./utils";
 import pgp from "pg-promise";
-import fs from "fs";
 import { getRegisteredNodes } from "./registered-node";
 import { checkCommitment } from "./graph-api";
 import * as constants from "./constants";
@@ -12,7 +11,7 @@ const log = createLogger();
 
 const main = () => {
   if (!constants.FUNDING_SERVICE_URL)
-    throw new Error('Missing "FUNDING_SERVICE_API" env variable');
+    throw new Error('Missing "FUNDING_SERVICE_URL" env variable');
 
   if (!constants.DB_CONNECTION_URL) {
     throw new Error('Missing "DB_CONNECTION_URL" env variable');
@@ -38,15 +37,9 @@ const start = async (ops: {
   baseQuota: bigint;
   fundingServiceUrl: string;
 }) => {
-  // create tables if they do not exist in the db
-  const schemaSql = fs.readFileSync("dump.sql", "utf8").toString();
-  const existingTables = await ops.db.manyOrNone(
-    "SELECT * FROM information_schema.tables WHERE table_name IN ('funding_requests', 'quotas', 'registered_nodes', 'clients')"
-  );
-  if (!existingTables.length) {
-    await ops.db.none(schemaSql);
-  }
   await ops.db.connect();
+  // run db migrations
+  await runMigrations(constants.DB_CONNECTION_URL!);
 
   // init services
   const fundingServiceApi = new FundingServiceApi(

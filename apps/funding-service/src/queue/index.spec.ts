@@ -57,13 +57,11 @@ describe("test index.ts", function () {
   let accounts: SignerWithAddress[];
   let provider: JsonRpcProvider;
   let dbInstance: DBInstance;
-  let pgInstance: IMemoryDb;
   let requestService: RequestService;
   let accessTokenService: AccessTokenService;
 
   beforeAll(async function () {
-    pgInstance = MockPgInstanceSingleton.getInstance();
-    dbInstance = MockPgInstanceSingleton.getDbInstance();
+    dbInstance = await MockPgInstanceSingleton.getDbInstance();
     MockPgInstanceSingleton.getInitialState();
   });
   beforeEach(async function () {

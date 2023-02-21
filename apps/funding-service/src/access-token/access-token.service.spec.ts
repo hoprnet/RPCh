@@ -14,11 +14,9 @@ const accessTokenParams = {
 describe("test AccessTokenService class", function () {
   let accessTokenService: AccessTokenService;
   let dbInstance: DBInstance;
-  let pgInstance: IMemoryDb;
 
   beforeAll(async function () {
-    pgInstance = MockPgInstanceSingleton.getInstance();
-    dbInstance = MockPgInstanceSingleton.getDbInstance();
+    dbInstance = await MockPgInstanceSingleton.getDbInstance();
     MockPgInstanceSingleton.getInitialState();
   });
 

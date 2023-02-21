@@ -28,7 +28,7 @@ describe("test registered node functions", function () {
   let dbInstance: DBInstance;
 
   beforeAll(async function () {
-    dbInstance = MockPgInstanceSingleton.getDbInstance();
+    dbInstance = await MockPgInstanceSingleton.getDbInstance();
     MockPgInstanceSingleton.getInitialState();
   });
 

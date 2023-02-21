@@ -6,31 +6,38 @@ import { CreateAccessToken, generateAccessToken } from "../access-token";
 import { DBInstance } from ".";
 import { CreateRequest, UpdateRequest } from "../request";
 import { utils } from "@rpch/common";
+import path from "path";
 import * as fixtures from "@rpch/common/build/fixtures";
 
 export class MockPgInstanceSingleton {
   private static pgInstance: IMemoryDb;
-  private static dbInstance: DBInstance;
+  private static dbInstance: db.DBInstance;
   private static initialDbState: IBackup;
 
-  private constructor() {
+  private constructor() {}
+
+  private async createInstance() {
+    const migrationsDirectory = path.join(__dirname, "../../migrations");
     let instance = newDb();
     fixtures.withQueryIntercept(instance);
-    instance.public.none(fs.readFileSync("dump.sql", "utf8"));
+    await instance.public.migrate({ migrationsPath: migrationsDirectory });
     MockPgInstanceSingleton.pgInstance = instance;
     MockPgInstanceSingleton.initialDbState =
       MockPgInstanceSingleton.pgInstance.backup();
     return MockPgInstanceSingleton.pgInstance;
   }
 
-  public static getInstance(): IMemoryDb {
-    return MockPgInstanceSingleton.pgInstance ?? new this();
+  public static async getInstance(): Promise<IMemoryDb> {
+    if (!MockPgInstanceSingleton.pgInstance) {
+      await new this().createInstance();
+    }
+    return MockPgInstanceSingleton.pgInstance;
   }
 
-  public static getDbInstance(): DBInstance {
+  public static async getDbInstance(): Promise<db.DBInstance> {
     if (!MockPgInstanceSingleton.dbInstance) {
-      MockPgInstanceSingleton.dbInstance =
-        this.getInstance().adapters.createPgPromise();
+      const instance = await this.getInstance();
+      MockPgInstanceSingleton.dbInstance = instance.adapters.createPgPromise();
     }
     return MockPgInstanceSingleton.dbInstance;
   }
@@ -74,11 +81,9 @@ const createAccessTokenAndRequest = async (dbInstance: DBInstance) => {
 
 describe("test db adapter functions", function () {
   let dbInstance: DBInstance;
-  let pgInstance: IMemoryDb;
 
   beforeAll(async function () {
-    pgInstance = MockPgInstanceSingleton.getInstance();
-    dbInstance = MockPgInstanceSingleton.getDbInstance();
+    dbInstance = await MockPgInstanceSingleton.getDbInstance();
     MockPgInstanceSingleton.getInitialState();
   });
 
