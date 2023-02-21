@@ -175,12 +175,14 @@ export const entryServer = (ops: {
           balances,
           frozenBalances
         );
-
+        const replacer = (_: any, value: any) =>
+          typeof value === "bigint" ? value.toString() : value;
         // all balances are in wei
-        return res.json({
-          available: availableBalances,
-          frozen: frozenBalances,
-        });
+        const jsonString = JSON.stringify(
+          { availableBalances, frozenBalances },
+          replacer
+        );
+        return res.json(JSON.parse(jsonString));
       } catch (e) {
         log.error("Can not get status for a single request", e);
         return res.status(500).json({ errors: "Unexpected error" });
