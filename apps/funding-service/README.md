@@ -31,3 +31,10 @@ docker run \
 -e DEBUG="rpch*,-*verbose,-*metrics" \
 funding-service
 ```
+
+## How to create new migrations
+You can create new a new migration with `yarn migrate create [name-of-migration]`, after creating this migration you can test it
+inside `db` tests or running docker image.
+### How migrations are running right now
+Migrations are being ran programmatically in `runMigrations`, this function runs all migrations inside the folder `migrations` 
+and stores passed migrations in a `migrations` table.
