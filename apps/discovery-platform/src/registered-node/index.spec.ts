@@ -80,7 +80,6 @@ describe("test registered node functions", function () {
     await updateRegisteredNode(dbInstance, {
       ...node,
       status: "READY",
-      updated_at: new Date().toISOString(),
     });
     const updatedNode = await getRegisteredNode(dbInstance, "1");
     assert.equal(updatedNode?.status, "READY");
@@ -112,7 +111,6 @@ describe("test registered node functions", function () {
     await updateRegisteredNode(dbInstance, {
       ...node,
       status: "READY",
-      updated_at: new Date().toISOString(),
     });
     const updatedNode = await getRegisteredNode(dbInstance, "1");
     await createRegisteredNode(dbInstance, mockNode("2", true));
@@ -136,7 +134,6 @@ describe("test registered node functions", function () {
     const updateNode = await updateRegisteredNode(dbInstance, {
       ...queryNode,
       status: "READY",
-      updated_at: new Date().toISOString(),
     });
 
     const eligibleNode = await getEligibleNode(dbInstance);
@@ -164,7 +161,7 @@ describe("test registered node functions", function () {
 
     assert.equal(reward, baseQuota + BigInt(1) * BigInt(2));
   });
-  it.only("should keep updated_at updated", async function () {
+  it("should keep updated_at updated", async function () {
     await createRegisteredNode(dbInstance, mockNode("1"));
     const node = await getRegisteredNode(dbInstance, "1");
     if (!node) throw new Error("Failed to create node");
@@ -172,7 +169,6 @@ describe("test registered node functions", function () {
     await updateRegisteredNode(dbInstance, {
       ...node,
       status: "READY",
-      updated_at: new Date().toISOString(),
     });
     const updatedNode = await getRegisteredNode(dbInstance, "1");
     if (!updatedNode) throw new Error("Failed to get updated node");

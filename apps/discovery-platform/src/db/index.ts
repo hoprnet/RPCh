@@ -124,7 +124,7 @@ export const updateRegisteredNode = async (
       honesty_score: updatedNode.honesty_score,
       reason: updatedNode.reason,
       status: updatedNode.status,
-      updated_at: updatedNode.updated_at,
+      updated_at: new Date().toISOString(),
     };
     const dbRes: QueryRegisteredNode | null = await dbInstance.oneOrNone(
       text,

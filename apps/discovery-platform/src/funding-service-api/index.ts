@@ -135,7 +135,6 @@ export class FundingServiceApi {
       await updateRegisteredNode(this.db, {
         ...dbNode,
         status: "FUNDING",
-        updated_at: new Date().toISOString(),
       });
 
       // save funding request in db
@@ -245,7 +244,6 @@ export class FundingServiceApi {
           status: request.status === "SUCCESS" ? "READY" : "UNUSABLE",
           total_amount_funded:
             BigInt(node.total_amount_funded) + BigInt(request.amount),
-          updated_at: new Date().toISOString(),
         });
         log.verbose(
           "request has been fulfilled",
@@ -289,7 +287,6 @@ export class FundingServiceApi {
           await updateRegisteredNode(this.db, {
             ...node,
             status: "READY",
-            updated_at: new Date().toISOString(),
           });
         }
       }

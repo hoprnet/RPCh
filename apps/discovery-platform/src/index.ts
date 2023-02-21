@@ -98,7 +98,6 @@ const start = async (ops: {
           await updateRegisteredNode(ops.db, {
             ...node,
             status: "READY",
-            updated_at: new Date().toISOString(),
           });
         }
       }

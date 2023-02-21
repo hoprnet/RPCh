@@ -256,12 +256,10 @@ describe("test v1 router", function () {
       await registeredNode.updateRegisteredNode(dbInstance, {
         ...firstCreatedNode.body.node!,
         status: "READY",
-        updated_at: new Date().toISOString(),
       });
       await registeredNode.updateRegisteredNode(dbInstance, {
         ...secondCreatedNode.body.node!,
         status: "READY",
-        updated_at: new Date().toISOString(),
       });
 
       let postFundingResponse: postFundingResponse = {
