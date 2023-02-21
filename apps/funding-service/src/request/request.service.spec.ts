@@ -48,13 +48,11 @@ const createAccessTokenAndRequest = async (
 
 describe("test RequestService class", function () {
   let dbInstance: DBInstance;
-  let pgInstance: IMemoryDb;
   let requestService: RequestService;
   let accessTokenService: AccessTokenService;
 
   beforeAll(async function () {
-    pgInstance = MockPgInstanceSingleton.getInstance();
-    dbInstance = MockPgInstanceSingleton.getDbInstance();
+    dbInstance = await MockPgInstanceSingleton.getDbInstance();
     MockPgInstanceSingleton.getInitialState();
   });
   beforeEach(function () {

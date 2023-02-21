@@ -1,9 +1,4 @@
-import {
-  DBInstance,
-  runInitialSqlDump,
-  runMigrations,
-  updateRegisteredNode,
-} from "./db";
+import { DBInstance, runMigrations, updateRegisteredNode } from "./db";
 import { entryServer } from "./entry-server";
 import { FundingServiceApi } from "./funding-service-api";
 import { createLogger } from "./utils";
@@ -43,7 +38,7 @@ const start = async (ops: {
   fundingServiceUrl: string;
 }) => {
   await ops.db.connect();
-  // run db migrations but filters out initial migration
+  // run db migrations
   await runMigrations(constants.DB_CONNECTION_URL!);
 
   // init services

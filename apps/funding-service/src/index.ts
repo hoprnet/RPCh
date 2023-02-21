@@ -1,7 +1,7 @@
 import pgp from "pg-promise";
 import { AccessTokenService } from "./access-token";
 import { getWallet } from "./blockchain";
-import { DBInstance } from "./db";
+import { DBInstance, runMigrations } from "./db";
 import * as api from "./entry-server";
 import { checkFreshRequests } from "./queue";
 import { RequestService } from "./request";
@@ -27,15 +27,10 @@ const start = async (ops: {
   privateKey: string;
   confirmations: number;
 }) => {
-  // create tables if they do not exist in the db
-  const schemaSql = fs.readFileSync("dump.sql", "utf8").toString();
-  const existingTables = await ops.db.manyOrNone(
-    "SELECT * FROM information_schema.tables WHERE table_name IN ('access_tokens', 'requests')"
-  );
-  if (!existingTables.length) {
-    await ops.db.none(schemaSql);
-  }
   await ops.db.connect();
+  // run db migrations
+  await runMigrations(constants.DB_CONNECTION_URL!);
+
   // init services
   const accessTokenService = new AccessTokenService(ops.db, ops.secretKey);
   const requestService = new RequestService(ops.db);

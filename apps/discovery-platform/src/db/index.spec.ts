@@ -3,7 +3,6 @@ import { QueryRegisteredNode } from "../registered-node/dto";
 import * as db from "./";
 import { CreateQuota } from "../quota/dto";
 import { IBackup, IMemoryDb, newDb } from "pg-mem";
-import fs from "fs";
 import { utils } from "@rpch/common";
 import { CreateClient, QueryClient } from "../client/dto";
 import path from "path";
