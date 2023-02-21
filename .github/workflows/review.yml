@@ -96,7 +96,7 @@ jobs:
         uses: aevea/action-kaniko@v0.10.0
         with:
           path: .
-          build_file: ${{ inputs.dockerfile }}
+          build_file: "./${{ matrix.directory }}/${{ matrix.project }}/Dockerfile"
           image: "rpch/${{ matrix.project }}"
           registry: "docker.io"
           username: ${{ secrets.CONTAINER_REGISTRY_USER }}
