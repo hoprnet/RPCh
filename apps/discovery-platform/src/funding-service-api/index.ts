@@ -132,7 +132,11 @@ export class FundingServiceApi {
       const { id: requestId, amountLeft }: postFundingResponse =
         fundingResponseJson;
 
-      await updateRegisteredNode(this.db, { ...dbNode, status: "FUNDING" });
+      await updateRegisteredNode(this.db, {
+        ...dbNode,
+        status: "FUNDING",
+        updated_at: new Date().toISOString(),
+      });
 
       // save funding request in db
       await createFundingRequest(this.db, {
@@ -241,6 +245,7 @@ export class FundingServiceApi {
           status: request.status === "SUCCESS" ? "READY" : "UNUSABLE",
           total_amount_funded:
             Number(node.total_amount_funded) + Number(request.amount),
+          updated_at: new Date().toISOString(),
         });
         log.verbose(
           "request has been fulfilled",
@@ -265,7 +270,7 @@ export class FundingServiceApi {
             previousRequestId,
           });
           log.verbose(
-            `deleting old request id ${previousRequestId} because 
+            `deleting old request id ${previousRequestId} because
             request will be fulfilled with request id ${newRequestId}`
           );
           this.pendingRequests.delete(previousRequestId);
@@ -277,13 +282,14 @@ export class FundingServiceApi {
           });
         } else {
           log.error(
-            `could not fund node ${node.id} with request id ${requestId} 
+            `could not fund node ${node.id} with request id ${requestId}
             and previous request id ${previousRequestId}`
           );
           this.pendingRequests.delete(requestId);
           await updateRegisteredNode(this.db, {
             ...node,
             status: "READY",
+            updated_at: new Date().toISOString(),
           });
         }
       }

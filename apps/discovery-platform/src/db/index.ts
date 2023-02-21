@@ -113,7 +113,7 @@ export const updateRegisteredNode = async (
     const text = `UPDATE ${TABLES.REGISTERED_NODES}
     SET has_exit_node = $<has_exit_node>, chain_id = $<chain_id>,
     total_amount_funded = $<total_amount_funded>, honesty_score = $<honesty_score>,
-    reason = $<reason>, status = $<status>
+    reason = $<reason>, status = $<status>, updated_at = $<updated_at>
     WHERE id = $<id>
     RETURNING *`;
     const values = {
@@ -124,6 +124,7 @@ export const updateRegisteredNode = async (
       honesty_score: updatedNode.honesty_score,
       reason: updatedNode.reason,
       status: updatedNode.status,
+      updated_at: updatedNode.updated_at,
     };
     const dbRes: QueryRegisteredNode | null = await dbInstance.oneOrNone(
       text,

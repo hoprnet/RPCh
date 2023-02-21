@@ -77,7 +77,11 @@ describe("test registered node functions", function () {
     await createRegisteredNode(dbInstance, mockNode("1"));
     const node = await getRegisteredNode(dbInstance, "1");
     if (!node) throw new Error("Failed to create node");
-    await updateRegisteredNode(dbInstance, { ...node, status: "READY" });
+    await updateRegisteredNode(dbInstance, {
+      ...node,
+      status: "READY",
+      updated_at: new Date().toISOString(),
+    });
     const updatedNode = await getRegisteredNode(dbInstance, "1");
     assert.equal(updatedNode?.status, "READY");
   });
@@ -105,7 +109,11 @@ describe("test registered node functions", function () {
     await createRegisteredNode(dbInstance, mockNode("1"));
     const node = await getRegisteredNode(dbInstance, "1");
     if (!node) throw new Error("Failed to create node");
-    await updateRegisteredNode(dbInstance, { ...node, status: "READY" });
+    await updateRegisteredNode(dbInstance, {
+      ...node,
+      status: "READY",
+      updated_at: new Date().toISOString(),
+    });
     const updatedNode = await getRegisteredNode(dbInstance, "1");
     await createRegisteredNode(dbInstance, mockNode("2", true));
     await createRegisteredNode(dbInstance, mockNode("3", true));
@@ -128,6 +136,7 @@ describe("test registered node functions", function () {
     const updateNode = await updateRegisteredNode(dbInstance, {
       ...queryNode,
       status: "READY",
+      updated_at: new Date().toISOString(),
     });
 
     const eligibleNode = await getEligibleNode(dbInstance);
@@ -154,6 +163,25 @@ describe("test registered node functions", function () {
     const reward = getRewardForNode(baseQuota, 0.1, nonExit);
 
     assert.equal(reward, baseQuota + 0.1 * 2);
+  });
+  it.only("should keep updated_at updated", async function () {
+    await createRegisteredNode(dbInstance, mockNode("1"));
+    const node = await getRegisteredNode(dbInstance, "1");
+    if (!node) throw new Error("Failed to create node");
+
+    await updateRegisteredNode(dbInstance, {
+      ...node,
+      status: "READY",
+      updated_at: new Date().toISOString(),
+    });
+    const updatedNode = await getRegisteredNode(dbInstance, "1");
+    if (!updatedNode) throw new Error("Failed to get updated node");
+
+    console.log(node.created_at, node.updated_at);
+    console.log(updatedNode.created_at, updatedNode.updated_at);
+    expect(new Date(node.updated_at).getTime()).toBeLessThan(
+      new Date(updatedNode?.updated_at).getTime()
+    );
   });
   it.todo("should get a access token");
 });

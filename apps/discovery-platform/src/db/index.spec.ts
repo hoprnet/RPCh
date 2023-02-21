@@ -158,6 +158,7 @@ describe("test db functions", function () {
       await db.updateRegisteredNode(dbInstance, {
         ...node,
         status: "UNUSABLE",
+        updated_at: new Date().toISOString(),
       });
       const updatedNode = await db.getRegisteredNode(dbInstance, "peer1");
 
@@ -275,6 +276,7 @@ describe("test db functions", function () {
       await db.updateRegisteredNode(dbInstance, {
         ...node,
         status: "UNUSABLE",
+        updated_at: new Date().toISOString(),
       });
       await db.saveRegisteredNode(dbInstance, createMockNode("peer2"));
       await db.saveRegisteredNode(dbInstance, createMockNode("peer3"));
