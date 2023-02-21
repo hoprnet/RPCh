@@ -17,7 +17,7 @@ export const createRegisteredNode = async (
 ): Promise<boolean> => {
   const newNode: Omit<QueryRegisteredNode, "created_at" | "updated_at"> = {
     honesty_score: 0,
-    total_amount_funded: 0,
+    total_amount_funded: BigInt(0),
     status: "FRESH",
     chain_id: Number(node.chainId),
     hoprd_api_endpoint: node.hoprdApiEndpoint,
@@ -85,14 +85,14 @@ export const getEligibleNode = async (
  * Calculate the reward that a given node should receive
  * @param baseQuota how much quota did the node allow
  * @param node node that gave access for request
- * @returns number
+ * @returns bigint
  */
 export const getRewardForNode = (
-  baseQuota: number,
-  baseExtra: number,
+  baseQuota: bigint,
+  baseExtra: bigint,
   node: QueryRegisteredNode
-): number => {
-  const extra = node.has_exit_node ? baseExtra * 2 : baseExtra;
+): bigint => {
+  const extra = node.has_exit_node ? baseExtra * BigInt(2) : baseExtra;
   const reward = baseQuota + extra;
   return reward;
 };

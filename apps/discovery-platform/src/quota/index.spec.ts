@@ -14,7 +14,7 @@ const createMockQuota = (params?: CreateQuota): CreateQuota => {
   return {
     actionTaker: params?.actionTaker ?? "discovery-platform",
     clientId: params?.clientId ?? "client",
-    quota: params?.quota ?? 1,
+    quota: params?.quota ?? BigInt(1),
   };
 };
 
@@ -50,7 +50,7 @@ describe("test quota functions", function () {
     const mockQuota = createMockQuota({
       clientId: "client",
       actionTaker: "discovery",
-      quota: 10,
+      quota: BigInt(10),
     });
     await createQuota(dbInstance, mockQuota);
     await createQuota(dbInstance, mockQuota);
@@ -59,7 +59,7 @@ describe("test quota functions", function () {
       createMockQuota({
         actionTaker: "discovery",
         clientId: "other client",
-        quota: 20,
+        quota: BigInt(20),
       })
     );
 
@@ -70,7 +70,7 @@ describe("test quota functions", function () {
     const mockQuota = createMockQuota({
       clientId: "client",
       actionTaker: "discovery",
-      quota: 10,
+      quota: BigInt(10),
     });
     const createdQuota = await createQuota(dbInstance, mockQuota);
     await updateQuota(dbInstance, { ...createdQuota, action_taker: "eve" });
@@ -81,7 +81,7 @@ describe("test quota functions", function () {
     const mockQuota = createMockQuota({
       clientId: "client",
       actionTaker: "discovery",
-      quota: 10,
+      quota: BigInt(10),
     });
     const createdQuota = await createQuota(dbInstance, mockQuota);
     if (!createdQuota.id) throw new Error("Could not create mock quota");
@@ -90,7 +90,7 @@ describe("test quota functions", function () {
     assert.equal(deletedQuota, undefined);
   });
   it("should sum all quotas", async function () {
-    const baseQuota = 10;
+    const baseQuota = BigInt(10);
     const mockQuota = createMockQuota({
       clientId: "client",
       actionTaker: "discovery",
@@ -105,6 +105,6 @@ describe("test quota functions", function () {
     );
     const sum = sumQuotas(allQuotasFromClient);
 
-    assert.equal(sum, 2 * baseQuota);
+    assert.equal(sum, BigInt(2) * baseQuota);
   });
 });

@@ -6,6 +6,7 @@ import { CreateAccessToken, generateAccessToken } from "../access-token";
 import { DBInstance } from ".";
 import { CreateRequest, UpdateRequest } from "../request";
 import { utils } from "@rpch/common";
+import * as fixtures from "@rpch/common/build/fixtures";
 
 export class MockPgInstanceSingleton {
   private static pgInstance: IMemoryDb;
@@ -14,6 +15,7 @@ export class MockPgInstanceSingleton {
 
   private constructor() {
     let instance = newDb();
+    fixtures.withQueryIntercept(instance);
     instance.public.none(fs.readFileSync("dump.sql", "utf8"));
     MockPgInstanceSingleton.pgInstance = instance;
     MockPgInstanceSingleton.initialDbState =
@@ -48,7 +50,7 @@ const mockCreateAccessToken = () => ({
   createdAt: new Date(Date.now()).toISOString(),
   expiredAt: new Date(Date.now()).toISOString(),
   token: generateAccessToken({
-    amount: 10,
+    amount: BigInt(10),
     expiredAt: new Date(),
     secretKey: "secret",
   }),
@@ -56,7 +58,7 @@ const mockCreateAccessToken = () => ({
 
 const mockCreateRequest = (hash?: string): CreateRequest => ({
   accessTokenHash: hash ?? "hash",
-  amount: "10",
+  amount: BigInt("10"),
   chainId: 80,
   nodeAddress: "address",
   status: "FRESH",
@@ -187,7 +189,7 @@ describe("test db adapter functions", function () {
     const queryRequest = await db.saveRequest(dbInstance, request);
 
     const updateRequest: UpdateRequest = {
-      amount: "20",
+      amount: BigInt("20"),
       id: queryRequest.id,
       accessTokenHash: queryRequest.access_token_hash,
       nodeAddress: queryRequest.node_address,

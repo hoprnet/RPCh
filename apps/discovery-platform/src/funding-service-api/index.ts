@@ -24,7 +24,7 @@ export class FundingServiceApi {
   // Date when the current tokens expires
   private expiredAt: Date | undefined;
   // Maximum amount that the current token can request
-  private amountLeft: number | undefined;
+  private amountLeft: string | undefined;
   // Map of all pending requests
   private pendingRequests: Map<
     //requestId
@@ -62,7 +62,7 @@ export class FundingServiceApi {
    * @param amount
    * @returns string
    */
-  private async getAccessToken(amount?: number): Promise<string> {
+  private async getAccessToken(amount?: bigint): Promise<string> {
     if (!this.accessToken || !this.accessTokenIsValid(amount)) {
       const accessToken = await this.fetchAccessToken();
       return accessToken;
@@ -76,7 +76,7 @@ export class FundingServiceApi {
    * @param amount
    * @returns boolean
    */
-  private accessTokenIsValid(amount?: number): boolean {
+  private accessTokenIsValid(amount?: bigint): boolean {
     if (!this.accessToken || !this.amountLeft || !this.expiredAt) {
       log.verbose("Access token for discovery platform does not exist");
       return false;
@@ -90,7 +90,7 @@ export class FundingServiceApi {
 
       return false;
     }
-    if (amount && this.amountLeft < amount) {
+    if (amount && BigInt(this.amountLeft) < amount) {
       log.verbose(
         "Access token for discovery platform has exceeded how many amount that it can reclaim"
       );
@@ -107,7 +107,7 @@ export class FundingServiceApi {
    * @returns
    */
   public async requestFunds(params: {
-    amount: number;
+    amount: bigint;
     node: QueryRegisteredNode;
     previousRequestId?: number;
     amountOfRetries?: number;
@@ -142,7 +142,7 @@ export class FundingServiceApi {
       await createFundingRequest(this.db, {
         registeredNodeId: dbNode.id,
         requestId,
-        amount: String(amount),
+        amount: amount,
       });
 
       this.amountLeft = amountLeft;
@@ -244,7 +244,7 @@ export class FundingServiceApi {
           ...node,
           status: request.status === "SUCCESS" ? "READY" : "UNUSABLE",
           total_amount_funded:
-            Number(node.total_amount_funded) + Number(request.amount),
+            BigInt(node.total_amount_funded) + BigInt(request.amount),
           updated_at: new Date().toISOString(),
         });
         log.verbose(
@@ -264,7 +264,7 @@ export class FundingServiceApi {
           log.verbose("retrying request for node", node);
           const previousRequestId = requestId;
           const newRequestId = await this.requestFunds({
-            amount: Number(request.amount),
+            amount: BigInt(request.amount),
             node: node,
             amountOfRetries: amountOfRetries + 1,
             previousRequestId,
@@ -298,7 +298,7 @@ export class FundingServiceApi {
 
   public async fetchRequestFunds(
     dbNode: QueryRegisteredNode,
-    amount: number,
+    amount: bigint,
     opts?: retry.Options | undefined
   ): Promise<Response> {
     const res = await retry(
@@ -306,7 +306,7 @@ export class FundingServiceApi {
         log.verbose({ attempt });
         await this.getAccessToken(amount);
         const body: postFundingRequest = {
-          amount: String(amount),
+          amount: amount.toString(),
           chainId: dbNode.chain_id,
         };
         // if anything throws, we retry

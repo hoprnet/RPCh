@@ -89,7 +89,7 @@ export const getWallet = (
  * @param smartContractAddress string
  * @param walletAddress string
  * @param provider ethers Provider
- * @returns number
+ * @returns bigint
  */
 export const getBalance = (
   smartContractAddress: string,
@@ -101,6 +101,7 @@ export const getBalance = (
     erc20.abi,
     provider
   );
+
   const balance = contract.balanceOf(walletAddress);
   return balance;
 };
@@ -117,7 +118,7 @@ export const getBalanceForAllChains = async (
   walletAddress: string,
   providers: ethers.providers.JsonRpcProvider[]
 ) => {
-  const balances: { [chainId: number]: number } = {};
+  const balances: { [chainId: number]: bigint } = {};
   for (const provider of providers) {
     log.verbose(["fetching balance for provider", provider.connection.url]);
     const balance = await getBalance(
@@ -125,7 +126,7 @@ export const getBalanceForAllChains = async (
       walletAddress,
       provider
     );
-    balances[provider.network.chainId] = Number(balance.toString());
+    balances[provider.network.chainId] = BigInt(balance);
   }
   return balances;
 };

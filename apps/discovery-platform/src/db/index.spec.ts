@@ -6,6 +6,7 @@ import { IBackup, IMemoryDb, newDb } from "pg-mem";
 import fs from "fs";
 import { utils } from "@rpch/common";
 import { CreateClient, QueryClient } from "../client/dto";
+import * as fixtures from "@rpch/common/build/fixtures";
 
 export class MockPgInstanceSingleton {
   private static pgInstance: IMemoryDb;
@@ -14,6 +15,7 @@ export class MockPgInstanceSingleton {
 
   private constructor() {
     let instance = newDb();
+    fixtures.withQueryIntercept(instance);
     instance.public.none(fs.readFileSync("dump.sql", "utf8"));
     MockPgInstanceSingleton.pgInstance = instance;
     MockPgInstanceSingleton.initialDbState =
@@ -56,7 +58,7 @@ const createMockNode = (
   hoprd_api_token: "sometoken",
   honesty_score: 0,
   status: "FRESH",
-  total_amount_funded: 0,
+  total_amount_funded: BigInt(0),
   created_at: Date.now().toString(),
   updated_at: Date.now().toString(),
 });
@@ -65,7 +67,7 @@ const createMockQuota = (params?: CreateQuota): CreateQuota => {
   return {
     actionTaker: params?.actionTaker ?? "discovery-platform",
     clientId: params?.clientId ?? "client",
-    quota: params?.quota ?? 1,
+    quota: params?.quota ?? BigInt(1),
   };
 };
 
@@ -238,7 +240,7 @@ describe("test db functions", function () {
       const mockQuota = createMockQuota({
         clientId: "client",
         actionTaker: "discovery",
-        quota: 10,
+        quota: BigInt(10),
       });
       await db.createQuota(dbInstance, mockQuota);
       await db.createQuota(dbInstance, mockQuota);
@@ -247,7 +249,7 @@ describe("test db functions", function () {
         createMockQuota({
           actionTaker: "discovery",
           clientId: otherClient.id,
-          quota: 20,
+          quota: BigInt(20),
         })
       );
 
@@ -258,7 +260,7 @@ describe("test db functions", function () {
       const mockQuota = createMockQuota({
         clientId: "client",
         actionTaker: "discovery",
-        quota: 10,
+        quota: BigInt(10),
       });
       const createdQuota = await db.createQuota(dbInstance, mockQuota);
 
@@ -295,7 +297,7 @@ describe("test db functions", function () {
       const mockQuota = createMockQuota({
         clientId: "client",
         actionTaker: "discovery",
-        quota: 10,
+        quota: BigInt(10),
       });
       const createdQuota = await db.createQuota(dbInstance, mockQuota);
       if (!createdQuota.id) throw new Error("Could not create mock quota");
@@ -311,7 +313,7 @@ describe("test db functions", function () {
       const createdFundedRequest = await db.createFundingRequest(dbInstance, {
         registered_node_id: node.id,
         request_id: Math.floor(Math.random() * 1e6),
-        amount: "1",
+        amount: BigInt("1"),
       });
 
       assert.equal(createdFundedRequest.registered_node_id, node.id);

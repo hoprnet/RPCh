@@ -11,6 +11,7 @@ import {
 } from "@rpch/common";
 import { utils as etherUtils } from "ethers";
 import fetch from "cross-fetch";
+import retry from "async-retry";
 import ReliabilityScore, { Stats } from "./reliability-score";
 import RequestCache from "./request-cache";
 import { createLogger } from "./utils";
@@ -102,64 +103,71 @@ export default class SDK {
     apiToken: string;
     peerId: string;
   }> {
-    log.verbose("Selecting entry node");
-    const rawResponse: globalThis.Response = await fetch(
-      new URL(
-        "/api/v1/request/entry-node",
-        discoveryPlatformApiEndpoint
-      ).toString(),
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept-Content": "application/json",
-        },
-        body: JSON.stringify({
-          client: this.ops.client,
-          exclusionList,
-        }),
-      }
-    );
-
-    const response: {
-      hoprd_api_endpoint: string;
-      accessToken: string;
-      id: string;
-    } = await rawResponse.json();
-
-    // Check for error response
-    if (rawResponse.status !== 200) {
-      log.error("Failed to request entry node", rawResponse.status, response);
-      throw new Error(`Failed to request entry node`);
-    }
-
-    const apiEndpointUrl = new URL(response.hoprd_api_endpoint);
-
-    this.entryNode = {
-      apiEndpoint: apiEndpointUrl.toString(),
-      apiToken: response.accessToken,
-      peerId: response.id,
-    };
-    log.verbose("Selected entry node", this.entryNode);
-
-    // Refresh messageListener
-    if (this.stopMessageListener) this.stopMessageListener();
-    this.stopMessageListener = await hoprd.createMessageListener(
-      this.entryNode!.apiEndpoint,
-      this.entryNode!.apiToken,
-      (message) => {
-        try {
-          const segment = Segment.fromString(message);
-          this.segmentCache.onSegment(segment);
-        } catch (e) {
-          log.verbose(
-            "rejected received data from HOPRd: not a valid segment",
-            message
-          );
+    try {
+      this.selectingEntryNode = true;
+      log.verbose("Selecting entry node");
+      const rawResponse: globalThis.Response = await fetch(
+        new URL(
+          "/api/v1/request/entry-node",
+          discoveryPlatformApiEndpoint
+        ).toString(),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept-Content": "application/json",
+          },
+          body: JSON.stringify({
+            client: this.ops.client,
+            exclusionList,
+          }),
         }
+      );
+
+      const response: {
+        hoprd_api_endpoint: string;
+        accessToken: string;
+        id: string;
+      } = await rawResponse.json();
+
+      // Check for error response
+      if (rawResponse.status !== 200) {
+        log.error("Failed to request entry node", rawResponse.status, response);
+        throw new Error(`Failed to request entry node`);
       }
-    );
-    return this.entryNode;
+
+      const apiEndpointUrl = new URL(response.hoprd_api_endpoint);
+
+      this.entryNode = {
+        apiEndpoint: apiEndpointUrl.toString(),
+        apiToken: response.accessToken,
+        peerId: response.id,
+      };
+      log.verbose("Selected entry node", this.entryNode);
+
+      // Refresh messageListener
+      if (this.stopMessageListener) this.stopMessageListener();
+      this.stopMessageListener = await hoprd.createMessageListener(
+        this.entryNode!.apiEndpoint,
+        this.entryNode!.apiToken,
+        (message) => {
+          try {
+            const segment = Segment.fromString(message);
+            this.segmentCache.onSegment(segment);
+          } catch (e) {
+            log.verbose(
+              "rejected received data from HOPRd: not a valid segment",
+              message
+            );
+          }
+        }
+      );
+      return this.entryNode;
+    } catch (error) {
+      throw error;
+    } finally {
+      this.selectingEntryNode = false;
+    }
   }
 
   /**
@@ -297,6 +305,28 @@ export default class SDK {
       await this.crypto.init();
     }
 
+    // fetch required data from discovery platform
+    await retry(
+      () => this.selectEntryNode(this.ops.discoveryPlatformApiEndpoint),
+      {
+        retries: 5,
+        onRetry: (e, attempt) => {
+          log.error("Error while selecting entry node", e);
+          log.verbose("Retrying to select entry node, attempt:", attempt);
+        },
+      }
+    );
+    await retry(
+      () => this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint),
+      {
+        retries: 5,
+        onRetry: (e, attempt) => {
+          log.error("Error while fetching exit nodes", e);
+          log.verbose("Retrying to fetch exit nodes, attempt:", attempt);
+        },
+      }
+    );
+
     // check for expires caches every second
     this.intervals.push(
       setInterval(() => {
@@ -310,9 +340,6 @@ export default class SDK {
         this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint);
       }, 60e3)
     );
-
-    await this.selectEntryNode(this.ops.discoveryPlatformApiEndpoint);
-    await this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint);
   }
 
   /**
@@ -347,15 +374,12 @@ export default class SDK {
       log.verbose("node is not reliable enough. selecting new entry node");
       exclusionList.push(this.entryNode!.peerId);
       try {
-        this.selectingEntryNode = true;
         await this.selectEntryNode(
           this.ops.discoveryPlatformApiEndpoint,
           exclusionList
         );
-        this.selectingEntryNode = false;
       } catch (error) {
-        log.error("Couldn't find elegible node: ", error);
-        this.selectingEntryNode = false;
+        log.error("Couldn't find new entry node: ", error);
         this.setDeadlock(DEADLOCK_MS);
       }
       log.verbose("got new entry node");

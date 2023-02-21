@@ -1,7 +1,7 @@
 export type getAccessTokenResponse = {
   accessToken: string;
   expiredAt: string;
-  amountLeft: number;
+  amountLeft: string;
 };
 
 export type postFundingRequest = {
@@ -11,7 +11,7 @@ export type postFundingRequest = {
 
 export type postFundingResponse = {
   id: number;
-  amountLeft: number;
+  amountLeft: string;
 };
 
 export type getRequestStatusResponse = {
