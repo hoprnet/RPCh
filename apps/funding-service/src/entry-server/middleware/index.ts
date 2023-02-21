@@ -3,7 +3,7 @@ import { AccessTokenService } from "../../access-token";
 import { RequestService } from "../../request";
 import { isExpired, createLogger } from "../../utils";
 import { utils } from "@rpch/common";
-import { ValidationChain, validationResult, body } from "express-validator";
+import { validationResult, body } from "express-validator";
 
 const log = createLogger(["entry-server", "middleware"]);
 
@@ -121,13 +121,6 @@ export const validateAmountAndToken = (ops: {
         return res.status(400).json({ errors: errors.array() });
       }
 
-      // const { amount, chainId } = req.body;
-
-      // Check amount
-      // if (typeof amount === "undefined" || amount <= 0) {
-      //   return res.status(400).json({ error: "Invalid amount" });
-      // }
-
       // Call tokenIsValid with validated amount
       tokenIsValid(
         ops.accessTokenService,
@@ -136,7 +129,8 @@ export const validateAmountAndToken = (ops: {
         true
       )(req, res, next);
     } catch (err) {
-      // Handle errors here
+      log.error("could not validate amount, chainId or token");
+      return res.status(500).json({ errors: "Unexpected error" });
     }
   },
 ];
