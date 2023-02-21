@@ -1,7 +1,7 @@
 # Create discovery platform
 
 # use slim version of node on Debian bullseye for smaller image sizes
-FROM node:16-bullseye-slim@sha256:2e42e0aab9c9fd2d914417659ebedb4f995dfde79f3f7127cbc7e57ae6485dd9 as builder
+FROM node:16-bullseye-slim as builder
 
 # use bash to have source command and persistent environment.
 SHELL ["/bin/bash", "-lc"]
@@ -18,7 +18,7 @@ COPY . .
 RUN turbo prune --scope="@rpch/discovery-platform" --docker
 
 # Add lockfile and package.json's of isolated subworkspace.
-FROM node:16-alpine AS installer
+FROM node:16-bullseye-slim AS installer
 RUN apk add --no-cache libc6-compat
 RUN apk update
 WORKDIR /app
@@ -35,7 +35,7 @@ COPY turbo.json turbo.json
 RUN yarn run build --scope="@rpch/discovery-platform"
 
 #  Copy only the necesary files to run the app.
-FROM node:16-alpine AS runner
+FROM node:16-bullseye-slim AS runner
 WORKDIR /app
 
 # we use tini as process 1 to catch signals properly, which is also built into Docker by default
