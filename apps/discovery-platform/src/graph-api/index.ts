@@ -6,6 +6,7 @@ import { createLogger } from "../utils";
 import * as constants from "../constants";
 import { utils } from "@rpch/common";
 const log = createLogger(["graph-api"]);
+
 /**
  * Query to get info needed to know if a node is committed
  */
