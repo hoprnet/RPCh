@@ -4,12 +4,8 @@ import { QueryRegisteredNode } from "../registered-node/dto";
 import { GetAccountChannelsResponse } from "./dto";
 import { createLogger } from "../utils";
 import * as constants from "../constants";
-
+import { utils } from "@rpch/common";
 const log = createLogger(["graph-api"]);
-// @ts-ignore
-const replacer = (key, value) =>
-  typeof value === "bigint" ? value.toString() : value;
-
 /**
  * Query to get info needed to know if a node is committed
  */
@@ -82,7 +78,7 @@ export const checkCommitment = async (ops: {
 
     log.verbose([
       "Received information from the graph",
-      JSON.stringify(graphRes, replacer),
+      JSON.stringify(graphRes, utils.bigIntReplacer),
     ]);
 
     // check if it has enough balance and enough open channels
@@ -133,7 +129,7 @@ export const getUpdatedAccounts = async (blockNumber: number) => {
           query: getAccountsFromBlockChange,
           variables,
         },
-        replacer
+        utils.bigIntReplacer
       ),
     });
 

@@ -3,9 +3,10 @@ import { AccessTokenService } from "../access-token";
 import { getBalanceForAllChains, getProviders } from "../blockchain";
 import { RequestService } from "../request";
 import { createLogger } from "../utils";
-import { tokenIsValid } from "./middleware";
-import { body, validationResult, param } from "express-validator";
+import { tokenIsValid, validateAmountAndToken } from "./middleware";
+import { validationResult, param } from "express-validator";
 import * as constants from "../constants";
+import { utils } from "@rpch/common";
 
 const app = express();
 const log = createLogger(["entry-server"]);
@@ -27,6 +28,7 @@ export const entryServer = (ops: {
   timeout: number;
 }) => {
   app.use(express.json());
+  app.set("json replacer", utils.bigIntReplacer);
 
   app.get("/api/access-token", async (req, res) => {
     try {
@@ -49,15 +51,8 @@ export const entryServer = (ops: {
 
   app.post(
     "/api/request/funds/:blockchainAddress",
-    body("amount").notEmpty().bail().isNumeric({ no_symbols: true }),
-    body("chainId").notEmpty().bail().isNumeric(),
-    tokenIsValid(
-      ops.accessTokenService,
-      ops.requestService,
-      ops.maxAmountOfTokens,
-      true
-    ),
-    async (req, res) => {
+    validateAmountAndToken(ops),
+    async (req: express.Request, res: express.Response) => {
       try {
         log.verbose(
           `POST /api/request/funds/:blockchainAddress`,
@@ -113,14 +108,8 @@ export const entryServer = (ops: {
       try {
         log.verbose(`GET /api/request/status`);
         const requests = await ops.requestService.getRequests();
-        const requestsWithAmountAsString = requests.map((request) => {
-          return {
-            ...request,
-            amount: request.amount.toString(),
-          };
-        });
 
-        return res.status(200).json(requestsWithAmountAsString);
+        return res.status(200).json(requests);
       } catch (e) {
         log.error("Can not get status for requests", e);
         return res.status(500).json({ errors: "Unexpected error" });
@@ -146,13 +135,7 @@ export const entryServer = (ops: {
         }
         const requestId = Number(req.params.requestId);
         const request = await ops.requestService.getRequest(requestId);
-        let requestWithAmountAsString;
-        if (request)
-          requestWithAmountAsString = {
-            ...request,
-            amount: request.amount.toString(),
-          };
-        return res.status(200).json(requestWithAmountAsString);
+        return res.status(200).json(request);
       } catch (e) {
         log.error("Can not get status for a single request", e);
         return res.status(500).json({ errors: "Unexpected error" });

@@ -2,6 +2,8 @@ import { NextFunction, Request, Response } from "express";
 import { AccessTokenService } from "../../access-token";
 import { RequestService } from "../../request";
 import { isExpired, createLogger } from "../../utils";
+import { utils } from "@rpch/common";
+import { ValidationChain, validationResult, body } from "express-validator";
 
 const log = createLogger(["entry-server", "middleware"]);
 
@@ -20,6 +22,8 @@ export const tokenIsValid =
     requestFunds?: boolean
   ) =>
   async (req: Request, res: Response, next: NextFunction) => {
+    console.log(JSON.stringify(req.body));
+
     const accessTokenHash: string | undefined =
       req.headers["x-access-token"]?.toString();
     log.verbose("validating token", accessTokenHash);
@@ -33,11 +37,11 @@ export const tokenIsValid =
       log.verbose("token has expired", accessTokenHash);
       return res.status(401).json({ errors: "Access Token expired" });
     }
-
-    if (requestFunds && req.body.amount === undefined) {
-      log.verbose("missing funding amount");
-      return res.status(400).json({ errors: "Missing funding amount" });
-    }
+    console.log(JSON.stringify(req.body), utils.bigIntReplacer);
+    // if (requestFunds && req.body.amount === undefined) {
+    //   log.verbose("missing funding amount");
+    //   return res.status(400).json({ errors: "Missing funding amount" });
+    // }
 
     const hasEnough = await doesAccessTokenHaveEnoughBalance({
       requestService,
@@ -90,3 +94,49 @@ export const doesAccessTokenHaveEnoughBalance = async (params: {
   }
   return true;
 };
+
+export const validateAmountAndToken = (ops: {
+  accessTokenService: AccessTokenService;
+  requestService: RequestService;
+  walletAddress: string;
+  maxAmountOfTokens: bigint;
+  timeout: number;
+}) => [
+  body("amount")
+    .exists()
+    .notEmpty()
+    .withMessage("Amount is required")
+    .bail()
+    .isNumeric({ no_symbols: true })
+    .withMessage("Amount must be a number"),
+  body("chainId")
+    .notEmpty()
+    .withMessage("Chain ID is required")
+    .bail()
+    .isNumeric(),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      // const { amount, chainId } = req.body;
+
+      // Check amount
+      // if (typeof amount === "undefined" || amount <= 0) {
+      //   return res.status(400).json({ error: "Invalid amount" });
+      // }
+
+      // Call tokenIsValid with validated amount
+      tokenIsValid(
+        ops.accessTokenService,
+        ops.requestService,
+        ops.maxAmountOfTokens,
+        true
+      )(req, res, next);
+    } catch (err) {
+      // Handle errors here
+    }
+  },
+];

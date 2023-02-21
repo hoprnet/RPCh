@@ -21,7 +21,7 @@ export const sendTransaction = async (params: {
   smartContractAddress: string;
   from: Signer;
   to: string;
-  amount: bigint;
+  amount: string;
 }): Promise<ethers.providers.TransactionResponse> => {
   const contract = new Contract(
     params.smartContractAddress,

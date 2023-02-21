@@ -79,7 +79,7 @@ export const checkFreshRequests = async (ops: {
         ],
       from: connectedSigner,
       to: freshRequest?.node_address,
-      amount: BigInt(freshRequest.amount),
+      amount: freshRequest.amount.toString(),
     });
     // set request status to pending while it is confirmed or failed
     await ops.requestService.updateRequest(freshRequest.id, {

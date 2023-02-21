@@ -8,11 +8,6 @@ import { MockPgInstanceSingleton } from "../db/index.spec";
 import { RequestService } from "../request";
 import { entryServer } from ".";
 
-// // @ts-ignore
-// BigInt.prototype.toJSON = function () {
-//   return this.toString();
-// };
-
 const SECRET_KEY = "SECRET";
 const MAX_AMOUNT_OF_TOKENS = BigInt(40);
 const TIMEOUT = 30 * 60_000;

@@ -52,7 +52,7 @@ describe("test Blockchain class", function () {
       smartContractAddress: contract.address,
       from: owner,
       to: receiver.address,
-      amount: ethers.utils.parseEther("10").toBigInt(),
+      amount: ethers.utils.parseEther("10").toString(),
     });
     assert.notEqual(transactionHash, undefined);
   });
@@ -62,7 +62,7 @@ describe("test Blockchain class", function () {
       smartContractAddress: contract.address,
       from: owner,
       to: receiver.address,
-      amount: BigInt("10"),
+      amount: "10",
     });
     const receipt = await getReceiptOfTransaction(provider, transactionHash);
     const possibleStatus = [0, 1];
@@ -87,7 +87,7 @@ describe("test Blockchain class", function () {
       smartContractAddress: contract.address,
       from: owner,
       to: receiver.address,
-      amount: BigInt("10"),
+      amount: "10",
     });
     const [receipt] = await Promise.all([
       waitForTransaction(transactionHash, provider, confirmations),
@@ -101,14 +101,14 @@ describe("test Blockchain class", function () {
       smartContractAddress: contract.address,
       from: owner,
       to: receiver.address,
-      amount: INITIAL_AMOUNT,
+      amount: INITIAL_AMOUNT.toString(),
     });
     await expect(
       sendTransaction({
         smartContractAddress: contract.address,
         from: owner,
         to: receiver.address,
-        amount: INITIAL_AMOUNT,
+        amount: INITIAL_AMOUNT.toString(),
       })
     ).to.be.reverted;
   });
