@@ -44,7 +44,7 @@ describe("test entry server", function () {
   let app: Express;
 
   beforeAll(async function () {
-    dbInstance = MockPgInstanceSingleton.getDbInstance();
+    dbInstance = await MockPgInstanceSingleton.getDbInstance();
     MockPgInstanceSingleton.getInitialState();
   });
 
