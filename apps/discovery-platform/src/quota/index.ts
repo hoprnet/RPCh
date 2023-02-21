@@ -74,9 +74,12 @@ export const deleteQuota = async (
 /**
  * Calculate sum on quotas
  * @param quotas QueryQuota[]
- * @returns number
+ * @returns bigint
  */
-export const sumQuotas = (quotas: QueryQuota[]): number => {
-  const sumOfQuotas = quotas.reduce((prev, next) => prev + next.quota, 0);
+export const sumQuotas = (quotas: QueryQuota[]): bigint => {
+  const sumOfQuotas = quotas.reduce(
+    (prev, next) => BigInt(prev) + BigInt(next.quota),
+    BigInt(0)
+  );
   return sumOfQuotas;
 };

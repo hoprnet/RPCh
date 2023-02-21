@@ -19,7 +19,7 @@ export type QueryRegisteredNode = {
   exit_node_pub_key: string;
   native_address: string;
   chain_id: number;
-  total_amount_funded: number;
+  total_amount_funded: bigint;
   honesty_score: number;
   reason?: string;
   status: RegisteredNodeStatus;

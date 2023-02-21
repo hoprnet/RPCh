@@ -9,7 +9,7 @@ import { RequestService } from "../request";
 import { entryServer } from ".";
 
 const SECRET_KEY = "SECRET";
-const MAX_AMOUNT_OF_TOKENS = 40;
+const MAX_AMOUNT_OF_TOKENS = BigInt(40);
 const TIMEOUT = 30 * 60_000;
 
 describe("test entry server", function () {
@@ -47,6 +47,7 @@ describe("test entry server", function () {
       .expect("Content-Type", /json/)
       .expect(200);
   });
+
   it("should accept valid tokens", async function () {
     const responseToken = await agent
       .get("/api/access-token")
@@ -102,13 +103,12 @@ describe("test entry server", function () {
 
     await agent
       .post("/api/request/funds/0x0000000000000000")
-      .send({ amount: MAX_AMOUNT_OF_TOKENS - 1, chainId: 80 })
+      .send({ amount: String(MAX_AMOUNT_OF_TOKENS - BigInt(1)), chainId: 80 })
       .set("Accept", "application/json")
       .set("x-access-token", responseToken.body.accessToken);
-
     await agent
       .post("/api/request/funds/0x0000000000000000")
-      .send({ amount: MAX_AMOUNT_OF_TOKENS, chainId: 80 })
+      .send({ amount: String(MAX_AMOUNT_OF_TOKENS), chainId: 80 })
       .set("Accept", "application/json")
       .set("x-access-token", responseToken.body.accessToken)
       .expect("Content-Type", /json/)
@@ -121,11 +121,11 @@ describe("test entry server", function () {
 
     const resFunding = await agent
       .post("/api/request/funds/0x0000000000000000")
-      .send({ amount: MAX_AMOUNT_OF_TOKENS - 10, chainId: 80 })
+      .send({ amount: String(MAX_AMOUNT_OF_TOKENS - BigInt(10)), chainId: 80 })
       .set("Accept", "application/json")
       .set("x-access-token", responseToken.body.accessToken);
 
-    assert.equal(resFunding.body.amountLeft, 10);
+    assert.equal(await resFunding.body.amountLeft, 10);
   });
   describe("should validate body before trying a funding request", function () {
     it("should fail if amount is missing on funding request", async function () {

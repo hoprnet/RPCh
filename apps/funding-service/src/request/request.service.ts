@@ -19,14 +19,14 @@ export class RequestService {
   /**
    * Saves a Request in DB
    * @param nodeAddress node peer id
-   * @param amount string representing the amount that will be funded
+   * @param amount bigint amount that will be funded
    * @param chainId chain on which the transaction will execute
    * @param accessTokenHash hash that created this request
    * @returns Promise<QueryRequest>
    */
   public async createRequest(params: {
     nodeAddress: string;
-    amount: string;
+    amount: bigint;
     chainId: number;
     accessTokenHash: string;
   }): Promise<QueryRequest> {
@@ -179,17 +179,17 @@ export class RequestService {
    * @returns [chainId: number]: number
    */
   public sumAmountOfRequests(requests: QueryRequest[]): {
-    [chainId: number]: number;
+    [chainId: number]: bigint;
   } {
     const requestsGroupedByChainId = this.groupRequestsByChainId(
       requests ?? []
     );
     {
-      const sumOfRequestsByChainId: { [chainId: number]: number } = {};
+      const sumOfRequestsByChainId: { [chainId: number]: bigint } = {};
       for (const chainId in requestsGroupedByChainId) {
         const sumOfRequests = requestsGroupedByChainId[chainId].reduce(
-          (prev, next) => prev + Number(next.amount),
-          0
+          (prev, next) => BigInt(prev) + BigInt(next.amount),
+          BigInt(0)
         );
         sumOfRequestsByChainId[chainId] = sumOfRequests;
       }
@@ -205,18 +205,18 @@ export class RequestService {
    */
   public calculateAvailableFunds = (
     balances: {
-      [chainId: number]: number;
+      [chainId: number]: bigint;
     },
     frozenBalances: {
-      [chainId: number]: number;
+      [chainId: number]: bigint;
     }
   ): {
-    [chainId: number]: number;
+    [chainId: number]: bigint;
   } => {
-    const availableBalances: { [chainId: number]: number } = {};
+    const availableBalances: { [chainId: number]: bigint } = {};
     for (const chainId in balances) {
-      const totalBalance = Number(balances[chainId]);
-      const frozenBalance = frozenBalances[Number(chainId)] ?? 0;
+      const totalBalance = balances[chainId];
+      const frozenBalance = frozenBalances[Number(chainId)] ?? BigInt(0);
       const availableBalance = totalBalance - frozenBalance;
       availableBalances[Number(chainId)] = availableBalance;
     }

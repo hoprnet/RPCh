@@ -136,24 +136,24 @@ describe("test registered node functions", function () {
     assert.equal(eligibleNode?.status, "READY");
   });
   it("should calculate reward for non exit node", async function () {
-    const baseQuota = 1;
+    const baseQuota = BigInt(1);
     await createRegisteredNode(dbInstance, mockNode("1", false));
     const nonExit = await getRegisteredNode(dbInstance, "1");
     if (!nonExit) throw new Error("Failed to create non exit node in test");
 
-    const reward = getRewardForNode(baseQuota, 0.1, nonExit);
+    const reward = getRewardForNode(baseQuota, BigInt(1), nonExit);
 
-    assert.equal(reward, baseQuota + 0.1);
+    assert.equal(reward, baseQuota + BigInt(1));
   });
   it("should calculate reward for exit node", async function () {
-    const baseQuota = 1;
+    const baseQuota = BigInt(1);
     await createRegisteredNode(dbInstance, mockNode("1", true));
     const nonExit = await getRegisteredNode(dbInstance, "1");
     if (!nonExit) throw new Error("Failed to create non exit node in test");
 
-    const reward = getRewardForNode(baseQuota, 0.1, nonExit);
+    const reward = getRewardForNode(baseQuota, BigInt(1), nonExit);
 
-    assert.equal(reward, baseQuota + 0.1 * 2);
+    assert.equal(reward, baseQuota + BigInt(1) * BigInt(2));
   });
   it.todo("should get a access token");
 });

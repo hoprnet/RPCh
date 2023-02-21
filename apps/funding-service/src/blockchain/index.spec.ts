@@ -16,7 +16,7 @@ import {
 } from ".";
 import * as erc20 from "./erc20-fixture.json";
 
-const INITIAL_AMOUNT = ethers.utils.parseEther("1000").toString();
+const INITIAL_AMOUNT = ethers.utils.parseEther("1000").toBigInt();
 const TOKEN_NAME = "CUSTOM TOKEN";
 const DECIMAL_UNITS = "18";
 const TOKEN_SYMBOL = "TKN";
@@ -44,7 +44,7 @@ describe("test Blockchain class", function () {
   it("should get balance", async function () {
     const [owner] = accounts;
     const balance = await getBalance(contract.address, owner.address, provider);
-    assert.equal(balance.toString(), INITIAL_AMOUNT);
+    assert.equal(balance, INITIAL_AMOUNT);
   });
   it("should send transaction and receive transaction response", async () => {
     const [owner, receiver] = accounts;
@@ -101,14 +101,14 @@ describe("test Blockchain class", function () {
       smartContractAddress: contract.address,
       from: owner,
       to: receiver.address,
-      amount: INITIAL_AMOUNT,
+      amount: INITIAL_AMOUNT.toString(),
     });
     await expect(
       sendTransaction({
         smartContractAddress: contract.address,
         from: owner,
         to: receiver.address,
-        amount: INITIAL_AMOUNT,
+        amount: INITIAL_AMOUNT.toString(),
       })
     ).to.be.reverted;
   });
@@ -121,7 +121,7 @@ describe("test Blockchain class", function () {
       [provider]
     );
 
-    assert.equal(keyedBalance[provider.network.chainId], balance.toString());
+    assert.equal(keyedBalance[provider.network.chainId], balance);
   });
   // TODO: Add tests for smart contract reverts
   it.todo("should fail if smart contract is reverted");

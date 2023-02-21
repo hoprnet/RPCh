@@ -26,7 +26,7 @@ export class AccessTokenService {
    */
   public async createAccessToken(ops: {
     timeout: number;
-    amount: number;
+    amount: bigint;
   }): Promise<QueryAccessToken | undefined> {
     try {
       log.normal("Creating access token...");
