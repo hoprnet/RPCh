@@ -82,7 +82,7 @@ jobs:
         with:
           account_key: ${{ secrets.GOOGLE_CREDENTIALS }}
 
-      - name: Build and push the container image
+      - name: Build and push the container image to GCP artifact registry
         uses: elgohr/Publish-Docker-Github-Action@v5
         with:
           dockerfile: "./${{ matrix.directory }}/${{ matrix.project }}/Dockerfile"
@@ -91,6 +91,20 @@ jobs:
           username: ${{ steps.gcloud.outputs.username }}
           password: ${{ steps.gcloud.outputs.password }}
           tags: "${{ env.SHORT_SHA }}"
+
+      - name: Build and push the container image to Docker Hub
+        uses: aevea/action-kaniko@v0.10.0
+        with:
+          path: .
+          build_file: ${{ inputs.dockerfile }}
+          image: "rpch/${{ matrix.project }}"
+          registry: "docker.io"
+          username: ${{ secrets.CONTAINER_REGISTRY_USER }}
+          password: ${{ secrets.CONTAINER_REGISTRY_SECRET }}
+          cache: true
+          cache_registry: rpch/kaniko-cache
+          tag: ${{ env.SHORT_SHA }}
+          tag_with_latest: ${{ startsWith(github.ref, 'main') }}
 
   review-configuration:
     name: Review configuration
@@ -139,7 +153,7 @@ jobs:
   #   if: startsWith(github.head_ref, 'release/')
   #   needs:
   #     - review-source-code
-  #     - review-dockerfiles
+  #     - container-image
   #     - review-configuration
   #     - review-e2e-test-results
   #   name: Publish NPM packages
