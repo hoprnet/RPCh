@@ -1,7 +1,6 @@
 import type Segment from "../segment";
 import { utils } from "ethers";
 import LoggerFactory from "./logger";
-import { IMemoryDb } from "pg-mem";
 
 export { default as LoggerFactory } from "./logger";
 export const createLogger = LoggerFactory("common");
@@ -165,18 +164,3 @@ export const areAllSegmentsPresent = (segments: Segment[]): boolean => {
  */
 export const bigIntReplacer = (key: any, value: any) =>
   typeof value === "bigint" ? value.toString() : value;
-
-/**
- * Function to handle numerics with a scale for pg-mem
- * @param db a pg-mem DB instance
- */
-export const withQueryIntercept = (instance: IMemoryDb): void => {
-  instance.public.interceptQueries((sql: string) => {
-    const newSql = sql.replace(/\bnumeric\s*\(\s*\d+\s*,\s*\d+\s*\)/g, "float");
-    if (sql !== newSql) {
-      return instance.public.many(newSql);
-    }
-    // proceed to actual SQL execution for other requests.
-    return null;
-  });
-};

@@ -6,6 +6,7 @@ import { CreateAccessToken, generateAccessToken } from "../access-token";
 import { DBInstance } from ".";
 import { CreateRequest, UpdateRequest } from "../request";
 import { utils } from "@rpch/common";
+import * as fixtures from "@rpch/common/build/fixtures";
 
 export class MockPgInstanceSingleton {
   private static pgInstance: IMemoryDb;
@@ -14,7 +15,7 @@ export class MockPgInstanceSingleton {
 
   private constructor() {
     let instance = newDb();
-    utils.withQueryIntercept(instance);
+    fixtures.withQueryIntercept(instance);
     instance.public.none(fs.readFileSync("dump.sql", "utf8"));
     MockPgInstanceSingleton.pgInstance = instance;
     MockPgInstanceSingleton.initialDbState =
