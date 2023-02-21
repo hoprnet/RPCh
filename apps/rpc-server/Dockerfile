@@ -59,7 +59,7 @@ RUN mkdir -p /app/db
 VOLUME ["/app/db"]
 
 # we use tini as process 1 to catch signals properly, which is also built into Docker by default
-RUN apt-get update && apt-get tini curl
+RUN apt-get update && apt-get install tini curl
 
 # this helper script can be used to ensure the hoprd node is running before starting
 RUN  curl https://raw.githubusercontent.com/eficode/wait-for/v2.2.3/wait-for > /bin/wait-for \
