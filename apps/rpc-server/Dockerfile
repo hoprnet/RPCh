@@ -2,7 +2,7 @@
 
 # use slim version of node on Debian bullseye for smaller image sizes
 # Specify platform to be amd because arm doesn't work
-FROM --platform=linux/amd64 node:16-bullseye-slim@sha256:2e42e0aab9c9fd2d914417659ebedb4f995dfde79f3f7127cbc7e57ae6485dd9 as builder
+FROM --platform=linux/amd64 node:16-bullseye-slim as builder
 
 # use bash to have source command and persistent environment.
 SHELL ["/bin/bash", "-lc"]
@@ -50,7 +50,7 @@ RUN yarn run build --scope="@rpch/rpc-server"
 
 #  Copy only the necesary files to run the app.
 # Specify platform to be amd because arm doesn't work
-FROM --platform=linux/amd64 node:16-alpine AS runner
+FROM --platform=linux/amd64 node:16-bullseye-slim AS runner
 
 WORKDIR /app
 
@@ -59,7 +59,7 @@ RUN mkdir -p /app/db
 VOLUME ["/app/db"]
 
 # we use tini as process 1 to catch signals properly, which is also built into Docker by default
-RUN apk add --no-cache tini curl
+RUN apt-get update && apt-get tini curl
 
 # this helper script can be used to ensure the hoprd node is running before starting
 RUN  curl https://raw.githubusercontent.com/eficode/wait-for/v2.2.3/wait-for > /bin/wait-for \
