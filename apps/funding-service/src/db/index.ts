@@ -22,7 +22,6 @@ export const runMigrations = async (dbUrl: string) => {
     count: Infinity,
     databaseUrl: dbUrl,
     migrationsTable: "migrations",
-    verbose: true,
     dir: migrationsDirectory,
   });
 };

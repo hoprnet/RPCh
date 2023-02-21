@@ -6,7 +6,6 @@ import * as api from "./entry-server";
 import { checkFreshRequests } from "./queue";
 import { RequestService } from "./request";
 import { createLogger } from "./utils";
-import fs from "fs";
 import * as constants from "./constants";
 
 const log = createLogger();
