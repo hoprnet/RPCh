@@ -37,10 +37,11 @@ Checkout [Sandbox](https://github.com/Rpc-h/RPCh/tree/main/devkit/sandbox#sandbo
 | 01/2023 | RPCh Sandbox v1           | 🟢     |
 | 01/2023 | RPCh Sandbox v2           | 🟢     |
 | 01/2023 | RPCh base infrastructure  | 🟡     |
-| 02/2023 | RPCh discovery platform   | 🟡     |
-| 02/2023 | RPCh Alpha                | 🟡     |
-| 02/2023 | RPCh Beta                 | ⚪️    |
-| 03/2023 | RPCh v1                   | ⚪️    |
+| 02/2023 | RPCh discovery platform   | 🟢     |
+| 02/2023 | RPCh Closed Alpha         | 🟡     |
+| 03/2023 | RPCh Open Alpha           | ⚪️     |
+| 04/2023 | RPCh Beta                 | ⚪️    |
+| 05/2023 | RPCh v1                   | ⚪️    |
 | ?/2023 | NIRP mainnet              | ⚪️    |
 | ?/2023 | NIRP gnosis               | ⚪️    |
 

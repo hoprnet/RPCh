@@ -181,6 +181,7 @@ app.post("/register-exit-nodes", async (req, res) => {
   try {
     const {
       discoveryPlatformEndpoint,
+      chainId,
       hoprdApiEndpoints,
       hoprdApiEndpointsExt,
       hoprdApiTokens,
@@ -189,6 +190,7 @@ app.post("/register-exit-nodes", async (req, res) => {
 
     await registerExitNodes(
       discoveryPlatformEndpoint,
+      chainId,
       hoprdApiEndpoints,
       hoprdApiEndpointsExt,
       hoprdApiTokens,

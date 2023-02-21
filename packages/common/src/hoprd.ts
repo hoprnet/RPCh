@@ -13,12 +13,14 @@ export const sendMessage = async ({
   message,
   destination,
   path,
+  hops,
 }: {
   apiEndpoint: string;
   apiToken: string | undefined;
   message: string;
   destination: string;
   path?: string[];
+  hops?: number;
 }): Promise<void | string> => {
   const [url, headers] = createApiUrl(
     "http",
@@ -27,10 +29,16 @@ export const sendMessage = async ({
     apiToken
   );
 
-  const body: { body: string; recipient: string; path?: string[] } = {
+  const body: {
+    body: string;
+    recipient: string;
+    path?: string[];
+    hops?: number;
+  } = {
     body: message,
     recipient: destination,
     path,
+    hops,
   };
 
   log.verbose(
@@ -53,11 +61,15 @@ export const sendMessage = async ({
 
   if (response.status === 202) {
     log.verbose(
-      "send message to HOPRd node",
+      "sent message to HOPRd node",
       message,
       destination,
       "with path",
-      path && path.length > 0 ? path.join("-") : "direct"
+      path && path.length > 0
+        ? path.join("-")
+        : path && path.length === 0
+        ? "direct"
+        : "auto-path"
     );
     const text = await response.text();
     return text;
