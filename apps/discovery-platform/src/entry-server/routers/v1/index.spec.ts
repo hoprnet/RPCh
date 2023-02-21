@@ -149,10 +149,12 @@ describe("test v1 router", function () {
     assert.equal(doesClientHaveQuotaResponse, true);
   });
   it("should create trial client", async function () {
-    const response = await request(app).get("/request/trial?label=devcon");
+    const response = await request(app).get(
+      "/request/trial?label=devcon,some-dash"
+    );
     const dbClient = await getClient(dbInstance, response.body.client);
     assert.equal(dbClient?.payment, "trial");
-    assert.deepEqual(dbClient?.labels, ["devcon"]);
+    assert.deepEqual(dbClient?.labels, ["devcon", "some-dash"]);
     assert.equal(!!response.body.client, true);
   });
   it("should turn client into premium when adding quota", async function () {

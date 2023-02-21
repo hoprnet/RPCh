@@ -24,7 +24,7 @@ import {
   getRewardForNode,
 } from "../../../registered-node";
 import { CreateRegisteredNode } from "../../../registered-node/dto";
-import { createLogger } from "../../../utils";
+import { createLogger, isListSafe } from "../../../utils";
 
 const log = createLogger(["entry-server", "router", "v1"]);
 
@@ -114,15 +114,6 @@ const getNodeSchema: Record<
     in: "query",
     isBoolean: true,
   },
-};
-
-const isListSafe = (value: string) => {
-  // check that the list only has ids and commas
-  const noSpecialCharsRegex = /^[a-zA-Z0-9]+$/;
-  if (noSpecialCharsRegex.test(value)) return true;
-
-  const alphanumericCommaRegex = /^[a-zA-Z0-9,]+$/;
-  return alphanumericCommaRegex.test(value);
 };
 
 // Express Router
