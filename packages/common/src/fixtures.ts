@@ -3,7 +3,7 @@ import { utils } from "ethers";
 import * as crypto from "@rpch/crypto-bridge/nodejs";
 import Request from "./request";
 import Response from "./response";
-import { IMemoryDb } from "pg-mem";
+import type { IMemoryDb } from "pg-mem";
 
 // example of a working provider
 export const PROVIDER = "https://primary.gnosis-chain.rpc.hoprtech.net";
