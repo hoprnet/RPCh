@@ -88,7 +88,10 @@ const start = async (ops: {
         log.verbose("node commitment", nodeIsCommitted);
         if (nodeIsCommitted) {
           log.verbose("new committed node", node.id);
-          await updateRegisteredNode(ops.db, { ...node, status: "READY" });
+          await updateRegisteredNode(ops.db, {
+            ...node,
+            status: "READY",
+          });
         }
       }
     } catch (e) {
