@@ -132,7 +132,10 @@ export class FundingServiceApi {
       const { id: requestId, amountLeft }: postFundingResponse =
         fundingResponseJson;
 
-      await updateRegisteredNode(this.db, { ...dbNode, status: "FUNDING" });
+      await updateRegisteredNode(this.db, {
+        ...dbNode,
+        status: "FUNDING",
+      });
 
       // save funding request in db
       await createFundingRequest(this.db, {
