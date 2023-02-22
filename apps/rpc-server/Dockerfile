@@ -77,4 +77,4 @@ USER node
 
 CMD ["node", "apps/rpc-server/build/index.js"]
 
-ENTRYPOINT ["/sbin/tini", "--"]
+ENTRYPOINT ["/usr/bin/tini", "--"]
