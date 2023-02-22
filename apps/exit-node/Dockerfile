@@ -2,7 +2,7 @@
 
 # use slim version of node on Debian bullseye for smaller image sizes
 # Specify platform to be amd because arm doesn't work
-FROM --platform=linux/amd64 node:16-bullseye-slim@sha256:2e42e0aab9c9fd2d914417659ebedb4f995dfde79f3f7127cbc7e57ae6485dd9 as builder
+FROM --platform=linux/amd64 node:16-bullseye-slim as builder
 
 # use bash to have source command and persistent environment.
 SHELL ["/bin/bash", "-lc"]
