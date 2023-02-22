@@ -162,10 +162,11 @@ describe("test registered node functions", function () {
     assert.equal(reward, baseQuota + BigInt(1) * BigInt(2));
   });
   it("should keep updated_at updated", async function () {
+    jest.setSystemTime(new Date(2023, 1, 21, 13, 30, 0));
     await createRegisteredNode(dbInstance, mockNode("1"));
     const node = await getRegisteredNode(dbInstance, "1");
     if (!node) throw new Error("Failed to create node");
-
+    jest.setSystemTime(new Date(2023, 1, 21, 14, 30, 0));
     await updateRegisteredNode(dbInstance, {
       ...node,
       status: "READY",
@@ -178,6 +179,7 @@ describe("test registered node functions", function () {
     expect(new Date(node.updated_at).getTime()).toBeLessThan(
       new Date(updatedNode?.updated_at).getTime()
     );
+    jest.useRealTimers();
   });
   it.todo("should get a access token");
 });
