@@ -60,10 +60,9 @@ export const start = async (ops: {
       // if this fails, then we most likely have received
       // a Response
       try {
-        if (!PeerId.createFromB58String(clientId).isValid())
-          throw Error("Invalid PeerId");
+        PeerId.createFromB58String(clientId);
       } catch {
-        log.verbose("Ignoring Response as we are an exit node");
+        log.verbose("Ignoring Response as we are an exit node", message.id);
         return;
       }
 
