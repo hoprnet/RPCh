@@ -51,6 +51,7 @@ export const start = async (ops: {
 }): Promise<() => void> => {
   const onMessage = async (message: Message) => {
     try {
+      log.verbose("Received message", message.id, message.body);
       // in the method, we are only expecting to receive
       // Requests, this means that the all messages are
       // prefixed by the entry node's peer id
@@ -59,9 +60,11 @@ export const start = async (ops: {
       // if this fails, then we most likely have received
       // a Response
       try {
-        PeerId.createFromB58String(clientId);
+        if (!PeerId.createFromB58String(clientId).isValid())
+          throw Error("Invalid PeerId");
       } catch {
         log.verbose("Ignoring Response as we are an exit node");
+        return;
       }
 
       const lastRequestFromClient: bigint = await db
@@ -92,6 +95,8 @@ export const start = async (ops: {
         rpchRequest,
         response
       );
+      log.verbose("Created response", message.id, rpchResponse.body);
+
       for (const segment of rpchResponse.toMessage().toSegments()) {
         ops.hoprd.sendMessage({
           apiEndpoint: ops.apiEndpoint,
