@@ -95,7 +95,11 @@ export const start = async (ops: {
         rpchRequest,
         response
       );
-      log.verbose("Created response", message.id, rpchResponse.body);
+      log.verbose(
+        "Created response",
+        rpchResponse.id,
+        rpchResponse.toMessage().body
+      );
 
       for (const segment of rpchResponse.toMessage().toSegments()) {
         ops.hoprd.sendMessage({
