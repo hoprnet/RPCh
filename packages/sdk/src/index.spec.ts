@@ -490,7 +490,7 @@ describe("test SDK class", function () {
     });
 
     describe("handling request size", function () {
-      it.only("should not send requests larger than max amount of segments", async function () {
+      it("should not send requests larger than max amount of segments", async function () {
         const hoprdSendMessageSpy = jest.spyOn(hoprd, "sendMessage");
         const MAXIMUM_SEGMENTS_PER_REQUEST = 100;
         const bigReq = await sdk.createRequest(
