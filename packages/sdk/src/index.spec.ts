@@ -1,9 +1,9 @@
-import assert from "assert";
+import { expect } from "@jest/globals";
 import { Request, hoprd } from "@rpch/common";
 import * as fixtures from "@rpch/common/build/fixtures";
+import assert from "assert";
 import nock from "nock";
 import SDK, { type HoprSdkOps } from "./index";
-import { expect } from "@jest/globals";
 
 const TIMEOUT = 5e3;
 const DISCOVERY_PLATFORM_API_ENDPOINT = "http://discovery_platform";
@@ -487,6 +487,66 @@ describe("test SDK class", function () {
       // createMessageListener should have 2 calls after stopping the previous
       // from old entry node and creating new one with new entry node
       assert.equal(createMessageListenerMetric.mock.calls.length, 2);
+    });
+
+    describe("handling request size", function () {
+      it("should not send requests larger than max amount of segments", async function () {
+        const hoprdSendMessageSpy = jest.spyOn(hoprd, "sendMessage");
+        const MAXIMUM_SEGMENTS_PER_REQUEST = 100;
+        const bigReq = await sdk.createRequest(
+          fixtures.PROVIDER,
+          // create an rpc call that will exceed MAXIMUM_SEGMENTS_PER_REQUEST size
+          fixtures.RPC_REQ_LARGE.repeat(MAXIMUM_SEGMENTS_PER_REQUEST)
+        );
+
+        try {
+          await sdk.sendRequest(bigReq);
+        } catch (e) {
+          expect(e).toEqual("Request is too big");
+          // request should not be in request cache
+          // @ts-ignore
+          expect(sdk.requestCache.getRequest(bigReq.id)).toEqual(undefined);
+          // hopr send message should never be called
+          expect(hoprdSendMessageSpy.mock.calls.length).toEqual(0);
+        }
+      });
+
+      it("should send requests smaller than max amount of segments", function (done) {
+        HOPRD_SEND_MESSAGE_NOCK.reply(202, "someresponse");
+        const MAXIMUM_SEGMENTS_PER_REQUEST = 100;
+
+        sdk
+          .createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE)
+          .then((normalRequest) => {
+            // how many times request cas increase without passing MAXIMUM_SEGMENTS_PER_REQUEST
+            const numberOfRepetitions = Math.floor(
+              MAXIMUM_SEGMENTS_PER_REQUEST /
+                normalRequest.toMessage().toSegments().length
+            );
+
+            const [clientRequest, , exitNodeResponse] =
+              fixtures.generateMockedFlow(
+                3,
+                // create an rpc call that is close to MAXIMUM_SEGMENTS_PER_REQUEST
+                fixtures.RPC_REQ_LARGE.repeat(numberOfRepetitions)
+              );
+
+            sdk.sendRequest(clientRequest).then((response) => {
+              // this will run when .onMessage resolves request
+              assert.equal(response.id, clientRequest.id);
+              // @ts-ignore
+              const pendingRequest = sdk.requestCache.getRequest(
+                clientRequest.id
+              );
+              assert.equal(pendingRequest, undefined);
+              done();
+            });
+
+            // return response for sdk sendRequest
+            // @ts-ignore
+            sdk.onMessage(exitNodeResponse.toMessage());
+          });
+      });
     });
 
     describe("should handle requests correctly when receiving a response", function () {
