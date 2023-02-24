@@ -490,7 +490,8 @@ describe("test SDK class", function () {
     });
 
     describe("handling request size", function () {
-      it("should not send requests larger than max amount of segments", async function () {
+      it.only("should not send requests larger than max amount of segments", async function () {
+        const hoprdSendMessageSpy = jest.spyOn(hoprd, "sendMessage");
         const MAXIMUM_SEGMENTS_PER_REQUEST = 100;
         const bigReq = await sdk.createRequest(
           fixtures.PROVIDER,
@@ -502,6 +503,11 @@ describe("test SDK class", function () {
           await sdk.sendRequest(bigReq);
         } catch (e) {
           expect(e).toEqual("Request is too big");
+          // request should not be in request cache
+          // @ts-ignore
+          expect(sdk.requestCache.getRequest(bigReq.id)).toEqual(undefined);
+          // hopr send message should never be called
+          expect(hoprdSendMessageSpy.mock.calls.length).toEqual(0);
         }
       });
 

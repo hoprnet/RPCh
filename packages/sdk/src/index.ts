@@ -450,7 +450,7 @@ export default class SDK {
           "Request exceeds maximum amount of segments with %s segments",
           segments.length
         );
-        reject("Request is too big");
+        return reject("Request is too big");
       }
 
       // Add request to request cache
