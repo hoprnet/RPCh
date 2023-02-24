@@ -337,7 +337,11 @@ export default class SDK {
     // update exit nodes every minute
     this.intervals.push(
       setInterval(() => {
-        this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint);
+        this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint).catch(
+          (error) => {
+            log.error("Failed to fetch exit nodes", error);
+          }
+        );
       }, 60e3)
     );
   }
