@@ -379,15 +379,32 @@ export default class SDK {
     ) {
       log.verbose("node is not reliable enough. selecting new entry node");
       exclusionList.push(this.entryNode!.peerId);
-      try {
-        await this.selectEntryNode(
-          this.ops.discoveryPlatformApiEndpoint,
-          exclusionList
-        );
-      } catch (error) {
+      // TODO: Implement retry or do a counter and at the 3rd createRequest, setDeadlock
+
+      await retry(
+        async (_, attempt) => {
+          log.verbose("Attempt to get exit node number: %s", attempt);
+          await this.selectEntryNode(
+            this.ops.discoveryPlatformApiEndpoint,
+            exclusionList
+          );
+        },
+        {
+          retries: 3,
+        }
+      ).catch((error) => {
         log.error("Couldn't find new entry node: ", error);
         this.setDeadlock(DEADLOCK_MS);
-      }
+      });
+      // try {
+      //   await this.selectEntryNode(
+      //     this.ops.discoveryPlatformApiEndpoint,
+      //     exclusionList
+      //   );
+      // } catch (error) {
+      //   log.error("Couldn't find new entry node: ", error);
+      //   this.setDeadlock(DEADLOCK_MS);
+      // }
       log.verbose("got new entry node");
     }
 
