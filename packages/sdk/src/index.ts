@@ -126,17 +126,21 @@ export default class SDK {
         }
       );
 
+      // Check for error response
+      if (rawResponse.status !== 200) {
+        log.error(
+          "Failed to request entry node",
+          rawResponse.status,
+          await rawResponse.text()
+        );
+        throw new Error(`Failed to request entry node`);
+      }
+
       const response: {
         hoprd_api_endpoint: string;
         accessToken: string;
         id: string;
       } = await rawResponse.json();
-
-      // Check for error response
-      if (rawResponse.status !== 200) {
-        log.error("Failed to request entry node", rawResponse.status, response);
-        throw new Error(`Failed to request entry node`);
-      }
 
       const apiEndpointUrl = new URL(response.hoprd_api_endpoint);
 
@@ -307,17 +311,8 @@ export default class SDK {
       await this.crypto.init();
     }
 
-    // fetch required data from discovery platform
-    await retry(
-      () => this.selectEntryNode(this.ops.discoveryPlatformApiEndpoint),
-      {
-        retries: 5,
-        onRetry: (e, attempt) => {
-          log.error("Error while selecting entry node", e);
-          log.verbose("Retrying to select entry node, attempt:", attempt);
-        },
-      }
-    );
+    await this.selectEntryNodeWithRetry({ retries: 5 });
+
     await retry(
       () => this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint),
       {
@@ -379,33 +374,13 @@ export default class SDK {
     ) {
       log.verbose("node is not reliable enough. selecting new entry node");
       exclusionList.push(this.entryNode!.peerId);
-      // TODO: Implement retry or do a counter and at the 3rd createRequest, setDeadlock
-
-      await retry(
-        async (_, attempt) => {
-          log.verbose("Attempt to get exit node number: %s", attempt);
-          await this.selectEntryNode(
-            this.ops.discoveryPlatformApiEndpoint,
-            exclusionList
-          );
+      await this.selectEntryNodeWithRetry({
+        retries: 3,
+        exclusionList,
+        onCatch: () => {
+          this.setDeadlock(DEADLOCK_MS);
         },
-        {
-          retries: 3,
-        }
-      ).catch((error) => {
-        log.error("Couldn't find new entry node: ", error);
-        this.setDeadlock(DEADLOCK_MS);
       });
-      // try {
-      //   await this.selectEntryNode(
-      //     this.ops.discoveryPlatformApiEndpoint,
-      //     exclusionList
-      //   );
-      // } catch (error) {
-      //   log.error("Couldn't find new entry node: ", error);
-      //   this.setDeadlock(DEADLOCK_MS);
-      // }
-      log.verbose("got new entry node");
     }
 
     // exclude entry node
@@ -421,6 +396,56 @@ export default class SDK {
       exitNode.peerId,
       this.crypto!.Identity.load_identity(etherUtils.arrayify(exitNode.pubKey))
     );
+  }
+
+  /**
+   * Select entry node with a number of retries before deadlocking the sdk
+   * @param retries amount of tries to select entry node
+   * @param exclusionList array of node peerid to exclude from selecting
+   * @param onCatch function to run after running out of retries
+   * @param opts retry options
+   * @returns object with entry node information
+   */
+  private async selectEntryNodeWithRetry(params: {
+    retries: number;
+    exclusionList?: string[];
+    onCatch?: () => void;
+    opts?: retry.Options;
+  }): Promise<
+    | {
+        apiEndpoint: string;
+        apiToken: string;
+        peerId: string;
+      }
+    | undefined
+  > {
+    try {
+      return await retry(
+        async () => {
+          const selectedEntryNode = await this.selectEntryNode(
+            this.ops.discoveryPlatformApiEndpoint,
+            params.exclusionList
+          );
+          log.verbose("Received entry node", selectedEntryNode);
+          return selectedEntryNode;
+        },
+        {
+          retries: params.retries,
+          onRetry: (e, attempt) => {
+            log.error("Error while selecting entry node", e);
+            log.verbose("Retrying to select entry node, attempt:", attempt);
+          },
+          ...params.opts,
+        }
+      );
+    } catch (error) {
+      log.error("Couldn't find new entry node: ", error);
+      if (typeof params.onCatch === "function") {
+        params.onCatch();
+      } else {
+        return;
+      }
+    }
   }
 
   /**

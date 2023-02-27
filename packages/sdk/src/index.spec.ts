@@ -14,6 +14,8 @@ const ENTRY_NODE_PEER_ID = fixtures.HOPRD_PEER_ID_A;
 const EXIT_NODE_PEER_ID = fixtures.EXIT_NODE_HOPRD_PEER_ID_A;
 const EXIT_NODE_PUB_KEY = fixtures.EXIT_NODE_PUB_KEY_A;
 
+// jest.setTimeout(1e3 * 10);
+
 jest.mock("@rpch/common", () => ({
   ...jest.requireActual("@rpch/common"),
   hoprd: {
@@ -162,7 +164,7 @@ describe("test SDK class", function () {
       const mock = createSdkMock();
       ops = mock.ops;
       sdk = mock.sdk;
-      DP_REQ_ENTRY_NOCK.thrice().reply(200, {
+      DP_REQ_ENTRY_NOCK.reply(200, {
         hoprd_api_endpoint: ENTRY_NODE_API_ENDPOINT,
         hoprd_api_port: ENTRY_NODE_API_PORT,
         accessToken: ENTRY_NODE_API_TOKEN,
@@ -447,6 +449,12 @@ describe("test SDK class", function () {
     });
 
     it("should call the stopMessageListener if entry node changes", async function () {
+      DP_REQ_ENTRY_NOCK.reply(200, {
+        hoprd_api_endpoint: ENTRY_NODE_API_ENDPOINT,
+        hoprd_api_port: ENTRY_NODE_API_PORT,
+        accessToken: ENTRY_NODE_API_TOKEN,
+        id: ENTRY_NODE_PEER_ID,
+      });
       // @ts-ignore
       const stopMessageListenerMetric = jest.spyOn(sdk, "stopMessageListener");
       // @ts-ignore
@@ -467,6 +475,12 @@ describe("test SDK class", function () {
     });
 
     it("should call the createMessageListener one more time if entry node changes", async function () {
+      DP_REQ_ENTRY_NOCK.reply(200, {
+        hoprd_api_endpoint: ENTRY_NODE_API_ENDPOINT,
+        hoprd_api_port: ENTRY_NODE_API_PORT,
+        accessToken: ENTRY_NODE_API_TOKEN,
+        id: ENTRY_NODE_PEER_ID,
+      });
       // @ts-ignore
       const createMessageListenerMetric = jest.spyOn(
         hoprd,
@@ -595,6 +609,75 @@ describe("test SDK class", function () {
           sdk.requestCache.getRequest(clientRequestA.id)?.request.id,
           clientRequestA.id
         );
+      });
+    });
+    describe("should retry selecting entry node", function () {
+      it("when creating a request and run onCatch", async function () {
+        //@ts-ignore
+        const selectEntryNodeMock = jest.spyOn(sdk, "selectEntryNode");
+        // Check that before doing anything, there's already something on the mock calls
+        assert.equal(selectEntryNodeMock.mock.calls.length, 0);
+        selectEntryNodeMock.mock.calls = [];
+        const retries = 3;
+        // fail 3 times
+        DP_REQ_ENTRY_NOCK.once()
+          .reply(500)
+          .post("/api/v1/request/entry-node")
+          .once()
+          .reply(500)
+          .post("/api/v1/request/entry-node")
+          .once()
+          .reply(500)
+          .post("/api/v1/request/entry-node")
+          .once()
+          .reply(500);
+
+        // @ts-ignore
+        const res = await sdk.selectEntryNodeWithRetry({
+          // will retry 2 times after first failing req
+          retries: retries,
+          onCatch: () => sdk.setDeadlock(1e3),
+          opts: { minTimeout: 100 },
+        });
+
+        // retries + 1 = initial call + retries
+        assert.equal(selectEntryNodeMock.mock.calls.length, retries + 1);
+
+        // @ts-ignore
+        expect(sdk.isDeadlocked()).toBe(true);
+      });
+      it("after 2 retries", async function () {
+        //@ts-ignore
+        const selectEntryNodeMock = jest.spyOn(sdk, "selectEntryNode");
+        // Check that before doing anything, there's already something on the mock calls
+        assert.equal(selectEntryNodeMock.mock.calls.length, 0);
+        selectEntryNodeMock.mock.calls = [];
+        const retries = 2;
+        // fail 2 times, work after wards
+        DP_REQ_ENTRY_NOCK.once()
+          .reply(500)
+          .post("/api/v1/request/entry-node")
+          .once()
+          .reply(500)
+          .post("/api/v1/request/entry-node")
+          .once()
+          .reply(200, {
+            hoprd_api_endpoint: ENTRY_NODE_API_ENDPOINT,
+            hoprd_api_port: ENTRY_NODE_API_PORT,
+            accessToken: ENTRY_NODE_API_TOKEN,
+            id: ENTRY_NODE_PEER_ID,
+          });
+
+        // @ts-ignore
+        const res = await sdk.selectEntryNodeWithRetry({
+          // will retry 2 times after first failing req
+          retries: retries,
+          opts: { minTimeout: 100 },
+        });
+
+        assert.equal(res?.peerId, ENTRY_NODE_PEER_ID);
+        // retries + 1 = initial call + retries
+        assert.equal(selectEntryNodeMock.mock.calls.length, retries + 1);
       });
     });
   });
