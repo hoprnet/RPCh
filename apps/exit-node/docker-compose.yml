@@ -79,7 +79,7 @@ services:
       - hoprd
     restart: unless-stopped
     volumes:
-      - exit-node-data:/tmp
+      - exit-node-data:${RPCH_DATA_DIR}
     environment:
       - HOPRD_API_ENDPOINT=http://hoprd:3001
       - DEBUG=${RPCH_DEBUG}
@@ -127,10 +127,10 @@ services:
       - /sys:/host/sys:ro
       - /:/rootfs:ro
     command:
-      - '--path.procfs=/host/proc'
-      - '--path.rootfs=/rootfs'
-      - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+      - "--path.procfs=/host/proc"
+      - "--path.rootfs=/rootfs"
+      - "--path.sysfs=/host/sys"
+      - "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)"
     restart: unless-stopped
     expose:
       - 9100
