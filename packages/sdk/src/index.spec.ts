@@ -610,7 +610,7 @@ describe("test SDK class", function () {
       });
     });
     describe("should retry selecting entry node", function () {
-      it("when creating a request and run onCatch", async function () {
+      it("when creating a request and set deadlock when retries run out", async function () {
         //@ts-ignore
         const selectEntryNodeMock = jest.spyOn(sdk, "selectEntryNode");
         // Check that before doing anything, there's already something on the mock calls
