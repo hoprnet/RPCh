@@ -1,9 +1,14 @@
 --
 -- PostgreSQL database dump
+-- INITIAL SCHEMA BEFORE MIGRATIONS RUN BEFORE ALL MIGRATIONS
 --
 
 -- Dumped from database version 15.1 (Debian 15.1-1.pgdg110+1)
 -- Dumped by pg_dump version 15.1 (Debian 15.1-1.pgdg110+1)
+
+--------------------------------------------------------------------------------
+-- Up Migration
+--------------------------------------------------------------------------------
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -27,7 +32,7 @@ CREATE TABLE public.funding_requests (
     id serial NOT NULL,
     registered_node_id character varying(255) NOT NULL,
     request_id integer NOT NULL,
-    amount text NOT NULL,
+    amount numeric(78,0) NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -58,13 +63,12 @@ ALTER TABLE public.clients OWNER TO postgres;
 CREATE TABLE public.quotas (
     id serial PRIMARY KEY,
     client_id character varying(255) NOT NULL,
-    quota integer NOT NULL,
+    quota numeric(78,0) NOT NULL,
     action_taker character varying(255) NOT NULL,
     created_at timestamptz DEFAULT now() NOT NULL,
     updated_at timestamptz DEFAULT now() NOT NULL,
     CONSTRAINT quotas_client_id_fkey FOREIGN KEY (client_id)
         REFERENCES public.clients (id)
-        ON DELETE CASCADE
 );
 
 
@@ -82,7 +86,7 @@ CREATE TABLE public.registered_nodes (
     hoprd_api_token character varying(255) NOT NULL,
     exit_node_pub_key character varying(255),
     native_address character varying(255) NOT NULL,
-    total_amount_funded numeric NOT NULL,
+    total_amount_funded numeric(78,0) NOT NULL,
     honesty_score numeric NOT NULL,
     reason character varying(255),
     status character varying(255) NOT NULL,
@@ -114,6 +118,3 @@ ALTER TABLE ONLY public.registered_nodes
 ALTER TABLE ONLY public.funding_requests
     ADD CONSTRAINT funding_requests_registered_node_id_fkey FOREIGN KEY (registered_node_id) REFERENCES public.registered_nodes(id);
 
---
--- PostgreSQL database dump complete
---

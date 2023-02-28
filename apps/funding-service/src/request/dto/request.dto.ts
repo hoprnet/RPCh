@@ -1,7 +1,7 @@
 type Request = {
   accessTokenHash: string;
   nodeAddress: string;
-  amount: string;
+  amount: bigint;
   transactionHash?: string;
   chainId: number;
   reason?: string;
@@ -28,7 +28,7 @@ export type QueryRequest = {
   access_token_hash: string;
   created_at: string;
   node_address: string;
-  amount: string;
+  amount: bigint;
   transaction_hash?: string;
   chain_id: number;
   reason?: string;

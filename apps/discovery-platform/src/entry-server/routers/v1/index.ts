@@ -15,7 +15,7 @@ import {
 } from "../../../client";
 import { DBInstance } from "../../../db";
 import { FundingServiceApi } from "../../../funding-service-api";
-import { createQuota, getAllQuotasByClient, sumQuotas } from "../../../quota";
+import { createQuota, getQuotasPaidByClient, sumQuotas } from "../../../quota";
 import {
   createRegisteredNode,
   getEligibleNode,
@@ -24,14 +24,17 @@ import {
   getRewardForNode,
 } from "../../../registered-node";
 import { CreateRegisteredNode } from "../../../registered-node/dto";
-import { createLogger } from "../../../utils";
+import { createLogger, isListSafe } from "../../../utils";
 
 const log = createLogger(["entry-server", "router", "v1"]);
 
 // base amount of reward that a node will receive after completing a request
-const BASE_EXTRA = 1;
+const BASE_EXTRA = BigInt(1);
 
-// client id fto fund trial clients
+// payment mode when quota is paid by trial
+const TRIAL_PAYMENT_MODE = "trial";
+
+// client id that will pay for quotas in trial mode
 const TRIAL_CLIENT_ID = "trial";
 
 // Sanitization and Validation
@@ -116,19 +119,10 @@ const getNodeSchema: Record<
   },
 };
 
-const isListSafe = (value: string) => {
-  // check that the list only has ids and commas
-  const noSpecialCharsRegex = /^[a-zA-Z0-9]+$/;
-  if (noSpecialCharsRegex.test(value)) return true;
-
-  const alphanumericCommaRegex = /^[a-zA-Z0-9,]+$/;
-  return alphanumericCommaRegex.test(value);
-};
-
 // Express Router
 export const v1Router = (ops: {
   db: DBInstance;
-  baseQuota: number;
+  baseQuota: bigint;
   fundingServiceApi: FundingServiceApi;
 }) => {
   const router = express.Router();
@@ -233,7 +227,7 @@ export const v1Router = (ops: {
             id: clientId,
             payment: "premium",
           });
-        } else if (dbClient.payment === "trial") {
+        } else if (dbClient.payment === TRIAL_CLIENT_ID) {
           // update client to premium of it was previously trial
           await updateClient(ops.db, { ...dbClient, payment: "premium" });
         }
@@ -241,6 +235,7 @@ export const v1Router = (ops: {
           clientId: dbClient.id,
           quota,
           actionTaker: "discovery-platform",
+          paidBy: dbClient.id,
         });
         return res.json({ quota: createdQuota });
       } catch (e) {
@@ -295,11 +290,6 @@ export const v1Router = (ops: {
 
         let dbClient = await getClient(ops.db, client);
 
-        // set db client to trial client if it is in trial mode
-        if (dbClient?.payment === "trial") {
-          dbClient = await getClient(ops.db, TRIAL_CLIENT_ID);
-        }
-
         if (!dbClient) {
           log.verbose("db client does not exist", client);
           return res.status(404).json({
@@ -307,12 +297,17 @@ export const v1Router = (ops: {
           });
         }
 
+        const clientIsTrialMode = dbClient?.payment === TRIAL_PAYMENT_MODE;
+        // set who is going to pay for quota
+        const paidById = clientIsTrialMode ? TRIAL_CLIENT_ID : dbClient?.id;
+
         // check if client has enough quota
         const doesClientHaveQuotaResponse = await doesClientHaveQuota(
           ops.db,
-          dbClient.id,
+          paidById,
           ops.baseQuota
         );
+
         if (!doesClientHaveQuotaResponse) {
           return res.status(403).json({
             body: "Client does not have enough quota",
@@ -327,24 +322,28 @@ export const v1Router = (ops: {
             .json({ errors: "Could not find eligible node" });
         }
 
-        // calculate how much should be funded to entry node
-        const amountToFund = getRewardForNode(
-          ops.baseQuota,
-          BASE_EXTRA,
-          selectedNode
-        );
-        // fund entry node
-        await ops.fundingServiceApi.requestFunds({
-          amount: amountToFund,
-          node: selectedNode,
-        });
+        // DISCLAIMER: ACTIVATE THIS WHEN FUNDING IS STABLE
+        // // calculate how much should be funded to entry node
+        // const amountToFund = getRewardForNode(
+        //   ops.baseQuota,
+        //   BASE_EXTRA,
+        //   selectedNode
+        // );
+
+        // // fund entry node
+        // await ops.fundingServiceApi.requestFunds({
+        //   amount: amountToFund,
+        //   node: selectedNode,
+        // });
 
         // create negative quota (showing that the client has used up initial quota)
         await createQuota(ops.db, {
           clientId: dbClient.id,
-          quota: ops.baseQuota * -1,
+          quota: ops.baseQuota * BigInt(-1),
           actionTaker: "discovery platform",
+          paidBy: paidById,
         });
+
         return res.json({
           ...selectedNode,
           accessToken: selectedNode.hoprd_api_token,
@@ -362,9 +361,9 @@ export const v1Router = (ops: {
 export const doesClientHaveQuota = async (
   db: DBInstance,
   client: string,
-  baseQuota: number
+  baseQuota: bigint
 ) => {
-  const allQuotasFromClient = await getAllQuotasByClient(db, client);
+  const allQuotasFromClient = await getQuotasPaidByClient(db, client);
   const sumOfClientsQuota = sumQuotas(allQuotasFromClient);
   return sumOfClientsQuota >= baseQuota;
 };

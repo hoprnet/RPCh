@@ -19,7 +19,8 @@
     "@rpch/configs-typescript": "*",
     "@types/debug": "^4.1.7",
     "@types/ws": "^8.5.3",
-    "nock": "^13.2.9"
+    "nock": "^13.2.9",
+    "pg-mem": "^2.6.4"
   },
   "dependencies": {
     "@rpch/crypto-bridge": "0.1.7-blockwallet.0",

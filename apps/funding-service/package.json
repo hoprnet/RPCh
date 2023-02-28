@@ -8,6 +8,7 @@
     "dev": "yarn build --watch",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "eslint \"src/**/*.ts*\"",
+    "migrate": "node-pg-migrate --migration-file-language sql",
     "test": "jest --coverage",
     "start": "node build/index.js"
   },
@@ -35,6 +36,7 @@
     "ethers": "^5.7.2",
     "express": "^4.18.2",
     "express-validator": "^6.14.3",
+    "node-pg-migrate": "^6.2.2",
     "pg-promise": "^11.0.0"
   }
 }

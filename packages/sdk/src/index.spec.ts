@@ -1,9 +1,9 @@
-import assert from "assert";
+import { expect } from "@jest/globals";
 import { Request, hoprd } from "@rpch/common";
 import * as fixtures from "@rpch/common/build/fixtures";
+import assert from "assert";
 import nock from "nock";
 import SDK, { type HoprSdkOps } from "./index";
-import { expect } from "@jest/globals";
 
 const TIMEOUT = 5e3;
 const DISCOVERY_PLATFORM_API_ENDPOINT = "http://discovery_platform";
@@ -79,6 +79,78 @@ describe("test SDK class", function () {
       await expect(sdk.sendRequest(request)).rejects.toThrow(
         "SDK not ready to send requests"
       );
+    });
+  });
+
+  describe("started unstable", function () {
+    let mock: ReturnType<typeof createSdkMock>;
+
+    beforeEach(async function () {
+      mock = createSdkMock();
+    });
+
+    afterEach(async function () {
+      await mock.sdk.stop();
+      jest.clearAllMocks();
+    });
+
+    it("should select entry node after 2 tries", async function () {
+      //@ts-ignore
+      const selectEntryNodeMock = jest.spyOn(mock.sdk, "selectEntryNode");
+
+      DP_GET_NODES.reply(200, [
+        {
+          exit_node_pub_key: EXIT_NODE_PUB_KEY,
+          id: EXIT_NODE_PEER_ID,
+        },
+      ]);
+
+      // fail 3 times, work after wards
+      nock(DISCOVERY_PLATFORM_API_ENDPOINT)
+        .post("/api/v1/request/entry-node")
+        .once()
+        .reply(500)
+        .post("/api/v1/request/entry-node")
+        .once()
+        .reply(200, {
+          hoprd_api_endpoint: ENTRY_NODE_API_ENDPOINT,
+          hoprd_api_port: ENTRY_NODE_API_PORT,
+          accessToken: ENTRY_NODE_API_TOKEN,
+          id: ENTRY_NODE_PEER_ID,
+        });
+
+      await mock.sdk.start();
+
+      assert.equal(selectEntryNodeMock.mock.calls.length, 2);
+    });
+
+    it("should fetch exit nodes after 2 tries", async function () {
+      //@ts-ignore
+      const fetchExitNodesMock = jest.spyOn(mock.sdk, "fetchExitNodes");
+
+      DP_REQ_ENTRY_NOCK.reply(200, {
+        hoprd_api_endpoint: ENTRY_NODE_API_ENDPOINT,
+        hoprd_api_port: ENTRY_NODE_API_PORT,
+        accessToken: ENTRY_NODE_API_TOKEN,
+        id: ENTRY_NODE_PEER_ID,
+      });
+
+      nock(DISCOVERY_PLATFORM_API_ENDPOINT)
+        .get("/api/v1/node?hasExitNode=true")
+        .once()
+        .reply(500)
+        .get("/api/v1/node?hasExitNode=true")
+        .once()
+        .reply(200, [
+          {
+            exit_node_pub_key: EXIT_NODE_PUB_KEY,
+            id: EXIT_NODE_PEER_ID,
+          },
+        ]);
+
+      await mock.sdk.start();
+
+      assert.equal(fetchExitNodesMock.mock.calls.length, 2);
     });
   });
 
@@ -314,12 +386,41 @@ describe("test SDK class", function () {
       }
       sdk.setDeadlock(0);
     });
+
+    it("should handle failed request", async function () {
+      HOPRD_SEND_MESSAGE_NOCK.reply(400, "error");
+      const [clientRequest] = fixtures.generateMockedFlow(3);
+      const resolveFunc = jest.fn(() => {});
+      const rejectFunc = jest.fn(() => {});
+
+      // @ts-ignore
+      sdk.requestCache.addRequest(clientRequest, resolveFunc, rejectFunc);
+
+      // call function to handle request failed
+      sdk.handleFailedRequest(clientRequest);
+
+      // should reject promise
+      assert.equal(rejectFunc.mock.calls.length, 1);
+
+      // request should not be in request cache
+      // @ts-ignore
+      assert.equal(sdk.requestCache.getRequest(clientRequest.id), undefined);
+
+      // should add failed metric
+      assert.equal(
+        // @ts-ignore
+        sdk.reliabilityScore.metrics.get(sdk.entryNode?.peerId)?.stats.failed,
+        1
+      );
+    });
+
     it("should not save request to requestCache if request to hoprd fails", async function () {
       HOPRD_SEND_MESSAGE_NOCK.reply(400, "error");
       const [clientRequest] = fixtures.generateMockedFlow(3);
       try {
         await sdk.sendRequest(clientRequest);
       } catch (e: any) {
+        // this will run if request is rejected
         // @ts-ignore
         assert.equal(sdk.requestCache.getRequest(clientRequest.id), undefined);
       }
@@ -386,6 +487,66 @@ describe("test SDK class", function () {
       // createMessageListener should have 2 calls after stopping the previous
       // from old entry node and creating new one with new entry node
       assert.equal(createMessageListenerMetric.mock.calls.length, 2);
+    });
+
+    describe("handling request size", function () {
+      it("should not send requests larger than max amount of segments", async function () {
+        const hoprdSendMessageSpy = jest.spyOn(hoprd, "sendMessage");
+        const MAXIMUM_SEGMENTS_PER_REQUEST = 100;
+        const bigReq = await sdk.createRequest(
+          fixtures.PROVIDER,
+          // create an rpc call that will exceed MAXIMUM_SEGMENTS_PER_REQUEST size
+          fixtures.RPC_REQ_LARGE.repeat(MAXIMUM_SEGMENTS_PER_REQUEST)
+        );
+
+        try {
+          await sdk.sendRequest(bigReq);
+        } catch (e) {
+          expect(e).toEqual("Request is too big");
+          // request should not be in request cache
+          // @ts-ignore
+          expect(sdk.requestCache.getRequest(bigReq.id)).toEqual(undefined);
+          // hopr send message should never be called
+          expect(hoprdSendMessageSpy.mock.calls.length).toEqual(0);
+        }
+      });
+
+      it("should send requests smaller than max amount of segments", function (done) {
+        HOPRD_SEND_MESSAGE_NOCK.reply(202, "someresponse");
+        const MAXIMUM_SEGMENTS_PER_REQUEST = 100;
+
+        sdk
+          .createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE)
+          .then((normalRequest) => {
+            // how many times request cas increase without passing MAXIMUM_SEGMENTS_PER_REQUEST
+            const numberOfRepetitions = Math.floor(
+              MAXIMUM_SEGMENTS_PER_REQUEST /
+                normalRequest.toMessage().toSegments().length
+            );
+
+            const [clientRequest, , exitNodeResponse] =
+              fixtures.generateMockedFlow(
+                3,
+                // create an rpc call that is close to MAXIMUM_SEGMENTS_PER_REQUEST
+                fixtures.RPC_REQ_LARGE.repeat(numberOfRepetitions)
+              );
+
+            sdk.sendRequest(clientRequest).then((response) => {
+              // this will run when .onMessage resolves request
+              assert.equal(response.id, clientRequest.id);
+              // @ts-ignore
+              const pendingRequest = sdk.requestCache.getRequest(
+                clientRequest.id
+              );
+              assert.equal(pendingRequest, undefined);
+              done();
+            });
+
+            // return response for sdk sendRequest
+            // @ts-ignore
+            sdk.onMessage(exitNodeResponse.toMessage());
+          });
+      });
     });
 
     describe("should handle requests correctly when receiving a response", function () {

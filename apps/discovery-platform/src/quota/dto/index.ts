@@ -1,12 +1,14 @@
 export type CreateQuota = {
   clientId: string;
-  quota: number;
+  paidBy: string;
+  quota: bigint;
   actionTaker: string;
 };
 export type QueryQuota = {
   id: number;
   client_id: string;
-  quota: number;
+  paid_by: string;
+  quota: bigint;
   action_taker: string;
   created_at: string;
   updated_at: string;

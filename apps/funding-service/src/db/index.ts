@@ -2,6 +2,8 @@ import { CreateAccessToken, QueryAccessToken } from "../access-token";
 import { CreateRequest, QueryRequest, UpdateRequest } from "../request";
 import pgp from "pg-promise";
 import { createLogger } from "../utils";
+import migrate from "node-pg-migrate";
+import path from "path";
 
 /**
  * DB module that handles the formatting of queries and executing them
@@ -10,6 +12,19 @@ import { createLogger } from "../utils";
 const log = createLogger(["db"]);
 
 export type DBInstance = pgp.IDatabase<{}>;
+
+export const runMigrations = async (dbUrl: string) => {
+  const migrationsDirectory = path.join(__dirname, "../../migrations");
+
+  await migrate({
+    schema: "public",
+    direction: "up",
+    count: Infinity,
+    databaseUrl: dbUrl,
+    migrationsTable: "migrations",
+    dir: migrationsDirectory,
+  });
+};
 
 export const saveAccessToken = async (
   db: DBInstance,

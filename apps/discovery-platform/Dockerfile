@@ -1,7 +1,7 @@
 # Create discovery platform
 
 # use slim version of node on Debian bullseye for smaller image sizes
-FROM node:16-bullseye-slim@sha256:2e42e0aab9c9fd2d914417659ebedb4f995dfde79f3f7127cbc7e57ae6485dd9 as builder
+FROM node:16-bullseye-slim as builder
 
 # use bash to have source command and persistent environment.
 SHELL ["/bin/bash", "-lc"]
@@ -48,7 +48,7 @@ RUN  curl https://raw.githubusercontent.com/eficode/wait-for/v2.2.3/wait-for > /
 
 COPY --from=installer /app/apps/discovery-platform/package.json .
 COPY --from=installer /app .
-COPY apps/discovery-platform/dump.sql /app/
+COPY apps/discovery-platform/migrations/ /app/
 
 # switch to normal user, to prevent dangerous root access
 RUN chown -R node:node .

@@ -6,18 +6,16 @@ import { RequestService } from "../../request";
 import { doesAccessTokenHaveEnoughBalance } from "./index";
 
 const SECRET_KEY = "SECRET";
-const MAX_AMOUNT_OF_TOKENS = 40;
+const MAX_AMOUNT_OF_TOKENS = BigInt(40);
 const TIMEOUT = 30;
 
 describe("should test entry server middleware functions", function () {
   let dbInstance: DBInstance;
   let accessTokenService: AccessTokenService;
   let requestService: RequestService;
-  let pgInstance: IMemoryDb;
 
   beforeAll(async function () {
-    pgInstance = MockPgInstanceSingleton.getInstance();
-    dbInstance = MockPgInstanceSingleton.getDbInstance();
+    dbInstance = await MockPgInstanceSingleton.getDbInstance();
     MockPgInstanceSingleton.getInitialState();
   });
 
@@ -37,7 +35,7 @@ describe("should test entry server middleware functions", function () {
       throw new Error("Failed to create access token in middleware test");
 
     requestService.createRequest({
-      amount: (MAX_AMOUNT_OF_TOKENS - 1).toString(),
+      amount: MAX_AMOUNT_OF_TOKENS - BigInt(1),
       chainId: 80,
       accessTokenHash: accessTokenResponse.token,
       nodeAddress: "0x0",

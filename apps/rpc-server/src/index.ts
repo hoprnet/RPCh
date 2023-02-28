@@ -65,7 +65,17 @@ export class RPCServer {
         try {
           if (!this.sdk) throw Error("SDK not initialized");
           const rpcRequest = await this.sdk.createRequest(exitProvider, body);
+          log.verbose(
+            "Sending request",
+            rpcRequest.id,
+            rpcRequest.toMessage().body
+          );
           const rpcResponse = await this.sdk.sendRequest(rpcRequest);
+          log.verbose(
+            "Received response",
+            rpcRequest.id,
+            rpcResponse.toMessage().body
+          );
           response.write(rpcResponse.body);
           response.statusCode = 200;
           response.end();

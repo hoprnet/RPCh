@@ -11,7 +11,11 @@ import {
   getAccessTokenResponse,
   postFundingResponse,
 } from "../../../funding-service-api/dto";
-import { getAllQuotasByClient, sumQuotas } from "../../../quota";
+import {
+  getQuotasCreatedByClient,
+  getQuotasPaidByClient,
+  sumQuotas,
+} from "../../../quota";
 import * as registeredNode from "../../../registered-node";
 import {
   CreateRegisteredNode,
@@ -19,7 +23,7 @@ import {
 } from "../../../registered-node/dto";
 
 const FUNDING_SERVICE_URL = "http://localhost:5000";
-const BASE_QUOTA = 1;
+const BASE_QUOTA = BigInt(1);
 const FAKE_ACCESS_TOKEN = "EcLjvxdALOT0eq18d8Gzz3DEr3AMG27NtL+++YPSZNE=";
 
 const nockFundingRequest = (nodeAddress: string) =>
@@ -45,7 +49,7 @@ describe("test v1 router", function () {
   let app: Express;
 
   beforeAll(async function () {
-    dbInstance = MockPgInstanceSingleton.getDbInstance();
+    dbInstance = await MockPgInstanceSingleton.getDbInstance();
     MockPgInstanceSingleton.getInitialState();
   });
 
@@ -129,13 +133,13 @@ describe("test v1 router", function () {
     const doesClientHaveQuotaResponse = await doesClientHaveQuota(
       dbInstance,
       "client",
-      2
+      BigInt(2)
     );
 
     assert.equal(doesClientHaveQuotaResponse, false);
   });
   it("should allow request because client has enough quota", async function () {
-    // create quota for wrong client
+    // create quota client
     await request(app).post("/client/quota").send({
       client: "client",
       quota: 1,
@@ -143,16 +147,18 @@ describe("test v1 router", function () {
     const doesClientHaveQuotaResponse = await doesClientHaveQuota(
       dbInstance,
       "client",
-      1
+      BigInt(1)
     );
 
     assert.equal(doesClientHaveQuotaResponse, true);
   });
   it("should create trial client", async function () {
-    const response = await request(app).get("/request/trial?label=devcon");
+    const response = await request(app).get(
+      "/request/trial?label=devcon,some-dash"
+    );
     const dbClient = await getClient(dbInstance, response.body.client);
     assert.equal(dbClient?.payment, "trial");
-    assert.deepEqual(dbClient?.labels, ["devcon"]);
+    assert.deepEqual(dbClient?.labels, ["devcon", "some-dash"]);
     assert.equal(!!response.body.client, true);
   });
   it("should turn client into premium when adding quota", async function () {
@@ -163,7 +169,7 @@ describe("test v1 router", function () {
 
     await request(app)
       .post("/client/quota")
-      .send({ client: trialClientId, quota: BASE_QUOTA });
+      .send({ client: trialClientId, quota: BASE_QUOTA.toString() });
 
     const dbTrialClientAfterAddingQuota = await getClient(
       dbInstance,
@@ -176,21 +182,23 @@ describe("test v1 router", function () {
   describe("should select an entry node", function () {
     it("should return an entry node", async function () {
       const spy = jest.spyOn(registeredNode, "getEligibleNode");
-      const amountLeft = 10;
+      const amountLeft = BigInt(10).toString();
       const peerId = "entry";
       const requestId = 1;
 
       const replyBody: getAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: 10,
+        amountLeft: BigInt(10).toString(),
         expiredAt: new Date().toISOString(),
       };
 
       nockGetApiAccessToken.reply(200, replyBody);
-      await request(app).post("/client/quota").send({
-        client: "client",
-        quota: 1,
-      });
+      await request(app)
+        .post("/client/quota")
+        .send({
+          client: "client",
+          quota: BigInt("1").toString(),
+        });
 
       await request(app).post("/node/register").send(mockNode(peerId, true));
 
@@ -220,13 +228,13 @@ describe("test v1 router", function () {
       spy.mockRestore();
     });
     it("should return an entry node that is not in the exclude list", async function () {
-      const amountLeft = 10;
+      const amountLeft = BigInt(10).toString();
       const peerId = "entry";
       const requestId = 1;
 
       const replyBody: getAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: 10,
+        amountLeft: BigInt(10).toString(),
         expiredAt: new Date().toISOString(),
       };
 
@@ -279,7 +287,7 @@ describe("test v1 router", function () {
 
       const apiAccessTokenResponse: getAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: 10,
+        amountLeft: BigInt(10).toString(),
         expiredAt: new Date().toISOString(),
       };
 
@@ -300,21 +308,22 @@ describe("test v1 router", function () {
     });
     it("should reduce client quota", async function () {
       const spy = jest.spyOn(registeredNode, "getEligibleNode");
-      const amountLeft = 10;
+      const amountLeft = BigInt(10).toString();
       const peerId = "entry";
       const requestId = 1;
 
       const apiTokenResponse: getAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: 10,
+        amountLeft: BigInt(10).toString(),
         expiredAt: new Date().toISOString(),
       };
 
       nockGetApiAccessToken.reply(200, apiTokenResponse);
 
+      // add quota to newClient
       await request(app).post("/client/quota").send({
         client: "newClient",
-        quota: BASE_QUOTA,
+        quota: BASE_QUOTA.toString(),
       });
 
       await request(app).post("/node/register").send(mockNode(peerId, true));
@@ -337,6 +346,7 @@ describe("test v1 router", function () {
         fundingResponse
       );
 
+      // use quota twice expecting the second time for it to fail
       await request(app)
         .post("/request/entry-node")
         .send({ client: "newClient" });
@@ -351,15 +361,15 @@ describe("test v1 router", function () {
       );
       spy.mockRestore();
     });
-    it("should be able to use trial mode client and reduce quota", async function () {
+    it.only("should be able to use trial mode client and reduce quota", async function () {
       const spy = jest.spyOn(registeredNode, "getEligibleNode");
-      const amountLeft = 10;
+      const amountLeft = BigInt(10).toString();
       const peerId = "entry";
       const requestId = 1;
 
       const apiTokenResponse: getAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: 10,
+        amountLeft: BigInt(10).toString(),
         expiredAt: new Date().toISOString(),
       };
 
@@ -372,7 +382,7 @@ describe("test v1 router", function () {
 
       await request(app).post("/client/quota").send({
         client: "trial",
-        quota: BASE_QUOTA,
+        quota: BASE_QUOTA.toString(),
       });
 
       await request(app).post("/node/register").send(mockNode(peerId, true));
@@ -396,7 +406,7 @@ describe("test v1 router", function () {
       );
 
       const trialClientQuotaBefore = sumQuotas(
-        await getAllQuotasByClient(dbInstance, "trial")
+        await getQuotasPaidByClient(dbInstance, "trial")
       );
 
       const requestResponse = await request(app)
@@ -404,11 +414,17 @@ describe("test v1 router", function () {
         .send({ client: trialClientId });
 
       const trialClientQuotaAfter = sumQuotas(
-        await getAllQuotasByClient(dbInstance, "trial")
+        await getQuotasPaidByClient(dbInstance, "trial")
       );
 
+      const b2dClientQuotaUsed = sumQuotas(
+        await getQuotasCreatedByClient(dbInstance, trialClientId)
+      );
+
+      expect(b2dClientQuotaUsed).toEqual(BASE_QUOTA * BigInt(-1));
       expect(trialClientQuotaAfter).toBeLessThan(trialClientQuotaBefore);
       expect(requestResponse.body).toHaveProperty("id");
+
       spy.mockRestore();
     });
   });

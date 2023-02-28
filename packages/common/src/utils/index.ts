@@ -158,3 +158,9 @@ export const areAllSegmentsPresent = (segments: Segment[]): boolean => {
   const { segmentsLength } = segments[0];
   return segmentsLength === segments.length;
 };
+
+/**
+ * Function to convert bigint values to string when doing JSON.stringify
+ */
+export const bigIntReplacer = (key: any, value: any) =>
+  typeof value === "bigint" ? value.toString() : value;

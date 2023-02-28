@@ -1,9 +1,8 @@
-import { DBInstance, updateRegisteredNode } from "./db";
+import { DBInstance, runMigrations, updateRegisteredNode } from "./db";
 import { entryServer } from "./entry-server";
 import { FundingServiceApi } from "./funding-service-api";
 import { createLogger } from "./utils";
 import pgp from "pg-promise";
-import fs from "fs";
 import { getRegisteredNodes } from "./registered-node";
 import { checkCommitment } from "./graph-api";
 import * as constants from "./constants";
@@ -12,7 +11,7 @@ const log = createLogger();
 
 const main = () => {
   if (!constants.FUNDING_SERVICE_URL)
-    throw new Error('Missing "FUNDING_SERVICE_API" env variable');
+    throw new Error('Missing "FUNDING_SERVICE_URL" env variable');
 
   if (!constants.DB_CONNECTION_URL) {
     throw new Error('Missing "DB_CONNECTION_URL" env variable');
@@ -35,18 +34,12 @@ const main = () => {
 
 const start = async (ops: {
   db: DBInstance;
-  baseQuota: number;
+  baseQuota: bigint;
   fundingServiceUrl: string;
 }) => {
-  // create tables if they do not exist in the db
-  const schemaSql = fs.readFileSync("dump.sql", "utf8").toString();
-  const existingTables = await ops.db.manyOrNone(
-    "SELECT * FROM information_schema.tables WHERE table_name IN ('funding_requests', 'quotas', 'registered_nodes', 'clients')"
-  );
-  if (!existingTables.length) {
-    await ops.db.none(schemaSql);
-  }
   await ops.db.connect();
+  // run db migrations
+  await runMigrations(constants.DB_CONNECTION_URL!);
 
   // init services
   const fundingServiceApi = new FundingServiceApi(
@@ -64,15 +57,16 @@ const start = async (ops: {
     log.normal("entry server is up");
   });
 
-  // keep track of all pending funding requests to update status or retry
-  const checkForPendingRequests = setInterval(async () => {
-    try {
-      log.normal("tracking pending requests");
-      await fundingServiceApi.checkForPendingRequests();
-    } catch (e) {
-      log.error("Failed to track pending requests", e);
-    }
-  }, 1000);
+  // DISCLAIMER: ACTIVATE THIS WHEN FUNDING IS STABLE
+  // // keep track of all pending funding requests to update status or retry
+  // const checkForPendingRequests = setInterval(async () => {
+  //   try {
+  //     log.normal("tracking pending requests");
+  //     await fundingServiceApi.checkForPendingRequests();
+  //   } catch (e) {
+  //     log.error("Failed to track pending requests", e);
+  //   }
+  // }, 1000);
 
   // check if fresh nodes have committed
   const checkCommitmentForFreshNodes = setInterval(async () => {
@@ -94,7 +88,10 @@ const start = async (ops: {
         log.verbose("node commitment", nodeIsCommitted);
         if (nodeIsCommitted) {
           log.verbose("new committed node", node.id);
-          await updateRegisteredNode(ops.db, { ...node, status: "READY" });
+          await updateRegisteredNode(ops.db, {
+            ...node,
+            status: "READY",
+          });
         }
       }
     } catch (e) {
@@ -103,7 +100,7 @@ const start = async (ops: {
   }, 1000);
 
   return () => {
-    clearInterval(checkForPendingRequests);
+    // clearInterval(checkForPendingRequests);
     clearInterval(checkCommitmentForFreshNodes);
   };
 };

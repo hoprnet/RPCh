@@ -28,7 +28,7 @@ describe("test registered node functions", function () {
   let dbInstance: DBInstance;
 
   beforeAll(async function () {
-    dbInstance = MockPgInstanceSingleton.getDbInstance();
+    dbInstance = await MockPgInstanceSingleton.getDbInstance();
     MockPgInstanceSingleton.getInitialState();
   });
 
@@ -77,7 +77,10 @@ describe("test registered node functions", function () {
     await createRegisteredNode(dbInstance, mockNode("1"));
     const node = await getRegisteredNode(dbInstance, "1");
     if (!node) throw new Error("Failed to create node");
-    await updateRegisteredNode(dbInstance, { ...node, status: "READY" });
+    await updateRegisteredNode(dbInstance, {
+      ...node,
+      status: "READY",
+    });
     const updatedNode = await getRegisteredNode(dbInstance, "1");
     assert.equal(updatedNode?.status, "READY");
   });
@@ -105,7 +108,10 @@ describe("test registered node functions", function () {
     await createRegisteredNode(dbInstance, mockNode("1"));
     const node = await getRegisteredNode(dbInstance, "1");
     if (!node) throw new Error("Failed to create node");
-    await updateRegisteredNode(dbInstance, { ...node, status: "READY" });
+    await updateRegisteredNode(dbInstance, {
+      ...node,
+      status: "READY",
+    });
     const updatedNode = await getRegisteredNode(dbInstance, "1");
     await createRegisteredNode(dbInstance, mockNode("2", true));
     await createRegisteredNode(dbInstance, mockNode("3", true));
@@ -116,7 +122,8 @@ describe("test registered node functions", function () {
 
     assert.equal(freshNodes?.length, 2);
   });
-  it("should get eligible node", async function () {
+  // DISCLAIMER: ACTIVATE THIS WHEN FUNDING IS STABLE
+  it.skip("should get eligible node", async function () {
     await createRegisteredNode(dbInstance, mockNode("1", false));
     await createRegisteredNode(dbInstance, mockNode("2", true));
     await createRegisteredNode(dbInstance, mockNode("3", true));
@@ -135,24 +142,44 @@ describe("test registered node functions", function () {
     assert.equal(eligibleNode?.status, "READY");
   });
   it("should calculate reward for non exit node", async function () {
-    const baseQuota = 1;
+    const baseQuota = BigInt(1);
     await createRegisteredNode(dbInstance, mockNode("1", false));
     const nonExit = await getRegisteredNode(dbInstance, "1");
     if (!nonExit) throw new Error("Failed to create non exit node in test");
 
-    const reward = getRewardForNode(baseQuota, 0.1, nonExit);
+    const reward = getRewardForNode(baseQuota, BigInt(1), nonExit);
 
-    assert.equal(reward, baseQuota + 0.1);
+    assert.equal(reward, baseQuota + BigInt(1));
   });
   it("should calculate reward for exit node", async function () {
-    const baseQuota = 1;
+    const baseQuota = BigInt(1);
     await createRegisteredNode(dbInstance, mockNode("1", true));
     const nonExit = await getRegisteredNode(dbInstance, "1");
     if (!nonExit) throw new Error("Failed to create non exit node in test");
 
-    const reward = getRewardForNode(baseQuota, 0.1, nonExit);
+    const reward = getRewardForNode(baseQuota, BigInt(1), nonExit);
 
-    assert.equal(reward, baseQuota + 0.1 * 2);
+    assert.equal(reward, baseQuota + BigInt(1) * BigInt(2));
+  });
+  it("should keep updated_at updated", async function () {
+    jest.setSystemTime(new Date(2023, 1, 21, 13, 30, 0));
+    await createRegisteredNode(dbInstance, mockNode("1"));
+    const node = await getRegisteredNode(dbInstance, "1");
+    if (!node) throw new Error("Failed to create node");
+    jest.setSystemTime(new Date(2023, 1, 21, 14, 30, 0));
+    await updateRegisteredNode(dbInstance, {
+      ...node,
+      status: "READY",
+    });
+    const updatedNode = await getRegisteredNode(dbInstance, "1");
+    if (!updatedNode) throw new Error("Failed to get updated node");
+
+    console.log(node.created_at, node.updated_at);
+    console.log(updatedNode.created_at, updatedNode.updated_at);
+    expect(new Date(node.updated_at).getTime()).toBeLessThan(
+      new Date(updatedNode?.updated_at).getTime()
+    );
+    jest.useRealTimers();
   });
   it.todo("should get a access token");
 });

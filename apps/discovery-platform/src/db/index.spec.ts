@@ -3,32 +3,40 @@ import { QueryRegisteredNode } from "../registered-node/dto";
 import * as db from "./";
 import { CreateQuota } from "../quota/dto";
 import { IBackup, IMemoryDb, newDb } from "pg-mem";
-import fs from "fs";
 import { utils } from "@rpch/common";
 import { CreateClient, QueryClient } from "../client/dto";
+import path from "path";
+import * as fixtures from "@rpch/common/build/fixtures";
 
 export class MockPgInstanceSingleton {
   private static pgInstance: IMemoryDb;
   private static dbInstance: db.DBInstance;
   private static initialDbState: IBackup;
 
-  private constructor() {
+  private constructor() {}
+
+  private async createInstance() {
+    const migrationsDirectory = path.join(__dirname, "../../migrations");
     let instance = newDb();
-    instance.public.none(fs.readFileSync("dump.sql", "utf8"));
+    fixtures.withQueryIntercept(instance);
+    await instance.public.migrate({ migrationsPath: migrationsDirectory });
     MockPgInstanceSingleton.pgInstance = instance;
     MockPgInstanceSingleton.initialDbState =
       MockPgInstanceSingleton.pgInstance.backup();
     return MockPgInstanceSingleton.pgInstance;
   }
 
-  public static getInstance(): IMemoryDb {
-    return MockPgInstanceSingleton.pgInstance ?? new this();
+  public static async getInstance(): Promise<IMemoryDb> {
+    if (!MockPgInstanceSingleton.pgInstance) {
+      await new this().createInstance();
+    }
+    return MockPgInstanceSingleton.pgInstance;
   }
 
-  public static getDbInstance(): db.DBInstance {
+  public static async getDbInstance(): Promise<db.DBInstance> {
     if (!MockPgInstanceSingleton.dbInstance) {
-      MockPgInstanceSingleton.dbInstance =
-        this.getInstance().adapters.createPgPromise();
+      const instance = await this.getInstance();
+      MockPgInstanceSingleton.dbInstance = instance.adapters.createPgPromise();
     }
     return MockPgInstanceSingleton.dbInstance;
   }
@@ -56,7 +64,7 @@ const createMockNode = (
   hoprd_api_token: "sometoken",
   honesty_score: 0,
   status: "FRESH",
-  total_amount_funded: 0,
+  total_amount_funded: BigInt(0),
   created_at: Date.now().toString(),
   updated_at: Date.now().toString(),
 });
@@ -65,7 +73,8 @@ const createMockQuota = (params?: CreateQuota): CreateQuota => {
   return {
     actionTaker: params?.actionTaker ?? "discovery-platform",
     clientId: params?.clientId ?? "client",
-    quota: params?.quota ?? 1,
+    paidBy: params?.paidBy ?? "client",
+    quota: params?.quota ?? BigInt(1),
   };
 };
 
@@ -81,7 +90,7 @@ describe("test db functions", function () {
   let dbInstance: db.DBInstance;
 
   beforeAll(async function () {
-    dbInstance = MockPgInstanceSingleton.getDbInstance();
+    dbInstance = await MockPgInstanceSingleton.getDbInstance();
     MockPgInstanceSingleton.getInitialState();
   });
 
@@ -228,16 +237,19 @@ describe("test db functions", function () {
       assert.equal(queryQuota?.quota, mockQuota.quota);
       assert.equal(queryQuota?.action_taker, mockQuota.actionTaker);
     });
-    it("should get quotas by client", async function () {
+    it("should get quotas created by client", async function () {
+      // create client
       const mockClient = createMockClient({
         id: "other client",
         payment: "premium",
       });
       const otherClient = await db.createClient(dbInstance, mockClient);
+      // create quota for client but paid by other client
       const mockQuota = createMockQuota({
         clientId: "client",
         actionTaker: "discovery",
-        quota: 10,
+        paidBy: "other client",
+        quota: BigInt(10),
       });
       await db.createQuota(dbInstance, mockQuota);
       await db.createQuota(dbInstance, mockQuota);
@@ -246,18 +258,49 @@ describe("test db functions", function () {
         createMockQuota({
           actionTaker: "discovery",
           clientId: otherClient.id,
-          quota: 20,
+          paidBy: "other client",
+          quota: BigInt(20),
         })
       );
 
-      const quotas = await db.getQuotasByClient(dbInstance, "client");
+      const quotas = await db.getQuotasCreatedByClient(dbInstance, "client");
       assert.equal(quotas.length, 2);
+    });
+    it("should get quotas paid by client", async function () {
+      // create client
+      const mockClient = createMockClient({
+        id: "other client",
+        payment: "premium",
+      });
+      const otherClient = await db.createClient(dbInstance, mockClient);
+      // create quotas that are used by 'client' and paid by 'other client'
+      const mockQuota = createMockQuota({
+        clientId: "client",
+        actionTaker: "discovery",
+        quota: BigInt(10),
+        paidBy: "other client",
+      });
+      await db.createQuota(dbInstance, mockQuota);
+      await db.createQuota(dbInstance, mockQuota);
+      await db.createQuota(
+        dbInstance,
+        createMockQuota({
+          actionTaker: "discovery",
+          clientId: otherClient.id,
+          quota: BigInt(20),
+          paidBy: "other client",
+        })
+      );
+
+      const quotas = await db.getQuotasPaidByClient(dbInstance, "other client");
+      assert.equal(quotas.length, 3);
     });
     it("should update quota", async function () {
       const mockQuota = createMockQuota({
         clientId: "client",
         actionTaker: "discovery",
-        quota: 10,
+        paidBy: "client",
+        quota: BigInt(10),
       });
       const createdQuota = await db.createQuota(dbInstance, mockQuota);
 
@@ -293,7 +336,8 @@ describe("test db functions", function () {
       const mockQuota = createMockQuota({
         clientId: "client",
         actionTaker: "discovery",
-        quota: 10,
+        paidBy: "client",
+        quota: BigInt(10),
       });
       const createdQuota = await db.createQuota(dbInstance, mockQuota);
       if (!createdQuota.id) throw new Error("Could not create mock quota");
@@ -309,7 +353,7 @@ describe("test db functions", function () {
       const createdFundedRequest = await db.createFundingRequest(dbInstance, {
         registered_node_id: node.id,
         request_id: Math.floor(Math.random() * 1e6),
-        amount: "1",
+        amount: BigInt("1"),
       });
 
       assert.equal(createdFundedRequest.registered_node_id, node.id);

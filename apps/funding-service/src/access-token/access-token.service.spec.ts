@@ -5,7 +5,7 @@ import { MockPgInstanceSingleton } from "../db/index.spec";
 import { IMemoryDb } from "pg-mem";
 
 const THIRTY_MINUTES_IN_MS = 30 * 60_000;
-const MAX_HOPR = 40;
+const MAX_HOPR = BigInt(40);
 const SECRET_KEY = "SECRET";
 const accessTokenParams = {
   amount: MAX_HOPR,
@@ -14,11 +14,9 @@ const accessTokenParams = {
 describe("test AccessTokenService class", function () {
   let accessTokenService: AccessTokenService;
   let dbInstance: DBInstance;
-  let pgInstance: IMemoryDb;
 
   beforeAll(async function () {
-    pgInstance = MockPgInstanceSingleton.getInstance();
-    dbInstance = MockPgInstanceSingleton.getDbInstance();
+    dbInstance = await MockPgInstanceSingleton.getDbInstance();
     MockPgInstanceSingleton.getInitialState();
   });
 

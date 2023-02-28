@@ -3,6 +3,7 @@ import { utils } from "ethers";
 import * as crypto from "@rpch/crypto-bridge/build/nodejs";
 import Request from "./request";
 import Response from "./response";
+import type { IMemoryDb } from "pg-mem";
 
 // example of a working provider
 export const PROVIDER = "https://primary.gnosis-chain.rpc.hoprtech.net";
@@ -196,4 +197,19 @@ export const createAsyncKeyValStore = () => {
       return store.get(k);
     },
   };
+};
+
+/**
+ * Function to handle numerics with a scale for pg-mem
+ * @param db a pg-mem DB instance
+ */
+export const withQueryIntercept = (instance: IMemoryDb): void => {
+  instance.public.interceptQueries((sql: string) => {
+    const newSql = sql.replace(/\bnumeric\s*\(\s*\d+\s*,\s*\d+\s*\)/g, "float");
+    if (sql !== newSql) {
+      return instance.public.many(newSql);
+    }
+    // proceed to actual SQL execution for other requests.
+    return null;
+  });
 };
