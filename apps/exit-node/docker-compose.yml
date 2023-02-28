@@ -26,6 +26,7 @@ services:
       - HOPRD_ENVIRONMENT=${HOPRD_ENVIRONMENT}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - HOPRD_PASSWORD=${HOPRD_PASSWORD}
+      - HOPRD_ANNOUNCE=true
   exit-node:
     build:
       dockerfile: apps/exit-node/Dockerfile
