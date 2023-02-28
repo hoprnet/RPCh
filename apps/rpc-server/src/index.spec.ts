@@ -3,6 +3,7 @@ import MemDown from "memdown";
 import supertest from "supertest";
 import { RPCServer } from ".";
 import mockSdk from "@rpch/sdk/build/index.mock";
+import * as fixtures from "@rpch/common/build/fixtures";
 
 jest.mock("leveldown", () => MemDown);
 // mock HOPRd interactions
@@ -63,5 +64,40 @@ describe("test index.ts", function () {
 
     const json = JSON.parse(response.text);
     assert.equal(json.result, "0x17f88c8");
+  });
+
+  describe("should respond with error message", function () {
+    it("sdk is deadlocked", async function () {
+      rpcServer.sdk?.setDeadlock(10000);
+      const res = await request
+        .post("/?exit-provider=someprovider")
+        .send(JSON.stringify({ id: "1", method: "eth_chainId" }));
+
+      expect(res.text).toEqual("SDK is deadlocked");
+      rpcServer.sdk?.setDeadlock(0);
+    });
+    it("sdk not initialized", async function () {
+      const temp = rpcServer.sdk!;
+      rpcServer.sdk = undefined;
+      const res = await request
+        .post("/?exit-provider=someprovider")
+        .send(JSON.stringify({ id: "1", method: "eth_chainId" }));
+
+      expect(res.text).toEqual("SDK not initialized");
+      rpcServer.sdk = mockSdk(temp);
+    });
+    it("request is too big", function () {
+      // max number of segments sdk can send to entry node
+      // @ts-ignore
+      rpcServer.sdk!.maximumSegmentsPerRequest = 1;
+
+      return request
+        .post("/?exit-provider=someprovider")
+        .send(
+          // create an rpc call that will exceed MAXIMUM_SEGMENTS_PER_REQUEST size
+          fixtures.RPC_REQ_LARGE
+        )
+        .expect("Request is too big");
+    });
   });
 });
