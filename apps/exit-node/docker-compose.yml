@@ -71,6 +71,11 @@ services:
     #   - hoprd_fluentbit
     # logging:
     #   driver: "fluentd"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "7"
   exit-node:
     build:
       dockerfile: apps/exit-node/Dockerfile
@@ -101,6 +106,11 @@ services:
     command: "node apps/exit-node/build/index.js"
     networks:
       - hopr-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "7"
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.45.0
     container_name: cadvisor
