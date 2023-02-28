@@ -8,7 +8,10 @@ volumes:
 services:
   hoprd:
     image: gcr.io/hoprassociation/hoprd:1.92.9@sha256:e23973ad8c5c6551f822e4aaafb6a9ff39d62fcbe153eb6946af078a63d11681
-    restart: unless-stopped
+    restart: on-failure
+    resources:
+      limits:
+        memory: 2G
     ports:
       - "3000:3000"
       - "3001:3001"
