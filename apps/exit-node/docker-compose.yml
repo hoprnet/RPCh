@@ -59,7 +59,6 @@ services:
       - HOPRD_IDENTITY=/app/hoprd-db/.hopr-id
       - HOPRD_HEALTH_CHECK=true
       - HOPRD_HEALTH_CHECK_HOST=0.0.0.0
-      - HOPRD_ANNOUNCE=true
       - HOPRD_HOST=0.0.0.0:9091
       - HOPRD_API_HOST=0.0.0.0
       - HOPRD_API=true
@@ -67,6 +66,7 @@ services:
       - HOPRD_ENVIRONMENT=${HOPRD_ENVIRONMENT}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - HOPRD_PASSWORD=${HOPRD_PASSWORD}
+      - HOPRD_ANNOUNCE=true
     # depends_on:
     #   - hoprd_fluentbit
     # logging:
