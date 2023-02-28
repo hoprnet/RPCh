@@ -14,8 +14,6 @@ const ENTRY_NODE_PEER_ID = fixtures.HOPRD_PEER_ID_A;
 const EXIT_NODE_PEER_ID = fixtures.EXIT_NODE_HOPRD_PEER_ID_A;
 const EXIT_NODE_PUB_KEY = fixtures.EXIT_NODE_PUB_KEY_A;
 
-// jest.setTimeout(1e3 * 10);
-
 jest.mock("@rpch/common", () => ({
   ...jest.requireActual("@rpch/common"),
   hoprd: {
