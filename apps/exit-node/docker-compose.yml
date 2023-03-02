@@ -5,27 +5,82 @@ volumes:
   hoprd-data:
   exit-node-data:
 
+networks:
+  hopr-net:
+    driver: bridge
 services:
+  # hoprd_fluentbit:
+  #   image: 'gcr.io/hoprassociation/hopr-fluentbit'
+  #   pull_policy: always
+  #   mem_reservation: 50m
+  #   mem_limit: 100m
+  #   container_name: hoprd_fluentbit
+  #   hostname: hoprd_fluentbit
+  #   user: root:root
+  #   restart: on-failure
+  #   networks:
+  #     - hopr-net
+  #   environment:
+  #     - HOPRD_VERSION=${HOPRD_VERSION}
+  #     - HOPRD_ENVIRONMENT_ID=${HOPRD_ENVIRONMENT}
+  #     - HOPRD_PEER_ID=${HOPRD_PEER_ID}
+  #     - HOPRD_NAT=${HOPRD_NAT}
+  #     - HOPRD_WALLET_ADDR=${HOPRD_WALLET_ADDR}
+  #     - HOST_HOSTNAME=${HOST_HOSTNAME}
+  #     - HOST_PUBLIC_IP=${HOST_PUBLIC_IP}
+  #     - HOST_PRIVATE_IP=${HOST_PRIVATE_IP}
+  #   ports:
+  #     - 24224:24224
+  #     - 2020:2020
+  #   command:
+  #     - "/fluent-bit/bin/fluent-bit"
+  #     - "-c"
+  #     - "/fluent-bit/etc/fluent-bit.conf"
   hoprd:
-    image: gcr.io/hoprassociation/hoprd:1.92.9@sha256:e23973ad8c5c6551f822e4aaafb6a9ff39d62fcbe153eb6946af078a63d11681
-    restart: unless-stopped
+    image: gcr.io/hoprassociation/hoprd:${HOPRD_VERSION}
+    restart: on-failure
+    pull_policy: always
+    mem_reservation: 300m
+    mem_limit: 2g
+    container_name: hoprd
+    hostname: hoprd
+    networks:
+      - hopr-net
     ports:
-      - "3000:3000"
       - "3001:3001"
       - "9091:9091"
       - "8080:8080"
     volumes:
-      - hoprd-data:/tmp
+      - hoprd-data:/app/hoprd-db
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
+      - DEBUG=${HOPRD_DEBUG}
+      - HOPRD_DATA=/app/hoprd-db
+      - HOPRD_IDENTITY=/app/hoprd-db/.hopr-id
+      - HOPRD_HEALTH_CHECK=true
+      - HOPRD_HEALTH_CHECK_HOST=0.0.0.0
       - HOPRD_HOST=0.0.0.0:9091
       - HOPRD_API_HOST=0.0.0.0
-      - HOPRD_ADMIN_HOST=0.0.0.0
-      - HOPRD_ADMIN=true
       - HOPRD_API=true
       - HOPRD_INIT=true
       - HOPRD_ENVIRONMENT=${HOPRD_ENVIRONMENT}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - HOPRD_PASSWORD=${HOPRD_PASSWORD}
+      - HOPRD_ANNOUNCE=false
+      # change heartbeat schedule to run every 20sec and ping peers every 1min
+      - HOPRD_HEARTBEAT_INTERVAL=20000
+      - HOPRD_HEARTBEAT_THRESHOLD=60000
+      # let node handle more connections than the default
+      - HOPRD_MAX_PARALLEL_CONNECTIONS=50000
+    # depends_on:
+    #   - hoprd_fluentbit
+    # logging:
+    #   driver: "fluentd"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1000m"
+        max-file: "7"
   exit-node:
     build:
       dockerfile: apps/exit-node/Dockerfile
@@ -34,10 +89,10 @@ services:
       - hoprd
     restart: unless-stopped
     volumes:
-      - exit-node-data:/tmp
+      - exit-node-data:${RPCH_DATA_DIR}
     environment:
       - HOPRD_API_ENDPOINT=http://hoprd:3001
-      - DEBUG=${DEBUG}
+      - DEBUG=${RPCH_DEBUG}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - RPCH_PASSWORD=${RPCH_PASSWORD}
       - RPCH_IDENTITY_DIR=${RPCH_IDENTITY_DIR}
@@ -54,3 +109,47 @@ services:
         "--",
       ]
     command: "node apps/exit-node/build/index.js"
+    networks:
+      - hopr-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "7"
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.45.0
+    container_name: cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    expose:
+      - 9093
+    ports:
+      - 9093:8080
+    networks:
+      - hopr-net
+    devices:
+      - /dev/kmsg:/dev/kmsg
+  nodeexporter:
+    image: prom/node-exporter:v1.4.0
+    container_name: nodeexporter
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.rootfs=/rootfs"
+      - "--path.sysfs=/host/sys"
+      - "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)"
+    restart: unless-stopped
+    expose:
+      - 9100
+    ports:
+      - 9100:9100
+    networks:
+      - hopr-net

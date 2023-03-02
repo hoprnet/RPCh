@@ -101,13 +101,17 @@ export const start = async (ops: {
       );
 
       for (const segment of rpchResponse.toMessage().toSegments()) {
-        ops.hoprd.sendMessage({
-          apiEndpoint: ops.apiEndpoint,
-          apiToken: ops.apiToken,
-          message: segment.toString(),
-          destination: rpchRequest.entryNodeDestination,
-          path: [],
-        });
+        ops.hoprd
+          .sendMessage({
+            apiEndpoint: ops.apiEndpoint,
+            apiToken: ops.apiToken,
+            message: segment.toString(),
+            destination: rpchRequest.entryNodeDestination,
+            path: [],
+          })
+          .catch((error) => {
+            log.error("Failed to send segment", error);
+          });
       }
     } catch (error) {
       log.error("Failed to respond with data", error);

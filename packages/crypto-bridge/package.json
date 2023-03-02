@@ -27,6 +27,6 @@
     "rimraf": "^3.0.2"
   },
   "dependencies": {
-    "@rpch/crypto": "^0.3.0"
+    "@rpch/crypto": "0.3.3"
   }
 }
