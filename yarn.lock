@@ -1643,10 +1643,10 @@
   resolved "https://registry.yarnpkg.com/@protobufjs/utf8/-/utf8-1.1.0.tgz#a777360b5b39a1a2e5106f8e858f2fd2d060c570"
   integrity sha512-Vvn3zZrhQZkkBE8LSuW3em98c0FwgO4nxzv6OdSxPKJIEKY2bGbHn+mhGIPerzI4twdxaP8/0+06HBpwf345Lw==
 
-"@rpch/crypto@0.3.2":
-  version "0.3.2"
-  resolved "https://registry.yarnpkg.com/@rpch/crypto/-/crypto-0.3.2.tgz#c5ae9a2d3f4fe099d389fc3f8b90537f47b3d1f2"
-  integrity sha512-MZZZjSbr3ixQHIcIXW9qa+TuYwR2XtkjJNgQE2fSg5vdFgb9J6AhnkOSh1tvfa5nYUGExZNSi3I60LJbWySi4Q==
+"@rpch/crypto@0.3.3":
+  version "0.3.3"
+  resolved "https://registry.yarnpkg.com/@rpch/crypto/-/crypto-0.3.3.tgz#84756fd5594f3179e26bb971a3a07f00a705fc75"
+  integrity sha512-pmUPNlu/fqC8/sV4FB8ElOztzeetLFUVYxbFW6pjg3MKhK9a+yH7JnTCnWN7tg/RuR+XgptyokPq4Px6aNILRw==
 
 "@rushstack/eslint-patch@^1.1.3":
   version "1.2.0"
