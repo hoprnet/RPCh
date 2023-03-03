@@ -7,6 +7,8 @@ import { tokenIsValid, validateAmountAndToken } from "./middleware";
 import { validationResult, param } from "express-validator";
 import * as constants from "../constants";
 import { utils } from "@rpch/common";
+import { Registry } from "prom-client";
+import { createCounter } from "../metrics";
 
 const app = express();
 const log = createLogger(["entry-server"]);
@@ -26,7 +28,15 @@ export const entryServer = (ops: {
   walletAddress: string;
   maxAmountOfTokens: bigint;
   timeout: number;
+  register: Registry;
 }) => {
+  // metrics
+  const counterRequestFundedNode = createCounter(
+    ops.register,
+    "counter_request_fund_node",
+    "amount of times we receive requests to fund nodes"
+  );
+
   app.use(express.json());
   app.set("json replacer", utils.bigIntReplacer);
 
@@ -86,6 +96,9 @@ export const entryServer = (ops: {
         const amountUsed = ops.requestService.sumAmountOfRequests(
           allUnresolvedAndSuccessfulRequestsByAccessToken
         );
+
+        counterRequestFundedNode.inc();
+
         return res.json({
           id: request.id,
           amountLeft: String(ops.maxAmountOfTokens - amountUsed[chainId]),

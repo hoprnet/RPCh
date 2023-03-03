@@ -8,6 +8,8 @@ import {
 import { QueryRequest, RequestService } from "../request";
 import { CustomError, createLogger } from "../utils";
 import * as constants from "../constants";
+import Prometheus from "prom-client";
+import { createCounter } from "../metrics";
 
 const log = createLogger(["queue"]);
 
@@ -24,7 +26,21 @@ export const checkFreshRequests = async (ops: {
   signer: Signer;
   confirmations: number;
   changeState: (state: boolean) => void;
+  register: Prometheus.Registry;
 }) => {
+  // metrics
+  const counterSuccessfulFundingNodes = createCounter(
+    ops.register,
+    "counter_funded_nodes_successful",
+    "amount of times we have funded nodes successfully"
+  );
+
+  const counterFailedFundingNodes = createCounter(
+    ops.register,
+    "counter_funded_nodes_failed",
+    "amount of times we have failed to fund nodes"
+  );
+
   ops.changeState(true);
   let freshRequest: QueryRequest | null | undefined;
   try {
@@ -103,6 +119,8 @@ export const checkFreshRequests = async (ops: {
       txReceipt.status === 1 ? "SUCCESS" : "FAILED"
     );
 
+    counterSuccessfulFundingNodes.inc();
+
     // update request to success or failed
     await ops.requestService.updateRequest(freshRequest.id, {
       status: txReceipt.status === 1 ? "SUCCESS" : "FAILED",
@@ -154,6 +172,7 @@ export const checkFreshRequests = async (ops: {
       }
     }
   } finally {
+    counterFailedFundingNodes.inc();
     ops.changeState(false);
   }
 };
