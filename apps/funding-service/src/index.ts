@@ -15,6 +15,16 @@ import path from "path";
 
 const log = createLogger();
 
+// create prometheus registry
+const register = new Prometheus.Registry();
+
+register.setDefaultLabels({
+  app: "funding_service",
+});
+
+// add default metrics to registry
+Prometheus.collectDefaultMetrics({ register });
+
 // boolean flag that stops queue from running
 // while it is still waiting for a transaction
 let running = false;
