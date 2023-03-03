@@ -15,7 +15,7 @@ import {
   QueryRegisteredNode,
 } from "../registered-node/dto";
 import assert from "assert";
-import { createClient } from "../client";
+import Prometheus from "prom-client";
 
 const FUNDING_SERVICE_URL = "http://localhost:5000";
 const BASE_QUOTA = BigInt(1);
@@ -54,10 +54,12 @@ describe("test entry server", function () {
       FUNDING_SERVICE_URL,
       dbInstance
     );
+    const register = new Prometheus.Registry();
     app = entryServer({
       db: dbInstance,
       baseQuota: BASE_QUOTA,
       fundingServiceApi,
+      register: register,
     });
   });
 

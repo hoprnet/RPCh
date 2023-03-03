@@ -25,6 +25,8 @@ import {
 } from "../../../registered-node";
 import { CreateRegisteredNode } from "../../../registered-node/dto";
 import { createLogger, isListSafe } from "../../../utils";
+import { Registry } from "prom-client";
+import { createCounter, createGauge } from "../../../metrics";
 
 const log = createLogger(["entry-server", "router", "v1"]);
 
@@ -124,7 +126,27 @@ export const v1Router = (ops: {
   db: DBInstance;
   baseQuota: bigint;
   fundingServiceApi: FundingServiceApi;
+  register: Registry;
 }) => {
+  // Metrics
+  const counterFetchedEntryNode = createCounter(
+    ops.register,
+    "counter_fetched_entry_nodes",
+    "amount of entry nodes we have given to users"
+  );
+
+  const counterTrialClients = createCounter(
+    ops.register,
+    "counter_trial_clients",
+    "amount of trial clients created through endpoint"
+  );
+
+  const counterAddedQuota = createCounter(
+    ops.register,
+    "counter_added_quota",
+    "amount of times quota is added through endpoint"
+  );
+
   const router = express.Router();
 
   router.use(express.json());
@@ -237,6 +259,9 @@ export const v1Router = (ops: {
           actionTaker: "discovery-platform",
           paidBy: dbClient.id,
         });
+
+        counterAddedQuota.inc();
+
         return res.json({ quota: createdQuota });
       } catch (e) {
         log.error("Can not create funds", e);
@@ -264,6 +289,9 @@ export const v1Router = (ops: {
           ops.db,
           label ? label.split(",") : []
         );
+
+        counterTrialClients.inc();
+
         return res.json({ client: trialClient.id });
       } catch (e) {
         log.error("Can not create trial client", e);
@@ -343,6 +371,8 @@ export const v1Router = (ops: {
           actionTaker: "discovery platform",
           paidBy: paidById,
         });
+
+        counterFetchedEntryNode.inc();
 
         return res.json({
           ...selectedNode,

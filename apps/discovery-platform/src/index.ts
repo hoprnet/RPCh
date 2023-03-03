@@ -6,8 +6,19 @@ import pgp from "pg-promise";
 import { getRegisteredNodes } from "./registered-node";
 import { checkCommitment } from "./graph-api";
 import * as constants from "./constants";
+import Prometheus from "prom-client";
 
 const log = createLogger();
+
+// create prometheus registry
+const register = new Prometheus.Registry();
+
+register.setDefaultLabels({
+  app: "discovery_platform",
+});
+
+// add default metrics to registry
+Prometheus.collectDefaultMetrics({ register });
 
 const main = () => {
   if (!constants.FUNDING_SERVICE_URL)
@@ -51,6 +62,7 @@ const start = async (ops: {
     db: ops.db,
     baseQuota: ops.baseQuota,
     fundingServiceApi: fundingServiceApi,
+    register: register,
   });
   // start listening at PORT for requests
   server.listen(constants.PORT, "0.0.0.0", () => {
