@@ -20,6 +20,7 @@ const log = createLogger(["entry-server"]);
  * @param walletAddress address used to query balance
  * @param maxAmountOfTokens max limit of tokens that an access token can request
  * @param timeout amount of milliseconds that a token will be valid
+ * @param register Prometheus register that will hold metrics
  * @returns Express app
  */
 export const entryServer = (ops: {
@@ -202,6 +203,12 @@ export const entryServer = (ops: {
       }
     }
   );
+
+  // Prometheus metrics
+  app.get("/api/metrics", async (req, res) => {
+    const metrics = await ops.register.metrics();
+    return res.json(metrics);
+  });
 
   return app;
 };

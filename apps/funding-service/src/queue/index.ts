@@ -19,6 +19,7 @@ const log = createLogger(["queue"]);
  * @param signer ethers signer that will send the transaction
  * @param confirmations amount of confirmations to wait for every transaction
  * @param changeState updates a higher lever boolean that stops this function from running
+ * @param register Prometheus register that will hold metrics
  * while it is already running
  */
 export const checkFreshRequests = async (ops: {
