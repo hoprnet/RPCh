@@ -2,12 +2,12 @@ import { JsonRpcProvider } from "@ethersproject/providers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import assert from "assert";
 import { ethers } from "hardhat";
-import { IMemoryDb } from "pg-mem";
 import { checkFreshRequests } from ".";
 import { AccessTokenService } from "../access-token";
 import { DBInstance } from "../db";
 import { MockPgInstanceSingleton } from "../db/index.spec";
 import { RequestService } from "../request";
+import Prometheus from "prom-client";
 
 const MOCK_ADDRESS = "0xA10AA7711FD1FA48ACAE6FF00FCB63B0F6AD055F";
 const MOCK_AMOUNT = "1000";
@@ -85,6 +85,7 @@ describe("test index.ts", function () {
       signer: owner,
       confirmations: 0,
       changeState: () => {},
+      register: new Prometheus.Registry(),
     });
     const queryRequest = await requestService.getRequest(createRequest.id);
     assert.equal(queryRequest?.status, "SUCCESS");
@@ -109,6 +110,7 @@ describe("test index.ts", function () {
       signer: owner,
       confirmations: 0,
       changeState: () => {},
+      register: new Prometheus.Registry(),
     });
     const queryRequest = await requestService.getRequest(createRequest.id);
     assert.equal(queryRequest?.status, "REJECTED-DURING-PROCESSING");
@@ -131,6 +133,7 @@ describe("test index.ts", function () {
       signer: owner,
       confirmations: 0,
       changeState: () => {},
+      register: new Prometheus.Registry(),
     });
 
     const queryRequest = await requestService.getRequest(createRequest.id);
