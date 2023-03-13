@@ -32,7 +32,7 @@ RUN turbo prune --scope="@rpch/exit-node" --docker
 
 # Add lockfile and package.json's of isolated subworkspace.
 # Specify platform to be amd because arm doesn't work
-FROM --platform=linux/amd64 node:16-alpine AS installer
+FROM --platform=linux/amd64 node:16-bullseye-slim AS installer
 RUN apk add --no-cache libc6-compat
 RUN apk update
 WORKDIR /app
@@ -50,7 +50,7 @@ RUN yarn run build --scope="@rpch/exit-node"
 
 #  Copy only the necesary files to run the app.
 # Specify platform to be amd because arm doesn't work
-FROM --platform=linux/amd64 node:16-alpine AS runner
+FROM --platform=linux/amd64 node:16-bullseye-slim AS runner
 
 WORKDIR /app
 

@@ -18,7 +18,7 @@ COPY . .
 RUN turbo prune --scope="@rpch/manager" --docker
 
 # Add lockfile and package.json's of isolated subworkspace.
-FROM node:16-alpine AS installer
+FROM node:16-bullseye-slim AS installer
 RUN apk add --no-cache libc6-compat
 RUN apk update
 WORKDIR /app
@@ -35,7 +35,7 @@ COPY turbo.json turbo.json
 RUN yarn run build --scope="@rpch/manager"
 
 #  Copy only the necesary files to run the app.
-FROM node:16-alpine AS runner
+FROM node:16-bullseye-slim AS runner
 WORKDIR /app
 
 # we use tini as process 1 to catch signals properly, which is also built into Docker by default
