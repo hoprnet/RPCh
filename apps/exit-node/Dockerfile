@@ -60,7 +60,7 @@ VOLUME ["/app/db"]
 
 # we use tini as process 1 to catch signals properly, which is also built into Docker by default
 RUN apt-get update && \
-  apt-get install -y tini curl && \
+  apt-get install -y tini curl  wget && \
   rm -rf /var/lib/apt/lists/*
 
 # this helper script can be used to ensure the hoprd node is running before starting

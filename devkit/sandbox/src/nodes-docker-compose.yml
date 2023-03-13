@@ -64,7 +64,7 @@ services:
         "-t",
         "300",
         "--",
-        "/sbin/tini",
+        "/usr/bin/tini",
         "--",
       ]
   exit-2:
@@ -81,7 +81,7 @@ services:
         "-t",
         "300",
         "--",
-        "/sbin/tini",
+        "/usr/bin/tini",
         "--",
       ]
   exit-3:
@@ -98,7 +98,7 @@ services:
         "-t",
         "300",
         "--",
-        "/sbin/tini",
+        "/usr/bin/tini",
         "--",
       ]
   exit-4:
@@ -115,7 +115,7 @@ services:
         "-t",
         "300",
         "--",
-        "/sbin/tini",
+        "/usr/bin/tini",
         "--",
       ]
   exit-5:
@@ -132,7 +132,7 @@ services:
         "-t",
         "300",
         "--",
-        "/sbin/tini",
+        "/usr/bin/tini",
         "--",
       ]
 

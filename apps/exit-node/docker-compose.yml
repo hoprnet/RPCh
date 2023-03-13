@@ -106,7 +106,7 @@ services:
         "-t",
         "300",
         "--",
-        "/sbin/tini",
+        "/usr/bin/tini",
         "--",
       ]
     command: "node apps/exit-node/build/index.js"
