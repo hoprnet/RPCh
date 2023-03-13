@@ -60,4 +60,4 @@ USER node
 
 CMD ["node", "apps/discovery-platform/build/index.js"]
 
-ENTRYPOINT ["/sbin/tini", "--"]
+ENTRYPOINT ["/usr/bin/tini", "--"]

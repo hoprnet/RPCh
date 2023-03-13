@@ -61,4 +61,4 @@ USER node
 
 CMD ["node", "apps/funding-service/build/index.js"]
 
-ENTRYPOINT ["/sbin/tini", "--"]
+ENTRYPOINT ["/usr/bin/tini", "--"]

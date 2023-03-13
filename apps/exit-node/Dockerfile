@@ -79,4 +79,4 @@ USER node
 
 CMD ["node", "apps/exit-node/build/index.js"]
 
-ENTRYPOINT ["/sbin/tini", "--"]
+ENTRYPOINT ["/usr/bin/tini", "--"]

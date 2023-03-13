@@ -51,4 +51,4 @@ COPY --from=installer /app/devkit/manager/package.json .
 COPY --from=installer /app .
 
 CMD ["node", "devkit/manager/build/index.js"]
-ENTRYPOINT ["/sbin/tini", "--"]
+ENTRYPOINT ["/usr/bin/tini", "--"]
