@@ -21,7 +21,6 @@ import {
   getEligibleNode,
   getRegisteredNode,
   getRegisteredNodes,
-  getRewardForNode,
 } from "../../../registered-node";
 import { CreateRegisteredNode } from "../../../registered-node/dto";
 import { createLogger, isListSafe } from "../../../utils";

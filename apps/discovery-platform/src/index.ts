@@ -20,9 +20,9 @@ const main = () => {
   // init db
   const pgInstance = pgp();
   const connectionString: string = constants.DB_CONNECTION_URL!;
-  // create table if the table does not exist
   const dbInstance = pgInstance({
     connectionString,
+    max: constants.MAX_DB_CONNECTIONS,
   });
 
   start({
@@ -37,7 +37,6 @@ const start = async (ops: {
   baseQuota: bigint;
   fundingServiceUrl: string;
 }) => {
-  await ops.db.connect();
   // run db migrations
   await runMigrations(constants.DB_CONNECTION_URL!);
 
@@ -71,7 +70,6 @@ const start = async (ops: {
   // check if fresh nodes have committed
   const checkCommitmentForFreshNodes = setInterval(async () => {
     try {
-      log.normal("tracking commitment for fresh nodes");
       const freshNodes = await getRegisteredNodes(ops.db, {
         status: "FRESH",
       });
