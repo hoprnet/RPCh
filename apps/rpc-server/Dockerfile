@@ -33,8 +33,8 @@ RUN turbo prune --scope="@rpch/rpc-server" --docker
 # Add lockfile and package.json's of isolated subworkspace.
 # Specify platform to be amd because arm doesn't work
 FROM --platform=linux/amd64 node:16-bullseye-slim AS installer
-RUN apk add --no-cache libc6-compat
-RUN apk update
+RUN apt-get update && \
+  apt-get install -y libc6
 WORKDIR /app
 
 # Install the dependencies.

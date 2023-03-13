@@ -19,8 +19,8 @@ RUN turbo prune --scope="@rpch/manager" --docker
 
 # Add lockfile and package.json's of isolated subworkspace.
 FROM node:16-bullseye-slim AS installer
-RUN apk add --no-cache libc6-compat
-RUN apk update
+RUN apt-get update && \
+  apt-get install -y libc6
 WORKDIR /app
 
 # Install the dependencies.
@@ -39,7 +39,9 @@ FROM node:16-bullseye-slim AS runner
 WORKDIR /app
 
 # we use tini as process 1 to catch signals properly, which is also built into Docker by default
-RUN apk add --no-cache tini curl
+RUN apt-get update && \
+  apt-get install -y tini curl && \
+  rm -rf /var/lib/apt/lists/*
 
 # this helper script can be used to ensure the hoprd node is running before starting
 RUN  curl https://raw.githubusercontent.com/eficode/wait-for/v2.2.3/wait-for > /bin/wait-for \
