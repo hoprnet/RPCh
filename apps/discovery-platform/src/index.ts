@@ -9,29 +9,6 @@ import * as constants from "./constants";
 
 const log = createLogger();
 
-const main = () => {
-  if (!constants.FUNDING_SERVICE_URL)
-    throw new Error('Missing "FUNDING_SERVICE_URL" env variable');
-
-  if (!constants.DB_CONNECTION_URL) {
-    throw new Error('Missing "DB_CONNECTION_URL" env variable');
-  }
-
-  // init db
-  const pgInstance = pgp();
-  const connectionString: string = constants.DB_CONNECTION_URL!;
-  // create table if the table does not exist
-  const dbInstance = pgInstance({
-    connectionString,
-  });
-
-  start({
-    baseQuota: constants.BASE_QUOTA,
-    db: dbInstance,
-    fundingServiceUrl: constants.FUNDING_SERVICE_URL!,
-  });
-};
-
 const start = async (ops: {
   db: DBInstance;
   baseQuota: bigint;
@@ -69,8 +46,14 @@ const start = async (ops: {
   // }, 1000);
 
   // check if fresh nodes have committed
+  let checkCommitmentForFreshNodesRunning = false;
   const checkCommitmentForFreshNodes = setInterval(async () => {
     try {
+      if (checkCommitmentForFreshNodesRunning) {
+        log.normal("'checkCommitmentForFreshNodes' is already running");
+        return;
+      }
+      checkCommitmentForFreshNodesRunning = true;
       log.normal("tracking commitment for fresh nodes");
       const freshNodes = await getRegisteredNodes(ops.db, {
         status: "FRESH",
@@ -96,13 +79,38 @@ const start = async (ops: {
       }
     } catch (e) {
       log.error("Failed to check commitment for fresh nodes", e);
+    } finally {
+      checkCommitmentForFreshNodesRunning = false;
     }
-  }, 1000);
+  }, 5000);
 
   return () => {
     // clearInterval(checkForPendingRequests);
     clearInterval(checkCommitmentForFreshNodes);
   };
+};
+
+const main = () => {
+  if (!constants.FUNDING_SERVICE_URL)
+    throw new Error('Missing "FUNDING_SERVICE_URL" env variable');
+
+  if (!constants.DB_CONNECTION_URL) {
+    throw new Error('Missing "DB_CONNECTION_URL" env variable');
+  }
+
+  // init db
+  const pgInstance = pgp();
+  const connectionString: string = constants.DB_CONNECTION_URL!;
+  // create table if the table does not exist
+  const dbInstance = pgInstance({
+    connectionString,
+  });
+
+  start({
+    baseQuota: constants.BASE_QUOTA,
+    db: dbInstance,
+    fundingServiceUrl: constants.FUNDING_SERVICE_URL!,
+  });
 };
 
 // if this file is the entrypoint of the nodejs process
