@@ -125,15 +125,13 @@ export const getCache = () => {
     let cachedBody = memoryCache.get(key);
     if (cachedBody) {
       log.verbose("Returning cached value for endpoint: ", key);
-      res.json(cachedBody);
-      return;
+      return res.json(cachedBody);
     }
     next();
   };
 };
 
-export const setCache = (req: Request, duration: number, body: Object) => {
-  let key = req.originalUrl || req.url;
+export const setCache = (key: string, duration: number, body: Object) => {
   memoryCache.put(key, body, duration);
 };
 
@@ -198,7 +196,7 @@ export const v1Router = (ops: {
           hasExitNode: hasExitNode ? hasExitNode === "true" : undefined,
         });
         // cache response for 1 min
-        setCache(req, 60e3, nodes);
+        setCache(req.originalUrl || req.url, 60e3, nodes);
         return res.json(nodes);
       } catch (e) {
         log.error("Can not get nodes", e);

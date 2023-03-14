@@ -1,8 +1,8 @@
 import assert from "assert";
-import express, { Express } from "express";
+import express, { Express, NextFunction, Request, Response } from "express";
 import nock from "nock";
 import request from "supertest";
-import { doesClientHaveQuota, v1Router } from ".";
+import { doesClientHaveQuota, getCache, setCache, v1Router } from ".";
 import { getClient } from "../../../client";
 import { DBInstance } from "../../../db";
 import { MockPgInstanceSingleton } from "../../../db/index.spec";
@@ -22,7 +22,6 @@ import {
   QueryRegisteredNode,
 } from "../../../registered-node/dto";
 import memoryCache from "memory-cache";
-import { Request } from "node-fetch";
 
 const FUNDING_SERVICE_URL = "http://localhost:5000";
 const BASE_QUOTA = BigInt(1);
@@ -431,25 +430,47 @@ describe("test v1 router", function () {
       spy.mockRestore();
     });
 
-    it("should cache response", async function () {
-      await request(app).post("/node/register").send(mockNode("exit1", true));
-      await request(app).post("/node/register").send(mockNode("exit2", true));
+    describe("test cache requests", function () {
+      it("should save request", function () {
+        const mockRequest = { url: "/test" } as Request;
+        // just return whatever is sent using .json
+        const mockResponse = {
+          json: jest.fn((args) => args),
+        } as unknown as Response;
+        setCache("/test", 100, "test");
+        const res = getCache()(mockRequest, mockResponse, {} as any);
+        assert.equal(res, "test");
+      });
+      it("should call next if nothing is cached", async () => {
+        const mockRequest = { url: "/test" } as Request;
+        // just return whatever is sent using .json
+        const mockResponse = {
+          json: jest.fn((args) => args),
+        } as unknown as Response;
+        const mockNext = jest.fn() as NextFunction;
+        const res = getCache()(mockRequest, mockResponse, mockNext);
+        expect(mockNext).toHaveBeenCalled();
+      });
+      it("should cache when request is successful", async function () {
+        await request(app).post("/node/register").send(mockNode("exit1", true));
+        await request(app).post("/node/register").send(mockNode("exit2", true));
 
-      // caching endpoint /node
-      const allExitNodes = await request(app).get(`/node?hasExitNode=true`);
-      const secondAllExitNodeResponse = await request(app).get(
-        `/node?hasExitNode=true`
-      );
+        // caching endpoint /node
+        const allExitNodes = await request(app).get(`/node?hasExitNode=true`);
+        const secondAllExitNodeResponse = await request(app).get(
+          `/node?hasExitNode=true`
+        );
 
-      assert.deepEqual(
-        JSON.stringify(memoryCache.get("/node?hasExitNode=true")),
-        JSON.stringify(allExitNodes.body)
-      );
+        assert.deepEqual(
+          JSON.stringify(memoryCache.get("/node?hasExitNode=true")),
+          JSON.stringify(allExitNodes.body)
+        );
 
-      assert.deepEqual(
-        JSON.stringify(memoryCache.get("/node?hasExitNode=true")),
-        JSON.stringify(secondAllExitNodeResponse.body)
-      );
+        assert.deepEqual(
+          JSON.stringify(memoryCache.get("/node?hasExitNode=true")),
+          JSON.stringify(secondAllExitNodeResponse.body)
+        );
+      });
     });
   });
 });
