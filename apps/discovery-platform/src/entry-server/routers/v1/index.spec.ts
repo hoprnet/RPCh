@@ -21,6 +21,7 @@ import {
   CreateRegisteredNode,
   QueryRegisteredNode,
 } from "../../../registered-node/dto";
+import memoryCache from "memory-cache";
 
 const FUNDING_SERVICE_URL = "http://localhost:5000";
 const BASE_QUOTA = BigInt(1);
@@ -59,6 +60,7 @@ describe("test v1 router", function () {
       FUNDING_SERVICE_URL,
       dbInstance
     );
+    memoryCache.clear();
     app = express().use(
       "",
       v1Router({
@@ -361,7 +363,7 @@ describe("test v1 router", function () {
       );
       spy.mockRestore();
     });
-    it.only("should be able to use trial mode client and reduce quota", async function () {
+    it("should be able to use trial mode client and reduce quota", async function () {
       const spy = jest.spyOn(registeredNode, "getEligibleNode");
       const amountLeft = BigInt(10).toString();
       const peerId = "entry";
