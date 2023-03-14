@@ -9,29 +9,6 @@ import * as constants from "./constants";
 
 const log = createLogger();
 
-const main = () => {
-  if (!constants.FUNDING_SERVICE_URL)
-    throw new Error('Missing "FUNDING_SERVICE_URL" env variable');
-
-  if (!constants.DB_CONNECTION_URL) {
-    throw new Error('Missing "DB_CONNECTION_URL" env variable');
-  }
-
-  // init db
-  const pgInstance = pgp();
-  const connectionString: string = constants.DB_CONNECTION_URL!;
-  // create table if the table does not exist
-  const dbInstance = pgInstance({
-    connectionString,
-  });
-
-  start({
-    baseQuota: constants.BASE_QUOTA,
-    db: dbInstance,
-    fundingServiceUrl: constants.FUNDING_SERVICE_URL!,
-  });
-};
-
 const start = async (ops: {
   db: DBInstance;
   baseQuota: bigint;
@@ -69,40 +46,71 @@ const start = async (ops: {
   // }, 1000);
 
   // check if fresh nodes have committed
-  // const checkCommitmentForFreshNodes = setInterval(async () => {
-  //   try {
-  //     log.normal("tracking commitment for fresh nodes");
-  //     const freshNodes = await getRegisteredNodes(ops.db, {
-  //       status: "FRESH",
-  //     });
+  let checkCommitmentForFreshNodesRunning = false;
+  const checkCommitmentForFreshNodes = setInterval(async () => {
+    try {
+      if (checkCommitmentForFreshNodesRunning) {
+        log.normal("'checkCommitmentForFreshNodes' is already running");
+        return;
+      }
+      checkCommitmentForFreshNodesRunning = true;
+      log.normal("tracking commitment for fresh nodes");
+      const freshNodes = await getRegisteredNodes(ops.db, {
+        status: "FRESH",
+      });
 
-  //     for (const node of freshNodes ?? []) {
-  //       log.verbose("checking commitment of fresh node", node);
+      for (const node of freshNodes ?? []) {
+        log.verbose("checking commitment of fresh node", node);
 
-  //       const nodeIsCommitted = await checkCommitment({
-  //         node,
-  //         minBalance: constants.BALANCE_THRESHOLD,
-  //         minChannels: constants.CHANNELS_THRESHOLD,
-  //       });
+        const nodeIsCommitted = await checkCommitment({
+          node,
+          minBalance: constants.BALANCE_THRESHOLD,
+          minChannels: constants.CHANNELS_THRESHOLD,
+        });
 
-  //       log.verbose("node commitment", nodeIsCommitted);
-  //       if (nodeIsCommitted) {
-  //         log.verbose("new committed node", node.id);
-  //         await updateRegisteredNode(ops.db, {
-  //           ...node,
-  //           status: "READY",
-  //         });
-  //       }
-  //     }
-  //   } catch (e) {
-  //     log.error("Failed to check commitment for fresh nodes", e);
-  //   }
-  // }, 1000);
+        log.verbose("node commitment", nodeIsCommitted);
+        if (nodeIsCommitted) {
+          log.verbose("new committed node", node.id);
+          await updateRegisteredNode(ops.db, {
+            ...node,
+            status: "READY",
+          });
+        }
+      }
+    } catch (e) {
+      log.error("Failed to check commitment for fresh nodes", e);
+    } finally {
+      checkCommitmentForFreshNodesRunning = false;
+    }
+  }, 5000);
 
   return () => {
     // clearInterval(checkForPendingRequests);
-    // clearInterval(checkCommitmentForFreshNodes);
+    clearInterval(checkCommitmentForFreshNodes);
   };
+};
+
+const main = () => {
+  if (!constants.FUNDING_SERVICE_URL)
+    throw new Error('Missing "FUNDING_SERVICE_URL" env variable');
+
+  if (!constants.DB_CONNECTION_URL) {
+    throw new Error('Missing "DB_CONNECTION_URL" env variable');
+  }
+
+  // init db
+  const pgInstance = pgp();
+  const connectionString: string = constants.DB_CONNECTION_URL!;
+  // create table if the table does not exist
+  const dbInstance = pgInstance({
+    connectionString,
+  });
+
+  start({
+    baseQuota: constants.BASE_QUOTA,
+    db: dbInstance,
+    fundingServiceUrl: constants.FUNDING_SERVICE_URL!,
+  });
 };
 
 // if this file is the entrypoint of the nodejs process
