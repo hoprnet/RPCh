@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
 import {
   ParamSchema,
   body,
@@ -21,10 +21,10 @@ import {
   getEligibleNode,
   getRegisteredNode,
   getRegisteredNodes,
-  getRewardForNode,
 } from "../../../registered-node";
 import { CreateRegisteredNode } from "../../../registered-node/dto";
 import { createLogger, isListSafe } from "../../../utils";
+import memoryCache from "memory-cache";
 
 const log = createLogger(["entry-server", "router", "v1"]);
 
@@ -119,6 +119,33 @@ const getNodeSchema: Record<
   },
 };
 
+export const getCache = () => {
+  return (req: Request, res: Response<any, any>, next: NextFunction) => {
+    let key = req.originalUrl || req.url;
+    let cachedBody = memoryCache.get(key);
+    if (cachedBody) {
+      log.verbose("Returning cached value for endpoint: ", key);
+      return res.json(cachedBody);
+    }
+    next();
+  };
+};
+
+export const setCache = (key: string, duration: number, body: Object) => {
+  memoryCache.put(key, body, duration);
+};
+
+// middleware used to check if client sent in req has enough quota
+export const doesClientHaveQuota = async (
+  db: DBInstance,
+  client: string,
+  baseQuota: bigint
+) => {
+  const allQuotasFromClient = await getQuotasPaidByClient(db, client);
+  const sumOfClientsQuota = sumQuotas(allQuotasFromClient);
+  return sumOfClientsQuota >= baseQuota;
+};
+
 // Express Router
 export const v1Router = (ops: {
   db: DBInstance;
@@ -152,6 +179,7 @@ export const v1Router = (ops: {
   router.get(
     "/node",
     checkSchema(getNodeSchema),
+    getCache(), // check if response is in cache
     async (
       req: Request<{}, {}, {}, { excludeList?: string; hasExitNode?: string }>,
       res: Response
@@ -167,6 +195,8 @@ export const v1Router = (ops: {
           excludeList: excludeList?.split(", "),
           hasExitNode: hasExitNode ? hasExitNode === "true" : undefined,
         });
+        // cache response for 1 min
+        setCache(req.originalUrl || req.url, 60e3, nodes);
         return res.json(nodes);
       } catch (e) {
         log.error("Can not get nodes", e);
@@ -356,14 +386,4 @@ export const v1Router = (ops: {
   );
 
   return router;
-};
-
-export const doesClientHaveQuota = async (
-  db: DBInstance,
-  client: string,
-  baseQuota: bigint
-) => {
-  const allQuotasFromClient = await getQuotasPaidByClient(db, client);
-  const sumOfClientsQuota = sumQuotas(allQuotasFromClient);
-  return sumOfClientsQuota >= baseQuota;
 };

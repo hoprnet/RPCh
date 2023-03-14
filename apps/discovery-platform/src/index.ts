@@ -14,7 +14,6 @@ const start = async (ops: {
   baseQuota: bigint;
   fundingServiceUrl: string;
 }) => {
-  await ops.db.connect();
   // run db migrations
   await runMigrations(constants.DB_CONNECTION_URL!);
 
@@ -24,15 +23,18 @@ const start = async (ops: {
     ops.db
   );
 
-  const server = entryServer({
+  const app = entryServer({
     db: ops.db,
     baseQuota: ops.baseQuota,
     fundingServiceApi: fundingServiceApi,
   });
   // start listening at PORT for requests
-  server.listen(constants.PORT, "0.0.0.0", () => {
+  const server = app.listen(constants.PORT, "0.0.0.0", () => {
     log.normal("entry server is up");
   });
+
+  // set server timeout to 30s
+  server.setTimeout(30e3);
 
   // DISCLAIMER: ACTIVATE THIS WHEN FUNDING IS STABLE
   // // keep track of all pending funding requests to update status or retry
