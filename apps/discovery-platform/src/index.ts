@@ -69,39 +69,39 @@ const start = async (ops: {
   // }, 1000);
 
   // check if fresh nodes have committed
-  const checkCommitmentForFreshNodes = setInterval(async () => {
-    try {
-      log.normal("tracking commitment for fresh nodes");
-      const freshNodes = await getRegisteredNodes(ops.db, {
-        status: "FRESH",
-      });
+  // const checkCommitmentForFreshNodes = setInterval(async () => {
+  //   try {
+  //     log.normal("tracking commitment for fresh nodes");
+  //     const freshNodes = await getRegisteredNodes(ops.db, {
+  //       status: "FRESH",
+  //     });
 
-      for (const node of freshNodes ?? []) {
-        log.verbose("checking commitment of fresh node", node);
+  //     for (const node of freshNodes ?? []) {
+  //       log.verbose("checking commitment of fresh node", node);
 
-        const nodeIsCommitted = await checkCommitment({
-          node,
-          minBalance: constants.BALANCE_THRESHOLD,
-          minChannels: constants.CHANNELS_THRESHOLD,
-        });
+  //       const nodeIsCommitted = await checkCommitment({
+  //         node,
+  //         minBalance: constants.BALANCE_THRESHOLD,
+  //         minChannels: constants.CHANNELS_THRESHOLD,
+  //       });
 
-        log.verbose("node commitment", nodeIsCommitted);
-        if (nodeIsCommitted) {
-          log.verbose("new committed node", node.id);
-          await updateRegisteredNode(ops.db, {
-            ...node,
-            status: "READY",
-          });
-        }
-      }
-    } catch (e) {
-      log.error("Failed to check commitment for fresh nodes", e);
-    }
-  }, 1000);
+  //       log.verbose("node commitment", nodeIsCommitted);
+  //       if (nodeIsCommitted) {
+  //         log.verbose("new committed node", node.id);
+  //         await updateRegisteredNode(ops.db, {
+  //           ...node,
+  //           status: "READY",
+  //         });
+  //       }
+  //     }
+  //   } catch (e) {
+  //     log.error("Failed to check commitment for fresh nodes", e);
+  //   }
+  // }, 1000);
 
   return () => {
     // clearInterval(checkForPendingRequests);
-    clearInterval(checkCommitmentForFreshNodes);
+    // clearInterval(checkCommitmentForFreshNodes);
   };
 };
 
