@@ -125,9 +125,10 @@ export const getCache = () => {
     let cachedBody = memoryCache.get(key);
     if (cachedBody) {
       log.verbose("Returning cached value for endpoint: ", key);
-      res.send(cachedBody);
+      res.json(cachedBody);
       return;
     }
+    next();
   };
 };
 

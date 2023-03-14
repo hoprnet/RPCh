@@ -22,6 +22,7 @@ import {
   QueryRegisteredNode,
 } from "../../../registered-node/dto";
 import memoryCache from "memory-cache";
+import { Request } from "node-fetch";
 
 const FUNDING_SERVICE_URL = "http://localhost:5000";
 const BASE_QUOTA = BigInt(1);
@@ -60,7 +61,6 @@ describe("test v1 router", function () {
       FUNDING_SERVICE_URL,
       dbInstance
     );
-    memoryCache.clear();
     app = express().use(
       "",
       v1Router({
@@ -73,6 +73,7 @@ describe("test v1 router", function () {
 
   afterEach(() => {
     jest.resetAllMocks();
+    memoryCache.clear();
   });
 
   it("should register a node", async function () {
@@ -428,6 +429,27 @@ describe("test v1 router", function () {
       expect(requestResponse.body).toHaveProperty("id");
 
       spy.mockRestore();
+    });
+
+    it("should cache response", async function () {
+      await request(app).post("/node/register").send(mockNode("exit1", true));
+      await request(app).post("/node/register").send(mockNode("exit2", true));
+
+      // caching endpoint /node
+      const allExitNodes = await request(app).get(`/node?hasExitNode=true`);
+      const secondAllExitNodeResponse = await request(app).get(
+        `/node?hasExitNode=true`
+      );
+
+      assert.deepEqual(
+        JSON.stringify(memoryCache.get("/node?hasExitNode=true")),
+        JSON.stringify(allExitNodes.body)
+      );
+
+      assert.deepEqual(
+        JSON.stringify(memoryCache.get("/node?hasExitNode=true")),
+        JSON.stringify(secondAllExitNodeResponse.body)
+      );
     });
   });
 });
