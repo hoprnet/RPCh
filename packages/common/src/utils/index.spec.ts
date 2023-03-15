@@ -37,6 +37,7 @@ describe("test utils / isExpired", function () {
   const timeout = 10e3;
   const inFiveSecs = new Date(createdAt.valueOf() + 5e3);
   const inTenSecs = new Date(createdAt.valueOf() + 15e3);
+
   it("should return false after 5 seconds", function () {
     assert(!isExpired(timeout, inFiveSecs, createdAt));
   });
