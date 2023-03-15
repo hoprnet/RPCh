@@ -7,7 +7,7 @@ const log = createLogger();
 
 /**
  * RPChProvider extends the JsonRpcProvider from ethers to enable use with Hopr protocol.
- * It uses an SDK to create and send requests and caches responses for some methods.
+ * Internally, it uses the RPCh SDK to send and receive requests RPC requests.
  * @extends JsonRpcProvider
  */
 export class RPChProvider extends JsonRpcProvider {
