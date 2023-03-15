@@ -331,18 +331,19 @@ export const v1Router = (ops: {
         // set who is going to pay for quota
         const paidById = clientIsTrialMode ? TRIAL_CLIENT_ID : dbClient?.id;
 
-        // check if client has enough quota
-        const doesClientHaveQuotaResponse = await doesClientHaveQuota(
-          ops.db,
-          paidById,
-          ops.baseQuota
-        );
+        // // check if client has enough quota
+        // const doesClientHaveQuotaResponse = await doesClientHaveQuota(
+        //   ops.db,
+        //   paidById,
+        //   ops.baseQuota
+        // );
 
-        if (!doesClientHaveQuotaResponse) {
-          return res.status(403).json({
-            body: "Client does not have enough quota",
-          });
-        }
+        // if (!doesClientHaveQuotaResponse) {
+        //   return res.status(403).json({
+        //     body: "Client does not have enough quota",
+        //   });
+        // }
+
         // choose selected entry node
         const selectedNode = await getEligibleNode(ops.db, { excludeList });
         log.verbose("selected entry node", selectedNode);
