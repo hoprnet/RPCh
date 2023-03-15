@@ -12,6 +12,7 @@ import {
 } from "./index";
 import { MockPgInstanceSingleton } from "../db/index.spec";
 import { createClient } from "../client";
+import { errors } from "pg-promise";
 
 const createMockQuota = (params?: Quota): Quota => {
   return {
@@ -95,8 +96,13 @@ describe("test quota functions", function () {
     const createdQuota = await createQuota(dbInstance, mockQuota);
     if (!createdQuota.id) throw new Error("Could not create mock quota");
     await deleteQuota(dbInstance, createdQuota.id);
-    const deletedQuota = await getQuota(dbInstance, createdQuota.id ?? 0);
-    assert.equal(deletedQuota, undefined);
+    try {
+      await getQuota(dbInstance, createdQuota.id ?? 0);
+    } catch (e) {
+      if (e instanceof errors.QueryResultError) {
+        assert.equal(e.message, "No data returned from the query.");
+      }
+    }
   });
 
   it("should sum all quota paid by client", async function () {

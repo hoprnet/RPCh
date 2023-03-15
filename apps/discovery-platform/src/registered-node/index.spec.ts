@@ -35,7 +35,6 @@ describe("test registered node functions", function () {
 
   it("should save registered node", async function () {
     const mockedNode = await createRegisteredNode(dbInstance, mockNode());
-    if (!mockedNode) throw new Error("Failed to create node");
     const createdNode = await getRegisteredNode(dbInstance, mockNode().peerId);
     assert.equal(createdNode?.id, mockNode().peerId);
   });
@@ -104,12 +103,11 @@ describe("test registered node functions", function () {
   it("should get all fresh nodes", async function () {
     await createRegisteredNode(dbInstance, mockNode("1"));
     const node = await getRegisteredNode(dbInstance, "1");
-    if (!node) throw new Error("Failed to create node");
     await updateRegisteredNode(dbInstance, {
       ...node,
       status: "READY",
     });
-    const updatedNode = await getRegisteredNode(dbInstance, "1");
+    await getRegisteredNode(dbInstance, "1");
     await createRegisteredNode(dbInstance, mockNode("2", true));
     await createRegisteredNode(dbInstance, mockNode("3", true));
 
@@ -126,7 +124,6 @@ describe("test registered node functions", function () {
     await createRegisteredNode(dbInstance, mockNode("3", true));
 
     const queryNode = await getRegisteredNode(dbInstance, "2");
-    if (!queryNode) throw new Error("Could not query in registered node test");
 
     const updateNode = await updateRegisteredNode(dbInstance, {
       ...queryNode,
@@ -142,7 +139,6 @@ describe("test registered node functions", function () {
     const baseQuota = BigInt(1);
     await createRegisteredNode(dbInstance, mockNode("1", false));
     const nonExit = await getRegisteredNode(dbInstance, "1");
-    if (!nonExit) throw new Error("Failed to create non exit node in test");
 
     const reward = getRewardForNode(baseQuota, BigInt(1), nonExit);
 
@@ -152,31 +148,23 @@ describe("test registered node functions", function () {
     const baseQuota = BigInt(1);
     await createRegisteredNode(dbInstance, mockNode("1", true));
     const nonExit = await getRegisteredNode(dbInstance, "1");
-    if (!nonExit) throw new Error("Failed to create non exit node in test");
 
     const reward = getRewardForNode(baseQuota, BigInt(1), nonExit);
 
     assert.equal(reward, baseQuota + BigInt(1) * BigInt(2));
   });
   it("should keep updated_at updated", async function () {
-    jest.setSystemTime(new Date(2023, 1, 21, 13, 30, 0));
     await createRegisteredNode(dbInstance, mockNode("1"));
     const node = await getRegisteredNode(dbInstance, "1");
-    if (!node) throw new Error("Failed to create node");
-    jest.setSystemTime(new Date(2023, 1, 21, 14, 30, 0));
     await updateRegisteredNode(dbInstance, {
       ...node,
       status: "READY",
     });
     const updatedNode = await getRegisteredNode(dbInstance, "1");
-    if (!updatedNode) throw new Error("Failed to get updated node");
 
-    console.log(node.created_at, node.updated_at);
-    console.log(updatedNode.created_at, updatedNode.updated_at);
     expect(new Date(node.updated_at).getTime()).toBeLessThan(
       new Date(updatedNode?.updated_at).getTime()
     );
-    jest.useRealTimers();
   });
   it.todo("should get a access token");
 });

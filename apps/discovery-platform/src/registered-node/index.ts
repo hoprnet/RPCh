@@ -41,7 +41,7 @@ export const createRegisteredNode = async (
 export const getRegisteredNode = async (
   dbInstance: db.DBInstance,
   peerId: string
-): Promise<RegisteredNodeDB | null> => {
+): Promise<RegisteredNodeDB> => {
   const node = await db.getRegisteredNode(dbInstance, peerId);
   return node;
 };

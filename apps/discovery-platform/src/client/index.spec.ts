@@ -3,6 +3,7 @@ import * as db from "../db";
 import { MockPgInstanceSingleton } from "../db/index.spec";
 import { Client } from "../types";
 import { createClient, deleteClient, getClient, updateClient } from "./index";
+import { errors } from "pg-promise";
 
 const createMockClient = (params?: Client): Client => {
   return {
@@ -32,6 +33,7 @@ describe("test quota functions", function () {
   it("should get client by id", async function () {
     const mockClient = createMockClient();
     const createdClient = await createClient(dbInstance, mockClient);
+
     await createClient(
       dbInstance,
       createMockClient({
@@ -40,18 +42,23 @@ describe("test quota functions", function () {
         labels: [],
       })
     );
+
     const queryClient = await getClient(dbInstance, createdClient.id);
+
     assert.equal(queryClient?.id, createdClient.id);
     assert.equal(queryClient?.payment, createdClient.payment);
   });
   it("should update client", async function () {
     const mockClient = createMockClient();
     const createdClient = await createClient(dbInstance, mockClient);
+
     await updateClient(dbInstance, {
       ...createdClient,
       labels: ["eth"],
     });
+
     const queryClient = await getClient(dbInstance, createdClient.id);
+
     assert.equal(queryClient?.id, mockClient.id);
     assert.deepEqual(queryClient?.labels, ["eth"]);
   });
@@ -61,10 +68,17 @@ describe("test quota functions", function () {
       payment: "premium",
       labels: [],
     });
+
     const createdClient = await createClient(dbInstance, mockClient);
-    if (!createdClient.id) throw new Error("Could not create mock client");
+
     await deleteClient(dbInstance, createdClient.id);
-    const deletedClient = await getClient(dbInstance, createdClient.id);
-    assert.equal(deletedClient, undefined);
+
+    try {
+      await getClient(dbInstance, createdClient.id);
+    } catch (e) {
+      if (e instanceof errors.QueryResultError) {
+        assert.equal(e.message, "No data returned from the query.");
+      }
+    }
   });
 });

@@ -121,7 +121,7 @@ export const getRegisteredNode = async (
   const values = {
     peerId,
   };
-  const dbRes: RegisteredNodeDB | null = await dbInstance.one(text, values);
+  const dbRes: RegisteredNodeDB = await dbInstance.one(text, values);
 
   return dbRes;
 };
@@ -147,10 +147,7 @@ export const updateRegisteredNode = async (
       status: updatedNode.status,
       updated_at: new Date().toISOString(),
     };
-    const dbRes: RegisteredNodeDB | null = await dbInstance.oneOrNone(
-      text,
-      values
-    );
+    const dbRes: RegisteredNodeDB = await dbInstance.one(text, values);
     return dbRes ? true : false;
   } catch (e) {
     log.error(e);
@@ -187,7 +184,7 @@ export const getQuota = async (
   const values = {
     id,
   };
-  const dbRes: QuotaDB | null = await dbInstance.oneOrNone(text, values);
+  const dbRes: QuotaDB = await dbInstance.one(text, values);
   return dbRes;
 };
 
@@ -230,7 +227,7 @@ export const updateQuota = async (
     quota: quota.quota,
     paid_by: quota.paid_by,
   };
-  const dbRes: QuotaDB | null = await dbInstance.oneOrNone(text, values);
+  const dbRes: QuotaDB = await dbInstance.one(text, values);
   return dbRes;
 };
 
@@ -242,7 +239,7 @@ export const deleteQuota = async (
   const values = {
     id,
   };
-  const dbRes: QuotaDB | null = await dbInstance.oneOrNone(text, values);
+  const dbRes: QuotaDB = await dbInstance.one(text, values);
   return dbRes;
 };
 
@@ -288,19 +285,19 @@ export const createClient = async (
 export const getClient = async (
   dbInstance: DBInstance,
   id: string
-): Promise<ClientDB | null> => {
+): Promise<ClientDB> => {
   const text = `SELECT * FROM ${TABLES.CLIENTS} WHERE id=$<id>`;
   const values = {
     id,
   };
-  const dbRes: ClientDB | null = await dbInstance.oneOrNone(text, values);
+  const dbRes: ClientDB = await dbInstance.one(text, values);
   return dbRes;
 };
 
 export const updateClient = async (
   dbInstance: DBInstance,
   client: ClientDB
-): Promise<ClientDB | null> => {
+): Promise<ClientDB> => {
   const text = `UPDATE ${TABLES.CLIENTS}
   SET id = $<id>, payment = $<payment>, labels = $<labels>
   WHERE id = $<id>
@@ -310,18 +307,18 @@ export const updateClient = async (
     payment: client.payment,
     labels: client.labels,
   };
-  const dbRes: ClientDB | null = await dbInstance.oneOrNone(text, values);
+  const dbRes: ClientDB = await dbInstance.one(text, values);
   return dbRes;
 };
 
 export const deleteClient = async (
   dbInstance: DBInstance,
   id: string
-): Promise<ClientDB | null> => {
+): Promise<ClientDB> => {
   const text = `DELETE FROM ${TABLES.CLIENTS} WHERE id=$<id> RETURNING *`;
   const values = {
     id,
   };
-  const dbRes: ClientDB | null = await dbInstance.oneOrNone(text, values);
+  const dbRes: ClientDB = await dbInstance.one(text, values);
   return dbRes;
 };

@@ -6,8 +6,8 @@ import { Client, ClientDB } from "../types";
 /**
  * Saves a client in DB
  * @param dbInstance DBInstance
- * @param client CreateClient
- * @returns QueryClient
+ * @param client Client
+ * @returns ClientDB
  */
 export const createClient = async (
   dbInstance: db.DBInstance,
@@ -41,7 +41,7 @@ export const createTrialClient = async (
  * Get a client that matches id
  * @param dbInstance DBInstance
  * @param id string
- * @returns QueryClient
+ * @returns ClientDB
  */
 export const getClient = async (
   dbInstance: db.DBInstance,
@@ -53,8 +53,8 @@ export const getClient = async (
 /**
  * Update client in DB
  * @param dbInstance DBInstance
- * @param client QueryClient
- * @returns QueryClient
+ * @param client ClientDB
+ * @returns ClientDB
  */
 export const updateClient = async (
   dbInstance: db.DBInstance,
@@ -67,7 +67,7 @@ export const updateClient = async (
  * Delete client with matching id
  * @param dbInstance DBInstance
  * @param id string
- * @returns QueryClient
+ * @returns ClientDB
  */
 export const deleteClient = async (
   dbInstance: db.DBInstance,

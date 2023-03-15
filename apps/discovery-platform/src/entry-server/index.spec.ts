@@ -109,6 +109,7 @@ describe("test entry server", function () {
     if (!requestResponse.body || !createdNode.body.node)
       throw new Error("Could not create mock nodes");
 
+    console.log(createdNode.body, requestResponse.body);
     assert.equal(requestResponse.body.id, createdNode.body.node.id);
     spy.mockRestore();
   });
