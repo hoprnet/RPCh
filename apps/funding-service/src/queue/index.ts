@@ -5,7 +5,8 @@ import {
   sendTransaction,
   waitForTransaction,
 } from "../blockchain";
-import { QueryRequest, RequestService } from "../request";
+import { QueryRequest } from "../request/dto";
+import { RequestService } from "../request";
 import { CustomError, createLogger } from "../utils";
 import * as constants from "../constants";
 
