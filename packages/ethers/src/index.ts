@@ -5,9 +5,20 @@ import { parseResponse, getResult, createLogger } from "./utils";
 
 const log = createLogger();
 
+/**
+ * RPChProvider extends the JsonRpcProvider from ethers to enable use with Hopr protocol.
+ * It uses an SDK to create and send requests and caches responses for some methods.
+ * @extends JsonRpcProvider
+ */
 export class RPChProvider extends JsonRpcProvider {
   public sdk: SDK;
 
+  /**
+   * @param url - The endpoint URL.
+   * @param hoprSdkOps - The options object for the SDK instance.
+   * @param setKeyVal - Function that sets a key-value pair in storage.
+   * @param getKeyVal - Function that retrieves the value corresponding to a key from storage.
+   */
   constructor(
     public readonly url: string,
     hoprSdkOps: HoprSdkOps,
@@ -15,9 +26,20 @@ export class RPChProvider extends JsonRpcProvider {
     getKeyVal: (key: string) => Promise<string | undefined>
   ) {
     super(url);
+    /**
+     * The SDK instance to create and send requests.
+     */
     this.sdk = new SDK(hoprSdkOps, setKeyVal, getKeyVal);
   }
 
+  /**
+   * Sends a request to the provider using the SDK instance.
+   * It caches responses for some methods and emits debug events.
+   * @param method - The RPC method to call.
+   * @param params - The parameters to pass to the RPC method.
+   * @returns A promise that resolves with the response from the server.
+   * @throws An error if the request fails.
+   */
   public async send(method: string, params: Array<any>): Promise<any> {
     log.verbose("Using SEND", method);
     log.verbose("is sdk ready?", this.sdk.isReady);
