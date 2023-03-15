@@ -1,7 +1,7 @@
 import { type Response, utils } from "@rpch/common";
 
 /**
- * The logger instance created by the `LoggerFactory` function from the `utils` module in `@rpch/common`.
+ * The logger instance to print out logs relevant to this `ethers` package.
  */
 export const createLogger = utils.LoggerFactory("ethers");
 
