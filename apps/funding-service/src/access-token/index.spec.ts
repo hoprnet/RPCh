@@ -2,7 +2,6 @@ import { AccessTokenService } from ".";
 import assert from "assert";
 import { DBInstance } from "../db";
 import { MockPgInstanceSingleton } from "../db/index.spec";
-import { IMemoryDb } from "pg-mem";
 
 const THIRTY_MINUTES_IN_MS = 30 * 60_000;
 const MAX_HOPR = BigInt(40);

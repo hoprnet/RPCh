@@ -98,9 +98,9 @@ describe("test index.ts", function () {
     if (!createRequest) throw new Error("request was not created");
     await requestService.updateRequest(createRequest.id, {
       status: "REJECTED-DURING-PROCESSING",
-      accessTokenHash: createRequest.access_token_hash,
-      nodeAddress: createRequest.node_address,
-      chainId: createRequest.chain_id,
+      access_token_hash: createRequest.access_token_hash,
+      node_address: createRequest.node_address,
+      chain_id: createRequest.chain_id,
       amount: createRequest.amount,
       id: createRequest.id,
     });

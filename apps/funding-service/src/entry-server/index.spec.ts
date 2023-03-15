@@ -64,6 +64,7 @@ describe("test entry server", function () {
         token,
         expired_at: new Date("2020-10-10").toISOString(),
         id: 1,
+        updated_at: new Date("2020-10-10").toISOString(),
         created_at: new Date("2020-10-10").toISOString(),
       }));
 

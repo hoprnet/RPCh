@@ -2,13 +2,13 @@ import assert from "assert";
 import fs from "fs";
 import { IBackup, IMemoryDb, newDb } from "pg-mem";
 import * as db from ".";
-import { CreateAccessToken } from "../access-token/dto";
 import { generateAccessToken } from "../utils";
 import { DBInstance } from ".";
-import { CreateRequest, UpdateRequest } from "../request/dto";
+import { Request, RequestDB, AccessToken } from "../types";
 import { utils } from "@rpch/common";
 import path from "path";
 import * as fixtures from "@rpch/common/build/fixtures";
+import { DBTimestamp } from "../types/general";
 
 export class MockPgInstanceSingleton {
   private static pgInstance: IMemoryDb;
@@ -64,7 +64,7 @@ const mockCreateAccessToken = () => ({
   }),
 });
 
-const mockCreateRequest = (hash?: string): CreateRequest => ({
+const mockCreateRequest = (hash?: string): Request => ({
   accessTokenHash: hash ?? "hash",
   amount: BigInt("10"),
   chainId: 80,
@@ -73,7 +73,7 @@ const mockCreateRequest = (hash?: string): CreateRequest => ({
 });
 
 const createAccessTokenAndRequest = async (dbInstance: DBInstance) => {
-  const createAccessToken: CreateAccessToken = mockCreateAccessToken();
+  const createAccessToken: AccessToken = mockCreateAccessToken();
   await db.saveAccessToken(dbInstance, createAccessToken);
   const request = mockCreateRequest(createAccessToken.token);
   const queryRequest = await db.saveRequest(dbInstance, request);
@@ -93,7 +93,7 @@ describe("test db adapter functions", function () {
   });
 
   it("should save access token", async function () {
-    const createAccessToken: CreateAccessToken = mockCreateAccessToken();
+    const createAccessToken: AccessToken = mockCreateAccessToken();
     await db.saveAccessToken(dbInstance, createAccessToken);
     const dbAccessToken = await db.getAccessToken(
       dbInstance,
@@ -102,8 +102,8 @@ describe("test db adapter functions", function () {
     assert(dbAccessToken?.token, createAccessToken.token);
   });
   it("should get access token", async function () {
-    const createAccessToken1: CreateAccessToken = mockCreateAccessToken();
-    const createAccessToken2: CreateAccessToken = mockCreateAccessToken();
+    const createAccessToken1: AccessToken = mockCreateAccessToken();
+    const createAccessToken2: AccessToken = mockCreateAccessToken();
     await db.saveAccessToken(dbInstance, createAccessToken1);
     await db.saveAccessToken(dbInstance, createAccessToken2);
     const dbAccessToken = await db.getAccessToken(
@@ -113,7 +113,7 @@ describe("test db adapter functions", function () {
     assert(dbAccessToken?.token, createAccessToken2.token);
   });
   it("should delete access token", async function () {
-    const createAccessToken: CreateAccessToken = mockCreateAccessToken();
+    const createAccessToken: AccessToken = mockCreateAccessToken();
     await db.saveAccessToken(dbInstance, createAccessToken);
     await db.deleteAccessToken(dbInstance, createAccessToken.token);
     const dbAccessToken = await db.getAccessToken(
@@ -123,7 +123,7 @@ describe("test db adapter functions", function () {
     assert(dbAccessToken === null);
   });
   it("should save request", async function () {
-    const createAccessToken: CreateAccessToken = mockCreateAccessToken();
+    const createAccessToken: AccessToken = mockCreateAccessToken();
     await db.saveAccessToken(dbInstance, createAccessToken);
     const request = mockCreateRequest(createAccessToken.token);
     const queryRequest = await db.saveRequest(dbInstance, request);
@@ -131,12 +131,12 @@ describe("test db adapter functions", function () {
     assert.equal(request.accessTokenHash, dbRequest?.access_token_hash);
   });
   it("should get request by id", async function () {
-    const createAccessToken: CreateAccessToken = mockCreateAccessToken();
+    const createAccessToken: AccessToken = mockCreateAccessToken();
     await db.saveAccessToken(dbInstance, createAccessToken);
     const request1 = mockCreateRequest(createAccessToken.token);
     await db.saveRequest(dbInstance, request1);
 
-    const createAccessToken2: CreateAccessToken = mockCreateAccessToken();
+    const createAccessToken2: AccessToken = mockCreateAccessToken();
     await db.saveAccessToken(dbInstance, createAccessToken2);
     const request2 = mockCreateRequest(createAccessToken2.token);
 
@@ -147,12 +147,12 @@ describe("test db adapter functions", function () {
     assert.equal(dbRequest?.access_token_hash, request2.accessTokenHash);
   });
   it("should get requests", async function () {
-    const createAccessToken: CreateAccessToken = mockCreateAccessToken();
+    const createAccessToken: AccessToken = mockCreateAccessToken();
     await db.saveAccessToken(dbInstance, createAccessToken);
     const request1 = mockCreateRequest(createAccessToken.token);
     await db.saveRequest(dbInstance, request1);
 
-    const createAccessToken2: CreateAccessToken = mockCreateAccessToken();
+    const createAccessToken2: AccessToken = mockCreateAccessToken();
     await db.saveAccessToken(dbInstance, createAccessToken2);
     const request2 = mockCreateRequest(createAccessToken2.token);
     await db.saveRequest(dbInstance, request2);
@@ -162,12 +162,12 @@ describe("test db adapter functions", function () {
     assert.equal(dbRequestsByAccessToken?.length, 2);
   });
   it("should get requests by access token", async function () {
-    const createAccessToken: CreateAccessToken = mockCreateAccessToken();
+    const createAccessToken: AccessToken = mockCreateAccessToken();
     await db.saveAccessToken(dbInstance, createAccessToken);
     const request1 = mockCreateRequest(createAccessToken.token);
     await db.saveRequest(dbInstance, request1);
 
-    const createAccessToken2: CreateAccessToken = mockCreateAccessToken();
+    const createAccessToken2: AccessToken = mockCreateAccessToken();
     await db.saveAccessToken(dbInstance, createAccessToken2);
     const request2 = mockCreateRequest(createAccessToken2.token);
     await db.saveRequest(dbInstance, request2);
@@ -180,7 +180,7 @@ describe("test db adapter functions", function () {
     assert.equal(dbRequestsByAccessToken?.length, 1);
   });
   it("should delete request", async function () {
-    const createAccessToken: CreateAccessToken = mockCreateAccessToken();
+    const createAccessToken: AccessToken = mockCreateAccessToken();
     await db.saveAccessToken(dbInstance, createAccessToken);
     const request = mockCreateRequest(createAccessToken.token);
     const queryRequest = await db.saveRequest(dbInstance, request);
@@ -189,20 +189,20 @@ describe("test db adapter functions", function () {
     assert.equal(dbRequest, null);
   });
   it("should update request", async function () {
-    const createAccessToken: CreateAccessToken = mockCreateAccessToken();
+    const createAccessToken: AccessToken = mockCreateAccessToken();
     await db.saveAccessToken(dbInstance, createAccessToken);
     const request = mockCreateRequest(createAccessToken.token);
     const queryRequest = await db.saveRequest(dbInstance, request);
 
-    const updateRequest: UpdateRequest = {
+    const updateRequest: Omit<RequestDB, keyof DBTimestamp> = {
       amount: BigInt("20"),
       id: queryRequest.id,
-      accessTokenHash: queryRequest.access_token_hash,
-      nodeAddress: queryRequest.node_address,
-      chainId: queryRequest.chain_id,
+      access_token_hash: queryRequest.access_token_hash,
+      node_address: queryRequest.node_address,
+      chain_id: queryRequest.chain_id,
       status: queryRequest.status,
       reason: queryRequest.reason,
-      transactionHash: queryRequest.transaction_hash,
+      transaction_hash: queryRequest.transaction_hash,
     };
 
     await db.updateRequest(dbInstance, updateRequest);
@@ -218,12 +218,12 @@ describe("test db adapter functions", function () {
     const thirdRequest = await createAccessTokenAndRequest(dbInstance);
     const updateFirstRequest = await db.updateRequest(dbInstance, {
       id: firstRequest.id,
-      accessTokenHash: firstRequest.access_token_hash,
-      nodeAddress: firstRequest.node_address,
+      access_token_hash: firstRequest.access_token_hash,
+      node_address: firstRequest.node_address,
       amount: firstRequest.amount,
-      chainId: firstRequest.chain_id,
+      chain_id: firstRequest.chain_id,
       reason: firstRequest.reason,
-      transactionHash: firstRequest.transaction_hash,
+      transaction_hash: firstRequest.transaction_hash,
       status: "FAILED",
     });
     const oldestFreshRequest = await db.getOldestFreshRequest(dbInstance);
@@ -239,12 +239,12 @@ describe("test db adapter functions", function () {
     const thirdRequest = await createAccessTokenAndRequest(dbInstance);
     const updateFirstRequest = await db.updateRequest(dbInstance, {
       id: firstRequest.id,
-      accessTokenHash: firstRequest.access_token_hash,
-      nodeAddress: firstRequest.node_address,
+      access_token_hash: firstRequest.access_token_hash,
+      node_address: firstRequest.node_address,
       amount: firstRequest.amount,
-      chainId: firstRequest.chain_id,
+      chain_id: firstRequest.chain_id,
       reason: firstRequest.reason,
-      transactionHash: firstRequest.transaction_hash,
+      transaction_hash: firstRequest.transaction_hash,
       status: "FAILED",
     });
     const unresolvedRequests = await db.getAllUnresolvedRequests(dbInstance);

@@ -1,10 +1,10 @@
 import assert from "assert";
 import { DBInstance } from "../db";
-import { UpdateRequest } from "./dto";
+import { RequestDB } from "../types";
 import { RequestService } from ".";
 import { AccessTokenService } from "../access-token";
-import { IMemoryDb } from "pg-mem";
 import { MockPgInstanceSingleton } from "../db/index.spec";
+import { DBTimestamp } from "../types/general";
 
 const SECRET_KEY = "SECRET";
 const MOCK_ADDRESS = "0xA10AA7711FD1FA48ACAE6FF00FCB63B0F6AD055F";
@@ -96,11 +96,11 @@ describe("test RequestService class", function () {
       requestService
     );
     if (!request) throw new Error("request was not created");
-    const updateRequest: UpdateRequest = {
-      accessTokenHash: request.access_token_hash,
-      chainId: request.chain_id,
+    const updateRequest: Omit<RequestDB, keyof DBTimestamp> = {
+      access_token_hash: request.access_token_hash,
+      chain_id: request.chain_id,
       id: request.id,
-      nodeAddress: request.node_address,
+      node_address: request.node_address,
       amount: BigInt(2 * Number(MOCK_AMOUNT)),
       status: request.status,
     };
@@ -141,12 +141,12 @@ describe("test RequestService class", function () {
       firstRequest.id,
       {
         id: firstRequest.id,
-        accessTokenHash: firstRequest.access_token_hash,
-        nodeAddress: firstRequest.node_address,
+        access_token_hash: firstRequest.access_token_hash,
+        node_address: firstRequest.node_address,
         amount: firstRequest.amount,
-        chainId: firstRequest.chain_id,
+        chain_id: firstRequest.chain_id,
         reason: firstRequest.reason,
-        transactionHash: firstRequest.transaction_hash,
+        transaction_hash: firstRequest.transaction_hash,
         status: "PENDING",
       }
     );
@@ -172,12 +172,12 @@ describe("test RequestService class", function () {
       firstRequest.id,
       {
         id: firstRequest.id,
-        accessTokenHash: firstRequest.access_token_hash,
-        nodeAddress: firstRequest.node_address,
+        access_token_hash: firstRequest.access_token_hash,
+        node_address: firstRequest.node_address,
         amount: firstRequest.amount,
-        chainId: firstRequest.chain_id,
+        chain_id: firstRequest.chain_id,
         reason: firstRequest.reason,
-        transactionHash: firstRequest.transaction_hash,
+        transaction_hash: firstRequest.transaction_hash,
         status: "FAILED",
       }
     );
@@ -205,12 +205,12 @@ describe("test RequestService class", function () {
       firstRequest.id,
       {
         id: firstRequest.id,
-        accessTokenHash: firstRequest.access_token_hash,
-        nodeAddress: firstRequest.node_address,
+        access_token_hash: firstRequest.access_token_hash,
+        node_address: firstRequest.node_address,
         amount: firstRequest.amount,
-        chainId: firstRequest.chain_id,
+        chain_id: firstRequest.chain_id,
         reason: firstRequest.reason,
-        transactionHash: firstRequest.transaction_hash,
+        transaction_hash: firstRequest.transaction_hash,
         status: "FAILED",
       }
     );
@@ -241,12 +241,12 @@ describe("test RequestService class", function () {
       firstRequest.id,
       {
         id: firstRequest.id,
-        accessTokenHash: firstRequest.access_token_hash,
-        nodeAddress: firstRequest.node_address,
+        access_token_hash: firstRequest.access_token_hash,
+        node_address: firstRequest.node_address,
         amount: firstRequest.amount,
-        chainId: firstRequest.chain_id,
+        chain_id: firstRequest.chain_id,
         reason: firstRequest.reason,
-        transactionHash: firstRequest.transaction_hash,
+        transaction_hash: firstRequest.transaction_hash,
         status: "FAILED",
       }
     );
@@ -278,12 +278,12 @@ describe("test RequestService class", function () {
       firstRequest.id,
       {
         id: firstRequest.id,
-        accessTokenHash: firstRequest.access_token_hash,
-        nodeAddress: firstRequest.node_address,
+        access_token_hash: firstRequest.access_token_hash,
+        node_address: firstRequest.node_address,
         amount: firstRequest.amount,
-        chainId: firstRequest.chain_id,
+        chain_id: firstRequest.chain_id,
         reason: firstRequest.reason,
-        transactionHash: firstRequest.transaction_hash,
+        transaction_hash: firstRequest.transaction_hash,
         status: "FAILED",
       }
     );
@@ -316,12 +316,12 @@ describe("test RequestService class", function () {
       firstRequest.id,
       {
         id: firstRequest.id,
-        accessTokenHash: firstRequest.access_token_hash,
-        nodeAddress: firstRequest.node_address,
+        access_token_hash: firstRequest.access_token_hash,
+        node_address: firstRequest.node_address,
         amount: firstRequest.amount,
-        chainId: firstRequest.chain_id,
+        chain_id: firstRequest.chain_id,
         reason: firstRequest.reason,
-        transactionHash: firstRequest.transaction_hash,
+        transaction_hash: firstRequest.transaction_hash,
         status: "FAILED",
       }
     );
@@ -329,12 +329,12 @@ describe("test RequestService class", function () {
       thirdRequest.id,
       {
         id: thirdRequest.id,
-        accessTokenHash: secondRequest.access_token_hash,
-        nodeAddress: thirdRequest.node_address,
+        access_token_hash: secondRequest.access_token_hash,
+        node_address: thirdRequest.node_address,
         amount: thirdRequest.amount,
-        chainId: thirdRequest.chain_id,
+        chain_id: thirdRequest.chain_id,
         reason: thirdRequest.reason,
-        transactionHash: thirdRequest.transaction_hash,
+        transaction_hash: thirdRequest.transaction_hash,
         status: thirdRequest.status,
       }
     );
@@ -342,12 +342,12 @@ describe("test RequestService class", function () {
       secondRequest.id,
       {
         id: secondRequest.id,
-        accessTokenHash: secondRequest.access_token_hash,
-        nodeAddress: secondRequest.node_address,
+        access_token_hash: secondRequest.access_token_hash,
+        node_address: secondRequest.node_address,
         amount: secondRequest.amount,
-        chainId: secondRequest.chain_id,
+        chain_id: secondRequest.chain_id,
         reason: secondRequest.reason,
-        transactionHash: secondRequest.transaction_hash,
+        transaction_hash: secondRequest.transaction_hash,
         status: "SUCCESS",
       }
     );

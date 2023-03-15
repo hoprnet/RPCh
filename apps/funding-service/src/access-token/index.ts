@@ -4,7 +4,7 @@ import {
   getAccessToken as getAccessTokenDB,
   saveAccessToken,
 } from "../db";
-import type { CreateAccessToken, QueryAccessToken } from "./dto";
+import type { AccessToken, AccessTokenDB } from "../types";
 import { createLogger, generateAccessToken } from "../utils";
 
 const log = createLogger(["access-token-service"]);
@@ -21,12 +21,12 @@ export class AccessTokenService {
    * Saves a access token in DB
    * @param timeout number
    * @param amount amount
-   * @returns Promise<QueryRequest | undefined>
+   * @returns Promise<AccessTokenDB | undefined>
    */
   public async createAccessToken(ops: {
     timeout: number;
     amount: bigint;
-  }): Promise<QueryAccessToken | undefined> {
+  }): Promise<AccessTokenDB | undefined> {
     try {
       log.normal("Creating access token...");
       const now = new Date();
@@ -39,7 +39,7 @@ export class AccessTokenService {
         expiredAt,
       });
 
-      const query: CreateAccessToken = {
+      const query: AccessToken = {
         token: hash,
         expiredAt: expiredAt.toISOString(),
         createdAt: now.toISOString(),
@@ -56,22 +56,22 @@ export class AccessTokenService {
   /**
    * Gets access token object from DB with a specific access token hash
    * @param accessTokenHash string
-   * @returns Promise<QueryAccessToken | undefined>
+   * @returns Promise<AccessTokenDB | undefined>
    */
   public getAccessToken(
     accessTokenHash: string
-  ): Promise<QueryAccessToken | null> {
+  ): Promise<AccessTokenDB | null> {
     return getAccessTokenDB(this.db, accessTokenHash);
   }
 
   /**
    * Deletes access token object from DB with a specific access token hash
    * @param accessTokenHash string
-   * @returns Promise<QueryAccessToken | undefined>
+   * @returns Promise<AccessTokenDB | undefined>
    */
   public deleteAccessToken(
     accessTokenHash: string
-  ): Promise<QueryAccessToken | null> {
+  ): Promise<AccessTokenDB | null> {
     return deleteAccessTokenDB(this.db, accessTokenHash);
   }
 }

@@ -1,6 +1,8 @@
 import { DBInstance } from "../db";
 import * as db from "../db";
-import { CreateRequest, QueryRequest, UpdateRequest } from "./dto";
+import { Request, RequestDB } from "../types";
+import { DBTimestamp } from "../types/general";
+
 import { createLogger } from "../utils";
 
 const log = createLogger(["request-service"]);
@@ -22,17 +24,17 @@ export class RequestService {
    * @param amount bigint amount that will be funded
    * @param chainId chain on which the transaction will execute
    * @param accessTokenHash hash that created this request
-   * @returns Promise<QueryRequest>
+   * @returns Promise<RequestDB>
    */
   public async createRequest(params: {
     nodeAddress: string;
     amount: bigint;
     chainId: number;
     accessTokenHash: string;
-  }): Promise<QueryRequest> {
+  }): Promise<RequestDB> {
     try {
       log.normal("Creating request...");
-      const createRequest: CreateRequest = {
+      const createRequest: Request = {
         amount: params.amount,
         accessTokenHash: params.accessTokenHash,
         nodeAddress: params.nodeAddress,
@@ -50,29 +52,29 @@ export class RequestService {
 
   /**
    * Gets all requests
-   * @returns Promise<QueryRequest[]>
+   * @returns Promise<RequestDB[]>
    */
-  public async getRequests(): Promise<QueryRequest[]> {
+  public async getRequests(): Promise<RequestDB[]> {
     return db.getRequests(this.db);
   }
 
   /**
    * Returns all requests created by access token
    * @param accessTokenHash string
-   * @returns Promise<QueryRequest[]>
+   * @returns Promise<RequestDB[]>
    */
   public async getRequestsByAccessToken(
     accessTokenHash: string
-  ): Promise<QueryRequest[]> {
+  ): Promise<RequestDB[]> {
     return db.getRequestsByAccessToken(this.db, accessTokenHash);
   }
 
   /**
    * Get request by id
    * @param requestId number
-   * @returns Promise<QueryRequest>
+   * @returns Promise<RequestDB>
    */
-  public async getRequest(requestId: number): Promise<QueryRequest | null> {
+  public async getRequest(requestId: number): Promise<RequestDB | null> {
     return db.getRequest(this.db, requestId);
   }
 
@@ -80,14 +82,17 @@ export class RequestService {
    * Updates request in DB and returns updated request
    * @param requestId number
    * @param updateRequest request object that will be saved, all properties will be overwritten
-   * @returns Promise<QueryRequest>
+   * @returns Promise<RequestDB>
    */
   public async updateRequest(
     requestId: number,
-    updateRequest: UpdateRequest
-  ): Promise<QueryRequest | null | undefined> {
+    updateRequest: Omit<RequestDB, keyof DBTimestamp>
+  ): Promise<RequestDB | null | undefined> {
     try {
-      const request: UpdateRequest = { ...updateRequest, id: requestId };
+      const request: Omit<RequestDB, keyof DBTimestamp> = {
+        ...updateRequest,
+        id: requestId,
+      };
       const updatedRequest = await db.updateRequest(this.db, request);
       return updatedRequest;
     } catch (e: any) {
@@ -103,9 +108,9 @@ export class RequestService {
   /**
    * Deletes request with request id
    * @param requestId number
-   * @returns Promise<QueryRequest>
+   * @returns Promise<RequestDB>
    */
-  public async deleteRequest(requestId: number): Promise<QueryRequest> {
+  public async deleteRequest(requestId: number): Promise<RequestDB> {
     log.normal(
       "Deleted request:",
       requestId,
@@ -117,7 +122,7 @@ export class RequestService {
   /**
    * Gets the oldest request with "FRESH" status
    */
-  public async getOldestFreshRequest(): Promise<QueryRequest | null> {
+  public async getOldestFreshRequest(): Promise<RequestDB | null> {
     const oldestFreshRequest = await db.getOldestFreshRequest(this.db);
     return oldestFreshRequest;
   }
@@ -126,7 +131,7 @@ export class RequestService {
    * Queries all requests that have not been processed.
    * These are requests that have neither succeeded nor failed.
    */
-  public async getAllUnresolvedRequests(): Promise<QueryRequest[]> {
+  public async getAllUnresolvedRequests(): Promise<RequestDB[]> {
     const unresolvedRequests = await db.getAllUnresolvedRequests(this.db);
     return unresolvedRequests;
   }
@@ -137,7 +142,7 @@ export class RequestService {
    */
   public async getAllUnresolvedAndSuccessfulRequestsByAccessToken(
     accessTokenHash: string
-  ): Promise<QueryRequest[]> {
+  ): Promise<RequestDB[]> {
     const allRequestsByAccessToken = await this.getRequestsByAccessToken(
       accessTokenHash
     );
@@ -157,13 +162,13 @@ export class RequestService {
   /**
    * Receives an array of requests and returns them in a key value object where the key is the chain
    * and the value is the array of requests
-   * @param requests QueryRequest[]
-   * @returns [chainId: number]: QueryRequest[]
+   * @param requests RequestDB[]
+   * @returns [chainId: number]: RequestDB[]
    */
-  public groupRequestsByChainId(requests: QueryRequest[]): {
-    [chainId: number]: QueryRequest[];
+  public groupRequestsByChainId(requests: RequestDB[]): {
+    [chainId: number]: RequestDB[];
   } {
-    const requestsKeyedByChainId: { [chainId: number]: QueryRequest[] } = {};
+    const requestsKeyedByChainId: { [chainId: number]: RequestDB[] } = {};
     for (const request of requests ?? []) {
       requestsKeyedByChainId[request.chain_id] = [
         ...(requestsKeyedByChainId[request.chain_id] ?? []),
@@ -175,10 +180,10 @@ export class RequestService {
 
   /**
    * Receives an array of requests and returns the sum per chain
-   * @param requests QueryRequest[]
+   * @param requests RequestDB[]
    * @returns [chainId: number]: number
    */
-  public sumAmountOfRequests(requests: QueryRequest[]): {
+  public sumAmountOfRequests(requests: RequestDB[]): {
     [chainId: number]: bigint;
   } {
     const requestsGroupedByChainId = this.groupRequestsByChainId(

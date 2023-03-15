@@ -1,4 +1,3 @@
-import { IMemoryDb } from "pg-mem";
 import { AccessTokenService } from "../../access-token";
 import { DBInstance } from "../../db";
 import { MockPgInstanceSingleton } from "../../db/index.spec";
