@@ -4,6 +4,8 @@ import { RequestService } from "../../request";
 import { isExpired, createLogger } from "../../utils";
 import { utils } from "@rpch/common";
 import { validationResult, body } from "express-validator";
+import { errors } from "pg-promise";
+import { AccessTokenDB } from "../../types";
 
 const log = createLogger(["entry-server", "middleware"]);
 
@@ -27,33 +29,39 @@ export const tokenIsValid =
     log.verbose("validating token", accessTokenHash);
     if (!accessTokenHash)
       return res.status(400).json({ errors: "Missing Access Token" });
-    const dbToken = await accessTokenService.getAccessToken(accessTokenHash);
-    if (!dbToken)
-      return res.status(404).json({ errors: "Access Token does not exist" });
 
-    if (isExpired(dbToken.expired_at)) {
-      log.verbose("token has expired", accessTokenHash);
-      return res.status(401).json({ errors: "Access Token expired" });
+    try {
+      const dbToken = await accessTokenService.getAccessToken(accessTokenHash);
+      if (isExpired(dbToken.expired_at)) {
+        log.verbose("token has expired", accessTokenHash);
+        return res.status(401).json({ errors: "Access Token expired" });
+      }
+
+      const hasEnough = await doesAccessTokenHaveEnoughBalance({
+        requestService,
+        maxAmountOfTokens,
+        token: dbToken.token,
+        requestAmount: requestFunds ? BigInt(req.body.amount) : BigInt(0),
+      });
+
+      if (!hasEnough) {
+        log.verbose(
+          "exceeded max amount of tokens redeemed per access token",
+          accessTokenHash
+        );
+        return res
+          .status(401)
+          .json({ errors: "Exceeded max amount of tokens redeemed" });
+      }
+
+      next();
+    } catch (e) {
+      if (e instanceof errors.QueryResultError) {
+        return res.status(404).json({ errors: "Access Token does not exist" });
+      } else {
+        log.error("failed to validate token", req);
+      }
     }
-
-    const hasEnough = await doesAccessTokenHaveEnoughBalance({
-      requestService,
-      maxAmountOfTokens,
-      token: dbToken.token,
-      requestAmount: requestFunds ? BigInt(req.body.amount) : BigInt(0),
-    });
-
-    if (!hasEnough) {
-      log.verbose(
-        "exceeded max amount of tokens redeemed per access token",
-        accessTokenHash
-      );
-      return res
-        .status(401)
-        .json({ errors: "Exceeded max amount of tokens redeemed" });
-    }
-
-    next();
   };
 
 /**

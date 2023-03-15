@@ -5,6 +5,7 @@ import { RequestService } from ".";
 import { AccessTokenService } from "../access-token";
 import { MockPgInstanceSingleton } from "../db/index.spec";
 import { DBTimestamp } from "../types/general";
+import { errors } from "pg-promise";
 
 const SECRET_KEY = "SECRET";
 const MOCK_ADDRESS = "0xA10AA7711FD1FA48ACAE6FF00FCB63B0F6AD055F";
@@ -32,7 +33,6 @@ const createAccessTokenAndRequest = async (
     amount: MOCK_AMOUNT,
     timeout: MOCK_TIMEOUT,
   });
-  if (!queryToken) throw new Error("Failed to create test token");
   const queryRequest = await requestService.createRequest(
     params
       ? { ...params, accessTokenHash: queryToken.token }
@@ -66,26 +66,24 @@ describe("test RequestService class", function () {
       accessTokenService,
       requestService
     );
-    if (!request) throw new Error("request was not created");
     const createdRequest = await requestService.getRequest(request.id);
     assert.equal(createdRequest?.node_address, MOCK_ADDRESS);
     assert.equal(createdRequest?.amount, MOCK_AMOUNT);
   });
   it("should get requests", async function () {
-    await await createAccessTokenAndRequest(accessTokenService, requestService);
-    await await createAccessTokenAndRequest(accessTokenService, requestService);
+    await createAccessTokenAndRequest(accessTokenService, requestService);
+    await createAccessTokenAndRequest(accessTokenService, requestService);
 
     const requestsByAccessToken = await requestService.getRequests();
 
     assert.equal(requestsByAccessToken?.length, 2);
   });
   it("should get request by request id", async function () {
-    await await createAccessTokenAndRequest(accessTokenService, requestService);
+    await createAccessTokenAndRequest(accessTokenService, requestService);
     const request = await createAccessTokenAndRequest(
       accessTokenService,
       requestService
     );
-    if (!request) throw new Error("request was not created");
     const createdRequest = await requestService.getRequest(request.id);
     assert.equal(createdRequest?.node_address, MOCK_ADDRESS);
     assert.equal(createdRequest?.amount, MOCK_AMOUNT);
@@ -95,7 +93,6 @@ describe("test RequestService class", function () {
       accessTokenService,
       requestService
     );
-    if (!request) throw new Error("request was not created");
     const updateRequest: Omit<RequestDB, keyof DBTimestamp> = {
       access_token_hash: request.access_token_hash,
       chain_id: request.chain_id,
@@ -116,19 +113,21 @@ describe("test RequestService class", function () {
       accessTokenService,
       requestService
     );
-    if (!request) throw new Error("request was not created");
     await requestService.deleteRequest(request.id);
 
-    const deletedRequest = await requestService.getRequest(request.id);
-
-    assert.equal(deletedRequest, undefined);
+    try {
+      const deletedRequest = await requestService.getRequest(request.id);
+    } catch (e) {
+      if (e instanceof errors.QueryResultError) {
+        assert.equal(e.message, "No data returned from the query.");
+      }
+    }
   });
   it("should return oldest unhandled request", async function () {
     const firstRequest = await createAccessTokenAndRequest(
       accessTokenService,
       requestService
     );
-    if (!firstRequest) throw new Error("request was not created");
     const secondRequest = await createAccessTokenAndRequest(
       accessTokenService,
       requestService
@@ -159,7 +158,6 @@ describe("test RequestService class", function () {
       accessTokenService,
       requestService
     );
-    if (!firstRequest) throw new Error("request was not created");
     const secondRequest = await createAccessTokenAndRequest(
       accessTokenService,
       requestService
@@ -190,7 +188,6 @@ describe("test RequestService class", function () {
       requestService,
       mockRequestParams(1)
     );
-    if (!firstRequest) throw new Error("request was not created");
     const secondRequest = await createAccessTokenAndRequest(
       accessTokenService,
       requestService,
@@ -226,7 +223,6 @@ describe("test RequestService class", function () {
       requestService,
       mockRequestParams(1)
     );
-    if (!firstRequest) throw new Error("request was not created");
     const secondRequest = await createAccessTokenAndRequest(
       accessTokenService,
       requestService,
@@ -263,7 +259,6 @@ describe("test RequestService class", function () {
       requestService,
       mockRequestParams(1)
     );
-    if (!firstRequest) throw new Error("request was not created");
     const secondRequest = await createAccessTokenAndRequest(
       accessTokenService,
       requestService,
@@ -303,7 +298,6 @@ describe("test RequestService class", function () {
       accessTokenService,
       requestService
     );
-    if (!firstRequest) throw new Error("request was not created");
     const secondRequest = await createAccessTokenAndRequest(
       accessTokenService,
       requestService

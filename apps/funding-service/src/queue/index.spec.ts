@@ -39,7 +39,6 @@ const createAccessTokenAndRequest = async (
     timeout: MOCK_TIMEOUT,
   });
 
-  if (!queryToken) throw new Error("Failed to create test token");
   const queryRequest = await requestService.createRequest(
     params
       ? { ...params, accessTokenHash: queryToken.token }
@@ -79,7 +78,6 @@ describe("test index.ts", function () {
       accessTokenService,
       requestService
     );
-    if (!createRequest) throw new Error("request was not created");
     await checkFreshRequests({
       requestService,
       signer: owner,
@@ -95,7 +93,6 @@ describe("test index.ts", function () {
       accessTokenService,
       requestService
     );
-    if (!createRequest) throw new Error("request was not created");
     await requestService.updateRequest(createRequest.id, {
       status: "REJECTED-DURING-PROCESSING",
       access_token_hash: createRequest.access_token_hash,

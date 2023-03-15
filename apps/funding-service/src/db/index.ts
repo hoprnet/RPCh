@@ -43,12 +43,12 @@ export const saveAccessToken = async (
 export const getAccessToken = async (
   db: DBInstance,
   accessTokenHash: string
-): Promise<AccessTokenDB | null> => {
+): Promise<AccessTokenDB> => {
   const text = "SELECT * FROM access_tokens WHERE token=$<token>";
   const values = {
     token: accessTokenHash,
   };
-  const dbRes: AccessTokenDB | null = await db.oneOrNone(text, values);
+  const dbRes: AccessTokenDB = await db.one(text, values);
 
   return dbRes;
 };
@@ -56,12 +56,12 @@ export const getAccessToken = async (
 export const deleteAccessToken = async (
   db: DBInstance,
   accessTokenHash: string
-): Promise<AccessTokenDB | null> => {
+): Promise<AccessTokenDB> => {
   const text = "DELETE FROM access_tokens WHERE token=$<token> RETURNING *";
   const values = {
     token: accessTokenHash,
   };
-  const dbRes: AccessTokenDB | null = await db.oneOrNone(text, values);
+  const dbRes: AccessTokenDB = await db.one(text, values);
   return dbRes;
 };
 
@@ -86,12 +86,12 @@ export const saveRequest = async (
 export const getRequest = async (
   db: DBInstance,
   requestId: number
-): Promise<RequestDB | null> => {
+): Promise<RequestDB> => {
   const text = "SELECT * FROM requests WHERE id=$<id>";
   const values = {
     id: requestId,
   };
-  const dbRes: RequestDB | null = await db.oneOrNone(text, values);
+  const dbRes: RequestDB = await db.one(text, values);
 
   return dbRes;
 };
@@ -118,7 +118,7 @@ export const getRequestsByAccessToken = async (
 export const updateRequest = async (
   db: DBInstance,
   request: Omit<RequestDB, keyof DBTimestamp>
-): Promise<RequestDB | null> => {
+): Promise<RequestDB> => {
   const text = `UPDATE requests SET 
     access_token_hash=$<access_token_hash>,
     node_address=$<node_address>,
@@ -128,7 +128,8 @@ export const updateRequest = async (
     transaction_hash=$<transaction_hash>,
     status=$<status>,
     updated_at = $<updated_at>
-    WHERE id=$<id>`;
+    WHERE id=$<id>
+    RETURNING *`;
 
   const values: Omit<RequestDB, "created_at"> = {
     id: request.id,
@@ -142,7 +143,7 @@ export const updateRequest = async (
     updated_at: new Date().toISOString(),
   };
 
-  const dbRes: RequestDB | null = await db.oneOrNone(text, values);
+  const dbRes: RequestDB = await db.one(text, values);
 
   return dbRes;
 };
@@ -161,12 +162,12 @@ export const deleteRequest = async (
 
 export const getOldestFreshRequest = async (
   db: DBInstance
-): Promise<RequestDB | null> => {
+): Promise<RequestDB> => {
   const text = `SELECT * FROM requests
     WHERE status = 'FRESH'
     ORDER BY created_at ASC
     LIMIT 1;`;
-  const dbRes: RequestDB | null = await db.oneOrNone(text);
+  const dbRes: RequestDB = await db.one(text);
   return dbRes;
 };
 

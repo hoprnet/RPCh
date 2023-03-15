@@ -74,7 +74,7 @@ export class RequestService {
    * @param requestId number
    * @returns Promise<RequestDB>
    */
-  public async getRequest(requestId: number): Promise<RequestDB | null> {
+  public async getRequest(requestId: number): Promise<RequestDB> {
     return db.getRequest(this.db, requestId);
   }
 
@@ -87,7 +87,7 @@ export class RequestService {
   public async updateRequest(
     requestId: number,
     updateRequest: Omit<RequestDB, keyof DBTimestamp>
-  ): Promise<RequestDB | null | undefined> {
+  ): Promise<RequestDB> {
     try {
       const request: Omit<RequestDB, keyof DBTimestamp> = {
         ...updateRequest,
@@ -95,13 +95,9 @@ export class RequestService {
       };
       const updatedRequest = await db.updateRequest(this.db, request);
       return updatedRequest;
-    } catch (e: any) {
-      log.error(
-        "Failed to update request",
-        requestId,
-        e,
-        log.createMetric({ id: requestId })
-      );
+    } catch (e) {
+      log.error("Failed to update request", requestId, e);
+      throw e;
     }
   }
 
@@ -122,7 +118,7 @@ export class RequestService {
   /**
    * Gets the oldest request with "FRESH" status
    */
-  public async getOldestFreshRequest(): Promise<RequestDB | null> {
+  public async getOldestFreshRequest(): Promise<RequestDB> {
     const oldestFreshRequest = await db.getOldestFreshRequest(this.db);
     return oldestFreshRequest;
   }

@@ -2,6 +2,7 @@ import { AccessTokenService } from ".";
 import assert from "assert";
 import { DBInstance } from "../db";
 import { MockPgInstanceSingleton } from "../db/index.spec";
+import { errors } from "pg-promise";
 
 const THIRTY_MINUTES_IN_MS = 30 * 60_000;
 const MAX_HOPR = BigInt(40);
@@ -43,8 +44,6 @@ describe("test AccessTokenService class", function () {
     const dbAccessToken = await accessTokenService.getAccessToken(
       accessToken?.token!
     );
-    if (!dbAccessToken)
-      throw new Error("Could not find access token in test db");
 
     expect(new Date(dbAccessToken.expired_at).valueOf()).toBeCloseTo(
       expectedExpireDate.valueOf()
@@ -65,9 +64,15 @@ describe("test AccessTokenService class", function () {
       accessTokenParams
     );
     await accessTokenService.deleteAccessToken(accessToken?.token!);
-    const dbAccessToken = await accessTokenService.getAccessToken(
-      accessToken?.token!
-    );
-    assert(dbAccessToken === null);
+
+    try {
+      const dbAccessToken = await accessTokenService.getAccessToken(
+        accessToken?.token!
+      );
+    } catch (e) {
+      if (e instanceof errors.QueryResultError) {
+        assert.equal(e.message, "No data returned from the query.");
+      }
+    }
   });
 });

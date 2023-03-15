@@ -21,12 +21,12 @@ export class AccessTokenService {
    * Saves a access token in DB
    * @param timeout number
    * @param amount amount
-   * @returns Promise<AccessTokenDB | undefined>
+   * @returns Promise<AccessTokenDB >
    */
   public async createAccessToken(ops: {
     timeout: number;
     amount: bigint;
-  }): Promise<AccessTokenDB | undefined> {
+  }): Promise<AccessTokenDB> {
     try {
       log.normal("Creating access token...");
       const now = new Date();
@@ -50,28 +50,25 @@ export class AccessTokenService {
       return queryAccessToken;
     } catch (e: any) {
       log.error("Failed to create access token: ", e);
+      throw e;
     }
   }
 
   /**
    * Gets access token object from DB with a specific access token hash
    * @param accessTokenHash string
-   * @returns Promise<AccessTokenDB | undefined>
+   * @returns Promise<AccessTokenDB >
    */
-  public getAccessToken(
-    accessTokenHash: string
-  ): Promise<AccessTokenDB | null> {
+  public getAccessToken(accessTokenHash: string): Promise<AccessTokenDB> {
     return getAccessTokenDB(this.db, accessTokenHash);
   }
 
   /**
    * Deletes access token object from DB with a specific access token hash
    * @param accessTokenHash string
-   * @returns Promise<AccessTokenDB | undefined>
+   * @returns Promise<AccessTokenDB >
    */
-  public deleteAccessToken(
-    accessTokenHash: string
-  ): Promise<AccessTokenDB | null> {
+  public deleteAccessToken(accessTokenHash: string): Promise<AccessTokenDB> {
     return deleteAccessTokenDB(this.db, accessTokenHash);
   }
 }

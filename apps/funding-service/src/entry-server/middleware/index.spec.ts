@@ -30,9 +30,6 @@ describe("should test entry server middleware functions", function () {
       timeout: TIMEOUT,
     });
 
-    if (!accessTokenResponse)
-      throw new Error("Failed to create access token in middleware test");
-
     requestService.createRequest({
       amount: MAX_AMOUNT_OF_TOKENS - BigInt(1),
       chainId: 80,

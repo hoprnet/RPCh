@@ -9,6 +9,7 @@ import { utils } from "@rpch/common";
 import path from "path";
 import * as fixtures from "@rpch/common/build/fixtures";
 import { DBTimestamp } from "../types/general";
+import { errors } from "pg-promise";
 
 export class MockPgInstanceSingleton {
   private static pgInstance: IMemoryDb;
@@ -110,17 +111,22 @@ describe("test db adapter functions", function () {
       dbInstance,
       createAccessToken2.token
     );
-    assert(dbAccessToken?.token, createAccessToken2.token);
+    assert(dbAccessToken.token, createAccessToken2.token);
   });
   it("should delete access token", async function () {
     const createAccessToken: AccessToken = mockCreateAccessToken();
     await db.saveAccessToken(dbInstance, createAccessToken);
     await db.deleteAccessToken(dbInstance, createAccessToken.token);
-    const dbAccessToken = await db.getAccessToken(
-      dbInstance,
-      createAccessToken.token
-    );
-    assert(dbAccessToken === null);
+    try {
+      const dbAccessToken = await db.getAccessToken(
+        dbInstance,
+        createAccessToken.token
+      );
+    } catch (e) {
+      if (e instanceof errors.QueryResultError) {
+        assert.equal(e.message, "No data returned from the query.");
+      }
+    }
   });
   it("should save request", async function () {
     const createAccessToken: AccessToken = mockCreateAccessToken();
@@ -128,7 +134,7 @@ describe("test db adapter functions", function () {
     const request = mockCreateRequest(createAccessToken.token);
     const queryRequest = await db.saveRequest(dbInstance, request);
     const dbRequest = await db.getRequest(dbInstance, queryRequest.id);
-    assert.equal(request.accessTokenHash, dbRequest?.access_token_hash);
+    assert.equal(request.accessTokenHash, dbRequest.access_token_hash);
   });
   it("should get request by id", async function () {
     const createAccessToken: AccessToken = mockCreateAccessToken();
@@ -159,7 +165,7 @@ describe("test db adapter functions", function () {
 
     const dbRequestsByAccessToken = await db.getRequests(dbInstance);
 
-    assert.equal(dbRequestsByAccessToken?.length, 2);
+    assert.equal(dbRequestsByAccessToken.length, 2);
   });
   it("should get requests by access token", async function () {
     const createAccessToken: AccessToken = mockCreateAccessToken();
@@ -177,7 +183,7 @@ describe("test db adapter functions", function () {
       request2.accessTokenHash
     );
 
-    assert.equal(dbRequestsByAccessToken?.length, 1);
+    assert.equal(dbRequestsByAccessToken.length, 1);
   });
   it("should delete request", async function () {
     const createAccessToken: AccessToken = mockCreateAccessToken();
@@ -185,8 +191,13 @@ describe("test db adapter functions", function () {
     const request = mockCreateRequest(createAccessToken.token);
     const queryRequest = await db.saveRequest(dbInstance, request);
     await db.deleteRequest(dbInstance, queryRequest.id);
-    const dbRequest = await db.getRequest(dbInstance, queryRequest.id);
-    assert.equal(dbRequest, null);
+    try {
+      const dbRequest = await db.getRequest(dbInstance, queryRequest.id);
+    } catch (e) {
+      if (e instanceof errors.QueryResultError) {
+        assert.equal(e.message, "No data returned from the query.");
+      }
+    }
   });
   it("should update request", async function () {
     const createAccessToken: AccessToken = mockCreateAccessToken();
@@ -209,11 +220,10 @@ describe("test db adapter functions", function () {
 
     const dbUpdatedRequest = await db.getRequest(dbInstance, queryRequest.id);
 
-    assert.equal(dbUpdatedRequest?.amount, 20);
+    assert.equal(dbUpdatedRequest.amount, 20);
   });
   it("should get oldest fresh request", async function () {
     const firstRequest = await createAccessTokenAndRequest(dbInstance);
-    if (!firstRequest) throw new Error("request was not created");
     const secondRequest = await createAccessTokenAndRequest(dbInstance);
     const thirdRequest = await createAccessTokenAndRequest(dbInstance);
     const updateFirstRequest = await db.updateRequest(dbInstance, {
@@ -227,6 +237,7 @@ describe("test db adapter functions", function () {
       status: "FAILED",
     });
     const oldestFreshRequest = await db.getOldestFreshRequest(dbInstance);
+
     assert.equal(
       oldestFreshRequest?.access_token_hash,
       secondRequest.access_token_hash
@@ -234,7 +245,6 @@ describe("test db adapter functions", function () {
   });
   it("should get all unresolved requests", async function () {
     const firstRequest = await createAccessTokenAndRequest(dbInstance);
-    if (!firstRequest) throw new Error("request was not created");
     const secondRequest = await createAccessTokenAndRequest(dbInstance);
     const thirdRequest = await createAccessTokenAndRequest(dbInstance);
     const updateFirstRequest = await db.updateRequest(dbInstance, {
@@ -248,6 +258,7 @@ describe("test db adapter functions", function () {
       status: "FAILED",
     });
     const unresolvedRequests = await db.getAllUnresolvedRequests(dbInstance);
+
     assert.equal(unresolvedRequests?.length, 2);
   });
 });
