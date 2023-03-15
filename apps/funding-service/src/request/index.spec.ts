@@ -1,7 +1,7 @@
 import assert from "assert";
 import { DBInstance } from "../db";
 import { UpdateRequest } from "./dto";
-import { RequestService } from "./request.service";
+import { RequestService } from ".";
 import { AccessTokenService } from "../access-token";
 import { IMemoryDb } from "pg-mem";
 import { MockPgInstanceSingleton } from "../db/index.spec";

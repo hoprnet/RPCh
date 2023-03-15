@@ -1,5 +1,5 @@
-import { CreateAccessToken, QueryAccessToken } from "../access-token";
-import { CreateRequest, QueryRequest, UpdateRequest } from "../request";
+import { CreateAccessToken, QueryAccessToken } from "../access-token/dto";
+import { CreateRequest, QueryRequest, UpdateRequest } from "../request/dto";
 import pgp from "pg-promise";
 import { createLogger } from "../utils";
 import migrate from "node-pg-migrate";

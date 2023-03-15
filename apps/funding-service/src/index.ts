@@ -73,7 +73,6 @@ const main = () => {
   // init db
   const pgInstance = pgp();
   const connectionString: string = constants.DB_CONNECTION_URL!;
-  // create table if the table does not exist
   const dbInstance = pgInstance({
     connectionString,
   });

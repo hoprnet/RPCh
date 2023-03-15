@@ -175,12 +175,10 @@ export const entryServer = (ops: {
           balances,
           frozenBalances
         );
-        const replacer = (_: any, value: any) =>
-          typeof value === "bigint" ? value.toString() : value;
         // all balances are in wei
         const jsonString = JSON.stringify(
           { availableBalances, frozenBalances },
-          replacer
+          utils.bigIntReplacer
         );
         return res.json(JSON.parse(jsonString));
       } catch (e) {

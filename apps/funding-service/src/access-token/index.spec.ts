@@ -1,4 +1,4 @@
-import { AccessTokenService } from "./access-token.service";
+import { AccessTokenService } from ".";
 import assert from "assert";
 import { DBInstance } from "../db";
 import { MockPgInstanceSingleton } from "../db/index.spec";
