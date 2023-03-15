@@ -8,9 +8,8 @@ import { DBInstance } from "../../../db";
 import { MockPgInstanceSingleton } from "../../../db/index.spec";
 import { FundingServiceApi } from "../../../funding-service-api";
 import {
-  getQuotasCreatedByClient,
-  getQuotasPaidByClient,
-  sumQuotas,
+  getSumOfQuotasUsedByClient,
+  getSumOfQuotasPaidByClient,
 } from "../../../quota";
 import * as registeredNode from "../../../registered-node";
 import {
@@ -304,7 +303,7 @@ describe("test v1 router", function () {
       spy.mockRestore();
     });
     it("should reduce client quota", async function () {
-      const spy = jest.spyOn(registeredNode, "getEligibleNode");
+      const spyGetEligibleNode = jest.spyOn(registeredNode, "getEligibleNode");
       const amountLeft = BigInt(10).toString();
       const peerId = "entry";
       const requestId = 1;
@@ -329,7 +328,7 @@ describe("test v1 router", function () {
         body: { node: RegisteredNodeDB | undefined };
       } = await request(app).get(`/node/${peerId}`);
 
-      spy.mockImplementation(async () => {
+      spyGetEligibleNode.mockImplementation(async () => {
         return createdNode.body.node;
       });
 
@@ -338,6 +337,7 @@ describe("test v1 router", function () {
         id: requestId,
       };
 
+      // mocks response from funding request
       nockFundingRequest(createdNode.body.node?.native_address!).reply(
         200,
         fundingResponse
@@ -356,10 +356,11 @@ describe("test v1 router", function () {
         requestResponse.body.body,
         "Client does not have enough quota"
       );
-      spy.mockRestore();
+
+      spyGetEligibleNode.mockRestore();
     });
     it("should be able to use trial mode client and reduce quota", async function () {
-      const spy = jest.spyOn(registeredNode, "getEligibleNode");
+      const spyGetEligibleNode = jest.spyOn(registeredNode, "getEligibleNode");
       const amountLeft = BigInt(10).toString();
       const peerId = "entry";
       const requestId = 1;
@@ -388,7 +389,7 @@ describe("test v1 router", function () {
         body: { node: RegisteredNodeDB | undefined };
       } = await request(app).get(`/node/${peerId}`);
 
-      spy.mockImplementation(async () => {
+      spyGetEligibleNode.mockImplementation(async () => {
         return createdNode.body.node;
       });
 
@@ -402,27 +403,30 @@ describe("test v1 router", function () {
         fundingResponse
       );
 
-      const trialClientQuotaBefore = sumQuotas(
-        await getQuotasPaidByClient(dbInstance, "trial")
+      const trialClientQuotaBefore = await getSumOfQuotasPaidByClient(
+        dbInstance,
+        "trial"
       );
 
       const requestResponse = await request(app)
         .post("/request/entry-node")
         .send({ client: trialClientId });
 
-      const trialClientQuotaAfter = sumQuotas(
-        await getQuotasPaidByClient(dbInstance, "trial")
+      const trialClientQuotaAfter = await getSumOfQuotasPaidByClient(
+        dbInstance,
+        "trial"
       );
 
-      const b2dClientQuotaUsed = sumQuotas(
-        await getQuotasCreatedByClient(dbInstance, trialClientId)
+      const b2dClientQuotaUsed = await getSumOfQuotasUsedByClient(
+        dbInstance,
+        trialClientId
       );
 
       expect(b2dClientQuotaUsed).toEqual(BASE_QUOTA * BigInt(-1));
       expect(trialClientQuotaAfter).toBeLessThan(trialClientQuotaBefore);
       expect(requestResponse.body).toHaveProperty("id");
 
-      spy.mockRestore();
+      spyGetEligibleNode.mockRestore();
     });
 
     describe("test cache requests", function () {

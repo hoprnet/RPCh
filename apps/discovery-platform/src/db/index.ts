@@ -188,30 +188,31 @@ export const getQuota = async (
   return dbRes;
 };
 
-export const getQuotasCreatedByClient = async (
+export const getSumOfQuotasPaidByClient = async (
   dbInstance: DBInstance,
   clientId: string
-): Promise<QuotaDB[]> => {
-  const text = `SELECT * FROM ${TABLES.QUOTAS} WHERE client_id=$<clientId>`;
+): Promise<bigint> => {
+  const text = `SELECT SUM(quota) FROM ${TABLES.QUOTAS} WHERE paid_by=$<clientId>`;
   const values = {
     clientId,
   };
-  const dbRes: QuotaDB[] = await dbInstance.manyOrNone(text, values);
-  return dbRes;
+  const dbRes = await dbInstance.one(text, values);
+
+  return dbRes?.sum ? BigInt(dbRes?.sum) : BigInt(0);
 };
 
-export const getQuotasPaidByClient = async (
+export const getSumOfQuotasUsedByClient = async (
   dbInstance: DBInstance,
   clientId: string
-): Promise<QuotaDB[]> => {
-  const text = `SELECT * FROM ${TABLES.QUOTAS} WHERE paid_by=$<clientId>`;
+): Promise<bigint> => {
+  const text = `SELECT SUM(quota) FROM ${TABLES.QUOTAS} WHERE client_id=$<clientId>`;
   const values = {
     clientId,
   };
-  const dbRes: QuotaDB[] = await dbInstance.manyOrNone(text, values);
-  return dbRes;
-};
+  const dbRes = await dbInstance.one(text, values);
 
+  return dbRes?.sum ? BigInt(dbRes?.sum) : BigInt(0);
+};
 export const updateQuota = async (
   dbInstance: DBInstance,
   quota: QuotaDB

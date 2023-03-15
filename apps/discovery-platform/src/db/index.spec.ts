@@ -239,63 +239,100 @@ describe("test db functions", function () {
       assert.equal(queryQuota?.quota, mockQuota.quota);
       assert.equal(queryQuota?.action_taker, mockQuota.actionTaker);
     });
-    it("should get quotas created by client", async function () {
-      // create client
+    it("should get sum of quotas used by client", async function () {
+      const expectedQuotas = [
+        BigInt("100000000"),
+        BigInt("-10000"),
+        BigInt("-1"),
+      ];
+      // create client to pay quotas
       const mockClient = createMockClient({
         id: "other client",
         payment: "premium",
       });
-      const otherClient = await db.createClient(dbInstance, mockClient);
-      // create quota for client but paid by other client
-      const mockQuota = createMockQuota({
-        clientId: "client",
-        actionTaker: "discovery",
-        paidBy: "other client",
-        quota: BigInt(10),
-      });
-      await db.createQuota(dbInstance, mockQuota);
-      await db.createQuota(dbInstance, mockQuota);
-      await db.createQuota(
-        dbInstance,
+      await db.createClient(dbInstance, mockClient);
+      // create quotas that are used by 'client'
+      const mockQuotas = expectedQuotas.map((quota) =>
         createMockQuota({
+          clientId: "client",
           actionTaker: "discovery",
-          clientId: otherClient.id,
+          quota,
           paidBy: "other client",
-          quota: BigInt(20),
         })
       );
 
-      const quotas = await db.getQuotasCreatedByClient(dbInstance, "client");
-      assert.equal(quotas.length, 2);
+      await Promise.all(
+        mockQuotas.map((mockQuota) => db.createQuota(dbInstance, mockQuota))
+      );
+
+      // create random quota that should not be taken into account
+      await db.createQuota(
+        dbInstance,
+        createMockQuota({
+          clientId: "other client",
+          actionTaker: "discovery",
+          quota: BigInt("10"),
+          paidBy: "client",
+        })
+      );
+
+      const sumOfQuotas = await db.getSumOfQuotasUsedByClient(
+        dbInstance,
+        "client"
+      );
+
+      assert.equal(
+        expectedQuotas.reduce((prev, next) => prev + next, BigInt(0)),
+        sumOfQuotas
+      );
     });
-    it("should get quotas paid by client", async function () {
+
+    it("should get sum of quotas paid by client", async function () {
+      const expectedQuotas = [
+        BigInt("100000000"),
+        BigInt("-10000"),
+        BigInt("-1"),
+      ];
       // create client
       const mockClient = createMockClient({
         id: "other client",
         payment: "premium",
       });
-      const otherClient = await db.createClient(dbInstance, mockClient);
-      // create quotas that are used by 'client' and paid by 'other client'
-      const mockQuota = createMockQuota({
-        clientId: "client",
-        actionTaker: "discovery",
-        quota: BigInt(10),
-        paidBy: "other client",
-      });
-      await db.createQuota(dbInstance, mockQuota);
-      await db.createQuota(dbInstance, mockQuota);
-      await db.createQuota(
-        dbInstance,
+      await db.createClient(dbInstance, mockClient);
+      // create quotas that are paid by 'other client'
+      const mockQuotas = expectedQuotas.map((quota) =>
         createMockQuota({
+          clientId: "client",
           actionTaker: "discovery",
-          clientId: otherClient.id,
-          quota: BigInt(20),
+          quota,
           paidBy: "other client",
         })
       );
 
-      const quotas = await db.getQuotasPaidByClient(dbInstance, "other client");
-      assert.equal(quotas.length, 3);
+      await Promise.all(
+        mockQuotas.map((mockQuota) => db.createQuota(dbInstance, mockQuota))
+      );
+
+      // create random quota that should not be taken into account
+      await db.createQuota(
+        dbInstance,
+        createMockQuota({
+          clientId: "other client",
+          actionTaker: "discovery",
+          quota: BigInt("10"),
+          paidBy: "client",
+        })
+      );
+
+      const sumOfQuotas = await db.getSumOfQuotasPaidByClient(
+        dbInstance,
+        "other client"
+      );
+
+      assert.equal(
+        expectedQuotas.reduce((prev, next) => prev + next, BigInt(0)),
+        sumOfQuotas
+      );
     });
     it("should update quota", async function () {
       const mockQuota = createMockQuota({

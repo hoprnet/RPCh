@@ -10,6 +10,7 @@ import {
 import { DBInstance } from "../db";
 import { RegisteredNode } from "../types";
 import { MockPgInstanceSingleton } from "../db/index.spec";
+import { wait } from "@rpch/common/build/fixtures";
 
 const mockNode = (peerId?: string, hasExitNode?: boolean): RegisteredNode => ({
   hasExitNode: hasExitNode ?? true,
@@ -156,6 +157,7 @@ describe("test registered node functions", function () {
   it("should keep updated_at updated", async function () {
     await createRegisteredNode(dbInstance, mockNode("1"));
     const node = await getRegisteredNode(dbInstance, "1");
+    await wait(1);
     await updateRegisteredNode(dbInstance, {
       ...node,
       status: "READY",

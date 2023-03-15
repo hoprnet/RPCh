@@ -34,29 +34,29 @@ export const getQuota = async (
 };
 
 /**
- * Get all quotas paid by a specific client
+ * Get sum of quotas paid by a specific client
  * @param dbInstance DBInstance
  * @param client string
- * @returns QuotaDB[]
+ * @returns bigint
  */
-export const getQuotasPaidByClient = async (
+export const getSumOfQuotasPaidByClient = async (
   dbInstance: db.DBInstance,
   client: string
-): Promise<QuotaDB[]> => {
-  return await db.getQuotasPaidByClient(dbInstance, client);
+): Promise<bigint> => {
+  return await db.getSumOfQuotasPaidByClient(dbInstance, client);
 };
 
 /**
- * Get all quotas created by a specific client
+ * Get sum of quotas used by a specific client
  * @param dbInstance DBInstance
  * @param client string
- * @returns QuotaDB[]
+ * @returns bigint
  */
-export const getQuotasCreatedByClient = async (
+export const getSumOfQuotasUsedByClient = async (
   dbInstance: db.DBInstance,
   client: string
-): Promise<QuotaDB[]> => {
-  return await db.getQuotasCreatedByClient(dbInstance, client);
+): Promise<bigint> => {
+  return await db.getSumOfQuotasUsedByClient(dbInstance, client);
 };
 
 /**
@@ -83,17 +83,4 @@ export const deleteQuota = async (
   id: number
 ): Promise<QuotaDB> => {
   return await db.deleteQuota(dbInstance, id);
-};
-
-/**
- * Calculate sum on quotas
- * @param quotas QuotaDB[]
- * @returns bigint
- */
-export const sumQuotas = (quotas: QuotaDB[]): bigint => {
-  const sumOfQuotas = quotas.reduce(
-    (prev, next) => BigInt(prev) + BigInt(next.quota),
-    BigInt(0)
-  );
-  return sumOfQuotas;
 };
