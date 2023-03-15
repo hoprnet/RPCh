@@ -1,8 +1,7 @@
+import * as constants from "../constants";
 import * as db from "../db";
 import { randomWords } from "../utils";
 import { CreateClient, QueryClient } from "./dto";
-
-const AMOUNT_OF_RANDOM_WORDS_FOR_TRIAL_ID = 5;
 
 /**
  * Saves a client in DB
@@ -26,9 +25,9 @@ export const createTrialClient = async (
   dbInstance: db.DBInstance,
   labels: string[]
 ): Promise<QueryClient> => {
-  const randomWordsId = randomWords(AMOUNT_OF_RANDOM_WORDS_FOR_TRIAL_ID).join(
-    "-"
-  );
+  const randomWordsId = randomWords(
+    constants.AMOUNT_OF_RANDOM_WORDS_FOR_TRIAL_ID
+  ).join("-");
 
   const dbQuota: CreateClient = {
     id: randomWordsId,

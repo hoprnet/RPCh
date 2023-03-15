@@ -4,7 +4,6 @@ import pgp from "pg-promise";
 import { createLogger } from "../utils";
 import { QueryFundingRequest } from "../funding-requests/dto";
 import { CreateClient, QueryClient } from "../client/dto";
-import fs from "fs";
 import migrate from "node-pg-migrate";
 import path from "path";
 
