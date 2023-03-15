@@ -1,10 +1,8 @@
 import assert from "assert";
-import { QueryRegisteredNode } from "../registered-node/dto";
 import * as db from "./";
-import { CreateQuota } from "../quota/dto";
 import { IBackup, IMemoryDb, newDb } from "pg-mem";
 import { utils } from "@rpch/common";
-import { CreateClient, QueryClient } from "../client/dto";
+import { Client, ClientDB, Quota, RegisteredNodeDB } from "../types";
 import path from "path";
 import * as fixtures from "@rpch/common/build/fixtures";
 
@@ -54,7 +52,7 @@ export class MockPgInstanceSingleton {
 const createMockNode = (
   peerId?: string,
   hasExitNode?: boolean
-): QueryRegisteredNode => ({
+): RegisteredNodeDB => ({
   chain_id: 100,
   id: peerId ?? "peerId" + utils.generatePseudoRandomId(1e6),
   has_exit_node: hasExitNode ?? true,
@@ -69,7 +67,7 @@ const createMockNode = (
   updated_at: Date.now().toString(),
 });
 
-const createMockQuota = (params?: CreateQuota): CreateQuota => {
+const createMockQuota = (params?: Quota): Quota => {
   return {
     actionTaker: params?.actionTaker ?? "discovery-platform",
     clientId: params?.clientId ?? "client",
@@ -78,7 +76,7 @@ const createMockQuota = (params?: CreateQuota): CreateQuota => {
   };
 };
 
-const createMockClient = (params?: CreateClient): CreateClient => {
+const createMockClient = (params?: Client): Client => {
   return {
     id: params?.id ?? "client",
     payment: params?.payment ?? "premium",
@@ -219,7 +217,7 @@ describe("test db functions", function () {
     });
   });
   describe("quota table", function () {
-    let client: QueryClient;
+    let client: ClientDB;
     beforeEach(async function () {
       const mockClient = createMockClient();
       client = await db.createClient(dbInstance, mockClient);

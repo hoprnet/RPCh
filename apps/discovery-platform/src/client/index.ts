@@ -1,7 +1,7 @@
 import * as constants from "../constants";
 import * as db from "../db";
 import { randomWords } from "../utils";
-import { CreateClient, QueryClient } from "./dto";
+import { Client, ClientDB } from "../types";
 
 /**
  * Saves a client in DB
@@ -11,9 +11,9 @@ import { CreateClient, QueryClient } from "./dto";
  */
 export const createClient = async (
   dbInstance: db.DBInstance,
-  client: CreateClient
-): Promise<QueryClient> => {
-  const dbQuota: CreateClient = {
+  client: Client
+): Promise<ClientDB> => {
+  const dbQuota: Client = {
     id: client.id,
     payment: client.payment,
     labels: client.labels ?? [],
@@ -24,12 +24,12 @@ export const createClient = async (
 export const createTrialClient = async (
   dbInstance: db.DBInstance,
   labels: string[]
-): Promise<QueryClient> => {
+): Promise<ClientDB> => {
   const randomWordsId = randomWords(
     constants.AMOUNT_OF_RANDOM_WORDS_FOR_TRIAL_ID
   ).join("-");
 
-  const dbQuota: CreateClient = {
+  const dbQuota: Client = {
     id: randomWordsId,
     payment: "trial",
     labels: labels ?? [],
@@ -41,12 +41,12 @@ export const createTrialClient = async (
  * Get a client that matches id
  * @param dbInstance DBInstance
  * @param id string
- * @returns QueryClient | null
+ * @returns QueryClient
  */
 export const getClient = async (
   dbInstance: db.DBInstance,
   id: string
-): Promise<QueryClient | null> => {
+): Promise<ClientDB> => {
   return await db.getClient(dbInstance, id);
 };
 
@@ -58,8 +58,8 @@ export const getClient = async (
  */
 export const updateClient = async (
   dbInstance: db.DBInstance,
-  client: QueryClient
-): Promise<QueryClient | null> => {
+  client: ClientDB
+): Promise<ClientDB> => {
   return await db.updateClient(dbInstance, client);
 };
 
@@ -67,11 +67,11 @@ export const updateClient = async (
  * Delete client with matching id
  * @param dbInstance DBInstance
  * @param id string
- * @returns QueryClient | null
+ * @returns QueryClient
  */
 export const deleteClient = async (
   dbInstance: db.DBInstance,
   id: string
-): Promise<QueryClient | null> => {
+): Promise<ClientDB> => {
   return await db.deleteClient(dbInstance, id);
 };

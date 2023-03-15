@@ -22,7 +22,7 @@ import {
   getRegisteredNode,
   getRegisteredNodes,
 } from "../../../registered-node";
-import { CreateRegisteredNode } from "../../../registered-node/dto";
+import { RegisteredNode } from "../../../types";
 import { createLogger, isListSafe } from "../../../utils";
 import memoryCache from "memory-cache";
 
@@ -38,7 +38,7 @@ const TRIAL_PAYMENT_MODE = "trial";
 const TRIAL_CLIENT_ID = "trial";
 
 // Sanitization and Validation
-const registerNodeSchema: Record<keyof CreateRegisteredNode, ParamSchema> = {
+const registerNodeSchema: Record<keyof RegisteredNode, ParamSchema> = {
   peerId: {
     in: "body",
     exists: {
@@ -166,7 +166,7 @@ export const v1Router = (ops: {
         if (!errors.isEmpty()) {
           return res.status(400).json({ errors: errors.array() });
         }
-        const node: CreateRegisteredNode = req.body;
+        const node: RegisteredNode = req.body;
         const registered = await createRegisteredNode(ops.db, node);
         return res.json({ body: registered });
       } catch (e) {

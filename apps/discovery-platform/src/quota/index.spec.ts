@@ -1,6 +1,6 @@
 import assert from "assert";
 import * as db from "../db";
-import { CreateQuota } from "./dto";
+import { Quota } from "../types";
 import {
   createQuota,
   deleteQuota,
@@ -13,7 +13,7 @@ import {
 import { MockPgInstanceSingleton } from "../db/index.spec";
 import { createClient } from "../client";
 
-const createMockQuota = (params?: CreateQuota): CreateQuota => {
+const createMockQuota = (params?: Quota): Quota => {
   return {
     actionTaker: params?.actionTaker ?? "discovery-platform",
     clientId: params?.clientId ?? "client",

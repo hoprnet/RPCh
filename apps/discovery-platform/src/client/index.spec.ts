@@ -1,10 +1,10 @@
 import assert from "assert";
 import * as db from "../db";
 import { MockPgInstanceSingleton } from "../db/index.spec";
-import { CreateClient } from "./dto";
+import { Client } from "../types";
 import { createClient, deleteClient, getClient, updateClient } from "./index";
 
-const createMockClient = (params?: CreateClient): CreateClient => {
+const createMockClient = (params?: Client): Client => {
   return {
     id: params?.id ?? "client",
     payment: params?.payment ?? "premium",

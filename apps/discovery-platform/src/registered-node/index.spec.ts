@@ -8,13 +8,10 @@ import {
   getRewardForNode,
 } from ".";
 import { DBInstance } from "../db";
-import { CreateRegisteredNode } from "./dto";
+import { RegisteredNode } from "../types";
 import { MockPgInstanceSingleton } from "../db/index.spec";
 
-const mockNode = (
-  peerId?: string,
-  hasExitNode?: boolean
-): CreateRegisteredNode => ({
+const mockNode = (peerId?: string, hasExitNode?: boolean): RegisteredNode => ({
   hasExitNode: hasExitNode ?? true,
   peerId: peerId ?? "peerId",
   chainId: 100,
