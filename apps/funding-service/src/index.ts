@@ -1,11 +1,12 @@
 import pgp from "pg-promise";
 import { AccessTokenService } from "./access-token";
 import { getWallet } from "./blockchain";
-import { DBInstance, runMigrations } from "./db";
+import { runMigrations } from "./db";
 import * as api from "./entry-server";
 import { checkFreshRequests } from "./queue";
 import { RequestService } from "./request";
 import { createLogger } from "./utils";
+import { DBInstance } from "./types";
 import * as constants from "./constants";
 
 const log = createLogger();
