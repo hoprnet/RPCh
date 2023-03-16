@@ -1,12 +1,11 @@
 import { assert } from "chai";
 import { Express } from "express";
-import { IMemoryDb } from "pg-mem";
 import request from "supertest";
 import { AccessTokenService } from "../access-token";
-import { DBInstance } from "../db";
 import { MockPgInstanceSingleton } from "../db/index.spec";
 import { RequestService } from "../request";
 import { entryServer } from ".";
+import { DBInstance } from "../types";
 
 const SECRET_KEY = "SECRET";
 const MAX_AMOUNT_OF_TOKENS = BigInt(40);

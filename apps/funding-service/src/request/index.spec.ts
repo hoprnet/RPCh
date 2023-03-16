@@ -1,6 +1,5 @@
 import assert from "assert";
-import { DBInstance } from "../db";
-import { RequestDB } from "../types";
+import { RequestDB, DBInstance } from "../types";
 import { RequestService } from ".";
 import { AccessTokenService } from "../access-token";
 import { MockPgInstanceSingleton } from "../db/index.spec";

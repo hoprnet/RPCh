@@ -1,6 +1,6 @@
 import { AccessTokenService } from ".";
 import assert from "assert";
-import { DBInstance } from "../db";
+import { DBInstance } from "../types";
 import { MockPgInstanceSingleton } from "../db/index.spec";
 import { errors } from "pg-promise";
 

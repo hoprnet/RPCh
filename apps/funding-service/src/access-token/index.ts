@@ -1,10 +1,9 @@
 import {
-  DBInstance,
   deleteAccessToken as deleteAccessTokenDB,
   getAccessToken as getAccessTokenDB,
   saveAccessToken,
 } from "../db";
-import type { AccessToken, AccessTokenDB } from "../types";
+import type { AccessToken, AccessTokenDB, DBInstance } from "../types";
 import { createLogger, generateAccessToken } from "../utils";
 
 const log = createLogger(["access-token-service"]);

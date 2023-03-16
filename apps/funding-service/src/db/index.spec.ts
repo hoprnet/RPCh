@@ -1,10 +1,8 @@
 import assert from "assert";
-import fs from "fs";
 import { IBackup, IMemoryDb, newDb } from "pg-mem";
 import * as db from ".";
 import { generateAccessToken } from "../utils";
-import { DBInstance } from ".";
-import { Request, RequestDB, AccessToken } from "../types";
+import { Request, RequestDB, AccessToken, DBInstance } from "../types";
 import { utils } from "@rpch/common";
 import path from "path";
 import * as fixtures from "@rpch/common/build/fixtures";
@@ -13,7 +11,7 @@ import { errors } from "pg-promise";
 
 export class MockPgInstanceSingleton {
   private static pgInstance: IMemoryDb;
-  private static dbInstance: db.DBInstance;
+  private static dbInstance: DBInstance;
   private static initialDbState: IBackup;
 
   private constructor() {}
@@ -36,7 +34,7 @@ export class MockPgInstanceSingleton {
     return MockPgInstanceSingleton.pgInstance;
   }
 
-  public static async getDbInstance(): Promise<db.DBInstance> {
+  public static async getDbInstance(): Promise<DBInstance> {
     if (!MockPgInstanceSingleton.dbInstance) {
       const instance = await this.getInstance();
       MockPgInstanceSingleton.dbInstance = instance.adapters.createPgPromise();
@@ -168,22 +166,68 @@ describe("test db adapter functions", function () {
     assert.equal(dbRequestsByAccessToken.length, 2);
   });
   it("should get requests by access token", async function () {
-    const createAccessToken: AccessToken = mockCreateAccessToken();
-    await db.saveAccessToken(dbInstance, createAccessToken);
-    const request1 = mockCreateRequest(createAccessToken.token);
+    const amountOfTimesToSendRequest = BigInt(3);
+    // create access tokens
+    const accessTokens = {
+      token1: mockCreateAccessToken(),
+      token2: mockCreateAccessToken(),
+    };
+
+    // activities with token1
+    // save access token -> save request
+    await db.saveAccessToken(dbInstance, accessTokens.token1);
+    const request1 = mockCreateRequest(accessTokens.token1.token);
     await db.saveRequest(dbInstance, request1);
 
-    const createAccessToken2: AccessToken = mockCreateAccessToken();
-    await db.saveAccessToken(dbInstance, createAccessToken2);
-    const request2 = mockCreateRequest(createAccessToken2.token);
-    await db.saveRequest(dbInstance, request2);
+    // activities with token2
+    // save access token -> save request x amountOfTimesToSendRequest
+    await db.saveAccessToken(dbInstance, accessTokens.token2);
+    const request2 = mockCreateRequest(accessTokens.token2.token);
+    await Promise.all(
+      Array.from({ length: Number(amountOfTimesToSendRequest) }).map((_) =>
+        db.saveRequest(dbInstance, request2)
+      )
+    );
 
-    const dbRequestsByAccessToken = await db.getRequestsByAccessToken(
+    const dbRequestsByAccessToken = await db.getRequests(dbInstance, {
+      access_token_hash: accessTokens.token2.token,
+    });
+
+    assert.equal(dbRequestsByAccessToken.length, amountOfTimesToSendRequest);
+  });
+  it("should get sum of requests by access token", async function () {
+    const amountOfTimesToSendRequest = BigInt(3);
+    // create access tokens
+    const accessTokens = {
+      token1: mockCreateAccessToken(),
+      token2: mockCreateAccessToken(),
+    };
+
+    // activities with token1
+    // save access token -> save request
+    await db.saveAccessToken(dbInstance, accessTokens.token1);
+    const request1 = mockCreateRequest(accessTokens.token1.token);
+    await db.saveRequest(dbInstance, request1);
+
+    // activities with token2
+    // save access token -> save request x amountOfTimesToSendRequest
+    await db.saveAccessToken(dbInstance, accessTokens.token2);
+    const request2 = mockCreateRequest(accessTokens.token2.token);
+    await Promise.all(
+      Array.from({ length: Number(amountOfTimesToSendRequest) }).map((_) =>
+        db.saveRequest(dbInstance, request2)
+      )
+    );
+
+    const sumOfDbRequestsByAccessToken = await db.getSumOfRequestsByAccessToken(
       dbInstance,
       request2.accessTokenHash
     );
 
-    assert.equal(dbRequestsByAccessToken.length, 1);
+    assert.equal(
+      sumOfDbRequestsByAccessToken,
+      request2.amount * amountOfTimesToSendRequest
+    );
   });
   it("should delete request", async function () {
     const createAccessToken: AccessToken = mockCreateAccessToken();
@@ -257,7 +301,13 @@ describe("test db adapter functions", function () {
       transaction_hash: firstRequest.transaction_hash,
       status: "FAILED",
     });
-    const unresolvedRequests = await db.getAllUnresolvedRequests(dbInstance);
+
+    const unresolvedRequests = await Promise.all(
+      [
+        db.getRequests(dbInstance, { status: "FRESH" }),
+        db.getRequests(dbInstance, { status: "PROCESSING" }),
+      ].flat()
+    );
 
     assert.equal(unresolvedRequests?.length, 2);
   });

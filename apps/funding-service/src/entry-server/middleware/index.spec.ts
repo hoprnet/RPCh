@@ -1,5 +1,5 @@
 import { AccessTokenService } from "../../access-token";
-import { DBInstance } from "../../db";
+import { DBInstance } from "../../types";
 import { MockPgInstanceSingleton } from "../../db/index.spec";
 import { RequestService } from "../../request";
 import { doesAccessTokenHaveEnoughBalance } from "./index";

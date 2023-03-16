@@ -2,10 +2,8 @@ import { NextFunction, Request, Response } from "express";
 import { AccessTokenService } from "../../access-token";
 import { RequestService } from "../../request";
 import { isExpired, createLogger } from "../../utils";
-import { utils } from "@rpch/common";
 import { validationResult, body } from "express-validator";
 import { errors } from "pg-promise";
-import { AccessTokenDB } from "../../types";
 
 const log = createLogger(["entry-server", "middleware"]);
 
@@ -74,25 +72,23 @@ export const doesAccessTokenHaveEnoughBalance = async (params: {
   maxAmountOfTokens: bigint;
   requestAmount?: bigint;
 }): Promise<Boolean> => {
-  const requestsByAccessToken =
-    await params.requestService.getRequestsByAccessToken(params.token);
-  const totalRequests = requestsByAccessToken?.filter(
-    (req) =>
-      req.status !== "FAILED" &&
-      req.status !== "FAILED-DURING-PROCESSING" &&
-      req.status !== "REJECTED-DURING-PROCESSING"
+  const totalRequests =
+    await params.requestService.getAllUnresolvedAndSuccessfulRequestsByAccessToken(
+      params.token
+    );
+
+  const sumOfTokensTotalPossibleRequests = totalRequests.reduce(
+    (prev, next) => BigInt(prev) + BigInt(next.amount),
+    BigInt(0)
   );
-  const sumOfTokensTotalPossibleRequests =
-    totalRequests?.reduce(
-      (prev, next) => BigInt(prev) + BigInt(next.amount),
-      BigInt(0)
-    ) ?? BigInt(0);
 
   const tokenBalanceWithRequestAmount =
     sumOfTokensTotalPossibleRequests + (params.requestAmount ?? BigInt(0));
+
   if (params.maxAmountOfTokens < tokenBalanceWithRequestAmount) {
     return false;
   }
+
   return true;
 };
 

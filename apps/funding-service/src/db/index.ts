@@ -1,18 +1,22 @@
-import { Request, RequestDB, AccessToken, AccessTokenDB } from "../types";
-import pgp from "pg-promise";
+import {
+  Request,
+  RequestDB,
+  AccessToken,
+  AccessTokenDB,
+  DBInstance,
+  RequestFilters,
+} from "../types";
 import { createLogger } from "../utils";
 import migrate from "node-pg-migrate";
 import path from "path";
 import { DBTimestamp } from "../types/general";
 
-/**
- * DB module that handles the formatting of queries and executing them
- */
-
 const log = createLogger(["db"]);
 
-export type DBInstance = pgp.IDatabase<{}>;
-
+/**
+ * Run migrations from project in a connected db
+ * @param dbUrl
+ */
 export const runMigrations = async (dbUrl: string) => {
   const migrationsDirectory = path.join(__dirname, "../../migrations");
 
@@ -96,23 +100,43 @@ export const getRequest = async (
   return dbRes;
 };
 
-export const getRequests = async (db: DBInstance): Promise<RequestDB[]> => {
-  const text = "SELECT * FROM requests";
-  const dbRes: RequestDB[] = await db.manyOrNone(text);
+export const getRequests = async (
+  db: DBInstance,
+  where?: RequestFilters
+): Promise<RequestDB[]> => {
+  const baseText = "SELECT * FROM requests";
+  let filtersText = [];
+  const values: { [key: string]: string } = {};
+
+  for (const key in where) {
+    if (key in where) {
+      filtersText.push(`${key}=$<${key}>`);
+      values[key] = String(where[key as keyof RequestFilters]);
+    }
+  }
+
+  const sqlText = filtersText.length
+    ? baseText + " WHERE " + filtersText.join(" AND ")
+    : baseText;
+
+  const dbRes: RequestDB[] = await db.manyOrNone(sqlText, values);
+  log.verbose("Registered nodes with filters query DB response", where, dbRes);
+
   return dbRes;
 };
 
-export const getRequestsByAccessToken = async (
+export const getSumOfRequestsByAccessToken = async (
   db: DBInstance,
   accessTokenHash: string
-): Promise<RequestDB[]> => {
-  const text = "SELECT * FROM requests WHERE access_token_hash=$<token>";
+): Promise<bigint> => {
+  const text =
+    "SELECT SUM(amount) FROM requests WHERE access_token_hash=$<token>";
   const values = {
     token: accessTokenHash,
   };
-  const dbRes: RequestDB[] = await db.manyOrNone(text, values);
+  const dbRes: { sum: bigint } = await db.one(text, values);
 
-  return dbRes;
+  return BigInt(dbRes.sum);
 };
 
 export const updateRequest = async (
@@ -168,14 +192,5 @@ export const getOldestFreshRequest = async (
     ORDER BY created_at ASC
     LIMIT 1;`;
   const dbRes: RequestDB = await db.one(text);
-  return dbRes;
-};
-
-export const getAllUnresolvedRequests = async (
-  db: DBInstance
-): Promise<RequestDB[]> => {
-  const text = `SELECT * FROM requests
-    WHERE status IN ('FRESH', 'PROCESSING')`;
-  const dbRes: RequestDB[] = await db.manyOrNone(text);
   return dbRes;
 };

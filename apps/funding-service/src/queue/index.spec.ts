@@ -2,10 +2,9 @@ import { JsonRpcProvider } from "@ethersproject/providers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import assert from "assert";
 import { ethers } from "hardhat";
-import { IMemoryDb } from "pg-mem";
 import { checkFreshRequests } from ".";
 import { AccessTokenService } from "../access-token";
-import { DBInstance } from "../db";
+import { DBInstance } from "../types";
 import { MockPgInstanceSingleton } from "../db/index.spec";
 import { RequestService } from "../request";
 

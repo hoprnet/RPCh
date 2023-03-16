@@ -1,6 +1,5 @@
-import { DBInstance } from "../db";
 import * as db from "../db";
-import { Request, RequestDB } from "../types";
+import { Request, RequestDB, DBInstance, RequestFilters } from "../types";
 import { DBTimestamp } from "../types/general";
 
 import { createLogger } from "../utils";
@@ -54,19 +53,19 @@ export class RequestService {
    * Gets all requests
    * @returns Promise<RequestDB[]>
    */
-  public async getRequests(): Promise<RequestDB[]> {
-    return db.getRequests(this.db);
+  public async getRequests(where?: RequestFilters): Promise<RequestDB[]> {
+    return db.getRequests(this.db, where);
   }
 
   /**
-   * Returns all requests created by access token
+   * Returns sum of all requests created by access token
    * @param accessTokenHash string
-   * @returns Promise<RequestDB[]>
+   * @returns Promise<bigint>
    */
-  public async getRequestsByAccessToken(
+  public async getSumOfRequestsByAccessToken(
     accessTokenHash: string
-  ): Promise<RequestDB[]> {
-    return db.getRequestsByAccessToken(this.db, accessTokenHash);
+  ): Promise<bigint> {
+    return db.getSumOfRequestsByAccessToken(this.db, accessTokenHash);
   }
 
   /**
@@ -127,8 +126,34 @@ export class RequestService {
    * Queries all requests that have not been processed.
    * These are requests that have neither succeeded nor failed.
    */
-  public async getAllUnresolvedRequests(): Promise<RequestDB[]> {
-    const unresolvedRequests = await db.getAllUnresolvedRequests(this.db);
+  public async getAllUnresolvedRequests(
+    accessTokenHash?: string
+  ): Promise<RequestDB[]> {
+    let queryOptions: { access_token_hash?: string } = {};
+
+    // possible status a unresolved request can have
+    let unresolvedStatuses: Request["status"][] = [
+      "FRESH",
+      "PROCESSING",
+      "PENDING",
+    ];
+
+    // filter by accessTokenHash if param is sent
+    if (accessTokenHash) {
+      queryOptions["access_token_hash"] = accessTokenHash;
+    }
+
+    const unresolvedRequests = (
+      await Promise.all(
+        unresolvedStatuses.map((status) =>
+          db.getRequests(this.db, {
+            status,
+            ...queryOptions,
+          })
+        )
+      )
+    ).flat();
+
     return unresolvedRequests;
   }
 
@@ -137,21 +162,18 @@ export class RequestService {
    * Th requests that have not been processed t have neither succeeded nor failed.
    */
   public async getAllUnresolvedAndSuccessfulRequestsByAccessToken(
-    accessTokenHash: string
+    accessTokenHash?: string
   ): Promise<RequestDB[]> {
-    const allRequestsByAccessToken = await this.getRequestsByAccessToken(
-      accessTokenHash
-    );
-    const successfulRequestsByAccessToken = allRequestsByAccessToken?.filter(
-      (request) => request.status === "SUCCESS"
-    );
-    const allUnresolvedRequests = await this.getAllUnresolvedRequests();
-    const allUnresolvedRequestsByAccessToken = allUnresolvedRequests?.filter(
-      (request) => request.access_token_hash === accessTokenHash
-    );
+    const successfulRequestsByAccessToken = await this.getRequests({
+      access_token_hash: accessTokenHash,
+      status: "SUCCESS",
+    });
+    const allUnresolvedRequestsByAccessToken =
+      await this.getAllUnresolvedRequests(accessTokenHash);
+
     return [
-      ...(successfulRequestsByAccessToken ?? []),
-      ...(allUnresolvedRequestsByAccessToken ?? []),
+      ...successfulRequestsByAccessToken,
+      ...allUnresolvedRequestsByAccessToken,
     ];
   }
 
@@ -182,9 +204,7 @@ export class RequestService {
   public sumAmountOfRequests(requests: RequestDB[]): {
     [chainId: number]: bigint;
   } {
-    const requestsGroupedByChainId = this.groupRequestsByChainId(
-      requests ?? []
-    );
+    const requestsGroupedByChainId = this.groupRequestsByChainId(requests);
     {
       const sumOfRequestsByChainId: { [chainId: number]: bigint } = {};
       for (const chainId in requestsGroupedByChainId) {
