@@ -26,6 +26,7 @@ const createAccessTokenAndRequest = async (
     nodeAddress: string;
     amount: bigint;
     chainId: number;
+    token?: string;
   }
 ) => {
   const queryToken = await accessTokenService.createAccessToken({
@@ -34,7 +35,7 @@ const createAccessTokenAndRequest = async (
   });
   const queryRequest = await requestService.createRequest(
     params
-      ? { ...params, accessTokenHash: queryToken.token }
+      ? { ...params, accessTokenHash: params.token ?? queryToken.token }
       : {
           accessTokenHash: queryToken.token,
           amount: MOCK_AMOUNT,
@@ -178,7 +179,7 @@ describe("test RequestService class", function () {
         status: "FAILED",
       }
     );
-    const unresolvedRequests = await requestService.getAllUnresolvedRequests();
+    const unresolvedRequests = await requestService.getUnresolvedRequests();
     assert.equal(unresolvedRequests?.length, 2);
   });
   it("should return all unresolved requests keyed by chain", async function () {
@@ -210,7 +211,7 @@ describe("test RequestService class", function () {
         status: "FAILED",
       }
     );
-    const unresolvedRequests = await requestService.getAllUnresolvedRequests();
+    const unresolvedRequests = await requestService.getUnresolvedRequests();
     const unresolvedRequestsKeyedByChain =
       requestService.groupRequestsByChainId(unresolvedRequests ?? []);
     assert.equal(unresolvedRequestsKeyedByChain[1].length, 1);
@@ -245,7 +246,7 @@ describe("test RequestService class", function () {
         status: "FAILED",
       }
     );
-    const unresolvedRequests = await requestService.getAllUnresolvedRequests();
+    const unresolvedRequests = await requestService.getUnresolvedRequests();
     const sumOfAmountByChainId = await requestService.sumAmountOfRequests(
       unresolvedRequests ?? []
     );
@@ -281,7 +282,7 @@ describe("test RequestService class", function () {
         status: "FAILED",
       }
     );
-    const unresolvedRequests = await requestService.getAllUnresolvedRequests();
+    const unresolvedRequests = await requestService.getUnresolvedRequests();
     const sumOfUnresolvedRequestsByChainId =
       await requestService.sumAmountOfRequests(unresolvedRequests ?? []);
 
@@ -345,10 +346,124 @@ describe("test RequestService class", function () {
       }
     );
     const allUnresolvedAndSuccessfulRequests =
-      await requestService.getAllUnresolvedAndSuccessfulRequestsByAccessToken(
+      await requestService.getUnresolvedAndSuccessfulRequests(
         secondRequest.access_token_hash
       );
 
     assert.equal(allUnresolvedAndSuccessfulRequests.length, 2);
+  });
+  it("should get sum of amount of a group of requests", async function () {
+    // create un resolved requests
+    const unresolvedRequestsAmounts = [
+      BigInt("1000000000"),
+      BigInt("-1000"),
+      BigInt("-1"),
+    ];
+
+    // save un resolved requests to db
+    await Promise.all(
+      unresolvedRequestsAmounts.map((amount) =>
+        createAccessTokenAndRequest(accessTokenService, requestService, {
+          amount,
+          chainId: 100,
+          nodeAddress: "address",
+        })
+      )
+    );
+
+    // create successful requests
+    const successfulRequestsAmounts = [
+      BigInt("-1000"),
+      BigInt("-1000"),
+      BigInt("-1"),
+    ];
+
+    // save successful requests to db
+    await Promise.all(
+      successfulRequestsAmounts.map((amount) =>
+        createAccessTokenAndRequest(accessTokenService, requestService, {
+          amount,
+          chainId: 100,
+          nodeAddress: "address",
+        })
+      )
+    );
+
+    const actualSum =
+      await requestService.getSumUnresolvedAndSuccessfulRequests();
+
+    const expectedSum = [
+      ...successfulRequestsAmounts,
+      ...unresolvedRequestsAmounts,
+    ].reduce((acc, next) => acc + next, BigInt(0));
+
+    assert.equal(actualSum, expectedSum);
+  });
+  it("should get sum of amount of a group of requests with same access token", async function () {
+    const mockToken = await accessTokenService.createAccessToken({
+      amount: MOCK_AMOUNT,
+      timeout: MOCK_CHAIN_ID,
+    });
+
+    // create un resolved requests
+    const unresolvedRequestsAmounts = [
+      BigInt("1000000000"),
+      BigInt("-1000"),
+      BigInt("-1"),
+    ];
+
+    // save un resolved requests to db
+    await Promise.all(
+      unresolvedRequestsAmounts.map((amount) =>
+        createAccessTokenAndRequest(accessTokenService, requestService, {
+          amount,
+          chainId: 100,
+          nodeAddress: "address",
+          token: mockToken.token,
+        })
+      )
+    );
+
+    // create successful requests
+    const successfulRequestsAmounts = [
+      BigInt("-1000"),
+      BigInt("-1000"),
+      BigInt("-1"),
+    ];
+
+    // save successful requests to db
+    await Promise.all(
+      successfulRequestsAmounts.map((amount) =>
+        createAccessTokenAndRequest(accessTokenService, requestService, {
+          amount,
+          chainId: 100,
+          nodeAddress: "address",
+          token: mockToken.token,
+        })
+      )
+    );
+
+    // save successful requests with random access token (absence of token will make it random)
+    await Promise.all(
+      successfulRequestsAmounts.map((amount) =>
+        createAccessTokenAndRequest(accessTokenService, requestService, {
+          amount,
+          chainId: 100,
+          nodeAddress: "address",
+        })
+      )
+    );
+
+    const actualSum =
+      await requestService.getSumUnresolvedAndSuccessfulRequests(
+        mockToken.token
+      );
+
+    const expectedSum = [
+      ...successfulRequestsAmounts,
+      ...unresolvedRequestsAmounts,
+    ].reduce((acc, next) => acc + next, BigInt(0));
+
+    assert.equal(actualSum, expectedSum);
   });
 });

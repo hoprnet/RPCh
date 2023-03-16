@@ -126,7 +126,7 @@ export class RequestService {
    * Queries all requests that have not been processed.
    * These are requests that have neither succeeded nor failed.
    */
-  public async getAllUnresolvedRequests(
+  public async getUnresolvedRequests(
     accessTokenHash?: string
   ): Promise<RequestDB[]> {
     let queryOptions: { access_token_hash?: string } = {};
@@ -161,20 +161,58 @@ export class RequestService {
    * Queries all requests that are successful and that have not been processed.
    * Th requests that have not been processed t have neither succeeded nor failed.
    */
-  public async getAllUnresolvedAndSuccessfulRequestsByAccessToken(
+  public async getUnresolvedAndSuccessfulRequests(
     accessTokenHash?: string
   ): Promise<RequestDB[]> {
-    const successfulRequestsByAccessToken = await this.getRequests({
-      access_token_hash: accessTokenHash,
-      status: "SUCCESS",
-    });
-    const allUnresolvedRequestsByAccessToken =
-      await this.getAllUnresolvedRequests(accessTokenHash);
+    let queryOptions: { access_token_hash?: string } = {};
 
-    return [
-      ...successfulRequestsByAccessToken,
-      ...allUnresolvedRequestsByAccessToken,
+    // filter by accessTokenHash if param is sent
+    if (accessTokenHash) {
+      queryOptions["access_token_hash"] = accessTokenHash;
+    }
+
+    const successfulRequests = await this.getRequests({
+      status: "SUCCESS",
+      ...queryOptions,
+    });
+
+    const allUnresolvedRequests = await this.getUnresolvedRequests(
+      accessTokenHash
+    );
+
+    return [...successfulRequests, ...allUnresolvedRequests];
+  }
+
+  public async getSumUnresolvedAndSuccessfulRequests(
+    accessTokenHash?: string
+  ): Promise<bigint> {
+    // status of requests that are considered successful or unsuccessful
+    let statusArray: RequestDB["status"][] = [
+      "FRESH",
+      "PROCESSING",
+      "PENDING",
+      "SUCCESS",
     ];
+
+    let queryOptions: { access_token_hash?: string } = {};
+
+    // filter by accessTokenHash if param is sent
+    if (accessTokenHash) {
+      queryOptions["access_token_hash"] = accessTokenHash;
+    }
+
+    const sums = await Promise.all(
+      statusArray.map((status) =>
+        db.getSumOfRequests(this.db, {
+          status,
+          ...queryOptions,
+        })
+      )
+    );
+
+    const sumOfStatuses = sums.reduce((acc, next) => acc + next, BigInt(0));
+
+    return sumOfStatuses;
   }
 
   /**

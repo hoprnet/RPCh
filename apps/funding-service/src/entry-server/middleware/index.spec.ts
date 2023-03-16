@@ -37,12 +37,16 @@ describe("should test entry server middleware functions", function () {
       nodeAddress: "0x0",
     });
 
-    const tokenHasBalanceRes = await doesAccessTokenHaveEnoughBalance({
-      maxAmountOfTokens: MAX_AMOUNT_OF_TOKENS,
-      requestService,
-      token: accessTokenResponse.token,
-      requestAmount: MAX_AMOUNT_OF_TOKENS,
-    });
+    const sumOfRequestsByAccessToken =
+      await requestService.getSumOfRequestsByAccessToken(
+        accessTokenResponse.token
+      );
+
+    const tokenHasBalanceRes = await doesAccessTokenHaveEnoughBalance(
+      sumOfRequestsByAccessToken,
+      MAX_AMOUNT_OF_TOKENS,
+      MAX_AMOUNT_OF_TOKENS
+    );
     expect(tokenHasBalanceRes).toEqual(false);
   });
 });

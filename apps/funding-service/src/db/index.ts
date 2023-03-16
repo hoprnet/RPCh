@@ -120,9 +120,35 @@ export const getRequests = async (
     : baseText;
 
   const dbRes: RequestDB[] = await db.manyOrNone(sqlText, values);
-  log.verbose("Registered nodes with filters query DB response", where, dbRes);
+  log.verbose("Requests with filters query DB response", where, dbRes);
 
   return dbRes;
+};
+
+export const getSumOfRequests = async (
+  db: DBInstance,
+  where?: RequestFilters
+): Promise<bigint> => {
+  const baseText = "SELECT SUM(amount) FROM requests";
+  let filtersText = [];
+  const values: { [key: string]: string } = {};
+
+  for (const key in where) {
+    if (key in where) {
+      filtersText.push(`${key}=$<${key}>`);
+      values[key] = String(where[key as keyof RequestFilters]);
+    }
+  }
+
+  const sqlText = filtersText.length
+    ? baseText + " WHERE " + filtersText.join(" AND ")
+    : baseText;
+
+  const dbRes: { sum: bigint } = await db.one(sqlText, values);
+
+  log.verbose("Sum of requests with filters query DB response", where, dbRes);
+
+  return dbRes.sum ? BigInt(dbRes.sum) : BigInt(0);
 };
 
 export const getSumOfRequestsByAccessToken = async (

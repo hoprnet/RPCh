@@ -63,9 +63,9 @@ const mockCreateAccessToken = () => ({
   }),
 });
 
-const mockCreateRequest = (hash?: string): Request => ({
+const mockCreateRequest = (hash?: string, amount?: bigint): Request => ({
   accessTokenHash: hash ?? "hash",
-  amount: BigInt("10"),
+  amount: amount ?? BigInt("10"),
   chainId: 80,
   nodeAddress: "address",
   status: "FRESH",
@@ -310,5 +310,37 @@ describe("test db adapter functions", function () {
     );
 
     assert.equal(unresolvedRequests?.length, 2);
+  });
+  it("should get sum of amount of a group of requests", async function () {
+    const mockAccessToken = await db.saveAccessToken(
+      dbInstance,
+      mockCreateAccessToken()
+    );
+    const requestAmounts = [
+      BigInt("1000000000"),
+      BigInt("-1000"),
+      BigInt("-1"),
+    ];
+
+    // create requests params
+    const requestsBodies = requestAmounts.map((amount) =>
+      mockCreateRequest(mockAccessToken.token, amount)
+    );
+
+    // save requests in db
+    await Promise.all(
+      requestsBodies.map((req) => db.saveRequest(dbInstance, req))
+    );
+
+    const actualSum = await db.getSumOfRequests(dbInstance, {
+      access_token_hash: mockAccessToken.token,
+    });
+
+    const expectedSum = requestAmounts.reduce(
+      (acc, next) => acc + next,
+      BigInt(0)
+    );
+
+    assert.equal(actualSum, expectedSum);
   });
 });

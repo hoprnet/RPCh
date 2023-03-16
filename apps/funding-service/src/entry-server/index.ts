@@ -80,7 +80,7 @@ export const entryServer = (ops: {
           chainId,
         });
         const allUnresolvedAndSuccessfulRequestsByAccessToken =
-          await ops.requestService.getAllUnresolvedAndSuccessfulRequestsByAccessToken(
+          await ops.requestService.getUnresolvedAndSuccessfulRequests(
             accessTokenHash
           );
         const amountUsed = ops.requestService.sumAmountOfRequests(
@@ -99,11 +99,7 @@ export const entryServer = (ops: {
 
   app.get(
     "/api/request/status",
-    tokenIsValid(
-      ops.accessTokenService,
-      ops.requestService,
-      ops.maxAmountOfTokens
-    ),
+    tokenIsValid(ops.accessTokenService),
     async (req, res) => {
       try {
         log.verbose(`GET /api/request/status`);
@@ -120,11 +116,7 @@ export const entryServer = (ops: {
   app.get(
     "/api/request/status/:requestId",
     param("requestId").isNumeric(),
-    tokenIsValid(
-      ops.accessTokenService,
-      ops.requestService,
-      ops.maxAmountOfTokens
-    ),
+    tokenIsValid(ops.accessTokenService),
     async (req, res) => {
       try {
         log.verbose(`GET /api/request/status/:requestId`, req.params);
@@ -145,11 +137,7 @@ export const entryServer = (ops: {
 
   app.get(
     "/api/funds",
-    tokenIsValid(
-      ops.accessTokenService,
-      ops.requestService,
-      ops.maxAmountOfTokens
-    ),
+    tokenIsValid(ops.accessTokenService),
     async (req, res) => {
       try {
         log.verbose(`GET /api/funds`);
@@ -166,7 +154,7 @@ export const entryServer = (ops: {
           providers
         );
         const compromisedRequests =
-          await ops.requestService.getAllUnresolvedRequests();
+          await ops.requestService.getUnresolvedRequests();
         const frozenBalances = await ops.requestService.sumAmountOfRequests(
           compromisedRequests ?? []
         );
