@@ -59,7 +59,7 @@ services:
       - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_1}
     entrypoint:
       [
-        "/bin/wait-for",
+        "/bin/wait-for-it.sh",
         "http://${HOPRD_API_TOKEN}@pluto:13301/api/v2/account/addresses",
         "-t",
         "300",
@@ -76,7 +76,7 @@ services:
       - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_2}
     entrypoint:
       [
-        "/bin/wait-for",
+        "/bin/wait-for-it.sh",
         "http://${HOPRD_API_TOKEN}@pluto:13302/api/v2/account/addresses",
         "-t",
         "300",
@@ -93,7 +93,7 @@ services:
       - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_3}
     entrypoint:
       [
-        "/bin/wait-for",
+        "/bin/wait-for-it.sh",
         "http://${HOPRD_API_TOKEN}@pluto:13303/api/v2/account/addresses",
         "-t",
         "300",
@@ -110,7 +110,7 @@ services:
       - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_4}
     entrypoint:
       [
-        "/bin/wait-for",
+        "/bin/wait-for-it.sh",
         "http://${HOPRD_API_TOKEN}@pluto:13304/api/v2/account/addresses",
         "-t",
         "300",
@@ -127,7 +127,7 @@ services:
       - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_5}
     entrypoint:
       [
-        "/bin/wait-for",
+        "/bin/wait-for-it.sh",
         "http://${HOPRD_API_TOKEN}@pluto:13305/api/v2/account/addresses",
         "-t",
         "300",

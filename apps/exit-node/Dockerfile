@@ -34,7 +34,8 @@ RUN turbo prune --scope="@rpch/exit-node" --docker
 # Specify platform to be amd because arm doesn't work
 FROM --platform=linux/amd64 node:16-bullseye-slim AS installer
 RUN apt-get update && \
-  apt-get install -y libc6
+  apt-get install -y libc6 && \
+  rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 # Install the dependencies.
@@ -60,13 +61,13 @@ VOLUME ["/app/db"]
 
 # we use tini as process 1 to catch signals properly, which is also built into Docker by default
 RUN apt-get update && \
-  apt-get install -y tini curl  wget && \
+  apt-get install -y tini curl wget netcat && \
   rm -rf /var/lib/apt/lists/*
 
 # this helper script can be used to ensure the hoprd node is running before starting
-RUN  curl https://raw.githubusercontent.com/eficode/wait-for/v2.2.3/wait-for > /bin/wait-for \
-  && chmod o+x /bin/wait-for \
-  && chmod u+x /bin/wait-for
+RUN curl https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh > /bin/wait-for-it.sh \
+  && chmod o+x /bin/wait-for-it.sh \
+  && chmod u+x /bin/wait-for-it.sh
 
 COPY --from=installer /app/apps/exit-node/package.json .
 COPY --from=installer /app .
