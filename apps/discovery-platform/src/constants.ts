@@ -36,6 +36,20 @@ const BASE_EXTRA = 1;
 // Max amount of connections app will have with db
 const MAX_DB_CONNECTIONS = 18;
 
+// array that contains a list of capabilities for DP using HOPRD token capabilities
+const DP_HOPRD_TOKEN_CAPABILITIES = [
+  "tokensCreate",
+  "tokensGetToken",
+  "tokensDelete",
+];
+
+// array that contains a list of capabilities for regular users using HOPRD token capabilities
+const USER_HOPRD_TOKEN_CAPABILITIES = [
+  "messagesWebsocket",
+  "messagesSendMessage",
+  "tokensGetToken",
+];
+
 export {
   PORT,
   FUNDING_SERVICE_URL,
