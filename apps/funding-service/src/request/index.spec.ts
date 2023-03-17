@@ -5,6 +5,7 @@ import { AccessTokenService } from "../access-token";
 import { MockPgInstanceSingleton } from "../db/index.spec";
 import { DBTimestamp } from "../types/general";
 import { errors } from "pg-promise";
+import * as constants from "../constants";
 
 const SECRET_KEY = "SECRET";
 const MOCK_ADDRESS = "0xA10AA7711FD1FA48ACAE6FF00FCB63B0F6AD055F";
@@ -217,82 +218,6 @@ describe("test RequestService class", function () {
     assert.equal(unresolvedRequestsKeyedByChain[1].length, 1);
     assert.equal(unresolvedRequestsKeyedByChain[2].length, 1);
   });
-  it("should return sum of all unresolved requests keyed by chain", async function () {
-    const firstRequest = await createAccessTokenAndRequest(
-      accessTokenService,
-      requestService,
-      mockRequestParams(1)
-    );
-    const secondRequest = await createAccessTokenAndRequest(
-      accessTokenService,
-      requestService,
-      mockRequestParams(1)
-    );
-    const thirdRequest = await createAccessTokenAndRequest(
-      accessTokenService,
-      requestService,
-      mockRequestParams(2)
-    );
-    const updateFirstRequest = await requestService.updateRequest(
-      firstRequest.id,
-      {
-        id: firstRequest.id,
-        access_token_hash: firstRequest.access_token_hash,
-        node_address: firstRequest.node_address,
-        amount: firstRequest.amount,
-        chain_id: firstRequest.chain_id,
-        reason: firstRequest.reason,
-        transaction_hash: firstRequest.transaction_hash,
-        status: "FAILED",
-      }
-    );
-    const unresolvedRequests = await requestService.getUnresolvedRequests();
-    const sumOfAmountByChainId = await requestService.sumAmountOfRequests(
-      unresolvedRequests ?? []
-    );
-    assert.equal(sumOfAmountByChainId[1], MOCK_AMOUNT);
-    assert.equal(sumOfAmountByChainId[2], MOCK_AMOUNT);
-  });
-  it("should calculate available and frozen funds", async function () {
-    const firstRequest = await createAccessTokenAndRequest(
-      accessTokenService,
-      requestService,
-      mockRequestParams(1)
-    );
-    const secondRequest = await createAccessTokenAndRequest(
-      accessTokenService,
-      requestService,
-      mockRequestParams(1)
-    );
-    const thirdRequest = await createAccessTokenAndRequest(
-      accessTokenService,
-      requestService,
-      mockRequestParams(2)
-    );
-    const updateFirstRequest = await requestService.updateRequest(
-      firstRequest.id,
-      {
-        id: firstRequest.id,
-        access_token_hash: firstRequest.access_token_hash,
-        node_address: firstRequest.node_address,
-        amount: firstRequest.amount,
-        chain_id: firstRequest.chain_id,
-        reason: firstRequest.reason,
-        transaction_hash: firstRequest.transaction_hash,
-        status: "FAILED",
-      }
-    );
-    const unresolvedRequests = await requestService.getUnresolvedRequests();
-    const sumOfUnresolvedRequestsByChainId =
-      await requestService.sumAmountOfRequests(unresolvedRequests ?? []);
-
-    const availableFunds = await requestService.calculateAvailableFunds(
-      sumOfUnresolvedRequestsByChainId,
-      sumOfUnresolvedRequestsByChainId
-    );
-    assert.equal(availableFunds[1], 0);
-    assert.equal(availableFunds[2], 0);
-  });
   it("should return all successful and unresolved requests by access token", async function () {
     const firstRequest = await createAccessTokenAndRequest(
       accessTokenService,
@@ -389,8 +314,10 @@ describe("test RequestService class", function () {
       )
     );
 
-    const actualSum =
-      await requestService.getSumUnresolvedAndSuccessfulRequests();
+    const actualSum = await requestService.getSumOfRequestsByStatus([
+      ...constants.UNRESOLVED_REQUESTS_STATUSES,
+      "SUCCESS",
+    ]);
 
     const expectedSum = [
       ...successfulRequestsAmounts,
@@ -454,10 +381,10 @@ describe("test RequestService class", function () {
       )
     );
 
-    const actualSum =
-      await requestService.getSumUnresolvedAndSuccessfulRequests(
-        mockToken.token
-      );
+    const actualSum = await requestService.getSumOfRequestsByStatus(
+      [...constants.UNRESOLVED_REQUESTS_STATUSES, "SUCCESS"],
+      mockToken.token
+    );
 
     const expectedSum = [
       ...successfulRequestsAmounts,

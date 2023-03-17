@@ -158,6 +158,39 @@ export class RequestService {
   }
 
   /**
+   *  Calculates the sum of requests by status from the database.
+   * @param statuses An array of request statuses to filter by.
+   *@param accessTokenHash (Optional) Access token hash to filter by.
+   *@returns A promise that resolves to the sum of requests matching the given criteria.
+   */
+  public async getSumOfRequestsByStatus(
+    statuses: RequestDB["status"][],
+    accessTokenHash?: string
+  ): Promise<bigint> {
+    let queryOptions: { access_token_hash?: string } = {};
+    // If accessTokenHash is provided, add it to the query options
+    if (accessTokenHash) {
+      queryOptions["access_token_hash"] = accessTokenHash;
+    }
+
+    // Get the sum of requests for each status in the given array
+    const sums = await Promise.all(
+      statuses.map((status) =>
+        db.getSumOfRequests(this.db, {
+          status,
+          ...queryOptions,
+        })
+      )
+    );
+
+    // Reduce the sums array to calculate the total sum of requests by status
+    const sumOfStatuses = sums.reduce((acc, next) => acc + next, BigInt(0));
+
+    // Return the total sum of requests by status
+    return sumOfStatuses;
+  }
+
+  /**
    * Queries all requests that are successful and that have not been processed.
    * Th requests that have not been processed t have neither succeeded nor failed.
    */
@@ -183,38 +216,6 @@ export class RequestService {
     return [...successfulRequests, ...allUnresolvedRequests];
   }
 
-  public async getSumUnresolvedAndSuccessfulRequests(
-    accessTokenHash?: string
-  ): Promise<bigint> {
-    // status of requests that are considered successful or unsuccessful
-    let statusArray: RequestDB["status"][] = [
-      "FRESH",
-      "PROCESSING",
-      "PENDING",
-      "SUCCESS",
-    ];
-
-    let queryOptions: { access_token_hash?: string } = {};
-
-    // filter by accessTokenHash if param is sent
-    if (accessTokenHash) {
-      queryOptions["access_token_hash"] = accessTokenHash;
-    }
-
-    const sums = await Promise.all(
-      statusArray.map((status) =>
-        db.getSumOfRequests(this.db, {
-          status,
-          ...queryOptions,
-        })
-      )
-    );
-
-    const sumOfStatuses = sums.reduce((acc, next) => acc + next, BigInt(0));
-
-    return sumOfStatuses;
-  }
-
   /**
    * Receives an array of requests and returns them in a key value object where the key is the chain
    * and the value is the array of requests
@@ -233,52 +234,4 @@ export class RequestService {
     }
     return requestsKeyedByChainId;
   }
-
-  /**
-   * Receives an array of requests and returns the sum per chain
-   * @param requests RequestDB[]
-   * @returns [chainId: number]: number
-   */
-  public sumAmountOfRequests(requests: RequestDB[]): {
-    [chainId: number]: bigint;
-  } {
-    const requestsGroupedByChainId = this.groupRequestsByChainId(requests);
-    {
-      const sumOfRequestsByChainId: { [chainId: number]: bigint } = {};
-      for (const chainId in requestsGroupedByChainId) {
-        const sumOfRequests = requestsGroupedByChainId[chainId].reduce(
-          (prev, next) => BigInt(prev) + BigInt(next.amount),
-          BigInt(0)
-        );
-        sumOfRequestsByChainId[chainId] = sumOfRequests;
-      }
-      return sumOfRequestsByChainId;
-    }
-  }
-
-  /**
-   * Receives balances and frozen balances and returns a key value pair of the available balances
-   * @param balances object where the key is the chain and the value is the balance for that chain
-   * @param frozenBalances object where the key is the chain and the value is the frozen balance for that chain
-   * @returns [chainId: number]: number
-   */
-  public calculateAvailableFunds = (
-    balances: {
-      [chainId: number]: bigint;
-    },
-    frozenBalances: {
-      [chainId: number]: bigint;
-    }
-  ): {
-    [chainId: number]: bigint;
-  } => {
-    const availableBalances: { [chainId: number]: bigint } = {};
-    for (const chainId in balances) {
-      const totalBalance = balances[chainId];
-      const frozenBalance = frozenBalances[Number(chainId)] ?? BigInt(0);
-      const availableBalance = totalBalance - frozenBalance;
-      availableBalances[Number(chainId)] = availableBalance;
-    }
-    return availableBalances;
-  };
 }

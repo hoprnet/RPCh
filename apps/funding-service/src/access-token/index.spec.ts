@@ -46,7 +46,8 @@ describe("test AccessTokenService class", function () {
     );
 
     expect(new Date(dbAccessToken.expired_at).valueOf()).toBeCloseTo(
-      expectedExpireDate.valueOf()
+      expectedExpireDate.valueOf(),
+      3
     );
   });
   it("should get access token", async function () {

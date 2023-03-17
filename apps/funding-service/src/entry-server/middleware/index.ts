@@ -4,6 +4,7 @@ import { RequestService } from "../../request";
 import { isExpired, createLogger } from "../../utils";
 import { validationResult, body } from "express-validator";
 import { errors } from "pg-promise";
+import * as constants from "../../constants";
 
 const log = createLogger(["entry-server", "middleware"]);
 
@@ -63,7 +64,10 @@ export const tokenCanRequestFunds =
     const dbToken = await accessTokenService.getAccessToken(accessTokenHash);
 
     const sumOfRequestsByAccessToken =
-      await requestService.getSumUnresolvedAndSuccessfulRequests(dbToken.token);
+      await requestService.getSumOfRequestsByStatus(
+        [...constants.UNRESOLVED_REQUESTS_STATUSES, "SUCCESS"],
+        accessTokenHash
+      );
 
     const hasEnough = await doesAccessTokenHaveEnoughBalance(
       sumOfRequestsByAccessToken,

@@ -89,16 +89,13 @@ export const entryServer = (ops: {
           accessTokenHash,
           chainId,
         });
-        const allUnresolvedAndSuccessfulRequestsByAccessToken =
-          await ops.requestService.getUnresolvedAndSuccessfulRequests(
-            accessTokenHash
-          );
-        const amountUsed = ops.requestService.sumAmountOfRequests(
-          allUnresolvedAndSuccessfulRequestsByAccessToken
+        const amountUsed = await ops.requestService.getSumOfRequestsByStatus(
+          [...constants.UNRESOLVED_REQUESTS_STATUSES, "SUCCESS"],
+          accessTokenHash
         );
         return res.json({
           id: request.id,
-          amountLeft: String(ops.maxAmountOfTokens - amountUsed[chainId]),
+          amountLeft: String(ops.maxAmountOfTokens - amountUsed),
         });
       } catch (e) {
         log.error("Can not request funding", e);
@@ -163,19 +160,17 @@ export const entryServer = (ops: {
           ops.walletAddress,
           providers
         );
-        const compromisedRequests =
-          await ops.requestService.getUnresolvedRequests();
-        const frozenBalances = await ops.requestService.sumAmountOfRequests(
-          compromisedRequests ?? []
+
+        const frozenBalance = await ops.requestService.getSumOfRequestsByStatus(
+          [...constants.UNRESOLVED_REQUESTS_STATUSES]
         );
 
-        const availableBalances = ops.requestService.calculateAvailableFunds(
-          balances,
-          frozenBalances
-        );
+        // DISCLAIMER: hardcoded to only accept one chain at a time
+        const availableBalance = balances[0] - frozenBalance;
+
         // all balances are in wei
         const jsonString = JSON.stringify(
-          { availableBalances, frozenBalances },
+          { availableBalance, frozenBalance },
           utils.bigIntReplacer
         );
         return res.json(JSON.parse(jsonString));
