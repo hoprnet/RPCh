@@ -221,6 +221,7 @@ describe("test db functions", function () {
     });
   });
   describe("quota table", function () {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     let client: ClientDB;
     beforeEach(async function () {
       const mockClient = createMockClient();

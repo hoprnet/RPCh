@@ -2,8 +2,8 @@ import crypto from "crypto";
 import fs from "fs";
 import { Wallet, utils as ethersUtils } from "ethers";
 import { Identity } from "@rpch/crypto-bridge/nodejs";
+import { ALGORITHM } from "./constants";
 
-const ALGORITHM = "aes-192-cbc";
 const generateIv = () => crypto.randomBytes(16);
 const getSalt = (str: string): Buffer => crypto.scryptSync(str, "salt", 24);
 

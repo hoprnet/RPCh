@@ -1,5 +1,4 @@
 import assert from "assert";
-import { FundingServiceApi } from "../funding-service-api";
 import * as db from "../db";
 import { MockPgInstanceSingleton } from "../db/index.spec";
 import { createRegisteredNode, getRegisteredNode } from "../registered-node";

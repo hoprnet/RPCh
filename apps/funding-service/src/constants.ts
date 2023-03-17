@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { RequestDB } from "./types";
 
 const {
   // Secret key used for access token generation
@@ -33,19 +34,29 @@ const MAX_AMOUNT_OF_TOKENS = process.env.MAX_AMOUNT_OF_TOKENS
 // Amount of milliseconds that a access token is valid
 const TIMEOUT = process.env.TIMEOUT ? Number(process.env.TIMEOUT) : 30 * 60_000;
 
+// A map of connection information for different Ethereum chains.
 const CONNECTION_INFO: { [chainId: number]: ethers.utils.ConnectionInfo } = {
   [GNOSIS_CHAIN_ID]: { url: "https://primary.gnosis-chain.rpc.hoprtech.net" },
 };
 
+// A map of smart contract addresses for different Ethereum chains.
 const SMART_CONTRACTS_PER_CHAIN: { [chainId: number]: string } = {
   [GNOSIS_CHAIN_ID]: "0x66225dE86Cac02b32f34992eb3410F59DE416698",
 };
 
+// Override chain ID, RPC URL, and smart contract address if provided.
 if (FORCE_CHAIN_ID && FORCE_RPC_URL && FORCE_SMART_CONTRACT_ADDRESS) {
   CONNECTION_INFO[Number(FORCE_CHAIN_ID)] = { url: FORCE_RPC_URL };
   SMART_CONTRACTS_PER_CHAIN[Number(FORCE_CHAIN_ID)] =
     FORCE_SMART_CONTRACT_ADDRESS;
 }
+
+// An array of request statuses that are considered unresolved.
+const UNRESOLVED_REQUESTS_STATUSES: RequestDB["status"][] = [
+  "FRESH",
+  "PENDING",
+  "PROCESSING",
+];
 
 export {
   SECRET_KEY,
@@ -60,4 +71,5 @@ export {
   FORCE_SMART_CONTRACT_ADDRESS,
   CONNECTION_INFO,
   SMART_CONTRACTS_PER_CHAIN,
+  UNRESOLVED_REQUESTS_STATUSES,
 };

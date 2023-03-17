@@ -2,46 +2,78 @@ import { NextFunction, Request, Response } from "express";
 import { AccessTokenService } from "../../access-token";
 import { RequestService } from "../../request";
 import { isExpired, createLogger } from "../../utils";
-import { utils } from "@rpch/common";
 import { validationResult, body } from "express-validator";
+import { errors } from "pg-promise";
+import * as constants from "../../constants";
 
 const log = createLogger(["entry-server", "middleware"]);
 
 /**
- * Middleware used to check if token has expired or has been used with too many requests
+ * Middleware used to check if token has expired
  * @param accessTokenService
  * @param requestService
  * @param maxAmountOfTokens
  * @param requestFunds
  */
-export const tokenIsValid =
-  (
-    accessTokenService: AccessTokenService,
-    requestService: RequestService,
-    maxAmountOfTokens: bigint,
-    requestFunds?: boolean
-  ) =>
+export const tokenIsActive =
+  (accessTokenService: AccessTokenService) =>
   async (req: Request, res: Response, next: NextFunction) => {
     const accessTokenHash: string | undefined =
       req.headers["x-access-token"]?.toString();
     log.verbose("validating token", accessTokenHash);
     if (!accessTokenHash)
       return res.status(400).json({ errors: "Missing Access Token" });
-    const dbToken = await accessTokenService.getAccessToken(accessTokenHash);
-    if (!dbToken)
-      return res.status(404).json({ errors: "Access Token does not exist" });
 
-    if (isExpired(dbToken.expired_at)) {
-      log.verbose("token has expired", accessTokenHash);
-      return res.status(401).json({ errors: "Access Token expired" });
+    try {
+      const dbToken = await accessTokenService.getAccessToken(accessTokenHash);
+
+      if (isExpired(dbToken.expired_at)) {
+        log.verbose("token has expired", accessTokenHash);
+        return res.status(401).json({ errors: "Access Token expired" });
+      }
+
+      next();
+    } catch (e) {
+      if (e instanceof errors.QueryResultError) {
+        return res.status(404).json({ errors: "Access Token does not exist" });
+      } else {
+        log.error("failed to validate token", req);
+      }
+    }
+  };
+
+export const tokenCanRequestFunds =
+  (
+    accessTokenService: AccessTokenService,
+    requestService: RequestService,
+    maxAmountOfTokens: bigint
+  ) =>
+  async (req: Request, res: Response, next: NextFunction) => {
+    const accessTokenHash: string | undefined =
+      req.headers["x-access-token"]?.toString();
+
+    log.verbose("validating if token can request funds", accessTokenHash);
+
+    if (!accessTokenHash)
+      return res.status(400).json({ errors: "Missing Access Token" });
+
+    if (!req.body.amount) {
+      return res.status(400).json({ errors: "Missing amount to fund" });
     }
 
-    const hasEnough = await doesAccessTokenHaveEnoughBalance({
-      requestService,
+    await accessTokenService.getAccessToken(accessTokenHash);
+
+    const sumOfRequestsByAccessToken =
+      await requestService.getSumOfRequestsByStatus(
+        [...constants.UNRESOLVED_REQUESTS_STATUSES, "SUCCESS"],
+        accessTokenHash
+      );
+
+    const hasEnough = await doesAccessTokenHaveEnoughBalance(
+      sumOfRequestsByAccessToken,
       maxAmountOfTokens,
-      token: dbToken.token,
-      requestAmount: requestFunds ? BigInt(req.body.amount) : BigInt(0),
-    });
+      BigInt(req.body.amount)
+    );
 
     if (!hasEnough) {
       log.verbose(
@@ -60,41 +92,21 @@ export const tokenIsValid =
  * Checks if token can make another request without exceeding max amount of tokens
  * @returns boolean
  */
-export const doesAccessTokenHaveEnoughBalance = async (params: {
-  requestService: RequestService;
-  token: string;
-  maxAmountOfTokens: bigint;
-  requestAmount?: bigint;
-}): Promise<Boolean> => {
-  const requestsByAccessToken =
-    await params.requestService.getRequestsByAccessToken(params.token);
-  const totalRequests = requestsByAccessToken?.filter(
-    (req) =>
-      req.status !== "FAILED" &&
-      req.status !== "FAILED-DURING-PROCESSING" &&
-      req.status !== "REJECTED-DURING-PROCESSING"
-  );
-  const sumOfTokensTotalPossibleRequests =
-    totalRequests?.reduce(
-      (prev, next) => BigInt(prev) + BigInt(next.amount),
-      BigInt(0)
-    ) ?? BigInt(0);
+export const doesAccessTokenHaveEnoughBalance = async (
+  sumOfRequests: bigint,
+  maxAmountOfTokens: bigint,
+  requestAmount: bigint
+): Promise<Boolean> => {
+  const tokenBalanceWithRequestAmount = sumOfRequests + requestAmount;
 
-  const tokenBalanceWithRequestAmount =
-    sumOfTokensTotalPossibleRequests + (params.requestAmount ?? BigInt(0));
-  if (params.maxAmountOfTokens < tokenBalanceWithRequestAmount) {
+  if (maxAmountOfTokens < tokenBalanceWithRequestAmount) {
     return false;
   }
+
   return true;
 };
 
-export const validateAmountAndToken = (ops: {
-  accessTokenService: AccessTokenService;
-  requestService: RequestService;
-  walletAddress: string;
-  maxAmountOfTokens: bigint;
-  timeout: number;
-}) => [
+export const validateFundingRequestBody = () => [
   body("amount")
     .exists()
     .notEmpty()
@@ -114,13 +126,7 @@ export const validateAmountAndToken = (ops: {
         return res.status(400).json({ errors: errors.array() });
       }
 
-      // Call tokenIsValid with validated amount
-      tokenIsValid(
-        ops.accessTokenService,
-        ops.requestService,
-        ops.maxAmountOfTokens,
-        true
-      )(req, res, next);
+      next();
     } catch (err) {
       log.error("could not validate amount, chainId or token");
       return res.status(500).json({ errors: "Unexpected error" });
