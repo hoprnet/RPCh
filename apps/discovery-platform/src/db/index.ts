@@ -72,7 +72,11 @@ export const getRegisteredNodes = async (
     sqlText,
     values
   );
-  log.verbose("Registered nodes with filters query DB response", dbRes);
+  log.verbose(
+    "Registered nodes with filters query DB response",
+    filters,
+    dbRes
+  );
 
   return dbRes;
 };
