@@ -99,11 +99,13 @@ describe("test entry server", function () {
       .get("/api/access-token")
       .set("Accept", "application/json");
 
-    await agent
+    const b = await agent
       .post("/api/request/funds/0x0000000000000000")
       .send({ amount: String(MAX_AMOUNT_OF_TOKENS - BigInt(1)), chainId: 80 })
       .set("Accept", "application/json")
-      .set("x-access-token", responseToken.body.accessToken);
+      .set("x-access-token", responseToken.body.accessToken)
+      .expect(200);
+
     await agent
       .post("/api/request/funds/0x0000000000000000")
       .send({ amount: String(MAX_AMOUNT_OF_TOKENS), chainId: 80 })

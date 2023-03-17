@@ -3,7 +3,11 @@ import { AccessTokenService } from "../access-token";
 import { getBalanceForAllChains, getProviders } from "../blockchain";
 import { RequestService } from "../request";
 import { createLogger } from "../utils";
-import { tokenIsValid, validateAmountAndToken } from "./middleware";
+import {
+  tokenCanRequestFunds,
+  tokenIsActive,
+  validateFundingRequestBody,
+} from "./middleware";
 import { validationResult, param } from "express-validator";
 import * as constants from "../constants";
 import { utils } from "@rpch/common";
@@ -51,7 +55,13 @@ export const entryServer = (ops: {
 
   app.post(
     "/api/request/funds/:blockchainAddress",
-    validateAmountAndToken(ops),
+    validateFundingRequestBody(),
+    tokenIsActive(ops.accessTokenService),
+    tokenCanRequestFunds(
+      ops.accessTokenService,
+      ops.requestService,
+      ops.maxAmountOfTokens
+    ),
     async (req: express.Request, res: express.Response) => {
       try {
         log.verbose(
@@ -99,7 +109,7 @@ export const entryServer = (ops: {
 
   app.get(
     "/api/request/status",
-    tokenIsValid(ops.accessTokenService),
+    tokenIsActive(ops.accessTokenService),
     async (req, res) => {
       try {
         log.verbose(`GET /api/request/status`);
@@ -116,7 +126,7 @@ export const entryServer = (ops: {
   app.get(
     "/api/request/status/:requestId",
     param("requestId").isNumeric(),
-    tokenIsValid(ops.accessTokenService),
+    tokenIsActive(ops.accessTokenService),
     async (req, res) => {
       try {
         log.verbose(`GET /api/request/status/:requestId`, req.params);
@@ -137,7 +147,7 @@ export const entryServer = (ops: {
 
   app.get(
     "/api/funds",
-    tokenIsValid(ops.accessTokenService),
+    tokenIsActive(ops.accessTokenService),
     async (req, res) => {
       try {
         log.verbose(`GET /api/funds`);

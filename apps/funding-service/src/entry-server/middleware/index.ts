@@ -8,13 +8,13 @@ import { errors } from "pg-promise";
 const log = createLogger(["entry-server", "middleware"]);
 
 /**
- * Middleware used to check if token has expired or has been used with too many requests
+ * Middleware used to check if token has expired
  * @param accessTokenService
  * @param requestService
  * @param maxAmountOfTokens
  * @param requestFunds
  */
-export const tokenIsValid =
+export const tokenIsActive =
   (accessTokenService: AccessTokenService) =>
   async (req: Request, res: Response, next: NextFunction) => {
     const accessTokenHash: string | undefined =
@@ -51,7 +51,7 @@ export const tokenCanRequestFunds =
     const accessTokenHash: string | undefined =
       req.headers["x-access-token"]?.toString();
 
-    log.verbose("validating token", accessTokenHash);
+    log.verbose("validating if token can request funds", accessTokenHash);
 
     if (!accessTokenHash)
       return res.status(400).json({ errors: "Missing Access Token" });
@@ -80,6 +80,8 @@ export const tokenCanRequestFunds =
         .status(401)
         .json({ errors: "Exceeded max amount of tokens redeemed" });
     }
+
+    next();
   };
 
 /**
@@ -100,13 +102,7 @@ export const doesAccessTokenHaveEnoughBalance = async (
   return true;
 };
 
-export const validateAmountAndToken = (ops: {
-  accessTokenService: AccessTokenService;
-  requestService: RequestService;
-  walletAddress: string;
-  maxAmountOfTokens: bigint;
-  timeout: number;
-}) => [
+export const validateFundingRequestBody = () => [
   body("amount")
     .exists()
     .notEmpty()
@@ -126,8 +122,7 @@ export const validateAmountAndToken = (ops: {
         return res.status(400).json({ errors: errors.array() });
       }
 
-      // Call tokenIsValid with validated amount
-      tokenIsValid(ops.accessTokenService)(req, res, next);
+      next();
     } catch (err) {
       log.error("could not validate amount, chainId or token");
       return res.status(500).json({ errors: "Unexpected error" });
