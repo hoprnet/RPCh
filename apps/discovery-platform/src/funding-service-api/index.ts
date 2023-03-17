@@ -1,16 +1,16 @@
 import fetch, { Response } from "node-fetch";
 import {
-  getAccessTokenResponse,
-  getRequestStatusResponse,
-  postFundingRequest,
-  postFundingResponse,
-} from "./dto";
+  GetAccessTokenResponse,
+  GetRequestStatusResponse,
+  PostFundingRequest,
+  PostFundingResponse,
+  RegisteredNodeDB,
+} from "../types";
 import { isExpired } from "../utils";
-import { QueryRegisteredNode } from "../registered-node/dto";
 import { DBInstance } from "../db";
 import { getRegisteredNode, updateRegisteredNode } from "../registered-node";
 import { createLogger } from "../utils";
-import { createFundingRequest } from "../funding-requests";
+import { createFundingRequest } from "../funding-request";
 import retry from "async-retry";
 
 const log = createLogger(["funding-service-api"]);
@@ -40,7 +40,7 @@ export class FundingServiceApi {
    * Save new access token to instance
    * @param ops
    */
-  private saveAccessToken(ops: getAccessTokenResponse): void {
+  private saveAccessToken(ops: GetAccessTokenResponse): void {
     (this.accessToken = ops.accessToken),
       (this.expiredAt = new Date(ops.expiredAt));
     this.amountLeft = ops.amountLeft;
@@ -51,7 +51,7 @@ export class FundingServiceApi {
    */
   private async fetchAccessToken(): Promise<string> {
     const res = await fetch(`${this.url}/api/access-token`);
-    const resJson: getAccessTokenResponse = await res.json();
+    const resJson: GetAccessTokenResponse = await res.json();
     log.verbose("Fetched access token", resJson);
     this.saveAccessToken(resJson);
     return resJson.accessToken;
@@ -108,7 +108,7 @@ export class FundingServiceApi {
    */
   public async requestFunds(params: {
     amount: bigint;
-    node: QueryRegisteredNode;
+    node: RegisteredNodeDB;
     previousRequestId?: number;
     amountOfRetries?: number;
   }) {
@@ -129,7 +129,7 @@ export class FundingServiceApi {
 
       log.verbose("funding service response", fundingResponseJson);
 
-      const { id: requestId, amountLeft }: postFundingResponse =
+      const { id: requestId, amountLeft }: PostFundingResponse =
         fundingResponseJson;
 
       await updateRegisteredNode(this.db, {
@@ -189,7 +189,7 @@ export class FundingServiceApi {
       },
     });
 
-    const resJson: getRequestStatusResponse = await res.json();
+    const resJson: GetRequestStatusResponse = await res.json();
 
     return resJson;
   }
@@ -294,7 +294,7 @@ export class FundingServiceApi {
   }
 
   public async fetchRequestFunds(
-    dbNode: QueryRegisteredNode,
+    dbNode: RegisteredNodeDB,
     amount: bigint,
     opts?: retry.Options | undefined
   ): Promise<Response> {
@@ -302,7 +302,7 @@ export class FundingServiceApi {
       async (bail, attempt) => {
         log.verbose({ attempt });
         await this.getAccessToken(amount);
-        const body: postFundingRequest = {
+        const body: PostFundingRequest = {
           amount: amount.toString(),
           chainId: dbNode.chain_id,
         };

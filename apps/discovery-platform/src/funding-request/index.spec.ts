@@ -3,13 +3,10 @@ import { FundingServiceApi } from "../funding-service-api";
 import * as db from "../db";
 import { MockPgInstanceSingleton } from "../db/index.spec";
 import { createRegisteredNode, getRegisteredNode } from "../registered-node";
-import { CreateRegisteredNode } from "../registered-node/dto";
+import { RegisteredNode } from "../types";
 import { createFundingRequest } from ".";
 
-const mockNode = (
-  peerId?: string,
-  hasExitNode?: boolean
-): CreateRegisteredNode => ({
+const mockNode = (peerId?: string, hasExitNode?: boolean): RegisteredNode => ({
   hasExitNode: hasExitNode ?? true,
   peerId: peerId ?? "peerId",
   chainId: 100,
@@ -32,10 +29,8 @@ describe("test funding requests functions", function () {
   });
 
   it("should save funding request", async function () {
-    const mockedNode = await createRegisteredNode(dbInstance, mockNode());
-    if (!mockedNode) throw new Error("Failed to create node");
+    await createRegisteredNode(dbInstance, mockNode());
     const createdNode = await getRegisteredNode(dbInstance, mockNode().peerId);
-    if (!createdNode) throw new Error("Failed to query created node");
 
     const createdFundedRequest = await createFundingRequest(dbInstance, {
       amount: BigInt("1"),

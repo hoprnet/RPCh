@@ -49,6 +49,8 @@ const USER_HOPRD_TOKEN_CAPABILITIES = [
   "messagesSendMessage",
   "tokensGetToken",
 ];
+// Used to create
+const AMOUNT_OF_RANDOM_WORDS_FOR_TRIAL_ID = 5;
 
 export {
   PORT,
@@ -61,4 +63,5 @@ export {
   SUBGRAPH_URL,
   SKIP_CHECK_COMMITMENT,
   MAX_DB_CONNECTIONS,
+  AMOUNT_OF_RANDOM_WORDS_FOR_TRIAL_ID,
 };

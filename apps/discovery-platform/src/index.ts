@@ -36,17 +36,6 @@ const start = async (ops: {
   // set server timeout to 30s
   server.setTimeout(30e3);
 
-  // DISCLAIMER: ACTIVATE THIS WHEN FUNDING IS STABLE
-  // // keep track of all pending funding requests to update status or retry
-  // const checkForPendingRequests = setInterval(async () => {
-  //   try {
-  //     log.normal("tracking pending requests");
-  //     await fundingServiceApi.checkForPendingRequests();
-  //   } catch (e) {
-  //     log.error("Failed to track pending requests", e);
-  //   }
-  // }, 1000);
-
   // check if fresh nodes have committed
   let checkCommitmentForFreshNodesRunning = false;
   const checkCommitmentForFreshNodes = setInterval(async () => {
@@ -87,7 +76,6 @@ const start = async (ops: {
   }, 5000);
 
   return () => {
-    // clearInterval(checkForPendingRequests);
     clearInterval(checkCommitmentForFreshNodes);
   };
 };
