@@ -172,11 +172,13 @@ export const createToken = async ({
   apiToken,
   tokenCapabilities,
   description,
+  maxCalls,
 }: {
   apiEndpoint: string;
   apiToken: string | undefined;
   tokenCapabilities: string[];
   description: string;
+  maxCalls: number;
 }) => {
   const [url, headers] = createApiUrl(
     "http",
@@ -184,8 +186,6 @@ export const createToken = async ({
     "/api/v2/tokens",
     apiToken
   );
-  // max number of requests a token can do
-  const MAX_CALLS = 100;
 
   const body: {
     capabilities: {
@@ -201,7 +201,7 @@ export const createToken = async ({
         {
           type: "calls",
           conditions: {
-            max: MAX_CALLS,
+            max: maxCalls,
           },
         },
       ],

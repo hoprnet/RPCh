@@ -61,6 +61,7 @@ describe("test hoprd.ts", function () {
         apiToken: ENTRY_NODE_API_TOKEN,
         tokenCapabilities: ["tokensCreate"],
         description: "test",
+        maxCalls: 100,
       });
 
       assert.equal(res, "token");
@@ -76,6 +77,7 @@ describe("test hoprd.ts", function () {
           apiToken: ENTRY_NODE_API_TOKEN,
           tokenCapabilities: ["tokensCreate"],
           description: "test",
+          maxCalls: 100,
         });
       } catch (e: any) {
         assert.equal(
