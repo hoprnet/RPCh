@@ -1,7 +1,6 @@
 import assert from "assert";
 import { checkCommitment, validateNode } from "./index";
-import { GetAccountChannelsResponse } from "./dto";
-import { QueryRegisteredNode } from "../registered-node/dto";
+import { RegisteredNodeDB, GetAccountChannelsResponse } from "../types";
 import nock from "nock";
 
 const GRAPH_HOPR_URL =
@@ -24,7 +23,7 @@ const mockGraphResponse: (
   },
 });
 
-const createMockNode = (peerId?: string): QueryRegisteredNode => ({
+const createMockNode = (peerId?: string): RegisteredNodeDB => ({
   chain_id: 100,
   id: peerId ?? "peerId",
   has_exit_node: true,
@@ -74,7 +73,7 @@ describe("test graph api functions", function () {
   });
   describe("check commitment", function () {
     it("should return false if not enough channels are open", async function () {
-      const node: QueryRegisteredNode = createMockNode();
+      const node: RegisteredNodeDB = createMockNode();
       const MIN_BALANCE = 1;
       const MIN_CHANNELS_OPEN = 5;
       nock(GRAPH_HOPR_URL).post(/.*/).reply(200, mockGraphResponse(3, "1"), {
@@ -88,7 +87,7 @@ describe("test graph api functions", function () {
       assert.equal(isCommitted, false);
     });
     it("should return true if enough channels are open", async function () {
-      const node: QueryRegisteredNode = createMockNode();
+      const node: RegisteredNodeDB = createMockNode();
       const MIN_BALANCE = 1;
       const MIN_CHANNELS_OPEN = 5;
       nock(GRAPH_HOPR_URL).post(/.*/).reply(200, mockGraphResponse(5, "1"), {
