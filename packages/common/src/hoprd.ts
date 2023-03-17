@@ -166,3 +166,67 @@ export const fetchPeerId = async ({
     );
   }
 };
+
+export const createToken = async ({
+  apiEndpoint,
+  apiToken,
+  tokenCapabilities,
+  description,
+}: {
+  apiEndpoint: string;
+  apiToken: string | undefined;
+  tokenCapabilities: string[];
+  description: string;
+}) => {
+  const [url, headers] = createApiUrl(
+    "http",
+    apiEndpoint,
+    "/api/v2/tokens",
+    apiToken
+  );
+  // max number of requests a token can do
+  const MAX_CALLS = 100;
+
+  const body: {
+    capabilities: {
+      endpoint: string[];
+      limits: { type: "calls"; conditions: { max: number } }[];
+    };
+    lifetime: number;
+    description: string;
+  } = {
+    capabilities: {
+      endpoint: tokenCapabilities,
+      limits: [
+        {
+          type: "calls",
+          conditions: {
+            max: MAX_CALLS,
+          },
+        },
+      ],
+    },
+    lifetime: 30 * 60e3, // 30 mins
+    description,
+  };
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  });
+
+  if (response.status === 201) {
+    log.verbose("received a new token");
+    const result: { token: string } = await response.json();
+    return result.token;
+  } else {
+    let errorMessage = await response.text();
+    log.error(
+      "failed to get token from HOPRd node",
+      response.status,
+      errorMessage
+    );
+    throw new Error(errorMessage);
+  }
+};
