@@ -1,12 +1,11 @@
 import { assert } from "chai";
 import { Express } from "express";
-import { IMemoryDb } from "pg-mem";
 import request from "supertest";
 import { AccessTokenService } from "../access-token";
-import { DBInstance } from "../db";
 import { MockPgInstanceSingleton } from "../db/index.spec";
 import { RequestService } from "../request";
 import { entryServer } from ".";
+import { DBInstance } from "../types";
 
 const SECRET_KEY = "SECRET";
 const MAX_AMOUNT_OF_TOKENS = BigInt(40);
@@ -64,6 +63,7 @@ describe("test entry server", function () {
         token,
         expired_at: new Date("2020-10-10").toISOString(),
         id: 1,
+        updated_at: new Date("2020-10-10").toISOString(),
         created_at: new Date("2020-10-10").toISOString(),
       }));
 
@@ -99,11 +99,13 @@ describe("test entry server", function () {
       .get("/api/access-token")
       .set("Accept", "application/json");
 
-    await agent
+    const b = await agent
       .post("/api/request/funds/0x0000000000000000")
       .send({ amount: String(MAX_AMOUNT_OF_TOKENS - BigInt(1)), chainId: 80 })
       .set("Accept", "application/json")
-      .set("x-access-token", responseToken.body.accessToken);
+      .set("x-access-token", responseToken.body.accessToken)
+      .expect(200);
+
     await agent
       .post("/api/request/funds/0x0000000000000000")
       .send({ amount: String(MAX_AMOUNT_OF_TOKENS), chainId: 80 })
