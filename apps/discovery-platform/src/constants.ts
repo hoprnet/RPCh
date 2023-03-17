@@ -49,6 +49,10 @@ const USER_HOPRD_TOKEN_CAPABILITIES = [
   "messagesSendMessage",
   "tokensGetToken",
 ];
+
+// Max requests hoprd access token can me used for
+const MAX_CALLS_HOPRD_ACCESS_TOKEN = 60e3 * 30;
+
 // Used to create
 const AMOUNT_OF_RANDOM_WORDS_FOR_TRIAL_ID = 5;
 
@@ -64,4 +68,7 @@ export {
   SKIP_CHECK_COMMITMENT,
   MAX_DB_CONNECTIONS,
   AMOUNT_OF_RANDOM_WORDS_FOR_TRIAL_ID,
+  MAX_CALLS_HOPRD_ACCESS_TOKEN,
+  DP_HOPRD_TOKEN_CAPABILITIES,
+  USER_HOPRD_TOKEN_CAPABILITIES,
 };

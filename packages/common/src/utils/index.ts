@@ -82,12 +82,13 @@ export const isExpired = (
  * @param apiToken
  * @returns URL in string
  */
-export const createApiUrl = (
-  protocol: "http" | "ws",
-  apiEndpoint: string,
-  path: string,
-  apiToken?: string
-): [string, any] => {
+export const createApiUrl = (params: {
+  protocol: "http" | "ws";
+  apiEndpoint: string;
+  path: string;
+  apiToken?: string;
+}): [string, any] => {
+  const { path, apiEndpoint, protocol, apiToken } = params;
   const url = new URL(path, apiEndpoint);
 
   if (protocol === "ws") {
@@ -104,7 +105,6 @@ export const createApiUrl = (
   if (apiToken) {
     headers["Authorization"] = "Basic " + btoa(apiToken);
   }
-
   return [url.toString(), headers];
 };
 

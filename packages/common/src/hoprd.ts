@@ -22,12 +22,12 @@ export const sendMessage = async ({
   path?: string[];
   hops?: number;
 }): Promise<void | string> => {
-  const [url, headers] = createApiUrl(
-    "http",
+  const [url, headers] = createApiUrl({
+    protocol: "http",
     apiEndpoint,
-    "/api/v2/messages",
-    apiToken
-  );
+    path: "/api/v2/messages",
+    apiToken,
+  });
 
   const body: {
     body: string;
@@ -94,12 +94,12 @@ export const createMessageListener = async (
   apiToken: string,
   onMessage: (message: string) => void
 ) => {
-  const [url] = createApiUrl(
-    "ws",
+  const [url] = createApiUrl({
+    protocol: "ws",
     apiEndpoint,
-    "/api/v2/messages/websocket",
-    apiToken
-  );
+    path: "/api/v2/messages/websocket",
+    apiToken,
+  });
   const ws = new WebSocket(url);
 
   ws.onopen = () => {
@@ -142,12 +142,12 @@ export const fetchPeerId = async ({
   apiEndpoint: string;
   apiToken: string | undefined;
 }): Promise<void | string> => {
-  const [url, headers] = createApiUrl(
-    "http",
+  const [url, headers] = createApiUrl({
+    protocol: "http",
     apiEndpoint,
-    "/api/v2/account/addresses",
-    apiToken
-  );
+    path: "/api/v2/account/addresses",
+    apiToken,
+  });
 
   const response = await fetch(url, {
     method: "GET",
@@ -180,23 +180,23 @@ export const createToken = async ({
   description: string;
   maxCalls: number;
 }) => {
-  const [url, headers] = createApiUrl(
-    "http",
+  const [url, headers] = createApiUrl({
+    protocol: "http",
     apiEndpoint,
-    "/api/v2/tokens",
-    apiToken
-  );
+    path: "/api/v2/tokens",
+    apiToken,
+  });
 
   const body: {
     capabilities: {
-      endpoint: string[];
+      endpoint: string;
       limits: { type: "calls"; conditions: { max: number } }[];
-    };
+    }[];
     lifetime: number;
     description: string;
   } = {
-    capabilities: {
-      endpoint: tokenCapabilities,
+    capabilities: tokenCapabilities.map((capability) => ({
+      endpoint: capability,
       limits: [
         {
           type: "calls",
@@ -205,7 +205,7 @@ export const createToken = async ({
           },
         },
       ],
-    },
+    })),
     lifetime: 30 * 60e3, // 30 mins
     description,
   };

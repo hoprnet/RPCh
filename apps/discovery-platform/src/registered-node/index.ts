@@ -1,7 +1,8 @@
 import * as db from "../db";
 import { RegisteredNode, RegisteredNodeDB } from "../types";
 import { createLogger } from "../utils";
-import { utils } from "@rpch/common";
+import { hoprd, utils } from "@rpch/common";
+import * as constants from "../constants";
 
 const log = createLogger(["registered-node"]);
 
@@ -76,8 +77,23 @@ export const getEligibleNode = async (
   if (readyNodes.length) {
     // choose selected entry node
     const selectedNode = utils.randomlySelectFromArray(readyNodes);
-    // TODO: get access token of selected node from capability based API
-    return selectedNode;
+    // get capability token of selected node for  Discovery Platform
+    const capabilityTokenForDP = await hoprd.createToken({
+      apiEndpoint: selectedNode.hoprd_api_endpoint,
+      apiToken: selectedNode.hoprd_api_token,
+      description: "access token for Discovery Platform",
+      tokenCapabilities: constants.DP_HOPRD_TOKEN_CAPABILITIES,
+      maxCalls: constants.MAX_CALLS_HOPRD_ACCESS_TOKEN,
+    });
+    const capabilityTokenForSdk = await hoprd.createToken({
+      apiEndpoint: selectedNode.hoprd_api_endpoint,
+      apiToken: capabilityTokenForDP,
+      description: "access token for SDK",
+      tokenCapabilities: constants.DP_HOPRD_TOKEN_CAPABILITIES,
+      maxCalls: constants.MAX_CALLS_HOPRD_ACCESS_TOKEN,
+    });
+
+    return { ...selectedNode, hoprd_api_token: capabilityTokenForSdk };
   }
 };
 
