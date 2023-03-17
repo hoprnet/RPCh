@@ -1,10 +1,9 @@
 import assert from "assert";
-import { QueryRegisteredNode } from "../registered-node/dto";
 import * as db from "./";
-import { CreateQuota } from "../quota/dto";
 import { IBackup, IMemoryDb, newDb } from "pg-mem";
 import { utils } from "@rpch/common";
-import { CreateClient, QueryClient } from "../client/dto";
+import { Client, ClientDB, Quota, RegisteredNodeDB } from "../types";
+import { errors } from "pg-promise";
 import path from "path";
 import * as fixtures from "@rpch/common/build/fixtures";
 
@@ -54,7 +53,7 @@ export class MockPgInstanceSingleton {
 const createMockNode = (
   peerId?: string,
   hasExitNode?: boolean
-): QueryRegisteredNode => ({
+): RegisteredNodeDB => ({
   chain_id: 100,
   id: peerId ?? "peerId" + utils.generatePseudoRandomId(1e6),
   has_exit_node: hasExitNode ?? true,
@@ -69,7 +68,7 @@ const createMockNode = (
   updated_at: Date.now().toString(),
 });
 
-const createMockQuota = (params?: CreateQuota): CreateQuota => {
+const createMockQuota = (params?: Quota): Quota => {
   return {
     actionTaker: params?.actionTaker ?? "discovery-platform",
     clientId: params?.clientId ?? "client",
@@ -78,7 +77,7 @@ const createMockQuota = (params?: CreateQuota): CreateQuota => {
   };
 };
 
-const createMockClient = (params?: CreateClient): CreateClient => {
+const createMockClient = (params?: Client): Client => {
   return {
     id: params?.id ?? "client",
     payment: params?.payment ?? "premium",
@@ -101,8 +100,7 @@ describe("test db functions", function () {
   describe("registered node table", function () {
     it("should save registered node", async function () {
       const node = createMockNode();
-      const savedNode = await db.saveRegisteredNode(dbInstance, node);
-      if (!savedNode) throw new Error("Db could not save node");
+      await db.saveRegisteredNode(dbInstance, node);
       const dbNode = await db.getRegisteredNode(dbInstance, node.id);
       assert.equal(dbNode?.id, node.id);
     });
@@ -162,7 +160,6 @@ describe("test db functions", function () {
     it("should update node", async function () {
       await db.saveRegisteredNode(dbInstance, createMockNode("peer1"));
       const node = await db.getRegisteredNode(dbInstance, "peer1");
-      if (!node) throw new Error("Db could not save node");
 
       await db.updateRegisteredNode(dbInstance, {
         ...node,
@@ -212,14 +209,19 @@ describe("test db functions", function () {
         labels: [],
       });
       const createdClient = await db.createClient(dbInstance, mockClient);
-      if (!createdClient.id) throw new Error("Could not create mock client");
       await db.deleteClient(dbInstance, createdClient.id);
-      const deletedClient = await db.getClient(dbInstance, createdClient.id);
-      assert.equal(deletedClient, undefined);
+
+      try {
+        await db.getClient(dbInstance, createdClient.id);
+      } catch (e) {
+        if (e instanceof errors.QueryResultError) {
+          assert.equal(e.message, "No data returned from the query.");
+        }
+      }
     });
   });
   describe("quota table", function () {
-    let client: QueryClient;
+    let client: ClientDB;
     beforeEach(async function () {
       const mockClient = createMockClient();
       client = await db.createClient(dbInstance, mockClient);
@@ -237,63 +239,100 @@ describe("test db functions", function () {
       assert.equal(queryQuota?.quota, mockQuota.quota);
       assert.equal(queryQuota?.action_taker, mockQuota.actionTaker);
     });
-    it("should get quotas created by client", async function () {
-      // create client
+    it("should get sum of quotas used by client", async function () {
+      const expectedQuotas = [
+        BigInt("100000000"),
+        BigInt("-10000"),
+        BigInt("-1"),
+      ];
+      // create client to pay quotas
       const mockClient = createMockClient({
         id: "other client",
         payment: "premium",
       });
-      const otherClient = await db.createClient(dbInstance, mockClient);
-      // create quota for client but paid by other client
-      const mockQuota = createMockQuota({
-        clientId: "client",
-        actionTaker: "discovery",
-        paidBy: "other client",
-        quota: BigInt(10),
-      });
-      await db.createQuota(dbInstance, mockQuota);
-      await db.createQuota(dbInstance, mockQuota);
-      await db.createQuota(
-        dbInstance,
+      await db.createClient(dbInstance, mockClient);
+      // create quotas that are used by 'client'
+      const mockQuotas = expectedQuotas.map((quota) =>
         createMockQuota({
+          clientId: "client",
           actionTaker: "discovery",
-          clientId: otherClient.id,
+          quota,
           paidBy: "other client",
-          quota: BigInt(20),
         })
       );
 
-      const quotas = await db.getQuotasCreatedByClient(dbInstance, "client");
-      assert.equal(quotas.length, 2);
+      await Promise.all(
+        mockQuotas.map((mockQuota) => db.createQuota(dbInstance, mockQuota))
+      );
+
+      // create random quota that should not be taken into account
+      await db.createQuota(
+        dbInstance,
+        createMockQuota({
+          clientId: "other client",
+          actionTaker: "discovery",
+          quota: BigInt("10"),
+          paidBy: "client",
+        })
+      );
+
+      const sumOfQuotas = await db.getSumOfQuotasUsedByClient(
+        dbInstance,
+        "client"
+      );
+
+      assert.equal(
+        expectedQuotas.reduce((prev, next) => prev + next, BigInt(0)),
+        sumOfQuotas
+      );
     });
-    it("should get quotas paid by client", async function () {
+
+    it("should get sum of quotas paid by client", async function () {
+      const expectedQuotas = [
+        BigInt("100000000"),
+        BigInt("-10000"),
+        BigInt("-1"),
+      ];
       // create client
       const mockClient = createMockClient({
         id: "other client",
         payment: "premium",
       });
-      const otherClient = await db.createClient(dbInstance, mockClient);
-      // create quotas that are used by 'client' and paid by 'other client'
-      const mockQuota = createMockQuota({
-        clientId: "client",
-        actionTaker: "discovery",
-        quota: BigInt(10),
-        paidBy: "other client",
-      });
-      await db.createQuota(dbInstance, mockQuota);
-      await db.createQuota(dbInstance, mockQuota);
-      await db.createQuota(
-        dbInstance,
+      await db.createClient(dbInstance, mockClient);
+      // create quotas that are paid by 'other client'
+      const mockQuotas = expectedQuotas.map((quota) =>
         createMockQuota({
+          clientId: "client",
           actionTaker: "discovery",
-          clientId: otherClient.id,
-          quota: BigInt(20),
+          quota,
           paidBy: "other client",
         })
       );
 
-      const quotas = await db.getQuotasPaidByClient(dbInstance, "other client");
-      assert.equal(quotas.length, 3);
+      await Promise.all(
+        mockQuotas.map((mockQuota) => db.createQuota(dbInstance, mockQuota))
+      );
+
+      // create random quota that should not be taken into account
+      await db.createQuota(
+        dbInstance,
+        createMockQuota({
+          clientId: "other client",
+          actionTaker: "discovery",
+          quota: BigInt("10"),
+          paidBy: "client",
+        })
+      );
+
+      const sumOfQuotas = await db.getSumOfQuotasPaidByClient(
+        dbInstance,
+        "other client"
+      );
+
+      assert.equal(
+        expectedQuotas.reduce((prev, next) => prev + next, BigInt(0)),
+        sumOfQuotas
+      );
     });
     it("should update quota", async function () {
       const mockQuota = createMockQuota({
@@ -313,12 +352,14 @@ describe("test db functions", function () {
     });
     it("should get only fresh nodes", async function () {
       await db.saveRegisteredNode(dbInstance, createMockNode("peer1"));
+
       const node = await db.getRegisteredNode(dbInstance, "peer1");
-      if (!node) throw new Error("Db could not save node");
+
       await db.updateRegisteredNode(dbInstance, {
         ...node,
         status: "UNUSABLE",
       });
+
       await db.saveRegisteredNode(dbInstance, createMockNode("peer2"));
       await db.saveRegisteredNode(dbInstance, createMockNode("peer3"));
 
@@ -340,15 +381,21 @@ describe("test db functions", function () {
         quota: BigInt(10),
       });
       const createdQuota = await db.createQuota(dbInstance, mockQuota);
-      if (!createdQuota.id) throw new Error("Could not create mock quota");
+
       await db.deleteQuota(dbInstance, createdQuota.id);
-      const deletedQuota = await db.getQuota(dbInstance, createdQuota.id ?? 0);
-      assert.equal(deletedQuota, undefined);
+
+      try {
+        await db.getQuota(dbInstance, createdQuota.id ?? 0);
+      } catch (e) {
+        if (e instanceof errors.QueryResultError) {
+          assert.equal(e.message, "No data returned from the query.");
+        }
+      }
     });
     it("should save funding request", async function () {
       await db.saveRegisteredNode(dbInstance, createMockNode("peer1"));
+
       const node = await db.getRegisteredNode(dbInstance, "peer1");
-      if (!node) throw new Error("Db could not save node");
 
       const createdFundedRequest = await db.createFundingRequest(dbInstance, {
         registered_node_id: node.id,
