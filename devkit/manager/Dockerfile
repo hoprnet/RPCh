@@ -20,7 +20,8 @@ RUN turbo prune --scope="@rpch/manager" --docker
 # Add lockfile and package.json's of isolated subworkspace.
 FROM node:16-bullseye-slim AS installer
 RUN apt-get update && \
-  apt-get install -y libc6
+  apt-get install -y libc6 && \
+  rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 # Install the dependencies.
