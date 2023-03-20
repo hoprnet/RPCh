@@ -12,6 +12,7 @@ import {
 import { errors } from "pg-promise";
 import path from "path";
 import * as fixtures from "@rpch/common/build/fixtures";
+import { DB_QUERY_VALUES } from "../constants";
 
 export class MockPgInstanceSingleton {
   private static pgInstance: IMemoryDb;
@@ -113,7 +114,10 @@ describe("test db functions", function () {
     it("should get all registered nodes", async function () {
       await db.saveRegisteredNode(dbInstance, createMockNode("1"));
       await db.saveRegisteredNode(dbInstance, createMockNode("2"));
-      const allNodes = await db.getRegisteredNodes(dbInstance);
+      const { query, params } = db.createRegisteredNodesQuery(
+        DB_QUERY_VALUES.REGISTERED_NODES
+      );
+      const allNodes = await db.getRegisteredNodes(dbInstance, query, params);
 
       assert.equal(allNodes.length, 2);
     });
@@ -124,9 +128,17 @@ describe("test db functions", function () {
       await db.saveRegisteredNode(dbInstance, secondNode);
       await db.saveRegisteredNode(dbInstance, createMockNode());
 
-      const notExitNodes = await db.getRegisteredNodes(dbInstance, {
-        hasExitNode: false,
-      });
+      const { query, params } = db.createRegisteredNodesQuery(
+        DB_QUERY_VALUES.REGISTERED_NODES,
+        {
+          hasExitNode: false,
+        }
+      );
+      const notExitNodes = await db.getRegisteredNodes(
+        dbInstance,
+        query,
+        params
+      );
 
       assert.equal(notExitNodes.length, 2);
     });
@@ -137,9 +149,13 @@ describe("test db functions", function () {
       await db.saveRegisteredNode(dbInstance, secondNode);
       await db.saveRegisteredNode(dbInstance, createMockNode("peer2", false));
 
-      const exitNodes = await db.getRegisteredNodes(dbInstance, {
-        hasExitNode: true,
-      });
+      const { query, params } = db.createRegisteredNodesQuery(
+        DB_QUERY_VALUES.REGISTERED_NODES,
+        {
+          hasExitNode: true,
+        }
+      );
+      const exitNodes = await db.getRegisteredNodes(dbInstance, query, params);
 
       assert.equal(exitNodes.length, 2);
     });
@@ -154,9 +170,19 @@ describe("test db functions", function () {
       await db.saveRegisteredNode(dbInstance, createMockNode("1"));
       await db.saveRegisteredNode(dbInstance, createMockNode("2"));
       await db.saveRegisteredNode(dbInstance, createMockNode("3"));
-      const notExcludedNodes = await db.getRegisteredNodes(dbInstance, {
-        excludeList: ["2"],
-      });
+
+      const { query, params } = db.createRegisteredNodesQuery(
+        DB_QUERY_VALUES.REGISTERED_NODES,
+        {
+          excludeList: ["2"],
+        }
+      );
+
+      const notExcludedNodes = await db.getRegisteredNodes(
+        dbInstance,
+        query,
+        params
+      );
       assert.equal(notExcludedNodes.length, 2);
       assert.equal(
         notExcludedNodes.findIndex((node) => node.id === "2"),
@@ -368,13 +394,24 @@ describe("test db functions", function () {
 
       await db.saveRegisteredNode(dbInstance, createMockNode("peer2"));
       await db.saveRegisteredNode(dbInstance, createMockNode("peer3"));
-
-      const freshNodes = await db.getRegisteredNodes(dbInstance, {
-        status: "FRESH",
-      });
-      const unusableNodes = await db.getRegisteredNodes(dbInstance, {
-        status: "UNUSABLE",
-      });
+      const { query: FreshNodesQuery, params: FreshNodesConditions } =
+        db.createRegisteredNodesQuery(DB_QUERY_VALUES.REGISTERED_NODES, {
+          status: "FRESH",
+        });
+      const { query: UnusableNodesQuery, params: UnusableNodesConditions } =
+        db.createRegisteredNodesQuery(DB_QUERY_VALUES.REGISTERED_NODES, {
+          status: "UNUSABLE",
+        });
+      const freshNodes = await db.getRegisteredNodes(
+        dbInstance,
+        FreshNodesQuery,
+        FreshNodesConditions
+      );
+      const unusableNodes = await db.getRegisteredNodes(
+        dbInstance,
+        UnusableNodesQuery,
+        UnusableNodesConditions
+      );
 
       assert.equal(freshNodes?.length, 2);
       assert.equal(unusableNodes?.length, 1);

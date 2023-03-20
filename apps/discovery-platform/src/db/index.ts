@@ -7,38 +7,14 @@ import {
   Quota,
   QuotaDB,
   RegisteredNodeDB,
+  RegisteredNodeDBWithoutApiToken,
   RegisteredNodeFilters,
 } from "../types";
 import migrate from "node-pg-migrate";
 import path from "path";
+import { DB_TABLES, DB_QUERY_VALUES } from "../constants";
 
 const log = createLogger(["db"]);
-
-const TABLES = {
-  REGISTERED_NODES: "registered_nodes",
-  FUNDING_REQUESTS: "funding_requests",
-  QUOTAS: "quotas",
-  CLIENTS: "clients",
-};
-
-const VALUES: {
-  REGISTERED_NODES: (keyof Omit<RegisteredNodeDB, "hoprd_api_token">)[];
-} = {
-  REGISTERED_NODES: [
-    "has_exit_node",
-    "chain_id",
-    "hoprd_api_endpoint",
-    "exit_node_pub_key",
-    "native_address",
-    "id",
-    "total_amount_funded",
-    "honesty_score",
-    "reason",
-    "status",
-    "created_at",
-    "updated_at",
-  ],
-};
 
 export const runMigrations = async (dbUrl: string) => {
   const migrationsDirectory = path.join(__dirname, "../../migrations");
@@ -59,52 +35,52 @@ export const runMigrations = async (dbUrl: string) => {
 
 export const getRegisteredNodes = async (
   dbInstance: DBInstance,
-  filters?: RegisteredNodeFilters
-) => {
-  log.verbose("Querying for Registered nodes with filters", filters);
-  let baseText = `SELECT (id, has_exit_node, chain_id, 
-    hoprd_api_endpoint, exit_node_pub_key, native_address, 
-    total_amount_funded, honesty_score, reason,
-    status, created_at, updated_at) FROM ${TABLES.REGISTERED_NODES}`;
-  let filtersText = [];
-  const values: { [key: string]: string } = {};
-
-  if (filters?.excludeList !== undefined) {
-    filtersText.push("id NOT IN ($<list>)");
-    values["list"] = filters.excludeList.join(", ");
-  }
-  if (filters?.hasExitNode !== undefined) {
-    filtersText.push("has_exit_node=$<exitNode>");
-    values["exitNode"] = String(filters.hasExitNode === true);
-  }
-  if (filters?.status !== undefined) {
-    filtersText.push("status=$<status>");
-    values["status"] = String(filters.status);
-  }
-
-  const sqlText = filtersText.length
-    ? baseText + " WHERE " + filtersText.join(" AND ")
-    : baseText;
-
-  const dbRes: RegisteredNodeDB[] = await dbInstance.manyOrNone(
-    sqlText,
-    values
-  );
-  log.verbose(
-    "Registered nodes with filters query DB response",
-    filters,
-    dbRes
-  );
+  query: string,
+  params: { [key: string]: string }
+): Promise<RegisteredNodeDB[]> => {
+  const dbRes: RegisteredNodeDB[] = await dbInstance.manyOrNone(query, params);
 
   return dbRes;
 };
+
+export const createRegisteredNodesQuery = (
+  values: string[],
+  filters?: RegisteredNodeFilters
+): { query: string; params: { [key: string]: string } } => {
+  log.verbose("Querying for Registered nodes with filters", filters);
+  let baseQuery = `SELECT ${values.join(", ")} FROM ${
+    DB_TABLES.REGISTERED_NODES
+  }`;
+  let filtersText = [];
+  const params: { [key: string]: string } = {};
+
+  if (filters?.excludeList !== undefined) {
+    filtersText.push("id NOT IN ($<list>)");
+    params["list"] = filters.excludeList.join(", ");
+  }
+  if (filters?.hasExitNode !== undefined) {
+    filtersText.push("has_exit_node=$<exitNode>");
+    params["exitNode"] = String(filters.hasExitNode === true);
+  }
+  if (filters?.status !== undefined) {
+    filtersText.push("status=$<status>");
+    params["status"] = String(filters.status);
+  }
+
+  const query = filtersText.length
+    ? baseQuery + " WHERE " + filtersText.join(" AND ")
+    : baseQuery;
+
+  return { query, params };
+};
+
 export const saveRegisteredNode = async (
   dbInstance: DBInstance,
   node: Omit<RegisteredNodeDB, "created_at" | "updated_at">
 ): Promise<boolean> => {
   try {
     const text = `INSERT INTO
-    ${TABLES.REGISTERED_NODES} (has_exit_node, id, chain_id, hoprd_api_endpoint, hoprd_api_token, exit_node_pub_key, native_address, total_amount_funded, honesty_score, status)
+    ${DB_TABLES.REGISTERED_NODES} (has_exit_node, id, chain_id, hoprd_api_endpoint, hoprd_api_token, exit_node_pub_key, native_address, total_amount_funded, honesty_score, status)
     VALUES ($<has_exit_node>, $<id>, $<chain_id>, $<hoprd_api_endpoint>, $<hoprd_api_token>, $<exit_node_pub_key>, $<native_address>, $<total_amount_funded>, $<honesty_score>, $<status>)
     RETURNING *`;
     const values: Omit<RegisteredNodeDB, "created_at" | "updated_at"> = {
@@ -131,22 +107,27 @@ export const saveRegisteredNode = async (
 export const getRegisteredNode = async (
   dbInstance: DBInstance,
   peerId: string
-): Promise<RegisteredNodeDB> => {
-  const text = `SELECT * FROM ${TABLES.REGISTERED_NODES} WHERE id=$<peerId>`;
+): Promise<RegisteredNodeDBWithoutApiToken> => {
+  const text = `SELECT ${DB_QUERY_VALUES.REGISTERED_NODES_WITHOUT_API_TOKEN.join(
+    ", "
+  )} FROM ${DB_TABLES.REGISTERED_NODES} WHERE id=$<peerId>`;
   const values = {
     peerId,
   };
-  const dbRes: RegisteredNodeDB = await dbInstance.one(text, values);
+  const dbRes: RegisteredNodeDBWithoutApiToken = await dbInstance.one(
+    text,
+    values
+  );
 
   return dbRes;
 };
 
 export const updateRegisteredNode = async (
   dbInstance: DBInstance,
-  updatedNode: RegisteredNodeDB
+  updatedNode: RegisteredNodeDBWithoutApiToken
 ): Promise<boolean> => {
   try {
-    const text = `UPDATE ${TABLES.REGISTERED_NODES}
+    const text = `UPDATE ${DB_TABLES.REGISTERED_NODES}
     SET has_exit_node = $<has_exit_node>, chain_id = $<chain_id>,
     total_amount_funded = $<total_amount_funded>, honesty_score = $<honesty_score>,
     reason = $<reason>, status = $<status>, updated_at = $<updated_at>
@@ -178,7 +159,7 @@ export const createQuota = async (
   dbInstance: DBInstance,
   quota: Quota
 ): Promise<QuotaDB> => {
-  const text = `INSERT INTO ${TABLES.QUOTAS} (id, client_id, paid_by, quota, action_taker)
+  const text = `INSERT INTO ${DB_TABLES.QUOTAS} (id, client_id, paid_by, quota, action_taker)
   VALUES (default, $<clientId>, $<paidBy>, $<quota>, $<actionTaker>) RETURNING *`;
   const values: Quota = {
     clientId: quota.clientId,
@@ -195,7 +176,7 @@ export const getQuota = async (
   dbInstance: DBInstance,
   id: number
 ): Promise<QuotaDB> => {
-  const text = `SELECT * FROM ${TABLES.QUOTAS} WHERE id=$<id>`;
+  const text = `SELECT * FROM ${DB_TABLES.QUOTAS} WHERE id=$<id>`;
   const values = {
     id,
   };
@@ -207,7 +188,7 @@ export const getSumOfQuotasPaidByClient = async (
   dbInstance: DBInstance,
   clientId: string
 ): Promise<bigint> => {
-  const text = `SELECT SUM(quota) FROM ${TABLES.QUOTAS} WHERE paid_by=$<clientId>`;
+  const text = `SELECT SUM(quota) FROM ${DB_TABLES.QUOTAS} WHERE paid_by=$<clientId>`;
   const values = {
     clientId,
   };
@@ -220,7 +201,7 @@ export const getSumOfQuotasUsedByClient = async (
   dbInstance: DBInstance,
   clientId: string
 ): Promise<bigint> => {
-  const text = `SELECT SUM(quota) FROM ${TABLES.QUOTAS} WHERE client_id=$<clientId>`;
+  const text = `SELECT SUM(quota) FROM ${DB_TABLES.QUOTAS} WHERE client_id=$<clientId>`;
   const values = {
     clientId,
   };
@@ -232,7 +213,7 @@ export const updateQuota = async (
   dbInstance: DBInstance,
   quota: QuotaDB
 ): Promise<QuotaDB> => {
-  const text = `UPDATE ${TABLES.QUOTAS}
+  const text = `UPDATE ${DB_TABLES.QUOTAS}
   SET client_id = $<client_id>, paid_by = $<paid_by>, quota = $<quota>, action_taker = $<action_taker>
   WHERE id = $<id>
   RETURNING *`;
@@ -251,7 +232,7 @@ export const deleteQuota = async (
   dbInstance: DBInstance,
   id: number
 ): Promise<QuotaDB> => {
-  const text = `DELETE FROM ${TABLES.QUOTAS} WHERE id=$<id> RETURNING *`;
+  const text = `DELETE FROM ${DB_TABLES.QUOTAS} WHERE id=$<id> RETURNING *`;
   const values = {
     id,
   };
@@ -266,7 +247,7 @@ export const createFundingRequest = async (
   dbInstance: DBInstance,
   fundingRequest: Omit<FundingRequestDB, "created_at" | "updated_at" | "id">
 ): Promise<FundingRequestDB> => {
-  const text = `INSERT INTO ${TABLES.FUNDING_REQUESTS} (id, registered_node_id, request_id, amount)
+  const text = `INSERT INTO ${DB_TABLES.FUNDING_REQUESTS} (id, registered_node_id, request_id, amount)
   VALUES (default, $<registered_node_id>, $<request_id>, $<amount>) RETURNING *`;
 
   const values: Omit<FundingRequestDB, "created_at" | "updated_at" | "id"> = {
@@ -287,7 +268,7 @@ export const createClient = async (
   dbInstance: DBInstance,
   client: Client
 ): Promise<ClientDB> => {
-  const text = `INSERT INTO ${TABLES.CLIENTS} (id, payment, labels)
+  const text = `INSERT INTO ${DB_TABLES.CLIENTS} (id, payment, labels)
   VALUES ($<id>, $<payment>, $<labels>) RETURNING *`;
   const values: Client = {
     id: client.id,
@@ -302,7 +283,7 @@ export const getClient = async (
   dbInstance: DBInstance,
   id: string
 ): Promise<ClientDB> => {
-  const text = `SELECT * FROM ${TABLES.CLIENTS} WHERE id=$<id>`;
+  const text = `SELECT * FROM ${DB_TABLES.CLIENTS} WHERE id=$<id>`;
   const values = {
     id,
   };
@@ -314,7 +295,7 @@ export const updateClient = async (
   dbInstance: DBInstance,
   client: ClientDB
 ): Promise<ClientDB> => {
-  const text = `UPDATE ${TABLES.CLIENTS}
+  const text = `UPDATE ${DB_TABLES.CLIENTS}
   SET id = $<id>, payment = $<payment>, labels = $<labels>
   WHERE id = $<id>
   RETURNING *`;
@@ -331,7 +312,7 @@ export const deleteClient = async (
   dbInstance: DBInstance,
   id: string
 ): Promise<ClientDB> => {
-  const text = `DELETE FROM ${TABLES.CLIENTS} WHERE id=$<id> RETURNING *`;
+  const text = `DELETE FROM ${DB_TABLES.CLIENTS} WHERE id=$<id> RETURNING *`;
   const values = {
     id,
   };

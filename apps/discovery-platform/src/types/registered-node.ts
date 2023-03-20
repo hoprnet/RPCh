@@ -22,4 +22,9 @@ export type RegisteredNodeDB = {
     status: RegisteredNodeStatus;
   };
 
+export type RegisteredNodeDBWithoutApiToken = Omit<
+  RegisteredNodeDB,
+  "hoprd_api_token"
+>;
+
 type RegisteredNodeStatus = "FRESH" | "FUNDING" | "UNUSABLE" | "READY";

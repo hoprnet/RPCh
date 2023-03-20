@@ -6,6 +6,7 @@ import {
   PostFundingRequest,
   PostFundingResponse,
   RegisteredNodeDB,
+  RegisteredNodeDBWithoutApiToken,
 } from "../types";
 import { isExpired } from "../utils";
 import { getRegisteredNode, updateRegisteredNode } from "../registered-node";
@@ -108,7 +109,7 @@ export class FundingServiceApi {
    */
   public async requestFunds(params: {
     amount: bigint;
-    node: RegisteredNodeDB;
+    node: RegisteredNodeDBWithoutApiToken;
     previousRequestId?: number;
     amountOfRetries?: number;
   }) {
@@ -294,7 +295,7 @@ export class FundingServiceApi {
   }
 
   public async fetchRequestFunds(
-    dbNode: RegisteredNodeDB,
+    dbNode: RegisteredNodeDBWithoutApiToken,
     amount: bigint,
     opts?: retry.Options | undefined
   ): Promise<Response> {

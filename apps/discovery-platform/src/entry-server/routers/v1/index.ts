@@ -20,6 +20,7 @@ import {
   getEligibleNode,
   getRegisteredNode,
   getRegisteredNodes,
+  getRegisteredNodesWithoutApiToken,
 } from "../../../registered-node";
 import { ClientDB, RegisteredNode, DBInstance } from "../../../types";
 import { createLogger, isListSafe } from "../../../utils";
@@ -190,7 +191,7 @@ export const v1Router = (ops: {
           return res.status(400).json({ errors: errors.array() });
         }
         const { hasExitNode, excludeList } = req.query;
-        const nodes = await getRegisteredNodes(ops.db, {
+        const nodes = await getRegisteredNodesWithoutApiToken(ops.db, {
           excludeList: excludeList?.split(", "),
           hasExitNode: hasExitNode ? hasExitNode === "true" : undefined,
         });

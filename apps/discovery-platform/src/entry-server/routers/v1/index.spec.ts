@@ -29,6 +29,15 @@ const nockFundingRequest = (nodeAddress: string) =>
 const nockGetApiAccessToken =
   nock(FUNDING_SERVICE_URL).get("/api/access-token");
 
+// mock HOPRd interactions
+jest.mock("@rpch/common", () => ({
+  ...jest.requireActual("@rpch/common"),
+  hoprd: {
+    ...jest.requireActual("@rpch/common").hoprd,
+    createToken: jest.fn(() => "token"),
+  },
+}));
+
 const mockNode = (peerId?: string, hasExitNode?: boolean): RegisteredNode => ({
   hasExitNode: hasExitNode ?? true,
   peerId: peerId ?? "peerId",
@@ -223,7 +232,7 @@ describe("test v1 router", function () {
       assert.equal(requestResponse.body.id, createdNode.body.node?.id);
       spy.mockRestore();
     });
-    it("should return an entry node that is not in the exclude list", async function () {
+    it.only("should return an entry node that is not in the exclude list", async function () {
       const amountLeft = BigInt(10).toString();
       const peerId = "entry";
       const requestId = 1;

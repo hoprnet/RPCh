@@ -4,6 +4,7 @@ import {
   RegisteredNodeDB,
   DBInstance,
   RegisteredNodeFilters,
+  RegisteredNodeDBWithoutApiToken,
 } from "../types";
 import { createLogger } from "../utils";
 import { hoprd, utils } from "@rpch/common";
@@ -47,7 +48,7 @@ export const createRegisteredNode = async (
 export const getRegisteredNode = async (
   dbInstance: DBInstance,
   peerId: string
-): Promise<RegisteredNodeDB> => {
+): Promise<RegisteredNodeDBWithoutApiToken> => {
   const node = await db.getRegisteredNode(dbInstance, peerId);
   return node;
 };
@@ -60,7 +61,7 @@ export const getRegisteredNode = async (
  */
 export const updateRegisteredNode = async (
   dbInstance: DBInstance,
-  updatedNode: RegisteredNodeDB
+  updatedNode: RegisteredNodeDBWithoutApiToken
 ): Promise<boolean> => {
   return await db.updateRegisteredNode(dbInstance, updatedNode);
 };
@@ -104,7 +105,7 @@ export const getEligibleNode = async (
 export const getRewardForNode = (
   baseQuota: bigint,
   baseExtra: bigint,
-  node: RegisteredNodeDB
+  node: RegisteredNodeDBWithoutApiToken
 ): bigint => {
   const extra = node.has_exit_node ? baseExtra * BigInt(2) : baseExtra;
   const reward = baseQuota + extra;
@@ -112,7 +113,7 @@ export const getRewardForNode = (
 };
 
 /**
- * Get all registered nodes with an optional set of filters
+ * Get all registered nodes token with an optional set of filters
  * @param dbInstance DBinstance
  * @param filters possible ways to filter registered nodes
  * @returns RegisteredNodeDB[]
@@ -121,5 +122,26 @@ export const getRegisteredNodes = async (
   dbInstance: DBInstance,
   filters?: RegisteredNodeFilters
 ): Promise<RegisteredNodeDB[]> => {
-  return await db.getRegisteredNodes(dbInstance, filters);
+  const { query, params } = db.createRegisteredNodesQuery(
+    constants.DB_QUERY_VALUES.REGISTERED_NODES,
+    filters
+  );
+  return await db.getRegisteredNodes(dbInstance, query, params);
+};
+
+/**
+ * Get all registered nodes not including api token with an optional set of filters
+ * @param dbInstance DBinstance
+ * @param filters possible ways to filter registered nodes
+ * @returns RegisteredNodeDB[]
+ */
+export const getRegisteredNodesWithoutApiToken = async (
+  dbInstance: DBInstance,
+  filters?: RegisteredNodeFilters
+): Promise<RegisteredNodeDBWithoutApiToken[]> => {
+  const { query, params } = db.createRegisteredNodesQuery(
+    constants.DB_QUERY_VALUES.REGISTERED_NODES_WITHOUT_API_TOKEN,
+    filters
+  );
+  return await db.getRegisteredNodes(dbInstance, query, params);
 };

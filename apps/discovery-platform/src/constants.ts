@@ -1,3 +1,5 @@
+import { RegisteredNodeDB } from "./types";
+
 const {
   // Api endpoint used for completing funding requests of registered nodes
   FUNDING_SERVICE_URL,
@@ -56,6 +58,53 @@ const MAX_CALLS_HOPRD_ACCESS_TOKEN = 60e3 * 30;
 // Used to create
 const AMOUNT_OF_RANDOM_WORDS_FOR_TRIAL_ID = 5;
 
+// Name of db tables in schema
+const DB_TABLES = {
+  REGISTERED_NODES: "registered_nodes",
+  FUNDING_REQUESTS: "funding_requests",
+  QUOTAS: "quotas",
+  CLIENTS: "clients",
+};
+
+// Values that will be used to query db
+const DB_QUERY_VALUES: {
+  REGISTERED_NODES_WITHOUT_API_TOKEN: (keyof Omit<
+    RegisteredNodeDB,
+    "hoprd_api_token"
+  >)[];
+  REGISTERED_NODES: (keyof RegisteredNodeDB)[];
+} = {
+  REGISTERED_NODES_WITHOUT_API_TOKEN: [
+    "id",
+    "has_exit_node",
+    "chain_id",
+    "hoprd_api_endpoint",
+    "exit_node_pub_key",
+    "native_address",
+    "total_amount_funded",
+    "honesty_score",
+    "reason",
+    "status",
+    "created_at",
+    "updated_at",
+  ],
+  REGISTERED_NODES: [
+    "id",
+    "has_exit_node",
+    "chain_id",
+    "hoprd_api_endpoint",
+    "hoprd_api_token",
+    "exit_node_pub_key",
+    "native_address",
+    "total_amount_funded",
+    "honesty_score",
+    "reason",
+    "status",
+    "created_at",
+    "updated_at",
+  ],
+};
+
 export {
   PORT,
   FUNDING_SERVICE_URL,
@@ -71,4 +120,6 @@ export {
   MAX_CALLS_HOPRD_ACCESS_TOKEN,
   DP_HOPRD_TOKEN_CAPABILITIES,
   USER_HOPRD_TOKEN_CAPABILITIES,
+  DB_TABLES,
+  DB_QUERY_VALUES,
 };
