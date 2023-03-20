@@ -88,7 +88,7 @@ export const getEligibleNode = async (
       apiEndpoint: selectedNode.hoprd_api_endpoint,
       apiToken: selectedNode.hoprd_api_token,
       description: "access token for SDK",
-      tokenCapabilities: constants.DP_HOPRD_TOKEN_CAPABILITIES,
+      tokenCapabilities: constants.USER_HOPRD_TOKEN_CAPABILITIES,
       maxCalls: constants.MAX_CALLS_HOPRD_ACCESS_TOKEN,
     });
 
