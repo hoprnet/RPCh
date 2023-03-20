@@ -1,5 +1,10 @@
 import * as db from "../db";
-import { RegisteredNode, RegisteredNodeDB } from "../types";
+import {
+  RegisteredNode,
+  RegisteredNodeDB,
+  DBInstance,
+  RegisteredNodeFilters,
+} from "../types";
 import { createLogger } from "../utils";
 import { hoprd, utils } from "@rpch/common";
 import * as constants from "../constants";
@@ -13,7 +18,7 @@ const log = createLogger(["registered-node"]);
  * @returns boolean
  */
 export const createRegisteredNode = async (
-  dbInstance: db.DBInstance,
+  dbInstance: DBInstance,
   node: RegisteredNode
 ): Promise<boolean> => {
   const newNode: Omit<RegisteredNodeDB, "created_at" | "updated_at"> = {
@@ -40,7 +45,7 @@ export const createRegisteredNode = async (
  * @returns RegisteredNodeDB | undefined
  */
 export const getRegisteredNode = async (
-  dbInstance: db.DBInstance,
+  dbInstance: DBInstance,
   peerId: string
 ): Promise<RegisteredNodeDB> => {
   const node = await db.getRegisteredNode(dbInstance, peerId);
@@ -54,7 +59,7 @@ export const getRegisteredNode = async (
  * @returns boolean
  */
 export const updateRegisteredNode = async (
-  dbInstance: db.DBInstance,
+  dbInstance: DBInstance,
   updatedNode: RegisteredNodeDB
 ): Promise<boolean> => {
   return await db.updateRegisteredNode(dbInstance, updatedNode);
@@ -67,8 +72,8 @@ export const updateRegisteredNode = async (
  * @returns access token hash
  */
 export const getEligibleNode = async (
-  dbInstance: db.DBInstance,
-  filters?: db.RegisteredNodeFilters
+  dbInstance: DBInstance,
+  filters?: RegisteredNodeFilters
 ): Promise<RegisteredNodeDB | undefined> => {
   const readyNodes = await getRegisteredNodes(dbInstance, {
     ...filters,
@@ -77,17 +82,10 @@ export const getEligibleNode = async (
   if (readyNodes.length) {
     // choose selected entry node
     const selectedNode = utils.randomlySelectFromArray(readyNodes);
-    // get capability token of selected node for  Discovery Platform
-    const capabilityTokenForDP = await hoprd.createToken({
-      apiEndpoint: selectedNode.hoprd_api_endpoint,
-      apiToken: selectedNode.hoprd_api_token,
-      description: "access token for Discovery Platform",
-      tokenCapabilities: constants.DP_HOPRD_TOKEN_CAPABILITIES,
-      maxCalls: constants.MAX_CALLS_HOPRD_ACCESS_TOKEN,
-    });
+    // get capability token of selected node for SDK
     const capabilityTokenForSdk = await hoprd.createToken({
       apiEndpoint: selectedNode.hoprd_api_endpoint,
-      apiToken: capabilityTokenForDP,
+      apiToken: selectedNode.hoprd_api_token,
       description: "access token for SDK",
       tokenCapabilities: constants.DP_HOPRD_TOKEN_CAPABILITIES,
       maxCalls: constants.MAX_CALLS_HOPRD_ACCESS_TOKEN,
@@ -120,8 +118,8 @@ export const getRewardForNode = (
  * @returns RegisteredNodeDB[]
  */
 export const getRegisteredNodes = async (
-  dbInstance: db.DBInstance,
-  filters?: db.RegisteredNodeFilters
+  dbInstance: DBInstance,
+  filters?: RegisteredNodeFilters
 ): Promise<RegisteredNodeDB[]> => {
   return await db.getRegisteredNodes(dbInstance, filters);
 };

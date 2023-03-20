@@ -1,6 +1,5 @@
 import { Express } from "express";
 import { entryServer } from ".";
-import { DBInstance } from "../db";
 import nock from "nock";
 import { MockPgInstanceSingleton } from "../db/index.spec";
 import { FundingServiceApi } from "../funding-service-api";
@@ -11,9 +10,9 @@ import {
   RegisteredNodeDB,
   GetAccessTokenResponse,
   PostFundingResponse,
+  DBInstance,
 } from "../types";
 import assert from "assert";
-import { createClient } from "../client";
 
 const FUNDING_SERVICE_URL = "http://localhost:5000";
 const BASE_QUOTA = BigInt(1);

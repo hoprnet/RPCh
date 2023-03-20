@@ -2,14 +2,20 @@ import assert from "assert";
 import * as db from "./";
 import { IBackup, IMemoryDb, newDb } from "pg-mem";
 import { utils } from "@rpch/common";
-import { Client, ClientDB, Quota, RegisteredNodeDB } from "../types";
+import {
+  Client,
+  ClientDB,
+  Quota,
+  RegisteredNodeDB,
+  DBInstance,
+} from "../types";
 import { errors } from "pg-promise";
 import path from "path";
 import * as fixtures from "@rpch/common/build/fixtures";
 
 export class MockPgInstanceSingleton {
   private static pgInstance: IMemoryDb;
-  private static dbInstance: db.DBInstance;
+  private static dbInstance: DBInstance;
   private static initialDbState: IBackup;
 
   private constructor() {}
@@ -32,7 +38,7 @@ export class MockPgInstanceSingleton {
     return MockPgInstanceSingleton.pgInstance;
   }
 
-  public static async getDbInstance(): Promise<db.DBInstance> {
+  public static async getDbInstance(): Promise<DBInstance> {
     if (!MockPgInstanceSingleton.dbInstance) {
       const instance = await this.getInstance();
       MockPgInstanceSingleton.dbInstance = instance.adapters.createPgPromise();
@@ -86,7 +92,7 @@ const createMockClient = (params?: Client): Client => {
 };
 
 describe("test db functions", function () {
-  let dbInstance: db.DBInstance;
+  let dbInstance: DBInstance;
 
   beforeAll(async function () {
     dbInstance = await MockPgInstanceSingleton.getDbInstance();

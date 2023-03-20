@@ -1,7 +1,6 @@
 import assert from "assert";
-import * as db from "../db";
 import { MockPgInstanceSingleton } from "../db/index.spec";
-import { Client } from "../types";
+import { Client, DBInstance } from "../types";
 import { createClient, deleteClient, getClient, updateClient } from "./index";
 import { errors } from "pg-promise";
 
@@ -14,7 +13,7 @@ const createMockClient = (params?: Client): Client => {
 };
 
 describe("test quota functions", function () {
-  let dbInstance: db.DBInstance;
+  let dbInstance: DBInstance;
 
   beforeAll(async function () {
     dbInstance = await MockPgInstanceSingleton.getDbInstance();

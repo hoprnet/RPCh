@@ -1,6 +1,6 @@
 import { createLogger } from "../utils";
 import * as db from "../db";
-import { FundingRequest, FundingRequestDB } from "../types";
+import { FundingRequest, FundingRequestDB, DBInstance } from "../types";
 const log = createLogger(["registered-node"]);
 
 /**
@@ -10,7 +10,7 @@ const log = createLogger(["registered-node"]);
  * @returns boolean
  */
 export const createFundingRequest = async (
-  dbInstance: db.DBInstance,
+  dbInstance: DBInstance,
   fundingRequest: FundingRequest
 ): Promise<FundingRequestDB> => {
   const newFundingRequest: Omit<

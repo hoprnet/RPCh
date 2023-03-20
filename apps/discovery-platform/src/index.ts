@@ -1,4 +1,4 @@
-import { DBInstance, runMigrations, updateRegisteredNode } from "./db";
+import { runMigrations, updateRegisteredNode } from "./db";
 import { entryServer } from "./entry-server";
 import { FundingServiceApi } from "./funding-service-api";
 import { createLogger } from "./utils";
@@ -6,6 +6,7 @@ import pgp from "pg-promise";
 import { getRegisteredNodes } from "./registered-node";
 import { checkCommitment } from "./graph-api";
 import * as constants from "./constants";
+import { DBInstance } from "./types";
 
 const log = createLogger();
 

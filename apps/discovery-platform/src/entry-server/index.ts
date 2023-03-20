@@ -1,8 +1,8 @@
-import express, { Request } from "express";
-import { DBInstance } from "../db";
+import express from "express";
 import { FundingServiceApi } from "../funding-service-api";
 import { v1Router } from "./routers/v1";
 import compression from "compression";
+import { DBInstance } from "../types";
 const app = express();
 
 export const entryServer = (ops: {

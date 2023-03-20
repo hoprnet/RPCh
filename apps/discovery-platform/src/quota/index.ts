@@ -1,5 +1,5 @@
 import * as db from "../db";
-import { Quota, QuotaDB } from "../types";
+import { Quota, QuotaDB, DBInstance } from "../types";
 
 /**
  * Saves a quota in DB
@@ -8,7 +8,7 @@ import { Quota, QuotaDB } from "../types";
  * @returns QuotaDB
  */
 export const createQuota = async (
-  dbInstance: db.DBInstance,
+  dbInstance: DBInstance,
   quota: Quota
 ): Promise<QuotaDB> => {
   const dbQuota: Quota = {
@@ -27,7 +27,7 @@ export const createQuota = async (
  * @returns QuotaDB
  */
 export const getQuota = async (
-  dbInstance: db.DBInstance,
+  dbInstance: DBInstance,
   id: number
 ): Promise<QuotaDB> => {
   return await db.getQuota(dbInstance, id);
@@ -40,7 +40,7 @@ export const getQuota = async (
  * @returns bigint
  */
 export const getSumOfQuotasPaidByClient = async (
-  dbInstance: db.DBInstance,
+  dbInstance: DBInstance,
   client: string
 ): Promise<bigint> => {
   return await db.getSumOfQuotasPaidByClient(dbInstance, client);
@@ -53,7 +53,7 @@ export const getSumOfQuotasPaidByClient = async (
  * @returns bigint
  */
 export const getSumOfQuotasUsedByClient = async (
-  dbInstance: db.DBInstance,
+  dbInstance: DBInstance,
   client: string
 ): Promise<bigint> => {
   return await db.getSumOfQuotasUsedByClient(dbInstance, client);
@@ -66,7 +66,7 @@ export const getSumOfQuotasUsedByClient = async (
  * @returns QuotaDB
  */
 export const updateQuota = async (
-  dbInstance: db.DBInstance,
+  dbInstance: DBInstance,
   quota: QuotaDB
 ): Promise<QuotaDB> => {
   return await db.updateQuota(dbInstance, quota);
@@ -79,7 +79,7 @@ export const updateQuota = async (
  * @returns QuotaDB
  */
 export const deleteQuota = async (
-  dbInstance: db.DBInstance,
+  dbInstance: DBInstance,
   id: number
 ): Promise<QuotaDB> => {
   return await db.deleteQuota(dbInstance, id);

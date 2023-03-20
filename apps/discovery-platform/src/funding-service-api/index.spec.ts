@@ -7,6 +7,7 @@ import {
   GetRequestStatusResponse,
   PostFundingResponse,
   RegisteredNodeDB,
+  DBInstance,
 } from "../types";
 import { MockPgInstanceSingleton } from "../db/index.spec";
 
@@ -47,7 +48,7 @@ const createMockNode = (peerId?: string): RegisteredNodeDB => ({
 
 describe("test funding service api class", function () {
   let fundingServiceApi: FundingServiceApi;
-  let dbInstance: db.DBInstance;
+  let dbInstance: DBInstance;
 
   beforeAll(async function () {
     dbInstance = await MockPgInstanceSingleton.getDbInstance();

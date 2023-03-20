@@ -4,7 +4,6 @@ import nock from "nock";
 import request from "supertest";
 import { doesClientHaveQuota, getCache, setCache, v1Router } from ".";
 import { getClient } from "../../../client";
-import { DBInstance } from "../../../db";
 import { MockPgInstanceSingleton } from "../../../db/index.spec";
 import { FundingServiceApi } from "../../../funding-service-api";
 import {
@@ -17,6 +16,7 @@ import {
   RegisteredNodeDB,
   GetAccessTokenResponse,
   PostFundingResponse,
+  DBInstance,
 } from "../../../types";
 import memoryCache from "memory-cache";
 

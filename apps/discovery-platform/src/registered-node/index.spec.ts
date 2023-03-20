@@ -7,8 +7,7 @@ import {
   getEligibleNode,
   getRewardForNode,
 } from ".";
-import { DBInstance } from "../db";
-import { RegisteredNode } from "../types";
+import { RegisteredNode, DBInstance } from "../types";
 import { MockPgInstanceSingleton } from "../db/index.spec";
 import { wait } from "@rpch/common/build/fixtures";
 

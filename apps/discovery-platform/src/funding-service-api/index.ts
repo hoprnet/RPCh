@@ -1,5 +1,6 @@
 import fetch, { Response } from "node-fetch";
 import {
+  DBInstance,
   GetAccessTokenResponse,
   GetRequestStatusResponse,
   PostFundingRequest,
@@ -7,7 +8,6 @@ import {
   RegisteredNodeDB,
 } from "../types";
 import { isExpired } from "../utils";
-import { DBInstance } from "../db";
 import { getRegisteredNode, updateRegisteredNode } from "../registered-node";
 import { createLogger } from "../utils";
 import { createFundingRequest } from "../funding-request";

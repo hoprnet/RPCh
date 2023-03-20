@@ -1,23 +1,16 @@
-import pgp from "pg-promise";
 import { createLogger } from "../utils";
 import {
   Client,
   ClientDB,
+  DBInstance,
   FundingRequestDB,
   Quota,
   QuotaDB,
   RegisteredNodeDB,
+  RegisteredNodeFilters,
 } from "../types";
 import migrate from "node-pg-migrate";
 import path from "path";
-
-export type DBInstance = pgp.IDatabase<{}>;
-
-export type RegisteredNodeFilters = {
-  hasExitNode?: boolean;
-  excludeList?: string[];
-  status?: RegisteredNodeDB["status"];
-};
 
 const log = createLogger(["db"]);
 
@@ -26,6 +19,25 @@ const TABLES = {
   FUNDING_REQUESTS: "funding_requests",
   QUOTAS: "quotas",
   CLIENTS: "clients",
+};
+
+const VALUES: {
+  REGISTERED_NODES: (keyof Omit<RegisteredNodeDB, "hoprd_api_token">)[];
+} = {
+  REGISTERED_NODES: [
+    "has_exit_node",
+    "chain_id",
+    "hoprd_api_endpoint",
+    "exit_node_pub_key",
+    "native_address",
+    "id",
+    "total_amount_funded",
+    "honesty_score",
+    "reason",
+    "status",
+    "created_at",
+    "updated_at",
+  ],
 };
 
 export const runMigrations = async (dbUrl: string) => {
@@ -50,7 +62,10 @@ export const getRegisteredNodes = async (
   filters?: RegisteredNodeFilters
 ) => {
   log.verbose("Querying for Registered nodes with filters", filters);
-  let baseText = `SELECT * FROM ${TABLES.REGISTERED_NODES}`;
+  let baseText = `SELECT (id, has_exit_node, chain_id, 
+    hoprd_api_endpoint, exit_node_pub_key, native_address, 
+    total_amount_funded, honesty_score, reason,
+    status, created_at, updated_at) FROM ${TABLES.REGISTERED_NODES}`;
   let filtersText = [];
   const values: { [key: string]: string } = {};
 

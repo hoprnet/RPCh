@@ -1,6 +1,6 @@
 import assert from "assert";
 import * as db from "../db";
-import { Quota } from "../types";
+import { DBInstance, Quota } from "../types";
 import {
   createQuota,
   deleteQuota,
@@ -23,7 +23,7 @@ const createMockQuota = (params?: Quota): Quota => {
 };
 
 describe("test quota functions", function () {
-  let dbInstance: db.DBInstance;
+  let dbInstance: DBInstance;
 
   beforeAll(async function () {
     dbInstance = await MockPgInstanceSingleton.getDbInstance();

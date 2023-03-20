@@ -1,9 +1,7 @@
 import assert from "assert";
-import { FundingServiceApi } from "../funding-service-api";
-import * as db from "../db";
 import { MockPgInstanceSingleton } from "../db/index.spec";
 import { createRegisteredNode, getRegisteredNode } from "../registered-node";
-import { RegisteredNode } from "../types";
+import { RegisteredNode, DBInstance } from "../types";
 import { createFundingRequest } from ".";
 
 const mockNode = (peerId?: string, hasExitNode?: boolean): RegisteredNode => ({
@@ -17,7 +15,7 @@ const mockNode = (peerId?: string, hasExitNode?: boolean): RegisteredNode => ({
 });
 
 describe("test funding requests functions", function () {
-  let dbInstance: db.DBInstance;
+  let dbInstance: DBInstance;
 
   beforeAll(async function () {
     dbInstance = await MockPgInstanceSingleton.getDbInstance();

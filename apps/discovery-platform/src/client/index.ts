@@ -1,7 +1,7 @@
 import * as constants from "../constants";
 import * as db from "../db";
 import { randomWords } from "../utils";
-import { Client, ClientDB } from "../types";
+import { Client, ClientDB, DBInstance } from "../types";
 
 /**
  * Saves a client in DB
@@ -10,7 +10,7 @@ import { Client, ClientDB } from "../types";
  * @returns ClientDB
  */
 export const createClient = async (
-  dbInstance: db.DBInstance,
+  dbInstance: DBInstance,
   client: Client
 ): Promise<ClientDB> => {
   const dbQuota: Client = {
@@ -22,7 +22,7 @@ export const createClient = async (
 };
 
 export const createTrialClient = async (
-  dbInstance: db.DBInstance,
+  dbInstance: DBInstance,
   labels: string[]
 ): Promise<ClientDB> => {
   const randomWordsId = randomWords(
@@ -44,7 +44,7 @@ export const createTrialClient = async (
  * @returns ClientDB
  */
 export const getClient = async (
-  dbInstance: db.DBInstance,
+  dbInstance: DBInstance,
   id: string
 ): Promise<ClientDB> => {
   return await db.getClient(dbInstance, id);
@@ -57,7 +57,7 @@ export const getClient = async (
  * @returns ClientDB
  */
 export const updateClient = async (
-  dbInstance: db.DBInstance,
+  dbInstance: DBInstance,
   client: ClientDB
 ): Promise<ClientDB> => {
   return await db.updateClient(dbInstance, client);
@@ -70,7 +70,7 @@ export const updateClient = async (
  * @returns ClientDB
  */
 export const deleteClient = async (
-  dbInstance: db.DBInstance,
+  dbInstance: DBInstance,
   id: string
 ): Promise<ClientDB> => {
   return await db.deleteClient(dbInstance, id);

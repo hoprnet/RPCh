@@ -13,7 +13,6 @@ import {
   getClient,
   updateClient,
 } from "../../../client";
-import { DBInstance } from "../../../db";
 import { FundingServiceApi } from "../../../funding-service-api";
 import { createQuota, getSumOfQuotasPaidByClient } from "../../../quota";
 import {
@@ -22,7 +21,7 @@ import {
   getRegisteredNode,
   getRegisteredNodes,
 } from "../../../registered-node";
-import { ClientDB, RegisteredNode } from "../../../types";
+import { ClientDB, RegisteredNode, DBInstance } from "../../../types";
 import { createLogger, isListSafe } from "../../../utils";
 import memoryCache from "memory-cache";
 import { errors } from "pg-promise";
