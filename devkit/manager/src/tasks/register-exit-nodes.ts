@@ -25,11 +25,11 @@ async function registerNode(
     nativeAddress,
   });
 
-  const [url, headers] = utils.createApiUrl(
-    "http",
-    discoveryPlatformEndpoint,
-    "/api/v1/node/register"
-  );
+  const [url, headers] = utils.createApiUrl({
+    protocol: "http",
+    apiEndpoint: discoveryPlatformEndpoint,
+    path: "/api/v1/node/register",
+  });
   return fetch(url.toString(), {
     method: "POST",
     headers,

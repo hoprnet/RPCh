@@ -9,12 +9,12 @@ export async function getBalances(
   hoprdEndpoint: string,
   hoprdToken: string
 ): Promise<{ hopr: string; native: string }> {
-  const [url, headers] = utils.createApiUrl(
-    "http",
-    hoprdEndpoint,
-    "/api/v2/account/balances",
-    hoprdToken
-  );
+  const [url, headers] = utils.createApiUrl({
+    protocol: "http",
+    apiEndpoint: hoprdEndpoint,
+    path: "/api/v2/account/balances",
+    apiToken: hoprdToken,
+  });
 
   return fetch(url, {
     method: "GET",
@@ -29,12 +29,12 @@ export async function withdraw(
   amount: string,
   recipient: string
 ) {
-  const [url, headers] = utils.createApiUrl(
-    "http",
-    hoprdEndpoint,
-    "/api/v2/account/withdraw",
-    hoprdToken
-  );
+  const [url, headers] = utils.createApiUrl({
+    protocol: "http",
+    apiEndpoint: hoprdEndpoint,
+    path: "/api/v2/account/withdraw",
+    apiToken: hoprdToken,
+  });
 
   return fetch(url.toString(), {
     method: "POST",
@@ -53,12 +53,12 @@ export async function getAddresses(
   hoprdEndpoint: string,
   hoprdToken: string
 ): Promise<{ hopr: string; native: string }> {
-  const [url, headers] = utils.createApiUrl(
-    "http",
-    hoprdEndpoint,
-    "/api/v2/account/addresses",
-    hoprdToken
-  );
+  const [url, headers] = utils.createApiUrl({
+    protocol: "http",
+    apiEndpoint: hoprdEndpoint,
+    path: "/api/v2/account/addresses",
+    apiToken: hoprdToken,
+  });
 
   return fetch(url.toString(), {
     method: "GET",
@@ -70,12 +70,12 @@ export async function getInfo(
   hoprdEndpoint: string,
   hoprdToken: string
 ): Promise<{ hoprToken: string }> {
-  const [url, headers] = utils.createApiUrl(
-    "http",
-    hoprdEndpoint,
-    "/api/v2/node/info",
-    hoprdToken
-  );
+  const [url, headers] = utils.createApiUrl({
+    protocol: "http",
+    apiEndpoint: hoprdEndpoint,
+    path: "/api/v2/node/info",
+    apiToken: hoprdToken,
+  });
 
   return fetch(url.toString(), {
     method: "GET",
@@ -91,12 +91,12 @@ export async function openChannel(
   hoprAmount: string,
   counterpartyPeerId: string
 ) {
-  const [url, headers] = utils.createApiUrl(
-    "http",
-    hoprdEndpoint,
-    "/api/v2/channels",
-    hoprdToken
-  );
+  const [url, headers] = utils.createApiUrl({
+    protocol: "http",
+    apiEndpoint: hoprdEndpoint,
+    path: "/api/v2/channels",
+    apiToken: hoprdToken,
+  });
 
   const response = await fetch(url.toString(), {
     method: "POST",

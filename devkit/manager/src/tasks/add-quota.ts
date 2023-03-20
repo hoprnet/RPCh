@@ -22,11 +22,11 @@ export default async function main(
     quota,
   });
 
-  const [url, headers] = utils.createApiUrl(
-    "http",
-    discoveryPlatformEndpoint,
-    "/api/v1/client/quota"
-  );
+  const [url, headers] = utils.createApiUrl({
+    protocol: "http",
+    apiEndpoint: discoveryPlatformEndpoint,
+    path: "/api/v1/client/quota",
+  });
 
   const result = await fetch(url.toString(), {
     method: "POST",
