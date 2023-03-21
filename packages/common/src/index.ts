@@ -5,3 +5,4 @@ export { default as Response } from "./response";
 export { default as Cache } from "./cache";
 export * as hoprd from "./hoprd";
 export * as utils from "./utils";
+export * as errors from "./errors";

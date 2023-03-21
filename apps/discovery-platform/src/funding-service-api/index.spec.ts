@@ -10,6 +10,7 @@ import {
   DBInstance,
 } from "../types";
 import { MockPgInstanceSingleton } from "../db/index.spec";
+import { DB_QUERY_VALUES } from "../constants";
 
 const FUNDING_SERVICE_URL = "http://localhost:5000";
 const FAKE_ACCESS_TOKEN = "EcLjvxdALOT0eq18d8Gzz3DEr3AMG27NtL+++YPSZNE=";
@@ -222,7 +223,11 @@ describe("test funding service api class", function () {
         amount: BigInt(5),
         node,
       });
-      const dbNode = await db.getRegisteredNode(dbInstance, "peer1");
+      const dbNode = await db.getRegisteredNode(
+        dbInstance,
+        "peer1",
+        DB_QUERY_VALUES.REGISTERED_NODES
+      );
 
       assert.equal(dbNode?.status, "FUNDING");
       assert.equal(
@@ -259,7 +264,11 @@ describe("test funding service api class", function () {
       } catch (e) {
         let message = "Unknown Error";
         if (e instanceof Error) message = e.message;
-        const dbNode = await db.getRegisteredNode(dbInstance, "peer1");
+        const dbNode = await db.getRegisteredNode(
+          dbInstance,
+          "peer1",
+          DB_QUERY_VALUES.REGISTERED_NODES
+        );
 
         assert.notEqual(dbNode?.status, "FUNDING");
         expect(message).toContain("funding request failed");
@@ -373,7 +382,11 @@ describe("test funding service api class", function () {
       );
 
       await fundingServiceApi.checkForPendingRequests();
-      const dbNode = await db.getRegisteredNode(dbInstance, node.id);
+      const dbNode = await db.getRegisteredNode(
+        dbInstance,
+        node.id,
+        DB_QUERY_VALUES.REGISTERED_NODES
+      );
 
       assert.equal(
         // @ts-ignore
@@ -431,7 +444,11 @@ describe("test funding service api class", function () {
       );
 
       await fundingServiceApi.checkForPendingRequests();
-      const dbNode = await db.getRegisteredNode(dbInstance, node.id);
+      const dbNode = await db.getRegisteredNode(
+        dbInstance,
+        node.id,
+        DB_QUERY_VALUES.REGISTERED_NODES
+      );
 
       assert.equal(
         // @ts-ignore
@@ -489,7 +506,11 @@ describe("test funding service api class", function () {
       nockRequestStatus(fundingResponse).reply(200, failedGetRequestStatusBody);
 
       await fundingServiceApi.checkForPendingRequests();
-      const dbNode = await db.getRegisteredNode(dbInstance, node.id);
+      const dbNode = await db.getRegisteredNode(
+        dbInstance,
+        node.id,
+        DB_QUERY_VALUES.REGISTERED_NODES
+      );
 
       assert.equal(
         // @ts-ignore
@@ -547,7 +568,11 @@ describe("test funding service api class", function () {
         await fundingServiceApi.checkForPendingRequests();
       }
 
-      const dbNode = await db.getRegisteredNode(dbInstance, node.id);
+      const dbNode = await db.getRegisteredNode(
+        dbInstance,
+        node.id,
+        DB_QUERY_VALUES.REGISTERED_NODES
+      );
 
       assert.equal(
         // @ts-ignore

@@ -3,6 +3,7 @@ import nock from "nock";
 import * as hoprd from "./hoprd";
 import * as fixtures from "./fixtures";
 import debug from "debug";
+import { ForbiddenError, NotFoundError } from "./errors";
 
 const ENTRY_NODE_API_ENDPOINT = "http://entry_node";
 const ENTRY_NODE_API_TOKEN = "12345";
@@ -12,6 +13,12 @@ const NOCK_SEND_MESSAGE = nock(ENTRY_NODE_API_ENDPOINT).post((uri) =>
 );
 const NOCK_CREATE_TOKEN = nock(ENTRY_NODE_API_ENDPOINT).post((uri) =>
   uri.includes("/api/v2/tokens")
+);
+const NOCK_GET_TOKEN = nock(ENTRY_NODE_API_ENDPOINT).get((uri) =>
+  uri.includes("/api/v2/token")
+);
+const NOCK_DELETE_TOKEN = nock(ENTRY_NODE_API_ENDPOINT).delete((uri) =>
+  uri.includes("/api/v2/token")
 );
 
 describe("test hoprd.ts", function () {
@@ -85,6 +92,90 @@ describe("test hoprd.ts", function () {
           '{"status":"UNKNOWN_FAILURE","error":"Full error message."}'
         );
       }
+    });
+  });
+  describe("getToken", () => {
+    it("should return a token object", async function () {
+      NOCK_GET_TOKEN.reply(200, {
+        id: "my-token-id",
+        description: "My token description",
+        capabilities: [
+          {
+            endpoint: "/api/v2/token",
+            limits: [
+              {
+                type: "max_calls",
+                conditions: [{ max: 100 }],
+              },
+            ],
+          },
+        ],
+      });
+      const token = await hoprd.getToken({
+        apiEndpoint: ENTRY_NODE_API_ENDPOINT,
+        apiToken: ENTRY_NODE_API_TOKEN,
+      });
+
+      expect(token.id).toBe("my-token-id");
+      expect(token.description).toBe("My token description");
+      expect(token.capabilities.length).toBe(1);
+    });
+
+    it("should throw a ForbiddenError when the response status is 403", async function () {
+      NOCK_GET_TOKEN.reply(403, "forbidden");
+      await expect(
+        hoprd.getToken({
+          apiEndpoint: ENTRY_NODE_API_ENDPOINT,
+          apiToken: ENTRY_NODE_API_TOKEN,
+        })
+      ).rejects.toThrow(ForbiddenError);
+    });
+
+    it("should throw a generic Error when the response status is not 200 or 403", async function () {
+      NOCK_GET_TOKEN.reply(500, "Internal server error");
+      await expect(
+        hoprd.getToken({
+          apiEndpoint: ENTRY_NODE_API_ENDPOINT,
+          apiToken: ENTRY_NODE_API_TOKEN,
+        })
+      ).rejects.toThrow(Error);
+    });
+  });
+  describe("deleteToken", function () {
+    it("should return true on success (status 204)", async function () {
+      NOCK_DELETE_TOKEN.reply(204);
+
+      const res = await hoprd.deleteToken({
+        apiEndpoint: ENTRY_NODE_API_ENDPOINT,
+        apiToken: ENTRY_NODE_API_TOKEN,
+        tokenToDelete: "dG9rZW4=",
+      });
+
+      expect(res).toEqual(true);
+    });
+
+    it("should throw a ForbiddenError when the response status is 403", async function () {
+      NOCK_DELETE_TOKEN.reply(403);
+
+      await expect(
+        hoprd.deleteToken({
+          apiEndpoint: ENTRY_NODE_API_ENDPOINT,
+          apiToken: ENTRY_NODE_API_TOKEN,
+          tokenToDelete: "dG9rZW4=",
+        })
+      ).rejects.toThrow(ForbiddenError);
+    });
+
+    it("should throw a NotFoundError when the response status is 404", async function () {
+      NOCK_DELETE_TOKEN.reply(404);
+
+      await expect(
+        hoprd.deleteToken({
+          apiEndpoint: ENTRY_NODE_API_ENDPOINT,
+          apiToken: ENTRY_NODE_API_TOKEN,
+          tokenToDelete: "dG9rZW4=",
+        })
+      ).rejects.toThrow(NotFoundError);
     });
   });
 });

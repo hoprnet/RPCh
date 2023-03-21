@@ -32,8 +32,14 @@ const CHANNELS_THRESHOLD = process.env.CHANNELS_THRESHOLD
 const SUBGRAPH_URL =
   "https://api.thegraph.com/subgraphs/name/hoprnet/hopr-channels";
 
-// Base amount of reward that a node will receive after completing a request
-const BASE_EXTRA = 1;
+// base amount of reward that a node will receive after completing a request
+const BASE_EXTRA = BigInt(1);
+
+// payment mode when quota is paid by trial client
+const TRIAL_PAYMENT_MODE = "trial";
+
+// client id that will pay for quotas in trial mode
+const TRIAL_CLIENT_ID = "trial";
 
 // Max amount of connections app will have with db
 const MAX_DB_CONNECTIONS = 18;
@@ -53,7 +59,7 @@ const USER_HOPRD_TOKEN_CAPABILITIES = [
 ];
 
 // Max requests hoprd access token can me used for
-const MAX_CALLS_HOPRD_ACCESS_TOKEN = 60e3 * 30;
+const MAX_CALLS_HOPRD_ACCESS_TOKEN = 10e3;
 
 // Used to create
 const AMOUNT_OF_RANDOM_WORDS_FOR_TRIAL_ID = 5;
@@ -122,4 +128,6 @@ export {
   USER_HOPRD_TOKEN_CAPABILITIES,
   DB_TABLES,
   DB_QUERY_VALUES,
+  TRIAL_PAYMENT_MODE,
+  TRIAL_CLIENT_ID,
 };

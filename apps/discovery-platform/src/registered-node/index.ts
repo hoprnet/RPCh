@@ -48,8 +48,30 @@ export const createRegisteredNode = async (
 export const getRegisteredNode = async (
   dbInstance: DBInstance,
   peerId: string
+): Promise<RegisteredNodeDB> => {
+  const node = await db.getRegisteredNode(
+    dbInstance,
+    peerId,
+    constants.DB_QUERY_VALUES.REGISTERED_NODES
+  );
+  return node;
+};
+
+/**
+ * Get a specific registered node without api token
+ * @param dbInstance DBinstance
+ * @param peerId id of the node
+ * @returns RegisteredNodeDB | undefined
+ */
+export const getRegisteredNodeWithoutApiToken = async (
+  dbInstance: DBInstance,
+  peerId: string
 ): Promise<RegisteredNodeDBWithoutApiToken> => {
-  const node = await db.getRegisteredNode(dbInstance, peerId);
+  const node = await db.getRegisteredNode(
+    dbInstance,
+    peerId,
+    constants.DB_QUERY_VALUES.REGISTERED_NODES_WITHOUT_API_TOKEN
+  );
   return node;
 };
 

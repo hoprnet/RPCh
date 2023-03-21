@@ -106,18 +106,16 @@ export const saveRegisteredNode = async (
 
 export const getRegisteredNode = async (
   dbInstance: DBInstance,
-  peerId: string
-): Promise<RegisteredNodeDBWithoutApiToken> => {
-  const text = `SELECT ${DB_QUERY_VALUES.REGISTERED_NODES_WITHOUT_API_TOKEN.join(
-    ", "
-  )} FROM ${DB_TABLES.REGISTERED_NODES} WHERE id=$<peerId>`;
-  const values = {
+  peerId: string,
+  values: string[]
+): Promise<RegisteredNodeDB> => {
+  const text = `SELECT ${values.join(", ")} FROM ${
+    DB_TABLES.REGISTERED_NODES
+  } WHERE id=$<peerId>`;
+  const params = {
     peerId,
   };
-  const dbRes: RegisteredNodeDBWithoutApiToken = await dbInstance.one(
-    text,
-    values
-  );
+  const dbRes: RegisteredNodeDB = await dbInstance.one(text, params);
 
   return dbRes;
 };

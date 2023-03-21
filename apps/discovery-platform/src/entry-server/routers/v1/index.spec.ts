@@ -28,21 +28,18 @@ const nockFundingRequest = (nodeAddress: string) =>
   nock(FUNDING_SERVICE_URL).post(`/api/request/funds/${nodeAddress}`);
 const nockGetApiAccessToken =
   nock(FUNDING_SERVICE_URL).get("/api/access-token");
-
-// mock HOPRd interactions
-jest.mock("@rpch/common", () => ({
-  ...jest.requireActual("@rpch/common"),
-  hoprd: {
-    ...jest.requireActual("@rpch/common").hoprd,
-    createToken: jest.fn(() => "token"),
-  },
-}));
+const nockGetHoprdToken = (endpoint: string) =>
+  nock(endpoint).get((uri) => uri.includes("/api/v2/token"));
+const nockDeleteHoprdToken = (endpoint: string) =>
+  nock(endpoint).delete((uri) => uri.includes("/api/v2/tokens"));
+const nockCreateHoprdToken = (endpoint: string) =>
+  nock(endpoint).post((uri) => uri.includes("/api/v2/tokens"));
 
 const mockNode = (peerId?: string, hasExitNode?: boolean): RegisteredNode => ({
   hasExitNode: hasExitNode ?? true,
   peerId: peerId ?? "peerId",
   chainId: 100,
-  hoprdApiEndpoint: "localhost:5000",
+  hoprdApiEndpoint: "http://localhost:5000",
   hoprdApiToken: "someToken",
   exitNodePubKey: "somePubKey",
   nativeAddress: "someAddress",
@@ -232,7 +229,7 @@ describe("test v1 router", function () {
       assert.equal(requestResponse.body.id, createdNode.body.node?.id);
       spy.mockRestore();
     });
-    it.only("should return an entry node that is not in the exclude list", async function () {
+    it("should return an entry node that is not in the exclude list", async function () {
       const amountLeft = BigInt(10).toString();
       const peerId = "entry";
       const requestId = 1;
@@ -280,6 +277,12 @@ describe("test v1 router", function () {
         200,
         postFundingResponse
       );
+
+      nockCreateHoprdToken(
+        secondCreatedNode.body.node!.hoprd_api_endpoint!
+      ).reply(201, {
+        token: "token",
+      });
 
       const requestResponse = await request(app)
         .post("/request/entry-node")
@@ -479,6 +482,133 @@ describe("test v1 router", function () {
           JSON.stringify(secondAllExitNodeResponse.body)
         );
       });
+    });
+  });
+  describe("refresh capability token", function () {
+    it("returns a new token if the current token is deleted successfully", async function () {
+      // define the mock data for the API responses
+      const peerId = "H0PR";
+      await request(app).post("/node/register").send(mockNode(peerId, true));
+      const createdNode: {
+        body: { node: RegisteredNodeDB };
+      } = await request(app).get(`/node/${peerId}`);
+      const { node } = createdNode.body;
+      const currentToken = "xyz456";
+      const newToken = "789def";
+
+      nockDeleteHoprdToken(node.hoprd_api_endpoint).reply(204);
+      nockGetHoprdToken(node.hoprd_api_endpoint).reply(403, {});
+      nockCreateHoprdToken(node.hoprd_api_endpoint).reply(201, {
+        token: newToken,
+      });
+
+      // make the request to the Express app using supertest
+      const response = await request(app)
+        .get(`/node/${node.id}/refresh`)
+        .set("x-auth-token", currentToken);
+      // assert that the response is as expected
+      expect(response.status).toBe(200);
+      expect(response.body.token).toBe(newToken);
+    });
+    it("returns a new token if the current token failed to delete", async function () {
+      // define the mock data for the API responses
+      const peerId = "H0PR";
+      await request(app).post("/node/register").send(mockNode(peerId, true));
+      const createdNode: {
+        body: { node: RegisteredNodeDB };
+      } = await request(app).get(`/node/${peerId}`);
+      const { node } = createdNode.body;
+      const currentToken = "xyz456";
+      const newToken = "789def";
+      const deleteTokenResponse = { success: true };
+
+      nockDeleteHoprdToken(node.hoprd_api_endpoint).reply(
+        500,
+        deleteTokenResponse
+      );
+      nockGetHoprdToken(node.hoprd_api_endpoint).reply(403, {});
+      nockCreateHoprdToken(node.hoprd_api_endpoint).reply(201, {
+        token: newToken,
+      });
+
+      const response = await request(app)
+        .get(`/node/${node.id}/refresh`)
+        .set("x-auth-token", currentToken);
+
+      // assert that the response is as expected
+      expect(response.status).toBe(200);
+      expect(response.body.token).toBe(newToken);
+    });
+    it("returns code 500 when token retrieval does not throw a 403 or 404 error", async function () {
+      // define the mock data for the API responses
+      const peerId = "H0PR";
+      await request(app).post("/node/register").send(mockNode(peerId, true));
+      const createdNode: {
+        body: { node: RegisteredNodeDB };
+      } = await request(app).get(`/node/${peerId}`);
+      const { node } = createdNode.body;
+      const currentToken = "xyz456";
+      const newToken = "789def";
+      const deleteTokenResponse = { success: true };
+
+      nockDeleteHoprdToken(node.hoprd_api_endpoint).reply(
+        500,
+        deleteTokenResponse
+      );
+      nockGetHoprdToken(node.hoprd_api_endpoint).reply(500, {});
+      nockCreateHoprdToken(node.hoprd_api_endpoint).reply(201, {
+        token: newToken,
+      });
+
+      const response = await request(app)
+        .get(`/node/${node.id}/refresh`)
+        .set("x-auth-token", currentToken);
+
+      // assert that the response is as expected
+      expect(response.status).toBe(500);
+    });
+    it("returns code 404 when token retrieval throws a 404 error", async function () {
+      // define the mock data for the API responses
+      const peerId = "H0PR";
+      await request(app).post("/node/register").send(mockNode(peerId, true));
+      const createdNode: {
+        body: { node: RegisteredNodeDB };
+      } = await request(app).get(`/node/${peerId}`);
+      const { node } = createdNode.body;
+      const currentToken = "xyz456";
+      const newToken = "789def";
+      const deleteTokenResponse = { success: true };
+
+      nockDeleteHoprdToken(node.hoprd_api_endpoint).reply(
+        500,
+        deleteTokenResponse
+      );
+      nockGetHoprdToken(node.hoprd_api_endpoint).reply(404, {});
+      nockCreateHoprdToken(node.hoprd_api_endpoint).reply(201, {
+        token: newToken,
+      });
+
+      const response = await request(app)
+        .get(`/node/${node.id}/refresh`)
+        .set("x-auth-token", currentToken);
+
+      // assert that the response is as expected
+      expect(response.status).toBe(404);
+    });
+    it("returns a 400 status code and validation errors if id parameter is not alphanumeric", async function () {
+      const response = await request(app)
+        .get("/node/120*32?/refresh")
+        .set("x-auth-token", "abc123");
+
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toBeDefined();
+    });
+
+    it("returns a 400 status code and validation errors if x-auth-token header is missing", async function () {
+      const response = await request(app).get("/node/123/refresh");
+
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toBeDefined();
     });
   });
 });

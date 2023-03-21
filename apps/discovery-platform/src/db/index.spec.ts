@@ -108,7 +108,11 @@ describe("test db functions", function () {
     it("should save registered node", async function () {
       const node = createMockNode();
       await db.saveRegisteredNode(dbInstance, node);
-      const dbNode = await db.getRegisteredNode(dbInstance, node.id);
+      const dbNode = await db.getRegisteredNode(
+        dbInstance,
+        node.id,
+        DB_QUERY_VALUES.REGISTERED_NODES
+      );
       assert.equal(dbNode?.id, node.id);
     });
     it("should get all registered nodes", async function () {
@@ -162,7 +166,11 @@ describe("test db functions", function () {
     it("should get one registered node", async function () {
       await db.saveRegisteredNode(dbInstance, createMockNode("1"));
       await db.saveRegisteredNode(dbInstance, createMockNode("2"));
-      const node = await db.getRegisteredNode(dbInstance, "1");
+      const node = await db.getRegisteredNode(
+        dbInstance,
+        "1",
+        DB_QUERY_VALUES.REGISTERED_NODES
+      );
 
       assert.equal(node?.id, "1");
     });
@@ -191,13 +199,21 @@ describe("test db functions", function () {
     });
     it("should update node", async function () {
       await db.saveRegisteredNode(dbInstance, createMockNode("peer1"));
-      const node = await db.getRegisteredNode(dbInstance, "peer1");
+      const node = await db.getRegisteredNode(
+        dbInstance,
+        "peer1",
+        DB_QUERY_VALUES.REGISTERED_NODES
+      );
 
       await db.updateRegisteredNode(dbInstance, {
         ...node,
         status: "UNUSABLE",
       });
-      const updatedNode = await db.getRegisteredNode(dbInstance, "peer1");
+      const updatedNode = await db.getRegisteredNode(
+        dbInstance,
+        "peer1",
+        DB_QUERY_VALUES.REGISTERED_NODES
+      );
 
       assert.equal(updatedNode?.status, "UNUSABLE");
     });
@@ -385,7 +401,11 @@ describe("test db functions", function () {
     it("should get only fresh nodes", async function () {
       await db.saveRegisteredNode(dbInstance, createMockNode("peer1"));
 
-      const node = await db.getRegisteredNode(dbInstance, "peer1");
+      const node = await db.getRegisteredNode(
+        dbInstance,
+        "peer1",
+        DB_QUERY_VALUES.REGISTERED_NODES
+      );
 
       await db.updateRegisteredNode(dbInstance, {
         ...node,
@@ -438,7 +458,11 @@ describe("test db functions", function () {
     it("should save funding request", async function () {
       await db.saveRegisteredNode(dbInstance, createMockNode("peer1"));
 
-      const node = await db.getRegisteredNode(dbInstance, "peer1");
+      const node = await db.getRegisteredNode(
+        dbInstance,
+        "peer1",
+        DB_QUERY_VALUES.REGISTERED_NODES
+      );
 
       const createdFundedRequest = await db.createFundingRequest(dbInstance, {
         registered_node_id: node.id,

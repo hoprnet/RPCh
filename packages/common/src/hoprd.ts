@@ -1,6 +1,7 @@
 import { createLogger, createApiUrl, decodeIncomingBody } from "./utils";
 import fetch from "cross-fetch";
 import WebSocket from "isomorphic-ws";
+import { ForbiddenError, NotFoundError } from "./errors";
 
 const log = createLogger(["hoprd"]);
 
@@ -73,6 +74,15 @@ export const sendMessage = async ({
     );
     const text = await response.text();
     return text;
+  }
+  if (response.status === 403) {
+    let errorMessage = await response.text();
+    log.error(
+      "failed to authorize sending message to HOPRd node",
+      response.status,
+      errorMessage
+    );
+    throw new ForbiddenError(errorMessage);
   } else {
     let errorMessage = await response.text();
     log.error(
@@ -223,7 +233,93 @@ export const createToken = async ({
   } else {
     let errorMessage = await response.text();
     log.error(
-      "failed to get token from HOPRd node",
+      "failed to create token for HOPRd node",
+      response.status,
+      errorMessage
+    );
+    throw new Error(errorMessage);
+  }
+};
+
+export const getToken = async ({
+  apiEndpoint,
+  apiToken,
+}: {
+  apiEndpoint: string;
+  apiToken: string;
+}) => {
+  const [url, headers] = createApiUrl({
+    protocol: "http",
+    apiEndpoint,
+    path: "/api/v2/token",
+    apiToken,
+  });
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers,
+  });
+
+  if (response.status === 200) {
+    const result: {
+      id: string;
+      description: string;
+      capabilities: {
+        endpoint: string;
+        limits: { type: string; conditions: { max: number } }[];
+      }[];
+    } = await response.json();
+    return result;
+  } else if (response.status === 403) {
+    let errorMessage = await response.text();
+    throw new ForbiddenError(errorMessage);
+  } else if (response.status === 404) {
+    let errorMessage = await response.text();
+    throw new NotFoundError(errorMessage);
+  } else {
+    let errorMessage = await response.text();
+    log.error(
+      "failed to query token from HOPRd node",
+      response.status,
+      errorMessage
+    );
+    throw new Error(errorMessage);
+  }
+};
+
+export const deleteToken = async ({
+  apiEndpoint,
+  apiToken,
+  tokenToDelete,
+}: {
+  apiEndpoint: string;
+  apiToken: string;
+  tokenToDelete: string;
+}): Promise<true> => {
+  const [url, headers] = createApiUrl({
+    protocol: "http",
+    apiEndpoint,
+    path: `/api/v2/token/${Buffer.from(tokenToDelete, "base64")}`,
+    apiToken,
+  });
+
+  const response = await fetch(url, {
+    method: "DELETE",
+    headers,
+  });
+
+  if (response.status === 204) {
+    return true;
+  } else if (response.status === 403) {
+    let errorMessage = await response.text();
+    throw new ForbiddenError(errorMessage);
+  } else if (response.status === 404) {
+    let errorMessage = await response.text();
+    throw new NotFoundError(errorMessage);
+  } else {
+    let errorMessage = await response.text();
+    log.error(
+      "failed to query token from HOPRd node",
       response.status,
       errorMessage
     );

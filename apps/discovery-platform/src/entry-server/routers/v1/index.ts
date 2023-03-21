@@ -3,6 +3,7 @@ import {
   ParamSchema,
   body,
   checkSchema,
+  header,
   param,
   query,
   validationResult,
@@ -19,24 +20,17 @@ import {
   createRegisteredNode,
   getEligibleNode,
   getRegisteredNode,
-  getRegisteredNodes,
+  getRegisteredNodeWithoutApiToken,
   getRegisteredNodesWithoutApiToken,
 } from "../../../registered-node";
 import { ClientDB, RegisteredNode, DBInstance } from "../../../types";
 import { createLogger, isListSafe } from "../../../utils";
 import memoryCache from "memory-cache";
 import { errors } from "pg-promise";
+import { hoprd, errors as httpErrors } from "@rpch/common";
+import * as constants from "../../../constants";
 
 const log = createLogger(["entry-server", "router", "v1"]);
-
-// base amount of reward that a node will receive after completing a request
-const BASE_EXTRA = BigInt(1);
-
-// payment mode when quota is paid by trial
-const TRIAL_PAYMENT_MODE = "trial";
-
-// client id that will pay for quotas in trial mode
-const TRIAL_CLIENT_ID = "trial";
 
 // Sanitization and Validation
 const registerNodeSchema: Record<keyof RegisteredNode, ParamSchema> = {
@@ -206,6 +200,66 @@ export const v1Router = (ops: {
   );
 
   router.get(
+    "/node/:id/refresh",
+    param("id").isAlphanumeric(),
+    header("x-auth-token").exists(),
+    async (req: Request<{ id: string }>, res: Response) => {
+      try {
+        log.verbose(`GET /node/:id/refresh`, req.params);
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+          return res.status(400).json({ errors: errors.array() });
+        }
+        // Get the ID of the node to refresh from the request params
+        const { id } = req.params;
+
+        const node = await getRegisteredNode(ops.db, id);
+        // Get the current token from the request headers
+        const currentToken: string = req.headers["x-auth-token"] as string;
+        if (!currentToken) throw Error("missing current auth token");
+        // check if token existed expecting status 403
+        try {
+          await hoprd.getToken({
+            apiEndpoint: node.hoprd_api_endpoint,
+            apiToken: currentToken,
+          });
+        } catch (e) {
+          if (e instanceof httpErrors.ForbiddenError) {
+            // Delete the current node capability token
+            try {
+              await hoprd.deleteToken({
+                apiEndpoint: node.hoprd_api_endpoint,
+                apiToken: node.hoprd_api_token,
+                tokenToDelete: currentToken,
+              });
+              // do nothing if token failed to delete
+            } catch {}
+            // request new token
+            const newToken = await hoprd.createToken({
+              apiEndpoint: node.hoprd_api_endpoint,
+              apiToken: node.hoprd_api_token,
+              description: "access token for SDK",
+              tokenCapabilities: constants.USER_HOPRD_TOKEN_CAPABILITIES,
+              maxCalls: constants.MAX_CALLS_HOPRD_ACCESS_TOKEN,
+            });
+            log.verbose("received new token: ", newToken);
+            return res.json({
+              token: newToken,
+            });
+          } else if (e instanceof httpErrors.NotFoundError) {
+            return res.status(e.status).json({ errors: e.message });
+          } else {
+            throw e;
+          }
+        }
+      } catch (e) {
+        log.error("Can not refresh token", e);
+        return res.status(500).json({ errors: "Unexpected error" });
+      }
+    }
+  );
+
+  router.get(
     "/node/:peerId",
     param("peerId").isAlphanumeric(),
     async (req: Request<{ peerId: string }>, res: Response) => {
@@ -216,7 +270,7 @@ export const v1Router = (ops: {
           return res.status(400).json({ errors: errors.array() });
         }
         const { peerId }: { peerId: string } = req.params;
-        const node = await getRegisteredNode(ops.db, peerId);
+        const node = await getRegisteredNodeWithoutApiToken(ops.db, peerId);
         return res.json({ node });
       } catch (e) {
         log.error("Can not get node with id", e);
@@ -265,7 +319,7 @@ export const v1Router = (ops: {
 
         if (!dbClient) throw Error("Could not create Client");
 
-        if (dbClient.payment === TRIAL_PAYMENT_MODE) {
+        if (dbClient.payment === constants.TRIAL_PAYMENT_MODE) {
           // update client to premium of it was previously trial
           await updateClient(ops.db, { ...dbClient, payment: "premium" });
         }
@@ -337,9 +391,12 @@ export const v1Router = (ops: {
           });
         }
 
-        const clientIsTrialMode = dbClient?.payment === TRIAL_PAYMENT_MODE;
+        const clientIsTrialMode =
+          dbClient?.payment === constants.TRIAL_PAYMENT_MODE;
         // set who is going to pay for quota
-        const paidById = clientIsTrialMode ? TRIAL_CLIENT_ID : dbClient?.id;
+        const paidById = clientIsTrialMode
+          ? constants.TRIAL_CLIENT_ID
+          : dbClient?.id;
 
         // check if client has enough quota
         const doesClientHaveQuotaResponse = await doesClientHaveQuota(
