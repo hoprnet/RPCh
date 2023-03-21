@@ -68,8 +68,6 @@ export default class SDK {
   public deadlockTimestamp: number | undefined;
   // toggle to not select entry nodes while another one is being selected
   private selectingEntryNode: boolean | undefined;
-  // max number of segments sdk can send to entry node
-  public maximumSegmentsPerRequest: number = 100;
 
   constructor(
     private readonly ops: HoprSdkOps,
@@ -450,7 +448,7 @@ export default class SDK {
       const message = req.toMessage();
       const segments = message.toSegments();
 
-      if (segments.length > this.maximumSegmentsPerRequest) {
+      if (segments.length > 100) {
         log.error(
           "Request exceeds maximum amount of segments with %s segments",
           segments.length
