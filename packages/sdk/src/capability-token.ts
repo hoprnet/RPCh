@@ -53,16 +53,18 @@ export default class CapabilityToken {
     return response;
   }
 
-  private isTokenExpired(): boolean {
+  private isTokenExpired(messages: number): boolean {
     log.verbose("capability token stats: ", {
       expired: Date.now() > this.expireTime,
       usedMoreThanThanMaxCalls: this.usedCalls >= MAX_CALLS,
     });
-    return Date.now() > this.expireTime || this.usedCalls >= MAX_CALLS;
+    return (
+      Date.now() > this.expireTime || this.usedCalls + messages >= MAX_CALLS
+    );
   }
 
   public async updateTokenData(messages: number): Promise<void> {
-    if (this.isTokenExpired()) {
+    if (this.isTokenExpired(messages)) {
       log.normal("Capability token expired");
       // if the token has expired or reached its usage limit, request a new one
       const newTokenData = await this.requestNewToken();

@@ -51,10 +51,9 @@ describe("CapabilityToken", function () {
         "nodeId",
         "token"
       );
-      capabilityToken["usedCalls"] = 10000;
 
       DP_GET_NODE.reply(200, { token: "newToken" });
-      await capabilityToken.updateTokenData(0);
+      await capabilityToken.updateTokenData(10000);
       const token = await capabilityToken.getToken();
       expect(token).toBe("newToken");
     });
