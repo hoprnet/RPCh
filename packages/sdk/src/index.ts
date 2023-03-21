@@ -17,7 +17,8 @@ import RequestCache from "./request-cache";
 import { createLogger } from "./utils";
 
 const log = createLogger();
-
+// max number of segments sdk can send to entry node
+const MAXIMUM_SEGMENTS_PER_REQUEST = 100;
 const DEADLOCK_MS = 1e3 * 60 * 0.5; // 30s
 
 /**
@@ -448,7 +449,7 @@ export default class SDK {
       const message = req.toMessage();
       const segments = message.toSegments();
 
-      if (segments.length > 100) {
+      if (segments.length > MAXIMUM_SEGMENTS_PER_REQUEST) {
         log.error(
           "Request exceeds maximum amount of segments with %s segments",
           segments.length
