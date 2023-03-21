@@ -8,6 +8,7 @@ import {
   Segment,
   hoprd,
   utils,
+  errors,
 } from "@rpch/common";
 import { utils as etherUtils } from "ethers";
 import fetch from "cross-fetch";
@@ -405,7 +406,7 @@ export default class SDK {
       (node) => node.peerId !== this.entryNode?.peerId
     );
     const exitNode = utils.randomlySelectFromArray(eligibleExitNodes);
-    return Request.createRequest(
+    const req = Request.createRequest(
       this.crypto!,
       provider,
       body,
@@ -413,6 +414,10 @@ export default class SDK {
       exitNode.peerId,
       this.crypto!.Identity.load_identity(etherUtils.arrayify(exitNode.pubKey))
     );
+    await this.capabilityToken!.updateTokenData(
+      req.toMessage().toSegments().length
+    );
+    return req;
   }
 
   /**
@@ -457,8 +462,6 @@ export default class SDK {
     const message = req.toMessage();
     const segments = message.toSegments();
 
-    const token = await this.capabilityToken?.getToken(segments.length);
-
     return new Promise(async (resolve, reject) => {
       if (segments.length > MAXIMUM_SEGMENTS_PER_REQUEST) {
         log.error(
@@ -467,15 +470,13 @@ export default class SDK {
         );
         return reject("Request is too big");
       }
-
       // Add request to request cache
       this.requestCache.addRequest(req, resolve, reject);
-
       // Send all segments in parallel using Promise.allSettled
       const sendMessagePromises = segments.map((segment) => {
         return hoprd.sendMessage({
           apiEndpoint: this.entryNode!.apiEndpoint,
-          apiToken: token,
+          apiToken: this.capabilityToken!.getToken(),
           message: segment.toString(),
           destination: req.exitNodeDestination,
           path: [],
@@ -491,6 +492,13 @@ export default class SDK {
         );
 
         if (rejectedResults.length > 0) {
+          const forbiddenErrors = (
+            rejectedResults as PromiseRejectedResult[]
+          ).filter((result) => result.reason instanceof errors.ForbiddenError);
+
+          if (forbiddenErrors.length > 0) {
+            this.capabilityToken?.requestNewToken();
+          }
           // If any promises were rejected, remove request from cache and reject promise
           this.handleFailedRequest(req);
         }

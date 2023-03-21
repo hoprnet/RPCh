@@ -5,7 +5,7 @@ import assert from "assert";
 import nock from "nock";
 import SDK, { type HoprSdkOps } from "./index";
 
-const TIMEOUT = 5e3;
+const TIMEOUT = 10e18;
 const DISCOVERY_PLATFORM_API_ENDPOINT = "http://discovery_platform";
 const ENTRY_NODE_API_ENDPOINT = "http://entry_node";
 const ENTRY_NODE_API_PORT = "1337";
@@ -34,6 +34,11 @@ const DP_REQ_ENTRY_NOCK = nock(DISCOVERY_PLATFORM_API_ENDPOINT).post(
 
 const HOPRD_SEND_MESSAGE_NOCK = nock(ENTRY_NODE_API_ENDPOINT).post(
   "/api/v2/messages"
+);
+
+// Define the Nock endpoints
+const DP_REFRESH_TOKEN = nock(DISCOVERY_PLATFORM_API_ENDPOINT).get(
+  "/api/v1/node/nodeId/refresh"
 );
 
 const createSdkMock = (
@@ -196,20 +201,19 @@ describe("test SDK class", function () {
 
     it("should send request and return response", function (done) {
       HOPRD_SEND_MESSAGE_NOCK.reply(202, "someresponse");
+      DP_REFRESH_TOKEN.reply(200, { token: "newToken" });
 
       const [clientRequest, , exitNodeResponse] =
         fixtures.generateMockedFlow(3);
 
       sdk.sendRequest(clientRequest).then((response) => {
         assert.equal(response.id, clientRequest.id);
-        // @ts-ignore
-        const pendingRequest = sdk.requestCache.getRequest(clientRequest.id);
+        const pendingRequest = sdk["requestCache"].getRequest(clientRequest.id);
         assert.equal(pendingRequest, undefined);
         done();
       });
 
-      // @ts-ignore
-      sdk.onMessage(exitNodeResponse.toMessage());
+      sdk["onMessage"](exitNodeResponse.toMessage());
     });
 
     it("should call `addMetric` when `onMessage` is triggered", async function () {

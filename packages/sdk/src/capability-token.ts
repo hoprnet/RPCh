@@ -17,9 +17,10 @@ export default class CapabilityToken {
   ) {
     this.expireTime = Date.now() + EXPIRE_TIME;
     this.usedCalls = 0;
+    log.normal("Started new capability token:", token);
   }
 
-  private async requestNewToken(): Promise<{ token: string }> {
+  public async requestNewToken(): Promise<{ token: string }> {
     const rawResponse: globalThis.Response = await fetch(
       new URL(
         `/api/v1/node/${this.selectedNodeId}/refresh`,
@@ -53,11 +54,16 @@ export default class CapabilityToken {
   }
 
   private isTokenExpired(): boolean {
+    log.verbose("capability token stats: ", {
+      expired: Date.now() > this.expireTime,
+      usedMoreThanThanMaxCalls: this.usedCalls >= MAX_CALLS,
+    });
     return Date.now() > this.expireTime || this.usedCalls >= MAX_CALLS;
   }
 
-  private async updateTokenData(messages: number): Promise<void> {
+  public async updateTokenData(messages: number): Promise<void> {
     if (this.isTokenExpired()) {
+      log.normal("Capability token expired");
       // if the token has expired or reached its usage limit, request a new one
       const newTokenData = await this.requestNewToken();
       this.token = newTokenData.token;
@@ -69,8 +75,7 @@ export default class CapabilityToken {
     }
   }
 
-  public async getToken(messages: number = 1): Promise<string> {
-    await this.updateTokenData(messages);
+  public getToken(): string {
     return this.token;
   }
 }

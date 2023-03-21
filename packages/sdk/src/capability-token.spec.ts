@@ -1,7 +1,5 @@
 import CapabilityToken from "./capability-token";
-import fetch from "node-fetch";
 import nock from "nock";
-import { Response } from "node-fetch";
 
 const DISCOVERY_PLATFORM_API_ENDPOINT = "https://example.com";
 
@@ -41,7 +39,7 @@ describe("CapabilityToken", function () {
         "token"
       );
       capabilityToken["expireTime"] = Date.now() - 1000;
-
+      await capabilityToken.updateTokenData(0);
       const token = await capabilityToken.getToken();
       expect(token).toBe("newToken");
     });
@@ -56,7 +54,7 @@ describe("CapabilityToken", function () {
       capabilityToken["usedCalls"] = 10000;
 
       DP_GET_NODE.reply(200, { token: "newToken" });
-
+      await capabilityToken.updateTokenData(0);
       const token = await capabilityToken.getToken();
       expect(token).toBe("newToken");
     });
@@ -64,7 +62,7 @@ describe("CapabilityToken", function () {
     it("should increment the usedCalls counter by the messages parameter", async function () {
       DP_GET_NODE.reply(200, { token: "newToken" });
 
-      await capabilityToken.getToken(3);
+      await capabilityToken.updateTokenData(3);
       expect(capabilityToken["usedCalls"]).toBe(3);
     });
 
@@ -75,13 +73,7 @@ describe("CapabilityToken", function () {
         "Failed to get new token from discovery platform"
       );
     });
-    it("should increment the usedCalls counter by the messages parameter", async function () {
-      DP_GET_NODE.reply(200, { token: "token" });
-
-      await capabilityToken.getToken(3);
-      expect(capabilityToken["usedCalls"]).toBe(3);
-    });
-    test("should throw an error when the request to the Discovery Platform API returns a bad response", async function () {
+    it("should throw an error when the request to the Discovery Platform API returns a bad response", async function () {
       DP_GET_NODE.reply(400, { error: "Bad Request" });
 
       await expect(capabilityToken["requestNewToken"]()).rejects.toThrowError(
