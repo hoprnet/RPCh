@@ -5,15 +5,13 @@ import nock from "nock";
 import { MockPgInstanceSingleton } from "../db/index.spec";
 import { FundingServiceApi } from "../funding-service-api";
 import * as registeredNode from "../registered-node";
-import {
-  getAccessTokenResponse,
-  postFundingResponse,
-} from "../funding-service-api/dto";
 import request from "supertest";
 import {
-  CreateRegisteredNode,
-  QueryRegisteredNode,
-} from "../registered-node/dto";
+  RegisteredNode,
+  RegisteredNodeDB,
+  GetAccessTokenResponse,
+  PostFundingResponse,
+} from "../types";
 import assert from "assert";
 import { createClient } from "../client";
 
@@ -26,10 +24,7 @@ const nockFundingRequest = (nodeAddress: string) =>
 const nockGetApiAccessToken =
   nock(FUNDING_SERVICE_URL).get("/api/access-token");
 
-const mockNode = (
-  peerId?: string,
-  hasExitNode?: boolean
-): CreateRegisteredNode => ({
+const mockNode = (peerId?: string, hasExitNode?: boolean): RegisteredNode => ({
   hasExitNode: hasExitNode ?? true,
   peerId: peerId ?? "peerId",
   chainId: 100,
@@ -71,7 +66,7 @@ describe("test entry server", function () {
     const peerId = "entry";
     const requestId = 1;
 
-    const getAccessTokenBody: getAccessTokenResponse = {
+    const getAccessTokenBody: GetAccessTokenResponse = {
       accessToken: FAKE_ACCESS_TOKEN,
       amountLeft: BigInt(10).toString(),
       expiredAt: new Date().toISOString(),
@@ -90,14 +85,14 @@ describe("test entry server", function () {
       .send(mockNode(peerId, true));
 
     const createdNode: {
-      body: { node: QueryRegisteredNode | undefined };
+      body: { node: RegisteredNodeDB | undefined };
     } = await request(app).get(`/api/v1/node/${peerId}`);
 
     spy.mockImplementation(async () => {
       return createdNode.body.node;
     });
 
-    const fundingResponseBody: postFundingResponse = {
+    const fundingResponseBody: PostFundingResponse = {
       amountLeft,
       id: requestId,
     };
