@@ -15,6 +15,7 @@ import retry from "async-retry";
 import ReliabilityScore, { Stats } from "./reliability-score";
 import RequestCache from "./request-cache";
 import { createLogger } from "./utils";
+import CapabilityToken from "./capability-token";
 
 const log = createLogger();
 // max number of segments sdk can send to entry node
@@ -59,6 +60,8 @@ export default class SDK {
   private segmentCache: SegmentCache;
   private requestCache: RequestCache;
   private reliabilityScore: ReliabilityScore;
+  // Capability token used for authentication with the selected hoprd
+  private capabilityToken?: CapabilityToken;
   // selected entry node
   private entryNode?: EntryNode;
   // available exit nodes
@@ -146,6 +149,12 @@ export default class SDK {
         peerId: response.id,
       };
       log.verbose("Selected entry node", this.entryNode);
+
+      this.capabilityToken = new CapabilityToken(
+        discoveryPlatformApiEndpoint,
+        this.entryNode.peerId,
+        this.entryNode.apiToken
+      );
 
       // Refresh messageListener
       if (this.stopMessageListener) this.stopMessageListener();
@@ -445,10 +454,12 @@ export default class SDK {
       throw Error("SDK is deadlocked");
     }
 
-    return new Promise(async (resolve, reject) => {
-      const message = req.toMessage();
-      const segments = message.toSegments();
+    const message = req.toMessage();
+    const segments = message.toSegments();
 
+    const token = await this.capabilityToken?.getToken(segments.length);
+
+    return new Promise(async (resolve, reject) => {
       if (segments.length > MAXIMUM_SEGMENTS_PER_REQUEST) {
         log.error(
           "Request exceeds maximum amount of segments with %s segments",
@@ -464,7 +475,7 @@ export default class SDK {
       const sendMessagePromises = segments.map((segment) => {
         return hoprd.sendMessage({
           apiEndpoint: this.entryNode!.apiEndpoint,
-          apiToken: this.entryNode!.apiToken,
+          apiToken: token,
           message: segment.toString(),
           destination: req.exitNodeDestination,
           path: [],
