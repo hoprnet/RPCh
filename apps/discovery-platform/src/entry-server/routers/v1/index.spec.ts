@@ -8,19 +8,16 @@ import { DBInstance } from "../../../db";
 import { MockPgInstanceSingleton } from "../../../db/index.spec";
 import { FundingServiceApi } from "../../../funding-service-api";
 import {
-  getAccessTokenResponse,
-  postFundingResponse,
-} from "../../../funding-service-api/dto";
-import {
-  getQuotasCreatedByClient,
-  getQuotasPaidByClient,
-  sumQuotas,
+  getSumOfQuotasUsedByClient,
+  getSumOfQuotasPaidByClient,
 } from "../../../quota";
 import * as registeredNode from "../../../registered-node";
 import {
-  CreateRegisteredNode,
-  QueryRegisteredNode,
-} from "../../../registered-node/dto";
+  RegisteredNode,
+  RegisteredNodeDB,
+  GetAccessTokenResponse,
+  PostFundingResponse,
+} from "../../../types";
 import memoryCache from "memory-cache";
 
 const FUNDING_SERVICE_URL = "http://localhost:5000";
@@ -32,10 +29,7 @@ const nockFundingRequest = (nodeAddress: string) =>
 const nockGetApiAccessToken =
   nock(FUNDING_SERVICE_URL).get("/api/access-token");
 
-const mockNode = (
-  peerId?: string,
-  hasExitNode?: boolean
-): CreateRegisteredNode => ({
+const mockNode = (peerId?: string, hasExitNode?: boolean): RegisteredNode => ({
   hasExitNode: hasExitNode ?? true,
   peerId: peerId ?? "peerId",
   chainId: 100,
@@ -188,7 +182,7 @@ describe("test v1 router", function () {
       const peerId = "entry";
       const requestId = 1;
 
-      const replyBody: getAccessTokenResponse = {
+      const replyBody: GetAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
         amountLeft: BigInt(10).toString(),
         expiredAt: new Date().toISOString(),
@@ -205,14 +199,14 @@ describe("test v1 router", function () {
       await request(app).post("/node/register").send(mockNode(peerId, true));
 
       const createdNode: {
-        body: { node: QueryRegisteredNode | undefined };
+        body: { node: RegisteredNodeDB | undefined };
       } = await request(app).get(`/node/${peerId}`);
 
       spy.mockImplementation(async () => {
         return createdNode.body.node;
       });
 
-      let postFundingResponse: postFundingResponse = {
+      let postFundingResponse: PostFundingResponse = {
         amountLeft,
         id: requestId,
       };
@@ -234,7 +228,7 @@ describe("test v1 router", function () {
       const peerId = "entry";
       const requestId = 1;
 
-      const replyBody: getAccessTokenResponse = {
+      const replyBody: GetAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
         amountLeft: BigInt(10).toString(),
         expiredAt: new Date().toISOString(),
@@ -253,10 +247,10 @@ describe("test v1 router", function () {
         .send(mockNode(peerId + "2", true));
 
       const firstCreatedNode: {
-        body: { node: QueryRegisteredNode | undefined };
+        body: { node: RegisteredNodeDB | undefined };
       } = await request(app).get(`/node/${peerId}`);
       const secondCreatedNode: {
-        body: { node: QueryRegisteredNode | undefined };
+        body: { node: RegisteredNodeDB | undefined };
       } = await request(app).get(`/node/${peerId + "2"}`);
 
       await registeredNode.updateRegisteredNode(dbInstance, {
@@ -268,7 +262,7 @@ describe("test v1 router", function () {
         status: "READY",
       });
 
-      let postFundingResponse: postFundingResponse = {
+      let postFundingResponse: PostFundingResponse = {
         amountLeft,
         id: requestId,
       };
@@ -287,7 +281,7 @@ describe("test v1 router", function () {
     it("should fail if no entry node is selected", async function () {
       const spy = jest.spyOn(registeredNode, "getEligibleNode");
 
-      const apiAccessTokenResponse: getAccessTokenResponse = {
+      const apiAccessTokenResponse: GetAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
         amountLeft: BigInt(10).toString(),
         expiredAt: new Date().toISOString(),
@@ -308,13 +302,13 @@ describe("test v1 router", function () {
       assert.equal(requestResponse.body.errors, "Could not find eligible node");
       spy.mockRestore();
     });
-    it.skip("should reduce client quota", async function () {
-      const spy = jest.spyOn(registeredNode, "getEligibleNode");
+    it("should reduce client quota", async function () {
+      const spyGetEligibleNode = jest.spyOn(registeredNode, "getEligibleNode");
       const amountLeft = BigInt(10).toString();
       const peerId = "entry";
       const requestId = 1;
 
-      const apiTokenResponse: getAccessTokenResponse = {
+      const apiTokenResponse: GetAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
         amountLeft: BigInt(10).toString(),
         expiredAt: new Date().toISOString(),
@@ -331,18 +325,19 @@ describe("test v1 router", function () {
       await request(app).post("/node/register").send(mockNode(peerId, true));
 
       const createdNode: {
-        body: { node: QueryRegisteredNode | undefined };
+        body: { node: RegisteredNodeDB | undefined };
       } = await request(app).get(`/node/${peerId}`);
 
-      spy.mockImplementation(async () => {
+      spyGetEligibleNode.mockImplementation(async () => {
         return createdNode.body.node;
       });
 
-      const fundingResponse: postFundingResponse = {
+      const fundingResponse: PostFundingResponse = {
         amountLeft,
         id: requestId,
       };
 
+      // mocks response from funding request
       nockFundingRequest(createdNode.body.node?.native_address!).reply(
         200,
         fundingResponse
@@ -361,15 +356,16 @@ describe("test v1 router", function () {
         requestResponse.body.body,
         "Client does not have enough quota"
       );
-      spy.mockRestore();
+
+      spyGetEligibleNode.mockRestore();
     });
     it("should be able to use trial mode client and reduce quota", async function () {
-      const spy = jest.spyOn(registeredNode, "getEligibleNode");
+      const spyGetEligibleNode = jest.spyOn(registeredNode, "getEligibleNode");
       const amountLeft = BigInt(10).toString();
       const peerId = "entry";
       const requestId = 1;
 
-      const apiTokenResponse: getAccessTokenResponse = {
+      const apiTokenResponse: GetAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
         amountLeft: BigInt(10).toString(),
         expiredAt: new Date().toISOString(),
@@ -390,14 +386,14 @@ describe("test v1 router", function () {
       await request(app).post("/node/register").send(mockNode(peerId, true));
 
       const createdNode: {
-        body: { node: QueryRegisteredNode | undefined };
+        body: { node: RegisteredNodeDB | undefined };
       } = await request(app).get(`/node/${peerId}`);
 
-      spy.mockImplementation(async () => {
+      spyGetEligibleNode.mockImplementation(async () => {
         return createdNode.body.node;
       });
 
-      const fundingResponse: postFundingResponse = {
+      const fundingResponse: PostFundingResponse = {
         amountLeft,
         id: requestId,
       };
@@ -407,27 +403,30 @@ describe("test v1 router", function () {
         fundingResponse
       );
 
-      const trialClientQuotaBefore = sumQuotas(
-        await getQuotasPaidByClient(dbInstance, "trial")
+      const trialClientQuotaBefore = await getSumOfQuotasPaidByClient(
+        dbInstance,
+        "trial"
       );
 
       const requestResponse = await request(app)
         .post("/request/entry-node")
         .send({ client: trialClientId });
 
-      const trialClientQuotaAfter = sumQuotas(
-        await getQuotasPaidByClient(dbInstance, "trial")
+      const trialClientQuotaAfter = await getSumOfQuotasPaidByClient(
+        dbInstance,
+        "trial"
       );
 
-      const b2dClientQuotaUsed = sumQuotas(
-        await getQuotasCreatedByClient(dbInstance, trialClientId)
+      const b2dClientQuotaUsed = await getSumOfQuotasUsedByClient(
+        dbInstance,
+        trialClientId
       );
 
       expect(b2dClientQuotaUsed).toEqual(BASE_QUOTA * BigInt(-1));
       expect(trialClientQuotaAfter).toBeLessThan(trialClientQuotaBefore);
       expect(requestResponse.body).toHaveProperty("id");
 
-      spy.mockRestore();
+      spyGetEligibleNode.mockRestore();
     });
 
     describe("test cache requests", function () {

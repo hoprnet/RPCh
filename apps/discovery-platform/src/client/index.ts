@@ -1,20 +1,19 @@
+import * as constants from "../constants";
 import * as db from "../db";
 import { randomWords } from "../utils";
-import { CreateClient, QueryClient } from "./dto";
-
-const AMOUNT_OF_RANDOM_WORDS_FOR_TRIAL_ID = 5;
+import { Client, ClientDB } from "../types";
 
 /**
  * Saves a client in DB
  * @param dbInstance DBInstance
- * @param client CreateClient
- * @returns QueryClient
+ * @param client Client
+ * @returns ClientDB
  */
 export const createClient = async (
   dbInstance: db.DBInstance,
-  client: CreateClient
-): Promise<QueryClient> => {
-  const dbQuota: CreateClient = {
+  client: Client
+): Promise<ClientDB> => {
+  const dbQuota: Client = {
     id: client.id,
     payment: client.payment,
     labels: client.labels ?? [],
@@ -25,12 +24,12 @@ export const createClient = async (
 export const createTrialClient = async (
   dbInstance: db.DBInstance,
   labels: string[]
-): Promise<QueryClient> => {
-  const randomWordsId = randomWords(AMOUNT_OF_RANDOM_WORDS_FOR_TRIAL_ID).join(
-    "-"
-  );
+): Promise<ClientDB> => {
+  const randomWordsId = randomWords(
+    constants.AMOUNT_OF_RANDOM_WORDS_FOR_TRIAL_ID
+  ).join("-");
 
-  const dbQuota: CreateClient = {
+  const dbQuota: Client = {
     id: randomWordsId,
     payment: "trial",
     labels: labels ?? [],
@@ -42,25 +41,25 @@ export const createTrialClient = async (
  * Get a client that matches id
  * @param dbInstance DBInstance
  * @param id string
- * @returns QueryClient | null
+ * @returns ClientDB
  */
 export const getClient = async (
   dbInstance: db.DBInstance,
   id: string
-): Promise<QueryClient | null> => {
+): Promise<ClientDB> => {
   return await db.getClient(dbInstance, id);
 };
 
 /**
  * Update client in DB
  * @param dbInstance DBInstance
- * @param client QueryClient
- * @returns QueryClient
+ * @param client ClientDB
+ * @returns ClientDB
  */
 export const updateClient = async (
   dbInstance: db.DBInstance,
-  client: QueryClient
-): Promise<QueryClient | null> => {
+  client: ClientDB
+): Promise<ClientDB> => {
   return await db.updateClient(dbInstance, client);
 };
 
@@ -68,11 +67,11 @@ export const updateClient = async (
  * Delete client with matching id
  * @param dbInstance DBInstance
  * @param id string
- * @returns QueryClient | null
+ * @returns ClientDB
  */
 export const deleteClient = async (
   dbInstance: db.DBInstance,
   id: string
-): Promise<QueryClient | null> => {
+): Promise<ClientDB> => {
   return await db.deleteClient(dbInstance, id);
 };
