@@ -310,8 +310,17 @@ export default class SDK {
       // @ts-expect-error
       await this.crypto.init();
     }
-
-    await this.selectEntryNodeWithRetry({ retries: 5 });
+    // fetch required data from discovery platform
+    await retry(
+      () => this.selectEntryNode(this.ops.discoveryPlatformApiEndpoint),
+      {
+        retries: 5,
+        onRetry: (e, attempt) => {
+          log.error("Error while selecting entry node", e);
+          log.verbose("Retrying to select entry node, attempt:", attempt);
+        },
+      }
+    );
 
     await retry(
       () => this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint),
@@ -374,13 +383,29 @@ export default class SDK {
     ) {
       log.verbose("node is not reliable enough. selecting new entry node");
       exclusionList.push(this.entryNode!.peerId);
-      await this.selectEntryNodeWithRetry({
-        retries: 3,
-        exclusionList,
-        onCatch: () => {
-          this.setDeadlock(DEADLOCK_MS);
-        },
-      });
+      // Try to select entry node 3 times
+      try {
+        await retry(
+          async () => {
+            const selectedEntryNode = await this.selectEntryNode(
+              this.ops.discoveryPlatformApiEndpoint,
+              exclusionList
+            );
+            log.verbose("Received entry node", selectedEntryNode);
+            return selectedEntryNode;
+          },
+          {
+            retries: 3,
+            onRetry: (e, attempt) => {
+              log.error("Error while selecting entry node", e);
+              log.verbose("Retrying to select entry node, attempt:", attempt);
+            },
+          }
+        );
+      } catch (error) {
+        log.error("Couldn't find new entry node: ", error);
+        this.setDeadlock(DEADLOCK_MS);
+      }
     }
 
     // exclude entry node
@@ -396,56 +421,6 @@ export default class SDK {
       exitNode.peerId,
       this.crypto!.Identity.load_identity(etherUtils.arrayify(exitNode.pubKey))
     );
-  }
-
-  /**
-   * Select entry node with a number of retries before deadlocking the sdk
-   * @param retries amount of tries to select entry node
-   * @param exclusionList array of node peerid to exclude from selecting
-   * @param onCatch function to run after running out of retries
-   * @param opts retry options
-   * @returns object with entry node information
-   */
-  private async selectEntryNodeWithRetry(params: {
-    retries: number;
-    exclusionList?: string[];
-    onCatch?: () => void;
-    opts?: retry.Options;
-  }): Promise<
-    | {
-        apiEndpoint: string;
-        apiToken: string;
-        peerId: string;
-      }
-    | undefined
-  > {
-    try {
-      return await retry(
-        async () => {
-          const selectedEntryNode = await this.selectEntryNode(
-            this.ops.discoveryPlatformApiEndpoint,
-            params.exclusionList
-          );
-          log.verbose("Received entry node", selectedEntryNode);
-          return selectedEntryNode;
-        },
-        {
-          retries: params.retries,
-          onRetry: (e, attempt) => {
-            log.error("Error while selecting entry node", e);
-            log.verbose("Retrying to select entry node, attempt:", attempt);
-          },
-          ...params.opts,
-        }
-      );
-    } catch (error) {
-      log.error("Couldn't find new entry node: ", error);
-      if (typeof params.onCatch === "function") {
-        params.onCatch();
-      } else {
-        return;
-      }
-    }
   }
 
   /**
