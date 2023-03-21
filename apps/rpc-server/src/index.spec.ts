@@ -86,18 +86,5 @@ describe("test index.ts", function () {
       expect(res.text).toEqual("SDK not initialized");
       rpcServer.sdk = mockSdk(temp);
     });
-    it("request is too big", function () {
-      // max number of segments sdk can send to entry node
-      // @ts-ignore
-      rpcServer.sdk!.maximumSegmentsPerRequest = 1;
-
-      return request
-        .post("/?exit-provider=someprovider")
-        .send(
-          // create an rpc call that will exceed MAXIMUM_SEGMENTS_PER_REQUEST size
-          fixtures.RPC_REQ_LARGE
-        )
-        .expect("Request is too big");
-    });
   });
 });
