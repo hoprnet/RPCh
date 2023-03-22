@@ -124,6 +124,10 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
+      - name: Cleanup after containers
+        shell: bash
+        run: docker system prune -f
+
       - name: Build
         uses: ./.github/actions/build-rpch
         env:
