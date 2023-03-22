@@ -10,6 +10,13 @@ export default class CapabilityToken {
   private expireTime: number;
   private usedCalls: number;
 
+  /**
+   * Creates a new CapabilityToken instance.
+   *
+   * @param discoveryPlatformApiEndpoint The API endpoint for the discovery platform.
+   * @param selectedNodeId The ID of the selected node.
+   * @param token The capability token string.
+   */
   constructor(
     private discoveryPlatformApiEndpoint: string,
     private selectedNodeId: string,
@@ -20,6 +27,11 @@ export default class CapabilityToken {
     log.normal("Started new capability token:", token);
   }
 
+  /**
+   * Sends a request to the discovery platform to get a new capability token.
+   *
+   * @returns A promise that resolves to an object containing the new capability token.
+   */
   public async requestNewToken(): Promise<{ token: string }> {
     const rawResponse: globalThis.Response = await fetch(
       new URL(
@@ -53,6 +65,12 @@ export default class CapabilityToken {
     return response;
   }
 
+  /**
+   * Checks whether the current capability token has expired.
+   *
+   * @param messages The number of messages sent.
+   * @returns A boolean indicating whether the current token has expired.
+   */
   private isTokenExpired(messages: number): boolean {
     log.verbose("capability token stats: ", {
       expired: Date.now() > this.expireTime,
@@ -63,6 +81,12 @@ export default class CapabilityToken {
     );
   }
 
+  /**
+   * Updates the capability token data, such as the token string and usage statistics.
+   *
+   * @param messages The number of messages sent.
+   * @returns A promise that resolves when the update is complete.
+   */
   public async updateTokenData(messages: number): Promise<void> {
     if (this.isTokenExpired(messages)) {
       log.normal("Capability token expired");
@@ -77,6 +101,21 @@ export default class CapabilityToken {
     }
   }
 
+  /**
+   * Sends a panic request to the discovery platform to get a new capability token.
+   *
+   * @returns A promise that resolves when the new token is received.
+   */
+  public async panicRequestToken() {
+    const newTokenData = await this.requestNewToken();
+    this.token = newTokenData.token;
+  }
+
+  /**
+   * Returns the current capability token.
+   *
+   * @returns The current capability token.
+   */
   public getToken(): string {
     return this.token;
   }

@@ -497,7 +497,7 @@ export default class SDK {
           ).filter((result) => result.reason instanceof errors.ForbiddenError);
 
           if (forbiddenErrors.length > 0) {
-            this.capabilityToken?.requestNewToken();
+            await this.capabilityToken?.panicRequestToken();
           }
           // If any promises were rejected, remove request from cache and reject promise
           this.handleFailedRequest(req);

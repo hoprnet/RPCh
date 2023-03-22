@@ -243,6 +243,7 @@ export const v1Router = (ops: {
               maxCalls: constants.MAX_CALLS_HOPRD_ACCESS_TOKEN,
             });
             log.verbose("received new token: ", newToken);
+            // TODO: REDUCE QUOTA -> WHAT CLIENT? -> ADD COLUMN TO DB
             return res.json({
               token: newToken,
             });
