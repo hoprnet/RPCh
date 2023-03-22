@@ -1,5 +1,13 @@
 import assert from "assert";
-import { isExpired } from "./index";
+import { generateAccessToken, isExpired } from "./index";
+
+const MOCK_MAX_AMOUNT = BigInt(20);
+const MOCK_SECRET_KEY = "SECRET_KEY";
+const MOCK_ACCESS_TOKEN_PARAMS = {
+  amount: MOCK_MAX_AMOUNT,
+  expiredAt: new Date(Date.now()),
+  secretKey: MOCK_SECRET_KEY,
+};
 
 describe("test utils file", function () {
   describe("isExpired function", function () {
@@ -20,6 +28,14 @@ describe("test utils file", function () {
       const res = isExpired(futureDate);
       jest.useRealTimers();
       assert(!res);
+    });
+  });
+
+  describe("test AccessToken class", function () {
+    it("should generate a different hash every time", function () {
+      const firstHash = generateAccessToken(MOCK_ACCESS_TOKEN_PARAMS);
+      const secondHash = generateAccessToken(MOCK_ACCESS_TOKEN_PARAMS);
+      assert(firstHash !== secondHash);
     });
   });
 });
