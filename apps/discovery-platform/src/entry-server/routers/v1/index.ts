@@ -15,7 +15,11 @@ import {
   updateClient,
 } from "../../../client";
 import { FundingServiceApi } from "../../../funding-service-api";
-import { createQuota, getSumOfQuotasPaidByClient } from "../../../quota";
+import {
+  createQuota,
+  getQuotaByToken,
+  getSumOfQuotasPaidByClient,
+} from "../../../quota";
 import {
   createRegisteredNode,
   getEligibleNode,
@@ -217,44 +221,36 @@ export const v1Router = (ops: {
         // Get the current token from the request headers
         const currentToken: string = req.headers["x-auth-token"] as string;
         if (!currentToken) throw Error("missing current auth token");
-        // check if token existed expecting status 403
+        // check if token exists
+        const quota = getQuotaByToken(ops.db, currentToken);
+        if (!quota) throw new httpErrors.NotFoundError();
+        // Delete the current node capability token
         try {
-          await hoprd.getToken({
+          await hoprd.deleteToken({
             apiEndpoint: node.hoprd_api_endpoint,
-            apiToken: currentToken,
+            apiToken: node.hoprd_api_token,
+            tokenToDelete: currentToken,
           });
-        } catch (e) {
-          if (e instanceof httpErrors.ForbiddenError) {
-            // Delete the current node capability token
-            try {
-              await hoprd.deleteToken({
-                apiEndpoint: node.hoprd_api_endpoint,
-                apiToken: node.hoprd_api_token,
-                tokenToDelete: currentToken,
-              });
-              // do nothing if token failed to delete
-            } catch {}
-            // request new token
-            const newToken = await hoprd.createToken({
-              apiEndpoint: node.hoprd_api_endpoint,
-              apiToken: node.hoprd_api_token,
-              description: "access token for SDK",
-              tokenCapabilities: constants.USER_HOPRD_TOKEN_CAPABILITIES,
-              maxCalls: constants.MAX_CALLS_HOPRD_ACCESS_TOKEN,
-            });
-            log.verbose("received new token: ", newToken);
-            // TODO: REDUCE QUOTA -> WHAT CLIENT? -> ADD COLUMN TO DB
-            return res.json({
-              token: newToken,
-            });
-          } else if (e instanceof httpErrors.NotFoundError) {
-            return res.status(e.status).json({ errors: e.message });
-          } else {
-            throw e;
-          }
-        }
+          // do nothing if token failed to delete
+        } catch {}
+        // request new token
+        const newToken = await hoprd.createToken({
+          apiEndpoint: node.hoprd_api_endpoint,
+          apiToken: node.hoprd_api_token,
+          description: "access token for SDK",
+          tokenCapabilities: constants.USER_HOPRD_TOKEN_CAPABILITIES,
+          maxCalls: Number(ops.baseQuota),
+        });
+        log.verbose("received new token: ", newToken);
+        // TODO: REDUCE QUOTA -> WHAT CLIENT? -> ADD COLUMN TO DB
+        return res.json({
+          token: newToken,
+        });
       } catch (e) {
         log.error("Can not refresh token", e);
+        if (e instanceof httpErrors.HttpError) {
+          return res.status(e.status).json({ errors: e.message });
+        }
         return res.status(500).json({ errors: "Unexpected error" });
       }
     }

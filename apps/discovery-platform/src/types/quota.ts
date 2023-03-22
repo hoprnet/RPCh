@@ -4,6 +4,7 @@ export type Quota = {
   clientId: string;
   paidBy: string;
   quota: bigint;
+  token?: string;
   actionTaker: string;
 };
 

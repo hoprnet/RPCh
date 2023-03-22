@@ -45,9 +45,17 @@ describe("test quota functions", function () {
     const mockQuota = createMockQuota();
     const createdQuota = await createQuota(dbInstance, mockQuota);
     await createQuota(dbInstance, createMockQuota());
-    const queryQuota = await db.getQuota(dbInstance, createdQuota.id ?? 0);
+    const queryQuota = await getQuota(dbInstance, createdQuota.id ?? 0);
     assert.equal(queryQuota?.quota, createdQuota.quota);
     assert.equal(queryQuota?.client_id, createdQuota.client_id);
+  });
+  it("should get quota by token", async function () {
+    const mockQuota = createMockQuota();
+    const token = "FAKE_TOKEN";
+    const createdQuota = await createQuota(dbInstance, { ...mockQuota, token });
+    await createQuota(dbInstance, createMockQuota());
+    const queryQuota = await db.getQuotaByToken(dbInstance, token);
+    assert.equal(queryQuota.token, token);
   });
   it("should get quotas created by client", async function () {
     const expectedQuotas = [

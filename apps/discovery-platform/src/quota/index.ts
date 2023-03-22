@@ -16,6 +16,7 @@ export const createQuota = async (
     clientId: quota.clientId,
     quota: quota.quota,
     paidBy: quota.paidBy,
+    token: quota.token,
   };
   return await db.createQuota(dbInstance, dbQuota);
 };
@@ -23,7 +24,7 @@ export const createQuota = async (
 /**
  * Get a quota that matches id
  * @param dbInstance DBInstance
- * @param id string
+ * @param id number
  * @returns QuotaDB
  */
 export const getQuota = async (
@@ -31,6 +32,19 @@ export const getQuota = async (
   id: number
 ): Promise<QuotaDB> => {
   return await db.getQuota(dbInstance, id);
+};
+
+/**
+ * Get a quota that matches token
+ * @param dbInstance DBInstance
+ * @param token string
+ * @returns QuotaDB
+ */
+export const getQuotaByToken = async (
+  dbInstance: DBInstance,
+  token: string
+): Promise<QuotaDB> => {
+  return await db.getQuotaByToken(dbInstance, token);
 };
 
 /**

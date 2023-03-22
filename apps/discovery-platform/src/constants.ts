@@ -13,7 +13,7 @@ const SKIP_CHECK_COMMITMENT = process.env.SKIP_CHECK_COMMITMENT === "true";
 // Unit amount of quotas a request costs
 const BASE_QUOTA = process.env.BASE_QUOTA
   ? BigInt(process.env.BASE_QUOTA)
-  : BigInt(1);
+  : BigInt(10e3);
 
 // Port that server will listen for requests
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3020;
@@ -57,9 +57,6 @@ const USER_HOPRD_TOKEN_CAPABILITIES = [
   "messagesSendMessage",
   "tokensGetToken",
 ];
-
-// Max requests hoprd access token can me used for
-const MAX_CALLS_HOPRD_ACCESS_TOKEN = 10e3;
 
 // Used to create
 const AMOUNT_OF_RANDOM_WORDS_FOR_TRIAL_ID = 5;
@@ -123,7 +120,6 @@ export {
   SKIP_CHECK_COMMITMENT,
   MAX_DB_CONNECTIONS,
   AMOUNT_OF_RANDOM_WORDS_FOR_TRIAL_ID,
-  MAX_CALLS_HOPRD_ACCESS_TOKEN,
   DP_HOPRD_TOKEN_CAPABILITIES,
   USER_HOPRD_TOKEN_CAPABILITIES,
   DB_TABLES,

@@ -157,13 +157,14 @@ export const createQuota = async (
   dbInstance: DBInstance,
   quota: Quota
 ): Promise<QuotaDB> => {
-  const text = `INSERT INTO ${DB_TABLES.QUOTAS} (id, client_id, paid_by, quota, action_taker)
-  VALUES (default, $<clientId>, $<paidBy>, $<quota>, $<actionTaker>) RETURNING *`;
+  const text = `INSERT INTO ${DB_TABLES.QUOTAS} (id, client_id, paid_by, quota, action_taker, token)
+  VALUES (default, $<clientId>, $<paidBy>, $<quota>, $<actionTaker>, $<token>) RETURNING *`;
   const values: Quota = {
     clientId: quota.clientId,
     quota: quota.quota,
     actionTaker: quota.actionTaker,
     paidBy: quota.paidBy,
+    token: quota.token,
   };
 
   const dbRes: QuotaDB = await dbInstance.one(text, values);
@@ -177,6 +178,18 @@ export const getQuota = async (
   const text = `SELECT * FROM ${DB_TABLES.QUOTAS} WHERE id=$<id>`;
   const values = {
     id,
+  };
+  const dbRes: QuotaDB = await dbInstance.one(text, values);
+  return dbRes;
+};
+
+export const getQuotaByToken = async (
+  dbInstance: DBInstance,
+  token: string
+): Promise<QuotaDB> => {
+  const text = `SELECT * FROM ${DB_TABLES.QUOTAS} WHERE token=$<token>`;
+  const values = {
+    token,
   };
   const dbRes: QuotaDB = await dbInstance.one(text, values);
   return dbRes;

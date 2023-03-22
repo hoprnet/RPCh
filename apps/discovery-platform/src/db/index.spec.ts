@@ -81,6 +81,7 @@ const createMockQuota = (params?: Quota): Quota => {
     clientId: params?.clientId ?? "client",
     paidBy: params?.paidBy ?? "client",
     quota: params?.quota ?? BigInt(1),
+    token: params?.token ?? "token",
   };
 };
 
@@ -287,6 +288,17 @@ describe("test db functions", function () {
       assert.equal(queryQuota?.quota, mockQuota.quota);
       assert.equal(queryQuota?.action_taker, mockQuota.actionTaker);
     });
+    it("should get quota by token", async function () {
+      const mockQuota = createMockQuota();
+      const token = "FAKE_TOKEN";
+      const createdQuota = await db.createQuota(dbInstance, {
+        ...mockQuota,
+        token,
+      });
+      await db.createQuota(dbInstance, createMockQuota());
+      const queryQuota = await db.getQuota(dbInstance, createdQuota.id ?? 0);
+      assert.equal(queryQuota.token, token);
+    });
     it("should get sum of quotas used by client", async function () {
       const expectedQuotas = [
         BigInt("100000000"),
@@ -455,6 +467,13 @@ describe("test db functions", function () {
         }
       }
     });
+    it("should save token with quota", async function () {
+      const mockQuota = createMockQuota();
+      const quota = await db.createQuota(dbInstance, mockQuota);
+      assert.notEqual(quota.token, undefined);
+    });
+  });
+  describe("funding request table", function () {
     it("should save funding request", async function () {
       await db.saveRegisteredNode(dbInstance, createMockNode("peer1"));
 
