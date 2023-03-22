@@ -43,54 +43,54 @@ jobs:
       - name: Run tests and coverage
         run: yarn test --ci
 
-  container-image:
-    name: Build and push container image
-    timeout-minutes: 10
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # TODO: dynamically get this list
-        project:
-          - exit-node
-          - funding-service
-          - discovery-platform
-          - rpc-server
-          - manager
-        include:
-          - project: exit-node
-            directory: apps
-          - project: funding-service
-            directory: apps
-          - project: discovery-platform
-            directory: apps
-          - project: rpc-server
-            directory: apps
-          - project: manager
-            directory: devkit
-
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v3
-
-      - name: Calculate environment variables
-        shell: sh
-        run: echo "SHORT_SHA=`git rev-parse --short HEAD`" >> $GITHUB_ENV
-
-      - name: Login to GCP
-        id: gcloud
-        uses: elgohr/gcloud-login-action@v1 #TODO - v2 is bugged, unable to get outputs
-        with:
-          account_key: ${{ secrets.GOOGLE_CREDENTIALS }}
-
-      - name: Build and push the container image
-        uses: elgohr/Publish-Docker-Github-Action@v5
-        with:
-          dockerfile: "./${{ matrix.directory }}/${{ matrix.project }}/Dockerfile"
-          name: ${{ secrets.GOOGLE_PROJECT }}/${{ secrets.GOOGLE_REPOSITORY }}/${{ matrix.project }}
-          registry: ${{ secrets.GOOGLE_REGION }}-docker.pkg.dev
-          username: ${{ steps.gcloud.outputs.username }}
-          password: ${{ steps.gcloud.outputs.password }}
-          tags: "${{ env.SHORT_SHA }}"
+#  container-image:
+#    name: Build and push container image
+#    timeout-minutes: 10
+#    runs-on: ubuntu-latest
+#    strategy:
+#      matrix:
+#        # TODO: dynamically get this list
+#        project:
+#          - exit-node
+#          - funding-service
+#          - discovery-platform
+#          - rpc-server
+#          - manager
+#        include:
+#          - project: exit-node
+#            directory: apps
+#          - project: funding-service
+#            directory: apps
+#          - project: discovery-platform
+#            directory: apps
+#          - project: rpc-server
+#            directory: apps
+#          - project: manager
+#            directory: devkit
+#
+#    steps:
+#      - name: Check out code
+#        uses: actions/checkout@v3
+#
+#      - name: Calculate environment variables
+#        shell: sh
+#        run: echo "SHORT_SHA=`git rev-parse --short HEAD`" >> $GITHUB_ENV
+#
+#      - name: Login to GCP
+#        id: gcloud
+#        uses: elgohr/gcloud-login-action@v1 #TODO - v2 is bugged, unable to get outputs
+#        with:
+#          account_key: ${{ secrets.GOOGLE_CREDENTIALS }}
+#
+#      - name: Build and push the container image
+#        uses: elgohr/Publish-Docker-Github-Action@v5
+#        with:
+#          dockerfile: "./${{ matrix.directory }}/${{ matrix.project }}/Dockerfile"
+#          name: ${{ secrets.GOOGLE_PROJECT }}/${{ secrets.GOOGLE_REPOSITORY }}/${{ matrix.project }}
+#          registry: ${{ secrets.GOOGLE_REGION }}-docker.pkg.dev
+#          username: ${{ steps.gcloud.outputs.username }}
+#          password: ${{ steps.gcloud.outputs.password }}
+#          tags: "${{ env.SHORT_SHA }}"
 
   review-configuration:
     name: Review configuration
