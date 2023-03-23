@@ -58,6 +58,10 @@ const UNRESOLVED_REQUESTS_STATUSES: RequestDB["status"][] = [
   "PROCESSING",
 ];
 
+// Subgraph endpoint used to query node commitment
+const SUBGRAPH_URL =
+  "https://api.thegraph.com/subgraphs/name/hoprnet/hopr-channels";
+
 export {
   SECRET_KEY,
   WALLET_PRIV_KEY,
@@ -72,4 +76,5 @@ export {
   CONNECTION_INFO,
   SMART_CONTRACTS_PER_CHAIN,
   UNRESOLVED_REQUESTS_STATUSES,
+  SUBGRAPH_URL,
 };
