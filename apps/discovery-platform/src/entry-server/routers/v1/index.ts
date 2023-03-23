@@ -27,7 +27,7 @@ import {
   getRegisteredNodeWithoutApiToken,
   getRegisteredNodesWithoutApiToken,
 } from "../../../registered-node";
-import { ClientDB, RegisteredNode, DBInstance } from "../../../types";
+import { ClientDB, RegisteredNode, DBInstance, QuotaDB } from "../../../types";
 import { createLogger, isListSafe } from "../../../utils";
 import memoryCache from "memory-cache";
 import { errors } from "pg-promise";
@@ -207,33 +207,39 @@ export const v1Router = (ops: {
     "/node/:id/refresh",
     param("id").isAlphanumeric(),
     header("x-auth-token").exists(),
-    async (req: Request<{ id: string }>, res: Response) => {
+    async function refreshNodeToken(
+      req: Request<{ id: string }>,
+      res: Response
+    ) {
       try {
         log.verbose(`GET /node/:id/refresh`, req.params);
+
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
           return res.status(400).json({ errors: errors.array() });
         }
-        // Get the ID of the node to refresh from the request params
-        const { id } = req.params;
 
+        const { id } = req.params;
         const node = await getRegisteredNode(ops.db, id);
-        // Get the current token from the request headers
+
         const currentToken: string = req.headers["x-auth-token"] as string;
         if (!currentToken) throw Error("missing current auth token");
-        // check if token exists
-        const quota = getQuotaByToken(ops.db, currentToken);
-        if (!quota) throw new httpErrors.NotFoundError();
-        // Delete the current node capability token
+
+        let quota: QuotaDB;
+        try {
+          quota = await getQuotaByToken(ops.db, currentToken);
+        } catch {
+          throw new httpErrors.NotFoundError();
+        }
+
         try {
           await hoprd.deleteToken({
             apiEndpoint: node.hoprd_api_endpoint,
             apiToken: node.hoprd_api_token,
             tokenToDelete: currentToken,
           });
-          // do nothing if token failed to delete
         } catch {}
-        // request new token
+
         const newToken = await hoprd.createToken({
           apiEndpoint: node.hoprd_api_endpoint,
           apiToken: node.hoprd_api_token,
@@ -241,16 +247,27 @@ export const v1Router = (ops: {
           tokenCapabilities: constants.USER_HOPRD_TOKEN_CAPABILITIES,
           maxCalls: Number(ops.baseQuota),
         });
+
         log.verbose("received new token: ", newToken);
-        // TODO: REDUCE QUOTA -> WHAT CLIENT? -> ADD COLUMN TO DB
+
+        await createQuota(ops.db, {
+          actionTaker: "discovery platform",
+          clientId: quota.client_id,
+          paidBy: quota.paid_by,
+          quota: ops.baseQuota,
+          token: newToken,
+        });
+
         return res.json({
           token: newToken,
         });
       } catch (e) {
         log.error("Can not refresh token", e);
+
         if (e instanceof httpErrors.HttpError) {
           return res.status(e.status).json({ errors: e.message });
         }
+
         return res.status(500).json({ errors: "Unexpected error" });
       }
     }
