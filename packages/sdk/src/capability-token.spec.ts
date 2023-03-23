@@ -82,12 +82,6 @@ describe("CapabilityToken", function () {
     it("should request a new token in case of panic", async function () {
       DP_GET_NODE.reply(200, { token: "newToken" });
 
-      const capabilityToken = new CapabilityToken(
-        "https://example.com",
-        "selectedNodeId",
-        "oldToken"
-      );
-
       await capabilityToken.panicRequestToken();
 
       expect(capabilityToken.getToken()).toEqual("newToken");
