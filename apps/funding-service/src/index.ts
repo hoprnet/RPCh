@@ -67,6 +67,11 @@ const start = async (ops: {
       log.error(error);
     }
   }, 1e4 * 60);
+
+  // start listening at PORT for requests
+  app.listen(constants.PORT, () => {
+    log.normal("entry server is up");
+  });
 };
 
 const main = () => {
