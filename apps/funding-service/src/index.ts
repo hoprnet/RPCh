@@ -8,6 +8,7 @@ import { RequestService } from "./request";
 import { createLogger } from "./utils";
 import { DBInstance } from "./types";
 import * as constants from "./constants";
+import { ticketsIssued } from "./reward-system";
 
 const log = createLogger();
 
@@ -55,10 +56,17 @@ const start = async (ops: {
       });
     }
   }, 30e3);
-  // start listening at PORT for requests
-  app.listen(constants.PORT, () => {
-    log.normal("entry server is up");
-  });
+
+  let issued: { [key: string]: number };
+  // start checking tickets issued every 10 minutes
+  setInterval(async () => {
+    try {
+      issued = await ticketsIssued();
+      log.verbose(`Tickets issued: ${issued}`);
+    } catch (error) {
+      log.error(error);
+    }
+  }, 1e4 * 60);
 };
 
 const main = () => {
