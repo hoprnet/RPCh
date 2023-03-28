@@ -1,18 +1,22 @@
-import { CreateAccessToken, QueryAccessToken } from "../access-token";
-import { CreateRequest, QueryRequest, UpdateRequest } from "../request";
-import pgp from "pg-promise";
+import {
+  Request,
+  RequestDB,
+  AccessToken,
+  AccessTokenDB,
+  DBInstance,
+  RequestFilters,
+} from "../types";
 import { createLogger } from "../utils";
 import migrate from "node-pg-migrate";
 import path from "path";
-
-/**
- * DB module that handles the formatting of queries and executing them
- */
+import { DBTimestamp } from "../types/general";
 
 const log = createLogger(["db"]);
 
-export type DBInstance = pgp.IDatabase<{}>;
-
+/**
+ * Run migrations from project in a connected db
+ * @param dbUrl
+ */
 export const runMigrations = async (dbUrl: string) => {
   const migrationsDirectory = path.join(__dirname, "../../migrations");
 
@@ -28,27 +32,27 @@ export const runMigrations = async (dbUrl: string) => {
 
 export const saveAccessToken = async (
   db: DBInstance,
-  accessToken: CreateAccessToken
-): Promise<QueryAccessToken> => {
+  accessToken: AccessToken
+): Promise<AccessTokenDB> => {
   const text =
     "INSERT INTO access_tokens(id, token, expired_at) values(default, $<token>, $<expiredAt>) RETURNING *";
   const values = {
     token: accessToken.token,
     expiredAt: accessToken.expiredAt,
   };
-  const dbRes: QueryAccessToken = await db.one(text, values);
+  const dbRes: AccessTokenDB = await db.one(text, values);
   return dbRes;
 };
 
 export const getAccessToken = async (
   db: DBInstance,
   accessTokenHash: string
-): Promise<QueryAccessToken | null> => {
+): Promise<AccessTokenDB> => {
   const text = "SELECT * FROM access_tokens WHERE token=$<token>";
   const values = {
     token: accessTokenHash,
   };
-  const dbRes: QueryAccessToken | null = await db.oneOrNone(text, values);
+  const dbRes: AccessTokenDB = await db.one(text, values);
 
   return dbRes;
 };
@@ -56,19 +60,19 @@ export const getAccessToken = async (
 export const deleteAccessToken = async (
   db: DBInstance,
   accessTokenHash: string
-): Promise<QueryAccessToken | null> => {
+): Promise<AccessTokenDB> => {
   const text = "DELETE FROM access_tokens WHERE token=$<token> RETURNING *";
   const values = {
     token: accessTokenHash,
   };
-  const dbRes: QueryAccessToken | null = await db.oneOrNone(text, values);
+  const dbRes: AccessTokenDB = await db.one(text, values);
   return dbRes;
 };
 
 export const saveRequest = async (
   db: DBInstance,
-  request: CreateRequest
-): Promise<QueryRequest> => {
+  request: Request
+): Promise<RequestDB> => {
   const text = `INSERT INTO requests(id, access_token_hash, node_address, amount, chain_id, status)
     values(default, $<token>, $<address>, $<amount>, $<chainId>, $<status>)
     RETURNING *`;
@@ -79,67 +83,117 @@ export const saveRequest = async (
     chainId: request.chainId,
     status: request.status,
   };
-  const dbRes: QueryRequest = await db.one(text, values);
+  const dbRes: RequestDB = await db.one(text, values);
   return dbRes;
 };
 
 export const getRequest = async (
   db: DBInstance,
   requestId: number
-): Promise<QueryRequest | null> => {
+): Promise<RequestDB> => {
   const text = "SELECT * FROM requests WHERE id=$<id>";
   const values = {
     id: requestId,
   };
-  const dbRes: QueryRequest | null = await db.oneOrNone(text, values);
+  const dbRes: RequestDB = await db.one(text, values);
 
   return dbRes;
 };
 
-export const getRequests = async (db: DBInstance): Promise<QueryRequest[]> => {
-  const text = "SELECT * FROM requests";
-  const dbRes: QueryRequest[] = await db.manyOrNone(text);
+export const getRequests = async (
+  db: DBInstance,
+  where?: RequestFilters
+): Promise<RequestDB[]> => {
+  const baseText = "SELECT * FROM requests";
+  let filtersText = [];
+  const values: { [key: string]: string } = {};
+
+  for (const key in where) {
+    if (key in where) {
+      filtersText.push(`${key}=$<${key}>`);
+      values[key] = String(where[key as keyof RequestFilters]);
+    }
+  }
+
+  const sqlText = filtersText.length
+    ? baseText + " WHERE " + filtersText.join(" AND ")
+    : baseText;
+
+  const dbRes: RequestDB[] = await db.manyOrNone(sqlText, values);
+  log.verbose("Requests with filters query DB response", where, dbRes);
+
   return dbRes;
 };
 
-export const getRequestsByAccessToken = async (
+export const getSumOfRequests = async (
+  db: DBInstance,
+  where?: RequestFilters
+): Promise<bigint> => {
+  const baseText = "SELECT SUM(amount) FROM requests";
+  let filtersText = [];
+  const values: { [key: string]: string } = {};
+
+  for (const key in where) {
+    if (key in where) {
+      filtersText.push(`${key}=$<${key}>`);
+      values[key] = String(where[key as keyof RequestFilters]);
+    }
+  }
+
+  const sqlText = filtersText.length
+    ? baseText + " WHERE " + filtersText.join(" AND ")
+    : baseText;
+
+  const dbRes: { sum: bigint } = await db.one(sqlText, values);
+
+  log.verbose("Sum of requests with filters query DB response", where, dbRes);
+
+  return dbRes.sum ? BigInt(dbRes.sum) : BigInt(0);
+};
+
+export const getSumOfRequestsByAccessToken = async (
   db: DBInstance,
   accessTokenHash: string
-): Promise<QueryRequest[]> => {
-  const text = "SELECT * FROM requests WHERE access_token_hash=$<token>";
+): Promise<bigint> => {
+  const text =
+    "SELECT SUM(amount) FROM requests WHERE access_token_hash=$<token>";
   const values = {
     token: accessTokenHash,
   };
-  const dbRes: QueryRequest[] = await db.manyOrNone(text, values);
+  const dbRes: { sum: bigint } = await db.one(text, values);
 
-  return dbRes;
+  return BigInt(dbRes.sum);
 };
 
 export const updateRequest = async (
   db: DBInstance,
-  request: UpdateRequest
-): Promise<QueryRequest | null> => {
+  request: Omit<RequestDB, keyof DBTimestamp>
+): Promise<RequestDB> => {
   const text = `UPDATE requests SET 
-    access_token_hash=$<accessTokenHash>,
-    node_address=$<nodeAddress>,
+    access_token_hash=$<access_token_hash>,
+    node_address=$<node_address>,
     amount=$<amount>,
-    chain_id=$<chainId>,
+    chain_id=$<chain_id>,
     reason=$<reason>,
-    transaction_hash=$<transactionHash>,
-    status=$<status>
-    WHERE id=$<id>`;
-  const values: UpdateRequest = {
+    transaction_hash=$<transaction_hash>,
+    status=$<status>,
+    updated_at = $<updated_at>
+    WHERE id=$<id>
+    RETURNING *`;
+
+  const values: Omit<RequestDB, "created_at"> = {
     id: request.id,
-    accessTokenHash: request.accessTokenHash,
-    nodeAddress: request.nodeAddress,
+    access_token_hash: request.access_token_hash,
+    node_address: request.node_address,
     amount: request.amount,
-    chainId: request.chainId,
+    chain_id: request.chain_id,
     reason: request.reason,
-    transactionHash: request.transactionHash,
+    transaction_hash: request.transaction_hash,
     status: request.status,
+    updated_at: new Date().toISOString(),
   };
 
-  const dbRes: QueryRequest | null = await db.oneOrNone(text, values);
+  const dbRes: RequestDB = await db.one(text, values);
 
   return dbRes;
 };
@@ -147,7 +201,7 @@ export const updateRequest = async (
 export const deleteRequest = async (
   db: DBInstance,
   requestId: number
-): Promise<QueryRequest> => {
+): Promise<RequestDB> => {
   const text = "DELETE FROM requests WHERE id=$<id> RETURNING *";
   const values = {
     id: requestId,
@@ -158,20 +212,11 @@ export const deleteRequest = async (
 
 export const getOldestFreshRequest = async (
   db: DBInstance
-): Promise<QueryRequest | null> => {
+): Promise<RequestDB> => {
   const text = `SELECT * FROM requests
     WHERE status = 'FRESH'
     ORDER BY created_at ASC
     LIMIT 1;`;
-  const dbRes: QueryRequest | null = await db.oneOrNone(text);
-  return dbRes;
-};
-
-export const getAllUnresolvedRequests = async (
-  db: DBInstance
-): Promise<QueryRequest[]> => {
-  const text = `SELECT * FROM requests
-    WHERE status IN ('FRESH', 'PROCESSING')`;
-  const dbRes: QueryRequest[] = await db.manyOrNone(text);
+  const dbRes: RequestDB = await db.one(text);
   return dbRes;
 };

@@ -1,17 +1,17 @@
 import * as db from "../db";
-import { CreateQuota, QueryQuota } from "./dto";
+import { Quota, QuotaDB } from "../types";
 
 /**
  * Saves a quota in DB
  * @param dbInstance DBInstance
- * @param quota CreateQuota
- * @returns QueryQuota
+ * @param quota Quota
+ * @returns QuotaDB
  */
 export const createQuota = async (
   dbInstance: db.DBInstance,
-  quota: CreateQuota
-): Promise<QueryQuota> => {
-  const dbQuota: CreateQuota = {
+  quota: Quota
+): Promise<QuotaDB> => {
+  const dbQuota: Quota = {
     actionTaker: quota.actionTaker,
     clientId: quota.clientId,
     quota: quota.quota,
@@ -24,51 +24,51 @@ export const createQuota = async (
  * Get a quota that matches id
  * @param dbInstance DBInstance
  * @param id string
- * @returns QueryQuota | null
+ * @returns QuotaDB
  */
 export const getQuota = async (
   dbInstance: db.DBInstance,
   id: number
-): Promise<QueryQuota | null> => {
+): Promise<QuotaDB> => {
   return await db.getQuota(dbInstance, id);
 };
 
 /**
- * Get all quotas paid by a specific client
+ * Get sum of quotas paid by a specific client
  * @param dbInstance DBInstance
  * @param client string
- * @returns QueryQuota[]
+ * @returns bigint
  */
-export const getQuotasPaidByClient = async (
+export const getSumOfQuotasPaidByClient = async (
   dbInstance: db.DBInstance,
   client: string
-): Promise<QueryQuota[]> => {
-  return await db.getQuotasPaidByClient(dbInstance, client);
+): Promise<bigint> => {
+  return await db.getSumOfQuotasPaidByClient(dbInstance, client);
 };
 
 /**
- * Get all quotas created by a specific client
+ * Get sum of quotas used by a specific client
  * @param dbInstance DBInstance
  * @param client string
- * @returns QueryQuota[]
+ * @returns bigint
  */
-export const getQuotasCreatedByClient = async (
+export const getSumOfQuotasUsedByClient = async (
   dbInstance: db.DBInstance,
   client: string
-): Promise<QueryQuota[]> => {
-  return await db.getQuotasCreatedByClient(dbInstance, client);
+): Promise<bigint> => {
+  return await db.getSumOfQuotasUsedByClient(dbInstance, client);
 };
 
 /**
  * Update quota in DB with matching id
  * @param dbInstance DBInstance
- * @param quota QueryQuota
- * @returns QueryQuota
+ * @param quota QuotaDB
+ * @returns QuotaDB
  */
 export const updateQuota = async (
   dbInstance: db.DBInstance,
-  quota: QueryQuota
-): Promise<QueryQuota | null> => {
+  quota: QuotaDB
+): Promise<QuotaDB> => {
   return await db.updateQuota(dbInstance, quota);
 };
 
@@ -76,24 +76,11 @@ export const updateQuota = async (
  * Delete quota with matching id
  * @param dbInstance DBInstance
  * @param id string
- * @returns QueryQuota | null
+ * @returns QuotaDB
  */
 export const deleteQuota = async (
   dbInstance: db.DBInstance,
   id: number
-): Promise<QueryQuota | null> => {
+): Promise<QuotaDB> => {
   return await db.deleteQuota(dbInstance, id);
-};
-
-/**
- * Calculate sum on quotas
- * @param quotas QueryQuota[]
- * @returns bigint
- */
-export const sumQuotas = (quotas: QueryQuota[]): bigint => {
-  const sumOfQuotas = quotas.reduce(
-    (prev, next) => BigInt(prev) + BigInt(next.quota),
-    BigInt(0)
-  );
-  return sumOfQuotas;
 };

@@ -1,7 +1,6 @@
 import { gql } from "graphql-request";
 import fetch from "node-fetch";
-import { QueryRegisteredNode } from "../registered-node/dto";
-import { GetAccountChannelsResponse } from "./dto";
+import { RegisteredNodeDB, GetAccountChannelsResponse } from "../types";
 import { createLogger } from "../utils";
 import * as constants from "../constants";
 import { utils } from "@rpch/common";
@@ -43,13 +42,13 @@ const getAccountsFromBlockChange = gql`
 
 /**
  * Check commitment for a specific node
- * @param node QueryRegisteredNode
+ * @param node RegisteredNodeDB
  * @param minBalance Minimum balance needed for node to be considered committed
  * @param minChannels Minimum amount of open channels needed to be considered committed
  * @returns boolean | undefined
  */
 export const checkCommitment = async (ops: {
-  node: QueryRegisteredNode;
+  node: RegisteredNodeDB;
   minBalance: number;
   minChannels: number;
 }): Promise<boolean | undefined> => {

@@ -33,6 +33,12 @@ const SUBGRAPH_URL =
 // Base amount of reward that a node will receive after completing a request
 const BASE_EXTRA = 1;
 
+// Max amount of connections app will have with db
+const MAX_DB_CONNECTIONS = 18;
+
+// Used to create
+const AMOUNT_OF_RANDOM_WORDS_FOR_TRIAL_ID = 5;
+
 export {
   PORT,
   FUNDING_SERVICE_URL,
@@ -43,4 +49,6 @@ export {
   BASE_EXTRA,
   SUBGRAPH_URL,
   SKIP_CHECK_COMMITMENT,
+  MAX_DB_CONNECTIONS,
+  AMOUNT_OF_RANDOM_WORDS_FOR_TRIAL_ID,
 };
