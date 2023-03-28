@@ -31,10 +31,6 @@ describe("test index.ts", function () {
     sdkStore.get
   );
 
-  beforeAll(async function () {
-    await provider.sdk.start();
-  });
-
   afterAll(async function () {
     await provider.sdk.stop();
   });
