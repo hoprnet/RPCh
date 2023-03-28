@@ -1,4 +1,3 @@
-import * as path from "path";
 import levelup from "levelup";
 import leveldown from "leveldown";
 import { utils as ethersUtils } from "ethers";
@@ -16,21 +15,19 @@ import * as exit from "./exit";
 import * as identity from "./identity";
 import { createLogger } from "./utils";
 import PeerId from "peer-id";
-
-const log = createLogger();
-
-const {
-  RPCH_PASSWORD,
-  RPCH_IDENTITY_DIR,
-  RPCH_PRIVATE_KEY: RPCH_PRIVATE_KEY_STR,
-  RPCH_DATA_DIR,
+import {
+  DEFAULT_DATA_DIR,
+  DEFAULT_IDENTITY_DIR,
   HOPRD_API_ENDPOINT,
   HOPRD_API_TOKEN,
-  RESPONSE_TIMEOUT: RESPONSE_TIMEOUT_STR = "10000",
-} = process.env;
+  RESPONSE_TIMEOUT,
+  RPCH_DATA_DIR,
+  RPCH_IDENTITY_DIR,
+  RPCH_PASSWORD,
+  RPCH_PRIVATE_KEY_STR,
+} from "./constants";
 
-const DEFAULT_IDENTITY_DIR = path.join(process.cwd(), ".identity");
-const DEFAULT_DATA_DIR = path.join(process.cwd(), "db");
+const log = createLogger();
 
 export const start = async (ops: {
   exit: {
@@ -187,7 +184,6 @@ if (require.main === module) {
     throw Error("env variable 'HOPRD_API_TOKEN' not found");
   }
 
-  const RESPONSE_TIMEOUT = Number(RESPONSE_TIMEOUT_STR);
   if (isNaN(RESPONSE_TIMEOUT)) {
     throw Error("env variable 'RESPONSE_TIMEOUT' not a number");
   }
