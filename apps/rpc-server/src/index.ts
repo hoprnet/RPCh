@@ -95,8 +95,13 @@ export class RPCServer {
           response.write(rpcResponse.body);
           response.statusCode = 200;
           response.end();
-        } catch {
+        } catch (e: unknown) {
           response.statusCode = 400;
+          if (e instanceof Error) {
+            response.write(e.message);
+          } else if (typeof e === "string") {
+            response.write(e);
+          }
           response.end();
         }
       }
