@@ -12,7 +12,7 @@ import {
 import { utils as etherUtils } from "ethers";
 import fetch from "cross-fetch";
 import retry from "async-retry";
-import ReliabilityScore, { Stats } from "./reliability-score";
+import ReliabilityScore from "./reliability-score";
 import RequestCache from "./request-cache";
 import { createLogger } from "./utils";
 
@@ -72,7 +72,9 @@ export default class SDK {
 
   constructor(
     private readonly ops: HoprSdkOps,
+    // eslint-disable-next-line no-unused-vars
     private setKeyVal: (key: string, val: string) => Promise<any>,
+    // eslint-disable-next-line no-unused-vars
     private getKeyVal: (key: string) => Promise<string | undefined>
   ) {
     this.segmentCache = new SegmentCache((message) => this.onMessage(message));
