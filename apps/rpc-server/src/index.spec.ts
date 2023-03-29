@@ -15,6 +15,7 @@ jest.mock("@rpch/common", () => ({
     }),
   },
 }));
+
 const DISCOVERY_PLATFORM_API_ENDPOINT = "http://discovery_platform";
 const TIMEOUT = 5e3;
 
