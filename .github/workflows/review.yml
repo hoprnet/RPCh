@@ -35,7 +35,7 @@ jobs:
         run: yarn format
 
       - name: Review linting
-        run: yarn lint --force
+        run: yarn lint
 
       - name: Review dependencies
         run: yarn depcheck
