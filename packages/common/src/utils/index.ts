@@ -22,21 +22,21 @@ export const splitStrByBytes = (str: string, maxBytes: number): string[] => {
   const res: string[] = [];
 
   let offset = 0;
-  let current = ''
+  let current = "";
 
   for (let utf8char of str) {
     if (offset + utf8char.length > maxBytes) {
-      res.push(current)
-      offset = 0
-      current = ''
+      res.push(current);
+      offset = 0;
+      current = "";
     }
 
-    offset += utf8char.length
-    current += utf8char
+    offset += utf8char.length;
+    current += utf8char;
   }
 
   if (current.length > 0) {
-    res.push(current)
+    res.push(current);
   }
 
   return res;
