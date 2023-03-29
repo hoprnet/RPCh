@@ -149,6 +149,7 @@ export default class SDK {
         apiToken: response.accessToken,
         peerId: response.id,
       };
+
       log.verbose("Selected entry node", this.entryNode);
 
       // Refresh messageListener
@@ -185,15 +186,22 @@ export default class SDK {
     discoveryPlatformApiEndpoint: string
   ): Promise<ExitNode[]> {
     log.verbose("Fetching exit nodes");
-    const response: {
-      exit_node_pub_key: string;
-      id: string;
-    }[] = await fetch(
+
+    const rawResponse = await fetch(
       new URL(
         "/api/v1/node?hasExitNode=true",
         discoveryPlatformApiEndpoint
       ).toString()
-    ).then((res) => res.json());
+    );
+
+    if (rawResponse.status !== 200) {
+      throw new Error("Failed to fetch exit nodes");
+    }
+
+    const response: {
+      exit_node_pub_key: string;
+      id: string;
+    }[] = await rawResponse.json();
 
     this.exitNodes = response.map((item) => ({
       peerId: item.id,
@@ -370,7 +378,6 @@ export default class SDK {
    */
   public async createRequest(provider: string, body: string): Promise<Request> {
     if (!this.isReady) throw Error("SDK not ready to create requests");
-    if (this.isDeadlocked()) throw Error("SDK is deadlocked");
     if (this.selectingEntryNode) throw Error("SDK is selecting entry node");
 
     let entryNodeScore: number = this.reliabilityScore.getScore(
