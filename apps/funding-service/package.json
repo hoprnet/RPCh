@@ -35,7 +35,7 @@
     "@rpch/common": "0.1.6",
     "ethers": "^5.7.2",
     "express": "^4.18.2",
-    "express-validator": "^6.14.3",
+    "express-validator": "^6.15.0",
     "node-pg-migrate": "^6.2.2",
     "pg-promise": "^11.0.0"
   }
