@@ -180,6 +180,7 @@ describe("test SDK class", function () {
 
     afterEach(async function () {
       await sdk.stop();
+      nock.cleanAll();
       jest.clearAllMocks();
     });
 
@@ -201,6 +202,7 @@ describe("test SDK class", function () {
         fixtures.generateMockedFlow(3);
 
       sdk.sendRequest(clientRequest).then((response) => {
+        // this will run when .onMessage resolves request
         assert.equal(response.id, clientRequest.id);
         // @ts-ignore
         const pendingRequest = sdk.requestCache.getRequest(clientRequest.id);
@@ -208,6 +210,7 @@ describe("test SDK class", function () {
         done();
       });
 
+      // return response for sdk sendRequest
       // @ts-ignore
       sdk.onMessage(exitNodeResponse.toMessage());
     });
@@ -354,6 +357,17 @@ describe("test SDK class", function () {
       assert.equal(sdk.fetchExitNodes.mock.calls.length, 1);
       // @ts-ignore
       assert.equal(sdk.exitNodes.length, 1);
+    });
+
+    it("should throw error when fetching exit nodes returns status code different to 200", async function () {
+      DP_GET_NODES.once().reply(500);
+      try {
+        await sdk["fetchExitNodes"](DISCOVERY_PLATFORM_API_ENDPOINT);
+      } catch (e) {
+        if (e instanceof Error) {
+          assert.equal(e.message, "Failed to fetch exit nodes");
+        }
+      }
     });
 
     it("should throw error when no entry node is available", async function () {
