@@ -19,7 +19,7 @@ module.exports = {
   clean: true,
   dts: true,
   bundle: false,
-  entry: ["src", "!src/**/.spec.*"],
+  entry: ["src", "!src/**/*.spec.*"],
   outDir: "build",
 };
 
