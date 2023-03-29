@@ -9,9 +9,9 @@ const log = createLogger(["server"]);
 
 /**
  * Creates the server which accepts RPC requests.
- * @param host host to run server on
- * @param port port to run server on
- * @param onRequest called everytime a new RPC request is received
+ * @param host - host to run server on
+ * @param port - port to run server on
+ * @param onRequest - called everytime a new RPC request is received
  * @returns http server
  */
 export const createServer = (

@@ -1,19 +1,19 @@
 import assert from "assert";
 import * as db from "../db";
-import { CreateQuota } from "./dto";
+import { Quota } from "../types";
 import {
   createQuota,
   deleteQuota,
   getQuota,
-  getQuotasCreatedByClient,
-  getQuotasPaidByClient,
-  sumQuotas,
+  getSumOfQuotasUsedByClient,
+  getSumOfQuotasPaidByClient,
   updateQuota,
 } from "./index";
 import { MockPgInstanceSingleton } from "../db/index.spec";
 import { createClient } from "../client";
+import { errors } from "pg-promise";
 
-const createMockQuota = (params?: CreateQuota): CreateQuota => {
+const createMockQuota = (params?: Quota): Quota => {
   return {
     actionTaker: params?.actionTaker ?? "discovery-platform",
     clientId: params?.clientId ?? "client",
@@ -50,28 +50,42 @@ describe("test quota functions", function () {
     assert.equal(queryQuota?.client_id, createdQuota.client_id);
   });
   it("should get quotas created by client", async function () {
-    // create client to create mocks with it
-    await createClient(dbInstance, { id: "other client", payment: "premium" });
-    const mockQuota = createMockQuota({
-      clientId: "client",
-      actionTaker: "discovery",
-      paidBy: "client",
-      quota: BigInt(10),
-    });
-    await createQuota(dbInstance, mockQuota);
-    await createQuota(dbInstance, mockQuota);
-    await createQuota(
-      dbInstance,
+    const expectedQuotas = [
+      BigInt("100000000"),
+      BigInt("-10000"),
+      BigInt("-1"),
+    ];
+    // create quotas that are used by 'client'
+    const mockQuotas = expectedQuotas.map((quota) =>
       createMockQuota({
+        clientId: "client",
         actionTaker: "discovery",
-        clientId: "other client",
-        paidBy: "client",
-        quota: BigInt(20),
+        quota,
+        paidBy: "sponsor",
       })
     );
 
-    const quotas = await db.getQuotasCreatedByClient(dbInstance, "client");
-    assert.equal(quotas.length, 2);
+    await Promise.all(
+      mockQuotas.map((mockQuota) => createQuota(dbInstance, mockQuota))
+    );
+
+    // create random quota that should not be taken into account
+    await db.createQuota(
+      dbInstance,
+      createMockQuota({
+        clientId: "sponsor",
+        actionTaker: "discovery",
+        quota: BigInt("10"),
+        paidBy: "client",
+      })
+    );
+
+    const sumOfQuotas = await getSumOfQuotasUsedByClient(dbInstance, "client");
+
+    assert.equal(
+      expectedQuotas.reduce((prev, next) => prev + next, BigInt(0)),
+      sumOfQuotas
+    );
   });
   it("should update quota", async function () {
     const mockQuota = createMockQuota({
@@ -95,8 +109,13 @@ describe("test quota functions", function () {
     const createdQuota = await createQuota(dbInstance, mockQuota);
     if (!createdQuota.id) throw new Error("Could not create mock quota");
     await deleteQuota(dbInstance, createdQuota.id);
-    const deletedQuota = await getQuota(dbInstance, createdQuota.id ?? 0);
-    assert.equal(deletedQuota, undefined);
+    try {
+      await getQuota(dbInstance, createdQuota.id ?? 0);
+    } catch (e) {
+      if (e instanceof errors.QueryResultError) {
+        assert.equal(e.message, "No data returned from the query.");
+      }
+    }
   });
 
   it("should sum all quota paid by client", async function () {
@@ -115,14 +134,12 @@ describe("test quota functions", function () {
     // client pays for quota once
     await createQuota(dbInstance, { ...mockQuota, paidBy: "client" });
 
-    const allQuotasPaidByClient = await getQuotasPaidByClient(
+    const allQuotasPaidByClient = await getSumOfQuotasPaidByClient(
       dbInstance,
       "sponsor"
     );
 
-    const sum = sumQuotas(allQuotasPaidByClient);
-
-    assert.equal(sum, BigInt(2) * baseQuota);
+    assert.equal(allQuotasPaidByClient, BigInt(2) * baseQuota);
   });
   it("should sum all quota used by client", async function () {
     const baseQuota = BigInt(10);
@@ -140,13 +157,11 @@ describe("test quota functions", function () {
     // sponsor uses quota once
     await createQuota(dbInstance, { ...mockQuota, clientId: "sponsor" });
 
-    const allQuotasCreatedByClient = await getQuotasCreatedByClient(
+    const allQuotasCreatedByClient = await db.getSumOfQuotasUsedByClient(
       dbInstance,
       "client"
     );
 
-    const sum = sumQuotas(allQuotasCreatedByClient);
-
-    assert.equal(sum, BigInt(2) * baseQuota);
+    assert.equal(allQuotasCreatedByClient, BigInt(2) * baseQuota);
   });
 });

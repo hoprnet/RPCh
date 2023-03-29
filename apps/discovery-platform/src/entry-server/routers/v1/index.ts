@@ -15,16 +15,17 @@ import {
 } from "../../../client";
 import { DBInstance } from "../../../db";
 import { FundingServiceApi } from "../../../funding-service-api";
-import { createQuota, getQuotasPaidByClient, sumQuotas } from "../../../quota";
+import { createQuota, getSumOfQuotasPaidByClient } from "../../../quota";
 import {
   createRegisteredNode,
   getEligibleNode,
   getRegisteredNode,
   getRegisteredNodes,
 } from "../../../registered-node";
-import { CreateRegisteredNode } from "../../../registered-node/dto";
+import { ClientDB, RegisteredNode } from "../../../types";
 import { createLogger, isListSafe } from "../../../utils";
 import memoryCache from "memory-cache";
+import { errors } from "pg-promise";
 
 const log = createLogger(["entry-server", "router", "v1"]);
 
@@ -38,7 +39,7 @@ const TRIAL_PAYMENT_MODE = "trial";
 const TRIAL_CLIENT_ID = "trial";
 
 // Sanitization and Validation
-const registerNodeSchema: Record<keyof CreateRegisteredNode, ParamSchema> = {
+const registerNodeSchema: Record<keyof RegisteredNode, ParamSchema> = {
   peerId: {
     in: "body",
     exists: {
@@ -141,8 +142,7 @@ export const doesClientHaveQuota = async (
   client: string,
   baseQuota: bigint
 ) => {
-  const allQuotasFromClient = await getQuotasPaidByClient(db, client);
-  const sumOfClientsQuota = sumQuotas(allQuotasFromClient);
+  const sumOfClientsQuota = await getSumOfQuotasPaidByClient(db, client);
   return sumOfClientsQuota >= baseQuota;
 };
 
@@ -166,7 +166,7 @@ export const v1Router = (ops: {
         if (!errors.isEmpty()) {
           return res.status(400).json({ errors: errors.array() });
         }
-        const node: CreateRegisteredNode = req.body;
+        const node: RegisteredNode = req.body;
         const registered = await createRegisteredNode(ops.db, node);
         return res.json({ body: registered });
       } catch (e) {
@@ -244,29 +244,39 @@ export const v1Router = (ops: {
     async (req, res) => {
       try {
         log.verbose(`POST /client/quota`, req.body);
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-          return res.status(400).json({ errors: errors.array() });
+        const validationErrors = validationResult(req);
+        if (!validationErrors.isEmpty()) {
+          return res.status(400).json({ errors: validationErrors.array() });
         }
         const { client: clientId, quota } = req.body;
+        let dbClient: ClientDB | undefined;
+
         // check if client exists
-        let dbClient = await getClient(ops.db, clientId);
-        if (!dbClient) {
-          // create client id it does not exist
-          dbClient = await createClient(ops.db, {
-            id: clientId,
-            payment: "premium",
-          });
-        } else if (dbClient.payment === TRIAL_CLIENT_ID) {
+        try {
+          dbClient = await getClient(ops.db, clientId);
+        } catch (e) {
+          if (e instanceof errors.QueryResultError) {
+            dbClient = await createClient(ops.db, {
+              id: clientId,
+              payment: "premium",
+            });
+          }
+        }
+
+        if (!dbClient) throw Error("Could not create Client");
+
+        if (dbClient.payment === TRIAL_PAYMENT_MODE) {
           // update client to premium of it was previously trial
           await updateClient(ops.db, { ...dbClient, payment: "premium" });
         }
+
         const createdQuota = await createQuota(ops.db, {
           clientId: dbClient.id,
           quota,
           actionTaker: "discovery-platform",
           paidBy: dbClient.id,
         });
+
         return res.json({ quota: createdQuota });
       } catch (e) {
         log.error("Can not create funds", e);
@@ -343,6 +353,7 @@ export const v1Router = (ops: {
             body: "Client does not have enough quota",
           });
         }
+
         // choose selected entry node
         const selectedNode = await getEligibleNode(ops.db, { excludeList });
         log.verbose("selected entry node", selectedNode);

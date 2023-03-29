@@ -9,7 +9,7 @@ export type GetAccountChannelsResponse = {
   };
 };
 
-export type getAccountsFromBlockChangeResponse = {
+export type GetAccountsFromBlockChangeResponse = {
   data: {
     account: {
       balance: string;

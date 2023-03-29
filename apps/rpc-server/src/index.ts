@@ -16,12 +16,24 @@ const {
   CLIENT,
 } = process.env;
 
+/**
+ * A class that represents an RPC server.
+ * @class
+ */
 export class RPCServer {
   private db: LevelUp;
   public sdk?: RPChSDK;
   public server?: Server;
   private stopServer?: () => void;
 
+  /**
+   * Creates an instance of RPCServer.
+   * @constructor
+   * @param dataDir - The data directory.
+   * @param timeout - The response timeout in milliseconds.
+   * @param discoveryPlatformApiEndpoint - The API endpoint of the discovery platform.
+   * @param client - The client ID.
+   */
   constructor(
     private dataDir: string,
     private timeout: number,
@@ -32,6 +44,10 @@ export class RPCServer {
     this.db = levelup(leveldown(this.dataDir));
   }
 
+  /**
+   * Starts the RPC server.
+   * @async
+   */
   public async start() {
     log.verbose("Initializing RPCh SDK", {
       timeout: this.timeout,
@@ -79,8 +95,13 @@ export class RPCServer {
           response.write(rpcResponse.body);
           response.statusCode = 200;
           response.end();
-        } catch {
+        } catch (e: unknown) {
           response.statusCode = 400;
+          if (e instanceof Error) {
+            response.write(e.message);
+          } else if (typeof e === "string") {
+            response.write(e);
+          }
           response.end();
         }
       }
@@ -89,6 +110,10 @@ export class RPCServer {
     this.stopServer = result.stop;
   }
 
+  /**
+   * Stops the RPC server.
+   * @async
+   */
   public async stop() {
     if (this.sdk) {
       await this.sdk.stop();

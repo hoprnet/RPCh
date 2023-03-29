@@ -126,17 +126,21 @@ export default class SDK {
         }
       );
 
+      // Check for error response
+      if (rawResponse.status !== 200) {
+        log.error(
+          "Failed to request entry node",
+          rawResponse.status,
+          await rawResponse.text()
+        );
+        throw new Error(`Failed to request entry node`);
+      }
+
       const response: {
         hoprd_api_endpoint: string;
         accessToken: string;
         id: string;
       } = await rawResponse.json();
-
-      // Check for error response
-      if (rawResponse.status !== 200) {
-        log.error("Failed to request entry node", rawResponse.status, response);
-        throw new Error(`Failed to request entry node`);
-      }
 
       const apiEndpointUrl = new URL(response.hoprd_api_endpoint);
 
@@ -306,7 +310,6 @@ export default class SDK {
       // @ts-expect-error
       await this.crypto.init();
     }
-
     // fetch required data from discovery platform
     await retry(
       () => this.selectEntryNode(this.ops.discoveryPlatformApiEndpoint),
@@ -318,6 +321,7 @@ export default class SDK {
         },
       }
     );
+
     await retry(
       () => this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint),
       {
@@ -379,16 +383,29 @@ export default class SDK {
     ) {
       log.verbose("node is not reliable enough. selecting new entry node");
       exclusionList.push(this.entryNode!.peerId);
+      // Try to select entry node 3 times
       try {
-        await this.selectEntryNode(
-          this.ops.discoveryPlatformApiEndpoint,
-          exclusionList
+        await retry(
+          async () => {
+            const selectedEntryNode = await this.selectEntryNode(
+              this.ops.discoveryPlatformApiEndpoint,
+              exclusionList
+            );
+            log.verbose("Received entry node", selectedEntryNode);
+            return selectedEntryNode;
+          },
+          {
+            retries: 3,
+            onRetry: (e, attempt) => {
+              log.error("Error while selecting entry node", e);
+              log.verbose("Retrying to select entry node, attempt:", attempt);
+            },
+          }
         );
       } catch (error) {
         log.error("Couldn't find new entry node: ", error);
         this.setDeadlock(DEADLOCK_MS);
       }
-      log.verbose("got new entry node");
     }
 
     // exclude entry node

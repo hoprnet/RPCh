@@ -3,11 +3,11 @@ import { FundingServiceApi } from ".";
 import * as db from "../db";
 import nock from "nock";
 import {
-  getAccessTokenResponse,
-  getRequestStatusResponse,
-  postFundingResponse,
-} from "./dto";
-import { QueryRegisteredNode } from "../registered-node/dto";
+  GetAccessTokenResponse,
+  GetRequestStatusResponse,
+  PostFundingResponse,
+  RegisteredNodeDB,
+} from "../types";
 import { MockPgInstanceSingleton } from "../db/index.spec";
 
 const FUNDING_SERVICE_URL = "http://localhost:5000";
@@ -24,13 +24,13 @@ const nockGetFunds = nock(FUNDING_SERVICE_URL).get("/api/funds");
 const now = new Date(Date.now());
 now.setMinutes(now.getMinutes() + 30);
 
-const successfulGetApiAccessTokenBody: getAccessTokenResponse = {
+const successfulGetApiAccessTokenBody: GetAccessTokenResponse = {
   accessToken: FAKE_ACCESS_TOKEN,
   amountLeft: BigInt("10").toString(),
   expiredAt: now.toISOString(),
 };
 
-const createMockNode = (peerId?: string): QueryRegisteredNode => ({
+const createMockNode = (peerId?: string): RegisteredNodeDB => ({
   chain_id: 100,
   id: peerId ?? "peerId",
   has_exit_node: true,
@@ -84,7 +84,7 @@ describe("test funding service api class", function () {
       it("should return false if token is expired", async function () {
         const now = new Date(Date.now());
         now.setMinutes(now.getMinutes() - 30);
-        const expiredAccessTokenResponse: getAccessTokenResponse = {
+        const expiredAccessTokenResponse: GetAccessTokenResponse = {
           accessToken: FAKE_ACCESS_TOKEN,
           amountLeft: "10",
           expiredAt: now.toISOString(),
@@ -102,7 +102,7 @@ describe("test funding service api class", function () {
         assert(!isTokenValid);
       });
       it("should return false if has been exceeded max amount", async function () {
-        const exceededAccessTokenResponse: getAccessTokenResponse = {
+        const exceededAccessTokenResponse: GetAccessTokenResponse = {
           ...successfulGetApiAccessTokenBody,
           amountLeft: "0",
         };
@@ -132,7 +132,7 @@ describe("test funding service api class", function () {
       assert(fundingServiceApi.expiredAt, now.toISOString());
     });
     it("should get access token", async function () {
-      const getAccessTokenResponse: getAccessTokenResponse = {
+      const getAccessTokenResponse: GetAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
         amountLeft: "10",
         expiredAt: new Date(Date.now()).toISOString(),
@@ -150,7 +150,7 @@ describe("test funding service api class", function () {
       assert(!isTokenValid);
     });
     it("should return false if has been exceeded max amount", async function () {
-      const exceededAccessTokenResponse: getAccessTokenResponse = {
+      const exceededAccessTokenResponse: GetAccessTokenResponse = {
         ...successfulGetApiAccessTokenBody,
         amountLeft: "0",
       };
@@ -180,7 +180,7 @@ describe("test funding service api class", function () {
     assert(fundingServiceApi.expiredAt, now.toISOString());
   });
   it("should get access token", async function () {
-    const getAccessTokenResponse: getAccessTokenResponse = {
+    const getAccessTokenResponse: GetAccessTokenResponse = {
       accessToken: FAKE_ACCESS_TOKEN,
       amountLeft: "10",
       expiredAt: new Date(Date.now()).toISOString(),
@@ -199,14 +199,14 @@ describe("test funding service api class", function () {
       const amountLeft = "10";
       const requestId = 123;
 
-      const getAccessTokenResponse: getAccessTokenResponse = {
+      const getAccessTokenResponse: GetAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
         amountLeft: "10",
         expiredAt: new Date(Date.now()).toISOString(),
       };
       nockGetApiAccessToken.reply(200, getAccessTokenResponse);
 
-      const postFundingResponseBody: postFundingResponse = {
+      const postFundingResponseBody: PostFundingResponse = {
         amountLeft,
         id: requestId,
       };
@@ -233,7 +233,7 @@ describe("test funding service api class", function () {
     it("should not change state if requesting funds failed", async function () {
       const node = createMockNode("peer1");
 
-      const getAccessTokenResponse: getAccessTokenResponse = {
+      const getAccessTokenResponse: GetAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
         amountLeft: "10",
         expiredAt: new Date(Date.now()).toISOString(),
@@ -269,7 +269,7 @@ describe("test funding service api class", function () {
       const amountLeft = "10";
       const requestId = 123;
 
-      const getAccessTokenResponse: getAccessTokenResponse = {
+      const getAccessTokenResponse: GetAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
         amountLeft: "10",
         expiredAt: new Date(Date.now()).toISOString(),
@@ -278,7 +278,7 @@ describe("test funding service api class", function () {
       // all access tokens expire straight away so it calls for access token 2 per run
       nockGetApiAccessToken.times(6).reply(200, getAccessTokenResponse);
 
-      const postFundingResponseBody: postFundingResponse = {
+      const postFundingResponseBody: PostFundingResponse = {
         amountLeft,
         id: requestId,
       };
@@ -306,7 +306,7 @@ describe("test funding service api class", function () {
 
       await db.saveRegisteredNode(dbInstance, node);
 
-      const getAccessTokenResponse: getAccessTokenResponse = {
+      const getAccessTokenResponse: GetAccessTokenResponse = {
         accessToken: FAKE_ACCESS_TOKEN,
         amountLeft: "10",
         expiredAt: new Date(Date.now()).toISOString(),
@@ -339,7 +339,7 @@ describe("test funding service api class", function () {
 
       nockGetApiAccessToken.twice().reply(200, successfulGetApiAccessTokenBody);
 
-      const successfulPostFundingBody: postFundingResponse = {
+      const successfulPostFundingBody: PostFundingResponse = {
         amountLeft,
         id: requestId,
       };
@@ -356,7 +356,7 @@ describe("test funding service api class", function () {
         node,
       });
 
-      const successfulGetRequestStatusBody: getRequestStatusResponse = {
+      const successfulGetRequestStatusBody: GetRequestStatusResponse = {
         accessTokenHash: "hash",
         amount: "5",
         chainId: node.chain_id,
@@ -397,7 +397,7 @@ describe("test funding service api class", function () {
 
       nockGetApiAccessToken.twice().reply(200, successfulGetApiAccessTokenBody);
 
-      const successfulPostFundingBody: postFundingResponse = {
+      const successfulPostFundingBody: PostFundingResponse = {
         amountLeft,
         id: requestId,
       };
@@ -414,7 +414,7 @@ describe("test funding service api class", function () {
         node,
       });
 
-      const successfulGetRequestStatusBody: getRequestStatusResponse = {
+      const successfulGetRequestStatusBody: GetRequestStatusResponse = {
         accessTokenHash: "hash",
         amount: "5",
         chainId: node.chain_id,
@@ -459,7 +459,7 @@ describe("test funding service api class", function () {
         .thrice()
         .reply(200, successfulGetApiAccessTokenBody);
 
-      const successfulPostFundingBody: postFundingResponse = {
+      const successfulPostFundingBody: PostFundingResponse = {
         amountLeft,
         id: requestId,
       };
@@ -475,7 +475,7 @@ describe("test funding service api class", function () {
         node,
       });
 
-      const failedGetRequestStatusBody: getRequestStatusResponse = {
+      const failedGetRequestStatusBody: GetRequestStatusResponse = {
         accessTokenHash: "hash",
         amount: "5",
         chainId: node.chain_id,
@@ -507,7 +507,7 @@ describe("test funding service api class", function () {
       const amountLeft = "10";
       const requestId = 123;
 
-      const successfulPostFundingBody: postFundingResponse = {
+      const successfulPostFundingBody: PostFundingResponse = {
         amountLeft,
         id: requestId,
       };
@@ -527,7 +527,7 @@ describe("test funding service api class", function () {
         node,
       });
 
-      const failedGetRequestStatusBody: getRequestStatusResponse = {
+      const failedGetRequestStatusBody: GetRequestStatusResponse = {
         accessTokenHash: "hash",
         amount: "5",
         chainId: node.chain_id,
@@ -562,7 +562,7 @@ describe("test funding service api class", function () {
 
     nockGetApiAccessToken.reply(200, successfulGetApiAccessTokenBody);
 
-    const freshGetRequestStatusBody: getRequestStatusResponse = {
+    const freshGetRequestStatusBody: GetRequestStatusResponse = {
       accessTokenHash: "hash",
       amount: "10",
       chainId: 10,

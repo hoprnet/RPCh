@@ -162,7 +162,7 @@ describe("test SDK class", function () {
       const mock = createSdkMock();
       ops = mock.ops;
       sdk = mock.sdk;
-      DP_REQ_ENTRY_NOCK.thrice().reply(200, {
+      DP_REQ_ENTRY_NOCK.reply(200, {
         hoprd_api_endpoint: ENTRY_NODE_API_ENDPOINT,
         hoprd_api_port: ENTRY_NODE_API_PORT,
         accessToken: ENTRY_NODE_API_TOKEN,
@@ -447,6 +447,12 @@ describe("test SDK class", function () {
     });
 
     it("should call the stopMessageListener if entry node changes", async function () {
+      DP_REQ_ENTRY_NOCK.reply(200, {
+        hoprd_api_endpoint: ENTRY_NODE_API_ENDPOINT,
+        hoprd_api_port: ENTRY_NODE_API_PORT,
+        accessToken: ENTRY_NODE_API_TOKEN,
+        id: ENTRY_NODE_PEER_ID,
+      });
       // @ts-ignore
       const stopMessageListenerMetric = jest.spyOn(sdk, "stopMessageListener");
       // @ts-ignore
@@ -467,6 +473,12 @@ describe("test SDK class", function () {
     });
 
     it("should call the createMessageListener one more time if entry node changes", async function () {
+      DP_REQ_ENTRY_NOCK.reply(200, {
+        hoprd_api_endpoint: ENTRY_NODE_API_ENDPOINT,
+        hoprd_api_port: ENTRY_NODE_API_PORT,
+        accessToken: ENTRY_NODE_API_TOKEN,
+        id: ENTRY_NODE_PEER_ID,
+      });
       // @ts-ignore
       const createMessageListenerMetric = jest.spyOn(
         hoprd,

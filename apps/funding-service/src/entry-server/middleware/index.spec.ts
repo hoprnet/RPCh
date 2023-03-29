@@ -1,6 +1,5 @@
-import { IMemoryDb } from "pg-mem";
 import { AccessTokenService } from "../../access-token";
-import { DBInstance } from "../../db";
+import { DBInstance } from "../../types";
 import { MockPgInstanceSingleton } from "../../db/index.spec";
 import { RequestService } from "../../request";
 import { doesAccessTokenHaveEnoughBalance } from "./index";
@@ -31,9 +30,6 @@ describe("should test entry server middleware functions", function () {
       timeout: TIMEOUT,
     });
 
-    if (!accessTokenResponse)
-      throw new Error("Failed to create access token in middleware test");
-
     requestService.createRequest({
       amount: MAX_AMOUNT_OF_TOKENS - BigInt(1),
       chainId: 80,
@@ -41,12 +37,16 @@ describe("should test entry server middleware functions", function () {
       nodeAddress: "0x0",
     });
 
-    const tokenHasBalanceRes = await doesAccessTokenHaveEnoughBalance({
-      maxAmountOfTokens: MAX_AMOUNT_OF_TOKENS,
-      requestService,
-      token: accessTokenResponse.token,
-      requestAmount: MAX_AMOUNT_OF_TOKENS,
-    });
+    const sumOfRequestsByAccessToken =
+      await requestService.getSumOfRequestsByAccessToken(
+        accessTokenResponse.token
+      );
+
+    const tokenHasBalanceRes = await doesAccessTokenHaveEnoughBalance(
+      sumOfRequestsByAccessToken,
+      MAX_AMOUNT_OF_TOKENS,
+      MAX_AMOUNT_OF_TOKENS
+    );
     expect(tokenHasBalanceRes).toEqual(false);
   });
 });
