@@ -20,7 +20,7 @@ const log = createLogger();
 // max number of segments sdk can send to entry node
 const MAXIMUM_SEGMENTS_PER_REQUEST = 100;
 const DEADLOCK_MS = 1e3 * 60 * 0.5; // 30s
-
+const MINIMUM_SCORE_FOR_RELIABLE_NODE = 0.7;
 /**
  * HOPR SDK options.
  */
@@ -385,7 +385,7 @@ export default class SDK {
     );
     const exclusionList: string[] = [];
     if (
-      entryNodeScore < 0.7 &&
+      entryNodeScore < MINIMUM_SCORE_FOR_RELIABLE_NODE &&
       this.reliabilityScore.getStatus(this.entryNode!.peerId) === "NON_FRESH"
     ) {
       log.verbose("node is not reliable enough. selecting new entry node");

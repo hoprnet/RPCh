@@ -202,6 +202,7 @@ describe("test SDK class", function () {
         fixtures.generateMockedFlow(3);
 
       sdk.sendRequest(clientRequest).then((response) => {
+        // this will run when .onMessage resolves request
         assert.equal(response.id, clientRequest.id);
         // @ts-ignore
         const pendingRequest = sdk.requestCache.getRequest(clientRequest.id);
@@ -209,6 +210,7 @@ describe("test SDK class", function () {
         done();
       });
 
+      // return response for sdk sendRequest
       // @ts-ignore
       sdk.onMessage(exitNodeResponse.toMessage());
     });
