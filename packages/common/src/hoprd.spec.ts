@@ -2,7 +2,6 @@ import assert from "assert";
 import nock from "nock";
 import * as hoprd from "./hoprd";
 import * as fixtures from "./fixtures";
-import debug from "debug";
 
 const ENTRY_NODE_API_ENDPOINT = "http://entry_node";
 const ENTRY_NODE_API_TOKEN = "12345";

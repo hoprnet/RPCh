@@ -67,9 +67,7 @@ describe("test AccessTokenService class", function () {
     await accessTokenService.deleteAccessToken(accessToken?.token!);
 
     try {
-      const dbAccessToken = await accessTokenService.getAccessToken(
-        accessToken?.token!
-      );
+      await accessTokenService.getAccessToken(accessToken?.token!);
     } catch (e) {
       if (e instanceof errors.QueryResultError) {
         assert.equal(e.message, "No data returned from the query.");

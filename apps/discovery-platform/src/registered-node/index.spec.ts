@@ -35,7 +35,7 @@ describe("test registered node functions", function () {
   });
 
   it("should save registered node", async function () {
-    const mockedNode = await createRegisteredNode(dbInstance, mockNode());
+    await createRegisteredNode(dbInstance, mockNode());
     const createdNode = await getRegisteredNode(dbInstance, mockNode().peerId);
     assert.equal(createdNode?.id, mockNode().peerId);
   });
@@ -126,7 +126,7 @@ describe("test registered node functions", function () {
 
     const queryNode = await getRegisteredNode(dbInstance, "2");
 
-    const updateNode = await updateRegisteredNode(dbInstance, {
+    await updateRegisteredNode(dbInstance, {
       ...queryNode,
       status: "READY",
     });
