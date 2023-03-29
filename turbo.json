@@ -8,7 +8,8 @@
       "outputs": [
         "build/**",
         ".next/**"
-      ]
+      ],
+      "cache": false
     },
     "@rpch/crypto-bridge#build": {
       "dependsOn": [
