@@ -112,7 +112,8 @@
       "outputs": []
     },
     "lint": {
-      "outputs": []
+      "outputs": [],
+      "cache": false
     },
     "test": {
       "cache": false,
