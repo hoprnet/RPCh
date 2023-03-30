@@ -6,8 +6,10 @@ const {
   CLIENT,
 } = process.env;
 
-const PORT = Number(process.env.PORT) ?? 3040;
-const RESPONSE_TIMEOUT = Number(process.env.RESPONSE_TIMEOUT) ?? 10000;
+const PORT = process.env.PORT ? Number(process.env.PORT) : 3040;
+const RESPONSE_TIMEOUT = process.env.RESPONSE_TIMEOUT
+  ? Number(process.env.RESPONSE_TIMEOUT)
+  : 10000;
 
 export {
   DATA_DIR,
