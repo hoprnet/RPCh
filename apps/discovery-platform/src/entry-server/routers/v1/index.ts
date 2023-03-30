@@ -157,14 +157,14 @@ export const v1Router = (ops: {
     ops.register,
     "counter_successful_request",
     "amount of successful requests discovery platform has processed",
-    { labelNames: ["method", "path"] }
+    { labelNames: ["method", "path", "status"] }
   );
 
   const counterFailedRequests = createCounter(
     ops.register,
     "counter_failed_request",
     "amount of failed requests discovery platform has processed",
-    { labelNames: ["method", "path"] }
+    { labelNames: ["method", "path", "status"] }
   );
 
   const router = express.Router();
@@ -192,13 +192,13 @@ export const v1Router = (ops: {
         const node: RegisteredNode = req.body;
         const registered = await createRegisteredNode(ops.db, node);
         counterSuccessfulRequests
-          .labels({ method: req.method, path: req.path })
+          .labels({ method: req.method, path: req.path, status: 200 })
           .inc();
         return res.json({ body: registered });
       } catch (e) {
         log.error("Can not register node", e);
         counterFailedRequests
-          .labels({ method: req.method, path: req.path })
+          .labels({ method: req.method, path: req.path, status: 500 })
           .inc();
         return res.status(500).json({ errors: "Unexpected error" });
       }
@@ -216,6 +216,9 @@ export const v1Router = (ops: {
       try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
+          counterFailedRequests
+            .labels({ method: req.method, path: req.path, status: 400 })
+            .inc();
           return res.status(400).json({ errors: errors.array() });
         }
         const { hasExitNode, excludeList } = req.query;
@@ -226,13 +229,13 @@ export const v1Router = (ops: {
         // cache response for 1 min
         setCache(req.originalUrl || req.url, 60e3, nodes);
         counterSuccessfulRequests
-          .labels({ method: req.method, path: req.path })
+          .labels({ method: req.method, path: req.path, status: 200 })
           .inc();
         return res.json(nodes);
       } catch (e) {
         log.error("Can not get nodes", e);
         counterFailedRequests
-          .labels({ method: req.method, path: req.path })
+          .labels({ method: req.method, path: req.path, status: 500 })
           .inc();
         return res.status(500).json({ errors: "Unexpected error" });
       }
@@ -246,15 +249,21 @@ export const v1Router = (ops: {
       try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
+          counterFailedRequests
+            .labels({ method: req.method, path: req.path, status: 400 })
+            .inc();
           return res.status(400).json({ errors: errors.array() });
         }
         const { peerId }: { peerId: string } = req.params;
         const node = await getRegisteredNode(ops.db, peerId);
+        counterSuccessfulRequests
+          .labels({ method: req.method, path: req.path, status: 200 })
+          .inc();
         return res.json({ node });
       } catch (e) {
         log.error("Can not get node with id", e);
         counterFailedRequests
-          .labels({ method: req.method, path: req.path })
+          .labels({ method: req.method, path: req.path, status: 500 })
           .inc();
         return res.status(500).json({ errors: "Unexpected error" });
       }
@@ -265,13 +274,13 @@ export const v1Router = (ops: {
     try {
       const funds = await ops.fundingServiceApi.getAvailableFunds();
       counterSuccessfulRequests
-        .labels({ method: req.method, path: req.path })
+        .labels({ method: req.method, path: req.path, status: 200 })
         .inc();
       return res.json({ body: funds });
     } catch (e) {
       log.error("Can not retrieve funds from funding service", e);
       counterFailedRequests
-        .labels({ method: req.method, path: req.path })
+        .labels({ method: req.method, path: req.path, status: 500 })
         .inc();
       return res.status(500).json({ errors: "Unexpected error" });
     }
@@ -286,6 +295,9 @@ export const v1Router = (ops: {
       try {
         const validationErrors = validationResult(req);
         if (!validationErrors.isEmpty()) {
+          counterFailedRequests
+            .labels({ method: req.method, path: req.path, status: 400 })
+            .inc();
           return res.status(400).json({ errors: validationErrors.array() });
         }
         const { client: clientId, quota } = req.body;
@@ -318,13 +330,14 @@ export const v1Router = (ops: {
         });
 
         counterSuccessfulRequests
-          .labels({ method: req.method, path: req.path })
+          .labels({ method: req.method, path: req.path, status: 200 })
           .inc();
+
         return res.json({ quota: createdQuota });
       } catch (e) {
         log.error("Can not create funds", e);
         counterFailedRequests
-          .labels({ method: req.method, path: req.path })
+          .labels({ method: req.method, path: req.path, status: 500 })
           .inc();
         return res.status(500).json({ errors: "Unexpected error" });
       }
@@ -341,6 +354,9 @@ export const v1Router = (ops: {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
           log.verbose("validation error", errors.array());
+          counterFailedRequests
+            .labels({ method: req.method, path: req.path, status: 400 })
+            .inc();
           return res.status(400).json({ errors: errors.array() });
         }
         const { label } = req.query;
@@ -351,14 +367,14 @@ export const v1Router = (ops: {
         );
 
         counterSuccessfulRequests
-          .labels({ method: req.method, path: req.path })
+          .labels({ method: req.method, path: req.path, status: 200 })
           .inc();
 
         return res.json({ client: trialClient.id });
       } catch (e) {
         log.error("Can not create trial client", e);
         counterFailedRequests
-          .labels({ method: req.method, path: req.path })
+          .labels({ method: req.method, path: req.path, status: 500 })
           .inc();
         return res.status(500).json({ errors: "Unexpected error" });
       }
@@ -376,6 +392,9 @@ export const v1Router = (ops: {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
           log.verbose("validation error", errors.array());
+          counterFailedRequests
+            .labels({ method: req.method, path: req.path, status: 400 })
+            .inc();
           return res.status(400).json({ errors: errors.array() });
         }
         const { client, excludeList } = req.body;
@@ -410,6 +429,9 @@ export const v1Router = (ops: {
         const selectedNode = await getEligibleNode(ops.db, { excludeList });
         log.verbose("selected entry node", selectedNode);
         if (!selectedNode) {
+          counterFailedRequests
+            .labels({ method: req.method, path: req.path, status: 404 })
+            .inc();
           return res
             .status(404)
             .json({ errors: "Could not find eligible node" });
@@ -438,7 +460,7 @@ export const v1Router = (ops: {
         });
 
         counterSuccessfulRequests
-          .labels({ method: req.method, path: req.path })
+          .labels({ method: req.method, path: req.path, status: 200 })
           .inc();
 
         return res.json({
@@ -448,7 +470,7 @@ export const v1Router = (ops: {
       } catch (e) {
         log.error("Can not retrieve entry node", e);
         counterFailedRequests
-          .labels({ method: req.method, path: req.path })
+          .labels({ method: req.method, path: req.path, status: 500 })
           .inc();
         return res.status(500).json({ errors: "Unexpected error" });
       }
