@@ -1,6 +1,6 @@
 import express from "express";
 import { AccessTokenService } from "../access-token";
-import { getBalanceForAllChains, getProviders } from "../blockchain";
+import { abi } from "@rpch/common";
 import { RequestService } from "../request";
 import { createLogger } from "../utils";
 import {
@@ -152,10 +152,10 @@ export const entryServer = (ops: {
           "getting funds for chains",
           [...Object.keys(constants.CONNECTION_INFO)],
         ]);
-        const providers = await getProviders(
+        const providers = await abi.getProviders(
           [...Object.keys(constants.CONNECTION_INFO)].map(Number)
         );
-        const balances = await getBalanceForAllChains(
+        const balances = await abi.getBalanceForAllChains(
           constants.SMART_CONTRACTS_PER_CHAIN,
           ops.walletAddress,
           providers

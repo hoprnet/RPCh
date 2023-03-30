@@ -1,10 +1,5 @@
-import { BigNumber, ethers, Signer } from "ethers";
-import {
-  getBalance,
-  getProvider,
-  sendTransaction,
-  waitForTransaction,
-} from "../blockchain";
+import { Signer } from "ethers";
+import { abi } from "@rpch/common";
 import { RequestDB } from "../types";
 import { RequestService } from "../request";
 import { CustomError, createLogger } from "../utils";
@@ -44,12 +39,12 @@ export const checkFreshRequests = async (ops: {
     // check if signer has enough to fund request
     const provider = ops.signer.provider
       ? ops.signer.provider
-      : await getProvider(freshRequest.chain_id);
+      : await abi.getProvider(freshRequest.chain_id);
     let connectedSigner = ops.signer.provider
       ? ops.signer
       : ops.signer.connect(provider);
     let address = await connectedSigner.getAddress();
-    const balance = await getBalance(
+    const balance = await abi.getBalance(
       constants.SMART_CONTRACTS_PER_CHAIN?.[
         freshRequest.chain_id as keyof typeof constants.SMART_CONTRACTS_PER_CHAIN
       ],
@@ -73,7 +68,7 @@ export const checkFreshRequests = async (ops: {
     });
 
     // sent transaction to fund request
-    const { hash: txHash } = await sendTransaction({
+    const { hash: txHash } = await abi.sendTransaction({
       smartContractAddress:
         constants.SMART_CONTRACTS_PER_CHAIN?.[
           freshRequest.chain_id as keyof typeof constants.SMART_CONTRACTS_PER_CHAIN
@@ -93,7 +88,7 @@ export const checkFreshRequests = async (ops: {
       id: freshRequest.id,
     });
     // wait for transaction to reach a certain amount of confirmations
-    const txReceipt = await waitForTransaction(
+    const txReceipt = await abi.waitForTransaction(
       txHash,
       provider,
       ops.confirmations

@@ -15,12 +15,14 @@ const MOCK_TIMEOUT = 3_000;
 
 const INITIAL_AMOUNT = ethers.utils.parseEther(MOCK_AMOUNT).toBigInt();
 
-jest.mock("../blockchain", () => {
+jest.mock("@rpch/common", () => {
   return {
-    ...jest.requireActual("../blockchain"),
-    sendTransaction: jest.fn(async () => ({ hash: MOCK_ADDRESS })),
-    waitForTransaction: jest.fn(async () => ({ status: 1 })),
-    getBalance: jest.fn(async () => INITIAL_AMOUNT),
+    ...jest.requireActual("@rpch/common"),
+    abi: {
+      sendTransaction: jest.fn(async () => ({ hash: MOCK_ADDRESS })),
+      waitForTransaction: jest.fn(async () => ({ status: 1 })),
+      getBalance: jest.fn(async () => INITIAL_AMOUNT),
+    },
   };
 });
 

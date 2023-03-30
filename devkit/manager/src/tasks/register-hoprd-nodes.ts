@@ -1,6 +1,6 @@
 import { Wallet, providers, utils } from "ethers";
 import { createLogger } from "../utils";
-import { abi } from "../../../../packages/common";
+import { abi } from "@rpch/common";
 
 const log = createLogger(["register-hoprd-nodes"]);
 
