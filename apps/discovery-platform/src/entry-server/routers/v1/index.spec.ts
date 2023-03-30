@@ -447,7 +447,8 @@ describe("test v1 router", function () {
           json: jest.fn((args) => args),
         } as unknown as Response;
         const mockNext = jest.fn() as NextFunction;
-        const res = getCache()(mockRequest, mockResponse, mockNext);
+        // result
+        getCache()(mockRequest, mockResponse, mockNext);
         expect(mockNext).toHaveBeenCalled();
       });
       it("should cache when request is successful", async function () {

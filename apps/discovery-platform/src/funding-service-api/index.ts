@@ -299,7 +299,7 @@ export class FundingServiceApi {
     opts?: retry.Options | undefined
   ): Promise<Response> {
     const res = await retry(
-      async (bail, attempt) => {
+      async (bail) => {
         await this.getAccessToken(amount);
         const body: PostFundingRequest = {
           amount: amount.toString(),

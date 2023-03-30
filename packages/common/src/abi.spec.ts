@@ -4,7 +4,8 @@ import { mine } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import assert from "assert";
 import { Contract, Signer, Wallet } from "ethers";
-import { ethers } from "hardhat";
+import hre from "hardhat";
+const { ethers } = hre;
 import {
   getBalance,
   getBalanceForAllChains,

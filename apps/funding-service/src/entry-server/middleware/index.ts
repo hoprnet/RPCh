@@ -61,7 +61,7 @@ export const tokenCanRequestFunds =
       return res.status(400).json({ errors: "Missing amount to fund" });
     }
 
-    const dbToken = await accessTokenService.getAccessToken(accessTokenHash);
+    await accessTokenService.getAccessToken(accessTokenHash);
 
     const sumOfRequestsByAccessToken =
       await requestService.getSumOfRequestsByStatus(
