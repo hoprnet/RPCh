@@ -1,20 +1,18 @@
 import type { Server } from "http";
-import * as path from "path";
 import levelup, { type LevelUp } from "levelup";
 import leveldown from "leveldown";
 import RPChSDK from "@rpch/sdk";
 import * as server from "./server";
 import { createLogger } from "./utils";
+import {
+  RESPONSE_TIMEOUT,
+  CLIENT,
+  DATA_DIR,
+  DISCOVERY_PLATFORM_API_ENDPOINT,
+  PORT,
+} from "./constants";
 
 const log = createLogger();
-
-const {
-  DATA_DIR = path.join(process.cwd(), "db"),
-  PORT = 3040,
-  RESPONSE_TIMEOUT: RESPONSE_TIMEOUT_STR = "10000",
-  DISCOVERY_PLATFORM_API_ENDPOINT,
-  CLIENT,
-} = process.env;
 
 /**
  * A class that represents an RPC server.
@@ -126,7 +124,6 @@ export class RPCServer {
 
 // if this file is the entrypoint of the nodejs process
 if (require.main === module) {
-  const RESPONSE_TIMEOUT = Number(RESPONSE_TIMEOUT_STR);
   if (isNaN(RESPONSE_TIMEOUT)) {
     throw Error("env variable 'RESPONSE_TIMEOUT' not a number");
   }

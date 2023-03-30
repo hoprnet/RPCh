@@ -13,7 +13,6 @@ import {
   PostFundingResponse,
 } from "../types";
 import assert from "assert";
-import { createClient } from "../client";
 
 const FUNDING_SERVICE_URL = "http://localhost:5000";
 const BASE_QUOTA = BigInt(1);

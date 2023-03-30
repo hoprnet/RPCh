@@ -1,4 +1,3 @@
-import { Wallet, providers, utils } from "ethers";
 import fundViaWallet from "./fund-via-wallet";
 import { createLogger } from "../utils";
 

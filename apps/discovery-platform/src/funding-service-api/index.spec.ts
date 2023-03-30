@@ -321,11 +321,9 @@ describe("test funding service api class", function () {
       await db.saveRegisteredNode(dbInstance, node);
       try {
         // should fail and throw error
-        const fundingResponse = await fundingServiceApi.fetchRequestFunds(
-          node,
-          BigInt(5),
-          { minTimeout: 100 }
-        );
+        await fundingServiceApi.fetchRequestFunds(node, BigInt(5), {
+          minTimeout: 100,
+        });
       } catch (e: any) {
         assert.equal(e.message, "funding request failed");
       }
@@ -542,6 +540,7 @@ describe("test funding service api class", function () {
         .reply(200, failedGetRequestStatusBody);
 
       // check for pending requests 1 more than the max amount so it can fail completely
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       for (const _ of Array.from({ length: testMaxAmountOfRetries + 1 })) {
         await fundingServiceApi.checkForPendingRequests();
       }

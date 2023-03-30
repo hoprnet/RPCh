@@ -1,4 +1,3 @@
-import type Nock from "nock";
 import { utils } from "ethers";
 import * as crypto from "@rpch/crypto-bridge/nodejs";
 import Request from "./request";

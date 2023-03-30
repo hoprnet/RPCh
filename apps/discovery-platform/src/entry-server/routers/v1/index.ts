@@ -29,9 +29,6 @@ import { errors } from "pg-promise";
 
 const log = createLogger(["entry-server", "router", "v1"]);
 
-// base amount of reward that a node will receive after completing a request
-const BASE_EXTRA = BigInt(1);
-
 // payment mode when quota is paid by trial
 const TRIAL_PAYMENT_MODE = "trial";
 

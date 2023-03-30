@@ -155,6 +155,7 @@ describe("test SDK class", function () {
   });
 
   describe("started", function () {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     let ops: HoprSdkOps;
     let sdk: SDK;
 
@@ -476,10 +477,7 @@ describe("test SDK class", function () {
 
       // Check that before node is seen as not reliable enough, messageListener isn't stopped
       assert.equal(stopMessageListenerMetric.mock.calls.length, 0);
-      const request = await sdk.createRequest(
-        fixtures.PROVIDER,
-        fixtures.RPC_REQ_LARGE
-      );
+      await sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE);
 
       // After createRequest, node should not be reliable enough and messageListener
       // should've been stopped to refresh entry node
@@ -505,10 +503,7 @@ describe("test SDK class", function () {
 
       // createMessageListener should have been called once (when sdk starts)
       assert.equal(createMessageListenerMetric.mock.calls.length, 1);
-      const request = await sdk.createRequest(
-        fixtures.PROVIDER,
-        fixtures.RPC_REQ_LARGE
-      );
+      await sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE);
 
       // createMessageListener should have 2 calls after stopping the previous
       // from old entry node and creating new one with new entry node
