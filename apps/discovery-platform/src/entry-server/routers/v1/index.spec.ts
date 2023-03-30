@@ -24,6 +24,7 @@ import {
   RegisteredNodeDB,
   GetAccessTokenResponse,
   PostFundingResponse,
+  RequestDurationMetrics,
 } from "../../../types";
 import memoryCache from "memory-cache";
 
@@ -503,7 +504,12 @@ describe("test v1 router", function () {
         } as unknown as Response,
         jest.fn()
       );
-      expect(requestDurationHistogram).toHaveBeenCalled();
+      expect(
+        Object.keys(
+          (requestDurationHistogram as unknown as RequestDurationMetrics)
+            .hashMap
+        ).length
+      ).not.toEqual(0);
     });
   });
 });
