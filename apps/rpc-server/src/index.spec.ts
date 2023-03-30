@@ -3,7 +3,6 @@ import MemDown from "memdown";
 import supertest from "supertest";
 import { RPCServer } from ".";
 import mockSdk from "@rpch/sdk/build/index.mock";
-import * as fixtures from "@rpch/common/build/fixtures";
 
 jest.mock("leveldown", () => MemDown);
 // mock HOPRd interactions
