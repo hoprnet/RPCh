@@ -186,7 +186,7 @@ export const v1Router = (ops: {
   const requestDurationHistogram = createHistogram(
     ops.register,
     "request_duration_seconds",
-    "Duration of requests in seconds",
+    "duration of requests in seconds",
     {
       buckets: [0.1, 0.5, 1, 5, 10, 30],
       labelNames: ["method", "path", "status"],

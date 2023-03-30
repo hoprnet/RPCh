@@ -8,6 +8,6 @@ The following section documents the metrics:
 
 | Name                                       | Type    | Description                                                   | Note                       |
 | ------------------------------------------ | ------- | ------------------------------------------------------------- | :------------------------- |
-| `counter_fetched_entry_nodes`  | counter | Number of times we have given an entry node to user|      |
-| `counter_trial_clients`  | counter | Number of times we have created a trial client|      |
-| `counter_added_quota`  | counter | Number of times quota has been added through endpoint|      |
+| `counter_successful_request`  | counter | amount of successful requests discovery platform has processed|      |
+| `counter_failed_request`  | counter | amount of failed requests discovery platform has processed|      |
+| `request_duration_seconds`  | histogram | duration of requests in seconds |      |
