@@ -4,7 +4,12 @@ export const createCounter = (
   register: Prometheus.Registry,
   name: string,
   help: string,
-  config?: Prometheus.CounterConfiguration<string>
+  config?: {
+    [key in keyof Omit<
+      Prometheus.CounterConfiguration<string>,
+      "name" | "help"
+    >]: Prometheus.CounterConfiguration<string>[key] | undefined;
+  }
 ) => {
   return new Prometheus.Counter({
     name,
@@ -27,7 +32,12 @@ export const createHistogram = (
   register: Prometheus.Registry,
   name: string,
   help: string,
-  config?: Prometheus.HistogramConfiguration<string>
+  config?: {
+    [key in keyof Omit<
+      Prometheus.HistogramConfiguration<string>,
+      "name" | "help"
+    >]: Prometheus.HistogramConfiguration<string>[key] | undefined;
+  }
 ) => {
   return new Prometheus.Histogram({
     name,
