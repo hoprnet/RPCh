@@ -24,8 +24,8 @@ import {
 } from "../../../registered-node";
 import { ClientDB, RegisteredNode } from "../../../types";
 import { createLogger, isListSafe } from "../../../utils";
-import { Registry } from "prom-client";
-import { createCounter } from "../../../metrics";
+import { Histogram, Registry } from "prom-client";
+import { createCounter, createHistogram } from "../../../metrics";
 import memoryCache from "memory-cache";
 import { errors } from "pg-promise";
 
@@ -145,6 +145,22 @@ export const doesClientHaveQuota = async (
   return sumOfClientsQuota >= baseQuota;
 };
 
+// middleware that will track duration of request
+const requestDurationMiddleware =
+  (histogramMetric: Histogram<string>) =>
+  (req: Request, res: Response, next: NextFunction) => {
+    const start = process.hrtime();
+    res.on("finish", () => {
+      const end = process.hrtime(start);
+      const durationSeconds = end[0] + end[1] / 1e9;
+      const statusCode = res.statusCode.toString();
+      const method = req.method;
+      const path = req.path;
+      histogramMetric.labels(method, path, statusCode).observe(durationSeconds);
+    });
+    next();
+  };
+
 // Express Router
 export const v1Router = (ops: {
   db: DBInstance;
@@ -167,11 +183,21 @@ export const v1Router = (ops: {
     { labelNames: ["method", "path", "status"] }
   );
 
+  const requestDurationHistogram = createHistogram(
+    ops.register,
+    "request_duration_seconds",
+    "Duration of requests in seconds",
+    {
+      buckets: [0.1, 0.5, 1, 5, 10, 30],
+      labelNames: ["method", "path", "status"],
+    }
+  );
+
   const router = express.Router();
 
   router.use(express.json());
 
-  router.use((req, res, next) => {
+  router.use((req, _res, next) => {
     const { method, path, params, body } = req;
     log.verbose(`${method.toUpperCase()} ${path}`, {
       params: req.params,
@@ -207,6 +233,7 @@ export const v1Router = (ops: {
 
   router.get(
     "/node",
+    requestDurationMiddleware(requestDurationHistogram),
     checkSchema(getNodeSchema),
     getCache(), // check if response is in cache
     async (
@@ -244,6 +271,7 @@ export const v1Router = (ops: {
 
   router.get(
     "/node/:peerId",
+    requestDurationMiddleware(requestDurationHistogram),
     param("peerId").isAlphanumeric(),
     async (req: Request<{ peerId: string }>, res: Response) => {
       try {
@@ -270,25 +298,30 @@ export const v1Router = (ops: {
     }
   );
 
-  router.get("/funding-service/funds", async (req, res) => {
-    try {
-      const funds = await ops.fundingServiceApi.getAvailableFunds();
-      counterSuccessfulRequests
-        .labels({ method: req.method, path: req.path, status: 200 })
-        .inc();
-      return res.json({ body: funds });
-    } catch (e) {
-      log.error("Can not retrieve funds from funding service", e);
-      counterFailedRequests
-        .labels({ method: req.method, path: req.path, status: 500 })
-        .inc();
-      return res.status(500).json({ errors: "Unexpected error" });
+  router.get(
+    "/funding-service/funds",
+    requestDurationMiddleware(requestDurationHistogram),
+    async (req, res) => {
+      try {
+        const funds = await ops.fundingServiceApi.getAvailableFunds();
+        counterSuccessfulRequests
+          .labels({ method: req.method, path: req.path, status: 200 })
+          .inc();
+        return res.json({ body: funds });
+      } catch (e) {
+        log.error("Can not retrieve funds from funding service", e);
+        counterFailedRequests
+          .labels({ method: req.method, path: req.path, status: 500 })
+          .inc();
+        return res.status(500).json({ errors: "Unexpected error" });
+      }
     }
-  });
+  );
 
   // DISCLAIMER: can be exploited to allow client to use infinite funds
   router.post(
     "/client/quota",
+    requestDurationMiddleware(requestDurationHistogram),
     body("client").exists(),
     body("quota").exists().bail().isNumeric(),
     async (req, res) => {
@@ -346,6 +379,7 @@ export const v1Router = (ops: {
 
   router.get(
     "/request/trial",
+    requestDurationMiddleware(requestDurationHistogram),
     query("label")
       .optional()
       .custom((value) => isListSafe(value)),
@@ -383,6 +417,7 @@ export const v1Router = (ops: {
 
   router.post(
     "/request/entry-node",
+    requestDurationMiddleware(requestDurationHistogram),
     body("client").exists(),
     body("excludeList")
       .optional()
