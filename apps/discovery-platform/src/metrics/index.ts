@@ -4,7 +4,6 @@ export const createCounter = (
   register: Prometheus.Registry,
   name: string,
   help: string,
-  // allow overwrite of extra config
   config?: {
     [key in keyof Omit<
       Prometheus.CounterConfiguration<string>,

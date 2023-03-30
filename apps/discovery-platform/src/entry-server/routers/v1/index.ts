@@ -146,7 +146,7 @@ export const doesClientHaveQuota = async (
 };
 
 // middleware that will track duration of request
-const requestDurationMiddleware =
+export const requestDurationMiddleware =
   (histogramMetric: Histogram<string>) =>
   (req: Request, res: Response, next: NextFunction) => {
     const start = process.hrtime();
