@@ -4,9 +4,6 @@ description: "Build the RPCh monorepo"
 runs:
   using: "composite"
   steps:
-    - name: Free Disk Space (Ubuntu)
-      uses: jlumbroso/free-disk-space@v1.2.0
-
     - name: Setup Node.js environment
       uses: actions/setup-node@v3
       with:
