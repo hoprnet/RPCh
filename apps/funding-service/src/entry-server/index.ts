@@ -4,6 +4,7 @@ import { getBalanceForAllChains, getProviders } from "../blockchain";
 import { RequestService } from "../request";
 import { createLogger } from "../utils";
 import {
+  requestDurationMiddleware,
   tokenCanRequestFunds,
   tokenIsActive,
   validateFundingRequestBody,
@@ -12,7 +13,7 @@ import { validationResult, param } from "express-validator";
 import * as constants from "../constants";
 import { utils } from "@rpch/common";
 import { Registry } from "prom-client";
-import { createCounter } from "../metrics";
+import { createCounter, createHistogram } from "../metric";
 
 const app = express();
 const log = createLogger(["entry-server"]);
@@ -35,37 +36,76 @@ export const entryServer = (ops: {
   timeout: number;
   register: Registry;
 }) => {
-  // metrics
-  const counterRequestFundedNode = createCounter(
+  // Metrics
+  const counterSuccessfulRequests = createCounter(
     ops.register,
-    "counter_request_fund_node",
-    "amount of times we receive requests to fund nodes"
+    "counter_successful_request",
+    "amount of successful requests discovery platform has processed",
+    { labelNames: ["method", "path", "status"] as const }
+  );
+
+  const counterFailedRequests = createCounter(
+    ops.register,
+    "counter_failed_request",
+    "amount of failed requests discovery platform has processed",
+    { labelNames: ["method", "path", "status"] as const }
+  );
+
+  const requestDurationHistogram = createHistogram(
+    ops.register,
+    "request_duration_seconds",
+    "duration of requests in seconds",
+    {
+      buckets: [0.1, 0.5, 1, 5, 10, 30],
+      labelNames: ["method", "path", "status"] as const,
+    }
   );
 
   app.use(express.json());
+
+  // log entry calls
+  app.use((req, _res, next) => {
+    const { method, path, params, body } = req;
+    log.verbose(`${method.toUpperCase()} ${path}`, {
+      params: req.params,
+      body: req.body,
+    });
+    next();
+  });
+
   app.set("json replacer", utils.bigIntReplacer);
 
-  app.get("/api/access-token", async (req, res) => {
-    try {
-      log.verbose("GET /api/access-token");
-      const accessToken = await ops.accessTokenService.createAccessToken({
-        amount: ops.maxAmountOfTokens,
-        timeout: ops.timeout,
-      });
-      return res.json({
-        accessToken: accessToken?.token,
-        expiredAt: accessToken?.expired_at,
-        createdAt: accessToken?.created_at,
-        amountLeft: ops.maxAmountOfTokens.toString(),
-      });
-    } catch (e) {
-      log.error("Can not create access token", e);
-      return res.status(500).json({ errors: "Unexpected error" });
+  app.get(
+    "/api/access-token",
+    requestDurationMiddleware(requestDurationHistogram),
+    async (req, res) => {
+      try {
+        const accessToken = await ops.accessTokenService.createAccessToken({
+          amount: ops.maxAmountOfTokens,
+          timeout: ops.timeout,
+        });
+        counterSuccessfulRequests
+          .labels({ method: req.method, path: req.path, status: 200 })
+          .inc();
+        return res.json({
+          accessToken: accessToken?.token,
+          expiredAt: accessToken?.expired_at,
+          createdAt: accessToken?.created_at,
+          amountLeft: ops.maxAmountOfTokens.toString(),
+        });
+      } catch (e) {
+        log.error("Can not create access token", e);
+        counterFailedRequests
+          .labels({ method: req.method, path: req.path, status: 500 })
+          .inc();
+        return res.status(500).json({ errors: "Unexpected error" });
+      }
     }
-  });
+  );
 
   app.post(
     "/api/request/funds/:blockchainAddress",
+    requestDurationMiddleware(requestDurationHistogram),
     validateFundingRequestBody(),
     tokenIsActive(ops.accessTokenService),
     tokenCanRequestFunds(
@@ -75,12 +115,6 @@ export const entryServer = (ops: {
     ),
     async (req: express.Request, res: express.Response) => {
       try {
-        log.verbose(
-          `POST /api/request/funds/:blockchainAddress`,
-          req.params,
-          req.body
-        );
-
         // check if validation failed
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -105,7 +139,9 @@ export const entryServer = (ops: {
           accessTokenHash
         );
 
-        counterRequestFundedNode.inc();
+        counterSuccessfulRequests
+          .labels({ method: req.method, path: req.path, status: 200 })
+          .inc();
 
         return res.json({
           id: request.id,
@@ -113,6 +149,9 @@ export const entryServer = (ops: {
         });
       } catch (e) {
         log.error("Can not request funding", e);
+        counterFailedRequests
+          .labels({ method: req.method, path: req.path, status: 500 })
+          .inc();
         return res.status(500).json({ errors: "Unexpected error" });
       }
     }
@@ -120,15 +159,20 @@ export const entryServer = (ops: {
 
   app.get(
     "/api/request/status",
+    requestDurationMiddleware(requestDurationHistogram),
     tokenIsActive(ops.accessTokenService),
     async (req, res) => {
       try {
-        log.verbose(`GET /api/request/status`);
         const requests = await ops.requestService.getRequests();
-
+        counterSuccessfulRequests
+          .labels({ method: req.method, path: req.path, status: 200 })
+          .inc();
         return res.status(200).json(requests);
       } catch (e) {
         log.error("Can not get status for requests", e);
+        counterFailedRequests
+          .labels({ method: req.method, path: req.path, status: 500 })
+          .inc();
         return res.status(500).json({ errors: "Unexpected error" });
       }
     }
@@ -136,11 +180,11 @@ export const entryServer = (ops: {
 
   app.get(
     "/api/request/status/:requestId",
+    requestDurationMiddleware(requestDurationHistogram),
     param("requestId").isNumeric(),
     tokenIsActive(ops.accessTokenService),
     async (req, res) => {
       try {
-        log.verbose(`GET /api/request/status/:requestId`, req.params);
         // check if validation failed
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -148,9 +192,15 @@ export const entryServer = (ops: {
         }
         const requestId = Number(req.params.requestId);
         const request = await ops.requestService.getRequest(requestId);
+        counterSuccessfulRequests
+          .labels({ method: req.method, path: req.path, status: 200 })
+          .inc();
         return res.status(200).json(request);
       } catch (e) {
         log.error("Can not get status for a single request", e);
+        counterFailedRequests
+          .labels({ method: req.method, path: req.path, status: 500 })
+          .inc();
         return res.status(500).json({ errors: "Unexpected error" });
       }
     }
@@ -158,10 +208,10 @@ export const entryServer = (ops: {
 
   app.get(
     "/api/funds",
+    requestDurationMiddleware(requestDurationHistogram),
     tokenIsActive(ops.accessTokenService),
     async (req, res) => {
       try {
-        log.verbose(`GET /api/funds`);
         log.verbose([
           "getting funds for chains",
           [...Object.keys(constants.CONNECTION_INFO)],
@@ -187,9 +237,15 @@ export const entryServer = (ops: {
           { availableBalance, frozenBalance },
           utils.bigIntReplacer
         );
+        counterSuccessfulRequests
+          .labels({ method: req.method, path: req.path, status: 200 })
+          .inc();
         return res.json(JSON.parse(jsonString));
       } catch (e) {
         log.error("Can not get status for a single request", e);
+        counterFailedRequests
+          .labels({ method: req.method, path: req.path, status: 500 })
+          .inc();
         return res.status(500).json({ errors: "Unexpected error" });
       }
     }

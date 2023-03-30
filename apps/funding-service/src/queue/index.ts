@@ -10,7 +10,7 @@ import { RequestService } from "../request";
 import { CustomError, createLogger } from "../utils";
 import * as constants from "../constants";
 import Prometheus from "prom-client";
-import { createCounter } from "../metrics";
+import { createCounter } from "../metric";
 
 const log = createLogger(["queue"]);
 

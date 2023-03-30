@@ -25,7 +25,7 @@ import {
 import { ClientDB, RegisteredNode } from "../../../types";
 import { createLogger, isListSafe } from "../../../utils";
 import { Histogram, Registry } from "prom-client";
-import { createCounter, createHistogram } from "../../../metrics";
+import { createCounter, createHistogram } from "../../../metric";
 import memoryCache from "memory-cache";
 import { errors } from "pg-promise";
 
@@ -197,6 +197,7 @@ export const v1Router = (ops: {
 
   router.use(express.json());
 
+  // log entry calls
   router.use((req, _res, next) => {
     const { method, path, params, body } = req;
     log.verbose(`${method.toUpperCase()} ${path}`, {
@@ -208,6 +209,7 @@ export const v1Router = (ops: {
 
   router.post(
     "/node/register",
+    requestDurationMiddleware(requestDurationHistogram),
     checkSchema(registerNodeSchema),
     async (req: Request, res: Response) => {
       try {
