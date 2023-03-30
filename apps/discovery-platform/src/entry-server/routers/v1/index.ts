@@ -153,43 +153,53 @@ export const v1Router = (ops: {
   register: Registry;
 }) => {
   // Metrics
-  const counterFetchedEntryNode = createCounter(
+  const counterSuccessfulRequests = createCounter(
     ops.register,
-    "counter_fetched_entry_nodes",
-    "amount of entry nodes we have given to users"
+    "counter_successful_request",
+    "amount of successful requests discovery platform has processed",
+    { labelNames: ["method", "path"] }
   );
 
-  const counterTrialClients = createCounter(
+  const counterFailedRequests = createCounter(
     ops.register,
-    "counter_trial_clients",
-    "amount of trial clients created through endpoint"
-  );
-
-  const counterAddedQuota = createCounter(
-    ops.register,
-    "counter_added_quota",
-    "amount of times quota is added through endpoint"
+    "counter_failed_request",
+    "amount of failed requests discovery platform has processed",
+    { labelNames: ["method", "path"] }
   );
 
   const router = express.Router();
 
   router.use(express.json());
 
+  router.use((req, res, next) => {
+    const { method, path, params, body } = req;
+    log.verbose(`${method.toUpperCase()} ${path}`, {
+      params: req.params,
+      body: req.body,
+    });
+    next();
+  });
+
   router.post(
     "/node/register",
     checkSchema(registerNodeSchema),
     async (req: Request, res: Response) => {
       try {
-        log.verbose("POST /node/register", req.body);
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
           return res.status(400).json({ errors: errors.array() });
         }
         const node: RegisteredNode = req.body;
         const registered = await createRegisteredNode(ops.db, node);
+        counterSuccessfulRequests
+          .labels({ method: req.method, path: req.path })
+          .inc();
         return res.json({ body: registered });
       } catch (e) {
         log.error("Can not register node", e);
+        counterFailedRequests
+          .labels({ method: req.method, path: req.path })
+          .inc();
         return res.status(500).json({ errors: "Unexpected error" });
       }
     }
@@ -204,7 +214,6 @@ export const v1Router = (ops: {
       res: Response
     ) => {
       try {
-        log.verbose("GET /node", req.query);
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
           return res.status(400).json({ errors: errors.array() });
@@ -216,9 +225,15 @@ export const v1Router = (ops: {
         });
         // cache response for 1 min
         setCache(req.originalUrl || req.url, 60e3, nodes);
+        counterSuccessfulRequests
+          .labels({ method: req.method, path: req.path })
+          .inc();
         return res.json(nodes);
       } catch (e) {
         log.error("Can not get nodes", e);
+        counterFailedRequests
+          .labels({ method: req.method, path: req.path })
+          .inc();
         return res.status(500).json({ errors: "Unexpected error" });
       }
     }
@@ -229,7 +244,6 @@ export const v1Router = (ops: {
     param("peerId").isAlphanumeric(),
     async (req: Request<{ peerId: string }>, res: Response) => {
       try {
-        log.verbose(`GET /node/:peerId`, req.params);
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
           return res.status(400).json({ errors: errors.array() });
@@ -239,18 +253,26 @@ export const v1Router = (ops: {
         return res.json({ node });
       } catch (e) {
         log.error("Can not get node with id", e);
+        counterFailedRequests
+          .labels({ method: req.method, path: req.path })
+          .inc();
         return res.status(500).json({ errors: "Unexpected error" });
       }
     }
   );
 
   router.get("/funding-service/funds", async (req, res) => {
-    log.verbose(`GET /funding-service/funds`);
     try {
       const funds = await ops.fundingServiceApi.getAvailableFunds();
+      counterSuccessfulRequests
+        .labels({ method: req.method, path: req.path })
+        .inc();
       return res.json({ body: funds });
     } catch (e) {
       log.error("Can not retrieve funds from funding service", e);
+      counterFailedRequests
+        .labels({ method: req.method, path: req.path })
+        .inc();
       return res.status(500).json({ errors: "Unexpected error" });
     }
   });
@@ -262,7 +284,6 @@ export const v1Router = (ops: {
     body("quota").exists().bail().isNumeric(),
     async (req, res) => {
       try {
-        log.verbose(`POST /client/quota`, req.body);
         const validationErrors = validationResult(req);
         if (!validationErrors.isEmpty()) {
           return res.status(400).json({ errors: validationErrors.array() });
@@ -296,11 +317,15 @@ export const v1Router = (ops: {
           paidBy: dbClient.id,
         });
 
-        counterAddedQuota.inc();
-
+        counterSuccessfulRequests
+          .labels({ method: req.method, path: req.path })
+          .inc();
         return res.json({ quota: createdQuota });
       } catch (e) {
         log.error("Can not create funds", e);
+        counterFailedRequests
+          .labels({ method: req.method, path: req.path })
+          .inc();
         return res.status(500).json({ errors: "Unexpected error" });
       }
     }
@@ -313,7 +338,6 @@ export const v1Router = (ops: {
       .custom((value) => isListSafe(value)),
     async (req: Request<{}, {}, {}, { label?: string }>, res: Response) => {
       try {
-        log.verbose("GET /request/trial", req.query);
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
           log.verbose("validation error", errors.array());
@@ -326,11 +350,16 @@ export const v1Router = (ops: {
           label ? label.split(",") : []
         );
 
-        counterTrialClients.inc();
+        counterSuccessfulRequests
+          .labels({ method: req.method, path: req.path })
+          .inc();
 
         return res.json({ client: trialClient.id });
       } catch (e) {
         log.error("Can not create trial client", e);
+        counterFailedRequests
+          .labels({ method: req.method, path: req.path })
+          .inc();
         return res.status(500).json({ errors: "Unexpected error" });
       }
     }
@@ -344,7 +373,6 @@ export const v1Router = (ops: {
       .custom((value) => isListSafe(value)),
     async (req, res) => {
       try {
-        log.verbose(`POST /request/entry-node`, req.body);
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
           log.verbose("validation error", errors.array());
@@ -409,7 +437,9 @@ export const v1Router = (ops: {
           paidBy: paidById,
         });
 
-        counterFetchedEntryNode.inc();
+        counterSuccessfulRequests
+          .labels({ method: req.method, path: req.path })
+          .inc();
 
         return res.json({
           ...selectedNode,
@@ -417,6 +447,9 @@ export const v1Router = (ops: {
         });
       } catch (e) {
         log.error("Can not retrieve entry node", e);
+        counterFailedRequests
+          .labels({ method: req.method, path: req.path })
+          .inc();
         return res.status(500).json({ errors: "Unexpected error" });
       }
     }
