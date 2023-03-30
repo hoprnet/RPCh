@@ -46,7 +46,6 @@ RUN apt-get update && \
 
 COPY --from=installer /app/apps/funding-service/package.json .
 COPY --from=installer /app .
-COPY apps/funding-service/src/blockchain/erc20-fixture.json /app/apps/funding-service/build/blockchain
 COPY apps/discovery-platform/migrations/ /app
 
 # switch to normal user, to prevent dangerous root access
