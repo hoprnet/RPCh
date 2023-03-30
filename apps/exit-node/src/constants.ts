@@ -9,7 +9,9 @@ const {
   HOPRD_API_TOKEN,
 } = process.env;
 
-const RESPONSE_TIMEOUT = Number(process.env.RESPONSE_TIMEOUT) ?? 10000;
+const RESPONSE_TIMEOUT = process.env.RESPONSE_TIMEOUT
+  ? Number(process.env.RESPONSE_TIMEOUT)
+  : 10000;
 const DEFAULT_IDENTITY_DIR = path.join(process.cwd(), ".identity");
 const DEFAULT_DATA_DIR = path.join(process.cwd(), "db");
 const ALGORITHM = "aes-192-cbc";
