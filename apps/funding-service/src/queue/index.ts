@@ -5,7 +5,8 @@ import {
   sendTransaction,
   waitForTransaction,
 } from "../blockchain";
-import { QueryRequest, RequestService } from "../request";
+import { RequestDB } from "../types";
+import { RequestService } from "../request";
 import { CustomError, createLogger } from "../utils";
 import * as constants from "../constants";
 import Prometheus from "prom-client";
@@ -43,7 +44,7 @@ export const checkFreshRequests = async (ops: {
   );
 
   ops.changeState(true);
-  let freshRequest: QueryRequest | null | undefined;
+  let freshRequest: RequestDB | null | undefined;
   try {
     freshRequest = await ops.requestService.getOldestFreshRequest();
     log.verbose("Starting to fulfill request: ", JSON.stringify(freshRequest));
@@ -81,9 +82,9 @@ export const checkFreshRequests = async (ops: {
     // set request status to pending while it is on the wire
     await ops.requestService.updateRequest(freshRequest.id, {
       status: "PENDING",
-      accessTokenHash: freshRequest.access_token_hash,
-      nodeAddress: freshRequest.node_address,
-      chainId: freshRequest.chain_id,
+      access_token_hash: freshRequest.access_token_hash,
+      node_address: freshRequest.node_address,
+      chain_id: freshRequest.chain_id,
       amount: BigInt(freshRequest.amount),
       id: freshRequest.id,
     });
@@ -100,11 +101,11 @@ export const checkFreshRequests = async (ops: {
     });
     // set request status to pending while it is confirmed or failed
     await ops.requestService.updateRequest(freshRequest.id, {
-      transactionHash: txHash,
+      transaction_hash: txHash,
       status: "PENDING",
-      accessTokenHash: freshRequest.access_token_hash,
-      nodeAddress: freshRequest.node_address,
-      chainId: freshRequest.chain_id,
+      access_token_hash: freshRequest.access_token_hash,
+      node_address: freshRequest.node_address,
+      chain_id: freshRequest.chain_id,
       amount: BigInt(freshRequest.amount),
       id: freshRequest.id,
     });
@@ -125,10 +126,10 @@ export const checkFreshRequests = async (ops: {
     // update request to success or failed
     await ops.requestService.updateRequest(freshRequest.id, {
       status: txReceipt.status === 1 ? "SUCCESS" : "FAILED",
-      transactionHash: txHash,
-      accessTokenHash: freshRequest.access_token_hash,
-      nodeAddress: freshRequest.node_address,
-      chainId: freshRequest.chain_id,
+      transaction_hash: txHash,
+      access_token_hash: freshRequest.access_token_hash,
+      node_address: freshRequest.node_address,
+      chain_id: freshRequest.chain_id,
       amount: BigInt(freshRequest.amount),
       id: freshRequest.id,
     });
@@ -141,9 +142,9 @@ export const checkFreshRequests = async (ops: {
         await ops.requestService.updateRequest(freshRequest?.id, {
           status: "REJECTED-DURING-PROCESSING",
           reason: e.message,
-          accessTokenHash: freshRequest.access_token_hash,
-          nodeAddress: freshRequest.node_address,
-          chainId: freshRequest.chain_id,
+          access_token_hash: freshRequest.access_token_hash,
+          node_address: freshRequest.node_address,
+          chain_id: freshRequest.chain_id,
           amount: BigInt(freshRequest.amount),
           id: freshRequest.id,
         });
@@ -158,9 +159,9 @@ export const checkFreshRequests = async (ops: {
         await ops.requestService.updateRequest(freshRequest?.id, {
           status: "FAILED-DURING-PROCESSING",
           reason: e.message ?? JSON.stringify(e),
-          accessTokenHash: freshRequest.access_token_hash,
-          nodeAddress: freshRequest.node_address,
-          chainId: freshRequest.chain_id,
+          access_token_hash: freshRequest.access_token_hash,
+          node_address: freshRequest.node_address,
+          chain_id: freshRequest.chain_id,
           amount: BigInt(freshRequest.amount),
           id: freshRequest.id,
         });

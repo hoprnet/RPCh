@@ -1,5 +1,5 @@
 import * as db from "../db";
-import { CreateRegisteredNode, QueryRegisteredNode } from "./dto";
+import { RegisteredNode, RegisteredNodeDB } from "../types";
 import { createLogger } from "../utils";
 import { utils } from "@rpch/common";
 
@@ -8,14 +8,14 @@ const log = createLogger(["registered-node"]);
 /**
  * Saves a registered node in DB
  * @param dbInstance DBinstance
- * @param node CreateRegisteredNode
+ * @param node RegisteredNode
  * @returns boolean
  */
 export const createRegisteredNode = async (
   dbInstance: db.DBInstance,
-  node: CreateRegisteredNode
+  node: RegisteredNode
 ): Promise<boolean> => {
-  const newNode: Omit<QueryRegisteredNode, "created_at" | "updated_at"> = {
+  const newNode: Omit<RegisteredNodeDB, "created_at" | "updated_at"> = {
     honesty_score: 0,
     total_amount_funded: BigInt(0),
     status: "FRESH",
@@ -36,12 +36,12 @@ export const createRegisteredNode = async (
  * Get a specific registered node
  * @param dbInstance DBinstance
  * @param peerId id of the node
- * @returns QueryRegisteredNode | undefined
+ * @returns RegisteredNodeDB | undefined
  */
 export const getRegisteredNode = async (
   dbInstance: db.DBInstance,
   peerId: string
-): Promise<QueryRegisteredNode | null> => {
+): Promise<RegisteredNodeDB> => {
   const node = await db.getRegisteredNode(dbInstance, peerId);
   return node;
 };
@@ -54,7 +54,7 @@ export const getRegisteredNode = async (
  */
 export const updateRegisteredNode = async (
   dbInstance: db.DBInstance,
-  updatedNode: QueryRegisteredNode
+  updatedNode: RegisteredNodeDB
 ): Promise<boolean> => {
   return await db.updateRegisteredNode(dbInstance, updatedNode);
 };
@@ -68,7 +68,7 @@ export const updateRegisteredNode = async (
 export const getEligibleNode = async (
   dbInstance: db.DBInstance,
   filters?: db.RegisteredNodeFilters
-): Promise<QueryRegisteredNode | undefined> => {
+): Promise<RegisteredNodeDB | undefined> => {
   const readyNodes = await getRegisteredNodes(dbInstance, {
     ...filters,
     status: "READY",
@@ -90,7 +90,7 @@ export const getEligibleNode = async (
 export const getRewardForNode = (
   baseQuota: bigint,
   baseExtra: bigint,
-  node: QueryRegisteredNode
+  node: RegisteredNodeDB
 ): bigint => {
   const extra = node.has_exit_node ? baseExtra * BigInt(2) : baseExtra;
   const reward = baseQuota + extra;
@@ -101,11 +101,11 @@ export const getRewardForNode = (
  * Get all registered nodes with an optional set of filters
  * @param dbInstance DBinstance
  * @param filters possible ways to filter registered nodes
- * @returns QueryRegisteredNode[]
+ * @returns RegisteredNodeDB[]
  */
 export const getRegisteredNodes = async (
   dbInstance: db.DBInstance,
   filters?: db.RegisteredNodeFilters
-): Promise<QueryRegisteredNode[]> => {
+): Promise<RegisteredNodeDB[]> => {
   return await db.getRegisteredNodes(dbInstance, filters);
 };

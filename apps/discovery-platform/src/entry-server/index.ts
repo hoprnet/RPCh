@@ -1,9 +1,9 @@
-import express, { Request } from "express";
+import express from "express";
 import { DBInstance } from "../db";
 import { FundingServiceApi } from "../funding-service-api";
 import { v1Router } from "./routers/v1";
 import { Registry, register } from "prom-client";
-
+import compression from "compression";
 const app = express();
 
 export const entryServer = (ops: {
@@ -12,6 +12,8 @@ export const entryServer = (ops: {
   fundingServiceApi: FundingServiceApi;
   register: Registry;
 }) => {
+  app.use(compression());
+
   app.use(
     "/api/v1",
     v1Router({

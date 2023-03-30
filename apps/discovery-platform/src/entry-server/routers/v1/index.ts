@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
 import {
   ParamSchema,
   body,
@@ -15,23 +15,21 @@ import {
 } from "../../../client";
 import { DBInstance } from "../../../db";
 import { FundingServiceApi } from "../../../funding-service-api";
-import { createQuota, getQuotasPaidByClient, sumQuotas } from "../../../quota";
+import { createQuota, getSumOfQuotasPaidByClient } from "../../../quota";
 import {
   createRegisteredNode,
   getEligibleNode,
   getRegisteredNode,
   getRegisteredNodes,
-  getRewardForNode,
 } from "../../../registered-node";
-import { CreateRegisteredNode } from "../../../registered-node/dto";
+import { ClientDB, RegisteredNode } from "../../../types";
 import { createLogger, isListSafe } from "../../../utils";
 import { Registry } from "prom-client";
-import { createCounter, createGauge } from "../../../metrics";
+import { createCounter } from "../../../metrics";
+import memoryCache from "memory-cache";
+import { errors } from "pg-promise";
 
 const log = createLogger(["entry-server", "router", "v1"]);
-
-// base amount of reward that a node will receive after completing a request
-const BASE_EXTRA = BigInt(1);
 
 // payment mode when quota is paid by trial
 const TRIAL_PAYMENT_MODE = "trial";
@@ -40,7 +38,7 @@ const TRIAL_PAYMENT_MODE = "trial";
 const TRIAL_CLIENT_ID = "trial";
 
 // Sanitization and Validation
-const registerNodeSchema: Record<keyof CreateRegisteredNode, ParamSchema> = {
+const registerNodeSchema: Record<keyof RegisteredNode, ParamSchema> = {
   peerId: {
     in: "body",
     exists: {
@@ -121,6 +119,32 @@ const getNodeSchema: Record<
   },
 };
 
+export const getCache = () => {
+  return (req: Request, res: Response<any, any>, next: NextFunction) => {
+    let key = req.originalUrl || req.url;
+    let cachedBody = memoryCache.get(key);
+    if (cachedBody) {
+      log.verbose("Returning cached value for endpoint: ", key);
+      return res.json(cachedBody);
+    }
+    next();
+  };
+};
+
+export const setCache = (key: string, duration: number, body: Object) => {
+  memoryCache.put(key, body, duration);
+};
+
+// middleware used to check if client sent in req has enough quota
+export const doesClientHaveQuota = async (
+  db: DBInstance,
+  client: string,
+  baseQuota: bigint
+) => {
+  const sumOfClientsQuota = await getSumOfQuotasPaidByClient(db, client);
+  return sumOfClientsQuota >= baseQuota;
+};
+
 // Express Router
 export const v1Router = (ops: {
   db: DBInstance;
@@ -161,7 +185,7 @@ export const v1Router = (ops: {
         if (!errors.isEmpty()) {
           return res.status(400).json({ errors: errors.array() });
         }
-        const node: CreateRegisteredNode = req.body;
+        const node: RegisteredNode = req.body;
         const registered = await createRegisteredNode(ops.db, node);
         return res.json({ body: registered });
       } catch (e) {
@@ -174,6 +198,7 @@ export const v1Router = (ops: {
   router.get(
     "/node",
     checkSchema(getNodeSchema),
+    getCache(), // check if response is in cache
     async (
       req: Request<{}, {}, {}, { excludeList?: string; hasExitNode?: string }>,
       res: Response
@@ -189,6 +214,8 @@ export const v1Router = (ops: {
           excludeList: excludeList?.split(", "),
           hasExitNode: hasExitNode ? hasExitNode === "true" : undefined,
         });
+        // cache response for 1 min
+        setCache(req.originalUrl || req.url, 60e3, nodes);
         return res.json(nodes);
       } catch (e) {
         log.error("Can not get nodes", e);
@@ -236,23 +263,32 @@ export const v1Router = (ops: {
     async (req, res) => {
       try {
         log.verbose(`POST /client/quota`, req.body);
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-          return res.status(400).json({ errors: errors.array() });
+        const validationErrors = validationResult(req);
+        if (!validationErrors.isEmpty()) {
+          return res.status(400).json({ errors: validationErrors.array() });
         }
         const { client: clientId, quota } = req.body;
+        let dbClient: ClientDB | undefined;
+
         // check if client exists
-        let dbClient = await getClient(ops.db, clientId);
-        if (!dbClient) {
-          // create client id it does not exist
-          dbClient = await createClient(ops.db, {
-            id: clientId,
-            payment: "premium",
-          });
-        } else if (dbClient.payment === TRIAL_CLIENT_ID) {
+        try {
+          dbClient = await getClient(ops.db, clientId);
+        } catch (e) {
+          if (e instanceof errors.QueryResultError) {
+            dbClient = await createClient(ops.db, {
+              id: clientId,
+              payment: "premium",
+            });
+          }
+        }
+
+        if (!dbClient) throw Error("Could not create Client");
+
+        if (dbClient.payment === TRIAL_PAYMENT_MODE) {
           // update client to premium of it was previously trial
           await updateClient(ops.db, { ...dbClient, payment: "premium" });
         }
+
         const createdQuota = await createQuota(ops.db, {
           clientId: dbClient.id,
           quota,
@@ -341,6 +377,7 @@ export const v1Router = (ops: {
             body: "Client does not have enough quota",
           });
         }
+
         // choose selected entry node
         const selectedNode = await getEligibleNode(ops.db, { excludeList });
         log.verbose("selected entry node", selectedNode);
@@ -386,14 +423,4 @@ export const v1Router = (ops: {
   );
 
   return router;
-};
-
-export const doesClientHaveQuota = async (
-  db: DBInstance,
-  client: string,
-  baseQuota: bigint
-) => {
-  const allQuotasFromClient = await getQuotasPaidByClient(db, client);
-  const sumOfClientsQuota = sumQuotas(allQuotasFromClient);
-  return sumOfClientsQuota >= baseQuota;
 };

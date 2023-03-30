@@ -3,7 +3,11 @@ import { AccessTokenService } from "../access-token";
 import { getBalanceForAllChains, getProviders } from "../blockchain";
 import { RequestService } from "../request";
 import { createLogger } from "../utils";
-import { tokenIsValid, validateAmountAndToken } from "./middleware";
+import {
+  tokenCanRequestFunds,
+  tokenIsActive,
+  validateFundingRequestBody,
+} from "./middleware";
 import { validationResult, param } from "express-validator";
 import * as constants from "../constants";
 import { utils } from "@rpch/common";
@@ -62,7 +66,13 @@ export const entryServer = (ops: {
 
   app.post(
     "/api/request/funds/:blockchainAddress",
-    validateAmountAndToken(ops),
+    validateFundingRequestBody(),
+    tokenIsActive(ops.accessTokenService),
+    tokenCanRequestFunds(
+      ops.accessTokenService,
+      ops.requestService,
+      ops.maxAmountOfTokens
+    ),
     async (req: express.Request, res: express.Response) => {
       try {
         log.verbose(
@@ -90,19 +100,16 @@ export const entryServer = (ops: {
           accessTokenHash,
           chainId,
         });
-        const allUnresolvedAndSuccessfulRequestsByAccessToken =
-          await ops.requestService.getAllUnresolvedAndSuccessfulRequestsByAccessToken(
-            accessTokenHash
-          );
-        const amountUsed = ops.requestService.sumAmountOfRequests(
-          allUnresolvedAndSuccessfulRequestsByAccessToken
+        const amountUsed = await ops.requestService.getSumOfRequestsByStatus(
+          [...constants.UNRESOLVED_REQUESTS_STATUSES, "SUCCESS"],
+          accessTokenHash
         );
 
         counterRequestFundedNode.inc();
 
         return res.json({
           id: request.id,
-          amountLeft: String(ops.maxAmountOfTokens - amountUsed[chainId]),
+          amountLeft: String(ops.maxAmountOfTokens - amountUsed),
         });
       } catch (e) {
         log.error("Can not request funding", e);
@@ -113,11 +120,7 @@ export const entryServer = (ops: {
 
   app.get(
     "/api/request/status",
-    tokenIsValid(
-      ops.accessTokenService,
-      ops.requestService,
-      ops.maxAmountOfTokens
-    ),
+    tokenIsActive(ops.accessTokenService),
     async (req, res) => {
       try {
         log.verbose(`GET /api/request/status`);
@@ -134,11 +137,7 @@ export const entryServer = (ops: {
   app.get(
     "/api/request/status/:requestId",
     param("requestId").isNumeric(),
-    tokenIsValid(
-      ops.accessTokenService,
-      ops.requestService,
-      ops.maxAmountOfTokens
-    ),
+    tokenIsActive(ops.accessTokenService),
     async (req, res) => {
       try {
         log.verbose(`GET /api/request/status/:requestId`, req.params);
@@ -159,11 +158,7 @@ export const entryServer = (ops: {
 
   app.get(
     "/api/funds",
-    tokenIsValid(
-      ops.accessTokenService,
-      ops.requestService,
-      ops.maxAmountOfTokens
-    ),
+    tokenIsActive(ops.accessTokenService),
     async (req, res) => {
       try {
         log.verbose(`GET /api/funds`);
@@ -179,22 +174,18 @@ export const entryServer = (ops: {
           ops.walletAddress,
           providers
         );
-        const compromisedRequests =
-          await ops.requestService.getAllUnresolvedRequests();
-        const frozenBalances = await ops.requestService.sumAmountOfRequests(
-          compromisedRequests ?? []
+
+        const frozenBalance = await ops.requestService.getSumOfRequestsByStatus(
+          [...constants.UNRESOLVED_REQUESTS_STATUSES]
         );
 
-        const availableBalances = ops.requestService.calculateAvailableFunds(
-          balances,
-          frozenBalances
-        );
-        const replacer = (_: any, value: any) =>
-          typeof value === "bigint" ? value.toString() : value;
+        // DISCLAIMER: hardcoded to only accept one chain at a time
+        const availableBalance = balances[0] - frozenBalance;
+
         // all balances are in wei
         const jsonString = JSON.stringify(
-          { availableBalances, frozenBalances },
-          replacer
+          { availableBalance, frozenBalance },
+          utils.bigIntReplacer
         );
         return res.json(JSON.parse(jsonString));
       } catch (e) {

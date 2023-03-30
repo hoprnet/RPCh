@@ -32,9 +32,10 @@ RUN turbo prune --scope="@rpch/exit-node" --docker
 
 # Add lockfile and package.json's of isolated subworkspace.
 # Specify platform to be amd because arm doesn't work
-FROM --platform=linux/amd64 node:16-alpine AS installer
-RUN apk add --no-cache libc6-compat
-RUN apk update
+FROM --platform=linux/amd64 node:16-bullseye-slim AS installer
+RUN apt-get update && \
+  apt-get install -y libc6 && \
+  rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 # Install the dependencies.
@@ -50,7 +51,7 @@ RUN yarn run build --scope="@rpch/exit-node"
 
 #  Copy only the necesary files to run the app.
 # Specify platform to be amd because arm doesn't work
-FROM --platform=linux/amd64 node:16-alpine AS runner
+FROM --platform=linux/amd64 node:16-bullseye-slim AS runner
 
 WORKDIR /app
 
@@ -59,12 +60,14 @@ RUN mkdir -p /app/db
 VOLUME ["/app/db"]
 
 # we use tini as process 1 to catch signals properly, which is also built into Docker by default
-RUN apk add --no-cache tini curl
+RUN apt-get update && \
+  apt-get install -y tini curl wget netcat && \
+  rm -rf /var/lib/apt/lists/*
 
 # this helper script can be used to ensure the hoprd node is running before starting
-RUN  curl https://raw.githubusercontent.com/eficode/wait-for/v2.2.3/wait-for > /bin/wait-for \
-  && chmod o+x /bin/wait-for \
-  && chmod u+x /bin/wait-for
+RUN curl https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh > /bin/wait-for-it.sh \
+  && chmod o+x /bin/wait-for-it.sh \
+  && chmod u+x /bin/wait-for-it.sh
 
 COPY --from=installer /app/apps/exit-node/package.json .
 COPY --from=installer /app .
@@ -77,4 +80,4 @@ USER node
 
 CMD ["node", "apps/exit-node/build/index.js"]
 
-ENTRYPOINT ["/sbin/tini", "--"]
+ENTRYPOINT ["/usr/bin/tini", "--"]

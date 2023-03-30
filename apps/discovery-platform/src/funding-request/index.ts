@@ -1,20 +1,20 @@
 import { createLogger } from "../utils";
 import * as db from "../db";
-import { CreateFundingRequest, QueryFundingRequest } from "./dto";
+import { FundingRequest, FundingRequestDB } from "../types";
 const log = createLogger(["registered-node"]);
 
 /**
  * Saves a funding request in DB
  * @param dbInstance DBinstance
- * @param fundingRequest CreateFundingRequest
+ * @param fundingRequest FundingRequest
  * @returns boolean
  */
 export const createFundingRequest = async (
   dbInstance: db.DBInstance,
-  fundingRequest: CreateFundingRequest
-): Promise<QueryFundingRequest> => {
+  fundingRequest: FundingRequest
+): Promise<FundingRequestDB> => {
   const newFundingRequest: Omit<
-    QueryFundingRequest,
+    FundingRequestDB,
     "created_at" | "updated_at" | "id"
   > = {
     registered_node_id: fundingRequest.registeredNodeId,

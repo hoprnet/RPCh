@@ -18,9 +18,10 @@ COPY . .
 RUN turbo prune --scope="@rpch/manager" --docker
 
 # Add lockfile and package.json's of isolated subworkspace.
-FROM node:16-alpine AS installer
-RUN apk add --no-cache libc6-compat
-RUN apk update
+FROM node:16-bullseye-slim AS installer
+RUN apt-get update && \
+  apt-get install -y libc6 && \
+  rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 # Install the dependencies.
@@ -35,11 +36,13 @@ COPY turbo.json turbo.json
 RUN yarn run build --scope="@rpch/manager"
 
 #  Copy only the necesary files to run the app.
-FROM node:16-alpine AS runner
+FROM node:16-bullseye-slim AS runner
 WORKDIR /app
 
 # we use tini as process 1 to catch signals properly, which is also built into Docker by default
-RUN apk add --no-cache tini curl
+RUN apt-get update && \
+  apt-get install -y tini curl && \
+  rm -rf /var/lib/apt/lists/*
 
 # this helper script can be used to ensure the hoprd node is running before starting
 RUN  curl https://raw.githubusercontent.com/eficode/wait-for/v2.2.3/wait-for > /bin/wait-for \
@@ -49,4 +52,4 @@ COPY --from=installer /app/devkit/manager/package.json .
 COPY --from=installer /app .
 
 CMD ["node", "devkit/manager/build/index.js"]
-ENTRYPOINT ["/sbin/tini", "--"]
+ENTRYPOINT ["/usr/bin/tini", "--"]

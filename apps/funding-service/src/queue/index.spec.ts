@@ -4,7 +4,7 @@ import assert from "assert";
 import { ethers } from "hardhat";
 import { checkFreshRequests } from ".";
 import { AccessTokenService } from "../access-token";
-import { DBInstance } from "../db";
+import { DBInstance } from "../types";
 import { MockPgInstanceSingleton } from "../db/index.spec";
 import { RequestService } from "../request";
 import Prometheus from "prom-client";
@@ -39,7 +39,6 @@ const createAccessTokenAndRequest = async (
     timeout: MOCK_TIMEOUT,
   });
 
-  if (!queryToken) throw new Error("Failed to create test token");
   const queryRequest = await requestService.createRequest(
     params
       ? { ...params, accessTokenHash: queryToken.token }
@@ -79,7 +78,6 @@ describe("test index.ts", function () {
       accessTokenService,
       requestService
     );
-    if (!createRequest) throw new Error("request was not created");
     await checkFreshRequests({
       requestService,
       signer: owner,
@@ -96,12 +94,11 @@ describe("test index.ts", function () {
       accessTokenService,
       requestService
     );
-    if (!createRequest) throw new Error("request was not created");
     await requestService.updateRequest(createRequest.id, {
       status: "REJECTED-DURING-PROCESSING",
-      accessTokenHash: createRequest.access_token_hash,
-      nodeAddress: createRequest.node_address,
-      chainId: createRequest.chain_id,
+      access_token_hash: createRequest.access_token_hash,
+      node_address: createRequest.node_address,
+      chain_id: createRequest.chain_id,
       amount: createRequest.amount,
       id: createRequest.id,
     });

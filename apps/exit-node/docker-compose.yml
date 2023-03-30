@@ -48,7 +48,8 @@ services:
       - hopr-net
     ports:
       - "3001:3001"
-      - "9091:9091"
+      - "9091:9091/tcp"
+      - "9091:9091/udp"
       - "8080:8080"
     volumes:
       - hoprd-data:/app/hoprd-db
@@ -105,7 +106,7 @@ services:
         "-t",
         "300",
         "--",
-        "/sbin/tini",
+        "/usr/bin/tini",
         "--",
       ]
     command: "node apps/exit-node/build/index.js"

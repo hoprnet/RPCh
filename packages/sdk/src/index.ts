@@ -20,7 +20,7 @@ const log = createLogger();
 // max number of segments sdk can send to entry node
 const MAXIMUM_SEGMENTS_PER_REQUEST = 100;
 const DEADLOCK_MS = 1e3 * 60 * 0.5; // 30s
-
+const MINIMUM_SCORE_FOR_RELIABLE_NODE = 0.7;
 /**
  * HOPR SDK options.
  */
@@ -126,17 +126,21 @@ export default class SDK {
         }
       );
 
+      // Check for error response
+      if (rawResponse.status !== 200) {
+        log.error(
+          "Failed to request entry node",
+          rawResponse.status,
+          await rawResponse.text()
+        );
+        throw new Error(`Failed to request entry node`);
+      }
+
       const response: {
         hoprd_api_endpoint: string;
         accessToken: string;
         id: string;
       } = await rawResponse.json();
-
-      // Check for error response
-      if (rawResponse.status !== 200) {
-        log.error("Failed to request entry node", rawResponse.status, response);
-        throw new Error(`Failed to request entry node`);
-      }
 
       const apiEndpointUrl = new URL(response.hoprd_api_endpoint);
 
@@ -145,6 +149,7 @@ export default class SDK {
         apiToken: response.accessToken,
         peerId: response.id,
       };
+
       log.verbose("Selected entry node", this.entryNode);
 
       // Refresh messageListener
@@ -181,15 +186,22 @@ export default class SDK {
     discoveryPlatformApiEndpoint: string
   ): Promise<ExitNode[]> {
     log.verbose("Fetching exit nodes");
-    const response: {
-      exit_node_pub_key: string;
-      id: string;
-    }[] = await fetch(
+
+    const rawResponse = await fetch(
       new URL(
         "/api/v1/node?hasExitNode=true",
         discoveryPlatformApiEndpoint
       ).toString()
-    ).then((res) => res.json());
+    );
+
+    if (rawResponse.status !== 200) {
+      throw new Error("Failed to fetch exit nodes");
+    }
+
+    const response: {
+      exit_node_pub_key: string;
+      id: string;
+    }[] = await rawResponse.json();
 
     this.exitNodes = response.map((item) => ({
       peerId: item.id,
@@ -306,7 +318,6 @@ export default class SDK {
       // @ts-expect-error
       await this.crypto.init();
     }
-
     // fetch required data from discovery platform
     await retry(
       () => this.selectEntryNode(this.ops.discoveryPlatformApiEndpoint),
@@ -318,6 +329,7 @@ export default class SDK {
         },
       }
     );
+
     await retry(
       () => this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint),
       {
@@ -366,7 +378,6 @@ export default class SDK {
    */
   public async createRequest(provider: string, body: string): Promise<Request> {
     if (!this.isReady) throw Error("SDK not ready to create requests");
-    if (this.isDeadlocked()) throw Error("SDK is deadlocked");
     if (this.selectingEntryNode) throw Error("SDK is selecting entry node");
 
     let entryNodeScore: number = this.reliabilityScore.getScore(
@@ -374,21 +385,34 @@ export default class SDK {
     );
     const exclusionList: string[] = [];
     if (
-      entryNodeScore < 0.7 &&
+      entryNodeScore < MINIMUM_SCORE_FOR_RELIABLE_NODE &&
       this.reliabilityScore.getStatus(this.entryNode!.peerId) === "NON_FRESH"
     ) {
       log.verbose("node is not reliable enough. selecting new entry node");
       exclusionList.push(this.entryNode!.peerId);
+      // Try to select entry node 3 times
       try {
-        await this.selectEntryNode(
-          this.ops.discoveryPlatformApiEndpoint,
-          exclusionList
+        await retry(
+          async () => {
+            const selectedEntryNode = await this.selectEntryNode(
+              this.ops.discoveryPlatformApiEndpoint,
+              exclusionList
+            );
+            log.verbose("Received entry node", selectedEntryNode);
+            return selectedEntryNode;
+          },
+          {
+            retries: 3,
+            onRetry: (e, attempt) => {
+              log.error("Error while selecting entry node", e);
+              log.verbose("Retrying to select entry node, attempt:", attempt);
+            },
+          }
         );
       } catch (error) {
         log.error("Couldn't find new entry node: ", error);
         this.setDeadlock(DEADLOCK_MS);
       }
-      log.verbose("got new entry node");
     }
 
     // exclude entry node

@@ -1,11 +1,12 @@
 import pgp from "pg-promise";
 import { AccessTokenService } from "./access-token";
 import { getWallet } from "./blockchain";
-import { DBInstance, runMigrations } from "./db";
+import { runMigrations } from "./db";
 import * as api from "./entry-server";
 import { checkFreshRequests } from "./queue";
 import { RequestService } from "./request";
 import { createLogger } from "./utils";
+import { DBInstance } from "./types";
 import * as constants from "./constants";
 import Prometheus from "prom-client";
 
@@ -86,7 +87,6 @@ const main = () => {
   // init db
   const pgInstance = pgp();
   const connectionString: string = constants.DB_CONNECTION_URL!;
-  // create table if the table does not exist
   const dbInstance = pgInstance({
     connectionString,
   });
