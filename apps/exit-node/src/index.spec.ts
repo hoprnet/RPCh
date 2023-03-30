@@ -41,7 +41,7 @@ const createMockedSetup = async () => {
     exit,
     hoprd,
     privateKey: utils.arrayify(fixtures.EXIT_NODE_PRIV_KEY_A),
-    identityDir: "",
+    identityFile: "",
     password: "",
     dataDir: "",
     apiEndpoint: "http://entry_node",

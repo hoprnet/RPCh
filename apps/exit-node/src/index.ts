@@ -17,12 +17,12 @@ import { createLogger } from "./utils";
 import PeerId from "peer-id";
 import {
   DEFAULT_DATA_DIR,
-  DEFAULT_IDENTITY_DIR,
+  DEFAULT_IDENTITY_FILE,
   HOPRD_API_ENDPOINT,
   HOPRD_API_TOKEN,
   RESPONSE_TIMEOUT,
   RPCH_DATA_DIR,
-  RPCH_IDENTITY_DIR,
+  RPCH_IDENTITY_FILE,
   RPCH_PASSWORD,
   RPCH_PRIVATE_KEY_STR,
 } from "./constants";
@@ -39,7 +39,7 @@ export const start = async (ops: {
     fetchPeerId: typeof hoprd.fetchPeerId;
   };
   privateKey?: Uint8Array;
-  identityDir: string;
+  identityFile: string;
   password?: string;
   dataDir: string;
   apiEndpoint: string;
@@ -130,7 +130,7 @@ export const start = async (ops: {
 
   log.verbose("Get identity");
   const { publicKey, identity: myIdentity } = await identity.getIdentity({
-    identityDir: ops.identityDir,
+    identityFile: ops.identityFile,
     password: ops.password,
     privateKey: ops.privateKey,
   });
@@ -196,7 +196,7 @@ if (require.main === module) {
     privateKey: RPCH_PRIVATE_KEY_STR
       ? ethersUtils.arrayify(RPCH_PRIVATE_KEY_STR)
       : undefined,
-    identityDir: RPCH_IDENTITY_DIR || DEFAULT_IDENTITY_DIR,
+    identityFile: RPCH_IDENTITY_FILE || DEFAULT_IDENTITY_FILE,
     password: RPCH_PASSWORD,
     dataDir: RPCH_DATA_DIR || DEFAULT_DATA_DIR,
     apiEndpoint: HOPRD_API_ENDPOINT,
