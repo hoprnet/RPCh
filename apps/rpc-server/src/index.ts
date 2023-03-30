@@ -57,10 +57,10 @@ export class RPCServer {
         timeout: this.timeout,
         discoveryPlatformApiEndpoint: this.discoveryPlatformApiEndpoint,
       },
-      async (clientId: string, counter: string) => {
+      async (clientId, counter) => {
         await this.db.put(clientId, counter);
       },
-      async (clientId: string) => {
+      async (clientId) => {
         try {
           const val = await this.db.get(clientId);
           return val.toString();
