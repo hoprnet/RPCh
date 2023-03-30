@@ -67,8 +67,8 @@ export const entryServer = (ops: {
   app.use((req, _res, next) => {
     const { method, path, params, body } = req;
     log.verbose(`${method.toUpperCase()} ${path}`, {
-      params: req.params,
-      body: req.body,
+      params,
+      body,
     });
     next();
   });
