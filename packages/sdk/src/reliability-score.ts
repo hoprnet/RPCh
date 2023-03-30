@@ -23,6 +23,13 @@ export type Stats = {
   failed: number;
 };
 
+type NodeMetrics = {
+  responses: Map<number, ResponseMetric>;
+  stats: Stats;
+  sent: number;
+  updatedAt: Date;
+};
+
 /**
  * Way to measure if the HOPRd entry node
  * we are using is reliable or not.
@@ -31,28 +38,23 @@ export default class ReliabilityScore {
   /**
    * Keeps track of metrics.
    */
-  private metrics = new Map<
-    string,
-    {
-      responses: Map<number, ResponseMetric>;
-      stats: Stats;
-      sent: number;
-      updatedAt: Date;
-    }
-  >();
+  private metrics = new Map<string, NodeMetrics>();
 
   /**
    * Keeps track of calculated score.
    * The `score` range goes from 0 to 1.
    */
   private score = new Map<string, number>();
-  private FRESH_NODE_THRESHOLD: number;
-  private MAX_RESPONSES: number;
 
-  constructor(freshNodeThreshold: number, maxResponses: number) {
-    this.FRESH_NODE_THRESHOLD = freshNodeThreshold;
-    this.MAX_RESPONSES = maxResponses;
-  }
+  /**
+   * Create reliability score instance
+   * @param freshNodeThreshold amount of requests a node can send and be considered "FRESH"
+   * @param maxResponses amount of responses a node can send until score is reset
+   */
+  constructor(
+    private freshNodeThreshold: number,
+    private maxResponses: number
+  ) {}
 
   /**
    * Get a node's responses.result stats.
@@ -87,13 +89,23 @@ export default class ReliabilityScore {
    * @param result
    */
   public addMetric(peerId: string, requestId: number, result: Result) {
-    let nodeMetrics = this.metrics.get(peerId);
+    const nodeMetrics = this.getNodeMetrics(peerId);
+
+    // register new result
+    this.updateNodeMetrics(peerId, requestId, result, nodeMetrics);
+
     log.verbose(
-      "node: %s, requestId: %s, result: %s",
-      peerId,
-      requestId,
-      result
+      `node: ${peerId} stats: ${JSON.stringify(this.getResultsStats(peerId))}`
     );
+
+    // Remove all responses except those with a dishonest result.
+    if (nodeMetrics.sent > this.maxResponses) {
+      this.resetNodeMetrics(peerId, nodeMetrics);
+    }
+  }
+
+  private getNodeMetrics(peerId: string) {
+    let nodeMetrics = this.metrics.get(peerId);
 
     if (!nodeMetrics) {
       nodeMetrics = {
@@ -105,6 +117,15 @@ export default class ReliabilityScore {
       this.metrics.set(peerId, nodeMetrics);
     }
 
+    return nodeMetrics;
+  }
+
+  private updateNodeMetrics(
+    peerId: string,
+    requestId: number,
+    result: Result,
+    nodeMetrics: NodeMetrics
+  ) {
     nodeMetrics.responses.set(requestId, {
       createdAt: new Date(),
       result,
@@ -112,49 +133,34 @@ export default class ReliabilityScore {
 
     nodeMetrics.sent += 1;
     nodeMetrics.stats = this.getResultsStats(peerId);
+  }
 
-    log.verbose(
-      "node: %s has a reliability score of %s",
-      peerId,
-      this.getScore(peerId)
-    );
+  private resetNodeMetrics(peerId: string, nodeMetrics: NodeMetrics) {
+    const [lastRequestId, lastResponse] = Array.from(nodeMetrics.responses).at(
+      -1
+    ) as [number, ResponseMetric];
 
-    log.verbose(
-      `node: ${peerId} request number: ${
-        this.metrics.get(peerId)?.sent
-      } reliability score: ${this.getScore(peerId)}`
-    );
-
-    log.verbose(
-      `node: ${peerId} stats: ${JSON.stringify(this.getResultsStats(peerId))}`
-    );
-
-    // Remove all responses except those with a dishonest result.
-    if (nodeMetrics.sent > this.MAX_RESPONSES) {
-      const [lastRequestId, lastResponse] = Array.from(
-        nodeMetrics.responses
-      ).at(-1) as [number, ResponseMetric];
-
-      for (const [requestId, { result }] of nodeMetrics.responses) {
-        if (result !== "dishonest") {
-          nodeMetrics.responses.delete(requestId);
-        }
+    // delete all requests that are not dishonest
+    for (const [requestId, { result }] of nodeMetrics.responses) {
+      if (result !== "dishonest") {
+        nodeMetrics.responses.delete(requestId);
       }
-      nodeMetrics.responses.set(lastRequestId, lastResponse);
-
-      nodeMetrics.sent = 1;
-      nodeMetrics.stats = this.getResultsStats(peerId);
-      const updatedScore = this.getScore(peerId);
-      this.score.set(peerId, updatedScore);
-      log.verbose(
-        "node %s exceeded the max number of responses possible. Recalculating score",
-        peerId,
-        log.createMetric({ peerId: peerId })
-      );
-      log.verbose(
-        `NODE ${peerId} SCORE AFTER RECALCULATION: ${this.getScore(peerId)}`
-      );
     }
+
+    // save last request
+    nodeMetrics.responses.set(lastRequestId, lastResponse);
+    nodeMetrics.sent = 1;
+    nodeMetrics.stats = this.getResultsStats(peerId);
+
+    // update score
+    const updatedScore = this.getScore(peerId);
+    this.score.set(peerId, updatedScore);
+
+    log.verbose(
+      "node %s exceeded the max number of responses possible. Recalculating score",
+      peerId,
+      log.createMetric({ peerId: peerId })
+    );
   }
 
   /**
@@ -174,7 +180,7 @@ export default class ReliabilityScore {
           "node %s is a dishonest node with 0 reliability score",
           peerId
         );
-      } else if (sent < this.FRESH_NODE_THRESHOLD) {
+      } else if (sent < this.freshNodeThreshold) {
         this.score.set(peerId, FRESH_NODE_SCORE);
         log.normal(
           "node %s is a fresh node with 0.2 reliability score",
@@ -205,7 +211,7 @@ export default class ReliabilityScore {
 
   public getStatus(peerId: string): "FRESH" | "NON_FRESH" {
     const sent = this.metrics.get(peerId)?.sent || 0;
-    if (sent < this.FRESH_NODE_THRESHOLD) {
+    if (sent < this.freshNodeThreshold) {
       return "FRESH";
     } else {
       return "NON_FRESH";

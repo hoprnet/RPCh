@@ -300,7 +300,6 @@ export class FundingServiceApi {
   ): Promise<Response> {
     const res = await retry(
       async (bail, attempt) => {
-        log.verbose({ attempt });
         await this.getAccessToken(amount);
         const body: PostFundingRequest = {
           amount: amount.toString(),
