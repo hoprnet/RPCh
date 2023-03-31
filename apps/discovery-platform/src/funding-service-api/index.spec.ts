@@ -8,7 +8,9 @@ import {
   PostFundingResponse,
   RegisteredNodeDB,
 } from "../types";
-import { MockPgInstanceSingleton } from "../db/index.spec";
+import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";
+import path from "path";
+import * as PgMem from "pg-mem";
 
 const FUNDING_SERVICE_URL = "http://localhost:5000";
 const FAKE_ACCESS_TOKEN = "EcLjvxdALOT0eq18d8Gzz3DEr3AMG27NtL+++YPSZNE=";
@@ -50,7 +52,11 @@ describe("test funding service api class", function () {
   let dbInstance: db.DBInstance;
 
   beforeAll(async function () {
-    dbInstance = await MockPgInstanceSingleton.getDbInstance();
+    const migrationsDirectory = path.join(__dirname, "../../migrations");
+    dbInstance = await MockPgInstanceSingleton.getDbInstance(
+      PgMem,
+      migrationsDirectory
+    );
     MockPgInstanceSingleton.getInitialState();
   });
 

@@ -2,10 +2,12 @@ import assert from "assert";
 import { RequestDB, DBInstance } from "../types";
 import { RequestService } from ".";
 import { AccessTokenService } from "../access-token";
-import { MockPgInstanceSingleton } from "../db/index.spec";
 import { DBTimestamp } from "../types/general";
 import { errors } from "pg-promise";
 import * as constants from "../constants";
+import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";
+import path from "path";
+import * as PgMem from "pg-mem";
 
 const SECRET_KEY = "SECRET";
 const MOCK_ADDRESS = "0xA10AA7711FD1FA48ACAE6FF00FCB63B0F6AD055F";
@@ -53,9 +55,14 @@ describe("test RequestService class", function () {
   let accessTokenService: AccessTokenService;
 
   beforeAll(async function () {
-    dbInstance = await MockPgInstanceSingleton.getDbInstance();
+    const migrationsDirectory = path.join(__dirname, "../../migrations");
+    dbInstance = await MockPgInstanceSingleton.getDbInstance(
+      PgMem,
+      migrationsDirectory
+    );
     MockPgInstanceSingleton.getInitialState();
   });
+
   beforeEach(function () {
     MockPgInstanceSingleton.getInitialState().restore();
     accessTokenService = new AccessTokenService(dbInstance, SECRET_KEY);
