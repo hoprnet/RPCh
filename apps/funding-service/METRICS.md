@@ -10,7 +10,7 @@ The following section documents the metrics:
 | ------------------------------------------ | ------- | ------------------------------------------------------------- | :------------------------- |
 | `counter_successful_request`  | counter | amount of successful requests discovery platform has processed|      |
 | `counter_failed_request`  | counter | amount of failed requests discovery platform has processed|      |
-| `request_duration_seconds`  | histogram | duration of requests in s
+| `request_duration_seconds`  | histogram | duration of requests in seconds
 | `counter_funded_nodes_successful`  | counter | Number of times we have funded nodes successfully|      |
 | `counter_funded_nodes_failed`  | counter | Number of times we have failed to fund nodes|      |
 

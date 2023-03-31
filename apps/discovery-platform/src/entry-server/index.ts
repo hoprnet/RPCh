@@ -27,7 +27,7 @@ export const entryServer = (ops: {
   // Prometheus metrics
   app.get("/api/metrics", async (req, res) => {
     const metrics = await register.metrics();
-    return res.json(metrics);
+    return res.send(metrics);
   });
 
   return app;

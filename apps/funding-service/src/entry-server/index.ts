@@ -63,6 +63,12 @@ export const entryServer = (ops: {
 
   app.use(express.json());
 
+  // Prometheus metrics
+  app.get("/api/metrics", async (req, res) => {
+    const metrics = await ops.register.metrics();
+    return res.send(metrics);
+  });
+
   // log entry calls
   app.use((req, _res, next) => {
     const { method, path, params, body } = req;
@@ -250,12 +256,6 @@ export const entryServer = (ops: {
       }
     }
   );
-
-  // Prometheus metrics
-  app.get("/api/metrics", async (req, res) => {
-    const metrics = await ops.register.metrics();
-    return res.json(metrics);
-  });
 
   return app;
 };

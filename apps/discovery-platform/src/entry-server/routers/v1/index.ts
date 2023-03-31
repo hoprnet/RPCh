@@ -215,6 +215,9 @@ export const v1Router = (ops: {
       try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
+          counterFailedRequests
+            .labels({ method: req.method, path: req.path, status: 400 })
+            .inc();
           return res.status(400).json({ errors: errors.array() });
         }
         const node: RegisteredNode = req.body;
