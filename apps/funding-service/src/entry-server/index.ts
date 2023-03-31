@@ -257,11 +257,5 @@ export const entryServer = (ops: {
     }
   );
 
-  // Prometheus metrics
-  app.get("/api/metrics", async (req, res) => {
-    const metrics = await ops.register.metrics();
-    return res.json(metrics);
-  });
-
   return app;
 };

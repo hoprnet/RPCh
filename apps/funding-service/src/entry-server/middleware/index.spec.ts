@@ -1,13 +1,8 @@
 import { AccessTokenService } from "../../access-token";
-import { DBInstance, RequestDurationMetrics } from "../../types";
+import { DBInstance } from "../../types";
 import { MockPgInstanceSingleton } from "../../db/index.spec";
 import { RequestService } from "../../request";
-import {
-  doesAccessTokenHaveEnoughBalance,
-  requestDurationMiddleware,
-} from "./index";
-import Prometheus from "prom-client";
-import { Request, Response } from "express";
+import { doesAccessTokenHaveEnoughBalance } from "./index";
 
 const SECRET_KEY = "SECRET";
 const MAX_AMOUNT_OF_TOKENS = BigInt(40);
@@ -53,48 +48,5 @@ describe("should test entry server middleware functions", function () {
       MAX_AMOUNT_OF_TOKENS
     );
     expect(tokenHasBalanceRes).toEqual(false);
-  });
-  describe("should register metric", function () {
-    let register: Prometheus.Registry;
-    beforeEach(() => {
-      // create prometheus registry
-      register = new Prometheus.Registry();
-
-      register.setDefaultLabels({
-        app: "funding_service",
-      });
-    });
-    afterEach(() => {
-      register.clear();
-      jest.clearAllMocks();
-    });
-    it("registers request duration", async function () {
-      const requestDurationHistogram = new Prometheus.Histogram({
-        name: "test_request_duration_seconds",
-        help: "Test request duration in seconds",
-        labelNames: ["method", "path", "status"],
-        registers: [register],
-        buckets: [0.1, 0.5, 1, 5, 10, 30],
-      });
-      const middleware = requestDurationMiddleware(requestDurationHistogram);
-      await middleware(
-        {} as Request,
-        {
-          on: jest.fn((event, callback) => {
-            if (event === "finish") {
-              callback();
-            }
-          }),
-          statusCode: 200,
-        } as unknown as Response,
-        jest.fn()
-      );
-      expect(
-        Object.keys(
-          (requestDurationHistogram as unknown as RequestDurationMetrics)
-            .hashMap
-        ).length
-      ).not.toEqual(0);
-    });
   });
 });
