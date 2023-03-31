@@ -68,4 +68,8 @@ export class MetricManager {
       ...config,
     });
   }
+
+  public async getMetrics() {
+    return await this.register.metrics();
+  }
 }

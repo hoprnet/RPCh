@@ -6,19 +6,10 @@ import pgp from "pg-promise";
 import { getRegisteredNodes } from "./registered-node";
 import { checkCommitment } from "./graph-api";
 import * as constants from "./constants";
-import Prometheus from "prom-client";
+import * as Prometheus from "prom-client";
+import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 
 const log = createLogger();
-
-// create prometheus registry
-const register = new Prometheus.Registry();
-
-register.setDefaultLabels({
-  app: "discovery_platform",
-});
-
-// add default metrics to registry
-Prometheus.collectDefaultMetrics({ register });
 
 const start = async (ops: {
   db: DBInstance;
@@ -34,12 +25,25 @@ const start = async (ops: {
     ops.db
   );
 
+  // create prometheus registry
+  const register = new Prometheus.Registry();
+
+  // add default metrics to registry
+  Prometheus.collectDefaultMetrics({ register });
+
+  const metricManager = new MetricManager(
+    Prometheus,
+    register,
+    constants.METRIC_PREFIX
+  );
+
   const app = entryServer({
     db: ops.db,
     baseQuota: ops.baseQuota,
     fundingServiceApi: fundingServiceApi,
-    register: register,
+    metricManager: metricManager,
   });
+
   // start listening at PORT for requests
   const server = app.listen(constants.PORT, "0.0.0.0", () => {
     log.normal("entry server is up");

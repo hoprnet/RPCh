@@ -58,7 +58,7 @@ const UNRESOLVED_REQUESTS_STATUSES: RequestDB["status"][] = [
   "PROCESSING",
 ];
 
-const METRIC_PREFIX = "discovery_platform_";
+const METRIC_PREFIX = "funding_service";
 
 export {
   SECRET_KEY,
