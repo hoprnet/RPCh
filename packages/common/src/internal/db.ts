@@ -1,6 +1,7 @@
 import type * as PgMem from "pg-mem";
 import type * as Pgp from "pg-promise";
 import * as fixtures from "../fixtures";
+import type * as Migrate from "node-pg-migrate";
 
 export class MockPgInstanceSingleton {
   private static pgInstance: PgMem.IMemoryDb;
@@ -52,3 +53,18 @@ export class MockPgInstanceSingleton {
     return MockPgInstanceSingleton.initialDbState;
   }
 }
+
+export const runMigrations = async (
+  dbUrl: string,
+  migrationsDirectory: string,
+  migrate: typeof Migrate.default
+) => {
+  await migrate({
+    schema: "public",
+    direction: "up",
+    count: Infinity,
+    databaseUrl: dbUrl,
+    migrationsTable: "migrations",
+    dir: migrationsDirectory,
+  });
+};

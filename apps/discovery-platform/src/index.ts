@@ -1,4 +1,4 @@
-import { DBInstance, runMigrations, updateRegisteredNode } from "./db";
+import { DBInstance, updateRegisteredNode } from "./db";
 import { entryServer } from "./entry-server";
 import { FundingServiceApi } from "./funding-service-api";
 import { createLogger } from "./utils";
@@ -8,6 +8,9 @@ import { checkCommitment } from "./graph-api";
 import * as constants from "./constants";
 import * as Prometheus from "prom-client";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
+import { runMigrations } from "@rpch/common/build/internal/db";
+import path from "path";
+import migrate from "node-pg-migrate";
 
 const log = createLogger();
 
@@ -17,7 +20,12 @@ const start = async (ops: {
   fundingServiceUrl: string;
 }) => {
   // run db migrations
-  await runMigrations(constants.DB_CONNECTION_URL!);
+  const migrationsDirectory = path.join(__dirname, "../migrations");
+  await runMigrations(
+    constants.DB_CONNECTION_URL!,
+    migrationsDirectory,
+    migrate
+  );
 
   // init services
   const fundingServiceApi = new FundingServiceApi(

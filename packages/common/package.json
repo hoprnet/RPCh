@@ -22,7 +22,8 @@
     "nock": "^13.2.9",
     "pg-mem": "^2.6.4",
     "prom-client": "^14.2.0",
-    "pg-promise": "^11.0.0"
+    "pg-promise": "^11.0.0",
+    "node-pg-migrate": "^6.2.2"
   },
   "dependencies": {
     "@rpch/crypto-bridge": "0.1.6",
