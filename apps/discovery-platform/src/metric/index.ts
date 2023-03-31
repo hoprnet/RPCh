@@ -1,4 +1,5 @@
 import Prometheus from "prom-client";
+import { METRIC_PREFIX } from "../constants";
 
 export const createCounter = (
   register: Prometheus.Registry,
@@ -12,7 +13,7 @@ export const createCounter = (
   }
 ) => {
   return new Prometheus.Counter({
-    name,
+    name: METRIC_PREFIX + name,
     help,
     registers: [register],
     ...config,
@@ -25,7 +26,12 @@ export const createGauge = (
   help: string,
   config?: Prometheus.GaugeConfiguration<string>
 ) => {
-  return new Prometheus.Gauge({ name, help, registers: [register], ...config });
+  return new Prometheus.Gauge({
+    name: METRIC_PREFIX + name,
+    help,
+    registers: [register],
+    ...config,
+  });
 };
 
 export const createHistogram = (
@@ -40,7 +46,7 @@ export const createHistogram = (
   }
 ) => {
   return new Prometheus.Histogram({
-    name,
+    name: METRIC_PREFIX + name,
     help,
     registers: [register],
     ...config,
@@ -54,7 +60,7 @@ export const createSummary = (
   config?: Prometheus.SummaryConfiguration<string>
 ) => {
   return new Prometheus.Summary({
-    name,
+    name: METRIC_PREFIX + name,
     help,
     registers: [register],
     ...config,
