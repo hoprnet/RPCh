@@ -180,7 +180,11 @@ export const start = async (ops: {
 
   if (OPT_IN_METRICS) {
     const pushMetrics = setInterval(() => {
-      gateway.pushAdd({ jobName: publicKey + "_exit_node_metrics" });
+      gateway
+        .pushAdd({ jobName: publicKey + "_exit_node_metrics" })
+        .catch(() => {
+          log.error("failed to push metrics");
+        });
     }, 60e3);
 
     intervals.push(pushMetrics);
