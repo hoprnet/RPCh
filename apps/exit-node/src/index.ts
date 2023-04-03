@@ -171,10 +171,6 @@ export const start = async (ops: {
     counterRequests.labels({ status: "error" }).inc();
   });
 
-  const pushMetrics = setInterval(() => {
-    gateway.pushAdd({ jobName: publicKey + "_exit_node_metrics" });
-  }, 60e3);
-
   const intervals: NodeJS.Timer[] = [];
   intervals.push(
     setInterval(() => {
@@ -183,6 +179,10 @@ export const start = async (ops: {
   );
 
   if (OPT_IN_METRICS) {
+    const pushMetrics = setInterval(() => {
+      gateway.pushAdd({ jobName: publicKey + "_exit_node_metrics" });
+    }, 60e3);
+
     intervals.push(pushMetrics);
   }
 
