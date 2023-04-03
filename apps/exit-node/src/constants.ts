@@ -15,6 +15,9 @@ const RESPONSE_TIMEOUT = process.env.RESPONSE_TIMEOUT
 const DEFAULT_IDENTITY_DIR = path.join(process.cwd(), ".identity");
 const DEFAULT_DATA_DIR = path.join(process.cwd(), "db");
 const ALGORITHM = "aes-192-cbc";
+const METRIC_PREFIX = "exit_node";
+const PUSHGATEWAY_ENDPOINT = "http://127.0.0.1:9091";
+const OPT_IN_METRICS = !!process.env.OPT_IN_METRICS ?? false;
 
 export {
   ALGORITHM,
@@ -27,4 +30,7 @@ export {
   RPCH_IDENTITY_DIR,
   RPCH_PASSWORD,
   RPCH_PRIVATE_KEY_STR,
+  METRIC_PREFIX,
+  PUSHGATEWAY_ENDPOINT,
+  OPT_IN_METRICS,
 };

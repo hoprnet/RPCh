@@ -31,6 +31,7 @@
     "leveldown": "^6.1.1",
     "levelup": "^5.1.1",
     "node-fetch": "^2.6.2",
-    "peer-id": "^0.16.0"
+    "peer-id": "^0.16.0",
+    "prom-client": "^14.2.0"
   }
 }
