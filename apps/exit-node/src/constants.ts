@@ -18,6 +18,7 @@ const ALGORITHM = "aes-192-cbc";
 const METRIC_PREFIX = "exit_node";
 const PUSHGATEWAY_ENDPOINT = "http://127.0.0.1:9091";
 const OPT_IN_METRICS = !!process.env.OPT_IN_METRICS ?? false;
+const SEND_METRICS_INTERVAL = 60e3;
 
 export {
   ALGORITHM,
@@ -33,4 +34,5 @@ export {
   METRIC_PREFIX,
   PUSHGATEWAY_ENDPOINT,
   OPT_IN_METRICS,
+  SEND_METRICS_INTERVAL,
 };

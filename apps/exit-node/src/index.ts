@@ -30,6 +30,7 @@ import {
   RPCH_IDENTITY_DIR,
   RPCH_PASSWORD,
   RPCH_PRIVATE_KEY_STR,
+  SEND_METRICS_INTERVAL,
 } from "./constants";
 
 const log = createLogger();
@@ -50,6 +51,9 @@ export const start = async (ops: {
   apiEndpoint: string;
   apiToken?: string;
   timeout: number;
+  pushgatewayEndpoint: string;
+  optInMetrics: boolean;
+  sendMetricsInterval: number;
 }): Promise<() => void> => {
   const metricManager = new MetricManager(
     Prometheus,
@@ -57,7 +61,7 @@ export const start = async (ops: {
     METRIC_PREFIX
   );
 
-  const gateway = new Prometheus.Pushgateway(PUSHGATEWAY_ENDPOINT);
+  const gateway = new Prometheus.Pushgateway(ops.pushgatewayEndpoint);
 
   // Metrics
   const counterRequests = metricManager.createCounter(
@@ -178,14 +182,14 @@ export const start = async (ops: {
     }, 1000)
   );
 
-  if (OPT_IN_METRICS) {
+  if (ops.optInMetrics) {
     const pushMetrics = setInterval(() => {
       gateway
         .pushAdd({ jobName: publicKey + "_exit_node_metrics" })
         .catch(() => {
           log.error("failed to push metrics");
         });
-    }, 60e3);
+    }, ops.sendMetricsInterval);
 
     intervals.push(pushMetrics);
   }
@@ -247,5 +251,8 @@ if (require.main === module) {
     apiEndpoint: HOPRD_API_ENDPOINT,
     apiToken: HOPRD_API_TOKEN,
     timeout: RESPONSE_TIMEOUT,
+    optInMetrics: OPT_IN_METRICS,
+    pushgatewayEndpoint: PUSHGATEWAY_ENDPOINT,
+    sendMetricsInterval: SEND_METRICS_INTERVAL,
   }).catch((error) => log.error(error));
 }
