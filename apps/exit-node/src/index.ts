@@ -71,7 +71,7 @@ export const start = async (ops: {
   );
 
   const counterRequestsToProvider = metricManager.createCounter(
-    "counter_sent_request",
+    "counter_provider_request",
     "amount of requests exit node has sent to provider",
     { labelNames: ["status"] }
   );

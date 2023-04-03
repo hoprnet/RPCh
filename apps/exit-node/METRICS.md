@@ -7,4 +7,4 @@ The following section documents the metrics:
 | Name                                       | Type    | Description                                                   | Note                       |
 | ------------------------------------------ | ------- | ------------------------------------------------------------- | :------------------------- |
 | `counter_received_request`  | counter | amount of requests exit node has processed	|      |
-| `counter_sent_request`  | counter | amount of requests exit node has sent to provider|      |
+| `counter_provider_request`  | counter | amount of requests exit node has sent to provider|      |
