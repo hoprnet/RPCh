@@ -117,7 +117,8 @@ describe("test RequestService class", function () {
     await requestService.deleteRequest(request.id);
 
     try {
-      const deletedRequest = await requestService.getRequest(request.id);
+      // deletedRequest
+      await requestService.getRequest(request.id);
     } catch (e) {
       if (e instanceof errors.QueryResultError) {
         assert.equal(e.message, "No data returned from the query.");
@@ -133,23 +134,19 @@ describe("test RequestService class", function () {
       accessTokenService,
       requestService
     );
-    const thirdRequest = await createAccessTokenAndRequest(
-      accessTokenService,
-      requestService
-    );
-    const updateFirstRequest = await requestService.updateRequest(
-      firstRequest.id,
-      {
-        id: firstRequest.id,
-        access_token_hash: firstRequest.access_token_hash,
-        node_address: firstRequest.node_address,
-        amount: firstRequest.amount,
-        chain_id: firstRequest.chain_id,
-        reason: firstRequest.reason,
-        transaction_hash: firstRequest.transaction_hash,
-        status: "PENDING",
-      }
-    );
+    // thirdRequest
+    await createAccessTokenAndRequest(accessTokenService, requestService);
+    //  updateFirstRequest
+    await requestService.updateRequest(firstRequest.id, {
+      id: firstRequest.id,
+      access_token_hash: firstRequest.access_token_hash,
+      node_address: firstRequest.node_address,
+      amount: firstRequest.amount,
+      chain_id: firstRequest.chain_id,
+      reason: firstRequest.reason,
+      transaction_hash: firstRequest.transaction_hash,
+      status: "PENDING",
+    });
     const oldestFreshRequest = await requestService.getOldestFreshRequest();
 
     assert.equal(oldestFreshRequest?.id, secondRequest?.id);
@@ -159,27 +156,21 @@ describe("test RequestService class", function () {
       accessTokenService,
       requestService
     );
-    const secondRequest = await createAccessTokenAndRequest(
-      accessTokenService,
-      requestService
-    );
-    const thirdRequest = await createAccessTokenAndRequest(
-      accessTokenService,
-      requestService
-    );
-    const updateFirstRequest = await requestService.updateRequest(
-      firstRequest.id,
-      {
-        id: firstRequest.id,
-        access_token_hash: firstRequest.access_token_hash,
-        node_address: firstRequest.node_address,
-        amount: firstRequest.amount,
-        chain_id: firstRequest.chain_id,
-        reason: firstRequest.reason,
-        transaction_hash: firstRequest.transaction_hash,
-        status: "FAILED",
-      }
-    );
+    // secondRequest
+    await createAccessTokenAndRequest(accessTokenService, requestService);
+    // thirdRequest
+    await createAccessTokenAndRequest(accessTokenService, requestService);
+    //  updateFirstRequest
+    await requestService.updateRequest(firstRequest.id, {
+      id: firstRequest.id,
+      access_token_hash: firstRequest.access_token_hash,
+      node_address: firstRequest.node_address,
+      amount: firstRequest.amount,
+      chain_id: firstRequest.chain_id,
+      reason: firstRequest.reason,
+      transaction_hash: firstRequest.transaction_hash,
+      status: "FAILED",
+    });
     const unresolvedRequests = await requestService.getUnresolvedRequests();
     assert.equal(unresolvedRequests?.length, 2);
   });
@@ -189,29 +180,29 @@ describe("test RequestService class", function () {
       requestService,
       mockRequestParams(1)
     );
-    const secondRequest = await createAccessTokenAndRequest(
+    // secondRequest
+    await createAccessTokenAndRequest(
       accessTokenService,
       requestService,
       mockRequestParams(1)
     );
-    const thirdRequest = await createAccessTokenAndRequest(
+    // thirdRequest
+    await createAccessTokenAndRequest(
       accessTokenService,
       requestService,
       mockRequestParams(2)
     );
-    const updateFirstRequest = await requestService.updateRequest(
-      firstRequest.id,
-      {
-        id: firstRequest.id,
-        access_token_hash: firstRequest.access_token_hash,
-        node_address: firstRequest.node_address,
-        amount: firstRequest.amount,
-        chain_id: firstRequest.chain_id,
-        reason: firstRequest.reason,
-        transaction_hash: firstRequest.transaction_hash,
-        status: "FAILED",
-      }
-    );
+    // updateFirstRequest
+    await requestService.updateRequest(firstRequest.id, {
+      id: firstRequest.id,
+      access_token_hash: firstRequest.access_token_hash,
+      node_address: firstRequest.node_address,
+      amount: firstRequest.amount,
+      chain_id: firstRequest.chain_id,
+      reason: firstRequest.reason,
+      transaction_hash: firstRequest.transaction_hash,
+      status: "FAILED",
+    });
     const unresolvedRequests = await requestService.getUnresolvedRequests();
     const unresolvedRequestsKeyedByChain =
       requestService.groupRequestsByChainId(unresolvedRequests ?? []);
@@ -231,45 +222,39 @@ describe("test RequestService class", function () {
       accessTokenService,
       requestService
     );
-    const updateFirstRequest = await requestService.updateRequest(
-      firstRequest.id,
-      {
-        id: firstRequest.id,
-        access_token_hash: firstRequest.access_token_hash,
-        node_address: firstRequest.node_address,
-        amount: firstRequest.amount,
-        chain_id: firstRequest.chain_id,
-        reason: firstRequest.reason,
-        transaction_hash: firstRequest.transaction_hash,
-        status: "FAILED",
-      }
-    );
-    const updateThirdRequest = await requestService.updateRequest(
-      thirdRequest.id,
-      {
-        id: thirdRequest.id,
-        access_token_hash: secondRequest.access_token_hash,
-        node_address: thirdRequest.node_address,
-        amount: thirdRequest.amount,
-        chain_id: thirdRequest.chain_id,
-        reason: thirdRequest.reason,
-        transaction_hash: thirdRequest.transaction_hash,
-        status: thirdRequest.status,
-      }
-    );
-    const updateSecondRequest = await requestService.updateRequest(
-      secondRequest.id,
-      {
-        id: secondRequest.id,
-        access_token_hash: secondRequest.access_token_hash,
-        node_address: secondRequest.node_address,
-        amount: secondRequest.amount,
-        chain_id: secondRequest.chain_id,
-        reason: secondRequest.reason,
-        transaction_hash: secondRequest.transaction_hash,
-        status: "SUCCESS",
-      }
-    );
+    // updateFirstRequest
+    await requestService.updateRequest(firstRequest.id, {
+      id: firstRequest.id,
+      access_token_hash: firstRequest.access_token_hash,
+      node_address: firstRequest.node_address,
+      amount: firstRequest.amount,
+      chain_id: firstRequest.chain_id,
+      reason: firstRequest.reason,
+      transaction_hash: firstRequest.transaction_hash,
+      status: "FAILED",
+    });
+    // updateThirdRequest
+    await requestService.updateRequest(thirdRequest.id, {
+      id: thirdRequest.id,
+      access_token_hash: secondRequest.access_token_hash,
+      node_address: thirdRequest.node_address,
+      amount: thirdRequest.amount,
+      chain_id: thirdRequest.chain_id,
+      reason: thirdRequest.reason,
+      transaction_hash: thirdRequest.transaction_hash,
+      status: thirdRequest.status,
+    });
+    // updateSecondRequest
+    await requestService.updateRequest(secondRequest.id, {
+      id: secondRequest.id,
+      access_token_hash: secondRequest.access_token_hash,
+      node_address: secondRequest.node_address,
+      amount: secondRequest.amount,
+      chain_id: secondRequest.chain_id,
+      reason: secondRequest.reason,
+      transaction_hash: secondRequest.transaction_hash,
+      status: "SUCCESS",
+    });
     const allUnresolvedAndSuccessfulRequests =
       await requestService.getUnresolvedAndSuccessfulRequests(
         secondRequest.access_token_hash

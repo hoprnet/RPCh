@@ -155,6 +155,7 @@ describe("test SDK class", function () {
   });
 
   describe("started", function () {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     let ops: HoprSdkOps;
     let sdk: SDK;
 
@@ -162,7 +163,7 @@ describe("test SDK class", function () {
       const mock = createSdkMock();
       ops = mock.ops;
       sdk = mock.sdk;
-      DP_REQ_ENTRY_NOCK.thrice().reply(200, {
+      DP_REQ_ENTRY_NOCK.reply(200, {
         hoprd_api_endpoint: ENTRY_NODE_API_ENDPOINT,
         hoprd_api_port: ENTRY_NODE_API_PORT,
         accessToken: ENTRY_NODE_API_TOKEN,
@@ -180,6 +181,7 @@ describe("test SDK class", function () {
 
     afterEach(async function () {
       await sdk.stop();
+      nock.cleanAll();
       jest.clearAllMocks();
     });
 
@@ -201,6 +203,7 @@ describe("test SDK class", function () {
         fixtures.generateMockedFlow(3);
 
       sdk.sendRequest(clientRequest).then((response) => {
+        // this will run when .onMessage resolves request
         assert.equal(response.id, clientRequest.id);
         // @ts-ignore
         const pendingRequest = sdk.requestCache.getRequest(clientRequest.id);
@@ -208,6 +211,7 @@ describe("test SDK class", function () {
         done();
       });
 
+      // return response for sdk sendRequest
       // @ts-ignore
       sdk.onMessage(exitNodeResponse.toMessage());
     });
@@ -356,6 +360,17 @@ describe("test SDK class", function () {
       assert.equal(sdk.exitNodes.length, 1);
     });
 
+    it("should throw error when fetching exit nodes returns status code different to 200", async function () {
+      DP_GET_NODES.once().reply(500);
+      try {
+        await sdk["fetchExitNodes"](DISCOVERY_PLATFORM_API_ENDPOINT);
+      } catch (e) {
+        if (e instanceof Error) {
+          assert.equal(e.message, "Failed to fetch exit nodes");
+        }
+      }
+    });
+
     it("should throw error when no entry node is available", async function () {
       DP_REQ_ENTRY_NOCK.once().reply(404, {
         body: "someError",
@@ -447,6 +462,12 @@ describe("test SDK class", function () {
     });
 
     it("should call the stopMessageListener if entry node changes", async function () {
+      DP_REQ_ENTRY_NOCK.reply(200, {
+        hoprd_api_endpoint: ENTRY_NODE_API_ENDPOINT,
+        hoprd_api_port: ENTRY_NODE_API_PORT,
+        accessToken: ENTRY_NODE_API_TOKEN,
+        id: ENTRY_NODE_PEER_ID,
+      });
       // @ts-ignore
       const stopMessageListenerMetric = jest.spyOn(sdk, "stopMessageListener");
       // @ts-ignore
@@ -456,10 +477,7 @@ describe("test SDK class", function () {
 
       // Check that before node is seen as not reliable enough, messageListener isn't stopped
       assert.equal(stopMessageListenerMetric.mock.calls.length, 0);
-      const request = await sdk.createRequest(
-        fixtures.PROVIDER,
-        fixtures.RPC_REQ_LARGE
-      );
+      await sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE);
 
       // After createRequest, node should not be reliable enough and messageListener
       // should've been stopped to refresh entry node
@@ -467,6 +485,12 @@ describe("test SDK class", function () {
     });
 
     it("should call the createMessageListener one more time if entry node changes", async function () {
+      DP_REQ_ENTRY_NOCK.reply(200, {
+        hoprd_api_endpoint: ENTRY_NODE_API_ENDPOINT,
+        hoprd_api_port: ENTRY_NODE_API_PORT,
+        accessToken: ENTRY_NODE_API_TOKEN,
+        id: ENTRY_NODE_PEER_ID,
+      });
       // @ts-ignore
       const createMessageListenerMetric = jest.spyOn(
         hoprd,
@@ -479,10 +503,7 @@ describe("test SDK class", function () {
 
       // createMessageListener should have been called once (when sdk starts)
       assert.equal(createMessageListenerMetric.mock.calls.length, 1);
-      const request = await sdk.createRequest(
-        fixtures.PROVIDER,
-        fixtures.RPC_REQ_LARGE
-      );
+      await sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE);
 
       // createMessageListener should have 2 calls after stopping the previous
       // from old entry node and creating new one with new entry node
