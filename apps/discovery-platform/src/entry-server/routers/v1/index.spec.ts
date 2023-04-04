@@ -12,6 +12,7 @@ import {
   getSumOfQuotasPaidByClient,
 } from "../../../quota";
 import * as registeredNode from "../../../registered-node";
+import Prometheus from "prom-client";
 import {
   RegisteredNode,
   RegisteredNodeDB,
@@ -54,12 +55,14 @@ describe("test v1 router", function () {
       FUNDING_SERVICE_URL,
       dbInstance
     );
+    const register = new Prometheus.Registry();
     app = express().use(
       "",
       v1Router({
         db: dbInstance,
         baseQuota: BASE_QUOTA,
         fundingServiceApi,
+        register: register,
       })
     );
   });

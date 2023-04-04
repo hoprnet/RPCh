@@ -5,6 +5,7 @@ import { AccessTokenService } from "../access-token";
 import { MockPgInstanceSingleton } from "../db/index.spec";
 import { RequestService } from "../request";
 import { entryServer } from ".";
+import Prometheus from "prom-client";
 import { DBInstance } from "../types";
 
 const SECRET_KEY = "SECRET";
@@ -27,12 +28,14 @@ describe("test entry server", function () {
     MockPgInstanceSingleton.getInitialState().restore();
     accessTokenService = new AccessTokenService(dbInstance, SECRET_KEY);
     requestService = new RequestService(dbInstance);
+    const register = new Prometheus.Registry();
     app = entryServer({
       accessTokenService,
       requestService,
       walletAddress: "0x0000000000000000",
       maxAmountOfTokens: MAX_AMOUNT_OF_TOKENS,
       timeout: TIMEOUT,
+      register: register,
     });
     agent = request(app);
   });

@@ -8,8 +8,19 @@ import { RequestService } from "./request";
 import { createLogger } from "./utils";
 import { DBInstance } from "./types";
 import * as constants from "./constants";
+import Prometheus from "prom-client";
 
 const log = createLogger();
+
+// create prometheus registry
+const register = new Prometheus.Registry();
+
+register.setDefaultLabels({
+  app: "funding_service",
+});
+
+// add default metrics to registry
+Prometheus.collectDefaultMetrics({ register });
 
 // boolean flag that stops queue from running
 // while it is still waiting for a transaction
@@ -42,6 +53,7 @@ const start = async (ops: {
     walletAddress: wallet.address,
     maxAmountOfTokens: constants.MAX_AMOUNT_OF_TOKENS,
     timeout: constants.TIMEOUT,
+    register: register,
   });
   // start queue that fulfills requests
   setInterval(() => {
@@ -52,6 +64,7 @@ const start = async (ops: {
         signer: wallet,
         confirmations: ops.confirmations,
         changeState: handleRunning,
+        register: register,
       });
     }
   }, 30e3);

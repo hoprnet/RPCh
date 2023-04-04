@@ -24,6 +24,8 @@ import {
 } from "../../../registered-node";
 import { ClientDB, RegisteredNode } from "../../../types";
 import { createLogger, isListSafe } from "../../../utils";
+import { Histogram, Registry } from "prom-client";
+import { createCounter, createHistogram } from "../../../metric";
 import memoryCache from "memory-cache";
 import { errors } from "pg-promise";
 
@@ -143,31 +145,92 @@ export const doesClientHaveQuota = async (
   return sumOfClientsQuota >= baseQuota;
 };
 
+// middleware that will track duration of request
+export const metricMiddleware =
+  (histogramMetric: Histogram<string>) =>
+  (req: Request, res: Response, next: NextFunction) => {
+    const start = process.hrtime();
+    res.on("finish", () => {
+      const end = process.hrtime(start);
+      const durationSeconds = end[0] + end[1] / 1e9;
+      const statusCode = res.statusCode.toString();
+      const method = req.method;
+      const path = req.path;
+      histogramMetric.labels(method, path, statusCode).observe(durationSeconds);
+    });
+    next();
+  };
+
 // Express Router
 export const v1Router = (ops: {
   db: DBInstance;
   baseQuota: bigint;
   fundingServiceApi: FundingServiceApi;
+  register: Registry;
 }) => {
+  // Metrics
+  const counterSuccessfulRequests = createCounter(
+    ops.register,
+    "counter_successful_request",
+    "amount of successful requests discovery platform has processed",
+    { labelNames: ["method", "path", "status"] }
+  );
+
+  const counterFailedRequests = createCounter(
+    ops.register,
+    "counter_failed_request",
+    "amount of failed requests discovery platform has processed",
+    { labelNames: ["method", "path", "status"] }
+  );
+
+  const requestDurationHistogram = createHistogram(
+    ops.register,
+    "request_duration_seconds",
+    "duration of requests in seconds",
+    {
+      buckets: [0.1, 0.5, 1, 5, 10, 30],
+      labelNames: ["method", "path", "status"],
+    }
+  );
+
   const router = express.Router();
 
   router.use(express.json());
 
+  // log entry calls
+  router.use((req, _res, next) => {
+    const { method, path, params, body } = req;
+    log.verbose(`${method.toUpperCase()} ${path}`, {
+      params,
+      body,
+    });
+    next();
+  });
+
   router.post(
     "/node/register",
+    metricMiddleware(requestDurationHistogram),
     checkSchema(registerNodeSchema),
     async (req: Request, res: Response) => {
       try {
-        log.verbose("POST /node/register", req.body);
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
+          counterFailedRequests
+            .labels({ method: req.method, path: req.path, status: 400 })
+            .inc();
           return res.status(400).json({ errors: errors.array() });
         }
         const node: RegisteredNode = req.body;
         const registered = await createRegisteredNode(ops.db, node);
+        counterSuccessfulRequests
+          .labels({ method: req.method, path: req.path, status: 200 })
+          .inc();
         return res.json({ body: registered });
       } catch (e) {
         log.error("Can not register node", e);
+        counterFailedRequests
+          .labels({ method: req.method, path: req.path, status: 500 })
+          .inc();
         return res.status(500).json({ errors: "Unexpected error" });
       }
     }
@@ -175,6 +238,7 @@ export const v1Router = (ops: {
 
   router.get(
     "/node",
+    metricMiddleware(requestDurationHistogram),
     checkSchema(getNodeSchema),
     getCache(), // check if response is in cache
     async (
@@ -182,9 +246,11 @@ export const v1Router = (ops: {
       res: Response
     ) => {
       try {
-        log.verbose("GET /node", req.query);
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
+          counterFailedRequests
+            .labels({ method: req.method, path: req.path, status: 400 })
+            .inc();
           return res.status(400).json({ errors: errors.array() });
         }
         const { hasExitNode, excludeList } = req.query;
@@ -194,9 +260,15 @@ export const v1Router = (ops: {
         });
         // cache response for 1 min
         setCache(req.originalUrl || req.url, 60e3, nodes);
+        counterSuccessfulRequests
+          .labels({ method: req.method, path: req.path, status: 200 })
+          .inc();
         return res.json(nodes);
       } catch (e) {
         log.error("Can not get nodes", e);
+        counterFailedRequests
+          .labels({ method: req.method, path: req.path, status: 500 })
+          .inc();
         return res.status(500).json({ errors: "Unexpected error" });
       }
     }
@@ -204,45 +276,66 @@ export const v1Router = (ops: {
 
   router.get(
     "/node/:peerId",
+    metricMiddleware(requestDurationHistogram),
     param("peerId").isAlphanumeric(),
     async (req: Request<{ peerId: string }>, res: Response) => {
       try {
-        log.verbose(`GET /node/:peerId`, req.params);
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
+          counterFailedRequests
+            .labels({ method: req.method, path: req.path, status: 400 })
+            .inc();
           return res.status(400).json({ errors: errors.array() });
         }
         const { peerId }: { peerId: string } = req.params;
         const node = await getRegisteredNode(ops.db, peerId);
+        counterSuccessfulRequests
+          .labels({ method: req.method, path: req.path, status: 200 })
+          .inc();
         return res.json({ node });
       } catch (e) {
         log.error("Can not get node with id", e);
+        counterFailedRequests
+          .labels({ method: req.method, path: req.path, status: 500 })
+          .inc();
         return res.status(500).json({ errors: "Unexpected error" });
       }
     }
   );
 
-  router.get("/funding-service/funds", async (req, res) => {
-    log.verbose(`GET /funding-service/funds`);
-    try {
-      const funds = await ops.fundingServiceApi.getAvailableFunds();
-      return res.json({ body: funds });
-    } catch (e) {
-      log.error("Can not retrieve funds from funding service", e);
-      return res.status(500).json({ errors: "Unexpected error" });
+  router.get(
+    "/funding-service/funds",
+    metricMiddleware(requestDurationHistogram),
+    async (req, res) => {
+      try {
+        const funds = await ops.fundingServiceApi.getAvailableFunds();
+        counterSuccessfulRequests
+          .labels({ method: req.method, path: req.path, status: 200 })
+          .inc();
+        return res.json({ body: funds });
+      } catch (e) {
+        log.error("Can not retrieve funds from funding service", e);
+        counterFailedRequests
+          .labels({ method: req.method, path: req.path, status: 500 })
+          .inc();
+        return res.status(500).json({ errors: "Unexpected error" });
+      }
     }
-  });
+  );
 
   // DISCLAIMER: can be exploited to allow client to use infinite funds
   router.post(
     "/client/quota",
+    metricMiddleware(requestDurationHistogram),
     body("client").exists(),
     body("quota").exists().bail().isNumeric(),
     async (req, res) => {
       try {
-        log.verbose(`POST /client/quota`, req.body);
         const validationErrors = validationResult(req);
         if (!validationErrors.isEmpty()) {
+          counterFailedRequests
+            .labels({ method: req.method, path: req.path, status: 400 })
+            .inc();
           return res.status(400).json({ errors: validationErrors.array() });
         }
         const { client: clientId, quota } = req.body;
@@ -274,9 +367,16 @@ export const v1Router = (ops: {
           paidBy: dbClient.id,
         });
 
+        counterSuccessfulRequests
+          .labels({ method: req.method, path: req.path, status: 200 })
+          .inc();
+
         return res.json({ quota: createdQuota });
       } catch (e) {
         log.error("Can not create funds", e);
+        counterFailedRequests
+          .labels({ method: req.method, path: req.path, status: 500 })
+          .inc();
         return res.status(500).json({ errors: "Unexpected error" });
       }
     }
@@ -284,15 +384,18 @@ export const v1Router = (ops: {
 
   router.get(
     "/request/trial",
+    metricMiddleware(requestDurationHistogram),
     query("label")
       .optional()
       .custom((value) => isListSafe(value)),
     async (req: Request<{}, {}, {}, { label?: string }>, res: Response) => {
       try {
-        log.verbose("GET /request/trial", req.query);
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
           log.verbose("validation error", errors.array());
+          counterFailedRequests
+            .labels({ method: req.method, path: req.path, status: 400 })
+            .inc();
           return res.status(400).json({ errors: errors.array() });
         }
         const { label } = req.query;
@@ -301,9 +404,17 @@ export const v1Router = (ops: {
           ops.db,
           label ? label.split(",") : []
         );
+
+        counterSuccessfulRequests
+          .labels({ method: req.method, path: req.path, status: 200 })
+          .inc();
+
         return res.json({ client: trialClient.id });
       } catch (e) {
         log.error("Can not create trial client", e);
+        counterFailedRequests
+          .labels({ method: req.method, path: req.path, status: 500 })
+          .inc();
         return res.status(500).json({ errors: "Unexpected error" });
       }
     }
@@ -311,16 +422,19 @@ export const v1Router = (ops: {
 
   router.post(
     "/request/entry-node",
+    metricMiddleware(requestDurationHistogram),
     body("client").exists(),
     body("excludeList")
       .optional()
       .custom((value) => isListSafe(value)),
     async (req, res) => {
       try {
-        log.verbose(`POST /request/entry-node`, req.body);
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
           log.verbose("validation error", errors.array());
+          counterFailedRequests
+            .labels({ method: req.method, path: req.path, status: 400 })
+            .inc();
           return res.status(400).json({ errors: errors.array() });
         }
         const { client, excludeList } = req.body;
@@ -355,6 +469,9 @@ export const v1Router = (ops: {
         const selectedNode = await getEligibleNode(ops.db, { excludeList });
         log.verbose("selected entry node", selectedNode);
         if (!selectedNode) {
+          counterFailedRequests
+            .labels({ method: req.method, path: req.path, status: 404 })
+            .inc();
           return res
             .status(404)
             .json({ errors: "Could not find eligible node" });
@@ -382,12 +499,19 @@ export const v1Router = (ops: {
           paidBy: paidById,
         });
 
+        counterSuccessfulRequests
+          .labels({ method: req.method, path: req.path, status: 200 })
+          .inc();
+
         return res.json({
           ...selectedNode,
           accessToken: selectedNode.hoprd_api_token,
         });
       } catch (e) {
         log.error("Can not retrieve entry node", e);
+        counterFailedRequests
+          .labels({ method: req.method, path: req.path, status: 500 })
+          .inc();
         return res.status(500).json({ errors: "Unexpected error" });
       }
     }
