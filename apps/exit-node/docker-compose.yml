@@ -101,7 +101,7 @@ services:
       - RPCH_DATA_DIR=${RPCH_DATA_DIR}
     entrypoint:
       [
-        "/bin/wait-for",
+        "/bin/wait-for-it.sh",
         "http://${HOPRD_API_TOKEN}@hoprd:3001/api/v2/account/addresses",
         "-t",
         "300",
