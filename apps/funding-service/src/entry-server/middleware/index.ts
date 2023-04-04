@@ -136,7 +136,7 @@ export const validateFundingRequestBody = () => [
 ];
 
 // middleware that will track duration of request
-export const requestDurationMiddleware =
+export const metricMiddleware =
   (histogramMetric: Histogram<string>) =>
   (req: Request, res: Response, next: NextFunction) => {
     const start = process.hrtime();
