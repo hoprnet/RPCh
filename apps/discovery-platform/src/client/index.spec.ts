@@ -1,9 +1,11 @@
 import assert from "assert";
 import * as db from "../db";
-import { MockPgInstanceSingleton } from "../db/index.spec";
 import { Client } from "../types";
 import { createClient, deleteClient, getClient, updateClient } from "./index";
 import { errors } from "pg-promise";
+import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";
+import path from "path";
+import * as PgMem from "pg-mem";
 
 const createMockClient = (params?: Client): Client => {
   return {
@@ -17,7 +19,11 @@ describe("test quota functions", function () {
   let dbInstance: db.DBInstance;
 
   beforeAll(async function () {
-    dbInstance = await MockPgInstanceSingleton.getDbInstance();
+    const migrationsDirectory = path.join(__dirname, "../../migrations");
+    dbInstance = await MockPgInstanceSingleton.getDbInstance(
+      PgMem,
+      migrationsDirectory
+    );
     MockPgInstanceSingleton.getInitialState();
   });
 

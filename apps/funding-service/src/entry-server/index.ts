@@ -12,8 +12,7 @@ import {
 import { validationResult, param } from "express-validator";
 import * as constants from "../constants";
 import { utils } from "@rpch/common";
-import { Registry } from "prom-client";
-import { createCounter, createHistogram } from "../metric";
+import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 
 const app = express();
 const log = createLogger(["entry-server"]);
@@ -34,25 +33,22 @@ export const entryServer = (ops: {
   walletAddress: string;
   maxAmountOfTokens: bigint;
   timeout: number;
-  register: Registry;
+  metricManager: MetricManager;
 }) => {
   // Metrics
-  const counterSuccessfulRequests = createCounter(
-    ops.register,
+  const counterSuccessfulRequests = ops.metricManager.createCounter(
     "counter_successful_request",
     "amount of successful requests discovery platform has processed",
     { labelNames: ["method", "path", "status"] as const }
   );
 
-  const counterFailedRequests = createCounter(
-    ops.register,
+  const counterFailedRequests = ops.metricManager.createCounter(
     "counter_failed_request",
     "amount of failed requests discovery platform has processed",
     { labelNames: ["method", "path", "status"] as const }
   );
 
-  const requestDurationHistogram = createHistogram(
-    ops.register,
+  const requestDurationHistogram = ops.metricManager.createHistogram(
     "request_duration_seconds",
     "duration of requests in seconds",
     {
@@ -65,7 +61,7 @@ export const entryServer = (ops: {
 
   // Prometheus metrics
   app.get("/api/metrics", async (req, res) => {
-    const metrics = await ops.register.metrics();
+    const metrics = await ops.metricManager.getMetrics();
     return res.send(metrics);
   });
 

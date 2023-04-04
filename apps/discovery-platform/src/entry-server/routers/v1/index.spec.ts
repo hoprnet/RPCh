@@ -5,14 +5,12 @@ import request from "supertest";
 import { doesClientHaveQuota, getCache, setCache, v1Router } from ".";
 import { getClient } from "../../../client";
 import { DBInstance } from "../../../db";
-import { MockPgInstanceSingleton } from "../../../db/index.spec";
 import { FundingServiceApi } from "../../../funding-service-api";
 import {
   getSumOfQuotasUsedByClient,
   getSumOfQuotasPaidByClient,
 } from "../../../quota";
 import * as registeredNode from "../../../registered-node";
-import Prometheus from "prom-client";
 import {
   RegisteredNode,
   RegisteredNodeDB,
@@ -20,6 +18,11 @@ import {
   PostFundingResponse,
 } from "../../../types";
 import memoryCache from "memory-cache";
+import * as Prometheus from "prom-client";
+import path from "path";
+import { MetricManager } from "@rpch/common/build/internal/metric-manager";
+import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";
+import * as PgMem from "pg-mem";
 
 const FUNDING_SERVICE_URL = "http://localhost:5000";
 const BASE_QUOTA = BigInt(1);
@@ -45,7 +48,11 @@ describe("test v1 router", function () {
   let app: Express;
 
   beforeAll(async function () {
-    dbInstance = await MockPgInstanceSingleton.getDbInstance();
+    const migrationsDirectory = path.join(__dirname, "../../../../migrations");
+    dbInstance = await MockPgInstanceSingleton.getDbInstance(
+      PgMem,
+      migrationsDirectory
+    );
     MockPgInstanceSingleton.getInitialState();
   });
 
@@ -56,13 +63,14 @@ describe("test v1 router", function () {
       dbInstance
     );
     const register = new Prometheus.Registry();
+    const metricManager = new MetricManager(Prometheus, register, "test");
     app = express().use(
       "",
       v1Router({
         db: dbInstance,
         baseQuota: BASE_QUOTA,
         fundingServiceApi,
-        register: register,
+        metricManager: metricManager,
       })
     );
   });
