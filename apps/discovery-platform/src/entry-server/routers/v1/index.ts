@@ -146,7 +146,7 @@ export const doesClientHaveQuota = async (
 };
 
 // middleware that will track duration of request
-export const requestDurationMiddleware =
+export const metricMiddleware =
   (histogramMetric: Histogram<string>) =>
   (req: Request, res: Response, next: NextFunction) => {
     const start = process.hrtime();
@@ -209,7 +209,7 @@ export const v1Router = (ops: {
 
   router.post(
     "/node/register",
-    requestDurationMiddleware(requestDurationHistogram),
+    metricMiddleware(requestDurationHistogram),
     checkSchema(registerNodeSchema),
     async (req: Request, res: Response) => {
       try {
@@ -238,7 +238,7 @@ export const v1Router = (ops: {
 
   router.get(
     "/node",
-    requestDurationMiddleware(requestDurationHistogram),
+    metricMiddleware(requestDurationHistogram),
     checkSchema(getNodeSchema),
     getCache(), // check if response is in cache
     async (
@@ -276,7 +276,7 @@ export const v1Router = (ops: {
 
   router.get(
     "/node/:peerId",
-    requestDurationMiddleware(requestDurationHistogram),
+    metricMiddleware(requestDurationHistogram),
     param("peerId").isAlphanumeric(),
     async (req: Request<{ peerId: string }>, res: Response) => {
       try {
@@ -305,7 +305,7 @@ export const v1Router = (ops: {
 
   router.get(
     "/funding-service/funds",
-    requestDurationMiddleware(requestDurationHistogram),
+    metricMiddleware(requestDurationHistogram),
     async (req, res) => {
       try {
         const funds = await ops.fundingServiceApi.getAvailableFunds();
@@ -326,7 +326,7 @@ export const v1Router = (ops: {
   // DISCLAIMER: can be exploited to allow client to use infinite funds
   router.post(
     "/client/quota",
-    requestDurationMiddleware(requestDurationHistogram),
+    metricMiddleware(requestDurationHistogram),
     body("client").exists(),
     body("quota").exists().bail().isNumeric(),
     async (req, res) => {
@@ -384,7 +384,7 @@ export const v1Router = (ops: {
 
   router.get(
     "/request/trial",
-    requestDurationMiddleware(requestDurationHistogram),
+    metricMiddleware(requestDurationHistogram),
     query("label")
       .optional()
       .custom((value) => isListSafe(value)),
@@ -422,7 +422,7 @@ export const v1Router = (ops: {
 
   router.post(
     "/request/entry-node",
-    requestDurationMiddleware(requestDurationHistogram),
+    metricMiddleware(requestDurationHistogram),
     body("client").exists(),
     body("excludeList")
       .optional()

@@ -4,7 +4,7 @@ import { getBalanceForAllChains, getProviders } from "../blockchain";
 import { RequestService } from "../request";
 import { createLogger } from "../utils";
 import {
-  requestDurationMiddleware,
+  metricMiddleware,
   tokenCanRequestFunds,
   tokenIsActive,
   validateFundingRequestBody,
@@ -83,7 +83,7 @@ export const entryServer = (ops: {
 
   app.get(
     "/api/access-token",
-    requestDurationMiddleware(requestDurationHistogram),
+    metricMiddleware(requestDurationHistogram),
     async (req, res) => {
       try {
         const accessToken = await ops.accessTokenService.createAccessToken({
@@ -111,7 +111,7 @@ export const entryServer = (ops: {
 
   app.post(
     "/api/request/funds/:blockchainAddress",
-    requestDurationMiddleware(requestDurationHistogram),
+    metricMiddleware(requestDurationHistogram),
     validateFundingRequestBody(),
     tokenIsActive(ops.accessTokenService),
     tokenCanRequestFunds(
@@ -165,7 +165,7 @@ export const entryServer = (ops: {
 
   app.get(
     "/api/request/status",
-    requestDurationMiddleware(requestDurationHistogram),
+    metricMiddleware(requestDurationHistogram),
     tokenIsActive(ops.accessTokenService),
     async (req, res) => {
       try {
@@ -186,7 +186,7 @@ export const entryServer = (ops: {
 
   app.get(
     "/api/request/status/:requestId",
-    requestDurationMiddleware(requestDurationHistogram),
+    metricMiddleware(requestDurationHistogram),
     param("requestId").isNumeric(),
     tokenIsActive(ops.accessTokenService),
     async (req, res) => {
@@ -214,7 +214,7 @@ export const entryServer = (ops: {
 
   app.get(
     "/api/funds",
-    requestDurationMiddleware(requestDurationHistogram),
+    metricMiddleware(requestDurationHistogram),
     tokenIsActive(ops.accessTokenService),
     async (req, res) => {
       try {
