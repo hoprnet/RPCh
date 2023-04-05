@@ -1,4 +1,8 @@
-import { JsonRpcProvider } from "@ethersproject/providers";
+import {
+  JsonRpcProvider,
+  ExternalProvider,
+  Web3Provider,
+} from "@ethersproject/providers";
 import { deepCopy } from "@ethersproject/properties";
 import SDK, { type HoprSdkOps } from "@rpch/sdk";
 import { parseResponse, getResult, createLogger } from "./utils";
@@ -119,4 +123,112 @@ export class RPChProvider extends JsonRpcProvider {
       throw error;
     }
   }
+}
+
+export class RPChExternalProvider implements ExternalProvider {
+  public sdk: SDK;
+  private _nextId: number = 1;
+
+  constructor(
+    public readonly url: string,
+    hoprSdkOps: HoprSdkOps,
+    setKeyVal: (key: string, val: string) => Promise<any>,
+    getKeyVal: (key: string) => Promise<string | undefined>
+  ) {
+    this.sdk = new SDK(hoprSdkOps, setKeyVal, getKeyVal);
+  }
+
+  /**
+   * Sends a request to the provider using the SDK instance.
+   * @param request - The JSON-RPC request payload to send.
+   * @param callback - The callback function to be invoked upon completion.
+   */
+  public sendAsync(
+    request: { method: string; params?: any[] },
+    callback: (error: Error | null, result?: any) => void
+  ): any {
+    const payload = {
+      method: request.method,
+      params: request.params,
+      id: this._nextId++,
+      jsonrpc: "2.0",
+    };
+    this.sdk
+      .createRequest(this.url, JSON.stringify(payload))
+      .then((rpchRequest) => {
+        log.verbose(
+          "Created request",
+          rpchRequest.id,
+          log.createMetric({ id: rpchRequest.id })
+        );
+        return this.sdk.sendRequest(rpchRequest);
+      })
+      .then((response) => {
+        log.verbose(
+          "Received response for request",
+          payload.id,
+          log.createMetric({ id: payload.id })
+        );
+        callback(null, response);
+      })
+      .catch((error) => {
+        log.error(
+          "Did not receive response for request",
+          payload.id,
+          log.createMetric({ id: payload.id })
+        );
+        callback(error, undefined);
+      });
+  }
+
+  /**
+   * This is identical to sendAsync. Historically, this used a synchronous web request,
+   * but no current browsers support this, so its use this way was deprecated quite a long time ago
+   * https://docs.ethers.org/v5/api/providers/other/#Web3Provider--ExternalProvider
+   *
+   * Sends a request to the provider using the SDK instance.
+   * @param request - The JSON-RPC request payload to send.
+   * @param callback - The callback function to be invoked upon completion.
+   */
+  public send(
+    request: { method: string; params?: any[] },
+    callback: (error: Error | null, result?: any) => void
+  ): any {
+    const payload = {
+      method: request.method,
+      params: request.params,
+      id: this._nextId++,
+      jsonrpc: "2.0",
+    };
+    this.sdk
+      .createRequest(this.url, JSON.stringify(payload))
+      .then((rpchRequest) => {
+        log.verbose(
+          "Created request",
+          rpchRequest.id,
+          log.createMetric({ id: rpchRequest.id })
+        );
+        return this.sdk.sendRequest(rpchRequest);
+      })
+      .then((response) => {
+        log.verbose(
+          "Received response for request",
+          payload.id,
+          log.createMetric({ id: payload.id })
+        );
+        callback(null, response);
+      })
+      .catch((error) => {
+        log.error(
+          "Did not receive response for request",
+          payload.id,
+          log.createMetric({ id: payload.id })
+        );
+        callback(error, undefined);
+      });
+  }
+  // TODO: Implement-> This is async and response with the actual response and not the Response object
+  request?:
+    | ((request: { method: string; params?: Array<any> }) => Promise<any>)
+    | undefined;
 }
