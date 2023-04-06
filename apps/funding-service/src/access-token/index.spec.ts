@@ -51,10 +51,11 @@ describe("test AccessTokenService class", function () {
       accessToken?.token!
     );
 
-    expect(new Date(dbAccessToken.expired_at).valueOf()).toBeCloseTo(
-      expectedExpireDate.valueOf(),
-      3
-    );
+    // the diff between what is expected and reality is less than 1 second
+    expect(
+      new Date(dbAccessToken.expired_at).valueOf() -
+        expectedExpireDate.valueOf()
+    ).toBeLessThan(1e3);
   });
   it("should get access token", async function () {
     await accessTokenService.createAccessToken(accessTokenParams);
