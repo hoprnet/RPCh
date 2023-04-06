@@ -1,6 +1,6 @@
 import pgp from "pg-promise";
 import { AccessTokenService } from "./access-token";
-import { abi } from "@rpch/common";
+import { blockchain } from "@rpch/common";
 import { runMigrations } from "./db";
 import * as api from "./entry-server";
 import { checkFreshRequests } from "./queue";
@@ -34,7 +34,7 @@ const start = async (ops: {
   // init services
   const accessTokenService = new AccessTokenService(ops.db, ops.secretKey);
   const requestService = new RequestService(ops.db);
-  const wallet = abi.getWallet(ops.privateKey);
+  const wallet = blockchain.getWallet(ops.privateKey);
   // init API server
   const app = api.entryServer({
     accessTokenService,

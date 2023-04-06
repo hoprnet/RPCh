@@ -14,7 +14,7 @@ import {
   getWallet,
   sendTransaction,
   waitForTransaction,
-} from "./abi";
+} from "./blockchain";
 import { erc20Fixtures as erc20 } from "./erc20-fixture";
 
 const INITIAL_AMOUNT = ethers.utils.parseEther("1000").toBigInt();

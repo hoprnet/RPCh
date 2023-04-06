@@ -1,6 +1,6 @@
 import { Wallet, providers, utils } from "ethers";
 import { createLogger } from "../utils";
-import { abi } from "@rpch/common";
+import { blockchain } from "@rpch/common";
 
 const log = createLogger(["register-hoprd-nodes"]);
 
@@ -40,9 +40,11 @@ export default async function main(
     throw Error("Wallet balance is less than 0.1");
   }
 
-  const nftContract = abi.getNFTAddress(nftAddress).connect(wallet);
-  const stakeContract = abi.getStakeContract(stakeAddress).connect(wallet);
-  const registerContract = abi
+  const nftContract = blockchain.getNFTAddress(nftAddress).connect(wallet);
+  const stakeContract = blockchain
+    .getStakeContract(stakeAddress)
+    .connect(wallet);
+  const registerContract = blockchain
     .getRegisterContract(registryAddress)
     .connect(wallet);
 
