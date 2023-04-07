@@ -1,0 +1,12 @@
+{
+  "name": "k6-loadtesting",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "k6": "k6 run src/index.js"
+  },
+  "author": "",
+  "license": "ISC"
+}
