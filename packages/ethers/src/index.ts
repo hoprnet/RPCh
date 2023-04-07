@@ -223,8 +223,60 @@ export class RPChExternalProvider implements ExternalProvider {
         callback(error, undefined);
       });
   }
-  // TODO: Implement-> This is async and response with the actual response and not the Response object
-  request?:
-    | ((request: { method: string; params?: Array<any> }) => Promise<any>)
-    | undefined;
+
+  /**
+   * Sends a request to the provider using the SDK instance.
+   * This is async and response with the actual response and not the Response object
+   * @param request - The JSON-RPC request payload to send.
+   */
+  public async request(request: {
+    method: string;
+    params?: Array<any>;
+  }): Promise<any> {
+    log.verbose("Using SEND", request.method);
+    log.verbose("is sdk ready?", this.sdk.isReady);
+
+    const payload = {
+      method: request.method,
+      params: request.params,
+      id: this._nextId++,
+      jsonrpc: "2.0",
+    };
+
+    const rpchRequest = await this.sdk.createRequest(
+      this.url,
+      JSON.stringify(payload)
+    );
+    log.verbose(
+      "Created request",
+      rpchRequest.id,
+      log.createMetric({ id: rpchRequest.id })
+    );
+
+    try {
+      const rpchResponsePromise = this.sdk.sendRequest(rpchRequest);
+      log.verbose(
+        "Send request",
+        rpchRequest.id,
+        log.createMetric({ id: rpchRequest.id })
+      );
+
+      const rpchResponse = await rpchResponsePromise;
+      const response = getResult(parseResponse(rpchResponse));
+      log.verbose(
+        "Received response for request",
+        rpchRequest.id,
+        log.createMetric({ id: rpchRequest.id })
+      );
+
+      return response;
+    } catch (error) {
+      log.error(
+        "Did not receive response for request",
+        rpchRequest.id,
+        log.createMetric({ id: rpchRequest.id })
+      );
+      throw error;
+    }
+  }
 }
