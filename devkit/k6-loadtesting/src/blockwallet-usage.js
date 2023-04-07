@@ -19,12 +19,11 @@ export const options = {
   },
   // Ramp the number of virtual users up and down
   stages: [
-    { duration: "10s", target: 10 },
-  //  { duration: "5s", target: 1 },
+    { duration: "5m", target: 1000 },
   ],
 };
 
-const URL = "https://mainnet-node.blockwallet.io/";
+const URL = "http://localhost:3040/?exit-provider=https://primary.gnosis-chain.rpc.hoprtech.net";
 
 
 // Simulated user behavior
@@ -33,7 +32,6 @@ export default function () {
     const parsedRequest = parsed[i];
     let res = http.post(URL, parsedRequest.body, parsedRequest.params);
     check(res, { "status was 200": (r) => r.status == 200 });
-    //sleep(parsedRequest.waitTillNextCall);
-    sleep(1);
+    sleep(parsedRequest.waitTillNextCall);
   }
 }

@@ -9,8 +9,7 @@
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "eslint \"src/**/*.ts*\"",
     "test": "jest --coverage",
-    "start": "node build/index.js",
-    "start-win-powershell-local": "$env:DISCOVERY_PLATFORM_API_ENDPOINT=\"http://localhost:3030\"&&$env:CLIENT=\"trial\"&&node build/index.js"
+    "start": "node build/index.js"
   },
   "devDependencies": {
     "@rpch/configs-eslint": "*",

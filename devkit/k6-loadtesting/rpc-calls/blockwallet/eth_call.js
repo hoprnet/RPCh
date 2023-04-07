@@ -1,4 +1,4 @@
-export const eth_getCode = {
+export const eth_call = {
     "method": "POST",
     "url": "https://mainnet-node.blockwallet.io/",
     "httpVersion": "h3",

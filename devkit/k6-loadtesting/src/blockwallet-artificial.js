@@ -4,7 +4,7 @@ import parseHarReq from "../functions/parseHarReq.js";
 import parseHarFile from "../functions/parseHarFile.js";
 
 import { eth_getCode } from '../rpc-calls/blockwallet/eth_getCode.js'
-//import { eth_call } from '../rpc-calls/blockwallet/eth_call.js'
+import { eth_call } from '../rpc-calls/blockwallet/eth_call.js'
 
 
 
@@ -20,20 +20,27 @@ export const options = {
   },
   // Ramp the number of virtual users up and down
   stages: [
-    { duration: "5s", target: 50 },
-    { duration: "5s", target: 500 },
+    { duration: "5s", target: 1 },
+    { duration: "20s", target: 10 },
+    { duration: "100s", target: 100 },
   ],
 };
 
-const URL = "https://mainnet-node.blockwallet.io/";
+const URL = "http://localhost:3040/?exit-provider=https://primary.gnosis-chain.rpc.hoprtech.net";
 
-const parsed = parseHarReq(eth_getCode)
+const eth_getCode_parsed = parseHarReq(eth_getCode);
+const eth_call_parsed = parseHarReq(eth_call);
 
 // Simulated user behavior
 export default function () {
-    let res = http.post(URL, parsed.body, parsed.params);
+    let res = http.post(URL, eth_getCode_parsed.body, eth_getCode_parsed.params);
 
     // Validate response status
     check(res, { "status was 200": (r) => r.status == 200 });
     sleep(1);
+
+    let res2 = http.post(URL, eth_call_parsed.body, eth_call_parsed.params);
+
+    // Validate response status
+    check(res2, { "status was 200": (r) => r.status == 200 });
 }
