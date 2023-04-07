@@ -1,4 +1,5 @@
 import * as path from "path";
+require('dotenv').config({path:path.join(process.cwd(), './.env.local')})
 
 const {
   DATA_DIR = path.join(process.cwd(), "db"),
