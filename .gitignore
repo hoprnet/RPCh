@@ -38,3 +38,6 @@ yarn-error.log*
 .turbo
 
 tmp
+
+#rpc-server
+apps/rpc-server/db
