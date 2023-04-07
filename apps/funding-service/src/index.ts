@@ -1,7 +1,6 @@
 import pgp from "pg-promise";
 import { AccessTokenService } from "./access-token";
 import { blockchain } from "@rpch/common";
-import { runMigrations } from "./db";
 import * as api from "./entry-server";
 import { checkFreshRequests } from "./queue";
 import { RequestService } from "./request";
