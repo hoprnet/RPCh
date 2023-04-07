@@ -22,7 +22,7 @@ const INITIAL_AMOUNT = ethers.utils.parseEther(MOCK_AMOUNT).toBigInt();
 jest.mock("@rpch/common", () => {
   return {
     ...jest.requireActual("@rpch/common"),
-    abi: {
+    blockchain: {
       sendTransaction: jest.fn(async () => ({ hash: MOCK_ADDRESS })),
       waitForTransaction: jest.fn(async () => ({ status: 1 })),
       getBalance: jest.fn(async () => INITIAL_AMOUNT),
