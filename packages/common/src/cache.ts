@@ -21,8 +21,12 @@ export default class Cache {
   /**
    *
    * @param onMessage Triggered once a Message can be constructed
+   * @param onMessage Triggered once a Message has expired
    */
-  constructor(private onMessage: (message: Message) => void) {}
+  constructor(
+    private onMessage: (message: Message) => void,
+    private onExpire?: () => void
+  ) {}
 
   /**
    * Feeds the cache with a new segment.
@@ -90,6 +94,9 @@ export default class Cache {
     for (const [id, entry] of this.segments.entries()) {
       if (isExpired(timeout, now, entry.receivedAt)) {
         log.verbose("dropping expired partial segments");
+        if (this.onExpire) {
+          this.onExpire();
+        }
         this.segments.delete(id);
       }
     }

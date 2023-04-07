@@ -8,6 +8,11 @@ import { RequestService } from "./request";
 import { createLogger } from "./utils";
 import { DBInstance } from "./types";
 import * as constants from "./constants";
+import Prometheus from "prom-client";
+import { MetricManager } from "@rpch/common/build/internal/metric-manager";
+import { runMigrations } from "@rpch/common/build/internal/db";
+import migrate from "node-pg-migrate";
+import path from "path";
 
 const log = createLogger();
 
@@ -27,14 +32,31 @@ const start = async (ops: {
   privateKey: string;
   confirmations: number;
 }) => {
-  await ops.db.connect();
   // run db migrations
-  await runMigrations(constants.DB_CONNECTION_URL!);
+  const migrationsDirectory = path.join(__dirname, "../migrations");
+  await runMigrations(
+    constants.DB_CONNECTION_URL!,
+    migrationsDirectory,
+    migrate
+  );
 
   // init services
   const accessTokenService = new AccessTokenService(ops.db, ops.secretKey);
   const requestService = new RequestService(ops.db);
   const wallet = blockchain.getWallet(ops.privateKey);
+
+  // create prometheus registry
+  const register = new Prometheus.Registry();
+  register.setDefaultLabels({
+    app: constants.METRIC_PREFIX,
+  });
+
+  const metricManager = new MetricManager(
+    Prometheus,
+    register,
+    constants.METRIC_PREFIX
+  );
+
   // init API server
   const app = api.entryServer({
     accessTokenService,
@@ -42,6 +64,7 @@ const start = async (ops: {
     walletAddress: wallet.address,
     maxAmountOfTokens: constants.MAX_AMOUNT_OF_TOKENS,
     timeout: constants.TIMEOUT,
+    metricManager: metricManager,
   });
   // start queue that fulfills requests
   setInterval(() => {
@@ -52,6 +75,7 @@ const start = async (ops: {
         signer: wallet,
         confirmations: ops.confirmations,
         changeState: handleRunning,
+        metricManager: metricManager,
       });
     }
   }, 30e3);

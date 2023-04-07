@@ -58,6 +58,8 @@ const UNRESOLVED_REQUESTS_STATUSES: RequestDB["status"][] = [
   "PROCESSING",
 ];
 
+const METRIC_PREFIX = "funding_service";
+
 export {
   SECRET_KEY,
   WALLET_PRIV_KEY,
@@ -72,4 +74,5 @@ export {
   CONNECTION_INFO,
   SMART_CONTRACTS_PER_CHAIN,
   UNRESOLVED_REQUESTS_STATUSES,
+  METRIC_PREFIX,
 };

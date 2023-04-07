@@ -9,7 +9,9 @@ import {
 } from ".";
 import { DBInstance } from "../db";
 import { RegisteredNode } from "../types";
-import { MockPgInstanceSingleton } from "../db/index.spec";
+import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";
+import path from "path";
+import * as PgMem from "pg-mem";
 import { wait } from "@rpch/common/build/fixtures";
 
 const mockNode = (peerId?: string, hasExitNode?: boolean): RegisteredNode => ({
@@ -26,7 +28,11 @@ describe("test registered node functions", function () {
   let dbInstance: DBInstance;
 
   beforeAll(async function () {
-    dbInstance = await MockPgInstanceSingleton.getDbInstance();
+    const migrationsDirectory = path.join(__dirname, "../../migrations");
+    dbInstance = await MockPgInstanceSingleton.getDbInstance(
+      PgMem,
+      migrationsDirectory
+    );
     MockPgInstanceSingleton.getInitialState();
   });
 

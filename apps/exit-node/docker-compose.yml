@@ -99,9 +99,10 @@ services:
       - RPCH_IDENTITY_DIR=${RPCH_IDENTITY_DIR}
       - RPCH_PRIVATE_KEY=${RPCH_PRIVATE_KEY}
       - RPCH_DATA_DIR=${RPCH_DATA_DIR}
+      - OPT_IN_METRICS=${OPT_IN_METRICS}
     entrypoint:
       [
-        "/bin/wait-for",
+        "/bin/wait-for-it.sh",
         "http://${HOPRD_API_TOKEN}@hoprd:3001/api/v2/account/addresses",
         "-t",
         "300",

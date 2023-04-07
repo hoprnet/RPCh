@@ -35,7 +35,8 @@
         "RPCH_DATA_DIR",
         "HOPRD_API_TOKEN",
         "HOPRD_API_ENDPOINT",
-        "RESPONSE_TIMEOUT"
+        "RESPONSE_TIMEOUT",
+        "OPT_IN_METRICS"
       ]
     },
     "@rpch/e2e#build": {
