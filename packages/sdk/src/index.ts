@@ -1,5 +1,4 @@
-import type * as RPChCryptoNode from "@rpch/crypto-bridge/nodejs";
-import type * as RPChCryptoWeb from "@rpch/crypto-bridge/web";
+import type * as RPChCrypto from "@rpch/crypto";
 import {
   Cache as SegmentCache,
   Message,
@@ -25,6 +24,7 @@ const MINIMUM_SCORE_FOR_RELIABLE_NODE = 0.7;
  * HOPR SDK options.
  */
 export type HoprSdkOps = {
+  crypto: typeof RPChCrypto;
   client: string;
   timeout: number;
   discoveryPlatformApiEndpoint: string;
@@ -53,7 +53,7 @@ export type ExitNode = {
  * Send traffic through the RPCh network
  */
 export default class SDK {
-  private crypto?: typeof RPChCryptoNode | typeof RPChCryptoWeb;
+  private crypto: typeof RPChCrypto;
   // single interval for the SDK for things that need to be checked.
   private intervals: NodeJS.Timer[] = [];
   private segmentCache: SegmentCache;
@@ -77,6 +77,8 @@ export default class SDK {
     // eslint-disable-next-line no-unused-vars
     private getKeyVal: (key: string) => Promise<string | undefined>
   ) {
+    this.crypto = ops.crypto;
+    this.crypto.set_panic_hook();
     this.segmentCache = new SegmentCache((message) => this.onMessage(message));
     this.requestCache = new RequestCache((request) =>
       this.onRequestRemoval(request)
@@ -308,18 +310,6 @@ export default class SDK {
   public async start(): Promise<void> {
     if (this.isReady) return;
 
-    if (typeof window === "undefined") {
-      log.verbose("Using 'node' RPCh crypto implementation");
-      this.crypto =
-        require("@rpch/crypto-bridge/nodejs") as typeof RPChCryptoNode;
-    } else {
-      log.verbose("Using 'web' RPCh crypto implementation");
-      this.crypto = (await import(
-        "@rpch/crypto-bridge/web"
-      )) as typeof RPChCryptoWeb;
-      // @ts-expect-error
-      await this.crypto.init();
-    }
     // fetch required data from discovery platform
     await retry(
       () => this.selectEntryNode(this.ops.discoveryPlatformApiEndpoint),

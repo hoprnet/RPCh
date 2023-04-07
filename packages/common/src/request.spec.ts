@@ -1,5 +1,5 @@
 import assert from "assert";
-import * as crypto from "@rpch/crypto-bridge/nodejs";
+import * as crypto from "@rpch/crypto-for-nodejs";
 import Message from "./message";
 import Request from "./request";
 import {

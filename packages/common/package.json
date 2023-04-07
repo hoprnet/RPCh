@@ -17,6 +17,7 @@
     "@rpch/configs-prettier": "*",
     "@rpch/configs-tsup": "*",
     "@rpch/configs-typescript": "*",
+    "@rpch/crypto-for-nodejs": "file:../../../crypto/build/nodejs",
     "@types/debug": "^4.1.7",
     "@types/ws": "^8.5.3",
     "nock": "^13.2.9",
@@ -26,7 +27,6 @@
     "node-pg-migrate": "^6.2.2"
   },
   "dependencies": {
-    "@rpch/crypto-bridge": "0.1.6",
     "cross-fetch": "^3.1.5",
     "debug": "^4.3.4",
     "ethers": "^5.7.2",

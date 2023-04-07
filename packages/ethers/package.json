@@ -17,6 +17,7 @@
     "@rpch/configs-prettier": "*",
     "@rpch/configs-tsup": "*",
     "@rpch/configs-typescript": "*",
+    "@rpch/crypto-for-nodejs": "file:../../../crypto/build/nodejs",
     "nock": "^13.2.9"
   },
   "dependencies": {

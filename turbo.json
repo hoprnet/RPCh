@@ -10,17 +10,6 @@
         ".next/**"
       ]
     },
-    "@rpch/crypto-bridge#build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "index.js",
-        "index.d.ts",
-        "nodejs/**",
-        "web/**"
-      ]
-    },
     "@rpch/exit-node#build": {
       "dependsOn": [
         "^build"

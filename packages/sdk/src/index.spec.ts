@@ -1,5 +1,6 @@
 import { expect } from "@jest/globals";
 import { Request, hoprd } from "@rpch/common";
+import * as RPChCrypto from "@rpch/crypto-for-nodejs";
 import * as fixtures from "@rpch/common/build/fixtures";
 import assert from "assert";
 import nock from "nock";
@@ -45,6 +46,7 @@ const createSdkMock = (
   const store = fixtures.createAsyncKeyValStore();
 
   const ops: HoprSdkOps = {
+    crypto: RPChCrypto,
     client: "",
     timeout: overwriteOps?.timeout ?? TIMEOUT,
     discoveryPlatformApiEndpoint:

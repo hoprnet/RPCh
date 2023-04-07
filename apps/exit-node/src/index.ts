@@ -10,7 +10,7 @@ import {
   hoprd,
   utils,
 } from "@rpch/common";
-import * as crypto from "@rpch/crypto-bridge/nodejs";
+import * as crypto from "@rpch/crypto-for-nodejs";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 import * as exit from "./exit";
 import * as identity from "./identity";
