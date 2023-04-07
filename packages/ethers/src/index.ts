@@ -1,8 +1,4 @@
-import {
-  JsonRpcProvider,
-  ExternalProvider,
-  Web3Provider,
-} from "@ethersproject/providers";
+import { JsonRpcProvider, ExternalProvider } from "@ethersproject/providers";
 import { deepCopy } from "@ethersproject/properties";
 import SDK, { type HoprSdkOps } from "@rpch/sdk";
 import { parseResponse, getResult, createLogger } from "./utils";
