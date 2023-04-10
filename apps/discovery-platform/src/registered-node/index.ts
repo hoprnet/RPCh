@@ -126,6 +126,9 @@ export const checkCommitmentForFreshNodes = async (
       status: "FRESH",
     });
 
+    // don't add items to queue if there are still items pending
+    if (queue.length()) return;
+
     for (const node of freshNodes) {
       queue.push(node, (err) => {
         cb(node, err);
