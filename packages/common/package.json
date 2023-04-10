@@ -1,6 +1,6 @@
 {
   "name": "@rpch/common",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "license": "LGPL-3.0",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
