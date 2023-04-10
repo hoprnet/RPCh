@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "@rpch/common": "0.1.6",
-    "@rpch/crypto-bridge": "0.1.6",
+    "@rpch/crypto-for-nodejs": "0.3.4",
     "ethers": "^5.7.2",
     "leveldown": "^6.1.1",
     "levelup": "^5.1.1",

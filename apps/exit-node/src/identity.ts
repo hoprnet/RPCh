@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import fs from "fs";
 import { Wallet, utils as ethersUtils } from "ethers";
-import { Identity } from "@rpch/crypto-bridge/nodejs";
+import { Identity } from "@rpch/crypto-for-nodejs";
 import { ALGORITHM } from "./constants";
 
 const generateIv = () => crypto.randomBytes(16);
