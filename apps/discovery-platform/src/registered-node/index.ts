@@ -109,3 +109,29 @@ export const getRegisteredNodes = async (
 ): Promise<RegisteredNodeDB[]> => {
   return await db.getRegisteredNodes(dbInstance, filters);
 };
+
+/**
+ * Checks the commitment status of fresh nodes and adds them to a queue for processing.
+ * @param dbInstance The database instance to use for the query.
+ * @param queue The queue to add the nodes to for processing.
+ * @returns A promise that resolves when the function completes.
+ */
+export const checkCommitmentForFreshNodes = async (
+  dbInstance: db.DBInstance,
+  queue: async.QueueObject<RegisteredNodeDB>,
+  cb: (node: RegisteredNodeDB, error: Error | null | undefined) => void
+): Promise<void> => {
+  try {
+    const freshNodes = await getRegisteredNodes(dbInstance, {
+      status: "FRESH",
+    });
+
+    for (const node of freshNodes) {
+      queue.push(node, (err) => {
+        cb(node, err);
+      });
+    }
+  } catch (e) {
+    log.error("Failed to check commitment for fresh nodes", e);
+  }
+};
