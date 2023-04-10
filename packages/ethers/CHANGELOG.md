@@ -1,5 +1,14 @@
 # @rpch/ethers
 
+## 0.1.7
+
+### Patch Changes
+
+- Use @rpch/crypto v0.3.4
+- Updated dependencies
+  - @rpch/common@0.1.7
+  - @rpch/sdk@0.1.7
+
 ## 0.1.6
 
 ### Patch Changes
