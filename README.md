@@ -23,28 +23,6 @@ We have four main project folders:
 
 Checkout [Sandbox](https://github.com/Rpc-h/RPCh/tree/main/devkit/sandbox#sandbox) which lets you try RPCh locally via docker.
 
-### Roadmap
-
-| Target  | Task                      | Status |
-| ------- | ------------------------- | ------ |
-| 11/2022 | @rpch/commons             | 🟢     |
-| 12/2022 | @rpch/ethers              | 🟢     |
-| 12/2022 | RPCh exit node            | 🟢     |
-| 12/2022 | RPCh funding service      | 🟢     |
-| 12/2022 | @rpch/crypto              | 🟢     |
-| 01/2023 | @rpch/sdk                 | 🟢     |
-| 01/2023 | Block Wallet integration  | 🟢     |
-| 01/2023 | RPCh Sandbox v1           | 🟢     |
-| 01/2023 | RPCh Sandbox v2           | 🟢     |
-| 01/2023 | RPCh base infrastructure  | 🟡     |
-| 02/2023 | RPCh discovery platform   | 🟢     |
-| 02/2023 | RPCh Closed Alpha         | 🟡     |
-| 03/2023 | RPCh Open Alpha           | ⚪️     |
-| 04/2023 | RPCh Beta                 | ⚪️    |
-| 05/2023 | RPCh v1                   | ⚪️    |
-| ?/2023 | NIRP mainnet              | ⚪️    |
-| ?/2023 | NIRP gnosis               | ⚪️    |
-
 ### For developers
 
 - coverage: currently we can generate coverage reports for each project, but we do not have a threshold set in which we would fail our CI
