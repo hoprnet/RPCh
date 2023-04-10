@@ -17,8 +17,8 @@
     "@rpch/configs-prettier": "*",
     "@rpch/configs-tsup": "*",
     "@rpch/configs-typescript": "*",
-    "@rpch/crypto": "file:../../../crypto/build/bundler",
-    "@rpch/crypto-for-nodejs": "file:../../../crypto/build/nodejs",
+    "@rpch/crypto": "0.3.4",
+    "@rpch/crypto-for-nodejs": "0.3.4",
     "nock": "^13.2.9",
     "@types/async-retry": "^1.4.5"
   },
