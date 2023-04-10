@@ -9,6 +9,7 @@ import {
   utils,
 } from "@rpch/common";
 import { utils as etherUtils } from "ethers";
+import debug from "debug";
 import fetch from "cross-fetch";
 import retry from "async-retry";
 import ReliabilityScore from "./reliability-score";
@@ -53,6 +54,8 @@ export type ExitNode = {
  * Send traffic through the RPCh network
  */
 export default class SDK {
+  // allows developers to programmatically enable debugging
+  public debug = debug;
   private crypto: typeof RPChCrypto;
   // single interval for the SDK for things that need to be checked.
   private intervals: NodeJS.Timer[] = [];
