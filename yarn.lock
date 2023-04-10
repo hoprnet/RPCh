@@ -1655,7 +1655,7 @@
   resolved "https://registry.yarnpkg.com/@protobufjs/utf8/-/utf8-1.1.0.tgz#a777360b5b39a1a2e5106f8e858f2fd2d060c570"
   integrity sha512-Vvn3zZrhQZkkBE8LSuW3em98c0FwgO4nxzv6OdSxPKJIEKY2bGbHn+mhGIPerzI4twdxaP8/0+06HBpwf345Lw==
 
-"@rpch/crypto-for-nodejs@0.3.4":
+"@rpch/crypto-for-nodejs@0.3.4", "@rpch/crypto-for-nodejs@0.3.6":
   version "0.3.4"
   resolved "https://registry.yarnpkg.com/@rpch/crypto-for-nodejs/-/crypto-for-nodejs-0.3.4.tgz#abacba90e24c84ad6ebf0a0bc1573c1f1ee1674a"
   integrity sha512-qKVOmTYqpGOPBQROxSTqyERS2ABpMYAicwAfyptEaaT8pJrDIxXXRDliH58zXvnjWFAUKKhdmDgDOXgkpSS1Yg==

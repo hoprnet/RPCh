@@ -1,6 +1,6 @@
 import assert from "assert";
 import * as fixtures from "@rpch/common/build/fixtures";
-import RPChCrypto from "@rpch/crypto-for-nodejs";
+import * as RPChCrypto from "@rpch/crypto-for-nodejs";
 import mockSdk from "@rpch/sdk/build/index.mock";
 import { RPChProvider } from ".";
 
