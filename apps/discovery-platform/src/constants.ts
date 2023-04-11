@@ -41,6 +41,12 @@ const AMOUNT_OF_RANDOM_WORDS_FOR_TRIAL_ID = 5;
 
 const METRIC_PREFIX = "discovery_platform";
 
+// payment mode when quota is paid by trial
+const TRIAL_PAYMENT_MODE = "trial";
+
+// client id that will pay for quotas in trial mode
+const TRIAL_CLIENT_ID = "trial";
+
 export {
   PORT,
   FUNDING_SERVICE_URL,
@@ -54,4 +60,6 @@ export {
   MAX_DB_CONNECTIONS,
   AMOUNT_OF_RANDOM_WORDS_FOR_TRIAL_ID,
   METRIC_PREFIX,
+  TRIAL_CLIENT_ID,
+  TRIAL_PAYMENT_MODE,
 };

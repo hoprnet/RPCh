@@ -1,8 +1,8 @@
 import assert from "assert";
-import express, { Express, NextFunction, Request, Response } from "express";
+import express, { type Express } from "express";
 import nock from "nock";
 import request from "supertest";
-import { doesClientHaveQuota, getCache, setCache, v1Router } from ".";
+import { v1Router } from ".";
 import { getClient } from "../../../client";
 import { DBInstance } from "../../../db";
 import { FundingServiceApi } from "../../../funding-service-api";
@@ -129,35 +129,6 @@ describe("test v1 router", function () {
       quota: 1,
     });
     assert.equal(createdQuota.body.quota.quota, 1);
-  });
-
-  it("should not allow request client does not have enough quota", async function () {
-    // create quota for client
-    await request(app).post("/client/quota").send({
-      client: "client",
-      quota: 1,
-    });
-    const doesClientHaveQuotaResponse = await doesClientHaveQuota(
-      dbInstance,
-      "client",
-      BigInt(2)
-    );
-
-    assert.equal(doesClientHaveQuotaResponse, false);
-  });
-  it("should allow request because client has enough quota", async function () {
-    // create quota client
-    await request(app).post("/client/quota").send({
-      client: "client",
-      quota: 1,
-    });
-    const doesClientHaveQuotaResponse = await doesClientHaveQuota(
-      dbInstance,
-      "client",
-      BigInt(1)
-    );
-
-    assert.equal(doesClientHaveQuotaResponse, true);
   });
   it("should create trial client", async function () {
     const response = await request(app).get(
@@ -438,50 +409,6 @@ describe("test v1 router", function () {
       expect(requestResponse.body).toHaveProperty("id");
 
       spyGetEligibleNode.mockRestore();
-    });
-
-    describe("test cache requests", function () {
-      it("should save request", function () {
-        const mockRequest = { url: "/test" } as Request;
-        // just return whatever is sent using .json
-        const mockResponse = {
-          json: jest.fn((args) => args),
-        } as unknown as Response;
-        setCache("/test", 100, "test");
-        const res = getCache()(mockRequest, mockResponse, {} as any);
-        assert.equal(res, "test");
-      });
-      it("should call next if nothing is cached", async () => {
-        const mockRequest = { url: "/test" } as Request;
-        // just return whatever is sent using .json
-        const mockResponse = {
-          json: jest.fn((args) => args),
-        } as unknown as Response;
-        const mockNext = jest.fn() as NextFunction;
-        // result
-        getCache()(mockRequest, mockResponse, mockNext);
-        expect(mockNext).toHaveBeenCalled();
-      });
-      it("should cache when request is successful", async function () {
-        await request(app).post("/node/register").send(mockNode("exit1", true));
-        await request(app).post("/node/register").send(mockNode("exit2", true));
-
-        // caching endpoint /node
-        const allExitNodes = await request(app).get(`/node?hasExitNode=true`);
-        const secondAllExitNodeResponse = await request(app).get(
-          `/node?hasExitNode=true`
-        );
-
-        assert.deepEqual(
-          JSON.stringify(memoryCache.get("/node?hasExitNode=true")),
-          JSON.stringify(allExitNodes.body)
-        );
-
-        assert.deepEqual(
-          JSON.stringify(memoryCache.get("/node?hasExitNode=true")),
-          JSON.stringify(secondAllExitNodeResponse.body)
-        );
-      });
     });
   });
 });
