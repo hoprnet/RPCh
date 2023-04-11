@@ -28,6 +28,7 @@ import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 import * as constants from "../../../constants";
 import { getNodeSchema, registerNodeSchema } from "./schema";
 import {
+  clientExists,
   doesClientHaveQuota,
   getCache,
   metricMiddleware,
@@ -83,6 +84,7 @@ export const v1Router = (ops: {
     "/node/register",
     metricMiddleware(requestDurationHistogram),
     checkSchema(registerNodeSchema),
+    clientExists(ops.db),
     async (req: Request, res: Response) => {
       try {
         const errors = validationResult(req);
@@ -113,6 +115,7 @@ export const v1Router = (ops: {
     metricMiddleware(requestDurationHistogram),
     checkSchema(getNodeSchema),
     getCache(), // check if response is in cache
+    clientExists(ops.db),
     async (
       req: Request<{}, {}, {}, { excludeList?: string; hasExitNode?: string }>,
       res: Response
@@ -150,6 +153,7 @@ export const v1Router = (ops: {
     "/node/:peerId",
     metricMiddleware(requestDurationHistogram),
     param("peerId").isAlphanumeric(),
+    clientExists(ops.db),
     async (req: Request<{ peerId: string }>, res: Response) => {
       try {
         const errors = validationResult(req);
@@ -178,6 +182,7 @@ export const v1Router = (ops: {
   router.get(
     "/funding-service/funds",
     metricMiddleware(requestDurationHistogram),
+    clientExists(ops.db),
     async (req, res) => {
       try {
         const funds = await ops.fundingServiceApi.getAvailableFunds();
@@ -299,6 +304,7 @@ export const v1Router = (ops: {
     body("excludeList")
       .optional()
       .custom((value) => isListSafe(value)),
+    clientExists(ops.db),
     async (req, res) => {
       try {
         const errors = validationResult(req);
