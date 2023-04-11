@@ -300,7 +300,6 @@ export const v1Router = (ops: {
   router.post(
     "/request/entry-node",
     metricMiddleware(requestDurationHistogram),
-    body("client").exists(),
     body("excludeList")
       .optional()
       .custom((value) => isListSafe(value)),
@@ -315,16 +314,10 @@ export const v1Router = (ops: {
             .inc();
           return res.status(400).json({ errors: errors.array() });
         }
-        const { client, excludeList } = req.body;
+        const { excludeList } = req.body;
+        const client = req.headers.client as string;
 
         let dbClient = await getClient(ops.db, client);
-
-        if (!dbClient) {
-          log.verbose("db client does not exist", client);
-          return res.status(404).json({
-            errors: "Client does not exist",
-          });
-        }
 
         const clientIsTrialMode =
           dbClient?.payment === constants.TRIAL_PAYMENT_MODE;

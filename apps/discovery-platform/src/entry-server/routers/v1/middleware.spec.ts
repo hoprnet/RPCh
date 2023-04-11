@@ -116,14 +116,27 @@ describe("test v1 middleware", function () {
       expect(mockNext).toHaveBeenCalled();
     });
     it("should cache when request is successful", async function () {
-      await request(app).post("/node/register").send(mockNode("exit1", true));
-      await request(app).post("/node/register").send(mockNode("exit2", true));
+      const responseRequestTrialClient = await request(app).get(
+        "/request/trial"
+      );
+      const trialClientId: string = responseRequestTrialClient.body.client;
+
+      await request(app)
+        .post("/node/register")
+        .set("client", trialClientId)
+        .send(mockNode("exit1", true));
+      await request(app)
+        .post("/node/register")
+        .set("client", trialClientId)
+        .send(mockNode("exit2", true));
 
       // caching endpoint /node
-      const allExitNodes = await request(app).get(`/node?hasExitNode=true`);
-      const secondAllExitNodeResponse = await request(app).get(
-        `/node?hasExitNode=true`
-      );
+      const allExitNodes = await request(app)
+        .get(`/node?hasExitNode=true`)
+        .set("client", trialClientId);
+      const secondAllExitNodeResponse = await request(app)
+        .get(`/node?hasExitNode=true`)
+        .set("client", trialClientId);
 
       assert.deepEqual(
         JSON.stringify(memoryCache.get("/node?hasExitNode=true")),
