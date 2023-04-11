@@ -7,7 +7,8 @@
   "scripts": {
     "k6-artificial": "k6 run src/rpc-server/artificial.js --out json=results/results-artificial.json",
     "k6-blockwallet": "k6 run src/rpc-server/usage-blockwallet.js --out json=results/results-usage-blockwallet.json",
-    "k6-trustwallet": "k6 run src/rpc-server/usage-trustwallet.js --out json=results/results-usage-trustwallet.json"
+    "k6-trustwallet": "k6 run src/rpc-server/usage-trustwallet.js --out json=results/results-usage-trustwallet.json",
+    "k6-dp": "k6 run src/discovery-platform/index.js --out json=results/results-discovery-platform.json"
   },
   "author": "",
   "license": "ISC"
