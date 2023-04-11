@@ -3,6 +3,8 @@ import type { Histogram } from "prom-client";
 import { getSumOfQuotasPaidByClient, type DBInstance } from "../../../db";
 import memoryCache from "memory-cache";
 import { createLogger } from "../../../utils";
+import { getClient } from "../../../client";
+import { RequestWithClient } from "../../../types";
 
 const log = createLogger(["entry-server", "router", "v1", "middleware"]);
 
@@ -31,6 +33,21 @@ export const doesClientHaveQuota = async (
   const sumOfClientsQuota = await getSumOfQuotasPaidByClient(db, client);
   return sumOfClientsQuota >= baseQuota;
 };
+
+export const clientExists =
+  (db: DBInstance, clientId: string) =>
+  async (
+    req: RequestWithClient,
+    res: Response<any, any>,
+    next: NextFunction
+  ) => {
+    const client = await getClient(db, clientId);
+    if (!client) {
+      res.status(404).json("Client does not exist");
+    }
+    req.client = client;
+    next();
+  };
 
 // middleware that will track duration of request
 export const metricMiddleware =
