@@ -5,7 +5,9 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "k6": "k6 run src/index.js"
+    "k6-artificial": "k6 run src/rpc-server/artificial.js --out json=results/results-artificial.json",
+    "k6-blockwallet": "k6 run src/rpc-server/usage-blockwallet.js --out json=results/results-usage-blockwallet.json",
+    "k6-trustwallet": "k6 run src/rpc-server/usage-trustwallet.js --out json=results/results-usage-trustwallet.json"
   },
   "author": "",
   "license": "ISC"

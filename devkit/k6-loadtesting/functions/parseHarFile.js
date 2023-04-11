@@ -4,6 +4,10 @@ export default function parseHarReq(har) {
     let waitTillNextCall;
     for (let i = 0; i < har.length; i++ ) {
         const harReq = har[i].request;
+
+        //Check for RPC call
+        if (harReq.method !== "POST" || harReq.postData.text.includes('jsonrpc')) continue;
+
         // Params
         let params = {
             headers: {},
