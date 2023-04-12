@@ -38,7 +38,7 @@ describe("test identity.ts", function () {
 
   it("should load identity via password", async function () {
     const myIdentity = await identity.getIdentity({
-      identityDir: "",
+      identityFile: "",
       password: PASSWORD,
     });
     assert(!!myIdentity);

@@ -1,6 +1,6 @@
 import pgp from "pg-promise";
 import { AccessTokenService } from "./access-token";
-import { getWallet } from "./blockchain";
+import { blockchain } from "@rpch/common";
 import * as api from "./entry-server";
 import { checkFreshRequests } from "./queue";
 import { RequestService } from "./request";
@@ -42,7 +42,7 @@ const start = async (ops: {
   // init services
   const accessTokenService = new AccessTokenService(ops.db, ops.secretKey);
   const requestService = new RequestService(ops.db);
-  const wallet = getWallet(ops.privateKey);
+  const wallet = blockchain.getWallet(ops.privateKey);
 
   // create prometheus registry
   const register = new Prometheus.Registry();

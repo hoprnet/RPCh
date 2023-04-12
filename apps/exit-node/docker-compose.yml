@@ -96,9 +96,10 @@ services:
       - DEBUG=${RPCH_DEBUG}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - RPCH_PASSWORD=${RPCH_PASSWORD}
-      - RPCH_IDENTITY_DIR=${RPCH_IDENTITY_DIR}
+      - RPCH_IDENTITY_FILE=${RPCH_IDENTITY_FILE}
       - RPCH_PRIVATE_KEY=${RPCH_PRIVATE_KEY}
       - RPCH_DATA_DIR=${RPCH_DATA_DIR}
+      - OPT_IN_METRICS=${OPT_IN_METRICS}
     entrypoint:
       [
         "/bin/wait-for-it.sh",

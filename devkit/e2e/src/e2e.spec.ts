@@ -1,5 +1,6 @@
 import assert from "assert";
 import * as ethers from "@rpch/ethers";
+import * as PRChCrypto from "@rpch/crypto-for-nodejs";
 import * as fixtures from "@rpch/common/build/fixtures";
 
 const PROVIDER_URL = fixtures.PROVIDER;
@@ -12,6 +13,7 @@ describe("e2e tests", function () {
   const provider = new ethers.RPChProvider(
     PROVIDER_URL,
     {
+      crypto: PRChCrypto,
       client: "sandbox",
       timeout: SDK_TIMEOUT,
       discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
