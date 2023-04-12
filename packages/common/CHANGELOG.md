@@ -1,5 +1,11 @@
 # @rpch/common
 
+## 0.1.7
+
+### Patch Changes
+
+- Use @rpch/crypto v0.3.4
+
 ## 0.1.6
 
 ### Patch Changes

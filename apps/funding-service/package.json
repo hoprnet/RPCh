@@ -1,6 +1,6 @@
 {
   "name": "@rpch/funding-service",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "license": "LGPL-3.0",
   "private": true,
   "scripts": {
@@ -14,9 +14,9 @@
   },
   "devDependencies": {
     "@ethersproject/providers": "^5.7.2",
-    "@nomicfoundation/hardhat-chai-matchers": "^1.0.5",
-    "@nomicfoundation/hardhat-network-helpers": "^1.0.7",
-    "@nomiclabs/hardhat-ethers": "^2.2.1",
+    "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
+    "@nomiclabs/hardhat-ethers": "^2.2.2",
     "@rpch/configs-eslint": "*",
     "@rpch/configs-jest": "*",
     "@rpch/configs-prettier": "*",
@@ -32,12 +32,12 @@
     "ts-node": "^10.9.1"
   },
   "dependencies": {
-    "@rpch/common": "0.1.6",
+    "@rpch/common": "0.1.7",
     "ethers": "^5.7.2",
     "express": "^4.18.2",
-    "express-validator": "^6.14.3",
+    "express-validator": "^6.15.0",
     "node-pg-migrate": "^6.2.2",
     "pg-promise": "^11.0.0",
-    "prom-client": "^14.1.1"
+    "prom-client": "^14.2.0"
   }
 }

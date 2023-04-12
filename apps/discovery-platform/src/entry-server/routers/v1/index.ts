@@ -24,10 +24,10 @@ import {
 } from "../../../registered-node";
 import { ClientDB, RegisteredNode } from "../../../types";
 import { createLogger, isListSafe } from "../../../utils";
-import { Histogram, Registry } from "prom-client";
-import { createCounter, createHistogram } from "../../../metric";
+import { Histogram } from "prom-client";
 import memoryCache from "memory-cache";
 import { errors } from "pg-promise";
+import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 
 const log = createLogger(["entry-server", "router", "v1"]);
 
@@ -166,25 +166,22 @@ export const v1Router = (ops: {
   db: DBInstance;
   baseQuota: bigint;
   fundingServiceApi: FundingServiceApi;
-  register: Registry;
+  metricManager: MetricManager;
 }) => {
   // Metrics
-  const counterSuccessfulRequests = createCounter(
-    ops.register,
+  const counterSuccessfulRequests = ops.metricManager.createCounter(
     "counter_successful_request",
     "amount of successful requests discovery platform has processed",
     { labelNames: ["method", "path", "status"] }
   );
 
-  const counterFailedRequests = createCounter(
-    ops.register,
+  const counterFailedRequests = ops.metricManager.createCounter(
     "counter_failed_request",
     "amount of failed requests discovery platform has processed",
     { labelNames: ["method", "path", "status"] }
   );
 
-  const requestDurationHistogram = createHistogram(
-    ops.register,
+  const requestDurationHistogram = ops.metricManager.createHistogram(
     "request_duration_seconds",
     "duration of requests in seconds",
     {

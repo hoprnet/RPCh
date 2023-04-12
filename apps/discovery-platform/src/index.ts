@@ -1,4 +1,4 @@
-import { DBInstance, runMigrations, updateRegisteredNode } from "./db";
+import { DBInstance, updateRegisteredNode } from "./db";
 import { entryServer } from "./entry-server";
 import { FundingServiceApi } from "./funding-service-api";
 import { createLogger } from "./utils";
@@ -6,19 +6,13 @@ import pgp from "pg-promise";
 import { getRegisteredNodes } from "./registered-node";
 import { checkCommitment } from "./graph-api";
 import * as constants from "./constants";
-import Prometheus from "prom-client";
+import * as Prometheus from "prom-client";
+import { MetricManager } from "@rpch/common/build/internal/metric-manager";
+import { runMigrations } from "@rpch/common/build/internal/db";
+import path from "path";
+import migrate from "node-pg-migrate";
 
 const log = createLogger();
-
-// create prometheus registry
-const register = new Prometheus.Registry();
-
-register.setDefaultLabels({
-  app: "discovery_platform",
-});
-
-// add default metrics to registry
-Prometheus.collectDefaultMetrics({ register });
 
 const start = async (ops: {
   db: DBInstance;
@@ -26,7 +20,12 @@ const start = async (ops: {
   fundingServiceUrl: string;
 }) => {
   // run db migrations
-  await runMigrations(constants.DB_CONNECTION_URL!);
+  const migrationsDirectory = path.join(__dirname, "../migrations");
+  await runMigrations(
+    constants.DB_CONNECTION_URL!,
+    migrationsDirectory,
+    migrate
+  );
 
   // init services
   const fundingServiceApi = new FundingServiceApi(
@@ -34,12 +33,25 @@ const start = async (ops: {
     ops.db
   );
 
+  // create prometheus registry
+  const register = new Prometheus.Registry();
+
+  // add default metrics to registry
+  Prometheus.collectDefaultMetrics({ register });
+
+  const metricManager = new MetricManager(
+    Prometheus,
+    register,
+    constants.METRIC_PREFIX
+  );
+
   const app = entryServer({
     db: ops.db,
     baseQuota: ops.baseQuota,
     fundingServiceApi: fundingServiceApi,
-    register: register,
+    metricManager: metricManager,
   });
+
   // start listening at PORT for requests
   const server = app.listen(constants.PORT, "0.0.0.0", () => {
     log.normal("entry server is up");

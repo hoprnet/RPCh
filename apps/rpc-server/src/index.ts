@@ -2,6 +2,7 @@ import type { Server } from "http";
 import levelup, { type LevelUp } from "levelup";
 import leveldown from "leveldown";
 import RPChSDK from "@rpch/sdk";
+import * as RPChCrypto from "@rpch/crypto-for-nodejs";
 import * as server from "./server";
 import { createLogger } from "./utils";
 import {
@@ -53,6 +54,7 @@ export class RPCServer {
     });
     this.sdk = new RPChSDK(
       {
+        crypto: RPChCrypto,
         client: this.client,
         timeout: this.timeout,
         discoveryPlatformApiEndpoint: this.discoveryPlatformApiEndpoint,

@@ -1,10 +1,6 @@
 import { Wallet, providers, utils } from "ethers";
-import {
-  createLogger,
-  getNFTAddress,
-  getStakeContract,
-  getRegisterContract,
-} from "../utils";
+import { createLogger } from "../utils";
+import { blockchain } from "@rpch/common";
 
 const log = createLogger(["register-hoprd-nodes"]);
 
@@ -44,9 +40,13 @@ export default async function main(
     throw Error("Wallet balance is less than 0.1");
   }
 
-  const nftContract = getNFTAddress(nftAddress).connect(wallet);
-  const stakeContract = getStakeContract(stakeAddress).connect(wallet);
-  const registerContract = getRegisterContract(registryAddress).connect(wallet);
+  const nftContract = blockchain.getNFTAddress(nftAddress).connect(wallet);
+  const stakeContract = blockchain
+    .getStakeContract(stakeAddress)
+    .connect(wallet);
+  const registerContract = blockchain
+    .getRegisterContract(registryAddress)
+    .connect(wallet);
 
   // check which peerids are not registered
   const unregisteredPeerIds: string[] = [];

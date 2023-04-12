@@ -39,7 +39,7 @@ const MAX_DB_CONNECTIONS = 18;
 // Used to create
 const AMOUNT_OF_RANDOM_WORDS_FOR_TRIAL_ID = 5;
 
-const METRIC_PREFIX = "discovery_platform_";
+const METRIC_PREFIX = "discovery_platform";
 
 export {
   PORT,

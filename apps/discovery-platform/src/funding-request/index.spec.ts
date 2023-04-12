@@ -1,9 +1,11 @@
 import assert from "assert";
 import * as db from "../db";
-import { MockPgInstanceSingleton } from "../db/index.spec";
 import { createRegisteredNode, getRegisteredNode } from "../registered-node";
 import { RegisteredNode } from "../types";
 import { createFundingRequest } from ".";
+import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";
+import path from "path";
+import * as PgMem from "pg-mem";
 
 const mockNode = (peerId?: string, hasExitNode?: boolean): RegisteredNode => ({
   hasExitNode: hasExitNode ?? true,
@@ -19,7 +21,11 @@ describe("test funding requests functions", function () {
   let dbInstance: db.DBInstance;
 
   beforeAll(async function () {
-    dbInstance = await MockPgInstanceSingleton.getDbInstance();
+    const migrationsDirectory = path.join(__dirname, "../../migrations");
+    dbInstance = await MockPgInstanceSingleton.getDbInstance(
+      PgMem,
+      migrationsDirectory
+    );
     MockPgInstanceSingleton.getInitialState();
   });
 
