@@ -62,7 +62,8 @@ const start = async (ops: {
   // set server timeout to 30s
   server.setTimeout(30e3);
 
-  // handles fresh nodes
+  // Create a task queue with a concurrency limit of QUEUE_CONCURRENCY_LIMIT
+  // to process nodes in parallel for commitment check
   const queueCheckCommitment = async.queue(
     async (task: RegisteredNodeDB, callback) => {
       try {
@@ -82,7 +83,7 @@ const start = async (ops: {
         callback();
       } catch (e) {}
     },
-    5
+    constants.QUEUE_CONCURRENCY_LIMIT
   );
 
   // adds fresh node to queue
