@@ -123,6 +123,17 @@ start() {
     echo "Done 'central-docker-compose'"
     sleep 20
 
+    # add quota to client 'trial'
+    echo "Adding quota to 'trial' in 'discovery-platform'"
+    curl -X POST "http://127.0.0.1:3030/add-quota" \
+        -H "Content-Type: application/json" \
+        -d '{
+            "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
+            "client": "trial",
+            "quota": "500"
+        }'
+    echo "Added quota to client 'trial' in 'discovery-platform'"
+
     # register nodes
     echo "Registering nodes to discovery-platform"
     scurl -X POST "http://127.0.0.1:3030/register-exit-nodes" \
@@ -130,6 +141,7 @@ start() {
         -d '{
             "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
             "chainId": "31337",
+            "client: trial"
             "hoprdApiEndpoints": [
                 "'$HOPRD_API_ENDPOINT_1'",
                 "'$HOPRD_API_ENDPOINT_2'",
@@ -171,17 +183,6 @@ start() {
             "quota": "500"
         }'
     echo "Added quota to client 'sandbox' in 'discovery-platform'"
-
-    # add quota to client 'trial'
-    echo "Adding quota to 'trial' in 'discovery-platform'"
-    curl -X POST "http://127.0.0.1:3030/add-quota" \
-        -H "Content-Type: application/json" \
-        -d '{
-            "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
-            "client": "trial",
-            "quota": "500"
-        }'
-    echo "Added quota to client 'trial' in 'discovery-platform'"
 
     echo "Sandbox has started!"
 }
