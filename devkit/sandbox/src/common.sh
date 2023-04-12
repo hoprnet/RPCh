@@ -141,7 +141,7 @@ start() {
         -d '{
             "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
             "chainId": "31337",
-            "client: trial"
+            "client: trial",
             "hoprdApiEndpoints": [
                 "'$HOPRD_API_ENDPOINT_1'",
                 "'$HOPRD_API_ENDPOINT_2'",
