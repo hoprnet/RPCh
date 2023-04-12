@@ -43,4 +43,4 @@ tmp
 apps/rpc-server/db
 
 #k6 results
-devkit/k6-loadtesting/results
+devkit/k6-loadtesting/results/*

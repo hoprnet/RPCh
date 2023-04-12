@@ -13,9 +13,9 @@ export const options = {
   },
   // Ramp the number of virtual users up and down
   stages: [
-    { duration: "5s", target: 1 },
-    { duration: "20s", target: 10 },
-    { duration: "100s", target: 100 },
+    // { duration: "5s", target: 1 },
+    // { duration: "20s", target: 10 },
+    { duration: "60s", target: 50000 },
   ],
 };
 
@@ -33,7 +33,7 @@ export default function () {
       "status was 200": (r) => r.status == 200,
       'verify resp': (r) => r.body.includes('jsonrpc'),
     });
-    sleep(1);
+    //sleep(1);
 
     let res2 = http.post(URL, eth_call_parsed.body, eth_call_parsed.params);
 
