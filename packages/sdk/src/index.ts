@@ -120,9 +120,9 @@ export default class SDK {
           headers: {
             "Content-Type": "application/json",
             "Accept-Content": "application/json",
+            client: this.ops.client,
           },
           body: JSON.stringify({
-            client: this.ops.client,
             exclusionList,
           }),
         }
@@ -193,7 +193,14 @@ export default class SDK {
       new URL(
         "/api/v1/node?hasExitNode=true",
         discoveryPlatformApiEndpoint
-      ).toString()
+      ).toString(),
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Accept-Content": "application/json",
+          client: this.ops.client,
+        },
+      }
     );
 
     if (rawResponse.status !== 200) {
