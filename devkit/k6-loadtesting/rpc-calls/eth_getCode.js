@@ -112,6 +112,6 @@ export const eth_getCode = {
     "bodySize": 113,
     "postData": {
         "mimeType": "application/json",
-        "text": "{\"method\":\"eth_getCode\",\"params\":[\"0x7545c53d0a1576726371cddf48b8bcbb07c21a08\",\"latest\"],\"id\":51,\"jsonrpc\":\"2.0\"}"
+        "text": "{\"method\":\"eth_getCode\",\"params\":[\"0xd4fdec44db9d44b8f2b6d529620f9c0c7066a2c1\",\"latest\"],\"id\":51,\"jsonrpc\":\"2.0\"}"
     }
 }

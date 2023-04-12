@@ -13,9 +13,9 @@ export const options = {
   },
   // Ramp the number of virtual users up and down
   stages: [
-    // { duration: "5s", target: 1 },
-    // { duration: "20s", target: 10 },
-    { duration: "60s", target: 50000 },
+    { duration: "5s", target: 1 },
+    { duration: "15s", target: 100 },
+    { duration: "60s", target: 5000 },
   ],
 };
 
@@ -26,20 +26,20 @@ const eth_call_parsed = parseHarReq(eth_call);
 
 // Simulated user behavior
 export default function () {
-    let res = http.post(URL, eth_getCode_parsed.body, eth_getCode_parsed.params);
+  let res = http.post(URL, eth_getCode_parsed.body, eth_getCode_parsed.params);
 
-    // Validate response status
-    check(res, { 
-      "status was 200": (r) => r.status == 200,
-      'verify resp': (r) => r.body.includes('jsonrpc'),
-    });
-    //sleep(1);
+  // Validate response status
+  check(res, { 
+    "status was 200": (r) => r.status == 200,
+    'verify resp': (r) => r.body.includes('jsonrpc'),
+  });
+  // sleep(1);
 
-    let res2 = http.post(URL, eth_call_parsed.body, eth_call_parsed.params);
+  // let res2 = http.post(URL, eth_call_parsed.body, eth_call_parsed.params);
 
-    // Validate response status
-    check(res2, { 
-      "status was 200": (r) => r.status == 200,
-      'verify resp': (r) => r.body.includes('jsonrpc'),
-    });
+  // Validate response status
+  // check(res2, { 
+  //   "status was 200": (r) => r.status == 200,
+  //   'verify resp': (r) => r.body.includes('jsonrpc'),
+  // });
 }
