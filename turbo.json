@@ -10,17 +10,6 @@
         ".next/**"
       ]
     },
-    "@rpch/crypto-bridge#build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "index.js",
-        "index.d.ts",
-        "nodejs/**",
-        "web/**"
-      ]
-    },
     "@rpch/exit-node#build": {
       "dependsOn": [
         "^build"
@@ -30,7 +19,7 @@
       ],
       "env": [
         "RPCH_PASSWORD",
-        "RPCH_IDENTITY_DIR",
+        "RPCH_IDENTITY_FILE",
         "RPCH_PRIVATE_KEY",
         "RPCH_DATA_DIR",
         "HOPRD_API_TOKEN",

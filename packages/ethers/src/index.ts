@@ -14,7 +14,6 @@ export class RPChProvider extends JsonRpcProvider {
   public sdk: SDK;
 
   /**
-   * @param url - The discovery platform's endpoint URL.
    * @param hoprSdkOps - The options object for the SDK instance.
    * @param setKeyVal - Function that sets a key-value pair in storage.
    * @param getKeyVal - Function that retrieves the value corresponding to a key from storage.

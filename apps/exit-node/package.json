@@ -1,6 +1,6 @@
 {
   "name": "@rpch/exit-node",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "license": "LGPL-3.0",
   "private": true,
   "scripts": {
@@ -25,8 +25,8 @@
     "nock": "^13.2.9"
   },
   "dependencies": {
-    "@rpch/common": "0.1.6",
-    "@rpch/crypto-bridge": "0.1.6",
+    "@rpch/common": "0.1.7",
+    "@rpch/crypto-for-nodejs": "0.3.4",
     "ethers": "^5.7.2",
     "leveldown": "^6.1.1",
     "levelup": "^5.1.1",

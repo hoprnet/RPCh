@@ -1,7 +1,7 @@
 import nock from "nock";
 import { type Message, Request, Response } from "@rpch/common";
 import * as fixtures from "@rpch/common/build/fixtures";
-import * as crypto from "@rpch/crypto/nodejs";
+import * as crypto from "@rpch/crypto-for-nodejs";
 import SDK from ".";
 
 export const DISCOVERY_PLATFORM_API_ENDPOINT = "http://discovery_platform";
