@@ -6,9 +6,10 @@ import {
 
 /**
  * Dictionaries used to compress and decompress RPC keys and methods 
+ * more info: https://ethereum.org/en/developers/docs/apis/json-rpc/
  */
 
-const propertiesMap : Dictionary = {
+const mainKeyMap : Dictionary = {
   0: 'id',
   1: 'params',
   2: 'method',
@@ -20,7 +21,7 @@ const propertiesMap : Dictionary = {
   8: 'jsonrpc',
 }
 
-const errorPropertiesMap : Dictionary = {
+const errorKeyMap : Dictionary = {
   0: 'code',
   1: 'name',
   2: 'message',
@@ -29,7 +30,7 @@ const errorPropertiesMap : Dictionary = {
   5: 'text',
 }
 
-const resultPropertiesMap : Dictionary= { //params: [ too
+const resultKeyMap : Dictionary= { //params: [ too
   0: 'hash',
   1: 'from',
   2: 'to',
@@ -91,7 +92,7 @@ const resultPropertiesMap : Dictionary= { //params: [ too
   60:'info',
 }
 
-const methodMap : Dictionary = {
+const methodValueMap : Dictionary = {
   0:'web3_clientVersion',
   1:'web3_sha3',
   2:'net_version',
@@ -159,40 +160,36 @@ const methodMap : Dictionary = {
 
 /**
  * Functions used to compress and decompress RPC requests 
+ * The zeros in the 1st 5 places of the result mean:
+ * 0 no.0 - the content is zipped
+ * 0 no.1 - 
+ * 0 no.2 - 
+ * 0 no.3 - 
+ * 0 no.4 - 'method' value compressed
  */
 
 export default class Compression {
 
   public static compressRpcRequest(requestBody: JSONObject): CompressedPayload {
-    let clientResponse : CompressedPayload = '00000';
+    let compressionDiagram : CompressedPayload = '00000';
     let jsonTmp : JSONObject = JSON.parse(JSON.stringify(requestBody));
 
     const jsonKeys : string[] = Object.keys(requestBody);
 
-    //Compress Method
-    if(jsonKeys.includes('method')) {
-      const method : string = requestBody['method'];
-      const methodId = Compression.getCompressedKeyId(method, methodMap);
-
+    //Compress 'method' Value
+    let result = Compression.compressedRPCMethodValue(jsonTmp);
+    if (result.compressed) {
+      Compression.replaceAt(compressionDiagram, 4, '1');
+      jsonTmp = result.json;
     }
-
-    for(let i = 0; i < jsonKeys.length; i++) {
-      const originalValue : string = jsonKeys[i] ;
-      const keyId = Compression.getCompressedKeyId(originalValue, propertiesMap);
-      if(!keyId) continue;
-
-      // @ts-ignore-start
-      delete jsonTmp[originalValue];
-      // @ts-ignore-end
-      jsonTmp
-
-    }
-
-
 
     return clientResponse;
   }
 
+
+  private static replaceAt(string: string, index: number, replacement: string) {
+    return string.substring(0, index) + replacement + string.substring(index + replacement.length);
+  }
 
   private static getCompressedKeyId(key: string, dictionary: Dictionary): string | null {
     let id = null;
@@ -206,6 +203,28 @@ export default class Compression {
     }
 
     return id;
+  }
+
+  private static compressedRPCMethodValue(input: JSONObject): JSONObject {
+    let result : JSONObject = {
+      compressed: false,
+      json: JSON.parse(JSON.stringify(input))
+    };
+    const inputKeys : string[] = Object.keys(input);
+    const dictionaryKeys : string[] = Object.keys(methodValueMap);
+
+    if(inputKeys.includes('method')) {
+      const method : string = input['method'];
+      const methodId = Compression.getCompressedKeyId(method, methodValueMap);
+      result.json['method'] = methodId;
+      result.compressed = true;
+    }
+
+    return result;
+  }
+
+
+    return result;
   }
 
 }
