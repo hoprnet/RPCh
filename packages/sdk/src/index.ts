@@ -279,6 +279,11 @@ export default class SDK {
         message.id,
         message.body
       );
+      console.log(
+        "failed to decrypt message id %s with body",
+        message.id,
+        message.body
+      );
       this.handleFailedRequest(match.request);
     }
   }
@@ -493,7 +498,7 @@ export default class SDK {
       // Wait for all promises to settle, then check if any were rejected
       try {
         const results = await Promise.allSettled(sendMessagePromises);
-
+        console.log("RPCH results", results);
         const rejectedResults = results.filter(
           (result) => result.status === "rejected"
         );
@@ -505,6 +510,8 @@ export default class SDK {
       } catch (e) {
         // If there was an error sending the request, remove request from cache and reject promise
         log.error("failed to send message to hoprd", e);
+        console.log("failed to send message to hoprd", e);
+
         this.handleFailedRequest(req);
       }
     });

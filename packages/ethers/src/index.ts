@@ -1,7 +1,10 @@
-import { JsonRpcProvider, ExternalProvider } from "@ethersproject/providers";
+import { JsonRpcProvider } from "@ethersproject/providers";
 import { deepCopy } from "@ethersproject/properties";
 import SDK, { type HoprSdkOps } from "@rpch/sdk";
 import { parseResponse, getResult, createLogger } from "./utils";
+import EventEmitter from "events";
+import type { JsonRpc } from "ethereum-provider";
+import type { Callback, JsonRpcResponse } from "ethereum-provider/dist/types";
 
 const log = createLogger();
 
@@ -120,9 +123,12 @@ export class RPChProvider extends JsonRpcProvider {
   }
 }
 
-export class RPChExternalProvider implements ExternalProvider {
+export class RPChEthereumProvider extends EventEmitter {
   public sdk: SDK;
   private _nextId: number = 1;
+  private connected: boolean;
+  private closed: boolean;
+  private _emit: (event: string, payload?: any) => boolean | null;
 
   constructor(
     public readonly url: string,
@@ -130,50 +136,110 @@ export class RPChExternalProvider implements ExternalProvider {
     setKeyVal: (key: string, val: string) => Promise<any>,
     getKeyVal: (key: string) => Promise<string | undefined>
   ) {
+    super();
+    // initializes the RPCh SDK
     this.sdk = new SDK(hoprSdkOps, setKeyVal, getKeyVal);
+    this.connected = false;
+    this.closed = false;
+    setTimeout(() => this.create(), 0);
+    this._emit = (event, payload) =>
+      !this.closed ? this.emit(event, payload) : null;
   }
 
-  /**
-   * Sends a request to the provider using the SDK instance.
-   * @param request - The JSON-RPC request payload to send.
-   * @param callback - The callback function to be invoked upon completion.
-   */
-  public sendAsync(
-    request: { method: string; params?: any[] },
-    callback: (error: Error | null, result?: any) => void
-  ): any {
-    const payload = {
-      method: request.method,
-      params: request.params,
-      id: this._nextId++,
-      jsonrpc: "2.0",
-    };
-    this.sdk
-      .createRequest(this.url, JSON.stringify(payload))
-      .then((rpchRequest) => {
-        log.verbose(
-          "Created request",
-          rpchRequest.id,
-          log.createMetric({ id: rpchRequest.id })
-        );
-        return this.sdk.sendRequest(rpchRequest);
-      })
-      .then((response) => {
-        log.verbose(
-          "Received response for request",
-          payload.id,
-          log.createMetric({ id: payload.id })
-        );
-        callback(null, response);
-      })
-      .catch((error) => {
-        log.error(
-          "Did not receive response for request",
-          payload.id,
-          log.createMetric({ id: payload.id })
-        );
-        callback(error, undefined);
-      });
+  onError(err: Error) {
+    if (!this.closed && this.listenerCount("error")) this.emit("error", err);
+  }
+
+  create() {
+    this.on("error", () => {
+      if (this.connected) this.close();
+    });
+    this.sdk.start().then(() => {
+      this.init();
+    });
+  }
+
+  init() {
+    console.log("RPCH " + "init " + this.sdk.isReady);
+    this.send(
+      { method: "net_version", params: [], id: this._nextId++, jsonrpc: "2.0" },
+      (err) => {
+        console.log("RPCH " + "init " + err);
+        if (err) return this.onError(err);
+        this.connected = true;
+
+        this._emit("connect");
+        // this.send(
+        //   {
+        //     method: "eth_pollSubscriptions",
+        //     params: ["immediate"],
+        //     id: this._nextId,
+        //     jsonrpc: "2.0",
+        //   },
+        //   (err) => {
+        //     if (!err) {
+        //       // this.subscriptions = true;
+        //       // this.pollSubscriptions();
+        //     }
+        //   }
+        // );
+      }
+    );
+  }
+
+  pollSubscriptions() {
+    // this.send(
+    //   {
+    //     method: "eth_pollSubscriptions",
+    //   },
+    //   (err, result) => {
+    //     if (err) {
+    //       this.subscriptionTimeout = setTimeout(
+    //         () => this.pollSubscriptions(),
+    //         10000
+    //       );
+    //       return this.onError(err);
+    //     } else {
+    //       if (!this.closed) this.subscriptionTimeout = this.pollSubscriptions();
+    //       if (result) {
+    //         result
+    //           .map((p: any) => {
+    //             let parse;
+    //             try {
+    //               parse = JSON.parse(p);
+    //             } catch (e) {
+    //               parse = false;
+    //             }
+    //             return parse;
+    //           })
+    //           .filter((n: boolean) => n)
+    //           .forEach((p: any) => this._emit("payload", p));
+    //       }
+    //     }
+    //   }
+    // );
+  }
+
+  close() {
+    // clearTimeout(this.subscriptionTimeout);
+    this._emit("close");
+    this.closed = true;
+    this.sdk.stop();
+    this.removeAllListeners();
+  }
+
+  filterStatus(res: { status: number; statusText: string | undefined }) {
+    if (res.status >= 200 && res.status < 300) return res;
+    const error = new Error(res.statusText);
+    throw error.message;
+  }
+
+  error(payload: JsonRpc.Payload, message: string, code = -1) {
+    this._emit("payload", {
+      id: payload.id,
+      jsonrpc: payload.jsonrpc,
+      error: { message, code },
+    });
   }
 
   /**
@@ -185,40 +251,55 @@ export class RPChExternalProvider implements ExternalProvider {
    * @param request - The JSON-RPC request payload to send.
    * @param callback - The callback function to be invoked upon completion.
    */
-  public send(
-    request: { method: string; params?: any[] },
-    callback: (error: Error | null, result?: any) => void
-  ): any {
-    const payload = {
-      method: request.method,
-      params: request.params,
-      id: this._nextId++,
-      jsonrpc: "2.0",
-    };
+  public async send(
+    payload: JsonRpc.Payload,
+    callback: Callback<JsonRpc.Response>
+  ) {
+    if (!this.sdk.isReady) return;
+    if (this.closed) return this.error(payload, "Not connected");
+
     this.sdk
       .createRequest(this.url, JSON.stringify(payload))
       .then((rpchRequest) => {
-        log.verbose(
-          "Created request",
-          rpchRequest.id,
-          log.createMetric({ id: rpchRequest.id })
-        );
+        console.log("here is the request", rpchRequest);
+        log.verbose("Created request", rpchRequest.id);
         return this.sdk.sendRequest(rpchRequest);
       })
       .then((response) => {
-        log.verbose(
-          "Received response for request",
-          payload.id,
-          log.createMetric({ id: payload.id })
-        );
-        callback(null, response);
+        console.log("here is the response", response);
+        log.verbose("Received response for request", payload.id);
+        callback(null, response as unknown as JsonRpcResponse);
       })
       .catch((error) => {
-        log.error(
-          "Did not receive response for request",
-          payload.id,
-          log.createMetric({ id: payload.id })
-        );
+        console.log("here is the error", error);
+        log.error("Did not receive response for request", payload.id);
+        callback(error, undefined);
+      });
+  }
+
+  /**
+   * Sends a request to the provider using the SDK instance.
+   * @param request - The JSON-RPC request payload to send.
+   * @param callback - The callback function to be invoked upon completion.
+   */
+  public sendAsync(
+    payload: JsonRpc.Payload,
+    callback: Callback<JsonRpc.Response>
+  ): any {
+    if (!this.sdk.isReady) return;
+    if (this.closed) return this.error(payload, "Not connected");
+    this.sdk
+      .createRequest(this.url, JSON.stringify(payload))
+      .then((rpchRequest) => {
+        log.verbose("Created request", rpchRequest.id);
+        return this.sdk.sendRequest(rpchRequest);
+      })
+      .then((response) => {
+        log.verbose("Received response for request", payload.id);
+        callback(null, response as unknown as JsonRpcResponse);
+      })
+      .catch((error) => {
+        log.error("Did not receive response for request", payload.id);
         callback(error, undefined);
       });
   }
@@ -246,11 +327,8 @@ export class RPChExternalProvider implements ExternalProvider {
       this.url,
       JSON.stringify(payload)
     );
-    log.verbose(
-      "Created request",
-      rpchRequest.id,
-      log.createMetric({ id: rpchRequest.id })
-    );
+
+    log.verbose("Created request", rpchRequest.id);
 
     try {
       const rpchResponsePromise = this.sdk.sendRequest(rpchRequest);
