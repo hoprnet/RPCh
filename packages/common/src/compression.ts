@@ -157,6 +157,33 @@ export default class Compression {
     // @ts-ignore-end
   }
 
+  public static async decompressRpcRequest(compressedBody: string): Promise<JSONObject> {
+    // @ts-ignore-start
+    let compressionDiagram : CompressedPayload = compressedBody.substring(0, 6);
+    // @ts-ignore-end
+    let jsonTmp : JSONObject = compressedBody.substring(6);
+
+    if (compressionDiagram[0] === '1') {
+      jsonTmp = await JSZip.loadAsync(jsonTmp).then(function (zip) {
+        // @ts-ignore-start
+        return zip.file("msg").async("text");
+        // @ts-ignore-end
+      }).then(function (txt) {
+        return txt
+      });
+    }
+
+    if (compressionDiagram[1] === '1') {
+      const msgpackrBuffer = Buffer.from(jsonTmp, 'binary')
+      jsonTmp = unpack(msgpackrBuffer);
+    }
+
+    if (compressionDiagram[2] === '1') {
+      jsonTmp = Compression.decompressRPCMainObjectKeys(jsonTmp);
+    }
+
+    return {}
+  }
 
   private static getCompressedKeyId(key: string, dictionary: Dictionary): string | null | PropertyKey {
     let id = null;
@@ -170,6 +197,10 @@ export default class Compression {
     }
 
     return id;
+  }
+
+  private static getDecompressedKeyId(key: string, dictionary: Dictionary): string | null | PropertyKey {
+    return dictionary[key];
   }
 
   private static compressRPCMethodValue(input: JSONObject): JSONObject {
@@ -277,8 +308,25 @@ export default class Compression {
     return result;
   }
 
+  private static decompressRPCMainObjectKeys(input: JSONObject): JSONObject {
+    let result : JSONObject = JSON.parse(JSON.stringify(input));
+    const tmpObjKeys: string[] = Object.keys(input);
+    for (let k = 0; k < tmpObjKeys.length; k++) {
+      const oldKey : any = tmpObjKeys[k];
+      const newKey = Compression.getDecompressedKeyId(oldKey, mainKeyMap);
+      if (newKey) {
+        result[newKey] = input[oldKey];
+        delete result[oldKey];
+      }
+    }
+    return result;
+  }
 }
 
+main ();
+async function main () {
+  const resultCompressed = await Compression.compressRpcRequest(req_small_different_params);
+  const result = await Compression.decompressRpcRequest(resultCompressed);
+  return;
+}
 
-//Compression.compressRpcRequest(a0);
-const result = Compression.compressRpcRequest(res_normal);
