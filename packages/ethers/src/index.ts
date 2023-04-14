@@ -131,7 +131,7 @@ export class RPChEthereumProvider extends EventEmitter {
   private _emit: (event: string, payload?: any) => boolean | null;
 
   constructor(
-    public readonly url: string,
+    private url: string,
     hoprSdkOps: HoprSdkOps,
     setKeyVal: (key: string, val: string) => Promise<any>,
     getKeyVal: (key: string) => Promise<string | undefined>
@@ -139,6 +139,7 @@ export class RPChEthereumProvider extends EventEmitter {
     super();
     // initializes the RPCh SDK
     this.sdk = new SDK(hoprSdkOps, setKeyVal, getKeyVal);
+    this.sdk.debug.enable("rpch*");
     this.connected = false;
     this.closed = false;
     setTimeout(() => this.create(), 0);
@@ -160,7 +161,6 @@ export class RPChEthereumProvider extends EventEmitter {
   }
 
   init() {
-    console.log("RPCH " + "init " + this.sdk.isReady);
     this.send(
       { method: "net_version", params: [], id: this._nextId++, jsonrpc: "2.0" },
       (err) => {
@@ -169,59 +169,15 @@ export class RPChEthereumProvider extends EventEmitter {
         this.connected = true;
 
         this._emit("connect");
-        // this.send(
-        //   {
-        //     method: "eth_pollSubscriptions",
-        //     params: ["immediate"],
-        //     id: this._nextId,
-        //     jsonrpc: "2.0",
-        //   },
-        //   (err) => {
-        //     if (!err) {
-        //       // this.subscriptions = true;
-        //       // this.pollSubscriptions();
-        //     }
-        //   }
-        // );
       }
     );
   }
 
   pollSubscriptions() {
-    // this.send(
-    //   {
-    //     method: "eth_pollSubscriptions",
-    //   },
-    //   (err, result) => {
-    //     if (err) {
-    //       this.subscriptionTimeout = setTimeout(
-    //         () => this.pollSubscriptions(),
-    //         10000
-    //       );
-    //       return this.onError(err);
-    //     } else {
-    //       if (!this.closed) this.subscriptionTimeout = this.pollSubscriptions();
-    //       if (result) {
-    //         result
-    //           .map((p: any) => {
-    //             let parse;
-    //             try {
-    //               parse = JSON.parse(p);
-    //             } catch (e) {
-    //               parse = false;
-    //             }
-    //             return parse;
-    //           })
-    //           .filter((n: boolean) => n)
-    //           .forEach((p: any) => this._emit("payload", p));
-    //       }
-    //     }
-    //   }
-    // );
+    log.error("subscriptions are not supported");
   }
 
   close() {
-    // clearTimeout(this.subscriptionTimeout);
     this._emit("close");
     this.closed = true;
     this.sdk.stop();
@@ -240,6 +196,23 @@ export class RPChEthereumProvider extends EventEmitter {
       jsonrpc: payload.jsonrpc,
       error: { message, code },
     });
+  }
+
+  handleRes(
+    payload: JsonRpc.Payload,
+    result?: JsonRpc.Response,
+    callback?: Callback<JsonRpc.Response>,
+    err?: Error
+  ) {
+    if (callback) {
+      callback(err ?? null, result);
+    } else {
+      const { id, jsonrpc } = payload;
+      const load = err
+        ? { id, jsonrpc, error: { message: err.message } }
+        : { id, jsonrpc, result };
+      this._emit("payload", load);
+    }
   }
 
   /**
@@ -268,12 +241,12 @@ export class RPChEthereumProvider extends EventEmitter {
       .then((response) => {
         console.log("here is the response", response);
         log.verbose("Received response for request", payload.id);
-        callback(null, response as unknown as JsonRpcResponse);
+        this.handleRes(payload, JSON.parse(response.body), callback);
       })
       .catch((error) => {
         console.log("here is the error", error);
         log.error("Did not receive response for request", payload.id);
-        callback(error, undefined);
+        this.handleRes(payload, undefined, callback, error);
       });
   }
 
@@ -296,11 +269,11 @@ export class RPChEthereumProvider extends EventEmitter {
       })
       .then((response) => {
         log.verbose("Received response for request", payload.id);
-        callback(null, response as unknown as JsonRpcResponse);
+        this.handleRes(payload, JSON.parse(response.body), callback);
       })
       .catch((error) => {
         log.error("Did not receive response for request", payload.id);
-        callback(error, undefined);
+        this.handleRes(payload, undefined, callback, error);
       });
   }
 
