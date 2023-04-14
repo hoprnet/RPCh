@@ -10,6 +10,8 @@ import {
   methodValueMap,
 } from "./compression-dictionaries";
 
+import { MAX_BYTES } from './utils/index'
+
 import * as utils from './utils'
 import { unpack, pack } from 'msgpackr';
 import JSZip from 'jszip';
@@ -126,24 +128,26 @@ export default class Compression {
     // @ts-ignore-end
     console.log("Compress msgpackr size:", jsonTmp.length);
 
+    if (jsonTmp.length > MAX_BYTES - 10) {
+      
+      let zip = new JSZip();
+      zip.file("msg", jsonTmp);
 
-    let zip = new JSZip();
-    zip.file("msg", jsonTmp);
+      const zipped = await zip.generateAsync({
+        type: "string",
+        compression: "DEFLATE",
+        compressionOptions: {
+          level: 9
+        }
+      })
+      console.log("Compress jszip size:", zipped.length);
 
-    const zipped = await zip.generateAsync({
-      type: "string",
-      compression: "DEFLATE",
-      compressionOptions: {
-        level: 9
+      if (zipped.length < jsonTmp.length) {
+        jsonTmp = zipped;
+        // @ts-ignore-start
+        compressionDiagram = utils.replaceInStringAt(compressionDiagram, 0, '1');
+        // @ts-ignore-end
       }
-    })
-    console.log("Compress jszip size:", zipped.length);
-
-    if (zipped.length < jsonTmp.length) {
-      jsonTmp = zipped;
-      // @ts-ignore-start
-      compressionDiagram = utils.replaceInStringAt(compressionDiagram, 0, '1');
-      // @ts-ignore-end
     }
 
     // @ts-ignore-start
