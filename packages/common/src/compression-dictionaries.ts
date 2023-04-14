@@ -19,16 +19,6 @@ export const mainKeyMap : Dictionary = {
   8: 'jsonrpc',
 }
 
-export const errorKeyMap : Dictionary = {
-  0: 'code',
-  1: 'name',
-  2: 'message',
-  3: 'error',
-  4: 'at',
-  5: 'text',
-  6: 'data',
-}
-
 export const resultOrParamsKeyMap : Dictionary = {
   0: 'hash',
   1: 'from',
@@ -87,7 +77,6 @@ export const resultOrParamsKeyMap : Dictionary = {
   55:'transactionHash',
   57:'transactionIndex',
   58:'type',
-  59:'code',
   60:'info',
   61:'maxPriorityFeePerGas',
   62:'maxFeePerGas',
@@ -122,6 +111,11 @@ export const resultOrParamsKeyMap : Dictionary = {
   92:'nonce',
   93:'storageHash',
   94:'storageProof',
+  95: 'code',
+  96: 'name',
+  97: 'message',
+  98: 'error',
+  99: 'text',
 }
 
 export const methodValueMap : Dictionary = {
