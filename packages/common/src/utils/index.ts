@@ -165,79 +165,88 @@ export const areAllSegmentsPresent = (segments: Segment[]): boolean => {
 export const bigIntReplacer = (key: any, value: any) =>
   typeof value === "bigint" ? value.toString() : value;
 
-
 /**
  * Function to replace a character in a string with another character or string
  */
-export const replaceInStringAt = (string: string, index: number, replacement: string): string => {
-  return string.substring(0, index) + replacement + string.substring(index + replacement.length);
-}
-  
+export const replaceInStringAt = (
+  string: string,
+  index: number,
+  replacement: string
+): string => {
+  return (
+    string.substring(0, index) +
+    replacement +
+    string.substring(index + replacement.length)
+  );
+};
+
 /**
  * Function to check if variable is an array
  */
 export const isArray = (input: any): boolean => {
   return Array.isArray(input);
-}
-  
+};
+
 /**
  * Function to check if variable is a json object
  */
 export const isJsonObject = (input: any): boolean => {
   return input.constructor == Object;
-}
-  
+};
+
 /**
  * Function to check if variable is an array of json objects
  */
 export const isArrayOfJsonObjects = (input: any): boolean => {
   const isArrayBool = isArray(input);
-  if ( !isArrayBool ) return false;
-  if ( input.length === 0) return false;
+  if (!isArrayBool) return false;
+  if (input.length === 0) return false;
 
-  for(let i = 0; i < input.length; i++) {
+  for (let i = 0; i < input.length; i++) {
     const isJsonObjectBool = isJsonObject(input[i]);
-    if(!isJsonObjectBool) return false;
+    if (!isJsonObjectBool) return false;
   }
 
   return true;
-}
+};
 
 /**
  * Function to check if variable is an array and has at least one json object
  */
 export const isArrayWithAtLeastOneJsonObject = (input: any): boolean => {
   const isArrayBool = isArray(input);
-  if ( !isArrayBool ) return false;
-  if ( input.length === 0) return false;
+  if (!isArrayBool) return false;
+  if (input.length === 0) return false;
 
-  for(let i = 0; i < input.length; i++) {
+  for (let i = 0; i < input.length; i++) {
     const isJsonObjectBool = isJsonObject(input[i]);
-    if(isJsonObjectBool) return true;
+    if (isJsonObjectBool) return true;
   }
 
   return false;
-}
+};
 
-  
 /**
  * Function to check if variable is an array of json objectsobject
  */
-export const findCommonElement = (array1: string[], array2: string[]) : boolean => {
+export const findCommonElement = (
+  array1: string[],
+  array2: string[]
+): boolean => {
   // Loop for array1
-  for(let i = 0; i < array1.length; i++) {
-      // Loop for array2
-      for(let j = 0; j < array2.length; j++) {
-          // Compare the element of each and
-          // every element from both of the
-          // arrays
-          if(array1[i] === array2[j]) {
-              // Return if common element found
-              return true;
-          }
+  for (let i = 0; i < array1.length; i++) {
+    // Loop for array2
+    for (let j = 0; j < array2.length; j++) {
+      // Compare the element of each and
+      // every element from both of the
+      // arrays
+      if (array1[i] === array2[j]) {
+        // Return if common element found
+        return true;
       }
+    }
   }
-   
+
   // Return if no common element exist
   return false;
-}
+};
