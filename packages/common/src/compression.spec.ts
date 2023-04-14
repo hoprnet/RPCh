@@ -1,4 +1,7 @@
 import assert from "assert";
+import _ from 'lodash';
+import Compression from "./compression";
+
 
 export const res_normal = {
   "jsonrpc": "2.0",
@@ -114,6 +117,37 @@ export const req_small_different_params = {
   ]
 }
 
+export const req_small_cant_do_main_keys = {
+  "id": 1378637,
+  "jsonrpc": "2.0",
+  "method": "eth_estimateGas",
+  "params": [
+      {
+          "from": "0x66087fb21b1274771",
+          "to": "0xa02af239a614ab47f0d",
+          "value": "0x0",
+          "data": "0xef5cfb8421b1274771"
+      },
+      "0x01a"
+  ],
+  "5": "won't do"
+}
+
+export const req_small_different_params_and_cant_do_params = {
+  "id": 1378637,
+  "jsonrpc": "2.0",
+  "method": "eth_estimateGas",
+  "params": [
+      {
+          "from": "0x66087fb21b1274771",
+          "2": "0xa02af239a614ab47f0d",
+          "value": "0x0",
+          "data": "0xef5cfb8421b1274771"
+      },
+      "0x01a"
+  ]
+}
+
 export const res_error = {
   "jsonrpc": "2.0",
   "error": {
@@ -143,38 +177,76 @@ export const res_80kb = {
   "id": "I7B8xsbzXN"
 }
 
-//describe("test hoprd.ts / sendMessage", function () {
-  // it("should return message response", async function () {
-  //   NOCK_SEND_MESSAGE.reply(202, "someresponse");
+describe("test compression.ts / compressRpcRequest", function () {
+  it("should return true", async function () {
+    const compressed : string = await Compression.compressRpcRequest(res_normal);
+    const decompressed : any = await Compression.decompressRpcRequest(compressed);
+    const test = _.isEqual(res_normal, decompressed);
+    assert(test);
+  });
 
-  //   const res = await hoprd.sendMessage({
-  //     apiEndpoint: ENTRY_NODE_API_ENDPOINT,
-  //     apiToken: ENTRY_NODE_API_TOKEN,
-  //     destination: EXIT_NODE_PEER_ID,
-  //     message: "hello",
-  //     path: [],
-  //   });
-  //   assert.equal(res, "someresponse");
-  // });
+  it("should return true", async function () {
+    const compressed : string = await Compression.compressRpcRequest(res_compress_key_problem0);
+    const decompressed : any = await Compression.decompressRpcRequest(compressed);
+    const test = _.isEqual(res_compress_key_problem0, decompressed);
+    assert(test);
+  });
 
-  // it("log error when response is not status 202", async function () {
-  //   NOCK_SEND_MESSAGE.reply(422, {
-  //     status: "UNKNOWN_FAILURE",
-  //     error: "Full error message.",
-  //   });
-  //   try {
-  //     await hoprd.sendMessage({
-  //       apiEndpoint: ENTRY_NODE_API_ENDPOINT,
-  //       apiToken: ENTRY_NODE_API_TOKEN,
-  //       destination: EXIT_NODE_PEER_ID,
-  //       message: "hello",
-  //       path: [],
-  //     });
-  //   } catch (e: any) {
-  //     assert.equal(
-  //       e.message,
-  //       '{"status":"UNKNOWN_FAILURE","error":"Full error message."}'
-  //     );
-  //   }
-  // });
-//});
+  it("should return true", async function () {
+    const compressed : string = await Compression.compressRpcRequest(res_compress_key_problem1);
+    const decompressed : any = await Compression.decompressRpcRequest(compressed);
+    const test = _.isEqual(res_compress_key_problem1, decompressed);
+    assert(test);
+  });
+
+  it("should return true", async function () {
+    const compressed : string = await Compression.compressRpcRequest(req_small_different_params);
+    const decompressed : any = await Compression.decompressRpcRequest(compressed);
+    const test = _.isEqual(req_small_different_params, decompressed);
+    assert(test);
+  });
+
+  
+  it("should return true", async function () {
+    const compressed : string = await Compression.compressRpcRequest(req_small_different_params_and_cant_do_params);
+    const decompressed : any = await Compression.decompressRpcRequest(compressed);
+    const test = _.isEqual(req_small_different_params_and_cant_do_params, decompressed);
+    assert(test);
+  });
+
+  it("should return true", async function () {
+    const compressed : string = await Compression.compressRpcRequest(req_small_cant_do_main_keys);
+    const decompressed : any = await Compression.decompressRpcRequest(compressed);
+    const test = _.isEqual(req_small_cant_do_main_keys, decompressed);
+    assert(test);
+  });
+  
+
+  it("should return true", async function () {
+    const compressed : string = await Compression.compressRpcRequest(res_80kb);
+    const decompressed : any = await Compression.decompressRpcRequest(compressed);
+    const test = _.isEqual(res_80kb, decompressed);
+    assert(test);
+  });
+
+  it("should return true", async function () {
+    const compressed : string = await Compression.compressRpcRequest(res_error);
+    const decompressed : any = await Compression.decompressRpcRequest(compressed);
+    const test = _.isEqual(res_error, decompressed);
+    assert(test);
+  });
+
+  it("should return true", async function () {
+    const compressed : string = await Compression.compressRpcRequest(req_80kb);
+    const decompressed : any = await Compression.decompressRpcRequest(compressed);
+    const test = _.isEqual(req_80kb, decompressed);
+    assert(test);
+  });
+
+  it("should return true", async function () {
+    const compressed : string = await Compression.compressRpcRequest(res_80kb);
+    const decompressed : any = await Compression.decompressRpcRequest(compressed);
+    const test = _.isEqual(res_80kb, decompressed);
+    assert(test);
+  });
+});

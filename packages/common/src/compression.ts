@@ -16,15 +16,16 @@ import * as utils from './utils'
 import { unpack, pack } from 'msgpackr';
 import JSZip from 'jszip';
 
-import {
-  res_normal,
-  res_compress_key_problem0,
-  res_compress_key_problem1,
-  req_small_different_params,
-  res_error,
-  req_80kb,
-  res_80kb
-} from './compression.spec'
+// For testing
+// import {
+//   res_normal,
+//   res_compress_key_problem0,
+//   res_compress_key_problem1,
+//   req_small_different_params,
+//   res_error,
+//   req_80kb,
+//   res_80kb
+// } from './compression.spec'
 
 /**
  * Functions used to compress and decompress RPC requests 
@@ -43,33 +44,34 @@ export default class Compression {
   public static async compressRpcRequest(requestBody: JSONObject): Promise<CompressedPayload> {
     let compressionDiagram : CompressedPayload = '0000000';
     let jsonTmp : JSONObject = JSON.parse(JSON.stringify(requestBody));
-    console.log('--Checks of sizes for comparation: --');
-    console.log('input size:', JSON.stringify(requestBody).length);
-    console.log("only msgpackr size:", pack(jsonTmp).length);
+    // console.log('--Checks of sizes for comparation: --');
+    // console.log('input size:', JSON.stringify(requestBody).length);
+    // console.log("only msgpackr size:", pack(jsonTmp).length);
 
-    let testZip = new JSZip();
-    testZip.file("msg", JSON.stringify(requestBody));
-    let testZipStr = await testZip.generateAsync({
-      type: "string",
-      compression: "DEFLATE",
-      compressionOptions: {
-        level: 9
-      }
-    })
-    console.log("only zip size:", testZipStr.length);
+    // For testing:
+    // let testZip = new JSZip();
+    // testZip.file("msg", JSON.stringify(requestBody));
+    // let testZipStr = await testZip.generateAsync({
+    //   type: "string",
+    //   compression: "DEFLATE",
+    //   compressionOptions: {
+    //     level: 9
+    //   }
+    // })
+    // console.log("only zip size:", testZipStr.length);
 
-    testZip.file("msg", pack(jsonTmp));
-    testZipStr = await testZip.generateAsync({
-      type: "string",
-      compression: "DEFLATE",
-      compressionOptions: {
-        level: 9
-      }
-    })
-    console.log("msgpackr and zip size:", testZipStr.length);
+    // testZip.file("msg", pack(jsonTmp));
+    // testZipStr = await testZip.generateAsync({
+    //   type: "string",
+    //   compression: "DEFLATE",
+    //   compressionOptions: {
+    //     level: 9
+    //   }
+    // })
+    // console.log("msgpackr and zip size:", testZipStr.length);
 
 
-    console.log('\n\n--Sizes of input after each consecutive type of compression: --');
+    //console.log('\n\n--Sizes of input after each consecutive type of compression: --');
     //Compress 'method' Value
     let result = Compression.compressRPCMethodValue(jsonTmp);
     if (result.compressed) {
@@ -78,7 +80,7 @@ export default class Compression {
       // @ts-ignore-end
       jsonTmp = result.json;
     }
-    console.log("Compress 'method' Value size:", JSON.stringify(jsonTmp).length);
+    // console.log("Compress 'method' Value size:", JSON.stringify(jsonTmp).length);
 
     //Compress 'result'{} keys
     result = Compression.compressRPCSomeObjectKeys(jsonTmp, 'result');
@@ -88,7 +90,7 @@ export default class Compression {
       // @ts-ignore-end
       jsonTmp = result.json;
     }
-    console.log("Compress 'result'{} keys size:", JSON.stringify(jsonTmp).length);
+    // console.log("Compress 'result'{} keys size:", JSON.stringify(jsonTmp).length);
 
     //Compress 'params'{} keys
     result = Compression.compressRPCSomeObjectKeys(jsonTmp, 'params');
@@ -98,7 +100,7 @@ export default class Compression {
       // @ts-ignore-end
       jsonTmp = result.json;
     }
-    console.log("Compress 'params'{} keys size:", JSON.stringify(jsonTmp).length);
+    // console.log("Compress 'params'{} keys size:", JSON.stringify(jsonTmp).length);
 
     //Compress 'error'{} keys
     result = Compression.compressRPCSomeObjectKeys(jsonTmp, 'error');
@@ -108,7 +110,7 @@ export default class Compression {
       // @ts-ignore-end
       jsonTmp = result.json;
     }
-    console.log("Compress 'error'{} keys size:", JSON.stringify(jsonTmp).length);
+    // console.log("Compress 'error'{} keys size:", JSON.stringify(jsonTmp).length);
 
     //Compress main keys
     result = Compression.compressRPCMainObjectKeys(jsonTmp);
@@ -118,7 +120,7 @@ export default class Compression {
       // @ts-ignore-end
       jsonTmp = result.json;
     }
-    console.log("Compress 'main'{} keys size:", JSON.stringify(jsonTmp).length);
+    // console.log("Compress 'main'{} keys size:", JSON.stringify(jsonTmp).length);
 
     //Compress msgpackr
     jsonTmp = pack(jsonTmp);
@@ -126,10 +128,10 @@ export default class Compression {
     // @ts-ignore-start
     compressionDiagram = utils.replaceInStringAt(compressionDiagram, 1, '1');
     // @ts-ignore-end
-    console.log("Compress msgpackr size:", jsonTmp.length);
+    // console.log("Compress msgpackr size:", jsonTmp.length);
 
     if (jsonTmp.length > MAX_BYTES - 10) {
-      
+
       let zip = new JSZip();
       zip.file("msg", jsonTmp);
 
@@ -140,7 +142,7 @@ export default class Compression {
           level: 9
         }
       })
-      console.log("Compress jszip size:", zipped.length);
+      //console.log("Compress jszip size:", zipped.length);
 
       if (zipped.length < jsonTmp.length) {
         jsonTmp = zipped;
@@ -382,10 +384,11 @@ export default class Compression {
   }
 }
 
-main ();
-async function main () {
-  const resultCompressed = await Compression.compressRpcRequest(req_small_different_params);
-  const result = await Compression.decompressRpcRequest(resultCompressed);
-  return;
-}
+// For Testing
+// main ();
+// async function main () {
+//   const resultCompressed = await Compression.compressRpcRequest(req_small_different_params);
+//   const result = await Compression.decompressRpcRequest(resultCompressed);
+//   return;
+// }
 
