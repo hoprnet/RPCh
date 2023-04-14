@@ -19,7 +19,7 @@ import * as utils from './utils'
  * The zeros in the 1st 5 places of the result mean:
  * 0 no.0 - the content is zipped
  * 0 no.1 - 
- * 0 no.2 - 
+ * 0 no.2 - 'params'{} keys compressed
  * 0 no.3 - 'result'{} keys compressed
  * 0 no.4 - 'method' value compressed
  */
@@ -123,6 +123,21 @@ const a2 = {
   "id": 73312
 };
 
+const a3 = {
+  "id": 1378637,
+  "jsonrpc": "2.0",
+  "method": "eth_estimateGas",
+  "params": [
+      {
+          "from": "0x66087fb21b1274771",
+          "to": "0xa02af239a614ab47f0d",
+          "value": "0x0",
+          "data": "0xef5cfb8421b1274771"
+      },
+      "0x01a"
+  ]
+}
+
 export default class Compression {
 
   public static compressRpcRequest(requestBody: JSONObject): CompressedPayload {
@@ -145,6 +160,15 @@ export default class Compression {
     if (result.compressed) {
       // @ts-ignore-start
       compressionDiagram = utils.replaceInStringAt(compressionDiagram, 3, '1');
+      // @ts-ignore-end
+      jsonTmp = result.json;
+    }
+
+    //Compress 'params'{} keys
+    result = Compression.compressRPCSomeObjectKeys(jsonTmp, 'params');
+    if (result.compressed) {
+      // @ts-ignore-start
+      compressionDiagram = utils.replaceInStringAt(compressionDiagram, 2, '1');
       // @ts-ignore-end
       jsonTmp = result.json;
     }
@@ -196,17 +220,19 @@ export default class Compression {
     if(!isArray && !isObject) return result;
 
     const dictionaryKeys : string[] = Object.keys(resultOrParamsKeyMap);
-    const isArrayOfJsonObjects = utils.isArrayOfJsonObjects(input[objectKey]);
-    if(isArrayOfJsonObjects) {
+    const isArrayWithAtLeastOneJsonObject = utils.isArrayWithAtLeastOneJsonObject(input[objectKey]);
+    if(isArrayWithAtLeastOneJsonObject) {
       //check if new keys do not create conflicts with old keys
       let cantContinue = false;
       for (let i = 0; i < input[objectKey].length; i++) {
+        if(!utils.isJsonObject(input[objectKey][i])) continue;
         const tmpObjKeys: string[] = Object.keys(input[objectKey][i]);
         cantContinue = utils.findCommonElement(dictionaryKeys, tmpObjKeys);
         if (cantContinue) return result;
       }
 
       for (let i = 0; i < input[objectKey].length; i++) {
+        if(!utils.isJsonObject(input[objectKey][i])) continue;
         let tmpObj = JSON.parse(JSON.stringify(input[objectKey][i]));
         const tmpObjKeys: string[] = Object.keys(input[objectKey][i]);
 
@@ -242,9 +268,6 @@ export default class Compression {
       result.json[objectKey] = JSON.parse(JSON.stringify(tmpObj));
     }
 
-
-    
-
     return result;
   }
 
@@ -252,6 +275,6 @@ export default class Compression {
 
 
 //Compression.compressRpcRequest(a0);
-//Compression.compressRpcRequest(a1);
+const result = Compression.compressRpcRequest(a0);
 
 console.log('wait');

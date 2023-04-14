@@ -188,7 +188,7 @@ export const isJsonObject = (input: any): boolean => {
 }
   
 /**
- * Function to check if variable is an array of json objectsobject
+ * Function to check if variable is an array of json objects
  */
 export const isArrayOfJsonObjects = (input: any): boolean => {
   const isArrayBool = isArray(input);
@@ -201,6 +201,22 @@ export const isArrayOfJsonObjects = (input: any): boolean => {
   }
 
   return true;
+}
+
+/**
+ * Function to check if variable is an array and has at least one json object
+ */
+export const isArrayWithAtLeastOneJsonObject = (input: any): boolean => {
+  const isArrayBool = isArray(input);
+  if ( !isArrayBool ) return false;
+  if ( input.length === 0) return false;
+
+  for(let i = 0; i < input.length; i++) {
+    const isJsonObjectBool = isJsonObject(input[i]);
+    if(isJsonObjectBool) return true;
+  }
+
+  return false;
 }
 
   

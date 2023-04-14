@@ -8,6 +8,7 @@ import {
   isArray,
   isJsonObject,
   isArrayOfJsonObjects,
+  isArrayWithAtLeastOneJsonObject,
   findCommonElement,
 } from "../utils";
 import { createMockedFlow, RPC_REQ_LARGE } from "../fixtures";
@@ -116,6 +117,7 @@ describe("test utils / isArrayOfJsonObjects", function () {
   const test4 : any = {a: {a: 'b', c: 'd'}, c: {a: 'b', c: 'd'}};
   const test5 : any = ['a', 'b'];
   const test6 : any = [{a: 'b', c: 'd'}, {a: 'b', c: 'd'}];
+  const test7 : any = ['string', {a: 'b', c: 'd'}];
   const test0_res = isArrayOfJsonObjects(test0);
   const test1_res = isArrayOfJsonObjects(test1);
   const test2_res = isArrayOfJsonObjects(test2);
@@ -123,8 +125,34 @@ describe("test utils / isArrayOfJsonObjects", function () {
   const test4_res = isArrayOfJsonObjects(test4);
   const test5_res = isArrayOfJsonObjects(test5);
   const test6_res = isArrayOfJsonObjects(test6);
+  const test7_res = isArrayOfJsonObjects(test7);
   it("should return true", function () {
     assert(test6_res);
+  });
+  it("should return false", function () {
+    assert(!(test0_res || test1_res || test2_res || test3_res || test4_res || test5_res || test7_res));
+  });
+});
+
+describe("test utils / isArrayWithAtLeastOneJsonObject", function () {
+  const test0 : any = 'abcdef';
+  const test1 : any = [];
+  const test2 : any = {};
+  const test3 : any = {a: 'b', c: 'd'};
+  const test4 : any = {a: {a: 'b', c: 'd'}, c: {a: 'b', c: 'd'}};
+  const test5 : any = ['a', 'b'];
+  const test6 : any = [{a: 'b', c: 'd'}, {a: 'b', c: 'd'}];
+  const test7 : any = ['string', {a: 'b', c: 'd'}];
+  const test0_res = isArrayWithAtLeastOneJsonObject(test0);
+  const test1_res = isArrayWithAtLeastOneJsonObject(test1);
+  const test2_res = isArrayWithAtLeastOneJsonObject(test2);
+  const test3_res = isArrayWithAtLeastOneJsonObject(test3);
+  const test4_res = isArrayWithAtLeastOneJsonObject(test4);
+  const test5_res = isArrayWithAtLeastOneJsonObject(test5);
+  const test6_res = isArrayWithAtLeastOneJsonObject(test6);
+  const test7_res = isArrayWithAtLeastOneJsonObject(test7);
+  it("should return true", function () {
+    assert(test6_res && test7_res);
   });
   it("should return false", function () {
     assert(!(test0_res || test1_res || test2_res || test3_res || test4_res || test5_res));
