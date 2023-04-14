@@ -6,6 +6,11 @@ RPCh SDK is a library which will be used by a client who wants to access the RPC
 Through the SDK, the client should be able to send traffic through the RPCh network and maintain a reliability metric of used HOPR entry nodes.
 
 ## How to use SDK
+You will need to have Node.js and npm/yarn installed on your computer. You can download them from their official website or use a package manager like Homebrew (for Mac) or Chocolatey (for Windows).
+
+```
+yarn add @rpch/crypto @rpch/sdk
+```
 
 You can create an instance of the SDK by passing in the required options and key-value store functions:
 ```TypeScript
