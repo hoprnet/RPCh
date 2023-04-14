@@ -6,7 +6,8 @@ runs:
   steps:
     - name: Free Disk Space (Ubuntu)
       uses: jlumbroso/free-disk-space@v1.2.0
-
+      with:
+        large-packages: false
     - name: Setup Node.js environment
       uses: actions/setup-node@v3
       with:
