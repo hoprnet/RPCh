@@ -8,7 +8,10 @@ Through the SDK, the client should be able to send traffic through the RPCh netw
 ## How to use SDK
 
 You can create an instance of the SDK by passing in the required options and key-value store functions:
-```
+```TypeScript
+import * as RPChCrypto from "@rpch/crypto";
+import SDK from "@rpch/sdk";
+
 const sdk = new SDK(
   {
     crypto: RPChCrypto,
@@ -29,7 +32,7 @@ Here are the available options:
 
 The setKeyValFunction and getKeyValFunction functions are used to store and retrieve key-value pairs for the SDK. These are used to store counters for outgoing requests and responses.
 
-```
+```TypeScript
 // This is an example of a simple way to set these functions
 async function setKeyVal(key: string, val: string): Promise<void> {
   localStorage.setItem(key, val);
@@ -41,7 +44,7 @@ async function getKeyVal(key: string): Promise<string | undefined> {
 ```
 
 Before you can send requests through the SDK, you must start it by calling the start method:
-```
+```TypeScript
 await sdk.start();
 ```
 This will fetch the required data from the discovery platform and start any necessary intervals.
@@ -52,7 +55,7 @@ Sending a requests consists of 2 steps:
 2. sending the previously created request `const res = await sdk.sendRequest(req);` This will send the request through the HOPR network and return the response. If there is an error, it will be thrown.
 
 When you are finished using the SDK, be sure to call the stop method:
-```
+```TypeScript
 await sdk.stop();
 ```
 This will stop any necessary intervals and clear up any remaining processes.
