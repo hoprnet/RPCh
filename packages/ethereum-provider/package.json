@@ -1,6 +1,6 @@
 {
   "name": "@rpch/ethereum-provider",
-  "version": "0.1.7",
+  "version": "0.0.1",
   "license": "LGPL-3.0",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
