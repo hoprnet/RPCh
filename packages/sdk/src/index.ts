@@ -248,7 +248,6 @@ export default class SDK {
           this.setKeyVal(exitNodeId, counter.toString());
         }
       );
-      log.normal("getting response for", match.request.id), response;
       const responseTime = Date.now() - match.createdAt.getTime();
       log.verbose(
         "response time for request %s: %s ms",

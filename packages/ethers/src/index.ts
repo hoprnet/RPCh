@@ -4,7 +4,7 @@ import SDK, { type HoprSdkOps } from "@rpch/sdk";
 import { parseResponse, getResult, createLogger } from "./utils";
 import EventEmitter from "events";
 import type { JsonRpc } from "ethereum-provider";
-import type { Callback, JsonRpcResponse } from "ethereum-provider/dist/types";
+import type { Callback } from "ethereum-provider/dist/types";
 
 const log = createLogger();
 
@@ -164,7 +164,6 @@ export class RPChEthereumProvider extends EventEmitter {
     this.send(
       { method: "net_version", params: [], id: this._nextId++, jsonrpc: "2.0" },
       (err) => {
-        console.log("RPCH " + "init " + err);
         if (err) return this.onError(err);
         this.connected = true;
 
@@ -234,17 +233,14 @@ export class RPChEthereumProvider extends EventEmitter {
     this.sdk
       .createRequest(this.url, JSON.stringify(payload))
       .then((rpchRequest) => {
-        console.log("here is the request", rpchRequest);
         log.verbose("Created request", rpchRequest.id);
         return this.sdk.sendRequest(rpchRequest);
       })
       .then((response) => {
-        console.log("here is the response", response);
         log.verbose("Received response for request", payload.id);
         this.handleRes(payload, JSON.parse(response.body), callback);
       })
       .catch((error) => {
-        console.log("here is the error", error);
         log.error("Did not receive response for request", payload.id);
         this.handleRes(payload, undefined, callback, error);
       });
