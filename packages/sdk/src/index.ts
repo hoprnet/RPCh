@@ -69,6 +69,8 @@ export default class SDK {
   public deadlockTimestamp: number | undefined;
   // toggle to not select entry nodes while another one is being selected
   private selectingEntryNode: boolean | undefined;
+  // toogle to not start if it's already starting
+  public starting: boolean | undefined;
 
   constructor(
     private readonly ops: HoprSdkOps,
@@ -293,6 +295,7 @@ export default class SDK {
    */
   public async start(): Promise<void> {
     if (this.isReady) return;
+    this.starting = true;
 
     if (typeof window === "undefined") {
       log.verbose("Using 'node' RPCh crypto implementation");
@@ -346,6 +349,8 @@ export default class SDK {
         );
       }, 60e3)
     );
+
+    this.starting = false;
   }
 
   /**
