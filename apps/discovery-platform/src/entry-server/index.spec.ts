@@ -96,14 +96,14 @@ describe("test entry server", function () {
 
     await request(app)
       .post("/api/v1/node/register")
-      .set("client", trialClientId)
+      .set("X-Rpch-Client", trialClientId)
       .send(mockNode(peerId, true));
 
     const createdNode: {
       body: { node: RegisteredNodeDB | undefined };
     } = await request(app)
       .get(`/api/v1/node/${peerId}`)
-      .set("client", trialClientId);
+      .set("X-Rpch-Client", trialClientId);
 
     spy.mockImplementation(async () => {
       return createdNode.body.node;
@@ -121,7 +121,7 @@ describe("test entry server", function () {
 
     const requestResponse = await request(app)
       .post("/api/v1/request/entry-node")
-      .set("client", trialClientId);
+      .set("X-Rpch-Client", trialClientId);
 
     if (!requestResponse.body || !createdNode.body.node)
       throw new Error("Could not create mock nodes");

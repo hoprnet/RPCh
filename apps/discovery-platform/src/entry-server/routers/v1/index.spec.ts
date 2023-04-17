@@ -86,11 +86,11 @@ describe("test v1 router", function () {
     const trialClientId: string = responseRequestTrialClient.body.client;
     await request(app)
       .post("/node/register")
-      .set("client", trialClientId)
+      .set("X-Rpch-Client", trialClientId)
       .send(node);
     const createdNode = await request(app)
       .get(`/node/${node.peerId}`)
-      .set("client", trialClientId);
+      .set("X-Rpch-Client", trialClientId);
     assert.equal(createdNode.body.node.id, node.peerId);
   });
 
@@ -100,15 +100,15 @@ describe("test v1 router", function () {
     const trialClientId: string = responseRequestTrialClient.body.client;
     await request(app)
       .post("/node/register")
-      .set("client", trialClientId)
+      .set("X-Rpch-Client", trialClientId)
       .send(node);
     await request(app)
       .post("/node/register")
-      .set("client", trialClientId)
+      .set("X-Rpch-Client", trialClientId)
       .send(mockNode("fake"));
     const createdNode = await request(app)
       .get(`/node/${node.peerId}`)
-      .set("client", trialClientId);
+      .set("X-Rpch-Client", trialClientId);
     assert.equal(createdNode.body.node.id, node.peerId);
   });
 
@@ -118,24 +118,24 @@ describe("test v1 router", function () {
 
     await request(app)
       .post("/node/register")
-      .set("client", trialClientId)
+      .set("X-Rpch-Client", trialClientId)
       .send(mockNode("notExit1", false));
     await request(app)
       .post("/node/register")
-      .set("client", trialClientId)
+      .set("X-Rpch-Client", trialClientId)
       .send(mockNode("notExit2", false));
     await request(app)
       .post("/node/register")
-      .set("client", trialClientId)
+      .set("X-Rpch-Client", trialClientId)
       .send(mockNode("exit3", true));
     await request(app)
       .post("/node/register")
-      .set("client", trialClientId)
+      .set("X-Rpch-Client", trialClientId)
       .send(mockNode("exit4", true));
 
     const allExitNodes = await request(app)
       .get(`/node?hasExitNode=true`)
-      .set("client", trialClientId);
+      .set("X-Rpch-Client", trialClientId);
     assert.equal(allExitNodes.body.length, 2);
   });
 
@@ -145,24 +145,24 @@ describe("test v1 router", function () {
 
     await request(app)
       .post("/node/register")
-      .set("client", trialClientId)
+      .set("X-Rpch-Client", trialClientId)
       .send(mockNode("notExit1", false));
     await request(app)
       .post("/node/register")
-      .set("client", trialClientId)
+      .set("X-Rpch-Client", trialClientId)
       .send(mockNode("notExit2", false));
     await request(app)
       .post("/node/register")
-      .set("client", trialClientId)
+      .set("X-Rpch-Client", trialClientId)
       .send(mockNode("notExit3", false));
     await request(app)
       .post("/node/register")
-      .set("client", trialClientId)
+      .set("X-Rpch-Client", trialClientId)
       .send(mockNode("exit4", true));
 
     const allExitNodes = await request(app)
       .get(`/node?hasExitNode=${false}&excludeList=notExit2`)
-      .set("client", trialClientId);
+      .set("X-Rpch-Client", trialClientId);
     assert.equal(allExitNodes.body.length, 2);
     assert.equal(
       allExitNodes.body.findIndex((node: any) => node.id === "notExit2"),
@@ -183,7 +183,7 @@ describe("test v1 router", function () {
 
     const response = await request(app)
       .get("/request/trial?label=devcon,some-dash")
-      .set("client", trialClientId);
+      .set("X-Rpch-Client", trialClientId);
     const dbClient = await getClient(dbInstance, response.body.client);
     assert.equal(dbClient?.payment, "trial");
     assert.deepEqual(dbClient?.labels, ["devcon", "some-dash"]);
@@ -234,14 +234,14 @@ describe("test v1 router", function () {
 
       await request(app)
         .post("/node/register")
-        .set("client", trialClientId)
+        .set("X-Rpch-Client", trialClientId)
         .send(mockNode(peerId, true));
 
       const createdNode: {
         body: { node: RegisteredNodeDB | undefined };
       } = await request(app)
         .get(`/node/${peerId}`)
-        .set("client", trialClientId);
+        .set("X-Rpch-Client", trialClientId);
 
       spy.mockImplementation(async () => {
         return createdNode.body.node;
@@ -259,7 +259,7 @@ describe("test v1 router", function () {
 
       const requestResponse = await request(app)
         .post("/request/entry-node")
-        .set("client", trialClientId);
+        .set("X-Rpch-Client", trialClientId);
 
       assert.equal(requestResponse.body.id, createdNode.body.node?.id);
       spy.mockRestore();
@@ -287,24 +287,24 @@ describe("test v1 router", function () {
 
       await request(app)
         .post("/node/register")
-        .set("client", trialClientId)
+        .set("X-Rpch-Client", trialClientId)
         .send(mockNode(peerId, true));
 
       await request(app)
         .post("/node/register")
-        .set("client", trialClientId)
+        .set("X-Rpch-Client", trialClientId)
         .send(mockNode(peerId + "2", true));
 
       const firstCreatedNode: {
         body: { node: RegisteredNodeDB | undefined };
       } = await request(app)
         .get(`/node/${peerId}`)
-        .set("client", trialClientId);
+        .set("X-Rpch-Client", trialClientId);
       const secondCreatedNode: {
         body: { node: RegisteredNodeDB | undefined };
       } = await request(app)
         .get(`/node/${peerId + "2"}`)
-        .set("client", trialClientId);
+        .set("X-Rpch-Client", trialClientId);
 
       await registeredNode.updateRegisteredNode(dbInstance, {
         ...firstCreatedNode.body.node!,
@@ -327,7 +327,7 @@ describe("test v1 router", function () {
 
       const requestResponse = await request(app)
         .post("/request/entry-node")
-        .set("client", trialClientId)
+        .set("X-Rpch-Client", trialClientId)
         .send({ excludeList: ["entry"] });
 
       assert.equal(requestResponse.body.id, secondCreatedNode.body.node?.id);
@@ -356,7 +356,7 @@ describe("test v1 router", function () {
 
       const requestResponse = await request(app)
         .post("/request/entry-node")
-        .set("client", trialClientId);
+        .set("X-Rpch-Client", trialClientId);
 
       assert.equal(requestResponse.body.errors, "Could not find eligible node");
       spy.mockRestore();
@@ -388,14 +388,14 @@ describe("test v1 router", function () {
 
       await request(app)
         .post("/node/register")
-        .set("client", trialClientId)
+        .set("X-Rpch-Client", trialClientId)
         .send(mockNode(peerId, true));
 
       const createdNode: {
         body: { node: RegisteredNodeDB | undefined };
       } = await request(app)
         .get(`/node/${peerId}`)
-        .set("client", trialClientId);
+        .set("X-Rpch-Client", trialClientId);
 
       spyGetEligibleNode.mockImplementation(async () => {
         return createdNode.body.node;
@@ -415,11 +415,11 @@ describe("test v1 router", function () {
       // use quota twice expecting the second time for it to fail
       await request(app)
         .post("/request/entry-node")
-        .set("client", trialClientId);
+        .set("X-Rpch-Client", trialClientId);
 
       const requestResponse = await request(app)
         .post("/request/entry-node")
-        .set("client", trialClientId);
+        .set("X-Rpch-Client", trialClientId);
 
       assert.equal(
         requestResponse.body.body,
@@ -454,14 +454,14 @@ describe("test v1 router", function () {
 
       await request(app)
         .post("/node/register")
-        .set("client", trialClientId)
+        .set("X-Rpch-Client", trialClientId)
         .send(mockNode(peerId, true));
 
       const createdNode: {
         body: { node: RegisteredNodeDB | undefined };
       } = await request(app)
         .get(`/node/${peerId}`)
-        .set("client", trialClientId);
+        .set("X-Rpch-Client", trialClientId);
 
       spyGetEligibleNode.mockImplementation(async () => {
         return createdNode.body.node;
@@ -484,7 +484,7 @@ describe("test v1 router", function () {
 
       const requestResponse = await request(app)
         .post("/request/entry-node")
-        .set("client", trialClientId);
+        .set("X-Rpch-Client", trialClientId);
 
       const trialClientQuotaAfter = await getSumOfQuotasPaidByClient(
         dbInstance,

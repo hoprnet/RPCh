@@ -36,7 +36,7 @@ export const doesClientHaveQuota = async (
 export const clientExists =
   (db: DBInstance) =>
   async (req: Request, res: Response<any, any>, next: NextFunction) => {
-    const clientId = req.headers.client as string;
+    const clientId = req.headers["x-rpch-client"] as string;
     const client = await getClient(db, clientId);
     if (!client) {
       res.status(404).json("Client does not exist");

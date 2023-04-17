@@ -125,10 +125,11 @@ export default class SDK {
           headers: {
             "Content-Type": "application/json",
             "Accept-Content": "application/json",
-            client: this.ops.client,
+            "x-rpch-client": this.ops.client,
           },
           body: JSON.stringify({
             exclusionList,
+            client: this.ops.client,
           }),
         }
       );
@@ -203,7 +204,7 @@ export default class SDK {
         headers: {
           "Content-Type": "application/json",
           "Accept-Content": "application/json",
-          client: this.ops.client,
+          '"x-rpch-client": this.ops.client,': this.ops.client,
         },
       }
     );

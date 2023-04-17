@@ -123,20 +123,20 @@ describe("test v1 middleware", function () {
 
       await request(app)
         .post("/node/register")
-        .set("client", trialClientId)
+        .set("X-Rpch-Client", trialClientId)
         .send(mockNode("exit1", true));
       await request(app)
         .post("/node/register")
-        .set("client", trialClientId)
+        .set("X-Rpch-Client", trialClientId)
         .send(mockNode("exit2", true));
 
       // caching endpoint /node
       const allExitNodes = await request(app)
         .get(`/node?hasExitNode=true`)
-        .set("client", trialClientId);
+        .set("X-Rpch-Client", trialClientId);
       const secondAllExitNodeResponse = await request(app)
         .get(`/node?hasExitNode=true`)
-        .set("client", trialClientId);
+        .set("X-Rpch-Client", trialClientId);
 
       assert.deepEqual(
         JSON.stringify(memoryCache.get("/node?hasExitNode=true")),

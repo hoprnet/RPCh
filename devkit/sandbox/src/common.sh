@@ -129,7 +129,7 @@ start() {
         -H "Content-Type: application/json" \
         -d '{
             "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
-            "client": "trial",
+            "X-Rpch-Client": "trial",
             "quota": "500"
         }'
     echo "Added quota to client 'trial' in 'discovery-platform'"
@@ -141,7 +141,7 @@ start() {
         -d '{
             "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
             "chainId": "31337",
-            "client": "trial",
+            "X-Rpch-Client": "trial",
             "hoprdApiEndpoints": [
                 "'$HOPRD_API_ENDPOINT_1'",
                 "'$HOPRD_API_ENDPOINT_2'",

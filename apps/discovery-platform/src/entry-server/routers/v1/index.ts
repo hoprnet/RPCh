@@ -84,7 +84,6 @@ export const v1Router = (ops: {
     "/node/register",
     metricMiddleware(requestDurationHistogram),
     checkSchema(registerNodeSchema),
-    clientExists(ops.db),
     async (req: Request, res: Response) => {
       try {
         const errors = validationResult(req);
@@ -115,7 +114,6 @@ export const v1Router = (ops: {
     metricMiddleware(requestDurationHistogram),
     checkSchema(getNodeSchema),
     getCache(), // check if response is in cache
-    clientExists(ops.db),
     async (
       req: Request<{}, {}, {}, { excludeList?: string; hasExitNode?: string }>,
       res: Response
@@ -182,7 +180,6 @@ export const v1Router = (ops: {
   router.get(
     "/funding-service/funds",
     metricMiddleware(requestDurationHistogram),
-    clientExists(ops.db),
     async (req, res) => {
       try {
         const funds = await ops.fundingServiceApi.getAvailableFunds();
@@ -303,7 +300,6 @@ export const v1Router = (ops: {
     body("excludeList")
       .optional()
       .custom((value) => isListSafe(value)),
-    clientExists(ops.db),
     async (req, res) => {
       try {
         const errors = validationResult(req);
@@ -314,8 +310,18 @@ export const v1Router = (ops: {
             .inc();
           return res.status(400).json({ errors: errors.array() });
         }
-        const { excludeList } = req.body;
-        const client = req.headers.client as string;
+        let { excludeList, client } = req.body;
+
+        if (!client) {
+          // check if client was sent in headers
+          client = req.headers["x-rpch-client"] as string;
+        }
+
+        if (!client) {
+          return res
+            .status(400)
+            .json({ errors: "client was not sent in request" });
+        }
 
         let dbClient = await getClient(ops.db, client);
 
