@@ -13,6 +13,8 @@ const BASE_QUOTA = process.env.BASE_QUOTA
   ? BigInt(process.env.BASE_QUOTA)
   : BigInt(1);
 
+const SECRET = process.env.SECRET;
+
 // Port that server will listen for requests
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3020;
 
@@ -57,4 +59,5 @@ export {
   AMOUNT_OF_RANDOM_WORDS_FOR_TRIAL_ID,
   METRIC_PREFIX,
   QUEUE_CONCURRENCY_LIMIT,
+  SECRET,
 };

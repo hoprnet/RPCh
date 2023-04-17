@@ -21,6 +21,7 @@ import * as PgMem from "pg-mem";
 const FUNDING_SERVICE_URL = "http://localhost:5000";
 const BASE_QUOTA = BigInt(1);
 const FAKE_ACCESS_TOKEN = "EcLjvxdALOT0eq18d8Gzz3DEr3AMG27NtL+++YPSZNE=";
+const SECRET = "SECRET";
 
 const nockFundingRequest = (nodeAddress: string) =>
   nock(FUNDING_SERVICE_URL).post(`/api/request/funds/${nodeAddress}`);
@@ -63,6 +64,7 @@ describe("test entry server", function () {
       baseQuota: BASE_QUOTA,
       fundingServiceApi,
       metricManager: metricManager,
+      secret: SECRET,
     });
   });
 
@@ -88,7 +90,8 @@ describe("test entry server", function () {
       .send({
         client: "client",
         quota: BigInt(1).toString(),
-      });
+      })
+      .set("x-secret-key", SECRET);
 
     await request(app)
       .post("/api/v1/node/register")

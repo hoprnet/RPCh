@@ -50,6 +50,7 @@ services:
       - sandbox
     environment:
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+      - DP_SECRET=${DP_SECRET}
   exit-1:
     <<: *exit
     environment:

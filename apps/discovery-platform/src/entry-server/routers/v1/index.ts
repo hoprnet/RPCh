@@ -3,6 +3,7 @@ import {
   ParamSchema,
   body,
   checkSchema,
+  header,
   param,
   query,
   validationResult,
@@ -167,6 +168,7 @@ export const v1Router = (ops: {
   baseQuota: bigint;
   fundingServiceApi: FundingServiceApi;
   metricManager: MetricManager;
+  secret: string;
 }) => {
   // Metrics
   const counterSuccessfulRequests = ops.metricManager.createCounter(
@@ -320,10 +322,12 @@ export const v1Router = (ops: {
     }
   );
 
-  // DISCLAIMER: can be exploited to allow client to use infinite funds
   router.post(
     "/client/quota",
     metricMiddleware(requestDurationHistogram),
+    header("x-secret-key")
+      .exists()
+      .custom((val) => val === ops.secret),
     body("client").exists(),
     body("quota").exists().bail().isNumeric(),
     async (req, res) => {
