@@ -1,14 +1,14 @@
-import { JSONObject, CompressedPayload, Dictionary } from "./types";
+import { JSONObject, CompressedPayload, Dictionary } from "../types";
 
 import {
   mainKeyMap,
   resultOrParamsKeyMap,
   methodValueMap,
-} from "./compression-dictionaries";
+} from "./dictionaries";
 
-import { MAX_BYTES } from "./utils/index";
+import { MAX_BYTES } from "../utils/index";
 
-import * as utils from "./utils";
+import * as utils from "../utils";
 import { unpack, pack } from "msgpackr";
 import JSZip from "jszip";
 

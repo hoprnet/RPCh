@@ -1,4 +1,4 @@
-import { Dictionary } from "./types";
+import { Dictionary } from "../types";
 
 /**
  * Dictionaries used to compress and decompress RPC keys and methods

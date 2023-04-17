@@ -1,6 +1,6 @@
 import assert from "assert";
 import _ from "lodash";
-import Compression from "./compression";
+import Compression from ".";
 
 export const res_normal = {
   jsonrpc: "2.0",
