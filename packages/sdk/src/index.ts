@@ -204,7 +204,7 @@ export default class SDK {
         headers: {
           "Content-Type": "application/json",
           "Accept-Content": "application/json",
-          '"x-rpch-client": this.ops.client,': this.ops.client,
+          "x-rpch-client": this.ops.client,
         },
       }
     );

@@ -25,7 +25,7 @@ describe("test index.ts", function () {
     PROVIDER_URL,
     {
       crypto: RPChCrypto,
-      client: "",
+      client: "client",
       timeout: TIMEOUT,
       discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
     },
