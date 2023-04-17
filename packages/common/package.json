@@ -24,20 +24,24 @@
     "@rpch/crypto-for-nodejs": "0.3.4",
     "@types/chai": "^4.3.4",
     "@types/debug": "^4.1.7",
+    "@types/lodash": "^4.14.194",
     "@types/ws": "^8.5.3",
     "chai": "^4.3.7",
     "hardhat": "^2.12.3",
+    "lodash": "^4.17.21",
     "nock": "^13.2.9",
+    "node-pg-migrate": "^6.2.2",
     "pg-mem": "^2.6.4",
-    "prom-client": "^14.2.0",
     "pg-promise": "^11.0.0",
-    "node-pg-migrate": "^6.2.2"
+    "prom-client": "^14.2.0"
   },
   "dependencies": {
     "cross-fetch": "3.2.0-alpha.2",
     "debug": "^4.3.4",
     "ethers": "^5.7.2",
     "isomorphic-ws": "^5.0.0",
+    "jszip": "^3.10.1",
+    "msgpackr": "^1.8.5",
     "peer-id": "^0.16.0",
     "ws": "^8.11.0"
   }
