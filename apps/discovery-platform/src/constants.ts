@@ -46,6 +46,7 @@ const TRIAL_PAYMENT_MODE = "trial";
 
 // client id that will pay for quotas in trial mode
 const TRIAL_CLIENT_ID = "trial";
+const QUEUE_CONCURRENCY_LIMIT = 5;
 
 export {
   PORT,
@@ -62,4 +63,5 @@ export {
   METRIC_PREFIX,
   TRIAL_CLIENT_ID,
   TRIAL_PAYMENT_MODE,
+  QUEUE_CONCURRENCY_LIMIT,
 };

@@ -357,7 +357,7 @@ export const v1Router = (ops: {
             .json({ errors: "Could not find eligible node" });
         }
 
-        // DISCLAIMER: ACTIVATE THIS WHEN FUNDING IS STABLE
+        // TODO: ACTIVATE THIS WHEN FUNDING IS STABLE
         // // calculate how much should be funded to entry node
         // const amountToFund = getRewardForNode(
         //   ops.baseQuota,
