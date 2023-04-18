@@ -1,5 +1,6 @@
 import assert from "assert";
 import * as fixtures from "@rpch/common/build/fixtures";
+import * as RPChCrypto from "@rpch/crypto-for-nodejs";
 import mockSdk from "@rpch/sdk/build/index.mock";
 import { RPChProvider } from ".";
 
@@ -23,6 +24,7 @@ describe("test index.ts", function () {
   const provider = new RPChProvider(
     PROVIDER_URL,
     {
+      crypto: RPChCrypto,
       client: "",
       timeout: TIMEOUT,
       discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,

@@ -1,9 +1,9 @@
 import crypto from "crypto";
 import fs from "fs";
 import { Wallet, utils as ethersUtils } from "ethers";
-import { Identity } from "@rpch/crypto-bridge/nodejs";
+import { Identity } from "@rpch/crypto-for-nodejs";
+import { ALGORITHM } from "./constants";
 
-const ALGORITHM = "aes-192-cbc";
 const generateIv = () => crypto.randomBytes(16);
 const getSalt = (str: string): Buffer => crypto.scryptSync(str, "salt", 24);
 
@@ -19,13 +19,13 @@ export const createPrivateKey = async (): Promise<Uint8Array> => {
  * Encrypts and stores the private key.
  * @param privateKey private key to store
  * @param password password to encrypt private key before storing
- * @param fileDir where to store the encrypted content
+ * @param file where to store the encrypted content
  * @returns a Uint8Array of [iv, encryptedPrivateKey]
  */
 export const storePrivateKey = async (
   privateKey: Uint8Array,
   password: string,
-  fileDir: string
+  file: string
 ): Promise<Uint8Array> => {
   const key = getSalt(password);
   const iv = generateIv();
@@ -33,23 +33,23 @@ export const storePrivateKey = async (
   const encrypted = Buffer.concat([cipher.update(privateKey), cipher.final()]);
   // include IV into file
   const result = Buffer.concat([iv, encrypted]);
-  await fs.promises.writeFile(fileDir, result, "hex");
+  await fs.promises.writeFile(file, result, "hex");
   return Uint8Array.from(result);
 };
 
 /**
  * Loads and decrypts the private key.
  * @param password password to decrypt private key
- * @param fileDir where is our encrypted private key located
+ * @param file where our encrypted private key is located
  * @returns
  */
 export const loadPrivateKey = async (
   password: string,
-  fileDir: string
+  file: string
 ): Promise<Uint8Array | undefined> => {
   let blob: Buffer;
   try {
-    blob = await fs.promises.readFile(fileDir);
+    blob = await fs.promises.readFile(file);
   } catch (error: any) {
     if (error.code === "ENOENT") {
       return undefined;
@@ -79,12 +79,12 @@ export const loadPrivateKey = async (
  * @returns Identity
  */
 export const getIdentity = async ({
-  identityDir,
+  identityFile,
   privateKey,
   password,
 }: {
   privateKey?: Uint8Array;
-  identityDir: string;
+  identityFile: string;
   password?: string;
 }): Promise<{
   privateKey: string;
@@ -95,12 +95,12 @@ export const getIdentity = async ({
     throw Error("Should provide 'privateKey' or 'password'");
   } else if (!privateKey && password) {
     // search for private key in storage
-    privateKey = await loadPrivateKey(password, identityDir);
+    privateKey = await loadPrivateKey(password, identityFile);
     if (!privateKey) {
       // if not found create a new one
       privateKey = await createPrivateKey();
       // store it in storage
-      await storePrivateKey(privateKey, password, identityDir);
+      await storePrivateKey(privateKey, password, identityFile);
     }
   }
 

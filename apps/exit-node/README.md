@@ -21,7 +21,7 @@ docker run \
 -e HOPRD_API_TOKEN="<YOUR HOPRD API TOKEN>" \
 -e DEBUG="rpch*,-*verbose,-*metrics" \
 -e RPCH_PASSWORD="PleaseChangeMe" \
--e RPCH_IDENTITY_DIR= \
+-e RPCH_IDENTITY_FILE= \
 -e RPCH_PRIVATE_KEY= \
 -e RPCH_DATA_DIR= \
 exit-node

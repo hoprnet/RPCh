@@ -1,6 +1,5 @@
-import type Nock from "nock";
 import { utils } from "ethers";
-import * as crypto from "@rpch/crypto-bridge/nodejs";
+import * as crypto from "@rpch/crypto-for-nodejs";
 import Request from "./request";
 import Response from "./response";
 import type { IMemoryDb } from "pg-mem";

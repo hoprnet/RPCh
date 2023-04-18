@@ -5,6 +5,7 @@ import { isExpired, createLogger } from "../../utils";
 import { validationResult, body } from "express-validator";
 import { errors } from "pg-promise";
 import * as constants from "../../constants";
+import { Histogram } from "prom-client";
 
 const log = createLogger(["entry-server", "middleware"]);
 
@@ -61,7 +62,7 @@ export const tokenCanRequestFunds =
       return res.status(400).json({ errors: "Missing amount to fund" });
     }
 
-    const dbToken = await accessTokenService.getAccessToken(accessTokenHash);
+    await accessTokenService.getAccessToken(accessTokenHash);
 
     const sumOfRequestsByAccessToken =
       await requestService.getSumOfRequestsByStatus(
@@ -133,3 +134,19 @@ export const validateFundingRequestBody = () => [
     }
   },
 ];
+
+// middleware that will track duration of request
+export const metricMiddleware =
+  (histogramMetric: Histogram<string>) =>
+  (req: Request, res: Response, next: NextFunction) => {
+    const start = process.hrtime();
+    res.on("finish", () => {
+      const end = process.hrtime(start);
+      const durationSeconds = end[0] + end[1] / 1e9;
+      const statusCode = res.statusCode.toString();
+      const method = req.method;
+      const path = req.path;
+      histogramMetric.labels(method, path, statusCode).observe(durationSeconds);
+    });
+    next();
+  };

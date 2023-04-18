@@ -1,8 +1,10 @@
 import { AccessTokenService } from "../../access-token";
 import { DBInstance } from "../../types";
-import { MockPgInstanceSingleton } from "../../db/index.spec";
 import { RequestService } from "../../request";
 import { doesAccessTokenHaveEnoughBalance } from "./index";
+import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";
+import path from "path";
+import * as PgMem from "pg-mem";
 
 const SECRET_KEY = "SECRET";
 const MAX_AMOUNT_OF_TOKENS = BigInt(40);
@@ -14,7 +16,11 @@ describe("should test entry server middleware functions", function () {
   let requestService: RequestService;
 
   beforeAll(async function () {
-    dbInstance = await MockPgInstanceSingleton.getDbInstance();
+    const migrationsDirectory = path.join(__dirname, "../../../migrations");
+    dbInstance = await MockPgInstanceSingleton.getDbInstance(
+      PgMem,
+      migrationsDirectory
+    );
     MockPgInstanceSingleton.getInitialState();
   });
 

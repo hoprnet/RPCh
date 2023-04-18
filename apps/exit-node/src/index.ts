@@ -1,4 +1,3 @@
-import * as path from "path";
 import levelup from "levelup";
 import leveldown from "leveldown";
 import { utils as ethersUtils } from "ethers";
@@ -11,26 +10,30 @@ import {
   hoprd,
   utils,
 } from "@rpch/common";
-import * as crypto from "@rpch/crypto-bridge/nodejs";
+import * as crypto from "@rpch/crypto-for-nodejs";
+import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 import * as exit from "./exit";
 import * as identity from "./identity";
 import { createLogger } from "./utils";
 import PeerId from "peer-id";
-
-const log = createLogger();
-
-const {
-  RPCH_PASSWORD,
-  RPCH_IDENTITY_DIR,
-  RPCH_PRIVATE_KEY: RPCH_PRIVATE_KEY_STR,
-  RPCH_DATA_DIR,
+import * as Prometheus from "prom-client";
+import {
+  DEFAULT_DATA_DIR,
+  DEFAULT_IDENTITY_FILE,
   HOPRD_API_ENDPOINT,
   HOPRD_API_TOKEN,
-  RESPONSE_TIMEOUT: RESPONSE_TIMEOUT_STR = "10000",
-} = process.env;
+  METRIC_PREFIX,
+  OPT_IN_METRICS,
+  PUSHGATEWAY_ENDPOINT,
+  RESPONSE_TIMEOUT,
+  RPCH_DATA_DIR,
+  RPCH_IDENTITY_FILE,
+  RPCH_PASSWORD,
+  RPCH_PRIVATE_KEY_STR,
+  SEND_METRICS_INTERVAL,
+} from "./constants";
 
-const DEFAULT_IDENTITY_DIR = path.join(process.cwd(), ".identity");
-const DEFAULT_DATA_DIR = path.join(process.cwd(), "db");
+const log = createLogger();
 
 export const start = async (ops: {
   exit: {
@@ -42,16 +45,41 @@ export const start = async (ops: {
     fetchPeerId: typeof hoprd.fetchPeerId;
   };
   privateKey?: Uint8Array;
-  identityDir: string;
+  identityFile: string;
   password?: string;
   dataDir: string;
   apiEndpoint: string;
   apiToken?: string;
   timeout: number;
+  pushgatewayEndpoint: string;
+  optInMetrics: boolean;
+  sendMetricsInterval: number;
 }): Promise<() => void> => {
+  const metricManager = new MetricManager(
+    Prometheus,
+    Prometheus.register,
+    METRIC_PREFIX
+  );
+
+  const gateway = new Prometheus.Pushgateway(ops.pushgatewayEndpoint);
+
+  // Metrics
+  const counterRequests = metricManager.createCounter(
+    "counter_received_request",
+    "amount of requests exit node has processed",
+    { labelNames: ["status"] }
+  );
+
+  const counterRequestsToProvider = metricManager.createCounter(
+    "counter_provider_request",
+    "amount of requests exit node has sent to provider",
+    { labelNames: ["status"] }
+  );
+
   const onMessage = async (message: Message) => {
     try {
       log.verbose("Received message", message.id, message.body);
+      counterRequests.labels({ status: "complete" }).inc();
       // in the method, we are only expecting to receive
       // Requests, this means that the all messages are
       // prefixed by the entry node's peer id
@@ -89,6 +117,8 @@ export const start = async (ops: {
         rpchRequest.provider
       );
 
+      counterRequestsToProvider.labels({ status: "complete" }).inc();
+
       const rpchResponse = Response.createResponse(
         crypto,
         rpchRequest,
@@ -115,6 +145,7 @@ export const start = async (ops: {
       }
     } catch (error) {
       log.error("Failed to respond with data", error);
+      counterRequestsToProvider.labels({ status: "error" }).inc();
     }
   };
 
@@ -133,20 +164,35 @@ export const start = async (ops: {
 
   log.verbose("Get identity");
   const { publicKey, identity: myIdentity } = await identity.getIdentity({
-    identityDir: ops.identityDir,
+    identityFile: ops.identityFile,
     password: ops.password,
     privateKey: ops.privateKey,
   });
   log.verbose("Got identity");
   log.normal("Running exit node with public key", publicKey);
 
-  const cache = new Cache(onMessage);
+  const cache = new Cache(onMessage, () => {
+    counterRequests.labels({ status: "error" }).inc();
+  });
+
   const intervals: NodeJS.Timer[] = [];
   intervals.push(
     setInterval(() => {
       cache.removeExpired(ops.timeout);
     }, 1000)
   );
+
+  if (ops.optInMetrics) {
+    const pushMetrics = setInterval(() => {
+      gateway
+        .pushAdd({ jobName: publicKey + "_exit_node_metrics" })
+        .catch(() => {
+          log.error("failed to push metrics");
+        });
+    }, ops.sendMetricsInterval);
+
+    intervals.push(pushMetrics);
+  }
 
   const stopMessageListening = await ops.hoprd.createMessageListener(
     ops.apiEndpoint,
@@ -187,7 +233,6 @@ if (require.main === module) {
     throw Error("env variable 'HOPRD_API_TOKEN' not found");
   }
 
-  const RESPONSE_TIMEOUT = Number(RESPONSE_TIMEOUT_STR);
   if (isNaN(RESPONSE_TIMEOUT)) {
     throw Error("env variable 'RESPONSE_TIMEOUT' not a number");
   }
@@ -200,11 +245,14 @@ if (require.main === module) {
     privateKey: RPCH_PRIVATE_KEY_STR
       ? ethersUtils.arrayify(RPCH_PRIVATE_KEY_STR)
       : undefined,
-    identityDir: RPCH_IDENTITY_DIR || DEFAULT_IDENTITY_DIR,
+    identityFile: RPCH_IDENTITY_FILE || DEFAULT_IDENTITY_FILE,
     password: RPCH_PASSWORD,
     dataDir: RPCH_DATA_DIR || DEFAULT_DATA_DIR,
     apiEndpoint: HOPRD_API_ENDPOINT,
     apiToken: HOPRD_API_TOKEN,
     timeout: RESPONSE_TIMEOUT,
+    optInMetrics: OPT_IN_METRICS,
+    pushgatewayEndpoint: PUSHGATEWAY_ENDPOINT,
+    sendMetricsInterval: SEND_METRICS_INTERVAL,
   }).catch((error) => log.error(error));
 }

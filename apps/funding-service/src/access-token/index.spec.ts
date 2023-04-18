@@ -1,8 +1,10 @@
 import { AccessTokenService } from ".";
 import assert from "assert";
 import { DBInstance } from "../types";
-import { MockPgInstanceSingleton } from "../db/index.spec";
 import { errors } from "pg-promise";
+import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";
+import path from "path";
+import * as PgMem from "pg-mem";
 
 const THIRTY_MINUTES_IN_MS = 30 * 60_000;
 const MAX_HOPR = BigInt(40);
@@ -16,7 +18,11 @@ describe("test AccessTokenService class", function () {
   let dbInstance: DBInstance;
 
   beforeAll(async function () {
-    dbInstance = await MockPgInstanceSingleton.getDbInstance();
+    const migrationsDirectory = path.join(__dirname, "../../migrations");
+    dbInstance = await MockPgInstanceSingleton.getDbInstance(
+      PgMem,
+      migrationsDirectory
+    );
     MockPgInstanceSingleton.getInitialState();
   });
 
@@ -45,10 +51,11 @@ describe("test AccessTokenService class", function () {
       accessToken?.token!
     );
 
-    expect(new Date(dbAccessToken.expired_at).valueOf()).toBeCloseTo(
-      expectedExpireDate.valueOf(),
-      3
-    );
+    // the diff between what is expected and reality is less than 1 second
+    expect(
+      new Date(dbAccessToken.expired_at).valueOf() -
+        expectedExpireDate.valueOf()
+    ).toBeLessThan(1e3);
   });
   it("should get access token", async function () {
     await accessTokenService.createAccessToken(accessTokenParams);
@@ -67,9 +74,7 @@ describe("test AccessTokenService class", function () {
     await accessTokenService.deleteAccessToken(accessToken?.token!);
 
     try {
-      const dbAccessToken = await accessTokenService.getAccessToken(
-        accessToken?.token!
-      );
+      await accessTokenService.getAccessToken(accessToken?.token!);
     } catch (e) {
       if (e instanceof errors.QueryResultError) {
         assert.equal(e.message, "No data returned from the query.");

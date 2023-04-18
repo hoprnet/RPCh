@@ -1,14 +1,10 @@
-import { BigNumber, ethers, Signer } from "ethers";
-import {
-  getBalance,
-  getProvider,
-  sendTransaction,
-  waitForTransaction,
-} from "../blockchain";
+import { Signer } from "ethers";
+import { blockchain } from "@rpch/common";
 import { RequestDB } from "../types";
 import { RequestService } from "../request";
 import { CustomError, createLogger } from "../utils";
 import * as constants from "../constants";
+import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 
 const log = createLogger(["queue"]);
 
@@ -18,6 +14,7 @@ const log = createLogger(["queue"]);
  * @param signer ethers signer that will send the transaction
  * @param confirmations amount of confirmations to wait for every transaction
  * @param changeState updates a higher lever boolean that stops this function from running
+ * @param register Prometheus register that will hold metrics
  * while it is already running
  */
 export const checkFreshRequests = async (ops: {
@@ -25,7 +22,19 @@ export const checkFreshRequests = async (ops: {
   signer: Signer;
   confirmations: number;
   changeState: (state: boolean) => void;
+  metricManager: MetricManager;
 }) => {
+  // metrics
+  const counterSuccessfulFundingNodes = ops.metricManager.createCounter(
+    "counter_funded_nodes_successful",
+    "amount of times we have funded nodes successfully"
+  );
+
+  const counterFailedFundingNodes = ops.metricManager.createCounter(
+    "counter_funded_nodes_failed",
+    "amount of times we have failed to fund nodes"
+  );
+
   ops.changeState(true);
   let freshRequest: RequestDB | null | undefined;
   try {
@@ -44,12 +53,12 @@ export const checkFreshRequests = async (ops: {
     // check if signer has enough to fund request
     const provider = ops.signer.provider
       ? ops.signer.provider
-      : await getProvider(freshRequest.chain_id);
+      : await blockchain.getProvider(freshRequest.chain_id);
     let connectedSigner = ops.signer.provider
       ? ops.signer
       : ops.signer.connect(provider);
     let address = await connectedSigner.getAddress();
-    const balance = await getBalance(
+    const balance = await blockchain.getBalance(
       constants.SMART_CONTRACTS_PER_CHAIN?.[
         freshRequest.chain_id as keyof typeof constants.SMART_CONTRACTS_PER_CHAIN
       ],
@@ -73,7 +82,7 @@ export const checkFreshRequests = async (ops: {
     });
 
     // sent transaction to fund request
-    const { hash: txHash } = await sendTransaction({
+    const { hash: txHash } = await blockchain.sendTransaction({
       smartContractAddress:
         constants.SMART_CONTRACTS_PER_CHAIN?.[
           freshRequest.chain_id as keyof typeof constants.SMART_CONTRACTS_PER_CHAIN
@@ -93,7 +102,7 @@ export const checkFreshRequests = async (ops: {
       id: freshRequest.id,
     });
     // wait for transaction to reach a certain amount of confirmations
-    const txReceipt = await waitForTransaction(
+    const txReceipt = await blockchain.waitForTransaction(
       txHash,
       provider,
       ops.confirmations
@@ -103,6 +112,8 @@ export const checkFreshRequests = async (ops: {
       freshRequest,
       txReceipt.status === 1 ? "SUCCESS" : "FAILED"
     );
+
+    counterSuccessfulFundingNodes.inc();
 
     // update request to success or failed
     await ops.requestService.updateRequest(freshRequest.id, {
@@ -155,6 +166,7 @@ export const checkFreshRequests = async (ops: {
       }
     }
   } finally {
+    counterFailedFundingNodes.inc();
     ops.changeState(false);
   }
 };

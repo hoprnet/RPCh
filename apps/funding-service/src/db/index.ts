@@ -7,28 +7,9 @@ import {
   RequestFilters,
 } from "../types";
 import { createLogger } from "../utils";
-import migrate from "node-pg-migrate";
-import path from "path";
 import { DBTimestamp } from "../types/general";
 
 const log = createLogger(["db"]);
-
-/**
- * Run migrations from project in a connected db
- * @param dbUrl
- */
-export const runMigrations = async (dbUrl: string) => {
-  const migrationsDirectory = path.join(__dirname, "../../migrations");
-
-  await migrate({
-    schema: "public",
-    direction: "up",
-    count: Infinity,
-    databaseUrl: dbUrl,
-    migrationsTable: "migrations",
-    dir: migrationsDirectory,
-  });
-};
 
 export const saveAccessToken = async (
   db: DBInstance,

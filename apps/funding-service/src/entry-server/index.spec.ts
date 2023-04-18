@@ -2,10 +2,14 @@ import { assert } from "chai";
 import { Express } from "express";
 import request from "supertest";
 import { AccessTokenService } from "../access-token";
-import { MockPgInstanceSingleton } from "../db/index.spec";
 import { RequestService } from "../request";
 import { entryServer } from ".";
+import Prometheus from "prom-client";
 import { DBInstance } from "../types";
+import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";
+import path from "path";
+import * as PgMem from "pg-mem";
+import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 
 const SECRET_KEY = "SECRET";
 const MAX_AMOUNT_OF_TOKENS = BigInt(40);
@@ -19,7 +23,11 @@ describe("test entry server", function () {
   let agent: request.SuperTest<request.Test>;
 
   beforeAll(async function () {
-    dbInstance = await MockPgInstanceSingleton.getDbInstance();
+    const migrationsDirectory = path.join(__dirname, "../../migrations");
+    dbInstance = await MockPgInstanceSingleton.getDbInstance(
+      PgMem,
+      migrationsDirectory
+    );
     MockPgInstanceSingleton.getInitialState();
   });
 
@@ -27,13 +35,19 @@ describe("test entry server", function () {
     MockPgInstanceSingleton.getInitialState().restore();
     accessTokenService = new AccessTokenService(dbInstance, SECRET_KEY);
     requestService = new RequestService(dbInstance);
+    // create prometheus registry
+    const register = new Prometheus.Registry();
+    const metricManager = new MetricManager(Prometheus, register, "test");
+
     app = entryServer({
       accessTokenService,
       requestService,
       walletAddress: "0x0000000000000000",
       maxAmountOfTokens: MAX_AMOUNT_OF_TOKENS,
       timeout: TIMEOUT,
+      metricManager: metricManager,
     });
+
     agent = request(app);
   });
 
@@ -99,7 +113,7 @@ describe("test entry server", function () {
       .get("/api/access-token")
       .set("Accept", "application/json");
 
-    const b = await agent
+    await agent
       .post("/api/request/funds/0x0000000000000000")
       .send({ amount: String(MAX_AMOUNT_OF_TOKENS - BigInt(1)), chainId: 80 })
       .set("Accept", "application/json")

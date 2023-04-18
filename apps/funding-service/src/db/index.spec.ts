@@ -1,56 +1,13 @@
 import assert from "assert";
-import { IBackup, IMemoryDb, newDb } from "pg-mem";
 import * as db from ".";
 import { generateAccessToken } from "../utils";
 import { Request, RequestDB, AccessToken, DBInstance } from "../types";
 import { utils } from "@rpch/common";
-import path from "path";
-import * as fixtures from "@rpch/common/build/fixtures";
 import { DBTimestamp } from "../types/general";
 import { errors } from "pg-promise";
-
-export class MockPgInstanceSingleton {
-  private static pgInstance: IMemoryDb;
-  private static dbInstance: DBInstance;
-  private static initialDbState: IBackup;
-
-  private constructor() {}
-
-  private async createInstance() {
-    const migrationsDirectory = path.join(__dirname, "../../migrations");
-    let instance = newDb();
-    fixtures.withQueryIntercept(instance);
-    await instance.public.migrate({ migrationsPath: migrationsDirectory });
-    MockPgInstanceSingleton.pgInstance = instance;
-    MockPgInstanceSingleton.initialDbState =
-      MockPgInstanceSingleton.pgInstance.backup();
-    return MockPgInstanceSingleton.pgInstance;
-  }
-
-  public static async getInstance(): Promise<IMemoryDb> {
-    if (!MockPgInstanceSingleton.pgInstance) {
-      await new this().createInstance();
-    }
-    return MockPgInstanceSingleton.pgInstance;
-  }
-
-  public static async getDbInstance(): Promise<DBInstance> {
-    if (!MockPgInstanceSingleton.dbInstance) {
-      const instance = await this.getInstance();
-      MockPgInstanceSingleton.dbInstance = instance.adapters.createPgPromise();
-    }
-    return MockPgInstanceSingleton.dbInstance;
-  }
-
-  public static backup(): void {
-    MockPgInstanceSingleton.initialDbState =
-      MockPgInstanceSingleton.pgInstance.backup();
-  }
-
-  public static getInitialState(): IBackup {
-    return MockPgInstanceSingleton.initialDbState;
-  }
-}
+import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";
+import path from "path";
+import * as PgMem from "pg-mem";
 
 const mockCreateAccessToken = () => ({
   id: utils.generatePseudoRandomId(1e6),
@@ -83,7 +40,11 @@ describe("test db adapter functions", function () {
   let dbInstance: DBInstance;
 
   beforeAll(async function () {
-    dbInstance = await MockPgInstanceSingleton.getDbInstance();
+    const migrationsDirectory = path.join(__dirname, "../../migrations");
+    dbInstance = await MockPgInstanceSingleton.getDbInstance(
+      PgMem,
+      migrationsDirectory
+    );
     MockPgInstanceSingleton.getInitialState();
   });
 
@@ -116,10 +77,7 @@ describe("test db adapter functions", function () {
     await db.saveAccessToken(dbInstance, createAccessToken);
     await db.deleteAccessToken(dbInstance, createAccessToken.token);
     try {
-      const dbAccessToken = await db.getAccessToken(
-        dbInstance,
-        createAccessToken.token
-      );
+      await db.getAccessToken(dbInstance, createAccessToken.token);
     } catch (e) {
       if (e instanceof errors.QueryResultError) {
         assert.equal(e.message, "No data returned from the query.");
@@ -184,7 +142,7 @@ describe("test db adapter functions", function () {
     await db.saveAccessToken(dbInstance, accessTokens.token2);
     const request2 = mockCreateRequest(accessTokens.token2.token);
     await Promise.all(
-      Array.from({ length: Number(amountOfTimesToSendRequest) }).map((_) =>
+      Array.from({ length: Number(amountOfTimesToSendRequest) }).map(() =>
         db.saveRequest(dbInstance, request2)
       )
     );
@@ -214,7 +172,7 @@ describe("test db adapter functions", function () {
     await db.saveAccessToken(dbInstance, accessTokens.token2);
     const request2 = mockCreateRequest(accessTokens.token2.token);
     await Promise.all(
-      Array.from({ length: Number(amountOfTimesToSendRequest) }).map((_) =>
+      Array.from({ length: Number(amountOfTimesToSendRequest) }).map(() =>
         db.saveRequest(dbInstance, request2)
       )
     );
@@ -236,7 +194,7 @@ describe("test db adapter functions", function () {
     const queryRequest = await db.saveRequest(dbInstance, request);
     await db.deleteRequest(dbInstance, queryRequest.id);
     try {
-      const dbRequest = await db.getRequest(dbInstance, queryRequest.id);
+      await db.getRequest(dbInstance, queryRequest.id);
     } catch (e) {
       if (e instanceof errors.QueryResultError) {
         assert.equal(e.message, "No data returned from the query.");
@@ -269,8 +227,10 @@ describe("test db adapter functions", function () {
   it("should get oldest fresh request", async function () {
     const firstRequest = await createAccessTokenAndRequest(dbInstance);
     const secondRequest = await createAccessTokenAndRequest(dbInstance);
-    const thirdRequest = await createAccessTokenAndRequest(dbInstance);
-    const updateFirstRequest = await db.updateRequest(dbInstance, {
+    // thirdRequest
+    await createAccessTokenAndRequest(dbInstance);
+    // updateFirstRequest
+    await db.updateRequest(dbInstance, {
       id: firstRequest.id,
       access_token_hash: firstRequest.access_token_hash,
       node_address: firstRequest.node_address,
@@ -289,9 +249,12 @@ describe("test db adapter functions", function () {
   });
   it("should get all unresolved requests", async function () {
     const firstRequest = await createAccessTokenAndRequest(dbInstance);
-    const secondRequest = await createAccessTokenAndRequest(dbInstance);
-    const thirdRequest = await createAccessTokenAndRequest(dbInstance);
-    const updateFirstRequest = await db.updateRequest(dbInstance, {
+    // secondRequest
+    await createAccessTokenAndRequest(dbInstance);
+    // thirdRequest
+    await createAccessTokenAndRequest(dbInstance);
+    // updateFirstRequest
+    await db.updateRequest(dbInstance, {
       id: firstRequest.id,
       access_token_hash: firstRequest.access_token_hash,
       node_address: firstRequest.node_address,

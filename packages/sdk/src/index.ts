@@ -1,5 +1,4 @@
-import type * as RPChCryptoNode from "@rpch/crypto-bridge/nodejs";
-import type * as RPChCryptoWeb from "@rpch/crypto-bridge/web";
+import type * as RPChCrypto from "@rpch/crypto";
 import {
   Cache as SegmentCache,
   Message,
@@ -10,9 +9,10 @@ import {
   utils,
 } from "@rpch/common";
 import { utils as etherUtils } from "ethers";
+import debug from "debug";
 import fetch from "cross-fetch";
 import retry from "async-retry";
-import ReliabilityScore, { Stats } from "./reliability-score";
+import ReliabilityScore from "./reliability-score";
 import RequestCache from "./request-cache";
 import { createLogger } from "./utils";
 
@@ -20,11 +20,12 @@ const log = createLogger();
 // max number of segments sdk can send to entry node
 const MAXIMUM_SEGMENTS_PER_REQUEST = 100;
 const DEADLOCK_MS = 1e3 * 60 * 0.5; // 30s
-
+const MINIMUM_SCORE_FOR_RELIABLE_NODE = 0.7;
 /**
  * HOPR SDK options.
  */
 export type HoprSdkOps = {
+  crypto: typeof RPChCrypto;
   client: string;
   timeout: number;
   discoveryPlatformApiEndpoint: string;
@@ -53,7 +54,9 @@ export type ExitNode = {
  * Send traffic through the RPCh network
  */
 export default class SDK {
-  private crypto?: typeof RPChCryptoNode | typeof RPChCryptoWeb;
+  // allows developers to programmatically enable debugging
+  public debug = debug;
+  private crypto: typeof RPChCrypto;
   // single interval for the SDK for things that need to be checked.
   private intervals: NodeJS.Timer[] = [];
   private segmentCache: SegmentCache;
@@ -74,9 +77,13 @@ export default class SDK {
 
   constructor(
     private readonly ops: HoprSdkOps,
+    // eslint-disable-next-line no-unused-vars
     private setKeyVal: (key: string, val: string) => Promise<any>,
+    // eslint-disable-next-line no-unused-vars
     private getKeyVal: (key: string) => Promise<string | undefined>
   ) {
+    this.crypto = ops.crypto;
+    this.crypto.set_panic_hook();
     this.segmentCache = new SegmentCache((message) => this.onMessage(message));
     this.requestCache = new RequestCache((request) =>
       this.onRequestRemoval(request)
@@ -128,17 +135,21 @@ export default class SDK {
         }
       );
 
+      // Check for error response
+      if (rawResponse.status !== 200) {
+        log.error(
+          "Failed to request entry node",
+          rawResponse.status,
+          await rawResponse.text()
+        );
+        throw new Error(`Failed to request entry node`);
+      }
+
       const response: {
         hoprd_api_endpoint: string;
         accessToken: string;
         id: string;
       } = await rawResponse.json();
-
-      // Check for error response
-      if (rawResponse.status !== 200) {
-        log.error("Failed to request entry node", rawResponse.status, response);
-        throw new Error(`Failed to request entry node`);
-      }
 
       const apiEndpointUrl = new URL(response.hoprd_api_endpoint);
 
@@ -147,6 +158,7 @@ export default class SDK {
         apiToken: response.accessToken,
         peerId: response.id,
       };
+
       log.verbose("Selected entry node", this.entryNode);
 
       // Refresh messageListener
@@ -183,15 +195,22 @@ export default class SDK {
     discoveryPlatformApiEndpoint: string
   ): Promise<ExitNode[]> {
     log.verbose("Fetching exit nodes");
-    const response: {
-      exit_node_pub_key: string;
-      id: string;
-    }[] = await fetch(
+
+    const rawResponse = await fetch(
       new URL(
         "/api/v1/node?hasExitNode=true",
         discoveryPlatformApiEndpoint
       ).toString()
-    ).then((res) => res.json());
+    );
+
+    if (rawResponse.status !== 200) {
+      throw new Error("Failed to fetch exit nodes");
+    }
+
+    const response: {
+      exit_node_pub_key: string;
+      id: string;
+    }[] = await rawResponse.json();
 
     this.exitNodes = response.map((item) => ({
       peerId: item.id,
@@ -298,19 +317,6 @@ export default class SDK {
     if (this.starting) throw Error("SDK is already starting");
     this.starting = true;
 
-    if (typeof window === "undefined") {
-      log.verbose("Using 'node' RPCh crypto implementation");
-      this.crypto =
-        require("@rpch/crypto-bridge/nodejs") as typeof RPChCryptoNode;
-    } else {
-      log.verbose("Using 'web' RPCh crypto implementation");
-      this.crypto = (await import(
-        "@rpch/crypto-bridge/web"
-      )) as typeof RPChCryptoWeb;
-      // @ts-expect-error
-      await this.crypto.init();
-    }
-
     // fetch required data from discovery platform
     await retry(
       () => this.selectEntryNode(this.ops.discoveryPlatformApiEndpoint),
@@ -322,6 +328,7 @@ export default class SDK {
         },
       }
     );
+
     await retry(
       () => this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint),
       {
@@ -372,7 +379,6 @@ export default class SDK {
    */
   public async createRequest(provider: string, body: string): Promise<Request> {
     if (!this.isReady) throw Error("SDK not ready to create requests");
-    if (this.isDeadlocked()) throw Error("SDK is deadlocked");
     if (this.selectingEntryNode) throw Error("SDK is selecting entry node");
 
     let entryNodeScore: number = this.reliabilityScore.getScore(
@@ -380,21 +386,34 @@ export default class SDK {
     );
     const exclusionList: string[] = [];
     if (
-      entryNodeScore < 0.7 &&
+      entryNodeScore < MINIMUM_SCORE_FOR_RELIABLE_NODE &&
       this.reliabilityScore.getStatus(this.entryNode!.peerId) === "NON_FRESH"
     ) {
       log.verbose("node is not reliable enough. selecting new entry node");
       exclusionList.push(this.entryNode!.peerId);
+      // Try to select entry node 3 times
       try {
-        await this.selectEntryNode(
-          this.ops.discoveryPlatformApiEndpoint,
-          exclusionList
+        await retry(
+          async () => {
+            const selectedEntryNode = await this.selectEntryNode(
+              this.ops.discoveryPlatformApiEndpoint,
+              exclusionList
+            );
+            log.verbose("Received entry node", selectedEntryNode);
+            return selectedEntryNode;
+          },
+          {
+            retries: 3,
+            onRetry: (e, attempt) => {
+              log.error("Error while selecting entry node", e);
+              log.verbose("Retrying to select entry node, attempt:", attempt);
+            },
+          }
         );
       } catch (error) {
         log.error("Couldn't find new entry node: ", error);
         this.setDeadlock(DEADLOCK_MS);
       }
-      log.verbose("got new entry node");
     }
 
     // exclude entry node

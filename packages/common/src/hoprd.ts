@@ -100,11 +100,19 @@ export const createMessageListener = async (
     "/api/v2/messages/websocket",
     apiToken
   );
-  const ws = new WebSocket(url);
+  const ws = await new Promise<WebSocket>((resolve, reject) => {
+    const socket = new WebSocket(url);
 
-  ws.onopen = () => {
-    log.normal("Listening for incoming messages from HOPRd", url);
-  };
+    socket.onopen = () => {
+      log.normal("Listening for incoming messages from HOPRd", url);
+      resolve(socket);
+    };
+
+    socket.onerror = (error) => {
+      console.error("WebSocket error:", error);
+      reject(error);
+    };
+  });
 
   ws.onmessage = (event) => {
     const body = event.data.toString();

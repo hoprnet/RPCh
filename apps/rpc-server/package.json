@@ -1,13 +1,13 @@
 {
   "name": "@rpch/rpc-server",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "license": "LGPL-3.0",
   "private": true,
   "scripts": {
     "build": "tsup",
     "dev": "yarn build --watch",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
-    "lint": "TIMING=1 eslint \"src/**/*.ts*\"",
+    "lint": "eslint \"src/**/*.ts*\"",
     "test": "jest --coverage",
     "start": "node build/index.js"
   },
@@ -24,7 +24,8 @@
     "supertest": "^6.3.3"
   },
   "dependencies": {
-    "@rpch/sdk": "0.1.6",
+    "@rpch/sdk": "0.1.7",
+    "@rpch/crypto-for-nodejs": "0.3.4",
     "leveldown": "^6.1.1",
     "levelup": "^5.1.1"
   }
