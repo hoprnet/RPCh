@@ -44,23 +44,16 @@ describe("test rpch ethereum provider", function () {
   // hook to emulate responses from the exit node
   provider.sdk = mockSdk(provider.sdk);
 
-  it("should get chain id", function (done) {
-    provider.send(
-      { id: 1, jsonrpc: "2.0", method: "eth_chainId", params: [] },
-      (err, res) => {
-        assert.equal(res?.result, 1);
-        done();
-      }
-    );
+  it("should get chain id", async function () {
+    const res = await provider.request({ method: "eth_chainId", params: [] });
+    assert.equal(res, 1);
   });
 
-  it("should get block number", function (done) {
-    provider.send(
-      { id: 1, jsonrpc: "2.0", method: "eth_blockNumber", params: [] },
-      (err, res) => {
-        assert.equal(res?.result, 25135304);
-        done();
-      }
-    );
+  it("should get block number", async function () {
+    const res = await provider.request({
+      method: "eth_blockNumber",
+      params: [],
+    });
+    assert.equal(res, 25135304);
   });
 });
