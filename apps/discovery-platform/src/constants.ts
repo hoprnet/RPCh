@@ -3,6 +3,8 @@ const {
   FUNDING_SERVICE_URL,
   // Database connection url
   DB_CONNECTION_URL,
+  // Secret for custom authentication
+  SECRET,
 } = process.env;
 
 // Skips commitment check making all fresh nodes go to ready
@@ -12,8 +14,6 @@ const SKIP_CHECK_COMMITMENT = process.env.SKIP_CHECK_COMMITMENT === "true";
 const BASE_QUOTA = process.env.BASE_QUOTA
   ? BigInt(process.env.BASE_QUOTA)
   : BigInt(1);
-
-const SECRET = process.env.SECRET;
 
 // Port that server will listen for requests
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3020;
