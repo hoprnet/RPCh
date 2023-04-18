@@ -5,9 +5,10 @@ import type {
   box_request,
   unbox_request,
   Session,
-  Identity,
+  Identity
 } from "@rpch/crypto-for-nodejs";
 import Message from "./message";
+import Compression from "./compression";
 import {
   generatePseudoRandomId,
   joinPartsToBody,
@@ -49,7 +50,8 @@ export default class Request {
     exitNodeReadIdentity: Identity
   ): Request {
     const id = generatePseudoRandomId(1e6);
-    const payload = joinPartsToBody(["request", provider, body]);
+    const compressedBody = Compression.compressRpcRequestSync(JSON.parse(body));
+    const payload = joinPartsToBody(["request", provider, compressedBody]);
     const envelope = new crypto.Envelope(
       utils.toUtf8Bytes(payload),
       entryNodeDestination,
@@ -109,11 +111,14 @@ export default class Request {
       utils.toUtf8String(session.get_request_data())
     );
 
+    const compressedBody = joinPartsToBody(remaining)
+    const body = JSON.stringify(Compression.decompressRpcRequestSync(compressedBody));
+
     if (type !== "request") throw Error("Message is not a Request");
     return new Request(
       message.id,
       provider,
-      joinPartsToBody(remaining),
+      body,
       entryNodeDestination,
       exitNodeDestination,
       exitNodeWriteIdentity,

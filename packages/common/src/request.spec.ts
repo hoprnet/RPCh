@@ -1,4 +1,5 @@
 import assert from "assert";
+import _ from "lodash";
 import * as crypto from "@rpch/crypto-for-nodejs";
 import Message from "./message";
 import Request from "./request";
@@ -25,7 +26,8 @@ const shouldBeAValidRequest = (
   assert.equal(typeof actual.id, "number");
   assert(actual.id > 0);
   assert.equal(actual.provider, expected.provider);
-  assert.equal(actual.body, expected.body);
+  const sameMessage = _.isEqual(JSON.parse(actual.body), JSON.parse(expected.body));
+  assert(sameMessage);
   assert.equal(actual.entryNodeDestination, expected.entryNodeDestination);
   assert.equal(actual.exitNodeDestination, expected.exitNodeDestination);
   assert(!!actual.exitNodeIdentity);

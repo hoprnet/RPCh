@@ -5,6 +5,7 @@ import type {
   box_response,
 } from "@rpch/crypto-for-nodejs";
 import Message from "./message";
+import Compression from "./compression";
 import { joinPartsToBody, splitBodyToParts } from "./utils";
 import { utils } from "ethers";
 
@@ -33,7 +34,8 @@ export default class Response {
     request: Request,
     body: string
   ): Response {
-    const payload = joinPartsToBody(["response", body]);
+    const compressedBody = Compression.compressRpcRequestSync(JSON.parse(body));
+    const payload = joinPartsToBody(["response", compressedBody]);
     const envelope = new crypto.Envelope(
       utils.toUtf8Bytes(payload),
       request.entryNodeDestination,
@@ -75,10 +77,10 @@ export default class Response {
     );
 
     const decrypted = utils.toUtf8String(request.session.get_response_data());
-
-    const [type, body] = splitBodyToParts(decrypted);
+    const [type, compressedDecrypted] = splitBodyToParts(decrypted);
+    const decompressedDecrypted = JSON.stringify(Compression.decompressRpcRequestSync(compressedDecrypted));
     if (type !== "response") throw Error("Message is not a Response");
-    return new Response(request.id, body, request);
+    return new Response(request.id, decompressedDecrypted, request);
   }
 
   /**

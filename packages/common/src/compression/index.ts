@@ -233,8 +233,6 @@ export default class Compression {
         return zipped;        
      });
 
-
-
       if (zipped.length < jsonTmp.length) {
         jsonTmp = zipped;
         // @ts-ignore-start
@@ -306,7 +304,6 @@ export default class Compression {
     // @ts-ignore-start
     let compressionDiagram: CompressedPayload = compressedBody.substring(0, 7);
     let jsonTmp: JSONObject = compressedBody.substring(7);
-
     if (compressionDiagram[0] === "1") {
       let zip = new JSZipSync();
       jsonTmp = zip.sync(function() {
@@ -384,8 +381,10 @@ export default class Compression {
     if (input["method"]) {
       const method: string = input["method"];
       const methodId = Compression.getCompressedKeyId(method, methodValueMap);
-      result.json["method"] = methodId;
-      result.compressed = true;
+      if(methodId) {
+        result.json["method"] = methodId;
+        result.compressed = true;
+      }
     }
 
     return result;

@@ -1,4 +1,5 @@
 import assert from "assert";
+import _ from "lodash";
 import * as crypto from "@rpch/crypto-for-nodejs";
 import Message from "./message";
 import type Request from "./request";
@@ -16,7 +17,8 @@ const shouldBeAValidResponse = (
   assert.equal(typeof actual.id, "number");
   assert(actual.id > 0);
   assert.equal(actual.id, expected.request.id);
-  assert.equal(actual.body, expected.body);
+  const sameMessage = _.isEqual(JSON.parse(actual.body), JSON.parse(expected.body));
+  assert(sameMessage);
 };
 
 const shouldBeAValidResponseMessage = (
