@@ -55,7 +55,10 @@ export const metricMiddleware =
       const statusCode = res.statusCode.toString();
       const method = req.method;
       const path = req.path;
-      const client = req.headers["x-rpch-client"] as string;
+      const client =
+        typeof req.headers["x-rpch-client"] === "string"
+          ? req.headers["x-rpch-client"]
+          : "";
 
       histogramMetric
         .labels(method, path, statusCode, client)
