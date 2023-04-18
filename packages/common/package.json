@@ -41,6 +41,7 @@
     "ethers": "^5.7.2",
     "isomorphic-ws": "^5.0.0",
     "jszip": "^3.10.1",
+    "jszip-sync": "3.2.1-sync",
     "msgpackr": "^1.8.5",
     "peer-id": "^0.16.0",
     "ws": "^8.11.0"
