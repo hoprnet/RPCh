@@ -295,6 +295,7 @@ export default class SDK {
    */
   public async start(): Promise<void> {
     if (this.isReady) return;
+    if (this.starting) throw Error("SDK is already starting");
     this.starting = true;
 
     if (typeof window === "undefined") {

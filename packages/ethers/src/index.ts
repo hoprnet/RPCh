@@ -41,7 +41,7 @@ export class RPChProvider extends JsonRpcProvider {
     log.verbose("Using SEND", method);
     log.verbose("is sdk ready?", this.sdk.isReady);
 
-    if (!this.sdk.isReady) {
+    if (!this.sdk.isReady && !this.sdk.starting) {
       await this.sdk.start();
     }
 
