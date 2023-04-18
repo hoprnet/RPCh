@@ -55,7 +55,11 @@ export const metricMiddleware =
       const statusCode = res.statusCode.toString();
       const method = req.method;
       const path = req.path;
-      histogramMetric.labels(method, path, statusCode).observe(durationSeconds);
+      const client = req.headers["x-rpch-client"] as string;
+
+      histogramMetric
+        .labels(method, path, statusCode, client)
+        .observe(durationSeconds);
     });
     next();
   };
