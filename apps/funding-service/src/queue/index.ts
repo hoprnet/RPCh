@@ -4,7 +4,7 @@ import { RequestDB } from "../types";
 import { RequestService } from "../request";
 import { CustomError, createLogger } from "../utils";
 import * as constants from "../constants";
-import { MetricManager } from "@rpch/common/build/internal/metric-manager";
+import type { Counter } from "prom-client";
 
 const log = createLogger(["queue"]);
 
@@ -22,19 +22,9 @@ export const checkFreshRequests = async (ops: {
   signer: Signer;
   confirmations: number;
   changeState: (state: boolean) => void;
-  metricManager: MetricManager;
+  counterSuccessfulFundingNodes: Counter<string>;
+  counterFailedFundingNodes: Counter<string>
 }) => {
-  // metrics
-  const counterSuccessfulFundingNodes = ops.metricManager.createCounter(
-    "counter_funded_nodes_successful",
-    "amount of times we have funded nodes successfully"
-  );
-
-  const counterFailedFundingNodes = ops.metricManager.createCounter(
-    "counter_funded_nodes_failed",
-    "amount of times we have failed to fund nodes"
-  );
-
   ops.changeState(true);
   let freshRequest: RequestDB | null | undefined;
   try {
@@ -113,7 +103,7 @@ export const checkFreshRequests = async (ops: {
       txReceipt.status === 1 ? "SUCCESS" : "FAILED"
     );
 
-    counterSuccessfulFundingNodes.inc();
+    ops.counterSuccessfulFundingNodes.inc();
 
     // update request to success or failed
     await ops.requestService.updateRequest(freshRequest.id, {
@@ -166,7 +156,7 @@ export const checkFreshRequests = async (ops: {
       }
     }
   } finally {
-    counterFailedFundingNodes.inc();
+    ops.counterFailedFundingNodes.inc();
     ops.changeState(false);
   }
 };
