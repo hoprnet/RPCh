@@ -74,9 +74,11 @@ export default class Compression {
     //Compress 'method' Value
     let result = Compression.compressRPCMethodValue(jsonTmp);
     if (result.compressed) {
-      // @ts-ignore-start
-      compressionDiagram = utils.replaceInStringAt(compressionDiagram, 6, "1");
-      // @ts-ignore-end
+      compressionDiagram = Compression.compressionDiagramUpdate(
+        compressionDiagram,
+        6,
+        true
+      );
       jsonTmp = result.json;
     }
     // console.log("Compress 'method' Value size:", JSON.stringify(jsonTmp).length);
@@ -84,9 +86,11 @@ export default class Compression {
     //Compress 'result'{} keys
     result = Compression.compressRPCSomeObjectKeys(jsonTmp, "result");
     if (result.compressed) {
-      // @ts-ignore-start
-      compressionDiagram = utils.replaceInStringAt(compressionDiagram, 4, "1");
-      // @ts-ignore-end
+      compressionDiagram = Compression.compressionDiagramUpdate(
+        compressionDiagram,
+        4,
+        true
+      );
       jsonTmp = result.json;
     }
     // console.log("Compress 'result'{} keys size:", JSON.stringify(jsonTmp).length);
@@ -94,9 +98,11 @@ export default class Compression {
     //Compress 'params'{} keys
     result = Compression.compressRPCSomeObjectKeys(jsonTmp, "params");
     if (result.compressed) {
-      // @ts-ignore-start
-      compressionDiagram = utils.replaceInStringAt(compressionDiagram, 3, "1");
-      // @ts-ignore-end
+      compressionDiagram = Compression.compressionDiagramUpdate(
+        compressionDiagram,
+        3,
+        true
+      );
       jsonTmp = result.json;
     }
     // console.log("Compress 'params'{} keys size:", JSON.stringify(jsonTmp).length);
@@ -104,9 +110,11 @@ export default class Compression {
     //Compress 'error'{} keys
     result = Compression.compressRPCSomeObjectKeys(jsonTmp, "error");
     if (result.compressed) {
-      // @ts-ignore-start
-      compressionDiagram = utils.replaceInStringAt(compressionDiagram, 5, "1");
-      // @ts-ignore-end
+      compressionDiagram = Compression.compressionDiagramUpdate(
+        compressionDiagram,
+        5,
+        true
+      );
       jsonTmp = result.json;
     }
     // console.log("Compress 'error'{} keys size:", JSON.stringify(jsonTmp).length);
@@ -114,9 +122,11 @@ export default class Compression {
     //Compress main keys
     result = Compression.compressRPCMainObjectKeys(jsonTmp);
     if (result.compressed) {
-      // @ts-ignore-start
-      compressionDiagram = utils.replaceInStringAt(compressionDiagram, 2, "1");
-      // @ts-ignore-end
+      compressionDiagram = Compression.compressionDiagramUpdate(
+        compressionDiagram,
+        2,
+        true
+      );
       jsonTmp = result.json;
     }
     // console.log("Compress 'main'{} keys size:", JSON.stringify(jsonTmp).length);
@@ -124,9 +134,11 @@ export default class Compression {
     //Compress msgpackr
     jsonTmp = pack(jsonTmp);
     jsonTmp = jsonTmp.toString("binary"); //  'ucs2', 'base64' and 'binary' also work https://stackoverflow.com/questions/6182315/how-can-i-do-base64-encoding-in-node-js
-    // @ts-ignore-start
-    compressionDiagram = utils.replaceInStringAt(compressionDiagram, 1, "1");
-    // @ts-ignore-end
+    compressionDiagram = Compression.compressionDiagramUpdate(
+      compressionDiagram,
+      1,
+      true
+    );
     // console.log("Compress msgpackr size:", jsonTmp.length);
 
     if (jsonTmp.length > MAX_BYTES - 10) {
@@ -143,17 +155,14 @@ export default class Compression {
       //console.log("Compress jszip size:", zipped.length);
 
       if (zipped.length < jsonTmp.length) {
-        jsonTmp = zipped;
-        // @ts-ignore-start
-        compressionDiagram = utils.replaceInStringAt(
+        jsonTmp = zipped as string;
+        compressionDiagram = Compression.compressionDiagramUpdate(
           compressionDiagram,
           0,
-          "1"
+          true
         );
-        // @ts-ignore-end
       }
     }
-
     // @ts-ignore-start
     return compressionDiagram + jsonTmp;
     // @ts-ignore-end
@@ -166,54 +175,66 @@ export default class Compression {
     let jsonTmp: JSONObject = JSON.parse(JSON.stringify(requestBody));
     let result = Compression.compressRPCMethodValue(jsonTmp);
     if (result.compressed) {
-      // @ts-ignore-start
-      compressionDiagram = utils.replaceInStringAt(compressionDiagram, 6, "1");
-      // @ts-ignore-end
+      compressionDiagram = Compression.compressionDiagramUpdate(
+        compressionDiagram,
+        6,
+        true
+      );
       jsonTmp = result.json;
     }
 
     //Compress 'result'{} keys
     result = Compression.compressRPCSomeObjectKeys(jsonTmp, "result");
     if (result.compressed) {
-      // @ts-ignore-start
-      compressionDiagram = utils.replaceInStringAt(compressionDiagram, 4, "1");
-      // @ts-ignore-end
+      compressionDiagram = Compression.compressionDiagramUpdate(
+        compressionDiagram,
+        4,
+        true
+      );
       jsonTmp = result.json;
     }
 
     //Compress 'params'{} keys
     result = Compression.compressRPCSomeObjectKeys(jsonTmp, "params");
     if (result.compressed) {
-      // @ts-ignore-start
-      compressionDiagram = utils.replaceInStringAt(compressionDiagram, 3, "1");
-      // @ts-ignore-end
+      compressionDiagram = Compression.compressionDiagramUpdate(
+        compressionDiagram,
+        3,
+        true
+      );
       jsonTmp = result.json;
     }
 
     //Compress 'error'{} keys
     result = Compression.compressRPCSomeObjectKeys(jsonTmp, "error");
     if (result.compressed) {
-      // @ts-ignore-start
-      compressionDiagram = utils.replaceInStringAt(compressionDiagram, 5, "1");
-      // @ts-ignore-end
+      compressionDiagram = Compression.compressionDiagramUpdate(
+        compressionDiagram,
+        5,
+        true
+      );
       jsonTmp = result.json;
     }
 
     //Compress main keys
     result = Compression.compressRPCMainObjectKeys(jsonTmp);
     if (result.compressed) {
-      // @ts-ignore-start
-      compressionDiagram = utils.replaceInStringAt(compressionDiagram, 2, "1");
-      // @ts-ignore-end
+      compressionDiagram = Compression.compressionDiagramUpdate(
+        compressionDiagram,
+        2,
+        true
+      );
       jsonTmp = result.json;
     }
 
     //Compress msgpackr
     jsonTmp = pack(jsonTmp);
     jsonTmp = jsonTmp.toString("binary"); //  'ucs2', 'base64' and 'binary' also work https://stackoverflow.com/questions/6182315/how-can-i-do-base64-encoding-in-node-js
-    // @ts-ignore-start
-    compressionDiagram = utils.replaceInStringAt(compressionDiagram, 1, "1");
-    // @ts-ignore-end
+    compressionDiagram = Compression.compressionDiagramUpdate(
+      compressionDiagram,
+      1,
+      true
+    );
 
     if (jsonTmp.length > MAX_BYTES - 10) {
       let zip = new JSZipSync();
@@ -237,13 +258,11 @@ export default class Compression {
 
       if (zipped.length < jsonTmp.length) {
         jsonTmp = zipped;
-        // @ts-ignore-start
-        compressionDiagram = utils.replaceInStringAt(
+        compressionDiagram = Compression.compressionDiagramUpdate(
           compressionDiagram,
           0,
-          "1"
+          true
         );
-        // @ts-ignore-end
       }
     }
 
@@ -560,6 +579,18 @@ export default class Compression {
     }
     return result;
   }
+
+  private static compressionDiagramUpdate = (
+    string: string,
+    index: number,
+    replacement: Boolean
+  ): CompressedPayload => {
+    // @ts-ignore-start
+    return string.substring(0, index) + replacement
+      ? "1"
+      : "0" + string.substring(index + 1);
+    // @ts-ignore-end
+  };
 }
 
 //For Testing

@@ -26,15 +26,17 @@ export default class Response {
    * @param body
    * @return Response
    */
-  public static createResponse(
+  public static async createResponse(
     crypto: {
       Envelope: typeof Envelope;
       box_response: typeof box_response;
     },
     request: Request,
     body: string
-  ): Response {
-    const compressedBody = Compression.compressRpcRequestSync(JSON.parse(body));
+  ): Promise<Response> {
+    const compressedBody = await Compression.compressRpcRequestAsync(
+      JSON.parse(body)
+    );
     const payload = joinPartsToBody(["response", compressedBody]);
     const envelope = new crypto.Envelope(
       utils.toUtf8Bytes(payload),
@@ -51,7 +53,7 @@ export default class Response {
    * @param exitNode
    * @returns Request
    */
-  public static fromMessage(
+  public static async fromMessage(
     crypto: {
       Envelope: typeof Envelope;
       unbox_response: typeof unbox_response;
@@ -60,7 +62,7 @@ export default class Response {
     message: Message,
     lastResponseFromExitNode: bigint,
     updateLastResponseFromExitNode: (exitNodeId: string, counter: bigint) => any
-  ): Response {
+  ): Promise<Response> {
     crypto.unbox_response(
       request.session,
       new crypto.Envelope(
@@ -79,7 +81,7 @@ export default class Response {
     const decrypted = utils.toUtf8String(request.session.get_response_data());
     const [type, compressedDecrypted] = splitBodyToParts(decrypted);
     const decompressedDecrypted = JSON.stringify(
-      Compression.decompressRpcRequestSync(compressedDecrypted)
+      await Compression.decompressRpcRequestAsync(compressedDecrypted)
     );
     if (type !== "response") throw Error("Message is not a Response");
     return new Response(request.id, decompressedDecrypted, request);

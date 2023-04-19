@@ -49,9 +49,9 @@ const shouldBeAValidRequestMessage = (
   assert(actual.body.length > expectedPrefix.length);
 };
 
-describe("test Request class", function () {
+describe("test Request class", async function () {
   it("should create request", function () {
-    const request = Request.createRequest(
+    const request = await Request.createRequest(
       crypto,
       PROVIDER,
       RPC_REQ_SMALL,
@@ -69,8 +69,8 @@ describe("test Request class", function () {
     });
   });
 
-  it("should create message from request", function () {
-    const request = Request.createRequest(
+  it("should create message from request", async function () {
+    const request = await Request.createRequest(
       crypto,
       PROVIDER,
       RPC_REQ_SMALL,
@@ -86,12 +86,12 @@ describe("test Request class", function () {
     );
   });
 
-  it("should create request from message", function () {
+  it("should create request from message", async function () {
     // created by exit node
-    const request = Request.fromMessage(
+    const request = await Request.fromMessage(
       crypto,
       // created by client
-      Request.createRequest(
+      await Request.createRequest(
         crypto,
         PROVIDER,
         RPC_REQ_SMALL,

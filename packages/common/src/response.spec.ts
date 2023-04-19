@@ -52,10 +52,10 @@ describe("test Response class", function () {
     shouldBeAValidResponseMessage(response.toMessage(), { id: request.id });
   });
 
-  it("should create response from message", function () {
+  it("should create response from message", async function () {
     const [clientRequest, , exitNodeResponse] = generateMockedFlow(3);
 
-    const clientResponse = Response.fromMessage(
+    const clientResponse = await Response.fromMessage(
       crypto,
       clientRequest,
       exitNodeResponse.toMessage(),
