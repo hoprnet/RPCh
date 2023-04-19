@@ -41,31 +41,35 @@ describe("test utils / isExpired", function () {
 });
 
 describe("test utils / areAllSegmentsPresent", function () {
-  const completeSegments = createMockedFlow(RPC_REQ_LARGE)
-    .next()
+  it("should return true", async function () {
+    const completeSegments = (await createMockedFlow(RPC_REQ_LARGE).next())
     .value.toMessage()
     .toSegments();
-  const incompleteSegments = completeSegments.slice(1);
-
-  it("should return true", function () {
     assert(areAllSegmentsPresent(completeSegments));
   });
-  it("should return false", function () {
+  it("should return false", async function () {
+    const completeSegments = (await createMockedFlow(RPC_REQ_LARGE).next())
+    .value.toMessage()
+    .toSegments();
+    const incompleteSegments = completeSegments.slice(1);
     assert(!areAllSegmentsPresent(incompleteSegments));
   });
 });
 
 describe("test utils / areAllSegmentsPresent", function () {
-  const completeSegments = createMockedFlow(RPC_REQ_LARGE)
-    .next()
+  it("should return true", async function () {
+    const completeSegments = (await createMockedFlow(RPC_REQ_LARGE).next())
     .value.toMessage()
     .toSegments();
-  const incompleteSegments = completeSegments.slice(1);
 
-  it("should return true", function () {
     assert(areAllSegmentsPresent(completeSegments));
   });
-  it("should return false", function () {
+  it("should return false", async function () {
+    const completeSegments = (await createMockedFlow(RPC_REQ_LARGE).next())
+    .value.toMessage()
+    .toSegments();
+    const incompleteSegments = completeSegments.slice(1);
+
     assert(!areAllSegmentsPresent(incompleteSegments));
   });
 });

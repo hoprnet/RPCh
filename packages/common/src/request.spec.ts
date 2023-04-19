@@ -49,8 +49,8 @@ const shouldBeAValidRequestMessage = (
   assert(actual.body.length > expectedPrefix.length);
 };
 
-describe("test Request class", async function () {
-  it("should create request", function () {
+describe("test Request class", function () {
+  it("should create request", async function () {
     const request = await Request.createRequest(
       crypto,
       PROVIDER,
@@ -91,14 +91,14 @@ describe("test Request class", async function () {
     const request = await Request.fromMessage(
       crypto,
       // created by client
-      await Request.createRequest(
+      (await Request.createRequest(
         crypto,
         PROVIDER,
         RPC_REQ_SMALL,
         ENTRY_NODE_PEER_ID,
         EXIT_NODE_HOPRD_PEER_ID,
         EXIT_NODE_READ_IDENTITY
-      ).toMessage(),
+      )).toMessage(),
       EXIT_NODE_HOPRD_PEER_ID,
       EXIT_NODE_WRITE_IDENTITY,
       BigInt(0),

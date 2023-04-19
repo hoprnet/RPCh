@@ -3,8 +3,13 @@ import Cache from "./cache";
 import { createMockedFlow, RPC_REQ_LARGE } from "./fixtures";
 
 const TIMEOUT = 10e3;
-const MESSAGE = createMockedFlow(RPC_REQ_LARGE).next().value.toMessage();
-const MESSAGE_SEGMENTS = MESSAGE.toSegments();
+var MESSAGE : any, MESSAGE_SEGMENTS: any;
+
+main();
+async function main() {
+  MESSAGE = (await createMockedFlow(RPC_REQ_LARGE).next()).value.toMessage();
+  MESSAGE_SEGMENTS = MESSAGE.toSegments();
+}
 
 describe("test Cache class", function () {
   it("should reconstruct message", function (done) {
