@@ -63,6 +63,16 @@ describe("test index.ts", function () {
   let dbInstance: DBInstance;
   let requestService: RequestService;
   let accessTokenService: AccessTokenService;
+  const register = new Prometheus.Registry();
+  const metricManager = new MetricManager(Prometheus, register, "test");
+  const counterSuccessfulFundingNodes = metricManager.createCounter(
+    "counter_funded_nodes_successful",
+    "amount of times we have funded nodes successfully"
+  );
+  const counterFailedFundingNodes = metricManager.createCounter(
+    "counter_funded_nodes_failed",
+    "amount of times we have failed to fund nodes"
+  );
 
   beforeAll(async function () {
     const migrationsDirectory = path.join(__dirname, "../../migrations");
@@ -89,15 +99,13 @@ describe("test index.ts", function () {
       requestService
     );
 
-    const register = new Prometheus.Registry();
-    const metricManager = new MetricManager(Prometheus, register, "test");
-
     await checkFreshRequests({
       requestService,
       signer: owner,
       confirmations: 0,
       changeState: () => {},
-      metricManager: metricManager,
+      counterSuccessfulFundingNodes,
+      counterFailedFundingNodes,
     });
     const queryRequest = await requestService.getRequest(createRequest.id);
     assert.equal(queryRequest?.status, "SUCCESS");
@@ -117,15 +125,13 @@ describe("test index.ts", function () {
       id: createRequest.id,
     });
 
-    const register = new Prometheus.Registry();
-    const metricManager = new MetricManager(Prometheus, register, "test");
-
     await checkFreshRequests({
       requestService,
       signer: owner,
       confirmations: 0,
       changeState: () => {},
-      metricManager: metricManager,
+      counterSuccessfulFundingNodes,
+      counterFailedFundingNodes,
     });
     const queryRequest = await requestService.getRequest(createRequest.id);
     assert.equal(queryRequest?.status, "REJECTED-DURING-PROCESSING");
@@ -143,15 +149,13 @@ describe("test index.ts", function () {
       }
     );
 
-    const register = new Prometheus.Registry();
-    const metricManager = new MetricManager(Prometheus, register, "test");
-
     await checkFreshRequests({
       requestService,
       signer: owner,
       confirmations: 0,
       changeState: () => {},
-      metricManager: metricManager,
+      counterSuccessfulFundingNodes,
+      counterFailedFundingNodes,
     });
 
     const queryRequest = await requestService.getRequest(createRequest.id);
