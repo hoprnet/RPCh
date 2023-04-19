@@ -153,34 +153,38 @@ export async function* createMockedFlow(
  * @param responseBody
  * @param lastResponseFromExitNode
  */
-export function generateMockedFlow(
+export async function generateMockedFlow(
   steps: 1 | 2 | 3,
   requestBody: string = RPC_REQ_SMALL,
   lastRequestFromClient: number = 0,
   responseBody: string = RPC_RES_SMALL,
   lastResponseFromExitNode: number = 0
-): [
-  clientRequest: Request,
-  exitNodeRequest: Request,
-  exitNodeResponse: Response,
-  clientResponse: Response
-] {
+): Promise<
+  [
+    clientRequest: Request,
+    exitNodeRequest: Request,
+    exitNodeResponse: Response,
+    clientResponse: Response
+  ]
+> {
   const X = {} as any;
   const flow = createMockedFlow(requestBody);
 
-  const clientRequest = flow.next().value as Request;
+  const clientRequest = (await flow.next()).value as Request;
   if (steps === 1) return [clientRequest, X, X, X];
 
   const exitNodeRequest2 = flow.next(lastRequestFromClient);
   console.log(exitNodeRequest2);
 
-  const exitNodeRequest = flow.next(lastRequestFromClient).value as Request;
+  const exitNodeRequest = (await flow.next(lastRequestFromClient))
+    .value as Request;
   if (steps === 2) return [clientRequest, exitNodeRequest, X, X];
 
-  const exitNodeResponse = flow.next(responseBody).value as Response;
+  const exitNodeResponse = (await flow.next(responseBody)).value as Response;
   if (steps === 3) return [clientRequest, exitNodeRequest, exitNodeResponse, X];
 
-  const clientResponse = flow.next(lastResponseFromExitNode).value as Response;
+  const clientResponse = (await flow.next(lastResponseFromExitNode))
+    .value as Response;
 
   return [clientRequest, exitNodeRequest, exitNodeResponse, clientResponse];
 }
