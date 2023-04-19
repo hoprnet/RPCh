@@ -38,14 +38,34 @@ import JSZip from "jszip";
  * 0 no.4 - 'result'{} keys compressed
  * 0 no.5 - 'error'{} kets compressed
  * 0 no.6 - 'method' value compressed
+ * 0 no.7 - payload was a JSON
+ * 0 no.8 - TBD
+ * 0 no.9 - TBD
  */
 
 export default class Compression {
   public static async compressRpcRequestAsync(
     requestBody: JSONObject
   ): Promise<CompressedPayload> {
-    let compressionDiagram: CompressedPayload = "0000000";
-    let jsonTmp: JSONObject = JSON.parse(JSON.stringify(requestBody));
+    let compressionDiagram: CompressedPayload = "0000000000";
+    let jsonTmp: JSONObject = null;
+    let payloadIsJSON = false;
+    try {
+      if (typeof requestBody === "string") {
+        jsonTmp = JSON.parse(requestBody);
+        payloadIsJSON = true;
+      } else {
+        jsonTmp = JSON.parse(JSON.stringify(requestBody));
+        payloadIsJSON = true;
+        compressionDiagram = Compression.compressionDiagramUpdate(
+          compressionDiagram,
+          7,
+          true
+        );
+      }
+    } catch (e) {
+      jsonTmp = requestBody;
+    }
     // console.log('--Checks of sizes for comparation: --');
     // console.log('input size:', JSON.stringify(requestBody).length);
     // console.log("only msgpackr size:", pack(jsonTmp).length);
@@ -74,74 +94,76 @@ export default class Compression {
 
     //console.log('\n\n--Sizes of input after each consecutive type of compression: --');
     //Compress 'method' Value
-    let result = Compression.compressRPCMethodValue(jsonTmp);
-    if (result.compressed) {
+    if (payloadIsJSON) {
+      let result = Compression.compressRPCMethodValue(jsonTmp);
+      if (result.compressed) {
+        compressionDiagram = Compression.compressionDiagramUpdate(
+          compressionDiagram,
+          6,
+          true
+        );
+        jsonTmp = result.json;
+      }
+      // console.log("Compress 'method' Value size:", JSON.stringify(jsonTmp).length);
+
+      //Compress 'result'{} keys
+      result = Compression.compressRPCSomeObjectKeys(jsonTmp, "result");
+      if (result.compressed) {
+        compressionDiagram = Compression.compressionDiagramUpdate(
+          compressionDiagram,
+          4,
+          true
+        );
+        jsonTmp = result.json;
+      }
+      // console.log("Compress 'result'{} keys size:", JSON.stringify(jsonTmp).length);
+
+      //Compress 'params'{} keys
+      result = Compression.compressRPCSomeObjectKeys(jsonTmp, "params");
+      if (result.compressed) {
+        compressionDiagram = Compression.compressionDiagramUpdate(
+          compressionDiagram,
+          3,
+          true
+        );
+        jsonTmp = result.json;
+      }
+      // console.log("Compress 'params'{} keys size:", JSON.stringify(jsonTmp).length);
+
+      //Compress 'error'{} keys
+      result = Compression.compressRPCSomeObjectKeys(jsonTmp, "error");
+      if (result.compressed) {
+        compressionDiagram = Compression.compressionDiagramUpdate(
+          compressionDiagram,
+          5,
+          true
+        );
+        jsonTmp = result.json;
+      }
+      // console.log("Compress 'error'{} keys size:", JSON.stringify(jsonTmp).length);
+
+      //Compress main keys
+      result = Compression.compressRPCMainObjectKeys(jsonTmp);
+      if (result.compressed) {
+        compressionDiagram = Compression.compressionDiagramUpdate(
+          compressionDiagram,
+          2,
+          true
+        );
+        jsonTmp = result.json;
+      }
+      // console.log("Compress 'main'{} keys size:", JSON.stringify(jsonTmp).length);
+
+      //Compress msgpackr
+      jsonTmp = pack(jsonTmp);
+      jsonTmp = jsonTmp.toString("binary"); //  'ucs2', 'base64' and 'binary' also work https://stackoverflow.com/questions/6182315/how-can-i-do-base64-encoding-in-node-js
       compressionDiagram = Compression.compressionDiagramUpdate(
         compressionDiagram,
-        6,
+        1,
         true
       );
-      jsonTmp = result.json;
+      // console.log("Compress msgpackr size:", jsonTmp.length);
     }
-    // console.log("Compress 'method' Value size:", JSON.stringify(jsonTmp).length);
-
-    //Compress 'result'{} keys
-    result = Compression.compressRPCSomeObjectKeys(jsonTmp, "result");
-    if (result.compressed) {
-      compressionDiagram = Compression.compressionDiagramUpdate(
-        compressionDiagram,
-        4,
-        true
-      );
-      jsonTmp = result.json;
-    }
-    // console.log("Compress 'result'{} keys size:", JSON.stringify(jsonTmp).length);
-
-    //Compress 'params'{} keys
-    result = Compression.compressRPCSomeObjectKeys(jsonTmp, "params");
-    if (result.compressed) {
-      compressionDiagram = Compression.compressionDiagramUpdate(
-        compressionDiagram,
-        3,
-        true
-      );
-      jsonTmp = result.json;
-    }
-    // console.log("Compress 'params'{} keys size:", JSON.stringify(jsonTmp).length);
-
-    //Compress 'error'{} keys
-    result = Compression.compressRPCSomeObjectKeys(jsonTmp, "error");
-    if (result.compressed) {
-      compressionDiagram = Compression.compressionDiagramUpdate(
-        compressionDiagram,
-        5,
-        true
-      );
-      jsonTmp = result.json;
-    }
-    // console.log("Compress 'error'{} keys size:", JSON.stringify(jsonTmp).length);
-
-    //Compress main keys
-    result = Compression.compressRPCMainObjectKeys(jsonTmp);
-    if (result.compressed) {
-      compressionDiagram = Compression.compressionDiagramUpdate(
-        compressionDiagram,
-        2,
-        true
-      );
-      jsonTmp = result.json;
-    }
-    // console.log("Compress 'main'{} keys size:", JSON.stringify(jsonTmp).length);
-
-    //Compress msgpackr
-    jsonTmp = pack(jsonTmp);
-    jsonTmp = jsonTmp.toString("binary"); //  'ucs2', 'base64' and 'binary' also work https://stackoverflow.com/questions/6182315/how-can-i-do-base64-encoding-in-node-js
-    compressionDiagram = Compression.compressionDiagramUpdate(
-      compressionDiagram,
-      1,
-      true
-    );
-    // console.log("Compress msgpackr size:", jsonTmp.length);
 
     if (jsonTmp.length > MAX_BYTES - 10) {
       let zip = new JSZip();
@@ -151,7 +173,7 @@ export default class Compression {
         type: "string",
         compression: "DEFLATE",
         compressionOptions: {
-          level: 9,
+          level: 1,
         },
       });
       //console.log("Compress jszip size:", zipped.length);
@@ -174,14 +196,14 @@ export default class Compression {
     compressedBody: string
   ): Promise<JSONObject> {
     // @ts-ignore-start
-    let compressionDiagram: CompressedPayload = compressedBody.substring(0, 7);
+    let compressionDiagram: CompressedPayload = compressedBody.substring(0, 10);
     // @ts-ignore-end
 
     if (!/^[01]+$/.test(compressionDiagram)) {
       return compressedBody;
     }
 
-    let jsonTmp: JSONObject = compressedBody.substring(7);
+    let jsonTmp: JSONObject = compressedBody.substring(10);
 
     if (compressionDiagram[0] === "1") {
       jsonTmp = await JSZip.loadAsync(jsonTmp)
@@ -218,6 +240,10 @@ export default class Compression {
 
     if (compressionDiagram[6] === "1") {
       jsonTmp = Compression.decompressRPCMethodValue(jsonTmp);
+    }
+
+    if (compressionDiagram[1] === "1" && compressionDiagram[7] === "0") {
+      jsonTmp = JSON.stringify(jsonTmp);
     }
 
     return jsonTmp;
@@ -452,7 +478,8 @@ export default class Compression {
 //For Testing
 // main ();
 // async function main () {
-//   const resultCompressed = await Compression.compressRpcRequestAsync(res_80kb);
+//   const resultCompressed = await Compression.compressRpcRequestAsync('U'+JSON.stringify(res_80kb));
 //   const result = await Compression.decompressRpcRequestAsync(resultCompressed);
+//   console.log('resultCompressed length', resultCompressed.length);
 //   return;
 // }

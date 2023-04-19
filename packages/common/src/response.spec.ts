@@ -2,6 +2,7 @@ import assert from "assert";
 import _ from "lodash";
 import * as crypto from "@rpch/crypto-for-nodejs";
 import Message from "./message";
+import { isStringifiedJSON } from "./utils";
 import type Request from "./request";
 import Response from "./response";
 import {
@@ -17,11 +18,16 @@ const shouldBeAValidResponse = (
   assert.equal(typeof actual.id, "number");
   assert(actual.id > 0);
   assert.equal(actual.id, expected.request.id);
-  const sameMessage = _.isEqual(
-    JSON.parse(actual.body),
-    JSON.parse(expected.body)
-  );
-  assert(sameMessage);
+  let expectedIsStringifiedJSON = isStringifiedJSON(expected.body);
+  if (expectedIsStringifiedJSON) {
+    const sameMessage = _.isEqual(
+      JSON.parse(actual.body),
+      JSON.parse(expected.body)
+    );
+    assert(sameMessage);
+  } else {
+    assert.equal(actual.body, expected.body);
+  }
 };
 
 const shouldBeAValidResponseMessage = (

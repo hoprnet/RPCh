@@ -50,9 +50,7 @@ export default class Request {
     exitNodeReadIdentity: Identity
   ): Promise<Request> {
     const id = generatePseudoRandomId(1e6);
-    const compressedBody = await Compression.compressRpcRequestAsync(
-      JSON.parse(body)
-    );
+    const compressedBody = await Compression.compressRpcRequestAsync(body);
     const payload = joinPartsToBody(["request", provider, compressedBody]);
     const envelope = new crypto.Envelope(
       utils.toUtf8Bytes(payload),
@@ -114,9 +112,7 @@ export default class Request {
     );
 
     const compressedBody = joinPartsToBody(remaining);
-    const body = JSON.stringify(
-      await Compression.decompressRpcRequestAsync(compressedBody)
-    );
+    const body = await Compression.decompressRpcRequestAsync(compressedBody);
 
     if (type !== "request") throw Error("Message is not a Request");
     return new Request(

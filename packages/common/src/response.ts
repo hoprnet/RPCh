@@ -34,9 +34,7 @@ export default class Response {
     request: Request,
     body: string
   ): Promise<Response> {
-    const compressedBody = await Compression.compressRpcRequestAsync(
-      JSON.parse(body)
-    );
+    const compressedBody = await Compression.compressRpcRequestAsync(body);
     const payload = joinPartsToBody(["response", compressedBody]);
     const envelope = new crypto.Envelope(
       utils.toUtf8Bytes(payload),
@@ -80,8 +78,8 @@ export default class Response {
 
     const decrypted = utils.toUtf8String(request.session.get_response_data());
     const [type, compressedDecrypted] = splitBodyToParts(decrypted);
-    const decompressedDecrypted = JSON.stringify(
-      await Compression.decompressRpcRequestAsync(compressedDecrypted)
+    const decompressedDecrypted = await Compression.decompressRpcRequestAsync(
+      compressedDecrypted
     );
     if (type !== "response") throw Error("Message is not a Response");
     return new Response(request.id, decompressedDecrypted, request);

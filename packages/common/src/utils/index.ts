@@ -250,3 +250,19 @@ export const findCommonElement = (
   // Return if no common element exist
   return false;
 };
+
+/**
+ * Function to check if input is a stringified JSON
+ */
+export const isStringifiedJSON = (input: any): Boolean => {
+  let result = false;
+  try {
+    if (typeof input === "string") {
+      JSON.parse(input);
+      result = true;
+    }
+  } catch (e) {
+    // It's all good man!
+  }
+  return result;
+};

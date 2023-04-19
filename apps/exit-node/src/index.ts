@@ -129,6 +129,11 @@ export const start = async (ops: {
         rpchResponse.id,
         rpchResponse.toMessage().body
       );
+      console.log(
+        "Created response",
+        rpchResponse.id,
+        rpchResponse.toMessage().body
+      );
 
       for (const segment of rpchResponse.toMessage().toSegments()) {
         ops.hoprd

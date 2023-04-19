@@ -3,6 +3,7 @@ import _ from "lodash";
 import * as crypto from "@rpch/crypto-for-nodejs";
 import Message from "./message";
 import Request from "./request";
+import { isStringifiedJSON } from "./utils";
 import {
   PROVIDER,
   RPC_REQ_SMALL,
@@ -26,11 +27,17 @@ const shouldBeAValidRequest = (
   assert.equal(typeof actual.id, "number");
   assert(actual.id > 0);
   assert.equal(actual.provider, expected.provider);
-  const sameMessage = _.isEqual(
-    JSON.parse(actual.body),
-    JSON.parse(expected.body)
-  );
-  assert(sameMessage);
+  let expectedIsStringifiedJSON = isStringifiedJSON(expected.body);
+  if (expectedIsStringifiedJSON) {
+    const sameMessage = _.isEqual(
+      JSON.parse(actual.body),
+      JSON.parse(expected.body)
+    );
+    assert(sameMessage);
+  } else {
+    assert.equal(actual.body, expected.body);
+  }
+
   assert.equal(actual.entryNodeDestination, expected.entryNodeDestination);
   assert.equal(actual.exitNodeDestination, expected.exitNodeDestination);
   assert(!!actual.exitNodeIdentity);
