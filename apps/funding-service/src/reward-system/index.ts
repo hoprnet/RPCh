@@ -72,7 +72,7 @@ const getRedeemedTicketCount = async (blockNumber: number, ids: String[]) => {
       }),
     });
 
-    const graphRes = await ticketCounts.json();
+    const graphRes: any = await ticketCounts.json();
     lastBlockNumber = graphRes.data._meta.block.number;
 
     const totalRedeemedTicketCountBySourceId: { [key: string]: number } =
@@ -110,7 +110,7 @@ const getLastBlockNumber = async (): Promise<number> => {
     body: JSON.stringify({ query: getLastBlockNumberQuery }),
   });
 
-  const graphRes = await blockNumber.json();
+  const graphRes: any = await blockNumber.json();
   return graphRes.data._meta.block.number;
 };
 
