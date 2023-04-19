@@ -36,7 +36,11 @@ describe("test Response class", function () {
   it("should create response from Request", async function () {
     const flow = createMockedFlow();
     const request = (await flow.next()).value as Request;
-    const response = await Response.createResponse(crypto, request, RPC_RES_SMALL);
+    const response = await Response.createResponse(
+      crypto,
+      request,
+      RPC_RES_SMALL
+    );
 
     shouldBeAValidResponse(response, {
       body: RPC_RES_SMALL,
@@ -47,7 +51,11 @@ describe("test Response class", function () {
   it("should create message from Response", async function () {
     const flow = createMockedFlow();
     const request = (await flow.next()).value as Request;
-    const response = await Response.createResponse(crypto, request, RPC_RES_SMALL);
+    const response = await Response.createResponse(
+      crypto,
+      request,
+      RPC_RES_SMALL
+    );
 
     shouldBeAValidResponseMessage(response.toMessage(), { id: request.id });
   });

@@ -1,4 +1,9 @@
-import { JSONObject, CompressedPayload, Dictionary } from "../types";
+import {
+  JSONObject,
+  CompressedDiagram,
+  CompressedPayload,
+  Dictionary,
+} from "../types";
 
 import {
   mainKeyMap,
@@ -11,11 +16,8 @@ import { MAX_BYTES } from "../utils/index";
 import * as utils from "../utils";
 import { unpack, pack } from "msgpackr";
 import JSZip from "jszip";
-// @ts-ignore-start
-import JSZipSync from "jszip-sync";
-// @ts-ignore-end
 
-// For testing
+//For testing
 // import {
 //   res_normal,
 //   res_compress_key_problem0,
@@ -24,7 +26,7 @@ import JSZipSync from "jszip-sync";
 //   res_error,
 //   req_80kb,
 //   res_80kb
-// } from './index.spec'
+// } from './compression-samples'
 
 /**
  * Functions used to compress and decompress RPC requests
@@ -174,6 +176,11 @@ export default class Compression {
     // @ts-ignore-start
     let compressionDiagram: CompressedPayload = compressedBody.substring(0, 7);
     // @ts-ignore-end
+
+    if (!/^[01]+$/.test(compressionDiagram)) {
+      return compressedBody;
+    }
+
     let jsonTmp: JSONObject = compressedBody.substring(7);
 
     if (compressionDiagram[0] === "1") {
@@ -435,17 +442,17 @@ export default class Compression {
     replacement: Boolean
   ): CompressedPayload => {
     // @ts-ignore-start
-    return string.substring(0, index) + replacement
-      ? "1"
-      : "0" + string.substring(index + 1);
+    return `${string.substring(0, index)}${
+      replacement ? "1" : "0"
+    }${string.substring(index + 1)}`;
     // @ts-ignore-end
   };
 }
 
 //For Testing
 // main ();
-// function main () {
-//   const resultCompressed = Compression.compressRpcRequestSync(res_80kb);
-//   const result = Compression.decompressRpcRequestSync(resultCompressed);
+// async function main () {
+//   const resultCompressed = await Compression.compressRpcRequestAsync(res_80kb);
+//   const result = await Compression.decompressRpcRequestAsync(resultCompressed);
 //   return;
 // }

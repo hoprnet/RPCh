@@ -173,9 +173,6 @@ export async function generateMockedFlow(
   const clientRequest = (await flow.next()).value as Request;
   if (steps === 1) return [clientRequest, X, X, X];
 
-  const exitNodeRequest2 = flow.next(lastRequestFromClient);
-  console.log(exitNodeRequest2);
-
   const exitNodeRequest = (await flow.next(lastRequestFromClient))
     .value as Request;
   if (steps === 2) return [clientRequest, exitNodeRequest, X, X];

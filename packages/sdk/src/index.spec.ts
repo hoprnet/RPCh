@@ -76,7 +76,8 @@ describe("test SDK class", function () {
     });
 
     it("should fail to send request", async function () {
-      const request = (await fixtures.createMockedFlow().next()).value as Request;
+      const request = (await fixtures.createMockedFlow().next())
+        .value as Request;
 
       await expect(sdk.sendRequest(request)).rejects.toThrow(
         "SDK not ready to send requests"
@@ -444,8 +445,9 @@ describe("test SDK class", function () {
 
     it("should add only one failed request to metrics if hoprd fails", async function () {
       HOPRD_SEND_MESSAGE_NOCK.reply(400, "error");
-      const request = (await fixtures.createMockedFlow(fixtures.RPC_REQ_LARGE).next())
-        .value as Request;
+      const request = (
+        await fixtures.createMockedFlow(fixtures.RPC_REQ_LARGE).next()
+      ).value as Request;
       try {
         await sdk.sendRequest(request);
       } catch (e: any) {
@@ -561,7 +563,7 @@ describe("test SDK class", function () {
                 clientRequest.id
               );
               assert.equal(pendingRequest, undefined);
-          //    done();
+              //    done();
             });
 
             // return response for sdk sendRequest

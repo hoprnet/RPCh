@@ -91,14 +91,16 @@ describe("test Request class", function () {
     const request = await Request.fromMessage(
       crypto,
       // created by client
-      (await Request.createRequest(
-        crypto,
-        PROVIDER,
-        RPC_REQ_SMALL,
-        ENTRY_NODE_PEER_ID,
-        EXIT_NODE_HOPRD_PEER_ID,
-        EXIT_NODE_READ_IDENTITY
-      )).toMessage(),
+      (
+        await Request.createRequest(
+          crypto,
+          PROVIDER,
+          RPC_REQ_SMALL,
+          ENTRY_NODE_PEER_ID,
+          EXIT_NODE_HOPRD_PEER_ID,
+          EXIT_NODE_READ_IDENTITY
+        )
+      ).toMessage(),
       EXIT_NODE_HOPRD_PEER_ID,
       EXIT_NODE_WRITE_IDENTITY,
       BigInt(0),

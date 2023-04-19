@@ -10,7 +10,7 @@ jest.mock("leveldown", () => MemDown);
 var clientRequest: any, exitNodeResponse: any;
 
 main();
-async function main(){
+async function main() {
   [clientRequest, , exitNodeResponse] = await fixtures.generateMockedFlow(
     3,
     fixtures.RPC_REQ_LARGE,
