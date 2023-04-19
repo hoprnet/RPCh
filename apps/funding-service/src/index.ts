@@ -87,7 +87,7 @@ const start = async (ops: {
         confirmations: ops.confirmations,
         changeState: handleRunning,
         counterSuccessfulFundingNodes,
-        counterFailedFundingNodes
+        counterFailedFundingNodes,
       });
     }
   }, 30e3);

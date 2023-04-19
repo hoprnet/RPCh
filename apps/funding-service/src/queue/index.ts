@@ -23,7 +23,7 @@ export const checkFreshRequests = async (ops: {
   confirmations: number;
   changeState: (state: boolean) => void;
   counterSuccessfulFundingNodes: Counter<string>;
-  counterFailedFundingNodes: Counter<string>
+  counterFailedFundingNodes: Counter<string>;
 }) => {
   ops.changeState(true);
   let freshRequest: RequestDB | null | undefined;
