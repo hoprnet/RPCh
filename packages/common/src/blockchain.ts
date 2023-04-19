@@ -1,9 +1,50 @@
 import { ethers, Signer, Wallet, Contract } from "ethers";
-import { createLogger } from "../utils";
-import * as erc20 from "./erc20-fixture.json";
-import * as constants from "../constants";
+import { createLogger } from "./utils";
+import { erc20Fixtures as erc20 } from "./erc20-fixture";
+import * as constants from "./constants";
 
 const log = createLogger(["blockchain"]);
+
+/**
+ * Get an instance of the smart contract.
+ * @notice Does not support the full ABI
+ * @param address
+ * @returns instance of the smart contract
+ */
+export function getNFTAddress(address: string): Contract {
+  const abi = [
+    "function safeTransferFrom(address,address,uint256)",
+    "function ownerOf(uint256)",
+  ];
+  return new Contract(address, abi);
+}
+
+/**
+ * Get an instance of the smart contract.
+ * @notice Does not support the full ABI
+ * @param address
+ * @returns instance of the smart contract
+ */
+export function getStakeContract(address: string): Contract {
+  const abi = [
+    "function isNftTypeAndRankRedeemed2(uint256,string,address) view returns (bool)",
+  ];
+  return new Contract(address, abi);
+}
+
+/**
+ * Get an instance of the smart contract.
+ * @notice Does not support the full ABI
+ * @param address
+ * @returns instance of the smart contract
+ */
+export function getRegisterContract(address: string): Contract {
+  const abi = [
+    "function isNodeRegisteredAndEligible(string) view returns (bool)",
+    "function selfRegister(string[])",
+  ];
+  return new Contract(address, abi);
+}
 
 /**
  * Blockchain functions, anything to do with interactions on chain is handled here

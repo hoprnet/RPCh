@@ -1,56 +1,13 @@
 import assert from "assert";
-import { IBackup, IMemoryDb, newDb } from "pg-mem";
 import * as db from ".";
 import { generateAccessToken } from "../utils";
 import { Request, RequestDB, AccessToken, DBInstance } from "../types";
 import { utils } from "@rpch/common";
-import path from "path";
-import * as fixtures from "@rpch/common/build/fixtures";
 import { DBTimestamp } from "../types/general";
 import { errors } from "pg-promise";
-
-export class MockPgInstanceSingleton {
-  private static pgInstance: IMemoryDb;
-  private static dbInstance: DBInstance;
-  private static initialDbState: IBackup;
-
-  private constructor() {}
-
-  private async createInstance() {
-    const migrationsDirectory = path.join(__dirname, "../../migrations");
-    let instance = newDb();
-    fixtures.withQueryIntercept(instance);
-    await instance.public.migrate({ migrationsPath: migrationsDirectory });
-    MockPgInstanceSingleton.pgInstance = instance;
-    MockPgInstanceSingleton.initialDbState =
-      MockPgInstanceSingleton.pgInstance.backup();
-    return MockPgInstanceSingleton.pgInstance;
-  }
-
-  public static async getInstance(): Promise<IMemoryDb> {
-    if (!MockPgInstanceSingleton.pgInstance) {
-      await new this().createInstance();
-    }
-    return MockPgInstanceSingleton.pgInstance;
-  }
-
-  public static async getDbInstance(): Promise<DBInstance> {
-    if (!MockPgInstanceSingleton.dbInstance) {
-      const instance = await this.getInstance();
-      MockPgInstanceSingleton.dbInstance = instance.adapters.createPgPromise();
-    }
-    return MockPgInstanceSingleton.dbInstance;
-  }
-
-  public static backup(): void {
-    MockPgInstanceSingleton.initialDbState =
-      MockPgInstanceSingleton.pgInstance.backup();
-  }
-
-  public static getInitialState(): IBackup {
-    return MockPgInstanceSingleton.initialDbState;
-  }
-}
+import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";
+import path from "path";
+import * as PgMem from "pg-mem";
 
 const mockCreateAccessToken = () => ({
   id: utils.generatePseudoRandomId(1e6),
@@ -83,7 +40,11 @@ describe("test db adapter functions", function () {
   let dbInstance: DBInstance;
 
   beforeAll(async function () {
-    dbInstance = await MockPgInstanceSingleton.getDbInstance();
+    const migrationsDirectory = path.join(__dirname, "../../migrations");
+    dbInstance = await MockPgInstanceSingleton.getDbInstance(
+      PgMem,
+      migrationsDirectory
+    );
     MockPgInstanceSingleton.getInitialState();
   });
 

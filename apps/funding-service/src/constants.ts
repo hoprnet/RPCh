@@ -62,6 +62,8 @@ const UNRESOLVED_REQUESTS_STATUSES: RequestDB["status"][] = [
 const SUBGRAPH_URL =
   "https://api.thegraph.com/subgraphs/name/hoprnet/hopr-channels";
 
+const METRIC_PREFIX = "funding_service";
+
 export {
   SECRET_KEY,
   WALLET_PRIV_KEY,
@@ -77,4 +79,5 @@ export {
   SMART_CONTRACTS_PER_CHAIN,
   UNRESOLVED_REQUESTS_STATUSES,
   SUBGRAPH_URL,
+  METRIC_PREFIX,
 };
