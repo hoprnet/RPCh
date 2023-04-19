@@ -11,8 +11,8 @@ describe("test request cache class", function () {
     requestCache = new RequestCache(jest.fn(() => "MOCK_ON_REQUEST_REMOVAL"));
   });
 
-  it("should add request", function () {
-    const [request] = fixtures.generateMockedFlow(1);
+  it("should add request", async function () {
+    const [request] = await fixtures.generateMockedFlow(1);
 
     requestCache.addRequest(
       request,

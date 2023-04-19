@@ -541,7 +541,7 @@ describe("test SDK class", function () {
 
         sdk
           .createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE)
-          .then((normalRequest) => {
+          .then(async (normalRequest) => {
             // how many times request cas increase without passing MAXIMUM_SEGMENTS_PER_REQUEST
             const numberOfRepetitions = Math.floor(
               MAXIMUM_SEGMENTS_PER_REQUEST /
@@ -573,7 +573,7 @@ describe("test SDK class", function () {
       });
     });
 
-    describe("should handle requests correctly when receiving a response", async function () {
+    describe("should handle requests correctly when receiving a response", function () {
       it("should remove request with matching response", async function () {
         const [clientRequest, , exitNodeResponse] =
           await fixtures.generateMockedFlow(3);
