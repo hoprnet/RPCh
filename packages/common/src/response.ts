@@ -78,7 +78,9 @@ export default class Response {
 
     const decrypted = utils.toUtf8String(request.session.get_response_data());
     const [type, compressedDecrypted] = splitBodyToParts(decrypted);
-    const decompressedDecrypted = JSON.stringify(Compression.decompressRpcRequestSync(compressedDecrypted));
+    const decompressedDecrypted = JSON.stringify(
+      Compression.decompressRpcRequestSync(compressedDecrypted)
+    );
     if (type !== "response") throw Error("Message is not a Response");
     return new Response(request.id, decompressedDecrypted, request);
   }

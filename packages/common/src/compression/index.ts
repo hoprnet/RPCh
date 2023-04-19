@@ -219,19 +219,21 @@ export default class Compression {
       let zip = new JSZipSync();
       zip.file("msg", jsonTmp);
 
-      let zipped = zip.sync(function() {
-        const zipped = zip.generateAsync({
-          type: "string",
-          compression: "DEFLATE",
-          compressionOptions: {
-            level: 9,
-          },
-        }).then(function(content: any) {
-          return content;
-        });
+      let zipped = zip.sync(function () {
+        const zipped = zip
+          .generateAsync({
+            type: "string",
+            compression: "DEFLATE",
+            compressionOptions: {
+              level: 9,
+            },
+          })
+          .then(function (content: any) {
+            return content;
+          });
 
-        return zipped;        
-     });
+        return zipped;
+      });
 
       if (zipped.length < jsonTmp.length) {
         jsonTmp = zipped;
@@ -298,16 +300,14 @@ export default class Compression {
     return jsonTmp;
   }
 
-  public static decompressRpcRequestSync(
-    compressedBody: string
-  ): JSONObject {
+  public static decompressRpcRequestSync(compressedBody: string): JSONObject {
     // @ts-ignore-start
     let compressionDiagram: CompressedPayload = compressedBody.substring(0, 7);
     let jsonTmp: JSONObject = compressedBody.substring(7);
     if (compressionDiagram[0] === "1") {
       let zip = new JSZipSync();
-      jsonTmp = zip.sync(function() {
-          var data = JSZip.loadAsync(jsonTmp)
+      jsonTmp = zip.sync(function () {
+        var data = JSZip.loadAsync(jsonTmp)
 
           .then(function (zip: any) {
             return zip.file("msg").async("text");
@@ -315,7 +315,7 @@ export default class Compression {
           .then(function (txt: any) {
             return txt;
           });
-          return data;        
+        return data;
       });
     }
     // @ts-ignore-end
@@ -381,7 +381,7 @@ export default class Compression {
     if (input["method"]) {
       const method: string = input["method"];
       const methodId = Compression.getCompressedKeyId(method, methodValueMap);
-      if(methodId) {
+      if (methodId) {
         result.json["method"] = methodId;
         result.compressed = true;
       }

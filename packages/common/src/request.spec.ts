@@ -26,7 +26,10 @@ const shouldBeAValidRequest = (
   assert.equal(typeof actual.id, "number");
   assert(actual.id > 0);
   assert.equal(actual.provider, expected.provider);
-  const sameMessage = _.isEqual(JSON.parse(actual.body), JSON.parse(expected.body));
+  const sameMessage = _.isEqual(
+    JSON.parse(actual.body),
+    JSON.parse(expected.body)
+  );
   assert(sameMessage);
   assert.equal(actual.entryNodeDestination, expected.entryNodeDestination);
   assert.equal(actual.exitNodeDestination, expected.exitNodeDestination);

@@ -17,7 +17,10 @@ const shouldBeAValidResponse = (
   assert.equal(typeof actual.id, "number");
   assert(actual.id > 0);
   assert.equal(actual.id, expected.request.id);
-  const sameMessage = _.isEqual(JSON.parse(actual.body), JSON.parse(expected.body));
+  const sameMessage = _.isEqual(
+    JSON.parse(actual.body),
+    JSON.parse(expected.body)
+  );
   assert(sameMessage);
 };
 

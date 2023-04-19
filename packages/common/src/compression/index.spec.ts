@@ -177,7 +177,9 @@ export const res_80kb = {
 
 describe("test compression.ts / compress and decompress RpcRequest Async", function () {
   it("should return true", async function () {
-    const compressed: string = await Compression.compressRpcRequestAsync(res_normal);
+    const compressed: string = await Compression.compressRpcRequestAsync(
+      res_normal
+    );
     const decompressed: any = await Compression.decompressRpcRequestAsync(
       compressed
     );
@@ -244,7 +246,9 @@ describe("test compression.ts / compress and decompress RpcRequest Async", funct
   });
 
   it("should return true", async function () {
-    const compressed: string = await Compression.compressRpcRequestAsync(res_80kb);
+    const compressed: string = await Compression.compressRpcRequestAsync(
+      res_80kb
+    );
     const decompressed: any = await Compression.decompressRpcRequestAsync(
       compressed
     );
@@ -253,7 +257,9 @@ describe("test compression.ts / compress and decompress RpcRequest Async", funct
   });
 
   it("should return true", async function () {
-    const compressed: string = await Compression.compressRpcRequestAsync(res_error);
+    const compressed: string = await Compression.compressRpcRequestAsync(
+      res_error
+    );
     const decompressed: any = await Compression.decompressRpcRequestAsync(
       compressed
     );
@@ -262,7 +268,9 @@ describe("test compression.ts / compress and decompress RpcRequest Async", funct
   });
 
   it("should return true", async function () {
-    const compressed: string = await Compression.compressRpcRequestAsync(req_80kb);
+    const compressed: string = await Compression.compressRpcRequestAsync(
+      req_80kb
+    );
     const decompressed: any = await Compression.decompressRpcRequestAsync(
       compressed
     );
@@ -271,7 +279,9 @@ describe("test compression.ts / compress and decompress RpcRequest Async", funct
   });
 
   it("should return true", async function () {
-    const compressed: string = await Compression.compressRpcRequestAsync(res_80kb);
+    const compressed: string = await Compression.compressRpcRequestAsync(
+      res_80kb
+    );
     const decompressed: any = await Compression.decompressRpcRequestAsync(
       compressed
     );
@@ -283,9 +293,7 @@ describe("test compression.ts / compress and decompress RpcRequest Async", funct
 describe("test compression.ts / compress and decompress RpcRequest Sync", function () {
   it("should return true", function () {
     const compressed: string = Compression.compressRpcRequestSync(res_normal);
-    const decompressed: any = Compression.decompressRpcRequestSync(
-      compressed
-    );
+    const decompressed: any = Compression.decompressRpcRequestSync(compressed);
     const test = _.isEqual(res_normal, decompressed);
     assert(test);
   });
@@ -294,9 +302,7 @@ describe("test compression.ts / compress and decompress RpcRequest Sync", functi
     const compressed: string = Compression.compressRpcRequestSync(
       res_compress_key_problem0
     );
-    const decompressed: any = Compression.decompressRpcRequestSync(
-      compressed
-    );
+    const decompressed: any = Compression.decompressRpcRequestSync(compressed);
     const test = _.isEqual(res_compress_key_problem0, decompressed);
     assert(test);
   });
@@ -305,9 +311,7 @@ describe("test compression.ts / compress and decompress RpcRequest Sync", functi
     const compressed: string = Compression.compressRpcRequestSync(
       res_compress_key_problem1
     );
-    const decompressed: any = Compression.decompressRpcRequestSync(
-      compressed
-    );
+    const decompressed: any = Compression.decompressRpcRequestSync(compressed);
     const test = _.isEqual(res_compress_key_problem1, decompressed);
     assert(test);
   });
@@ -316,9 +320,7 @@ describe("test compression.ts / compress and decompress RpcRequest Sync", functi
     const compressed: string = Compression.compressRpcRequestSync(
       req_small_different_params
     );
-    const decompressed: any = Compression.decompressRpcRequestSync(
-      compressed
-    );
+    const decompressed: any = Compression.decompressRpcRequestSync(compressed);
     const test = _.isEqual(req_small_different_params, decompressed);
     assert(test);
   });
@@ -327,9 +329,7 @@ describe("test compression.ts / compress and decompress RpcRequest Sync", functi
     const compressed: string = Compression.compressRpcRequestSync(
       req_small_different_params_and_cant_do_params
     );
-    const decompressed: any = Compression.decompressRpcRequestSync(
-      compressed
-    );
+    const decompressed: any = Compression.decompressRpcRequestSync(compressed);
     const test = _.isEqual(
       req_small_different_params_and_cant_do_params,
       decompressed
@@ -341,45 +341,35 @@ describe("test compression.ts / compress and decompress RpcRequest Sync", functi
     const compressed: string = Compression.compressRpcRequestSync(
       req_small_cant_do_main_keys
     );
-    const decompressed: any = Compression.decompressRpcRequestSync(
-      compressed
-    );
+    const decompressed: any = Compression.decompressRpcRequestSync(compressed);
     const test = _.isEqual(req_small_cant_do_main_keys, decompressed);
     assert(test);
   });
 
   it("should return true", function () {
     const compressed: string = Compression.compressRpcRequestSync(res_80kb);
-    const decompressed: any = Compression.decompressRpcRequestSync(
-      compressed
-    );
+    const decompressed: any = Compression.decompressRpcRequestSync(compressed);
     const test = _.isEqual(res_80kb, decompressed);
     assert(test);
   });
 
   it("should return true", function () {
     const compressed: string = Compression.compressRpcRequestSync(res_error);
-    const decompressed: any = Compression.decompressRpcRequestSync(
-      compressed
-    );
+    const decompressed: any = Compression.decompressRpcRequestSync(compressed);
     const test = _.isEqual(res_error, decompressed);
     assert(test);
   });
 
   it("should return true", function () {
     const compressed: string = Compression.compressRpcRequestSync(req_80kb);
-    const decompressed: any = Compression.decompressRpcRequestSync(
-      compressed
-    );
+    const decompressed: any = Compression.decompressRpcRequestSync(compressed);
     const test = _.isEqual(req_80kb, decompressed);
     assert(test);
   });
 
   it("should return true", function () {
     const compressed: string = Compression.compressRpcRequestSync(res_80kb);
-    const decompressed: any = Compression.decompressRpcRequestSync(
-      compressed
-    );
+    const decompressed: any = Compression.decompressRpcRequestSync(compressed);
     const test = _.isEqual(res_80kb, decompressed);
     assert(test);
   });
