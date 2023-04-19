@@ -4,7 +4,7 @@
   "extends": "./base.json",
   "compilerOptions": {
     "lib": [
-      "es2015"
+      "ES2015"
     ],
     "module": "CommonJS",
     "target": "es6"
