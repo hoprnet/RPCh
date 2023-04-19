@@ -41,6 +41,8 @@ start() {
     logs_error=""
     segmentation_error=""
     pluto=false
+
+    echo "The script is still running. Don't worry, you need to wait."
     sleep 10
 
     until [[ $logs1 =~ "Listening for incoming messages from HOPRd" ]]; do
