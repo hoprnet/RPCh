@@ -81,16 +81,10 @@ export default class Response {
     );
 
     const decrypted = utils.toUtf8String(request.session.get_response_data());
-    log.verbose("decrypted", decrypted);
-    //   console.log(      "decrypted", decrypted);
     const [type, compressedDecrypted] = splitBodyToParts(decrypted);
-    log.verbose("compressedDecrypted", compressedDecrypted);
-    //  console.log(      "compressedDecrypted", compressedDecrypted);
     const decompressedDecrypted = await Compression.decompressRpcRequestAsync(
       compressedDecrypted
     );
-    log.verbose("decompressedDecrypted", decompressedDecrypted);
-    // console.log(      "decompressedDecrypted", decompressedDecrypted);
     if (type !== "response") throw Error("Message is not a Response");
     return new Response(request.id, decompressedDecrypted, request);
   }

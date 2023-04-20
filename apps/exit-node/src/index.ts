@@ -87,6 +87,7 @@ export const start = async (ops: {
       const [clientId] = utils.splitBodyToParts(message.body);
       // if this fails, then we most likely have received
       // a Response
+      console.log("clientId", clientId);
       try {
         PeerId.createFromB58String(clientId);
       } catch {
