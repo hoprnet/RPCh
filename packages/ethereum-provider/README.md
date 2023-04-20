@@ -10,6 +10,14 @@ You will need to have Node.js and npm/yarn installed on your computer. You can d
 yarn add @rpch/crypto-for-nodejs @rpch/ethereum-provider
 ```
 
+Get your rpch client by running
+```
+curl --request GET \
+  --url https://staging.discovery.rpch.tech/api/v1/request/trial
+```
+
+or go to https://access.rpch.net/ and follow the docker guide
+
 You can create an instance of this adaptor by passing in the required options and key-value store functions:
 ```TypeScript
 import * as RPChCrypto from "@rpch/crypto-for-nodejs";
@@ -23,7 +31,7 @@ const provider = new RPChEthereumProvider(
   PROVIDER_URL,
   {
     crypto: RPChCrypto,
-    client: '',
+    client: "your_client_name",
     timeout: TIMEOUT,
     discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
   },
