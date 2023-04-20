@@ -267,6 +267,7 @@ app.post(
 app.post(
   "/register-exit-nodes",
   body("discoveryPlatformEndpoint").exists(),
+  body("client").exists(),
   body("chainId").exists(),
   body("hoprdApiEndpoints")
     .exists()
@@ -301,8 +302,10 @@ app.post(
         hoprdApiEndpointsExt,
         hoprdApiTokens,
         exitNodePubKeys,
+        client,
       } = req.body as {
         discoveryPlatformEndpoint: string;
+        client: string;
         chainId: string;
         hoprdApiEndpoints: string[];
         hoprdApiEndpointsExt: string[];
@@ -312,6 +315,7 @@ app.post(
 
       await registerExitNodes(
         discoveryPlatformEndpoint,
+        client,
         chainId,
         hoprdApiEndpoints,
         hoprdApiEndpointsExt,
