@@ -77,17 +77,17 @@ export const start = async (ops: {
   );
 
   const onMessage = async (message: Message) => {
-    console.log("message", message);
     try {
       log.verbose("Received message", message.id, message.body);
       counterRequests.labels({ status: "complete" }).inc();
       // in the method, we are only expecting to receive
       // Requests, this means that the all messages are
       // prefixed by the entry node's peer id
+
       const [clientId] = utils.splitBodyToParts(message.body);
       // if this fails, then we most likely have received
       // a Response
-      console.log("clientId", clientId);
+
       try {
         PeerId.createFromB58String(clientId);
       } catch {
@@ -101,7 +101,6 @@ export const start = async (ops: {
           return BigInt(v.toString());
         })
         .catch(() => BigInt(0));
-      console.log("lastRequestFromClient", lastRequestFromClient);
       const rpchRequest = await Request.fromMessage(
         crypto,
         message,
@@ -112,12 +111,10 @@ export const start = async (ops: {
           db.put(clientId, counter.toString());
         }
       );
-      console.log("rpchRequest", rpchRequest);
       const response = await ops.exit.sendRpcRequest(
         rpchRequest.body,
         rpchRequest.provider
       );
-      console.log("response", response);
       counterRequestsToProvider.labels({ status: "complete" }).inc();
 
       const rpchResponse = await Response.createResponse(
@@ -126,11 +123,6 @@ export const start = async (ops: {
         response
       );
       log.verbose(
-        "Created response",
-        rpchResponse.id,
-        rpchResponse.toMessage().body
-      );
-      console.log(
         "Created response",
         rpchResponse.id,
         rpchResponse.toMessage().body

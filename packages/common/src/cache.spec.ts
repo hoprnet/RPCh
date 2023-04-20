@@ -28,22 +28,21 @@ describe("test Cache class", function () {
     }
   });
   it("should drop expired segments", async function () {
-    const MESSAGE = (await createMockedFlow(RPC_REQ_LARGE).next()).value.toMessage();
+    const MESSAGE = (
+      await createMockedFlow(RPC_REQ_LARGE).next()
+    ).value.toMessage();
     const MESSAGE_SEGMENTS = MESSAGE.toSegments();
-    console.log('MESSAGE', MESSAGE, '\nMESSAGE_SEGMENTS', MESSAGE_SEGMENTS)
 
     jest.useFakeTimers();
     const cache = new Cache(() => {});
 
     // simulate failure.
     for (const segment of MESSAGE_SEGMENTS.slice(0, 2)) {
-      console.log('segment', segment)
       cache.onSegment(segment);
     }
 
     // @ts-ignore-next-line
     const inCache = cache.segments;
-    console.log('inCache', inCache)
     // advance time by 1s more than the timeout.
     jest.advanceTimersByTime(TIMEOUT + 1e3);
 

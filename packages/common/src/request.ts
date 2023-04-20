@@ -58,7 +58,12 @@ export default class Request {
       exitNodeDestination
     );
     const session = crypto.box_request(envelope, exitNodeReadIdentity);
-
+    console.log("REQUEST createRequest body.length", body.length);
+    console.log(
+      "REQUEST createRequest compressedBody.length",
+      compressedBody.length
+    );
+    console.log("REQUEST createRequest payload.length", payload.length);
     return new Request(
       id,
       provider,
@@ -88,7 +93,6 @@ export default class Request {
     updateLastRequestFromClient: (clientId: string, counter: bigint) => any
   ): Promise<Request> {
     const [origin, encrypted] = splitBodyToParts(message.body);
-
     const entryNodeDestination =
       PeerId.createFromB58String(origin).toB58String();
 
@@ -106,14 +110,16 @@ export default class Request {
       entryNodeDestination,
       session.updated_counter()
     );
-
-    const [type, provider, ...remaining] = splitBodyToParts(
+    const [type, provider, compressedBody] = splitBodyToParts(
       utils.toUtf8String(session.get_request_data())
     );
 
-    const compressedBody = joinPartsToBody(remaining);
     const body = await Compression.decompressRpcRequestAsync(compressedBody);
-
+    console.log(
+      "Request fromMessage compressedBody.length:",
+      compressedBody.length
+    );
+    console.log("Request fromMessage body.length:", body.length);
     if (type !== "request") throw Error("Message is not a Request");
     return new Request(
       message.id,

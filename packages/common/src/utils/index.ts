@@ -136,10 +136,8 @@ export const SEPERATOR = "|";
  * @returns body
  */
 export const joinPartsToBody = (parts: string[]): string => {
-  console.log('joinPartsToBody parts:', parts);
   const toJoin = [parts.length, ...parts];
   const joined = toJoin.join(SEPERATOR);
-  console.log('joinPartsToBody joined:', joined);
   return joined;
 };
 
@@ -149,7 +147,9 @@ export const joinPartsToBody = (parts: string[]): string => {
  * @returns parts of the body
  */
 export const splitBodyToParts = (body: string): string[] => {
-  console.log('splitBodyToParts body:', body);
+  if (!body.indexOf("|")) {
+    return [body];
+  }
   const numberOfParts = parseInt(body.split("|")[0]);
   let array = [];
   let splitIndex = body.indexOf("|");
@@ -161,7 +161,6 @@ export const splitBodyToParts = (body: string): string[] => {
     body = body.substring(splitIndex + 1);
   }
   array.push(body);
-  console.log('splitBodyToParts array:', array);
   return array;
 };
 

@@ -43,14 +43,12 @@ export default class Segment {
   }
 
   public static fromString(str: string): Segment {
-    const [msgId_, segmentNr_, segmentsLength_, ...remaining] =
-      splitBodyToParts(str);
+    const [msgId_, segmentNr_, segmentsLength_, body] = splitBodyToParts(str);
 
     const msgId = Number(msgId_);
     const segmentNr = Number(segmentNr_);
     const segmentsLength = Number(segmentsLength_);
-    const body = joinPartsToBody(remaining);
-
+    console.log("SEMENT toString segmentsLength", segmentsLength);
     return new Segment(msgId, segmentNr, segmentsLength, body);
   }
 }
