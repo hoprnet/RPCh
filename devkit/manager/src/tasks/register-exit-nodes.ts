@@ -8,6 +8,7 @@ const log = createLogger(["register-exit-nodes"]);
 
 async function registerNode(
   discoveryPlatformEndpoint: string,
+  client: string,
   chainId: string,
   hoprdPeerId: string,
   hoprdApiEndpoint: string,
@@ -32,7 +33,7 @@ async function registerNode(
   );
   return fetch(url.toString(), {
     method: "POST",
-    headers,
+    headers: { ...headers, client },
     body: JSON.stringify({
       hasExitNode: true,
       peerId: hoprdPeerId,
@@ -47,6 +48,7 @@ async function registerNode(
 
 export default async function main(
   discoveryPlatformEndpoint: string,
+  client: string,
   chainId: string,
   hoprdApiEndpoints: string[],
   hoprdApiEndpointsExt: string[],
@@ -108,6 +110,7 @@ export default async function main(
     const exitNodeAddress = ethersUtils.computeAddress(nodes.exitNodePubKey);
     await registerNode(
       discoveryPlatformEndpoint,
+      client,
       chainId,
       nodes.hoprdPeerId,
       nodes.hoprdApiEndpointExt,
