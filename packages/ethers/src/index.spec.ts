@@ -20,39 +20,37 @@ const TIMEOUT = 5e3;
 const DISCOVERY_PLATFORM_API_ENDPOINT = "http://discovery_platform";
 
 describe("test index.ts", function () {
-  describe("test rpch json provider", function () {
-    const sdkStore = fixtures.createAsyncKeyValStore();
-    const provider = new RPChProvider(
-      PROVIDER_URL,
-      {
-        crypto: RPChCrypto,
-        client: "",
-        timeout: TIMEOUT,
-        discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
-      },
-      sdkStore.set,
-      sdkStore.get
-    );
+  const sdkStore = fixtures.createAsyncKeyValStore();
+  const provider = new RPChProvider(
+    PROVIDER_URL,
+    {
+      crypto: RPChCrypto,
+      client: "client",
+      timeout: TIMEOUT,
+      discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
+    },
+    sdkStore.set,
+    sdkStore.get
+  );
 
-    beforeAll(async function () {
-      await provider.sdk.start();
-    });
+  beforeAll(async function () {
+    await provider.sdk.start();
+  });
 
-    afterAll(async function () {
-      await provider.sdk.stop();
-    });
+  afterAll(async function () {
+    await provider.sdk.stop();
+  });
 
-    // hook to emulate responses from the exit node
-    provider.sdk = mockSdk(provider.sdk);
+  // hook to emulate responses from the exit node
+  provider.sdk = mockSdk(provider.sdk);
 
-    it("should get chain id", async function () {
-      const network = await provider.getNetwork();
-      assert.equal(network.chainId, 1);
-    });
+  it("should get chain id", async function () {
+    const network = await provider.getNetwork();
+    assert.equal(network.chainId, 1);
+  });
 
-    it("should get block number", async function () {
-      const blockNumber = await provider.getBlockNumber();
-      assert.equal(blockNumber, 25135304);
-    });
+  it("should get block number", async function () {
+    const blockNumber = await provider.getBlockNumber();
+    assert.equal(blockNumber, 25135304);
   });
 });

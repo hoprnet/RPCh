@@ -75,6 +75,10 @@ describe("test entry server", function () {
     const amountLeft = BigInt(10).toString();
     const peerId = "entry";
     const requestId = 1;
+    const responseRequestTrialClient = await request(app).get(
+      "/api/v1/request/trial"
+    );
+    const trialClientId: string = responseRequestTrialClient.body.client;
 
     const getAccessTokenBody: GetAccessTokenResponse = {
       accessToken: FAKE_ACCESS_TOKEN,
@@ -86,17 +90,20 @@ describe("test entry server", function () {
     await request(app)
       .post("/api/v1/client/quota")
       .send({
-        client: "client",
+        client: trialClientId,
         quota: BigInt(1).toString(),
       });
 
     await request(app)
       .post("/api/v1/node/register")
+      .set("X-Rpch-Client", trialClientId)
       .send(mockNode(peerId, true));
 
     const createdNode: {
       body: { node: RegisteredNodeDB | undefined };
-    } = await request(app).get(`/api/v1/node/${peerId}`);
+    } = await request(app)
+      .get(`/api/v1/node/${peerId}`)
+      .set("X-Rpch-Client", trialClientId);
 
     spy.mockImplementation(async () => {
       return createdNode.body.node;
@@ -114,7 +121,7 @@ describe("test entry server", function () {
 
     const requestResponse = await request(app)
       .post("/api/v1/request/entry-node")
-      .send({ client: "client" });
+      .set("X-Rpch-Client", trialClientId);
 
     if (!requestResponse.body || !createdNode.body.node)
       throw new Error("Could not create mock nodes");

@@ -125,10 +125,11 @@ export default class SDK {
           headers: {
             "Content-Type": "application/json",
             "Accept-Content": "application/json",
+            "x-rpch-client": this.ops.client,
           },
           body: JSON.stringify({
-            client: this.ops.client,
             exclusionList,
+            client: this.ops.client,
           }),
         }
       );
@@ -198,7 +199,14 @@ export default class SDK {
       new URL(
         "/api/v1/node?hasExitNode=true",
         discoveryPlatformApiEndpoint
-      ).toString()
+      ).toString(),
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Accept-Content": "application/json",
+          "x-rpch-client": this.ops.client,
+        },
+      }
     );
 
     if (rawResponse.status !== 200) {
