@@ -51,7 +51,9 @@ const shouldBeAValidRequestMessage = (
   request: Request
 ) => {
   assert.equal(actual.id, expected.id);
-  const expectedPrefix = request.entryNodeDestination + "|";
+  const numberOfParts = parseInt(actual.body.split("|")[0]);
+  const expectedPrefix =
+    `${numberOfParts}|` + request.entryNodeDestination + "|";
   assert(actual.body.startsWith(expectedPrefix));
   assert(actual.body.length > expectedPrefix.length);
 };
@@ -116,7 +118,7 @@ describe("test Request class", function () {
 
     shouldBeAValidRequest(request, {
       provider: PROVIDER,
-      body: RPC_REQ_SMALL,
+      body: `1|0110001000Þ\x00\x04¡0­1663836360444¡1\x90¡2¡7¡8£2.0`,
       entryNodeDestination: ENTRY_NODE_PEER_ID,
       exitNodeDestination: EXIT_NODE_HOPRD_PEER_ID,
       exitNodeIdentity: EXIT_NODE_WRITE_IDENTITY,

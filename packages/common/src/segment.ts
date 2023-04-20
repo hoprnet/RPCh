@@ -30,6 +30,7 @@ export default class Segment {
 
   public toString() {
     return joinPartsToBody([
+      4,
       String(this.msgId),
       String(this.segmentNr),
       String(this.segmentsLength),
@@ -49,7 +50,7 @@ export default class Segment {
     const msgId = Number(msgId_);
     const segmentNr = Number(segmentNr_);
     const segmentsLength = Number(segmentsLength_);
-    const body = joinPartsToBody(remaining);
+    const body = joinPartsToBody([remaining.length, ...remaining]);
 
     return new Segment(msgId, segmentNr, segmentsLength, body);
   }

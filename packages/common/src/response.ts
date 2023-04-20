@@ -9,6 +9,10 @@ import Compression from "./compression";
 import { joinPartsToBody, splitBodyToParts } from "./utils";
 import { utils } from "ethers";
 
+import { createLogger } from "./utils";
+
+const log = createLogger();
+
 /**
  * Represents a response made by a RPCh.
  * To be send over the HOPR network via Response.toMessage().
@@ -35,7 +39,7 @@ export default class Response {
     body: string
   ): Promise<Response> {
     const compressedBody = await Compression.compressRpcRequestAsync(body);
-    const payload = joinPartsToBody(["response", compressedBody]);
+    const payload = joinPartsToBody([2, "response", compressedBody]);
     const envelope = new crypto.Envelope(
       utils.toUtf8Bytes(payload),
       request.entryNodeDestination,
@@ -77,10 +81,16 @@ export default class Response {
     );
 
     const decrypted = utils.toUtf8String(request.session.get_response_data());
+    log.verbose("decrypted", decrypted);
+    //   console.log(      "decrypted", decrypted);
     const [type, compressedDecrypted] = splitBodyToParts(decrypted);
+    log.verbose("compressedDecrypted", compressedDecrypted);
+    //  console.log(      "compressedDecrypted", compressedDecrypted);
     const decompressedDecrypted = await Compression.decompressRpcRequestAsync(
       compressedDecrypted
     );
+    log.verbose("decompressedDecrypted", decompressedDecrypted);
+    // console.log(      "decompressedDecrypted", decompressedDecrypted);
     if (type !== "response") throw Error("Message is not a Response");
     return new Response(request.id, decompressedDecrypted, request);
   }

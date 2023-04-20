@@ -38,7 +38,7 @@ import JSZip from "jszip";
  * 0 no.4 - 'result'{} keys compressed
  * 0 no.5 - 'error'{} kets compressed
  * 0 no.6 - 'method' value compressed
- * 0 no.7 - payload was a JSON
+ * 0 no.7 - payload was a 1: JSON, 0: string
  * 0 no.8 - TBD
  * 0 no.9 - TBD
  */

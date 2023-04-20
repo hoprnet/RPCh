@@ -253,6 +253,8 @@ export default class SDK {
         }
       );
 
+      log.verbose("const response = await Response.fromMessage(", message);
+
       const responseTime = Date.now() - match.createdAt.getTime();
       log.verbose(
         "response time for request %s: %s ms",

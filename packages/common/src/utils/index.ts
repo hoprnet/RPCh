@@ -131,10 +131,11 @@ export const SEPERATOR = "|";
 
 /**
  * Given some strings, join them using SEPERATOR.
+ * 1st place in the array is the number of added strings to the array (we do not count 1st number)
  * @param parts
  * @returns body
  */
-export const joinPartsToBody = (parts: string[]): string => {
+export const joinPartsToBody = (parts: [number, ...string[]]): string => {
   return parts.join(SEPERATOR);
 };
 
@@ -144,7 +145,18 @@ export const joinPartsToBody = (parts: string[]): string => {
  * @returns parts of the body
  */
 export const splitBodyToParts = (body: string): string[] => {
-  return body.split(SEPERATOR);
+  const numberOfParts = parseInt(body.split("|")[0]);
+  let array = [];
+  let splitIndex = body.indexOf("|");
+  body = body.substring(splitIndex + 1);
+  for (let i = 1; i < numberOfParts; i++) {
+    splitIndex = body.indexOf("|");
+    const part = body.substring(0, splitIndex);
+    array.push(part);
+    body = body.substring(splitIndex + 1);
+  }
+  array.push(body);
+  return array;
 };
 
 /**
