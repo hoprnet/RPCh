@@ -27,6 +27,7 @@ import * as PgMem from "pg-mem";
 const FUNDING_SERVICE_URL = "http://localhost:5000";
 const BASE_QUOTA = BigInt(1);
 const FAKE_ACCESS_TOKEN = "EcLjvxdALOT0eq18d8Gzz3DEr3AMG27NtL+++YPSZNE=";
+const SECRET = "SECRET";
 
 const nockFundingRequest = (nodeAddress: string) =>
   nock(FUNDING_SERVICE_URL).post(`/api/request/funds/${nodeAddress}`);
@@ -71,6 +72,7 @@ describe("test v1 router", function () {
         baseQuota: BASE_QUOTA,
         fundingServiceApi,
         metricManager: metricManager,
+        secret: SECRET,
       })
     );
   });
@@ -169,13 +171,36 @@ describe("test v1 router", function () {
       -1
     );
   });
-
   it("should add quota to a client", async function () {
-    const createdQuota = await request(app).post("/client/quota").send({
-      client: "client",
-      quota: 1,
-    });
+    const createdQuota = await request(app)
+      .post("/client/quota")
+      .send({
+        client: "client",
+        quota: 1,
+      })
+      .set("x-secret-key", SECRET);
+
     assert.equal(createdQuota.body.quota.quota, 1);
+  });
+
+  it("should not add quota to a client if secret is missing or incorrect", async function () {
+    const createdQuotaWithoutSecret = await request(app)
+      .post("/client/quota")
+      .send({
+        client: "client",
+        quota: 1,
+      });
+
+    const createdQuotaWithWrongSecret = await request(app)
+      .post("/client/quota")
+      .send({
+        client: "client",
+        quota: 1,
+      })
+      .set("x-secret-key", "wrong");
+
+    assert.equal(createdQuotaWithoutSecret.status, 400);
+    assert.equal(createdQuotaWithWrongSecret.status, 400);
   });
   it("should create trial client", async function () {
     const responseRequestTrialClient = await request(app).get("/request/trial");
@@ -197,7 +222,8 @@ describe("test v1 router", function () {
 
     await request(app)
       .post("/client/quota")
-      .send({ client: trialClientId, quota: BASE_QUOTA.toString() });
+      .send({ client: trialClientId, quota: BASE_QUOTA.toString() })
+      .set("x-secret-key", SECRET);
 
     const dbTrialClientAfterAddingQuota = await getClient(
       dbInstance,
@@ -230,7 +256,8 @@ describe("test v1 router", function () {
         .send({
           client: trialClientId,
           quota: BigInt("1").toString(),
-        });
+        })
+        .set("x-secret-key", SECRET);
 
       await request(app)
         .post("/node/register")
@@ -280,10 +307,13 @@ describe("test v1 router", function () {
       };
 
       nockGetApiAccessToken.reply(200, replyBody);
-      await request(app).post("/client/quota").send({
-        client: trialClientId,
-        quota: 1,
-      });
+      await request(app)
+        .post("/client/quota")
+        .send({
+          client: trialClientId,
+          quota: 1,
+        })
+        .set("x-secret-key", SECRET);
 
       await request(app)
         .post("/node/register")
@@ -330,6 +360,7 @@ describe("test v1 router", function () {
         .set("X-Rpch-Client", trialClientId)
         .send({ excludeList: ["entry"] });
 
+      assert.equal(requestResponse.status, 200);
       assert.equal(requestResponse.body.id, secondCreatedNode.body.node?.id);
     });
     it("should fail if no entry node is selected", async function () {
@@ -346,11 +377,13 @@ describe("test v1 router", function () {
       );
       const trialClientId: string = responseRequestTrialClient.body.client;
       nockGetApiAccessToken.reply(200, apiAccessTokenResponse);
-
-      await request(app).post("/client/quota").send({
-        client: trialClientId,
-        quota: 1,
-      });
+      await request(app)
+        .post("/client/quota")
+        .send({
+          client: trialClientId,
+          quota: 1,
+        })
+        .set("x-secret-key", SECRET);
 
       spy.mockImplementation(async () => undefined);
 
@@ -381,10 +414,13 @@ describe("test v1 router", function () {
       nockGetApiAccessToken.reply(200, apiTokenResponse);
 
       // add quota to newClient
-      await request(app).post("/client/quota").send({
-        client: "newClient",
-        quota: BASE_QUOTA.toString(),
-      });
+      await request(app)
+        .post("/client/quota")
+        .send({
+          client: "newClient",
+          quota: BASE_QUOTA.toString(),
+        })
+        .set("x-secret-key", SECRET);
 
       await request(app)
         .post("/node/register")
@@ -447,10 +483,13 @@ describe("test v1 router", function () {
       );
       const trialClientId: string = responseRequestTrialClient.body.client;
 
-      await request(app).post("/client/quota").send({
-        client: "trial",
-        quota: BASE_QUOTA.toString(),
-      });
+      await request(app)
+        .post("/client/quota")
+        .send({
+          client: "trial",
+          quota: BASE_QUOTA.toString(),
+        })
+        .set("x-secret-key", SECRET);
 
       await request(app)
         .post("/node/register")

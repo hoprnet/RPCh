@@ -33,6 +33,7 @@ services:
       - sandbox
     environment:
       - DEBUG=${DEBUG}
+      - DP_SECRET=${DP_SECRET}
       - PORT=3030
   pluto:
     image: gcr.io/hoprassociation/hopr-pluto:${HOPR_PLUTO_VERSION}
