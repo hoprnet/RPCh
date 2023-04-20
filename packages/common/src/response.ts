@@ -39,7 +39,7 @@ export default class Response {
     body: string
   ): Promise<Response> {
     const compressedBody = await Compression.compressRpcRequestAsync(body);
-    const payload = joinPartsToBody([2, "response", compressedBody]);
+    const payload = joinPartsToBody(["response", compressedBody]);
     const envelope = new crypto.Envelope(
       utils.toUtf8Bytes(payload),
       request.entryNodeDestination,
