@@ -8,9 +8,19 @@ Through the SDK, the client should be able to send traffic through the RPCh netw
 ## How to use SDK
 You will need to have Node.js and npm/yarn installed on your computer. You can download them from their official website or use a package manager like Homebrew (for Mac) or Chocolatey (for Windows).
 
+Install necessary packages
 ```
 yarn add @rpch/crypto @rpch/sdk
 ```
+
+Get your rpch client by running
+```
+curl --request GET \
+  --url https://staging.discovery.rpch.tech/api/v1/request/trial
+```
+
+or go to https://access.rpch.net/ and follow the docker guide
+
 
 You can create an instance of the SDK by passing in the required options and key-value store functions:
 ```TypeScript
