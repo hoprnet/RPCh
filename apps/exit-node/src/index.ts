@@ -62,10 +62,6 @@ export const start = async (ops: {
   );
 
   const gateway = new Prometheus.Pushgateway(ops.pushgatewayEndpoint);
-  console.log("ops", ops);
-  console.log("gateway", gateway);
-  console.log("hoprd", hoprd);
-
 
   // Metrics
   const counterRequests = metricManager.createCounter(
