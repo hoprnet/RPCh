@@ -237,11 +237,7 @@ export default class SDK {
     // check whether we have a matching request id
     const match = this.requestCache.getRequest(message.id);
     if (!match) {
-      log.error(
-        "matching request not found",
-        message.id,
-        log.createMetric({ id: message.id })
-      );
+      log.error("matching request not found", message.id);
       return;
     }
 
@@ -260,7 +256,6 @@ export default class SDK {
           this.setKeyVal(exitNodeId, counter.toString());
         }
       );
-
       const responseTime = Date.now() - match.createdAt.getTime();
       log.verbose(
         "response time for request %s: %s ms",
@@ -273,11 +268,13 @@ export default class SDK {
       );
 
       match.resolve(response);
+
       this.reliabilityScore.addMetric(
         match.request.entryNodeDestination,
         match.request.id,
         "success"
       );
+
       this.requestCache.removeRequest(match.request);
 
       log.verbose("responded to %s with %s", match.request.body, response.body);
@@ -501,7 +498,6 @@ export default class SDK {
       // Wait for all promises to settle, then check if any were rejected
       try {
         const results = await Promise.allSettled(sendMessagePromises);
-
         const rejectedResults = results.filter(
           (result) => result.status === "rejected"
         );
