@@ -310,7 +310,7 @@ describe("test v1 router", function () {
       await request(app)
         .post("/client/quota")
         .send({
-          client: "client",
+          client: trialClientId,
           quota: 1,
         })
         .set("x-secret-key", SECRET);
@@ -360,6 +360,7 @@ describe("test v1 router", function () {
         .set("X-Rpch-Client", trialClientId)
         .send({ excludeList: ["entry"] });
 
+      assert.equal(requestResponse.status, 200);
       assert.equal(requestResponse.body.id, secondCreatedNode.body.node?.id);
     });
     it("should fail if no entry node is selected", async function () {
@@ -379,7 +380,7 @@ describe("test v1 router", function () {
       await request(app)
         .post("/client/quota")
         .send({
-          client: "client",
+          client: trialClientId,
           quota: 1,
         })
         .set("x-secret-key", SECRET);
