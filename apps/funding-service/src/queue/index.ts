@@ -41,11 +41,7 @@ export const checkFreshRequests = async (ops: {
     freshRequest = await ops.requestService.getOldestFreshRequest();
     log.verbose("Starting to fulfill request: ", JSON.stringify(freshRequest));
     if (!freshRequest) throw new CustomError("No pending fresh request");
-    log.normal(
-      "handling request: ",
-      freshRequest.id,
-      log.createMetric({ id: freshRequest.id })
-    );
+    log.normal("handling request: ", freshRequest.id);
     // check if request and signer are valid
     if (!ops.signer) throw new CustomError("Missing signer transaction");
     if (!freshRequest.chain_id)

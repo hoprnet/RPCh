@@ -158,8 +158,7 @@ export default class ReliabilityScore {
 
     log.verbose(
       "node %s exceeded the max number of responses possible. Recalculating score",
-      peerId,
-      log.createMetric({ peerId: peerId })
+      peerId
     );
   }
 
