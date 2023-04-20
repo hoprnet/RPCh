@@ -111,7 +111,7 @@ export default class Request {
       utils.toUtf8String(session.get_request_data())
     );
 
-    const compressedBody = joinPartsToBody(...remaining);
+    const compressedBody = joinPartsToBody(remaining);
     const body = await Compression.decompressRpcRequestAsync(compressedBody);
 
     if (type !== "request") throw Error("Message is not a Request");
