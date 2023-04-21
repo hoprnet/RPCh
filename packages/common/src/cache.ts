@@ -64,6 +64,7 @@ export default class Cache {
 
     if (areAllSegmentsPresent(segmentEntry.segments)) {
       const message = Message.fromSegments(segmentEntry.segments);
+
       // remove segments
       this.segments.delete(segment.msgId);
 

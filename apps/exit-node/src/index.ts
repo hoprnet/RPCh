@@ -83,11 +83,9 @@ export const start = async (ops: {
       // in the method, we are only expecting to receive
       // Requests, this means that the all messages are
       // prefixed by the entry node's peer id
-
       const [clientId] = utils.splitBodyToParts(message.body);
       // if this fails, then we most likely have received
       // a Response
-
       try {
         PeerId.createFromB58String(clientId);
       } catch {
@@ -111,10 +109,12 @@ export const start = async (ops: {
           db.put(clientId, counter.toString());
         }
       );
+
       const response = await ops.exit.sendRpcRequest(
         rpchRequest.body,
         rpchRequest.provider
       );
+
       counterRequestsToProvider.labels({ status: "complete" }).inc();
 
       const rpchResponse = await Response.createResponse(
@@ -157,7 +157,6 @@ export const start = async (ops: {
       apiToken: ops.apiToken,
     })
     .catch((error) => log.error(error));
-
   if (!myPeerId) throw Error("Could not find HOPRd's peer id");
   log.verbose("Fetched peer id", myPeerId);
 
