@@ -3,7 +3,7 @@
 ## Description
 The RPCh ethereum provider adaptor is an extension of the [`ethereum-provider`](https://github.com/floating/ethereum-provider). The goal of this adaptor is to provide a plug and play experience of for projects that currently use the ethereum provider.
 
-# How to use RPCh ethers adaptor
+# How to use RPCh ethereum provider adaptor
 You will need to have Node.js and npm/yarn installed on your computer. You can download them from their official website or use a package manager like Homebrew (for Mac) or Chocolatey (for Windows).
 
 ```
