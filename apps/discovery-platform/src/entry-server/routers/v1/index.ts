@@ -117,7 +117,12 @@ export const v1Router = (ops: {
     checkSchema(getNodeSchema),
     getCache(), // check if response is in cache
     async (
-      req: Request<{}, {}, {}, { excludeList?: string; hasExitNode?: string }>,
+      req: Request<
+        {},
+        {},
+        {},
+        { excludeList?: string; hasExitNode?: string; status?: string }
+      >,
       res: Response
     ) => {
       try {
@@ -128,10 +133,11 @@ export const v1Router = (ops: {
             .inc();
           return res.status(400).json({ errors: errors.array() });
         }
-        const { hasExitNode, excludeList } = req.query;
+        const { hasExitNode, excludeList, status } = req.query;
         const nodes = await getRegisteredNodes(ops.db, {
           excludeList: excludeList?.split(", "),
           hasExitNode: hasExitNode ? hasExitNode === "true" : undefined,
+          status,
         });
         // cache response for 1 min
         setCache(req.originalUrl || req.url, 60e3, nodes);
