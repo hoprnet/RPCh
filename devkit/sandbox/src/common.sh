@@ -127,8 +127,7 @@ start() {
     echo "Adding quota to 'trial' in 'discovery-platform'"
     curl -X POST "http://127.0.0.1:3030/add-quota" \
         -H "Content-Type: application/json" \
-        -H "x-rpch-client": trial" \
-        -H "x-secret-key": $DP_SECRET" \
+        -H "x-rpch-client: trial" \
         -d '{
             "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
             "client": "trial",
@@ -180,7 +179,6 @@ start() {
     scurl -X POST "http://127.0.0.1:3030/add-quota" \
         -H "Content-Type: application/json" \
         -H "x-rpch-client: sandbox" \
-        -H "x-secret-key: $DP_SECRET" \
         -d '{
             "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
             "client": "sandbox",
