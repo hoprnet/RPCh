@@ -86,5 +86,6 @@ export const getNodeSchema: Record<
     optional: true,
     in: "query",
     isString: true,
+    isIn: { options: [["FRESH", "FUNDING", "UNUSABLE", "READY"]] },
   },
 };

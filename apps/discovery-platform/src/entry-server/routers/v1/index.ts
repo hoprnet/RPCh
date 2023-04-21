@@ -22,7 +22,7 @@ import {
   getRegisteredNode,
   getRegisteredNodes,
 } from "../../../registered-node";
-import { ClientDB, RegisteredNode } from "../../../types";
+import { ClientDB, RegisteredNode, RegisteredNodeDB } from "../../../types";
 import { createLogger, isListSafe } from "../../../utils";
 import { errors } from "pg-promise";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
@@ -121,7 +121,11 @@ export const v1Router = (ops: {
         {},
         {},
         {},
-        { excludeList?: string; hasExitNode?: string; status?: string }
+        {
+          excludeList?: string;
+          hasExitNode?: string;
+          status?: RegisteredNodeDB["status"];
+        }
       >,
       res: Response
     ) => {
