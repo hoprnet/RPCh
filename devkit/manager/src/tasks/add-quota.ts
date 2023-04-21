@@ -14,7 +14,8 @@ const log = createLogger(["add-quota"]);
 export default async function main(
   discoveryPlatformEndpoint: string,
   client: string,
-  quota: string
+  quota: string,
+  secret: string
 ): Promise<void> {
   log.normal("Adding quota", {
     discoveryPlatformEndpoint,
@@ -30,7 +31,7 @@ export default async function main(
 
   const result = await fetch(url.toString(), {
     method: "POST",
-    headers,
+    headers: { ...headers, "x-secret-key": secret },
     body: JSON.stringify({
       client,
       quota,

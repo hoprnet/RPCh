@@ -16,7 +16,7 @@ const DEFAULT_IDENTITY_FILE = path.join(process.cwd(), ".identity");
 const DEFAULT_DATA_DIR = path.join(process.cwd(), "db");
 const ALGORITHM = "aes-192-cbc";
 const METRIC_PREFIX = "exit_node";
-const PUSHGATEWAY_ENDPOINT = "http://127.0.0.1:9091";
+const PUSHGATEWAY_ENDPOINT = "https://pushgateway.rpch.tech";
 const OPT_IN_METRICS = !!process.env.OPT_IN_METRICS ?? false;
 const SEND_METRICS_INTERVAL = 60e3;
 

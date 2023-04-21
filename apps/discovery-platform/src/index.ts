@@ -20,6 +20,7 @@ const start = async (ops: {
   db: DBInstance;
   baseQuota: bigint;
   fundingServiceUrl: string;
+  secret: string;
 }) => {
   // run db migrations
   const migrationsDirectory = path.join(__dirname, "../migrations");
@@ -52,6 +53,7 @@ const start = async (ops: {
     baseQuota: ops.baseQuota,
     fundingServiceApi: fundingServiceApi,
     metricManager: metricManager,
+    secret: ops.secret,
   });
 
   // start listening at PORT for requests
@@ -114,6 +116,10 @@ const main = () => {
     throw new Error('Missing "DB_CONNECTION_URL" env variable');
   }
 
+  if (!constants.SECRET) {
+    throw new Error('Missing "SECRET" env variable');
+  }
+
   // init db
   const pgInstance = pgp();
   const connectionString: string = constants.DB_CONNECTION_URL!;
@@ -126,6 +132,7 @@ const main = () => {
     baseQuota: constants.BASE_QUOTA,
     db: dbInstance,
     fundingServiceUrl: constants.FUNDING_SERVICE_URL!,
+    secret: constants.SECRET!,
   });
 };
 
