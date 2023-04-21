@@ -13,7 +13,7 @@ import {
   getClient,
   updateClient,
 } from "../../../client";
-import { DBInstance } from "../../../db";
+import { DBInstance, deleteRegisteredNode } from "../../../db";
 import { FundingServiceApi } from "../../../funding-service-api";
 import { createQuota } from "../../../quota";
 import {
@@ -199,7 +199,6 @@ export const v1Router = (ops: {
     }
   );
 
-  // TODO: can be exploited to allow client to use infinite funds
   router.post(
     "/client/quota",
     metricMiddleware(requestDurationHistogram),
@@ -253,6 +252,38 @@ export const v1Router = (ops: {
         return res.json({ quota: createdQuota });
       } catch (e) {
         log.error("Can not create funds", e);
+        counterFailedRequests
+          .labels({ method: req.method, path: req.path, status: 500 })
+          .inc();
+        return res.status(500).json({ errors: "Unexpected error" });
+      }
+    }
+  );
+
+  router.delete(
+    "/request/entry-node/:id",
+    metricMiddleware(requestDurationHistogram),
+    header("x-secret-key")
+      .exists()
+      .custom((val) => val === ops.secret),
+    param("id").isAlphanumeric(),
+    async (req: Request<{ id: string }>, res: Response) => {
+      try {
+        const validationErrors = validationResult(req);
+        if (!validationErrors.isEmpty()) {
+          counterFailedRequests
+            .labels({ method: req.method, path: req.path, status: 400 })
+            .inc();
+          return res.status(400).json({ errors: validationErrors.array() });
+        }
+        const { id }: { id: string } = req.params;
+        const node = await deleteRegisteredNode(ops.db, id);
+        counterSuccessfulRequests
+          .labels({ method: req.method, path: req.path, status: 200 })
+          .inc();
+        return res.json({ node });
+      } catch (e) {
+        log.error("Can not delete registered_node", e);
         counterFailedRequests
           .labels({ method: req.method, path: req.path, status: 500 })
           .inc();

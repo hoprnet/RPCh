@@ -182,7 +182,6 @@ describe("test v1 router", function () {
 
     assert.equal(createdQuota.body.quota.quota, 1);
   });
-
   it("should not add quota to a client if secret is missing or incorrect", async function () {
     const createdQuotaWithoutSecret = await request(app)
       .post("/client/quota")
@@ -201,6 +200,45 @@ describe("test v1 router", function () {
 
     assert.equal(createdQuotaWithoutSecret.status, 400);
     assert.equal(createdQuotaWithWrongSecret.status, 400);
+  });
+  it("should delete registered node", async function () {
+    const node = mockNode();
+    const responseRequestTrialClient = await request(app).get("/request/trial");
+    const trialClientId: string = responseRequestTrialClient.body.client;
+    await request(app)
+      .post("/node/register")
+      .set("X-Rpch-Client", trialClientId)
+      .send(node);
+    const deletedNode = await request(app)
+      .delete(`/request/entry-node/${node.peerId}`)
+      .set("X-Rpch-Client", trialClientId)
+      .set("x-secret-key", SECRET);
+    const queryDeletedNode = await request(app)
+      .get(`/node/${node.peerId}`)
+      .set("X-Rpch-Client", trialClientId);
+
+    assert.equal(queryDeletedNode.status, 500);
+    assert.equal(deletedNode.status, 200);
+    assert.equal(deletedNode.body.node.id, node.peerId);
+  });
+  it("should not delete registered node if secret is missing or incorrect", async function () {
+    const deletedNodeWithoutSecret = await request(app)
+      .delete("/request/entry-node/123")
+      .send({
+        client: "client",
+        quota: 1,
+      });
+
+    const deletedNodeWithWrongSecret = await request(app)
+      .delete("/request/entry-node/123")
+      .send({
+        client: "client",
+        quota: 1,
+      })
+      .set("x-secret-key", "wrong");
+
+    assert.equal(deletedNodeWithoutSecret.status, 400);
+    assert.equal(deletedNodeWithWrongSecret.status, 400);
   });
   it("should create trial client", async function () {
     const responseRequestTrialClient = await request(app).get("/request/trial");

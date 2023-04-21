@@ -6,6 +6,7 @@ import {
   updateRegisteredNode,
   getEligibleNode,
   getRewardForNode,
+  deleteRegisteredNode,
 } from ".";
 import { DBInstance } from "../db";
 import { RegisteredNode } from "../types";
@@ -79,13 +80,18 @@ describe("test registered node functions", function () {
   it("should update registered node", async function () {
     await createRegisteredNode(dbInstance, mockNode("1"));
     const node = await getRegisteredNode(dbInstance, "1");
-    if (!node) throw new Error("Failed to create node");
     await updateRegisteredNode(dbInstance, {
       ...node,
       status: "READY",
     });
     const updatedNode = await getRegisteredNode(dbInstance, "1");
     assert.equal(updatedNode?.status, "READY");
+  });
+  it("should delete registered node", async function () {
+    await createRegisteredNode(dbInstance, mockNode("1"));
+    const node = await getRegisteredNode(dbInstance, "1");
+    await deleteRegisteredNode(dbInstance, node.id);
+    await expect(getRegisteredNode(dbInstance, node.id)).rejects.toThrowError();
   });
   it("should get all nodes that are not exit nodes", async function () {
     await createRegisteredNode(dbInstance, mockNode("1", false));
