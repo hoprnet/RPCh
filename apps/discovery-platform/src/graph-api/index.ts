@@ -73,7 +73,7 @@ export const checkCommitment = async (ops: {
       }),
     });
 
-    const graphRes: GetAccountChannelsResponse = await channels.json();
+    const graphRes = (await channels.json()) as GetAccountChannelsResponse;
 
     log.verbose([
       "Received information from the graph",
@@ -132,7 +132,7 @@ export const getUpdatedAccounts = async (blockNumber: number) => {
       ),
     });
 
-    const graphRes: GetAccountChannelsResponse = await channels.json();
+    const graphRes = (await channels.json()) as GetAccountChannelsResponse;
 
     log.verbose([
       "Received information from the graph",

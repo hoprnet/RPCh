@@ -51,7 +51,7 @@ export class FundingServiceApi {
    */
   private async fetchAccessToken(): Promise<string> {
     const res = await fetch(`${this.url}/api/access-token`);
-    const resJson: GetAccessTokenResponse = await res.json();
+    const resJson = (await res.json()) as GetAccessTokenResponse;
     log.verbose("Fetched access token", resJson);
     this.saveAccessToken(resJson);
     return resJson.accessToken;
@@ -125,12 +125,11 @@ export class FundingServiceApi {
 
       const res = await this.fetchRequestFunds(dbNode, amount);
 
-      let fundingResponseJson = await res.json();
+      let fundingResponseJson = (await res.json()) as PostFundingResponse;
 
       log.verbose("funding service response", fundingResponseJson);
 
-      const { id: requestId, amountLeft }: PostFundingResponse =
-        fundingResponseJson;
+      const { id: requestId, amountLeft } = fundingResponseJson;
 
       await updateRegisteredNode(this.db, {
         ...dbNode,
@@ -189,7 +188,7 @@ export class FundingServiceApi {
       },
     });
 
-    const resJson: GetRequestStatusResponse = await res.json();
+    const resJson = (await res.json()) as GetRequestStatusResponse;
 
     return resJson;
   }
