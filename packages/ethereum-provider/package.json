@@ -1,6 +1,6 @@
 {
-  "name": "@rpch/ethers",
-  "version": "0.1.7",
+  "name": "@rpch/ethereum-provider",
+  "version": "0.0.1",
   "license": "LGPL-3.0",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
@@ -21,12 +21,9 @@
     "nock": "^13.2.9"
   },
   "dependencies": {
-    "@ethersproject/properties": "^5.7.0",
-    "@ethersproject/providers": "^5.7.2",
     "@rpch/common": "0.1.7",
-    "@rpch/sdk": "0.1.7"
-  },
-  "peerDependencies": {
-    "ethers": "^5.7.2"
+    "@rpch/sdk": "0.1.7",
+    "ethereum-provider": "^0.7.7",
+    "events": "^3.3.0"
   }
 }

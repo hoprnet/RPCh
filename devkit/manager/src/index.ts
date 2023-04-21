@@ -12,7 +12,7 @@ import { body, query } from "express-validator";
 
 // we do not run this build this file via turbo
 /* eslint-disable turbo/no-undeclared-env-vars */
-const { PORT = 3030 } = process.env;
+const { PORT = 3030, DP_SECRET } = process.env;
 
 const log = createLogger();
 const app = express();
@@ -36,8 +36,9 @@ app.post(
   async (req, res) => {
     try {
       const { discoveryPlatformEndpoint, client, quota } = req.body;
+      if (!DP_SECRET) throw new Error("MISSING DP_SECRET ENV");
 
-      await addQuota(discoveryPlatformEndpoint, client, quota);
+      await addQuota(discoveryPlatformEndpoint, client, quota, DP_SECRET);
       return res.sendStatus(200);
     } catch (error) {
       log.error("Could not 'add-quota'", error);
@@ -266,6 +267,7 @@ app.post(
 app.post(
   "/register-exit-nodes",
   body("discoveryPlatformEndpoint").exists(),
+  body("client").exists(),
   body("chainId").exists(),
   body("hoprdApiEndpoints")
     .exists()
@@ -300,8 +302,10 @@ app.post(
         hoprdApiEndpointsExt,
         hoprdApiTokens,
         exitNodePubKeys,
+        client,
       } = req.body as {
         discoveryPlatformEndpoint: string;
+        client: string;
         chainId: string;
         hoprdApiEndpoints: string[];
         hoprdApiEndpointsExt: string[];
@@ -311,6 +315,7 @@ app.post(
 
       await registerExitNodes(
         discoveryPlatformEndpoint,
+        client,
         chainId,
         hoprdApiEndpoints,
         hoprdApiEndpointsExt,

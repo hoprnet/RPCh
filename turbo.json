@@ -74,7 +74,8 @@
         "CHANNELS_THRESHOLD",
         "BASE_QUOTA",
         "DB_CONNECTION_URL",
-        "SKIP_CHECK_COMMITMENT"
+        "SKIP_CHECK_COMMITMENT",
+        "SECRET"
       ]
     },
     "@rpch/rpc-server#build": {

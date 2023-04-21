@@ -11,6 +11,7 @@ export const entryServer = (ops: {
   baseQuota: bigint;
   fundingServiceApi: FundingServiceApi;
   metricManager: MetricManager;
+  secret: string;
 }) => {
   app.use(compression());
 
@@ -21,6 +22,7 @@ export const entryServer = (ops: {
       db: ops.db,
       fundingServiceApi: ops.fundingServiceApi,
       metricManager: ops.metricManager,
+      secret: ops.secret,
     })
   );
 
