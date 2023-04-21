@@ -44,6 +44,7 @@ describe("test Cache class", function () {
 
     // @ts-ignore-next-line
     const inCache = cache.segments;
+
     // advance time by 1s more than the timeout.
     jest.advanceTimersByTime(TIMEOUT + 1e3);
 

@@ -283,3 +283,7 @@ export const isStringifiedJSON = (input: any): Boolean => {
   }
   return result;
 };
+
+export function toUtf8Bytes(zipped2: Uint8Array) {
+  throw new Error("Function not implemented.");
+}

@@ -84,6 +84,7 @@ export const start = async (ops: {
       // Requests, this means that the all messages are
       // prefixed by the entry node's peer id
       const [clientId] = utils.splitBodyToParts(message.body);
+
       // if this fails, then we most likely have received
       // a Response
       try {

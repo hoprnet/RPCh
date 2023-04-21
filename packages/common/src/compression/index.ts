@@ -16,6 +16,7 @@ import { MAX_BYTES } from "../utils/index";
 import * as utils from "../utils";
 import { unpack, pack } from "msgpackr";
 import LZString from "lz-string";
+import { utils as utils3 } from "ethers";
 
 /**
  * Functions used to compress and decompress RPC requests
@@ -123,10 +124,10 @@ export default class Compression {
     }
 
     if (jsonTmp.length > MAX_BYTES - 10) {
-      const zipped = LZString.compress(jsonTmp);
+      const zipped = LZString.compressToUTF16(jsonTmp);
 
       if (zipped.length < jsonTmp.length) {
-        jsonTmp = zipped as string;
+        jsonTmp = zipped;
         compressionDiagram = Compression.compressionDiagramUpdate(
           compressionDiagram,
           0,
@@ -153,7 +154,7 @@ export default class Compression {
     let jsonTmp: JSONObject = compressedBody.substring(10);
 
     if (compressionDiagram[0] === "1") {
-      jsonTmp = LZString.decompress(jsonTmp);
+      jsonTmp = LZString.decompressFromUTF16(jsonTmp);
     }
 
     if (compressionDiagram[1] === "1") {
