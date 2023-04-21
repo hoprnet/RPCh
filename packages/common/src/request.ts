@@ -58,12 +58,6 @@ export default class Request {
       exitNodeDestination
     );
     const session = crypto.box_request(envelope, exitNodeReadIdentity);
-    console.log("REQUEST createRequest body.length", body.length);
-    console.log(
-      "REQUEST createRequest compressedBody.length",
-      compressedBody.length
-    );
-    console.log("REQUEST createRequest payload.length", payload.length);
     return new Request(
       id,
       provider,
@@ -115,11 +109,6 @@ export default class Request {
     );
 
     const body = await Compression.decompressRpcRequestAsync(compressedBody);
-    console.log(
-      "Request fromMessage compressedBody.length:",
-      compressedBody.length
-    );
-    console.log("Request fromMessage body.length:", body.length);
     if (type !== "request") throw Error("Message is not a Request");
     return new Request(
       message.id,

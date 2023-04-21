@@ -16,6 +16,6 @@ describe("test Segment class", function () {
     assert.equal(segment.msgId, 13);
     assert.equal(segment.segmentNr, 0);
     assert.equal(segment.segmentsLength, 1);
-    assert.equal(segment.body, `1|${BODY}`);
+    assert.equal(segment.body, BODY);
   });
 });

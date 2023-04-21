@@ -11,7 +11,8 @@ import {
   isArrayWithAtLeastOneJsonObject,
   findCommonElement,
 } from "../utils";
-import { createMockedFlow, RPC_REQ_LARGE } from "../fixtures";
+import { createMockedFlow } from "../fixtures";
+import { req_80kb } from "../compression/compression-samples";
 
 describe("test utils / splitStrByBytes", function () {
   it("should return 1 string", function () {
@@ -43,7 +44,7 @@ describe("test utils / isExpired", function () {
 describe("test utils / areAllSegmentsPresent", function () {
   it("should return true", async function () {
     const completeSegments = (
-      await createMockedFlow(RPC_REQ_LARGE).next()
+      await createMockedFlow(JSON.stringify(req_80kb)).next()
     ).value
       .toMessage()
       .toSegments();
@@ -51,7 +52,7 @@ describe("test utils / areAllSegmentsPresent", function () {
   });
   it("should return false", async function () {
     const completeSegments = (
-      await createMockedFlow(RPC_REQ_LARGE).next()
+      await createMockedFlow(JSON.stringify(req_80kb)).next()
     ).value
       .toMessage()
       .toSegments();
@@ -63,7 +64,7 @@ describe("test utils / areAllSegmentsPresent", function () {
 describe("test utils / areAllSegmentsPresent", function () {
   it("should return true", async function () {
     const completeSegments = (
-      await createMockedFlow(RPC_REQ_LARGE).next()
+      await createMockedFlow(JSON.stringify(req_80kb)).next()
     ).value
       .toMessage()
       .toSegments();
@@ -72,7 +73,7 @@ describe("test utils / areAllSegmentsPresent", function () {
   });
   it("should return false", async function () {
     const completeSegments = (
-      await createMockedFlow(RPC_REQ_LARGE).next()
+      await createMockedFlow(JSON.stringify(req_80kb)).next()
     ).value
       .toMessage()
       .toSegments();

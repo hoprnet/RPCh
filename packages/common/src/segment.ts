@@ -48,7 +48,6 @@ export default class Segment {
     const msgId = Number(msgId_);
     const segmentNr = Number(segmentNr_);
     const segmentsLength = Number(segmentsLength_);
-    console.log("SEMENT toString segmentsLength", segmentsLength);
     return new Segment(msgId, segmentNr, segmentsLength, body);
   }
 }

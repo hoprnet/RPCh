@@ -46,11 +46,6 @@ export default class Response {
       request.exitNodeDestination
     );
     crypto.box_response(request.session, envelope);
-    console.log("RESPONSE createResponse body.length", body.length);
-    console.log(
-      "RESPONSE createResponse compressedDecrypted.length",
-      compressedBody.length
-    );
     return new Response(request.id, body, request);
   }
 
@@ -89,15 +84,6 @@ export default class Response {
     const [type, compressedDecrypted] = splitBodyToParts(decrypted);
     const decompressedDecrypted = await Compression.decompressRpcRequestAsync(
       compressedDecrypted
-    );
-    console.log("RESPONSE fromMessage decrypted.length", decrypted.length);
-    console.log(
-      "RESPONSE fromMessage compressedDecrypted.length",
-      compressedDecrypted.length
-    );
-    console.log(
-      "RESPONSE fromMessage decompressedDecrypted.length",
-      decompressedDecrypted.length
     );
     if (type !== "response") throw Error("Message is not a Response");
     return new Response(request.id, decompressedDecrypted, request);

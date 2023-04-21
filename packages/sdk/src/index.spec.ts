@@ -2,6 +2,7 @@ import { expect } from "@jest/globals";
 import { Request, hoprd } from "@rpch/common";
 import * as RPChCrypto from "@rpch/crypto-for-nodejs";
 import * as fixtures from "@rpch/common/build/fixtures";
+import { req_80kb } from "@rpch/common/build/compression/compression-samples";
 import assert from "assert";
 import nock from "nock";
 import SDK, { type HoprSdkOps } from "./index";
@@ -520,7 +521,7 @@ describe("test SDK class", function () {
         const bigReq = await sdk.createRequest(
           fixtures.PROVIDER,
           // create an rpc call that will exceed MAXIMUM_SEGMENTS_PER_REQUEST size
-          fixtures.RPC_REQ_LARGE.repeat(MAXIMUM_SEGMENTS_PER_REQUEST)
+          JSON.stringify(req_80kb).repeat(10)
         );
 
         try {

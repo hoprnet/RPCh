@@ -118,7 +118,7 @@ describe("test Request class", function () {
 
     shouldBeAValidRequest(request, {
       provider: PROVIDER,
-      body: `1|0110001000Þ\x00\x04¡0­1663836360444¡1\x90¡2¡7¡8£2.0`,
+      body: RPC_REQ_SMALL,
       entryNodeDestination: ENTRY_NODE_PEER_ID,
       exitNodeDestination: EXIT_NODE_HOPRD_PEER_ID,
       exitNodeIdentity: EXIT_NODE_WRITE_IDENTITY,

@@ -1,13 +1,14 @@
 import assert from "assert";
 import Cache from "./cache";
-import { createMockedFlow, RPC_REQ_LARGE } from "./fixtures";
+import { createMockedFlow } from "./fixtures";
+import { req_80kb } from "./compression/compression-samples";
 
 const TIMEOUT = 10e3;
 
 describe("test Cache class", function () {
   it("should reconstruct message", async function () {
     const MESSAGE = (
-      await createMockedFlow(RPC_REQ_LARGE).next()
+      await createMockedFlow(JSON.stringify(req_80kb)).next()
     ).value.toMessage();
     const MESSAGE_SEGMENTS = MESSAGE.toSegments();
 
@@ -29,7 +30,7 @@ describe("test Cache class", function () {
   });
   it("should drop expired segments", async function () {
     const MESSAGE = (
-      await createMockedFlow(RPC_REQ_LARGE).next()
+      await createMockedFlow(JSON.stringify(req_80kb)).next()
     ).value.toMessage();
     const MESSAGE_SEGMENTS = MESSAGE.toSegments();
 
