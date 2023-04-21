@@ -22,7 +22,6 @@ export class RPChEthereumProvider
     super();
     // initializes the RPCh SDK
     this.sdk = new SDK(hoprSdkOps, setKeyVal, getKeyVal);
-    this.sdk.debug.enable("rpch*");
   }
 
   /**
