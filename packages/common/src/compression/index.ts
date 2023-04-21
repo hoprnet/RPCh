@@ -1,9 +1,4 @@
-import {
-  JSONObject,
-  CompressedDiagram,
-  CompressedPayload,
-  Dictionary,
-} from "../types";
+import { JSONObject, CompressedPayload, Dictionary } from "../types";
 
 import {
   mainKeyMap,
@@ -16,7 +11,6 @@ import { MAX_BYTES } from "../utils/index";
 import * as utils from "../utils";
 import { unpack, pack } from "msgpackr";
 import LZString from "lz-string";
-import { utils as utils3 } from "ethers";
 
 /**
  * Functions used to compress and decompress RPC requests

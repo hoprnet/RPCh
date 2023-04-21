@@ -9,10 +9,6 @@ import Compression from "./compression";
 import { joinPartsToBody, splitBodyToParts } from "./utils";
 import { utils } from "ethers";
 
-import { createLogger } from "./utils";
-
-const log = createLogger();
-
 /**
  * Represents a response made by a RPCh.
  * To be send over the HOPR network via Response.toMessage().

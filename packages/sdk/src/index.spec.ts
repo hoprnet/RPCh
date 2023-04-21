@@ -517,7 +517,7 @@ describe("test SDK class", function () {
     describe("handling request size", function () {
       it("should not send requests larger than max amount of segments", async function () {
         const hoprdSendMessageSpy = jest.spyOn(hoprd, "sendMessage");
-        const MAXIMUM_SEGMENTS_PER_REQUEST = 100;
+        //const MAXIMUM_SEGMENTS_PER_REQUEST = 100;
         const bigReq = await sdk.createRequest(
           fixtures.PROVIDER,
           // create an rpc call that will exceed MAXIMUM_SEGMENTS_PER_REQUEST size

@@ -1,3 +1,4 @@
+/* eslint-disable */
 import Compression from "./index";
 import {
   res_normal,
