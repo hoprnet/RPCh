@@ -14,7 +14,7 @@ async function registerNode(
   hoprdApiToken: string,
   exitNodePubKey: string,
   nativeAddress: string
-): Promise<void> {
+): Promise<unknown> {
   log.verbose("Registering node", {
     discoveryPlatformEndpoint,
     chainId,

@@ -19,7 +19,7 @@ export async function getBalances(
   return fetch(url, {
     method: "GET",
     headers,
-  }).then((res) => res.json());
+  }).then((res) => res.json() as unknown as { hopr: string; native: string });
 }
 
 export async function withdraw(
@@ -45,8 +45,8 @@ export async function withdraw(
       recipient,
     }),
   })
-    .then((res) => res.json())
-    .then((res: { receipt: string }) => res.receipt);
+    .then((res) => res.json() as unknown as { receipt: string })
+    .then((res) => res.receipt);
 }
 
 export async function getAddresses(
@@ -63,7 +63,7 @@ export async function getAddresses(
   return fetch(url.toString(), {
     method: "GET",
     headers,
-  }).then((res) => res.json());
+  }).then((res) => res.json() as unknown as { hopr: string; native: string });
 }
 
 export async function getInfo(
@@ -81,8 +81,8 @@ export async function getInfo(
     method: "GET",
     headers,
   })
-    .then((res) => res.json())
-    .then((res: { hoprToken: string }) => res);
+    .then((res) => res.json() as unknown as { hoprToken: string })
+    .then((res) => res);
 }
 
 export async function openChannel(
