@@ -1,4 +1,12 @@
-export default function parseHarReq(har) {
+ /* 
+  * Function that will create a loadtesting scenario 
+  * for k6 loadtesting out of a HAR file which contains 
+  * recorded network calls of a wallet.
+  * HAR file can be generated using Network Tab from
+  * Chromium based browsers.
+  */
+
+export default function parseHarFile(har) {
     let requests = [];
     har = har.log.entries;
     let waitTillNextCall;
