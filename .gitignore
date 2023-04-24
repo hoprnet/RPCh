@@ -37,8 +37,10 @@ yarn-error.log*
 # turbo
 .turbo
 
+tmp
 
-# db
+# rpc-server db
 apps/rpc-server/db
 
-tmp
+#k6 results
+devkit/k6-loadtesting/results/*

@@ -1,0 +1,15 @@
+{
+  "name": "loadtesting-6",
+  "version": "0.0.1",
+  "description": "",
+  "license": "LGPL-3.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test:artificial": "k6 run src/rpc-server/artificial.js --out json=results/results-artificial.json",
+    "test:blockwallet": "k6 run src/rpc-server/usage-blockwallet.js --out json=results/results-usage-blockwallet.json",
+    "test:trustwallet": "k6 run src/rpc-server/usage-trustwallet.js --out json=results/results-usage-trustwallet.json",
+    "test:dp": "k6 run src/discovery-platform/index.js --out json=results/results-discovery-platform.json"
+  },
+  "author": ""
+}
