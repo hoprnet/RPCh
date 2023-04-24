@@ -75,6 +75,15 @@ await sdk.stop();
 ```
 This will stop any necessary intervals and clear up any remaining processes.
 
+## Enabling debugging logs
+
+Depending on which platform you are running the SDK, you need to enable debugging in different ways.
+We use the library [debug](https://github.com/debug-js/debug) for our logging.
+
+- on nodejs: you need to run the instance with the following environment variable `DEBUG="rpch*" ..`
+- on web platforms:
+  - localStorage: update `localStorage` with keyval `debug:rpch*`
+  - programmatic: access the SDK object and enable logging with `sdk.debug.enable("rpch*")`
 
 
 
