@@ -58,7 +58,7 @@ const getMockedResponse = async (request: Request): Promise<Message> => {
   const counter = await exitNodeStore
     .get(request.entryNodeDestination)
     .then((v) => BigInt(v || "0"));
-  const exitNodeRequest = Request.fromMessage(
+  const exitNodeRequest = await Request.fromMessage(
     crypto,
     request.toMessage(),
     EXIT_NODE_PEER_ID,
@@ -68,7 +68,7 @@ const getMockedResponse = async (request: Request): Promise<Message> => {
       return exitNodeStore.set(clientId, counter.toString());
     }
   );
-  const exitNodeResponse = Response.createResponse(
+  const exitNodeResponse = await Response.createResponse(
     crypto,
     exitNodeRequest,
     body

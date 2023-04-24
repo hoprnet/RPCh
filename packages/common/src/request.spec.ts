@@ -1,7 +1,9 @@
 import assert from "assert";
+import _ from "lodash";
 import * as crypto from "@rpch/crypto-for-nodejs";
 import Message from "./message";
 import Request from "./request";
+import { isStringifiedJSON } from "./utils";
 import {
   PROVIDER,
   RPC_REQ_SMALL,
@@ -25,7 +27,17 @@ const shouldBeAValidRequest = (
   assert.equal(typeof actual.id, "number");
   assert(actual.id > 0);
   assert.equal(actual.provider, expected.provider);
-  assert.equal(actual.body, expected.body);
+  let expectedIsStringifiedJSON = isStringifiedJSON(expected.body);
+  if (expectedIsStringifiedJSON) {
+    const sameMessage = _.isEqual(
+      JSON.parse(actual.body),
+      JSON.parse(expected.body)
+    );
+    assert(sameMessage);
+  } else {
+    assert.equal(actual.body, expected.body);
+  }
+
   assert.equal(actual.entryNodeDestination, expected.entryNodeDestination);
   assert.equal(actual.exitNodeDestination, expected.exitNodeDestination);
   assert(!!actual.exitNodeIdentity);
@@ -39,14 +51,16 @@ const shouldBeAValidRequestMessage = (
   request: Request
 ) => {
   assert.equal(actual.id, expected.id);
-  const expectedPrefix = request.entryNodeDestination + "|";
+  const numberOfParts = parseInt(actual.body.split("|")[0]);
+  const expectedPrefix =
+    `${numberOfParts}|` + request.entryNodeDestination + "|";
   assert(actual.body.startsWith(expectedPrefix));
   assert(actual.body.length > expectedPrefix.length);
 };
 
 describe("test Request class", function () {
-  it("should create request", function () {
-    const request = Request.createRequest(
+  it("should create request", async function () {
+    const request = await Request.createRequest(
       crypto,
       PROVIDER,
       RPC_REQ_SMALL,
@@ -64,8 +78,8 @@ describe("test Request class", function () {
     });
   });
 
-  it("should create message from request", function () {
-    const request = Request.createRequest(
+  it("should create message from request", async function () {
+    const request = await Request.createRequest(
       crypto,
       PROVIDER,
       RPC_REQ_SMALL,
@@ -81,18 +95,20 @@ describe("test Request class", function () {
     );
   });
 
-  it("should create request from message", function () {
+  it("should create request from message", async function () {
     // created by exit node
-    const request = Request.fromMessage(
+    const request = await Request.fromMessage(
       crypto,
       // created by client
-      Request.createRequest(
-        crypto,
-        PROVIDER,
-        RPC_REQ_SMALL,
-        ENTRY_NODE_PEER_ID,
-        EXIT_NODE_HOPRD_PEER_ID,
-        EXIT_NODE_READ_IDENTITY
+      (
+        await Request.createRequest(
+          crypto,
+          PROVIDER,
+          RPC_REQ_SMALL,
+          ENTRY_NODE_PEER_ID,
+          EXIT_NODE_HOPRD_PEER_ID,
+          EXIT_NODE_READ_IDENTITY
+        )
       ).toMessage(),
       EXIT_NODE_HOPRD_PEER_ID,
       EXIT_NODE_WRITE_IDENTITY,

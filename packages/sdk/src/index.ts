@@ -247,7 +247,7 @@ export default class SDK {
       ).then((k) => BigInt(k || "0"));
 
       // construct Response from Message
-      const response = Response.fromMessage(
+      const response = await Response.fromMessage(
         this.crypto!,
         match.request,
         message,
@@ -420,7 +420,7 @@ export default class SDK {
       (node) => node.peerId !== this.entryNode?.peerId
     );
     const exitNode = utils.randomlySelectFromArray(eligibleExitNodes);
-    return Request.createRequest(
+    return await Request.createRequest(
       this.crypto!,
       provider,
       body,
