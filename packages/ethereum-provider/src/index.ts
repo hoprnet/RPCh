@@ -65,11 +65,7 @@ export class RPChEthereumProvider
 
       return response;
     } catch (error) {
-      log.error(
-        "Did not receive response for request",
-        rpchRequest.id,
-        log.createMetric({ id: rpchRequest.id })
-      );
+      log.error("Did not receive response for request", rpchRequest.id);
       throw error;
     }
   }
