@@ -65,7 +65,7 @@ export const registerNodeSchema: Record<keyof RegisteredNode, ParamSchema> = {
 };
 
 export const getNodeSchema: Record<
-  keyof { excludeList?: string; hasExitNode?: string },
+  keyof { excludeList?: string; hasExitNode?: string; status?: string },
   ParamSchema
 > = {
   excludeList: {
@@ -81,5 +81,11 @@ export const getNodeSchema: Record<
     optional: true,
     in: "query",
     isBoolean: true,
+  },
+  status: {
+    optional: true,
+    in: "query",
+    isString: true,
+    isIn: { options: [["FRESH", "FUNDING", "UNUSABLE", "READY"]] },
   },
 };
