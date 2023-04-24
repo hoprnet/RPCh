@@ -72,6 +72,8 @@ export default class SDK {
   public deadlockTimestamp: number | undefined;
   // toggle to not select entry nodes while another one is being selected
   private selectingEntryNode: boolean | undefined;
+  // toogle to not start if it's already starting
+  public starting: boolean | undefined;
 
   constructor(
     private readonly ops: HoprSdkOps,
@@ -247,7 +249,7 @@ export default class SDK {
       ).then((k) => BigInt(k || "0"));
 
       // construct Response from Message
-      const response = Response.fromMessage(
+      const response = await Response.fromMessage(
         this.crypto!,
         match.request,
         message,
@@ -256,7 +258,6 @@ export default class SDK {
           this.setKeyVal(exitNodeId, counter.toString());
         }
       );
-
       const responseTime = Date.now() - match.createdAt.getTime();
       log.verbose(
         "response time for request %s: %s ms",
@@ -265,11 +266,13 @@ export default class SDK {
       );
 
       match.resolve(response);
+
       this.reliabilityScore.addMetric(
         match.request.entryNodeDestination,
         match.request.id,
         "success"
       );
+
       this.requestCache.removeRequest(match.request);
 
       log.verbose("responded to %s with %s", match.request.body, response.body);
@@ -312,47 +315,55 @@ export default class SDK {
    */
   public async start(): Promise<void> {
     if (this.isReady) return;
+    try {
+      if (this.starting) throw Error("SDK is already starting");
+      this.starting = true;
 
-    // fetch required data from discovery platform
-    await retry(
-      () => this.selectEntryNode(this.ops.discoveryPlatformApiEndpoint),
-      {
-        retries: 5,
-        onRetry: (e, attempt) => {
-          log.error("Error while selecting entry node", e);
-          log.verbose("Retrying to select entry node, attempt:", attempt);
-        },
-      }
-    );
+      // fetch required data from discovery platform
+      await retry(
+        () => this.selectEntryNode(this.ops.discoveryPlatformApiEndpoint),
+        {
+          retries: 5,
+          onRetry: (e, attempt) => {
+            log.error("Error while selecting entry node", e);
+            log.verbose("Retrying to select entry node, attempt:", attempt);
+          },
+        }
+      );
 
-    await retry(
-      () => this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint),
-      {
-        retries: 5,
-        onRetry: (e, attempt) => {
-          log.error("Error while fetching exit nodes", e);
-          log.verbose("Retrying to fetch exit nodes, attempt:", attempt);
-        },
-      }
-    );
+      await retry(
+        () => this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint),
+        {
+          retries: 5,
+          onRetry: (e, attempt) => {
+            log.error("Error while fetching exit nodes", e);
+            log.verbose("Retrying to fetch exit nodes, attempt:", attempt);
+          },
+        }
+      );
 
-    // check for expires caches every second
-    this.intervals.push(
-      setInterval(() => {
-        this.segmentCache.removeExpired(this.ops.timeout);
-        this.requestCache.removeExpired(this.ops.timeout);
-      }, 1e3)
-    );
-    // update exit nodes every minute
-    this.intervals.push(
-      setInterval(() => {
-        this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint).catch(
-          (error) => {
-            log.error("Failed to fetch exit nodes", error);
-          }
-        );
-      }, 60e3)
-    );
+      // check for expires caches every second
+      this.intervals.push(
+        setInterval(() => {
+          this.segmentCache.removeExpired(this.ops.timeout);
+          this.requestCache.removeExpired(this.ops.timeout);
+        }, 1e3)
+      );
+      // update exit nodes every minute
+      this.intervals.push(
+        setInterval(() => {
+          this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint).catch(
+            (error) => {
+              log.error("Failed to fetch exit nodes", error);
+            }
+          );
+        }, 60e3)
+      );
+    } catch (e: any) {
+      log.error("Could not start SDK", e.message);
+    } finally {
+      this.starting = false;
+    }
   }
 
   /**
@@ -415,7 +426,7 @@ export default class SDK {
       (node) => node.peerId !== this.entryNode?.peerId
     );
     const exitNode = utils.randomlySelectFromArray(eligibleExitNodes);
-    return Request.createRequest(
+    return await Request.createRequest(
       this.crypto!,
       provider,
       body,
@@ -493,7 +504,6 @@ export default class SDK {
       // Wait for all promises to settle, then check if any were rejected
       try {
         const results = await Promise.allSettled(sendMessagePromises);
-
         const rejectedResults = results.filter(
           (result) => result.status === "rejected"
         );

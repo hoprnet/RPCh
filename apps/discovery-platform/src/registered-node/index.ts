@@ -36,13 +36,27 @@ export const createRegisteredNode = async (
  * Get a specific registered node
  * @param dbInstance DBinstance
  * @param peerId id of the node
- * @returns RegisteredNodeDB | undefined
+ * @returns RegisteredNodeDB
  */
 export const getRegisteredNode = async (
   dbInstance: db.DBInstance,
   peerId: string
 ): Promise<RegisteredNodeDB> => {
   const node = await db.getRegisteredNode(dbInstance, peerId);
+  return node;
+};
+
+/**
+ * Delete a specific registered node
+ * @param dbInstance DBinstance
+ * @param peerId id of the node
+ * @returns RegisteredNodeDB
+ */
+export const deleteRegisteredNode = async (
+  dbInstance: db.DBInstance,
+  peerId: string
+): Promise<RegisteredNodeDB> => {
+  const node = await db.deleteRegisteredNode(dbInstance, peerId);
   return node;
 };
 

@@ -84,9 +84,9 @@ export const wait = (ms: number) =>
  * @param exitNode
  * @param requestBody
  */
-export function* createMockedFlow(
+export async function* createMockedFlow(
   requestBody: string = RPC_REQ_SMALL
-): Generator<Request | Response, Response, any> {
+): AsyncGenerator<Request | Response, Response, any> {
   const tmsp = +new Date();
   const TIME_DIFF = 50;
   const entryNodeDestination = HOPRD_PEER_ID_A;
@@ -97,7 +97,7 @@ export function* createMockedFlow(
 
   // client side
   resetDateNow = setDateNow(tmsp - TIME_DIFF * 4);
-  const clientRequest = Request.createRequest(
+  const clientRequest = await Request.createRequest(
     crypto,
     PROVIDER,
     requestBody,
@@ -110,7 +110,7 @@ export function* createMockedFlow(
 
   // exit node side
   resetDateNow = setDateNow(tmsp - TIME_DIFF * 3);
-  const exitNodeRequest = Request.fromMessage(
+  const exitNodeRequest = await Request.fromMessage(
     crypto,
     clientRequest.toMessage(),
     exitNodeDestination,
@@ -123,7 +123,7 @@ export function* createMockedFlow(
 
   // exit node side
   resetDateNow = setDateNow(tmsp - TIME_DIFF * 2);
-  const exitNodeResponse = Response.createResponse(
+  const exitNodeResponse = await Response.createResponse(
     crypto,
     exitNodeRequest,
     responseBody
@@ -133,7 +133,7 @@ export function* createMockedFlow(
 
   // client side
   resetDateNow = setDateNow(tmsp - TIME_DIFF);
-  const clientResponse = Response.fromMessage(
+  const clientResponse = await Response.fromMessage(
     crypto,
     clientRequest,
     exitNodeResponse.toMessage(),
@@ -153,31 +153,36 @@ export function* createMockedFlow(
  * @param responseBody
  * @param lastResponseFromExitNode
  */
-export function generateMockedFlow(
+export async function generateMockedFlow(
   steps: 1 | 2 | 3,
   requestBody: string = RPC_REQ_SMALL,
   lastRequestFromClient: number = 0,
   responseBody: string = RPC_RES_SMALL,
   lastResponseFromExitNode: number = 0
-): [
-  clientRequest: Request,
-  exitNodeRequest: Request,
-  exitNodeResponse: Response,
-  clientResponse: Response
-] {
+): Promise<
+  [
+    clientRequest: Request,
+    exitNodeRequest: Request,
+    exitNodeResponse: Response,
+    clientResponse: Response
+  ]
+> {
   const X = {} as any;
   const flow = createMockedFlow(requestBody);
 
-  const clientRequest = flow.next().value as Request;
+  const clientRequest = (await flow.next()).value as Request;
   if (steps === 1) return [clientRequest, X, X, X];
 
-  const exitNodeRequest = flow.next(lastRequestFromClient).value as Request;
+  const exitNodeRequest = (await flow.next(lastRequestFromClient))
+    .value as Request;
   if (steps === 2) return [clientRequest, exitNodeRequest, X, X];
 
-  const exitNodeResponse = flow.next(responseBody).value as Response;
+  const exitNodeResponse = (await flow.next(responseBody)).value as Response;
   if (steps === 3) return [clientRequest, exitNodeRequest, exitNodeResponse, X];
 
-  const clientResponse = flow.next(lastResponseFromExitNode).value as Response;
+  const clientResponse = (await flow.next(lastResponseFromExitNode))
+    .value as Response;
+
   return [clientRequest, exitNodeRequest, exitNodeResponse, clientResponse];
 }
 

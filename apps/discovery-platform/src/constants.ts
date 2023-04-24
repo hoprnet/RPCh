@@ -3,6 +3,8 @@ const {
   FUNDING_SERVICE_URL,
   // Database connection url
   DB_CONNECTION_URL,
+  // Secret for custom authentication
+  SECRET,
 } = process.env;
 
 // Skips commitment check making all fresh nodes go to ready
@@ -64,4 +66,5 @@ export {
   TRIAL_CLIENT_ID,
   TRIAL_PAYMENT_MODE,
   QUEUE_CONCURRENCY_LIMIT,
+  SECRET,
 };

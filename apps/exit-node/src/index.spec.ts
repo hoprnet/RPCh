@@ -7,12 +7,17 @@ import * as Prometheus from "prom-client";
 
 jest.mock("leveldown", () => MemDown);
 
-const [clientRequest, , exitNodeResponse] = fixtures.generateMockedFlow(
-  3,
-  fixtures.RPC_REQ_LARGE,
-  undefined,
-  fixtures.RPC_RES_LARGE
-);
+var clientRequest: any, exitNodeResponse: any;
+
+main();
+async function main() {
+  [clientRequest, , exitNodeResponse] = await fixtures.generateMockedFlow(
+    3,
+    fixtures.RPC_REQ_LARGE,
+    undefined,
+    fixtures.RPC_RES_LARGE
+  );
+}
 
 const createMockedSetup = async (optInMetrics = false) => {
   let triggerMessageListenerOnMessage: (message: string) => void = () => {};

@@ -41,6 +41,8 @@ start() {
     logs_error=""
     segmentation_error=""
     pluto=false
+
+    echo "The script is still running. Don't worry, you need to wait."
     sleep 10
 
     until [[ $logs1 =~ "Listening for incoming messages from HOPRd" ]]; do
@@ -127,9 +129,10 @@ start() {
     echo "Adding quota to 'trial' in 'discovery-platform'"
     curl -X POST "http://127.0.0.1:3030/add-quota" \
         -H "Content-Type: application/json" \
+        -H "x-rpch-client: trial" \
         -d '{
             "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
-            "X-Rpch-Client": "trial",
+            "client": "trial",
             "quota": "500"
         }'
     echo "Added quota to client 'trial' in 'discovery-platform'"
@@ -177,6 +180,7 @@ start() {
     echo "Adding quota to 'sandbox' in 'discovery-platform'"
     scurl -X POST "http://127.0.0.1:3030/add-quota" \
         -H "Content-Type: application/json" \
+        -H "x-rpch-client: sandbox" \
         -d '{
             "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
             "client": "sandbox",

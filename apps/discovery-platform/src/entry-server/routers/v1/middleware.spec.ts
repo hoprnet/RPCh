@@ -55,6 +55,7 @@ describe("test v1 middleware", function () {
         baseQuota: BASE_QUOTA,
         fundingServiceApi,
         metricManager: metricManager,
+        secret: "secret",
       })
     );
   });
@@ -78,12 +79,16 @@ describe("test v1 middleware", function () {
 
     assert.equal(doesClientHaveQuotaResponse, false);
   });
-  it("should allow request because client has enough quota", async function () {
+  it.only("should allow request because client has enough quota", async function () {
     // create quota client
-    await request(app).post("/client/quota").send({
-      client: "client",
-      quota: 1,
-    });
+    await request(app)
+      .post("/client/quota")
+      .send({
+        client: "client",
+        quota: 1,
+      })
+      .set("x-secret-key", "secret");
+
     const doesClientHaveQuotaResponse = await doesClientHaveQuota(
       dbInstance,
       "client",

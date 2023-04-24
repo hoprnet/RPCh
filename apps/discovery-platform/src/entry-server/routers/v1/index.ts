@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import {
   body,
   checkSchema,
+  header,
   param,
   query,
   validationResult,
@@ -12,7 +13,7 @@ import {
   getClient,
   updateClient,
 } from "../../../client";
-import { DBInstance } from "../../../db";
+import { DBInstance, deleteRegisteredNode } from "../../../db";
 import { FundingServiceApi } from "../../../funding-service-api";
 import { createQuota } from "../../../quota";
 import {
@@ -21,7 +22,7 @@ import {
   getRegisteredNode,
   getRegisteredNodes,
 } from "../../../registered-node";
-import { ClientDB, RegisteredNode } from "../../../types";
+import { ClientDB, RegisteredNode, RegisteredNodeDB } from "../../../types";
 import { createLogger, isListSafe } from "../../../utils";
 import { errors } from "pg-promise";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
@@ -43,6 +44,7 @@ export const v1Router = (ops: {
   baseQuota: bigint;
   fundingServiceApi: FundingServiceApi;
   metricManager: MetricManager;
+  secret: string;
 }) => {
   // Metrics
   const counterSuccessfulRequests = ops.metricManager.createCounter(
@@ -115,7 +117,16 @@ export const v1Router = (ops: {
     checkSchema(getNodeSchema),
     getCache(), // check if response is in cache
     async (
-      req: Request<{}, {}, {}, { excludeList?: string; hasExitNode?: string }>,
+      req: Request<
+        {},
+        {},
+        {},
+        {
+          excludeList?: string;
+          hasExitNode?: string;
+          status?: RegisteredNodeDB["status"];
+        }
+      >,
       res: Response
     ) => {
       try {
@@ -126,10 +137,11 @@ export const v1Router = (ops: {
             .inc();
           return res.status(400).json({ errors: errors.array() });
         }
-        const { hasExitNode, excludeList } = req.query;
+        const { hasExitNode, excludeList, status } = req.query;
         const nodes = await getRegisteredNodes(ops.db, {
           excludeList: excludeList?.split(", "),
           hasExitNode: hasExitNode ? hasExitNode === "true" : undefined,
+          status,
         });
         // cache response for 1 min
         setCache(req.originalUrl || req.url, 60e3, nodes);
@@ -197,10 +209,12 @@ export const v1Router = (ops: {
     }
   );
 
-  // TODO: can be exploited to allow client to use infinite funds
   router.post(
     "/client/quota",
     metricMiddleware(requestDurationHistogram),
+    header("x-secret-key")
+      .exists()
+      .custom((val) => val === ops.secret),
     body("client").exists(),
     body("quota").exists().bail().isNumeric(),
     async (req, res) => {
@@ -248,6 +262,38 @@ export const v1Router = (ops: {
         return res.json({ quota: createdQuota });
       } catch (e) {
         log.error("Can not create funds", e);
+        counterFailedRequests
+          .labels({ method: req.method, path: req.path, status: 500 })
+          .inc();
+        return res.status(500).json({ errors: "Unexpected error" });
+      }
+    }
+  );
+
+  router.delete(
+    "/request/entry-node/:id",
+    metricMiddleware(requestDurationHistogram),
+    header("x-secret-key")
+      .exists()
+      .custom((val) => val === ops.secret),
+    param("id").isAlphanumeric(),
+    async (req: Request<{ id: string }>, res: Response) => {
+      try {
+        const validationErrors = validationResult(req);
+        if (!validationErrors.isEmpty()) {
+          counterFailedRequests
+            .labels({ method: req.method, path: req.path, status: 400 })
+            .inc();
+          return res.status(400).json({ errors: validationErrors.array() });
+        }
+        const { id }: { id: string } = req.params;
+        const node = await deleteRegisteredNode(ops.db, id);
+        counterSuccessfulRequests
+          .labels({ method: req.method, path: req.path, status: 200 })
+          .inc();
+        return res.json({ node });
+      } catch (e) {
+        log.error("Can not delete registered_node", e);
         counterFailedRequests
           .labels({ method: req.method, path: req.path, status: 500 })
           .inc();

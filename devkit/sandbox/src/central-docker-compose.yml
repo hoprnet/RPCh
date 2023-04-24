@@ -64,6 +64,7 @@ services:
       - DB_CONNECTION_URL=postgresql://postgres:postgres@postgres-db:5432
       - FUNDING_SERVICE_URL=http://funding-service:3010
       - SKIP_CHECK_COMMITMENT=${SKIP_CHECK_COMMITMENT}
+      - SECRET=${DP_SECRET}
 
 # we create a proxy to the sandbox
 # network created in 'nodes-docker-compose'

@@ -124,7 +124,7 @@ export const methodValueMap: Dictionary = {
   4: "net_peerCount",
   5: "eth_protocolVersion",
   6: "eth_syncing",
-  7: "eth_coinbase",
+  7: "eth_chainId",
   8: "eth_mining",
   9: "eth_hashrate",
   10: "eth_gasPrice",
@@ -180,4 +180,5 @@ export const methodValueMap: Dictionary = {
   60: "shh_uninstallFilter",
   61: "shh_getFilterChanges",
   62: "shh_getMessages",
+  63: "eth_coinbase",
 };
