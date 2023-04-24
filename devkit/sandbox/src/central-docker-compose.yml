@@ -24,26 +24,27 @@ services:
       - sandbox-proxy
     volumes:
       - postgres-data:/var/lib/postgresql/data
-  funding-service:
-    build:
-      dockerfile: apps/funding-service/Dockerfile
-      context: ../../../
-    depends_on:
-      - postgres-db
-    restart: unless-stopped
-    ports:
-      - "3010:3010"
-    networks:
-      - sandbox-proxy
-    environment:
-      - DEBUG=${DEBUG}
-      - PORT=3010
-      - SECRET_KEY=${SECRET_KEY}
-      - WALLET_PRIV_KEY=${FUNDING_SERVICE_PRIVATE_KEY}
-      - DB_CONNECTION_URL=postgresql://postgres:postgres@postgres-db:5432
-      - FORCE_CHAIN_ID=31337
-      - FORCE_RPC_URL=${RPC_PROVIDER}
-      - FORCE_SMART_CONTRACT_ADDRESS=${FORCE_SMART_CONTRACT_ADDRESS}
+
+  # funding-service:
+  #   build:
+  #     dockerfile: apps/funding-service/Dockerfile
+  #     context: ../../../
+  #   depends_on:
+  #     - postgres-db
+  #   restart: unless-stopped
+  #   ports:
+  #     - "3010:3010"
+  #   networks:
+  #     - sandbox-proxy
+  #   environment:
+  #     - DEBUG=${DEBUG}
+  #     - PORT=3010
+  #     - SECRET_KEY=${SECRET_KEY}
+  #     - WALLET_PRIV_KEY=${FUNDING_SERVICE_PRIVATE_KEY}
+  #     - DB_CONNECTION_URL=postgresql://postgres:postgres@postgres-db:5432
+  #     - FORCE_CHAIN_ID=31337
+  #     - FORCE_RPC_URL=${RPC_PROVIDER}
+  #     - FORCE_SMART_CONTRACT_ADDRESS=${FORCE_SMART_CONTRACT_ADDRESS}
 
   discovery-platform:
     build:
@@ -63,6 +64,7 @@ services:
       - DB_CONNECTION_URL=postgresql://postgres:postgres@postgres-db:5432
       - FUNDING_SERVICE_URL=http://funding-service:3010
       - SKIP_CHECK_COMMITMENT=${SKIP_CHECK_COMMITMENT}
+      - SECRET=${DP_SECRET}
 
 # we create a proxy to the sandbox
 # network created in 'nodes-docker-compose'

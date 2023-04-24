@@ -56,6 +56,17 @@ const start = async (ops: {
     constants.METRIC_PREFIX
   );
 
+  // metrics
+  const counterSuccessfulFundingNodes = metricManager.createCounter(
+    "counter_funded_nodes_successful",
+    "amount of times we have funded nodes successfully"
+  );
+
+  const counterFailedFundingNodes = metricManager.createCounter(
+    "counter_funded_nodes_failed",
+    "amount of times we have failed to fund nodes"
+  );
+
   // init API server
   const app = api.entryServer({
     accessTokenService,
@@ -65,6 +76,7 @@ const start = async (ops: {
     timeout: constants.TIMEOUT,
     metricManager: metricManager,
   });
+
   // start queue that fulfills requests
   setInterval(() => {
     log.normal("running queue for fresh requests");
@@ -74,7 +86,8 @@ const start = async (ops: {
         signer: wallet,
         confirmations: ops.confirmations,
         changeState: handleRunning,
-        metricManager: metricManager,
+        counterSuccessfulFundingNodes,
+        counterFailedFundingNodes,
       });
     }
   }, 30e3);

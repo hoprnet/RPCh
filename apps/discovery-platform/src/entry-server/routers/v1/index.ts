@@ -1,8 +1,8 @@
-import express, { NextFunction, Request, Response } from "express";
+import express, { Request, Response } from "express";
 import {
-  ParamSchema,
   body,
   checkSchema,
+  header,
   param,
   query,
   validationResult,
@@ -13,153 +13,30 @@ import {
   getClient,
   updateClient,
 } from "../../../client";
-import { DBInstance } from "../../../db";
+import { DBInstance, deleteRegisteredNode } from "../../../db";
 import { FundingServiceApi } from "../../../funding-service-api";
-import { createQuota, getSumOfQuotasPaidByClient } from "../../../quota";
+import { createQuota } from "../../../quota";
 import {
   createRegisteredNode,
   getEligibleNode,
   getRegisteredNode,
   getRegisteredNodes,
 } from "../../../registered-node";
-import { ClientDB, RegisteredNode } from "../../../types";
+import { ClientDB, RegisteredNode, RegisteredNodeDB } from "../../../types";
 import { createLogger, isListSafe } from "../../../utils";
-import { Histogram } from "prom-client";
-import memoryCache from "memory-cache";
 import { errors } from "pg-promise";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
+import * as constants from "../../../constants";
+import { getNodeSchema, registerNodeSchema } from "./schema";
+import {
+  clientExists,
+  doesClientHaveQuota,
+  getCache,
+  metricMiddleware,
+  setCache,
+} from "./middleware";
 
 const log = createLogger(["entry-server", "router", "v1"]);
-
-// payment mode when quota is paid by trial
-const TRIAL_PAYMENT_MODE = "trial";
-
-// client id that will pay for quotas in trial mode
-const TRIAL_CLIENT_ID = "trial";
-
-// Sanitization and Validation
-const registerNodeSchema: Record<keyof RegisteredNode, ParamSchema> = {
-  peerId: {
-    in: "body",
-    exists: {
-      errorMessage: "Expected peerId to be in the body",
-      bail: true,
-    },
-    isString: true,
-  },
-  chainId: {
-    in: "body",
-    exists: {
-      errorMessage: "Expected chainId to be in the body",
-      bail: true,
-    },
-    isNumeric: true,
-    toInt: true,
-  },
-  exitNodePubKey: {
-    in: "body",
-    exists: {
-      errorMessage: "Expected exitNodePubKey to be in the body",
-      bail: true,
-    },
-    isString: true,
-  },
-  hasExitNode: {
-    in: "body",
-    exists: {
-      errorMessage: "Expected hasExitNode to be in the body",
-      bail: true,
-    },
-    isBoolean: true,
-    toBoolean: true,
-  },
-  hoprdApiEndpoint: {
-    in: "body",
-    exists: {
-      errorMessage: "Expected hoprdApiEndpoint to be in the body",
-      bail: true,
-    },
-    isString: true,
-  },
-  hoprdApiToken: {
-    in: "body",
-    exists: {
-      errorMessage: "Expected hoprdApiToken to be in the body",
-      bail: true,
-    },
-    isString: true,
-  },
-  nativeAddress: {
-    in: "body",
-    exists: {
-      errorMessage: "Expected nativeAddress to be in the body",
-      bail: true,
-    },
-    isString: true,
-  },
-};
-
-const getNodeSchema: Record<
-  keyof { excludeList?: string; hasExitNode?: string },
-  ParamSchema
-> = {
-  excludeList: {
-    optional: true,
-    in: "query",
-    custom: {
-      options: (value) => {
-        return isListSafe(value);
-      },
-    },
-  },
-  hasExitNode: {
-    optional: true,
-    in: "query",
-    isBoolean: true,
-  },
-};
-
-export const getCache = () => {
-  return (req: Request, res: Response<any, any>, next: NextFunction) => {
-    let key = req.originalUrl || req.url;
-    let cachedBody = memoryCache.get(key);
-    if (cachedBody) {
-      log.verbose("Returning cached value for endpoint: ", key);
-      return res.json(cachedBody);
-    }
-    next();
-  };
-};
-
-export const setCache = (key: string, duration: number, body: Object) => {
-  memoryCache.put(key, body, duration);
-};
-
-// middleware used to check if client sent in req has enough quota
-export const doesClientHaveQuota = async (
-  db: DBInstance,
-  client: string,
-  baseQuota: bigint
-) => {
-  const sumOfClientsQuota = await getSumOfQuotasPaidByClient(db, client);
-  return sumOfClientsQuota >= baseQuota;
-};
-
-// middleware that will track duration of request
-export const metricMiddleware =
-  (histogramMetric: Histogram<string>) =>
-  (req: Request, res: Response, next: NextFunction) => {
-    const start = process.hrtime();
-    res.on("finish", () => {
-      const end = process.hrtime(start);
-      const durationSeconds = end[0] + end[1] / 1e9;
-      const statusCode = res.statusCode.toString();
-      const method = req.method;
-      const path = req.path;
-      histogramMetric.labels(method, path, statusCode).observe(durationSeconds);
-    });
-    next();
-  };
 
 // Express Router
 export const v1Router = (ops: {
@@ -167,6 +44,7 @@ export const v1Router = (ops: {
   baseQuota: bigint;
   fundingServiceApi: FundingServiceApi;
   metricManager: MetricManager;
+  secret: string;
 }) => {
   // Metrics
   const counterSuccessfulRequests = ops.metricManager.createCounter(
@@ -186,7 +64,7 @@ export const v1Router = (ops: {
     "duration of requests in seconds",
     {
       buckets: [0.1, 0.5, 1, 5, 10, 30],
-      labelNames: ["method", "path", "status"],
+      labelNames: ["method", "path", "status", "client"],
     }
   );
 
@@ -239,7 +117,16 @@ export const v1Router = (ops: {
     checkSchema(getNodeSchema),
     getCache(), // check if response is in cache
     async (
-      req: Request<{}, {}, {}, { excludeList?: string; hasExitNode?: string }>,
+      req: Request<
+        {},
+        {},
+        {},
+        {
+          excludeList?: string;
+          hasExitNode?: string;
+          status?: RegisteredNodeDB["status"];
+        }
+      >,
       res: Response
     ) => {
       try {
@@ -250,10 +137,11 @@ export const v1Router = (ops: {
             .inc();
           return res.status(400).json({ errors: errors.array() });
         }
-        const { hasExitNode, excludeList } = req.query;
+        const { hasExitNode, excludeList, status } = req.query;
         const nodes = await getRegisteredNodes(ops.db, {
           excludeList: excludeList?.split(", "),
           hasExitNode: hasExitNode ? hasExitNode === "true" : undefined,
+          status,
         });
         // cache response for 1 min
         setCache(req.originalUrl || req.url, 60e3, nodes);
@@ -275,6 +163,7 @@ export const v1Router = (ops: {
     "/node/:peerId",
     metricMiddleware(requestDurationHistogram),
     param("peerId").isAlphanumeric(),
+    clientExists(ops.db),
     async (req: Request<{ peerId: string }>, res: Response) => {
       try {
         const errors = validationResult(req);
@@ -320,10 +209,12 @@ export const v1Router = (ops: {
     }
   );
 
-  // DISCLAIMER: can be exploited to allow client to use infinite funds
   router.post(
     "/client/quota",
     metricMiddleware(requestDurationHistogram),
+    header("x-secret-key")
+      .exists()
+      .custom((val) => val === ops.secret),
     body("client").exists(),
     body("quota").exists().bail().isNumeric(),
     async (req, res) => {
@@ -352,7 +243,7 @@ export const v1Router = (ops: {
 
         if (!dbClient) throw Error("Could not create Client");
 
-        if (dbClient.payment === TRIAL_PAYMENT_MODE) {
+        if (dbClient.payment === constants.TRIAL_PAYMENT_MODE) {
           // update client to premium of it was previously trial
           await updateClient(ops.db, { ...dbClient, payment: "premium" });
         }
@@ -371,6 +262,38 @@ export const v1Router = (ops: {
         return res.json({ quota: createdQuota });
       } catch (e) {
         log.error("Can not create funds", e);
+        counterFailedRequests
+          .labels({ method: req.method, path: req.path, status: 500 })
+          .inc();
+        return res.status(500).json({ errors: "Unexpected error" });
+      }
+    }
+  );
+
+  router.delete(
+    "/request/entry-node/:id",
+    metricMiddleware(requestDurationHistogram),
+    header("x-secret-key")
+      .exists()
+      .custom((val) => val === ops.secret),
+    param("id").isAlphanumeric(),
+    async (req: Request<{ id: string }>, res: Response) => {
+      try {
+        const validationErrors = validationResult(req);
+        if (!validationErrors.isEmpty()) {
+          counterFailedRequests
+            .labels({ method: req.method, path: req.path, status: 400 })
+            .inc();
+          return res.status(400).json({ errors: validationErrors.array() });
+        }
+        const { id }: { id: string } = req.params;
+        const node = await deleteRegisteredNode(ops.db, id);
+        counterSuccessfulRequests
+          .labels({ method: req.method, path: req.path, status: 200 })
+          .inc();
+        return res.json({ node });
+      } catch (e) {
+        log.error("Can not delete registered_node", e);
         counterFailedRequests
           .labels({ method: req.method, path: req.path, status: 500 })
           .inc();
@@ -420,7 +343,6 @@ export const v1Router = (ops: {
   router.post(
     "/request/entry-node",
     metricMiddleware(requestDurationHistogram),
-    body("client").exists(),
     body("excludeList")
       .optional()
       .custom((value) => isListSafe(value)),
@@ -434,20 +356,27 @@ export const v1Router = (ops: {
             .inc();
           return res.status(400).json({ errors: errors.array() });
         }
-        const { client, excludeList } = req.body;
+        let { excludeList, client } = req.body;
+
+        if (!client) {
+          // check if client was sent in headers
+          client = req.headers["x-rpch-client"] as string;
+        }
+
+        if (!client) {
+          return res
+            .status(400)
+            .json({ errors: "client was not sent in request" });
+        }
 
         let dbClient = await getClient(ops.db, client);
 
-        if (!dbClient) {
-          log.verbose("db client does not exist", client);
-          return res.status(404).json({
-            errors: "Client does not exist",
-          });
-        }
-
-        const clientIsTrialMode = dbClient?.payment === TRIAL_PAYMENT_MODE;
+        const clientIsTrialMode =
+          dbClient?.payment === constants.TRIAL_PAYMENT_MODE;
         // set who is going to pay for quota
-        const paidById = clientIsTrialMode ? TRIAL_CLIENT_ID : dbClient?.id;
+        const paidById = clientIsTrialMode
+          ? constants.TRIAL_CLIENT_ID
+          : dbClient?.id;
 
         // check if client has enough quota
         const doesClientHaveQuotaResponse = await doesClientHaveQuota(
@@ -474,7 +403,7 @@ export const v1Router = (ops: {
             .json({ errors: "Could not find eligible node" });
         }
 
-        // DISCLAIMER: ACTIVATE THIS WHEN FUNDING IS STABLE
+        // TODO: ACTIVATE THIS WHEN FUNDING IS STABLE
         // // calculate how much should be funded to entry node
         // const amountToFund = getRewardForNode(
         //   ops.baseQuota,

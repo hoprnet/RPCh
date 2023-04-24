@@ -130,6 +130,16 @@ describe("test db functions", function () {
 
       assert.equal(updatedNode?.status, "UNUSABLE");
     });
+    it("should delete registered node", async function () {
+      const registeredNodeId = "peer1";
+      await db.saveRegisteredNode(dbInstance, createMockNode(registeredNodeId));
+      const node = await db.getRegisteredNode(dbInstance, registeredNodeId);
+      assert.equal(node.id, registeredNodeId);
+      await db.deleteRegisteredNode(dbInstance, registeredNodeId);
+      await expect(
+        db.getRegisteredNode(dbInstance, registeredNodeId)
+      ).rejects.toThrowError();
+    });
   });
   describe("client table", function () {
     it("should create client", async function () {

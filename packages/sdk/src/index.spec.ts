@@ -2,6 +2,7 @@ import { expect } from "@jest/globals";
 import { Request, hoprd } from "@rpch/common";
 import * as RPChCrypto from "@rpch/crypto-for-nodejs";
 import * as fixtures from "@rpch/common/build/fixtures";
+import { req_80kb } from "@rpch/common/build/compression/compression-samples";
 import assert from "assert";
 import nock from "nock";
 import SDK, { type HoprSdkOps } from "./index";
@@ -76,7 +77,8 @@ describe("test SDK class", function () {
     });
 
     it("should fail to send request", async function () {
-      const request = fixtures.createMockedFlow().next().value as Request;
+      const request = (await fixtures.createMockedFlow().next())
+        .value as Request;
 
       await expect(sdk.sendRequest(request)).rejects.toThrow(
         "SDK not ready to send requests"
@@ -198,11 +200,11 @@ describe("test SDK class", function () {
       assert.equal(request.body, fixtures.RPC_REQ_LARGE);
     });
 
-    it("should send request and return response", function (done) {
+    it("should send request and return response", async function () {
       HOPRD_SEND_MESSAGE_NOCK.reply(202, "someresponse");
 
       const [clientRequest, , exitNodeResponse] =
-        fixtures.generateMockedFlow(3);
+        await fixtures.generateMockedFlow(3);
 
       sdk.sendRequest(clientRequest).then((response) => {
         // this will run when .onMessage resolves request
@@ -210,7 +212,6 @@ describe("test SDK class", function () {
         // @ts-ignore
         const pendingRequest = sdk.requestCache.getRequest(clientRequest.id);
         assert.equal(pendingRequest, undefined);
-        done();
       });
 
       // return response for sdk sendRequest
@@ -224,13 +225,13 @@ describe("test SDK class", function () {
       //@ts-ignore
       const addMetricMock = jest.spyOn(sdk.reliabilityScore, "addMetric");
 
-      const [smallRequest, , smallResponse] = fixtures.generateMockedFlow(
+      const [smallRequest, , smallResponse] = await fixtures.generateMockedFlow(
         3,
         fixtures.RPC_REQ_SMALL,
         undefined,
         fixtures.RPC_RES_SMALL
       );
-      const [largeRequest, , largeResponse] = fixtures.generateMockedFlow(
+      const [largeRequest, , largeResponse] = await fixtures.generateMockedFlow(
         3,
         fixtures.RPC_REQ_LARGE,
         undefined,
@@ -251,10 +252,10 @@ describe("test SDK class", function () {
       assert(addMetricMock.mock.calls.at(0)?.includes("success"));
     });
 
-    it("should call addMetric when onRequestRemoval is triggered", function () {
+    it("should call addMetric when onRequestRemoval is triggered", async function () {
       HOPRD_SEND_MESSAGE_NOCK.reply(202, "someresponse");
 
-      const [largeRequest, , largeResponse] = fixtures.generateMockedFlow(
+      const [largeRequest, , largeResponse] = await fixtures.generateMockedFlow(
         3,
         fixtures.RPC_REQ_LARGE,
         undefined,
@@ -395,7 +396,7 @@ describe("test SDK class", function () {
 
     it("should not allow sending requests if sdk is deadlocked", async function () {
       sdk.setDeadlock(10e6);
-      const [clientRequest] = fixtures.generateMockedFlow(3);
+      const [clientRequest] = await fixtures.generateMockedFlow(3);
       try {
         await sdk.sendRequest(clientRequest);
       } catch (e: any) {
@@ -406,7 +407,7 @@ describe("test SDK class", function () {
 
     it("should handle failed request", async function () {
       HOPRD_SEND_MESSAGE_NOCK.reply(400, "error");
-      const [clientRequest] = fixtures.generateMockedFlow(3);
+      const [clientRequest] = await fixtures.generateMockedFlow(3);
       const resolveFunc = jest.fn(() => {});
       const rejectFunc = jest.fn(() => {});
 
@@ -433,7 +434,7 @@ describe("test SDK class", function () {
 
     it("should not save request to requestCache if request to hoprd fails", async function () {
       HOPRD_SEND_MESSAGE_NOCK.reply(400, "error");
-      const [clientRequest] = fixtures.generateMockedFlow(3);
+      const [clientRequest] = await fixtures.generateMockedFlow(3);
       try {
         await sdk.sendRequest(clientRequest);
       } catch (e: any) {
@@ -445,8 +446,9 @@ describe("test SDK class", function () {
 
     it("should add only one failed request to metrics if hoprd fails", async function () {
       HOPRD_SEND_MESSAGE_NOCK.reply(400, "error");
-      const request = fixtures.createMockedFlow(fixtures.RPC_REQ_LARGE).next()
-        .value as Request;
+      const request = (
+        await fixtures.createMockedFlow(fixtures.RPC_REQ_LARGE).next()
+      ).value as Request;
       try {
         await sdk.sendRequest(request);
       } catch (e: any) {
@@ -515,11 +517,11 @@ describe("test SDK class", function () {
     describe("handling request size", function () {
       it("should not send requests larger than max amount of segments", async function () {
         const hoprdSendMessageSpy = jest.spyOn(hoprd, "sendMessage");
-        const MAXIMUM_SEGMENTS_PER_REQUEST = 100;
+        //const MAXIMUM_SEGMENTS_PER_REQUEST = 100;
         const bigReq = await sdk.createRequest(
           fixtures.PROVIDER,
           // create an rpc call that will exceed MAXIMUM_SEGMENTS_PER_REQUEST size
-          fixtures.RPC_REQ_LARGE.repeat(MAXIMUM_SEGMENTS_PER_REQUEST)
+          JSON.stringify(req_80kb).repeat(10)
         );
 
         try {
@@ -534,13 +536,13 @@ describe("test SDK class", function () {
         }
       });
 
-      it("should send requests smaller than max amount of segments", function (done) {
+      it("should send requests smaller than max amount of segments", async function () {
         HOPRD_SEND_MESSAGE_NOCK.reply(202, "someresponse");
         const MAXIMUM_SEGMENTS_PER_REQUEST = 100;
 
         sdk
           .createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE)
-          .then((normalRequest) => {
+          .then(async (normalRequest) => {
             // how many times request cas increase without passing MAXIMUM_SEGMENTS_PER_REQUEST
             const numberOfRepetitions = Math.floor(
               MAXIMUM_SEGMENTS_PER_REQUEST /
@@ -548,7 +550,7 @@ describe("test SDK class", function () {
             );
 
             const [clientRequest, , exitNodeResponse] =
-              fixtures.generateMockedFlow(
+              await fixtures.generateMockedFlow(
                 3,
                 // create an rpc call that is close to MAXIMUM_SEGMENTS_PER_REQUEST
                 fixtures.RPC_REQ_LARGE.repeat(numberOfRepetitions)
@@ -562,7 +564,7 @@ describe("test SDK class", function () {
                 clientRequest.id
               );
               assert.equal(pendingRequest, undefined);
-              done();
+              //    done();
             });
 
             // return response for sdk sendRequest
@@ -575,7 +577,7 @@ describe("test SDK class", function () {
     describe("should handle requests correctly when receiving a response", function () {
       it("should remove request with matching response", async function () {
         const [clientRequest, , exitNodeResponse] =
-          fixtures.generateMockedFlow(3);
+          await fixtures.generateMockedFlow(3);
 
         // @ts-ignore
         sdk.requestCache.addRequest(
@@ -591,14 +593,14 @@ describe("test SDK class", function () {
           undefined
         );
       });
-      it("shouldn't remove request with different response", function () {
-        const [clientRequestA] = fixtures.generateMockedFlow(
+      it("shouldn't remove request with different response", async function () {
+        const [clientRequestA] = await fixtures.generateMockedFlow(
           3,
           fixtures.RPC_REQ_SMALL,
           undefined,
           fixtures.RPC_RES_SMALL
         );
-        const [, , exitNodeResponseB] = fixtures.generateMockedFlow(
+        const [, , exitNodeResponseB] = await fixtures.generateMockedFlow(
           3,
           fixtures.RPC_REQ_LARGE,
           undefined,

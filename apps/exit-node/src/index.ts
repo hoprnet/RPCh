@@ -100,8 +100,7 @@ export const start = async (ops: {
           return BigInt(v.toString());
         })
         .catch(() => BigInt(0));
-
-      const rpchRequest = Request.fromMessage(
+      const rpchRequest = await Request.fromMessage(
         crypto,
         message,
         myPeerId!,
@@ -119,7 +118,7 @@ export const start = async (ops: {
 
       counterRequestsToProvider.labels({ status: "complete" }).inc();
 
-      const rpchResponse = Response.createResponse(
+      const rpchResponse = await Response.createResponse(
         crypto,
         rpchRequest,
         response
@@ -186,8 +185,8 @@ export const start = async (ops: {
     const pushMetrics = setInterval(() => {
       gateway
         .pushAdd({ jobName: publicKey + "_exit_node_metrics" })
-        .catch(() => {
-          log.error("failed to push metrics");
+        .catch((e) => {
+          log.error("failed to push metrics", e);
         });
     }, ops.sendMetricsInterval);
 

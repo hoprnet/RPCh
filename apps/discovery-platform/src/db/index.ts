@@ -140,6 +140,18 @@ export const updateRegisteredNode = async (
   }
 };
 
+export const deleteRegisteredNode = async (
+  dbInstance: DBInstance,
+  peerId: string
+): Promise<RegisteredNodeDB> => {
+  const text = `DELETE FROM ${TABLES.REGISTERED_NODES} WHERE id=$<peerId> RETURNING *`;
+  const values = {
+    peerId,
+  };
+  const dbRes: RegisteredNodeDB = await dbInstance.one(text, values);
+
+  return dbRes;
+};
 /**
  * Quota DB functions
  */

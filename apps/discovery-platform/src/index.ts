@@ -3,14 +3,16 @@ import { entryServer } from "./entry-server";
 import { FundingServiceApi } from "./funding-service-api";
 import { createLogger } from "./utils";
 import pgp from "pg-promise";
-import { getRegisteredNodes } from "./registered-node";
+import { checkCommitmentForFreshNodes } from "./registered-node";
 import { checkCommitment } from "./graph-api";
 import * as constants from "./constants";
 import * as Prometheus from "prom-client";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 import { runMigrations } from "@rpch/common/build/internal/db";
+import * as async from "async";
 import path from "path";
 import migrate from "node-pg-migrate";
+import type { RegisteredNodeDB } from "./types";
 
 const log = createLogger();
 
@@ -18,6 +20,7 @@ const start = async (ops: {
   db: DBInstance;
   baseQuota: bigint;
   fundingServiceUrl: string;
+  secret: string;
 }) => {
   // run db migrations
   const migrationsDirectory = path.join(__dirname, "../migrations");
@@ -50,6 +53,7 @@ const start = async (ops: {
     baseQuota: ops.baseQuota,
     fundingServiceApi: fundingServiceApi,
     metricManager: metricManager,
+    secret: ops.secret,
   });
 
   // start listening at PORT for requests
@@ -60,47 +64,47 @@ const start = async (ops: {
   // set server timeout to 30s
   server.setTimeout(30e3);
 
-  // check if fresh nodes have committed
-  let checkCommitmentForFreshNodesRunning = false;
-  const checkCommitmentForFreshNodes = setInterval(async () => {
-    try {
-      if (checkCommitmentForFreshNodesRunning) {
-        log.normal("'checkCommitmentForFreshNodes' is already running");
-        return;
-      }
-      checkCommitmentForFreshNodesRunning = true;
-      log.normal("tracking commitment for fresh nodes");
-      const freshNodes = await getRegisteredNodes(ops.db, {
-        status: "FRESH",
-      });
-
-      for (const node of freshNodes ?? []) {
-        log.verbose("checking commitment of fresh node", node);
-
+  // Create a task queue with a concurrency limit of QUEUE_CONCURRENCY_LIMIT
+  // to process nodes in parallel for commitment check
+  const queueCheckCommitment = async.queue(
+    async (task: RegisteredNodeDB, callback) => {
+      try {
         const nodeIsCommitted = await checkCommitment({
-          node,
+          node: task,
           minBalance: constants.BALANCE_THRESHOLD,
           minChannels: constants.CHANNELS_THRESHOLD,
         });
 
-        log.verbose("node commitment", nodeIsCommitted);
         if (nodeIsCommitted) {
-          log.verbose("new committed node", node.id);
           await updateRegisteredNode(ops.db, {
-            ...node,
+            ...task,
             status: "READY",
           });
         }
-      }
-    } catch (e) {
-      log.error("Failed to check commitment for fresh nodes", e);
-    } finally {
-      checkCommitmentForFreshNodesRunning = false;
-    }
-  }, 5000);
+
+        callback();
+      } catch (e) {}
+    },
+    constants.QUEUE_CONCURRENCY_LIMIT
+  );
+
+  // adds fresh node to queue
+  const checkCommitmentInterval = setInterval(
+    () =>
+      checkCommitmentForFreshNodes(
+        ops.db,
+        queueCheckCommitment,
+        (node, err) => {
+          if (err) {
+            log.error("Failed to process node", node, err);
+          }
+        }
+      ),
+    60e3
+  );
 
   return () => {
-    clearInterval(checkCommitmentForFreshNodes);
+    clearInterval(checkCommitmentInterval);
   };
 };
 
@@ -110,6 +114,10 @@ const main = () => {
 
   if (!constants.DB_CONNECTION_URL) {
     throw new Error('Missing "DB_CONNECTION_URL" env variable');
+  }
+
+  if (!constants.SECRET) {
+    throw new Error('Missing "SECRET" env variable');
   }
 
   // init db
@@ -124,6 +132,7 @@ const main = () => {
     baseQuota: constants.BASE_QUOTA,
     db: dbInstance,
     fundingServiceUrl: constants.FUNDING_SERVICE_URL!,
+    secret: constants.SECRET!,
   });
 };
 

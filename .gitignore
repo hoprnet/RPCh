@@ -39,7 +39,7 @@ yarn-error.log*
 
 tmp
 
-#rpc-server
+# rpc-server db
 apps/rpc-server/db
 
 #k6 results

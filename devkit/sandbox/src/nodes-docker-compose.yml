@@ -33,6 +33,7 @@ services:
       - sandbox
     environment:
       - DEBUG=${DEBUG}
+      - DP_SECRET=${DP_SECRET}
       - PORT=3030
   pluto:
     image: gcr.io/hoprassociation/hopr-pluto:${HOPR_PLUTO_VERSION}
@@ -63,7 +64,7 @@ services:
         "/bin/wait-for-it.sh",
         "http://${HOPRD_API_TOKEN}@pluto:13301/api/v2/account/addresses",
         "-t",
-        "300",
+        "15",
         "--",
         "/usr/bin/tini",
         "--",
@@ -81,7 +82,7 @@ services:
         "/bin/wait-for-it.sh",
         "http://${HOPRD_API_TOKEN}@pluto:13302/api/v2/account/addresses",
         "-t",
-        "300",
+        "15",
         "--",
         "/usr/bin/tini",
         "--",
@@ -99,7 +100,7 @@ services:
         "/bin/wait-for-it.sh",
         "http://${HOPRD_API_TOKEN}@pluto:13303/api/v2/account/addresses",
         "-t",
-        "300",
+        "15",
         "--",
         "/usr/bin/tini",
         "--",
@@ -117,7 +118,7 @@ services:
         "/bin/wait-for-it.sh",
         "http://${HOPRD_API_TOKEN}@pluto:13304/api/v2/account/addresses",
         "-t",
-        "300",
+        "15",
         "--",
         "/usr/bin/tini",
         "--",
@@ -135,7 +136,7 @@ services:
         "/bin/wait-for-it.sh",
         "http://${HOPRD_API_TOKEN}@pluto:13305/api/v2/account/addresses",
         "-t",
-        "300",
+        "15",
         "--",
         "/usr/bin/tini",
         "--",

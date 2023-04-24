@@ -131,11 +131,14 @@ export const SEPERATOR = "|";
 
 /**
  * Given some strings, join them using SEPERATOR.
+ * 1st place in the array is the number of added strings to the array (we do not count 1st number)
  * @param parts
  * @returns body
  */
 export const joinPartsToBody = (parts: string[]): string => {
-  return parts.join(SEPERATOR);
+  const toJoin = [parts.length, ...parts];
+  const joined = toJoin.join(SEPERATOR);
+  return joined;
 };
 
 /**
@@ -144,7 +147,21 @@ export const joinPartsToBody = (parts: string[]): string => {
  * @returns parts of the body
  */
 export const splitBodyToParts = (body: string): string[] => {
-  return body.split(SEPERATOR);
+  if (!body.indexOf("|")) {
+    return [body];
+  }
+  const numberOfParts = parseInt(body.split("|")[0]);
+  let array = [];
+  let splitIndex = body.indexOf("|");
+  body = body.substring(splitIndex + 1);
+  for (let i = 1; i < numberOfParts; i++) {
+    splitIndex = body.indexOf("|");
+    const part = body.substring(0, splitIndex);
+    array.push(part);
+    body = body.substring(splitIndex + 1);
+  }
+  array.push(body);
+  return array;
 };
 
 /**
@@ -164,3 +181,105 @@ export const areAllSegmentsPresent = (segments: Segment[]): boolean => {
  */
 export const bigIntReplacer = (key: any, value: any) =>
   typeof value === "bigint" ? value.toString() : value;
+
+/**
+ * Function to replace a character in a string with another character or string
+ */
+export const replaceInStringAt = (
+  string: string,
+  index: number,
+  replacement: string
+): string => {
+  return (
+    string.substring(0, index) +
+    replacement +
+    string.substring(index + replacement.length)
+  );
+};
+
+/**
+ * Function to check if variable is an array
+ */
+export const isArray = (input: any): boolean => {
+  return Array.isArray(input);
+};
+
+/**
+ * Function to check if variable is a json object
+ */
+export const isJsonObject = (input: any): boolean => {
+  return input.constructor == Object;
+};
+
+/**
+ * Function to check if variable is an array of json objects
+ */
+export const isArrayOfJsonObjects = (input: any): boolean => {
+  const isArrayBool = isArray(input);
+  if (!isArrayBool) return false;
+  if (input.length === 0) return false;
+
+  for (let i = 0; i < input.length; i++) {
+    const isJsonObjectBool = isJsonObject(input[i]);
+    if (!isJsonObjectBool) return false;
+  }
+
+  return true;
+};
+
+/**
+ * Function to check if variable is an array and has at least one json object
+ */
+export const isArrayWithAtLeastOneJsonObject = (input: any): boolean => {
+  const isArrayBool = isArray(input);
+  if (!isArrayBool) return false;
+  if (input.length === 0) return false;
+
+  for (let i = 0; i < input.length; i++) {
+    const isJsonObjectBool = isJsonObject(input[i]);
+    if (isJsonObjectBool) return true;
+  }
+
+  return false;
+};
+
+/**
+ * Function to check if variable is an array of json objectsobject
+ */
+export const findCommonElement = (
+  array1: string[],
+  array2: string[]
+): boolean => {
+  // Loop for array1
+  for (let i = 0; i < array1.length; i++) {
+    // Loop for array2
+    for (let j = 0; j < array2.length; j++) {
+      // Compare the element of each and
+      // every element from both of the
+      // arrays
+      if (array1[i] === array2[j]) {
+        // Return if common element found
+        return true;
+      }
+    }
+  }
+
+  // Return if no common element exist
+  return false;
+};
+
+/**
+ * Function to check if input is a stringified JSON
+ */
+export const isStringifiedJSON = (input: any): Boolean => {
+  let result = false;
+  try {
+    if (typeof input === "string") {
+      JSON.parse(input);
+      result = true;
+    }
+  } catch (e) {
+    // It's all good man!
+  }
+  return result;
+};

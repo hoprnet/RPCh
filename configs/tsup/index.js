@@ -19,6 +19,7 @@ module.exports = {
   clean: true,
   dts: true,
   bundle: false,
+  target: "es2018",
   entry: ["src", "!src/**/*.spec.*"],
   outDir: "build",
 };
