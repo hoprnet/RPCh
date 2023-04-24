@@ -72,6 +72,8 @@ export default class SDK {
   public deadlockTimestamp: number | undefined;
   // toggle to not select entry nodes while another one is being selected
   private selectingEntryNode: boolean | undefined;
+  // toogle to not start if it's already starting
+  public starting: boolean | undefined;
 
   constructor(
     private readonly ops: HoprSdkOps,
@@ -317,47 +319,55 @@ export default class SDK {
    */
   public async start(): Promise<void> {
     if (this.isReady) return;
+    try {
+      if (this.starting) throw Error("SDK is already starting");
+      this.starting = true;
 
-    // fetch required data from discovery platform
-    await retry(
-      () => this.selectEntryNode(this.ops.discoveryPlatformApiEndpoint),
-      {
-        retries: 5,
-        onRetry: (e, attempt) => {
-          log.error("Error while selecting entry node", e);
-          log.verbose("Retrying to select entry node, attempt:", attempt);
-        },
-      }
-    );
+      // fetch required data from discovery platform
+      await retry(
+        () => this.selectEntryNode(this.ops.discoveryPlatformApiEndpoint),
+        {
+          retries: 5,
+          onRetry: (e, attempt) => {
+            log.error("Error while selecting entry node", e);
+            log.verbose("Retrying to select entry node, attempt:", attempt);
+          },
+        }
+      );
 
-    await retry(
-      () => this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint),
-      {
-        retries: 5,
-        onRetry: (e, attempt) => {
-          log.error("Error while fetching exit nodes", e);
-          log.verbose("Retrying to fetch exit nodes, attempt:", attempt);
-        },
-      }
-    );
+      await retry(
+        () => this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint),
+        {
+          retries: 5,
+          onRetry: (e, attempt) => {
+            log.error("Error while fetching exit nodes", e);
+            log.verbose("Retrying to fetch exit nodes, attempt:", attempt);
+          },
+        }
+      );
 
-    // check for expires caches every second
-    this.intervals.push(
-      setInterval(() => {
-        this.segmentCache.removeExpired(this.ops.timeout);
-        this.requestCache.removeExpired(this.ops.timeout);
-      }, 1e3)
-    );
-    // update exit nodes every minute
-    this.intervals.push(
-      setInterval(() => {
-        this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint).catch(
-          (error) => {
-            log.error("Failed to fetch exit nodes", error);
-          }
-        );
-      }, 60e3)
-    );
+      // check for expires caches every second
+      this.intervals.push(
+        setInterval(() => {
+          this.segmentCache.removeExpired(this.ops.timeout);
+          this.requestCache.removeExpired(this.ops.timeout);
+        }, 1e3)
+      );
+      // update exit nodes every minute
+      this.intervals.push(
+        setInterval(() => {
+          this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint).catch(
+            (error) => {
+              log.error("Failed to fetch exit nodes", error);
+            }
+          );
+        }, 60e3)
+      );
+    } catch (e: any) {
+      log.error("Could not start SDK", e.message);
+    } finally {
+      this.starting = false;
+    }
   }
 
   /**
