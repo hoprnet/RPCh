@@ -108,9 +108,9 @@ export const createMessageListener = async (
       resolve(socket);
     };
 
-    socket.onerror = (error) => {
-      console.error("WebSocket error:", error);
-      reject(error);
+    socket.onerror = (event) => {
+      log.error("WebSocket error:", event);
+      reject(event.error);
     };
   });
 
@@ -132,6 +132,10 @@ export const createMessageListener = async (
     log.verbose("decoded received body", message);
 
     onMessage(message);
+  };
+
+  ws.onerror = (event) => {
+    log.error("WebSocket error:", event);
   };
 
   return () => {
