@@ -80,7 +80,9 @@ export const sendMessage = async ({
       response.status,
       errorMessage
     );
-    throw new Error(errorMessage);
+    throw new Error(
+      `HOPRd node responsed with error "${errorMessage}" when sending message "${message}" with path "${path}" to destination "${destination}"`
+    );
   }
 };
 
