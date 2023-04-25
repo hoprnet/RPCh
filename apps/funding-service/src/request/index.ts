@@ -106,11 +106,7 @@ export class RequestService {
    * @returns Promise<RequestDB>
    */
   public async deleteRequest(requestId: number): Promise<RequestDB> {
-    log.normal(
-      "Deleted request:",
-      requestId,
-      log.createMetric({ id: requestId })
-    );
+    log.normal("Deleted request:", requestId);
     return db.deleteRequest(this.db, requestId);
   }
 

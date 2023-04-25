@@ -262,11 +262,7 @@ export default class SDK {
       log.verbose(
         "response time for request %s: %s ms",
         match.request.id,
-        responseTime,
-        log.createMetric({
-          id: match.request.id,
-          responseTime: responseTime,
-        })
+        responseTime
       );
 
       match.resolve(response);

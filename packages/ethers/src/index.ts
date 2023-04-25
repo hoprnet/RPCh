@@ -68,19 +68,11 @@ export class RPChProvider extends JsonRpcProvider {
       this.url,
       JSON.stringify(payload)
     );
-    log.verbose(
-      "Created request",
-      rpchRequest.id,
-      log.createMetric({ id: rpchRequest.id })
-    );
+    log.verbose("Created request", rpchRequest.id);
 
     try {
       const rpchResponsePromise = this.sdk.sendRequest(rpchRequest);
-      log.verbose(
-        "Send request",
-        rpchRequest.id,
-        log.createMetric({ id: rpchRequest.id })
-      );
+      log.verbose("Send request", rpchRequest.id);
 
       // Cache the fetch, but clear it on the next event loop
       if (cache) {
@@ -93,11 +85,7 @@ export class RPChProvider extends JsonRpcProvider {
 
       const rpchResponse = await rpchResponsePromise;
       const response = getResult(parseResponse(rpchResponse));
-      log.verbose(
-        "Received response for request",
-        rpchRequest.id,
-        log.createMetric({ id: rpchRequest.id })
-      );
+      log.verbose("Received response for request", rpchRequest.id);
       this.emit("debug", {
         action: "response",
         request: payload,
@@ -107,11 +95,7 @@ export class RPChProvider extends JsonRpcProvider {
 
       return response;
     } catch (error) {
-      log.error(
-        "Did not receive response for request",
-        rpchRequest.id,
-        log.createMetric({ id: rpchRequest.id })
-      );
+      log.error("Did not receive response for request", rpchRequest.id);
       this.emit("debug", {
         action: "response",
         error: error,
