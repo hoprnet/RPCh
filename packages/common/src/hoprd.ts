@@ -126,6 +126,10 @@ export const createMessageListener = async (
     onMessage(message);
   };
 
+  ws.onerror = (event) => {
+    log.error(event);
+  };
+
   return () => {
     log.normal("Closing HOPRd listener");
     ws.close();
