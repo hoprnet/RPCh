@@ -1,5 +1,12 @@
 # @rpch/funding-service
 
+## 0.0.9
+
+### Patch Changes
+
+- Updated dependencies
+  - @rpch/common@0.2.0
+
 ## 0.0.8
 
 ### Patch Changes
