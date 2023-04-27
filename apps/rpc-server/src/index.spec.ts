@@ -72,7 +72,7 @@ describe("test index.ts", function () {
         .post("/?exit-provider=someprovider")
         .send(JSON.stringify({ id: "1", method: "eth_chainId" }));
 
-      expect(res.text).toEqual("SDK is deadlocked");
+      expect(res.text).toContain("SDK is deadlocked");
       rpcServer.sdk?.setDeadlock(0);
     });
     it("sdk not initialized", async function () {
@@ -82,7 +82,7 @@ describe("test index.ts", function () {
         .post("/?exit-provider=someprovider")
         .send(JSON.stringify({ id: "1", method: "eth_chainId" }));
 
-      expect(res.text).toEqual("SDK not initialized");
+      expect(res.text).toContain("SDK not initialized");
       rpcServer.sdk = mockSdk(temp);
     });
   });

@@ -38,9 +38,10 @@ describe("test hoprd.ts / sendMessage", function () {
         path: [],
       });
     } catch (e: any) {
-      assert.equal(
-        e.message,
-        '{"status":"UNKNOWN_FAILURE","error":"Full error message."}'
+      assert(
+        e.message.includes(
+          '{"status":"UNKNOWN_FAILURE","error":"Full error message."}'
+        )
       );
     }
   });

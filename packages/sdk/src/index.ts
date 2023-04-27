@@ -282,7 +282,7 @@ export default class SDK {
         message.id,
         message.body
       );
-      this.handleFailedRequest(match.request);
+      this.handleFailedRequest(match.request, "failed to decrypt");
     }
   }
 
@@ -302,11 +302,11 @@ export default class SDK {
    * @param req Request
    * @returns void
    */
-  public handleFailedRequest(req: Request) {
+  public handleFailedRequest(req: Request, reason?: string) {
     // add metric failed metric
     this.onRequestRemoval(req);
     // reject request promise
-    this.requestCache.getRequest(req.id)?.reject("request failed");
+    this.requestCache.getRequest(req.id)?.reject(`request failed: "${reason}"`);
     this.requestCache.removeRequest(req);
   }
 
@@ -510,12 +510,12 @@ export default class SDK {
 
         if (rejectedResults.length > 0) {
           // If any promises were rejected, remove request from cache and reject promise
-          this.handleFailedRequest(req);
+          this.handleFailedRequest(req, "not all segments were delivered");
         }
-      } catch (e) {
+      } catch (e: any) {
         // If there was an error sending the request, remove request from cache and reject promise
         log.error("failed to send message to hoprd", e);
-        this.handleFailedRequest(req);
+        this.handleFailedRequest(req, e);
       }
     });
   }
