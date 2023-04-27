@@ -147,7 +147,7 @@ export const joinPartsToBody = (parts: string[]): string => {
  * @returns parts of the body
  */
 export const splitBodyToParts = (body: string): string[] => {
-  if (body.indexOf("|") === -1) {
+  if (!body.includes("|")) {
     return [body];
   }
   const numberOfParts = parseInt(body.split("|")[0]);
