@@ -59,28 +59,31 @@ export const sendMessage = async ({
     body: JSON.stringify(body),
   });
 
+  const genericLogInfo = [
+    message,
+    destination,
+    "with path",
+    path && path.length > 0
+      ? path.join("-")
+      : path && path.length === 0
+      ? "direct"
+      : "auto-path",
+  ].join(" ");
   if (response.status === 202) {
-    log.verbose(
-      "sent message to HOPRd node",
-      message,
-      destination,
-      "with path",
-      path && path.length > 0
-        ? path.join("-")
-        : path && path.length === 0
-        ? "direct"
-        : "auto-path"
-    );
+    log.verbose("sent message to HOPRd node", genericLogInfo);
     const text = await response.text();
     return text;
   } else {
     let errorMessage = await response.text();
     log.error(
       "failed to send message to HOPRd node",
+      genericLogInfo,
       response.status,
       errorMessage
     );
-    throw new Error(errorMessage);
+    throw new Error(
+      `HOPRd node responsed with error "${errorMessage}" when sending message: ${genericLogInfo}`
+    );
   }
 };
 

@@ -2,7 +2,7 @@ name: Review
 
 on:
   push:
-    branches: [main]
+    branches: [main, running-staging-release]
   pull_request:
     types: [opened, synchronize]
 

@@ -137,6 +137,13 @@ start() {
         }'
     echo "Added quota to client 'trial' in 'discovery-platform'"
 
+    # declare HOPR_API_ENDPOINTS
+    [[ -z "${FORCE_EXT_HOPRD_IP}" ]] && RESOLVED_HOPRD_API_ENDPOINT_1_EXT=$HOPRD_API_ENDPOINT_1_EXT || RESOLVED_HOPRD_API_ENDPOINT_1_EXT="http://${FORCE_EXT_HOPRD_IP}:13301"
+    [[ -z "${FORCE_EXT_HOPRD_IP}" ]] && RESOLVED_HOPRD_API_ENDPOINT_2_EXT=$HOPRD_API_ENDPOINT_2_EXT || RESOLVED_HOPRD_API_ENDPOINT_2_EXT="http://${FORCE_EXT_HOPRD_IP}:13302"
+    [[ -z "${FORCE_EXT_HOPRD_IP}" ]] && RESOLVED_HOPRD_API_ENDPOINT_3_EXT=$HOPRD_API_ENDPOINT_3_EXT || RESOLVED_HOPRD_API_ENDPOINT_3_EXT="http://${FORCE_EXT_HOPRD_IP}:13303"
+    [[ -z "${FORCE_EXT_HOPRD_IP}" ]] && RESOLVED_HOPRD_API_ENDPOINT_4_EXT=$HOPRD_API_ENDPOINT_4_EXT || RESOLVED_HOPRD_API_ENDPOINT_4_EXT="http://${FORCE_EXT_HOPRD_IP}:13304"
+    [[ -z "${FORCE_EXT_HOPRD_IP}" ]] && RESOLVED_HOPRD_API_ENDPOINT_5_EXT=$HOPRD_API_ENDPOINT_5_EXT || RESOLVED_HOPRD_API_ENDPOINT_5_EXT="http://${FORCE_EXT_HOPRD_IP}:13305"
+
     # register nodes
     echo "Registering nodes to discovery-platform"
     scurl -X POST "http://127.0.0.1:3030/register-exit-nodes" \
@@ -153,11 +160,11 @@ start() {
                 "'$HOPRD_API_ENDPOINT_5'"
             ],
             "hoprdApiEndpointsExt": [
-                "'$HOPRD_API_ENDPOINT_1_EXT'",
-                "'$HOPRD_API_ENDPOINT_2_EXT'",
-                "'$HOPRD_API_ENDPOINT_3_EXT'",
-                "'$HOPRD_API_ENDPOINT_4_EXT'",
-                "'$HOPRD_API_ENDPOINT_5_EXT'"
+                "'$RESOLVED_HOPRD_API_ENDPOINT_1_EXT'",
+                "'$RESOLVED_HOPRD_API_ENDPOINT_2_EXT'",
+                "'$RESOLVED_HOPRD_API_ENDPOINT_3_EXT'",
+                "'$RESOLVED_HOPRD_API_ENDPOINT_4_EXT'",
+                "'$RESOLVED_HOPRD_API_ENDPOINT_5_EXT'"
             ],
             "hoprdApiTokens": [
                 "'$HOPRD_API_TOKEN'",
