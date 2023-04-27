@@ -1,5 +1,12 @@
 # @rpch/rpc-server
 
+## 0.0.4
+
+### Patch Changes
+
+- Fix breaking bug
+  - @rpch/sdk@0.2.1
+
 ## 0.0.3
 
 ### Patch Changes

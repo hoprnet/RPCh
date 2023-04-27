@@ -1,5 +1,11 @@
 # @rpch/common
 
+## 0.2.1
+
+### Patch Changes
+
+- Fix breaking bug
+
 ## 0.2.0
 
 ### Minor Changes
