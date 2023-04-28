@@ -8,6 +8,12 @@ volumes:
 networks:
   hopr-net:
     driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.22.0.0/16
+          gateway: 172.22.0.1
+
 services:
   # hoprd_fluentbit:
   #   image: 'gcr.io/hoprassociation/hopr-fluentbit'
