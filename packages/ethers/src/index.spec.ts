@@ -5,14 +5,13 @@ import mockSdk from "@rpch/sdk/build/index.mock";
 import { RPChProvider } from ".";
 
 // mock HOPRd interactions
+// mock HOPRd interactions
 jest.mock("@rpch/common", () => ({
   ...jest.requireActual("@rpch/common"),
   hoprd: {
-    ...jest.requireActual("@rpch/common").hoprd,
+    sendMessage: jest.fn(async () => "MOCK_SEND_MSG_RESPONSE"),
     createMessageListener: jest.fn(async () => {
-      return {
-        close: () => {},
-      };
+      return () => {};
     }),
   },
 }));
