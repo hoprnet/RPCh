@@ -8,9 +8,11 @@ import { RPChProvider } from ".";
 jest.mock("@rpch/common", () => ({
   ...jest.requireActual("@rpch/common"),
   hoprd: {
-    sendMessage: jest.fn(async () => "MOCK_SEND_MSG_RESPONSE"),
+    ...jest.requireActual("@rpch/common").hoprd,
     createMessageListener: jest.fn(async () => {
-      return () => {};
+      return {
+        close: () => {},
+      };
     }),
   },
 }));
