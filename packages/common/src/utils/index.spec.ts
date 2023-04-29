@@ -15,7 +15,7 @@ import {
 import { createMockedFlow } from "../fixtures";
 import { req_80kb } from "../compression/compression-samples";
 import http from "http";
-import WS, { WebSocket } from "ws";
+import WS, { WebSocket } from "isomorphic-ws";
 
 describe("test utils / splitStrByBytes", function () {
   it("should return 1 string", function () {

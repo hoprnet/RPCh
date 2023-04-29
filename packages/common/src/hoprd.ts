@@ -5,7 +5,7 @@ import {
   establishInfiniteWsConnection,
 } from "./utils";
 import fetch from "cross-fetch";
-import WebSocket from "ws";
+import WebSocket from "isomorphic-ws";
 
 const log = createLogger(["hoprd"]);
 

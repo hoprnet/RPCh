@@ -15,7 +15,6 @@ import retry from "async-retry";
 import ReliabilityScore from "./reliability-score";
 import RequestCache from "./request-cache";
 import { createLogger } from "./utils";
-import WebSocket from "ws";
 
 const log = createLogger();
 // max number of segments sdk can send to entry node
@@ -67,8 +66,8 @@ export default class SDK {
   private entryNode?: EntryNode;
   // available exit nodes
   private exitNodes: ExitNode[] = [];
-  // ws connection to hoprd
-  private connection?: WebSocket;
+  // stopMessageListener
+  private stopMessageListener?: () => void;
   // an epoch timestamp that stops creating requests until that time has passed
   public deadlockTimestamp: number | undefined;
   // toggle to not select entry nodes while another one is being selected
@@ -164,22 +163,24 @@ export default class SDK {
       log.verbose("Selected entry node", this.entryNode);
 
       // Refresh messageListener
-      if (this.connection) this.connection.close();
-      this.connection = await hoprd.createMessageListener(
-        this.entryNode!.apiEndpoint,
-        this.entryNode!.apiToken,
-        (message) => {
-          try {
-            const segment = Segment.fromString(message);
-            this.segmentCache.onSegment(segment);
-          } catch (e) {
-            log.verbose(
-              "rejected received data from HOPRd: not a valid segment",
-              message
-            );
+      if (this.stopMessageListener) this.stopMessageListener();
+      this.stopMessageListener = (
+        await hoprd.createMessageListener(
+          this.entryNode!.apiEndpoint,
+          this.entryNode!.apiToken,
+          (message) => {
+            try {
+              const segment = Segment.fromString(message);
+              this.segmentCache.onSegment(segment);
+            } catch (e) {
+              log.verbose(
+                "rejected received data from HOPRd: not a valid segment",
+                message
+              );
+            }
           }
-        }
-      );
+        )
+      ).close;
       return this.entryNode;
     } catch (error) {
       throw error;
@@ -371,7 +372,7 @@ export default class SDK {
    * Stop the SDK and clear up tangling processes.
    */
   public async stop(): Promise<void> {
-    if (this.connection) this.connection.close();
+    if (this.stopMessageListener) this.stopMessageListener();
     for (const interval of this.intervals) {
       clearInterval(interval);
     }

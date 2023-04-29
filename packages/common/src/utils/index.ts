@@ -1,7 +1,7 @@
 import type Segment from "../segment";
 import { utils } from "ethers";
 import LoggerFactory from "./logger";
-import WebSocket from "ws";
+import WebSocket from "isomorphic-ws";
 export { default as LoggerFactory } from "./logger";
 export const createLogger = LoggerFactory("common");
 

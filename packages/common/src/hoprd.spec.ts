@@ -3,7 +3,7 @@ import nock from "nock";
 import * as hoprd from "./hoprd";
 import * as fixtures from "./fixtures";
 import http from "http";
-import WS from "ws";
+import WS from "isomorphic-ws";
 
 const ENTRY_NODE_API_ENDPOINT = "http://entry_node";
 const ENTRY_NODE_API_TOKEN = "12345";
