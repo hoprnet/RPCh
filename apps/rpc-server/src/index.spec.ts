@@ -9,11 +9,9 @@ jest.mock("leveldown", () => MemDown);
 jest.mock("@rpch/common", () => ({
   ...jest.requireActual("@rpch/common"),
   hoprd: {
-    ...jest.requireActual("@rpch/common").hoprd,
-    createMessageListener: jest.fn(async () => {
-      return {
-        close: () => {},
-      };
+    sendMessage: jest.fn(async () => "MOCK_SEND_MSG_RESPONSE"),
+    createMessageListener: jest.fn(() => {
+      return { close: () => {} };
     }),
   },
 }));
@@ -36,7 +34,7 @@ describe("test index.ts", function () {
     request = supertest(rpcServer.server);
   });
 
-  afterAll(async function () {
+  afterEach(async function () {
     await rpcServer.stop();
   });
 
