@@ -193,7 +193,7 @@ export const start = async (ops: {
     intervals.push(pushMetrics);
   }
 
-  const stopMessageListening = await ops.hoprd.createMessageListener(
+  const connection = await ops.hoprd.createMessageListener(
     ops.apiEndpoint,
     ops.apiToken || "",
     (message: string) => {
@@ -213,7 +213,7 @@ export const start = async (ops: {
     for (const interval of intervals) {
       clearInterval(interval);
     }
-    stopMessageListening();
+    connection.close();
   };
 };
 

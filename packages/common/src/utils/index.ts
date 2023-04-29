@@ -1,10 +1,11 @@
 import type Segment from "../segment";
 import { utils } from "ethers";
 import LoggerFactory from "./logger";
-
+import WebSocket from "ws";
 export { default as LoggerFactory } from "./logger";
 export const createLogger = LoggerFactory("common");
 
+const log = createLogger(["utils"]);
 /**
  * Maximum bytes we should be sending
  * within the HOPR network.
@@ -282,4 +283,35 @@ export const isStringifiedJSON = (input: any): Boolean => {
     // It's all good man!
   }
   return result;
+};
+
+export const establishInfiniteWsConnection = async (
+  url: string,
+  timeout: number
+): Promise<WebSocket> => {
+  // try to establish connection infinitely
+  while (true) {
+    try {
+      const socket = new WebSocket(url);
+      // wait for socket to establish
+      await new Promise<void>((resolve, reject) => {
+        socket.onopen = () => {
+          log.normal("Listening for incoming messages from HOPRd", url);
+          resolve();
+        };
+        socket.onerror = (event) => {
+          log.error("WebSocket error:", event);
+          reject(event);
+        };
+      });
+      return socket;
+    } catch (error) {
+      log.error(
+        "WebSocket connection failed, retrying in %s ms...",
+        timeout,
+        error
+      );
+      await new Promise<void>((resolve) => setTimeout(resolve, timeout));
+    }
+  }
 };
