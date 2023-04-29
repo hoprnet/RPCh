@@ -180,7 +180,7 @@ export default class SDK {
         }
       );
       this.stopMessageListener = () => {
-        if (connection) connection.close();
+        if (connection.close) connection.close();
       };
       return this.entryNode;
     } catch (error) {
