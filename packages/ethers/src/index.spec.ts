@@ -5,7 +5,6 @@ import mockSdk from "@rpch/sdk/build/index.mock";
 import { RPChProvider } from ".";
 
 // mock HOPRd interactions
-// mock HOPRd interactions
 jest.mock("@rpch/common", () => ({
   ...jest.requireActual("@rpch/common"),
   hoprd: {
