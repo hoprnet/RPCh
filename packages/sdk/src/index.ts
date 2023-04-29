@@ -164,23 +164,24 @@ export default class SDK {
 
       // Refresh messageListener
       if (this.stopMessageListener) this.stopMessageListener();
-      this.stopMessageListener = (
-        await hoprd.createMessageListener(
-          this.entryNode!.apiEndpoint,
-          this.entryNode!.apiToken,
-          (message) => {
-            try {
-              const segment = Segment.fromString(message);
-              this.segmentCache.onSegment(segment);
-            } catch (e) {
-              log.verbose(
-                "rejected received data from HOPRd: not a valid segment",
-                message
-              );
-            }
+      const connection = await hoprd.createMessageListener(
+        this.entryNode!.apiEndpoint,
+        this.entryNode!.apiToken,
+        (message) => {
+          try {
+            const segment = Segment.fromString(message);
+            this.segmentCache.onSegment(segment);
+          } catch (e) {
+            log.verbose(
+              "rejected received data from HOPRd: not a valid segment",
+              message
+            );
           }
-        )
-      ).close;
+        }
+      );
+      this.stopMessageListener = () => {
+        if (connection) connection.close();
+      };
       return this.entryNode;
     } catch (error) {
       throw error;
