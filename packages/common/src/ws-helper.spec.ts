@@ -106,8 +106,8 @@ describe("test ws class", function () {
 
     // wait for 2 heartbeats
     setTimeout(() => {
-      expect(waitUntilSocketOpenSpy.mock.calls.length).toEqual(1);
       helper.close();
+      expect(waitUntilSocketOpenSpy.mock.calls.length).toEqual(1);
       done();
     }, heartbeatTimeout * 2);
   });

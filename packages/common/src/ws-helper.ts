@@ -47,6 +47,7 @@ class WebSocketHelper {
   }
 
   public close() {
+    this.connectionIsClosing = true;
     clearTimeout(this.pingTimeout);
     this.socket.close();
   }
@@ -87,8 +88,7 @@ class WebSocketHelper {
         log.error("Ws connection is still closing");
         return;
       }
-      this.connectionIsClosing = true;
-      this.socket.close();
+      this.close();
       // open new ws
       this.socket = new WebSocket(this.url);
       await this.waitUntilSocketOpen();
