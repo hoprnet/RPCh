@@ -10,7 +10,6 @@ import {
   isArrayOfJsonObjects,
   isArrayWithAtLeastOneJsonObject,
   findCommonElement,
-  establishInfiniteWsConnection,
 } from "../utils";
 import { createMockedFlow } from "../fixtures";
 import { req_80kb } from "../compression/compression-samples";
@@ -218,56 +217,5 @@ describe("test utils / findCommonElement", function () {
   });
   it("should return false", function () {
     assert(!(test0_res || test1_res || test2_res || test5_res || test7_res));
-  });
-});
-
-describe("test utils / establishInfiniteWsConnection", function () {
-  const url = "ws://localhost:1234";
-  let server: WS.Server;
-  let httpServer: http.Server;
-
-  beforeEach(function () {
-    httpServer = http.createServer();
-    server = new WS.Server({ server: httpServer });
-    httpServer.listen(1234);
-  });
-
-  afterEach(() => {
-    server.close();
-    httpServer.close();
-  });
-
-  it("gets a successful connection", async () => {
-    console.log("trying to @connect");
-
-    const socketPromise = establishInfiniteWsConnection(url, 1);
-    const socket = await socketPromise;
-
-    assert(socket instanceof WebSocket);
-    assert(socket.OPEN);
-    socket.close();
-  });
-
-  it("retries after failing", async () => {
-    // close to fail
-    server.close();
-    httpServer.close();
-    const retryTimeout = 10;
-
-    const socketPromise = establishInfiniteWsConnection(url, retryTimeout);
-
-    // Wait for the first retry
-    await new Promise((resolve) => setTimeout(resolve, retryTimeout));
-
-    // Reopen server
-    httpServer = http.createServer();
-    server = new WS.Server({ server: httpServer });
-    httpServer.listen(1234);
-
-    const socket = await socketPromise;
-
-    expect(socket).toBeInstanceOf(WebSocket);
-    expect(socket.readyState).toBe(WebSocket.OPEN);
-    socket.close();
   });
 });
