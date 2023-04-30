@@ -1,11 +1,6 @@
-import {
-  createLogger,
-  createApiUrl,
-  decodeIncomingBody,
-  establishInfiniteWsConnection,
-} from "./utils";
+import { createLogger, createApiUrl } from "./utils";
 import fetch from "cross-fetch";
-import WebSocket from "isomorphic-ws";
+import WebSocketHelper from "./ws-helper";
 
 const log = createLogger(["hoprd"]);
 
@@ -101,7 +96,8 @@ export const createMessageListener = async (
   apiEndpoint: string,
   apiToken: string,
   onMessage: (message: string) => void,
-  retryTimeout = 5000
+  retryTimeout = 5000,
+  maxTimeWithoutPing = 60e3
 ) => {
   const [url] = createApiUrl(
     "ws",
@@ -109,43 +105,14 @@ export const createMessageListener = async (
     "/api/v2/messages/websocket",
     apiToken
   );
-
-  let ws = await establishInfiniteWsConnection(url, retryTimeout);
-
-  const setUpEventHandlers = (ws: WebSocket) => {
-    ws.addEventListener("message", (event) => {
-      const body = event.data.toString();
-      // message received is an acknowledgement of a
-      // message we have send, we can safely ingore this
-      if (body.startsWith("ack:")) return;
-
-      log.verbose("received body from HOPRd", body);
-
-      let message: string | undefined;
-      try {
-        message = decodeIncomingBody(body);
-      } catch (error) {
-        log.error(error);
-      }
-      if (!message) return;
-      log.verbose("decoded received body", message);
-
-      onMessage(message);
-    });
-
-    ws.addEventListener("error", async (event) => {
-      log.error("WebSocket error:", event);
-      // close existing ws
-      ws.close();
-      // open new ws
-      ws = await establishInfiniteWsConnection(url, retryTimeout);
-      // set up event handlers again
-      setUpEventHandlers(ws);
-      console.log("established ws");
-    });
-  };
-
-  setUpEventHandlers(ws);
+  let ws = new WebSocketHelper(
+    url,
+    onMessage,
+    retryTimeout,
+    maxTimeWithoutPing
+  );
+  ws.setUpEventHandlers();
+  await ws.waitUntilSocketOpen();
 
   return ws;
 };
