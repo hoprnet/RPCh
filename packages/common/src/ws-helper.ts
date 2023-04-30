@@ -2,34 +2,37 @@ import { createLogger, decodeIncomingBody } from "./utils";
 import { WebSocket } from "isomorphic-ws";
 const log = createLogger(["websocket"]);
 
-class HoprWebSocket extends WebSocket {
+class WebSocketHelper {
   public pingTimeout: NodeJS.Timeout | undefined;
+  public socket: WebSocket;
+  private connectionIsClosing: boolean;
 
   constructor(
-    url: string,
+    private url: string,
     private onMessage: (data: string) => void,
     private retryTimeout: number,
     private maxTimeWithoutPing: number
   ) {
-    super(url);
+    this.socket = new WebSocket(url);
+    this.connectionIsClosing = false;
   }
 
-  public async establishInfiniteWsConnection(): Promise<WebSocket> {
+  public async waitUntilSocketOpen(): Promise<WebSocket> {
     // try to establish connection infinitely
     while (true) {
       try {
         // wait for socket to establish
         await new Promise<void>((resolve, reject) => {
-          this.onopen = () => {
+          this.socket.onopen = () => {
             log.normal("Listening for incoming messages from HOPRd", this.url);
             resolve();
           };
-          this.onerror = (event) => {
+          this.socket.onerror = (event) => {
             log.error("WebSocket error:", event);
             reject(event);
           };
         });
-        return this;
+        return this.socket;
       } catch (error) {
         log.error(
           "WebSocket connection failed, retrying in %s ms...",
@@ -45,19 +48,19 @@ class HoprWebSocket extends WebSocket {
 
   public close() {
     clearTimeout(this.pingTimeout);
-    super.close();
+    this.socket.close();
   }
 
   private heartbeat() {
     clearTimeout(this.pingTimeout);
     this.pingTimeout = setTimeout(() => {
       log.error("did not receive heartbeat");
-      this.emit("error");
+      this.socket.emit("error", "heartbeat was not received");
     }, this.maxTimeWithoutPing);
   }
 
   public setUpEventHandlers() {
-    this.onmessage = (event) => {
+    this.socket.onmessage = (event) => {
       const body = event.data.toString();
       // message received is an acknowledgement of a
       // message we have send, we can safely ignore this
@@ -77,25 +80,35 @@ class HoprWebSocket extends WebSocket {
       this.onMessage(message);
     };
 
-    this.on("error", async (event) => {
+    this.socket.on("error", async (event) => {
       log.error("WebSocket error:", event);
       // close existing ws
-      this.terminate();
+      if (this.connectionIsClosing) {
+        log.error("Ws connection is still closing");
+        return;
+      }
+      this.connectionIsClosing = true;
+      this.socket.close();
       // open new ws
-      await this.establishInfiniteWsConnection();
+      this.socket = new WebSocket(this.url);
+      await this.waitUntilSocketOpen();
       // set up event handlers again
       this.setUpEventHandlers();
       console.log("Established new ws after error");
     });
 
-    this.on("open", () => {
+    this.socket.on("open", () => {
       this.heartbeat();
     });
 
-    this.on("ping", () => {
+    this.socket.on("close", () => {
+      this.connectionIsClosing = false;
+    });
+
+    this.socket.on("ping", () => {
       this.heartbeat();
     });
   }
 }
 
-export default HoprWebSocket;
+export default WebSocketHelper;

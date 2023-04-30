@@ -1,6 +1,6 @@
 import { createLogger, createApiUrl } from "./utils";
 import fetch from "cross-fetch";
-import HoprWebSocket from "./ws";
+import WebSocketHelper from "./ws-helper";
 
 const log = createLogger(["hoprd"]);
 
@@ -105,9 +105,14 @@ export const createMessageListener = async (
     "/api/v2/messages/websocket",
     apiToken
   );
-  let ws = new HoprWebSocket(url, onMessage, retryTimeout, maxTimeWithoutPing);
+  let ws = new WebSocketHelper(
+    url,
+    onMessage,
+    retryTimeout,
+    maxTimeWithoutPing
+  );
   ws.setUpEventHandlers();
-  await ws.establishInfiniteWsConnection();
+  await ws.waitUntilSocketOpen();
 
   return ws;
 };
