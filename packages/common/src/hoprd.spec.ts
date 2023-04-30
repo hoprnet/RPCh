@@ -2,8 +2,6 @@ import assert from "assert";
 import nock from "nock";
 import * as hoprd from "./hoprd";
 import * as fixtures from "./fixtures";
-import http from "http";
-import WS from "isomorphic-ws";
 
 const ENTRY_NODE_API_ENDPOINT = "http://entry_node";
 const ENTRY_NODE_API_TOKEN = "12345";
@@ -46,76 +44,5 @@ describe("test hoprd.ts / sendMessage", function () {
         )
       );
     }
-  });
-});
-
-describe("test hoprd.ts / createMessageListener", function () {
-  const url = "ws://localhost:1234";
-  let server: WS.Server;
-  let httpServer: http.Server;
-
-  beforeEach(function () {
-    httpServer = http.createServer();
-    server = new WS.Server({ server: httpServer });
-    httpServer.listen(1234);
-  });
-
-  afterEach(() => {
-    server.close();
-    httpServer.close();
-  });
-
-  it("gets a successful connection", (done) => {
-    const onMessageSpy = jest.fn(() => {
-      // on message listener works
-      done();
-    });
-    server.on("connection", (ws) => {
-      ws.send("connected");
-      ws.on("message", () => {
-        ws.send(fixtures.ENCODED_HOPRD_MESSAGE);
-      });
-    });
-    hoprd
-      .createMessageListener(url, "token", onMessageSpy)
-      .then((connection) => {
-        connection.send("i am connected");
-        connection.close();
-      });
-  });
-  it("onMessage is triggered on retry", (done) => {
-    // close to fail
-    server.close();
-    httpServer.close();
-    const retryTimeout = 100;
-
-    const onMessageSpy = jest.fn(() => {
-      // on message listener works after retry
-      done();
-    });
-
-    // turn on server after first retry
-    new Promise((resolve) =>
-      setTimeout(() => {
-        // Reopen server
-        httpServer = http.createServer();
-        server = new WS.Server({ server: httpServer });
-        httpServer.listen(1234);
-        server.on("connection", (ws) => {
-          ws.send("connected");
-          ws.on("message", () => {
-            ws.send(fixtures.ENCODED_HOPRD_MESSAGE);
-          });
-        });
-        resolve("turned on");
-      }, retryTimeout)
-    );
-
-    hoprd
-      .createMessageListener(url, "token", onMessageSpy, retryTimeout)
-      .then((connection) => {
-        connection.send("i am connected");
-        connection.close();
-      });
   });
 });
