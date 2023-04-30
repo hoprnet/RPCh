@@ -4,7 +4,7 @@ import MemDown from "memdown";
 import { utils } from "ethers";
 import { start as startExitNode } from "./index";
 import * as Prometheus from "prom-client";
-import WebSocket from "isomorphic-ws";
+import { WebSocketHelper } from "@rpch/common";
 
 jest.mock("leveldown", () => MemDown);
 
@@ -36,7 +36,7 @@ const createMockedSetup = async (optInMetrics = false) => {
         onMessage: (message: string) => void
       ) => {
         triggerMessageListenerOnMessage = onMessage;
-        return { close: () => {} } as WebSocket;
+        return { close: () => {} } as WebSocketHelper;
       }
     ),
     fetchPeerId: jest.fn(
