@@ -33,6 +33,7 @@ services:
       - sandbox
     environment:
       - DEBUG=${DEBUG}
+      - DP_SECRET=${DP_SECRET}
       - PORT=3030
   pluto:
     image: gcr.io/hoprassociation/hopr-pluto:${HOPR_PLUTO_VERSION}
@@ -54,87 +55,42 @@ services:
     <<: *exit
     environment:
       - HOPRD_API_ENDPOINT=http://pluto:13301
+      - OPT_IN_METRICS=${OPT_IN_METRICS}
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_1}
-    entrypoint:
-      [
-        "/bin/wait-for-it.sh",
-        "http://${HOPRD_API_TOKEN}@pluto:13301/api/v2/account/addresses",
-        "-t",
-        "300",
-        "--",
-        "/usr/bin/tini",
-        "--",
-      ]
   exit-2:
     <<: *exit
     environment:
       - HOPRD_API_ENDPOINT=http://pluto:13302
       - DEBUG=${DEBUG:-"rpch*"}
+      - OPT_IN_METRICS=${OPT_IN_METRICS}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_2}
-    entrypoint:
-      [
-        "/bin/wait-for-it.sh",
-        "http://${HOPRD_API_TOKEN}@pluto:13302/api/v2/account/addresses",
-        "-t",
-        "300",
-        "--",
-        "/usr/bin/tini",
-        "--",
-      ]
   exit-3:
     <<: *exit
     environment:
       - HOPRD_API_ENDPOINT=http://pluto:13303
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+      - OPT_IN_METRICS=${OPT_IN_METRICS}
       - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_3}
-    entrypoint:
-      [
-        "/bin/wait-for-it.sh",
-        "http://${HOPRD_API_TOKEN}@pluto:13303/api/v2/account/addresses",
-        "-t",
-        "300",
-        "--",
-        "/usr/bin/tini",
-        "--",
-      ]
   exit-4:
     <<: *exit
     environment:
       - HOPRD_API_ENDPOINT=http://pluto:13304
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+      - OPT_IN_METRICS=${OPT_IN_METRICS}
       - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_4}
-    entrypoint:
-      [
-        "/bin/wait-for-it.sh",
-        "http://${HOPRD_API_TOKEN}@pluto:13304/api/v2/account/addresses",
-        "-t",
-        "300",
-        "--",
-        "/usr/bin/tini",
-        "--",
-      ]
   exit-5:
     <<: *exit
     environment:
       - HOPRD_API_ENDPOINT=http://pluto:13305
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+      - OPT_IN_METRICS=${OPT_IN_METRICS}
       - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_5}
-    entrypoint:
-      [
-        "/bin/wait-for-it.sh",
-        "http://${HOPRD_API_TOKEN}@pluto:13305/api/v2/account/addresses",
-        "-t",
-        "300",
-        "--",
-        "/usr/bin/tini",
-        "--",
-      ]
 
 # since this file is run first,
 # we create the sandbox network

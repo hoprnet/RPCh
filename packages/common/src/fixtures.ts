@@ -1,6 +1,5 @@
-import type Nock from "nock";
 import { utils } from "ethers";
-import * as crypto from "@rpch/crypto-bridge/nodejs";
+import * as crypto from "@rpch/crypto-for-nodejs";
 import Request from "./request";
 import Response from "./response";
 import type { IMemoryDb } from "pg-mem";
@@ -53,6 +52,8 @@ export const RPC_RES_LARGE = `{"id":1663836360444,"jsonrpc": "2.0","result": "0x
  */
 export const RPC_RES_ERROR = `{"id":123,"jsonrpc": "2.0","error":{"code":1,"message":"ExampleMethodresultismissing'example_key'."}}`;
 
+export const ENCODED_HOPRD_MESSAGE = `249,1,150,185,1,140,52,124,57,54,50,54,48,54,124,53,124,55,124,50,97,56,51,49,51,100,48,50,55,55,102,48,51,102,51,97,100,51,54,50,52,48,54,54,100,48,100,101,98,102,102,101,52,97,97,52,55,55,51,48,99,53,102,102,56,48,100,52,99,102,50,51,53,98,50,49,48,51,99,102,48,54,51,49,55,53,53,99,50,100,101,56,102,98,49,100,97,97,51,98,48,49,54,99,54,54,52,49,57,100,55,97,48,52,55,55,102,55,53,97,50,50,54,102,51,56,55,53,97,50,57,99,100,52,51,101,49,100,51,49,53,48,48,52,99,100,54,97,49,51,48,56,100,50,100,100,50,49,98,55,54,53,98,101,97,49,102,101,48,50,57,56,100,49,97,54,54,100,57,101,99,54,102,98,98,49,97,53,52,98,48,101,100,98,49,56,99,48,98,98,53,98,48,97,54,56,102,54,56,53,56,55,54,98,98,57,49,57,50,102,53,56,55,55,48,56,53,102,101,57,55,52,55,55,51,54,57,51,99,54,52,53,97,50,100,50,99,97,51,51,101,53,48,102,55,53,50,97,56,97,98,54,101,53,55,102,55,51,50,97,51,100,50,98,99,101,49,52,52,102,99,100,52,52,52,56,99,49,49,99,56,102,98,49,53,57,57,98,49,101,97,53,100,100,99,99,52,49,102,99,98,57,56,97,98,55,101,56,100,53,49,55,57,102,57,101,53,52,54,101,98,100,101,55,102,52,56,56,48,48,101,100,55,102,52,102,101,98,50,97,48,52,50,98,101,57,98,56,51,49,56,97,53,50,52,52,52,52,50,56,100,53,99,52,52,102,56,101,102,97,57,53,53,102,52,50,54,51,57,53,55,48,49,54,56,98,49,48,53,57,98,99,134,1,135,205,141,225,198`;
+
 /**
  * Adjust global Date.now().
  * Primarily used to avoid verification
@@ -85,9 +86,9 @@ export const wait = (ms: number) =>
  * @param exitNode
  * @param requestBody
  */
-export function* createMockedFlow(
+export async function* createMockedFlow(
   requestBody: string = RPC_REQ_SMALL
-): Generator<Request | Response, Response, any> {
+): AsyncGenerator<Request | Response, Response, any> {
   const tmsp = +new Date();
   const TIME_DIFF = 50;
   const entryNodeDestination = HOPRD_PEER_ID_A;
@@ -98,7 +99,7 @@ export function* createMockedFlow(
 
   // client side
   resetDateNow = setDateNow(tmsp - TIME_DIFF * 4);
-  const clientRequest = Request.createRequest(
+  const clientRequest = await Request.createRequest(
     crypto,
     PROVIDER,
     requestBody,
@@ -111,7 +112,7 @@ export function* createMockedFlow(
 
   // exit node side
   resetDateNow = setDateNow(tmsp - TIME_DIFF * 3);
-  const exitNodeRequest = Request.fromMessage(
+  const exitNodeRequest = await Request.fromMessage(
     crypto,
     clientRequest.toMessage(),
     exitNodeDestination,
@@ -124,7 +125,7 @@ export function* createMockedFlow(
 
   // exit node side
   resetDateNow = setDateNow(tmsp - TIME_DIFF * 2);
-  const exitNodeResponse = Response.createResponse(
+  const exitNodeResponse = await Response.createResponse(
     crypto,
     exitNodeRequest,
     responseBody
@@ -134,7 +135,7 @@ export function* createMockedFlow(
 
   // client side
   resetDateNow = setDateNow(tmsp - TIME_DIFF);
-  const clientResponse = Response.fromMessage(
+  const clientResponse = await Response.fromMessage(
     crypto,
     clientRequest,
     exitNodeResponse.toMessage(),
@@ -154,31 +155,36 @@ export function* createMockedFlow(
  * @param responseBody
  * @param lastResponseFromExitNode
  */
-export function generateMockedFlow(
+export async function generateMockedFlow(
   steps: 1 | 2 | 3,
   requestBody: string = RPC_REQ_SMALL,
   lastRequestFromClient: number = 0,
   responseBody: string = RPC_RES_SMALL,
   lastResponseFromExitNode: number = 0
-): [
-  clientRequest: Request,
-  exitNodeRequest: Request,
-  exitNodeResponse: Response,
-  clientResponse: Response
-] {
+): Promise<
+  [
+    clientRequest: Request,
+    exitNodeRequest: Request,
+    exitNodeResponse: Response,
+    clientResponse: Response
+  ]
+> {
   const X = {} as any;
   const flow = createMockedFlow(requestBody);
 
-  const clientRequest = flow.next().value as Request;
+  const clientRequest = (await flow.next()).value as Request;
   if (steps === 1) return [clientRequest, X, X, X];
 
-  const exitNodeRequest = flow.next(lastRequestFromClient).value as Request;
+  const exitNodeRequest = (await flow.next(lastRequestFromClient))
+    .value as Request;
   if (steps === 2) return [clientRequest, exitNodeRequest, X, X];
 
-  const exitNodeResponse = flow.next(responseBody).value as Response;
+  const exitNodeResponse = (await flow.next(responseBody)).value as Response;
   if (steps === 3) return [clientRequest, exitNodeRequest, exitNodeResponse, X];
 
-  const clientResponse = flow.next(lastResponseFromExitNode).value as Response;
+  const clientResponse = (await flow.next(lastResponseFromExitNode))
+    .value as Response;
+
   return [clientRequest, exitNodeRequest, exitNodeResponse, clientResponse];
 }
 

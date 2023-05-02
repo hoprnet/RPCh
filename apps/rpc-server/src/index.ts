@@ -1,20 +1,19 @@
 import type { Server } from "http";
-import * as path from "path";
 import levelup, { type LevelUp } from "levelup";
 import leveldown from "leveldown";
 import RPChSDK from "@rpch/sdk";
+import * as RPChCrypto from "@rpch/crypto-for-nodejs";
 import * as server from "./server";
 import { createLogger } from "./utils";
+import {
+  RESPONSE_TIMEOUT,
+  CLIENT,
+  DATA_DIR,
+  DISCOVERY_PLATFORM_API_ENDPOINT,
+  PORT,
+} from "./constants";
 
 const log = createLogger();
-
-const {
-  DATA_DIR = path.join(process.cwd(), "db"),
-  PORT = 3040,
-  RESPONSE_TIMEOUT: RESPONSE_TIMEOUT_STR = "10000",
-  DISCOVERY_PLATFORM_API_ENDPOINT,
-  CLIENT,
-} = process.env;
 
 /**
  * A class that represents an RPC server.
@@ -55,6 +54,7 @@ export class RPCServer {
     });
     this.sdk = new RPChSDK(
       {
+        crypto: RPChCrypto,
         client: this.client,
         timeout: this.timeout,
         discoveryPlatformApiEndpoint: this.discoveryPlatformApiEndpoint,
@@ -78,30 +78,41 @@ export class RPCServer {
       "0.0.0.0",
       Number(PORT),
       async (body, response, exitProvider) => {
+        let verboseLogs: string[] = [];
         try {
           if (!this.sdk) throw Error("SDK not initialized");
           const rpcRequest = await this.sdk.createRequest(exitProvider, body);
-          log.verbose(
-            "Sending request",
-            rpcRequest.id,
-            rpcRequest.toMessage().body
+          const rpcRequestBody = rpcRequest.toMessage().body;
+          log.verbose("Sending request", rpcRequest.id, rpcRequestBody);
+          verboseLogs.push(
+            `1/3: created request: "${rpcRequest.id}" with body "${rpcRequestBody}"`
           );
           const rpcResponse = await this.sdk.sendRequest(rpcRequest);
-          log.verbose(
-            "Received response",
-            rpcRequest.id,
-            rpcResponse.toMessage().body
+          const rpcResponseBody = rpcResponse.toMessage().body;
+          verboseLogs.push(`2/3: send request: "${rpcRequest.id}"`);
+          log.verbose("Received response", rpcRequest.id, rpcResponseBody);
+          verboseLogs.push(
+            `3/3: received response "${rpcResponse.id}" with body "${rpcResponseBody}" for request: "${rpcRequest.id}"`
           );
           response.write(rpcResponse.body);
           response.statusCode = 200;
           response.end();
-        } catch (e: unknown) {
+        } catch (error: unknown) {
+          const errorMsg = [
+            "Error sending request",
+            error instanceof Error ? error.message : error,
+            "with trace",
+            verboseLogs.join(" -> "),
+          ].join(" ");
+          log.error(errorMsg);
+          response.write(
+            JSON.stringify({
+              jsonrpc: "2.0",
+              error: { code: -32600, message: `Internal Error: "${errorMsg}"` },
+              id: null,
+            })
+          );
           response.statusCode = 400;
-          if (e instanceof Error) {
-            response.write(e.message);
-          } else if (typeof e === "string") {
-            response.write(e);
-          }
           response.end();
         }
       }
@@ -126,7 +137,6 @@ export class RPCServer {
 
 // if this file is the entrypoint of the nodejs process
 if (require.main === module) {
-  const RESPONSE_TIMEOUT = Number(RESPONSE_TIMEOUT_STR);
   if (isNaN(RESPONSE_TIMEOUT)) {
     throw Error("env variable 'RESPONSE_TIMEOUT' not a number");
   }

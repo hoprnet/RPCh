@@ -1,6 +1,8 @@
 import assert from "assert";
-import * as crypto from "@rpch/crypto-bridge/nodejs";
+import _ from "lodash";
+import * as crypto from "@rpch/crypto-for-nodejs";
 import Message from "./message";
+import { isStringifiedJSON } from "./utils";
 import type Request from "./request";
 import Response from "./response";
 import {
@@ -16,7 +18,16 @@ const shouldBeAValidResponse = (
   assert.equal(typeof actual.id, "number");
   assert(actual.id > 0);
   assert.equal(actual.id, expected.request.id);
-  assert.equal(actual.body, expected.body);
+  let expectedIsStringifiedJSON = isStringifiedJSON(expected.body);
+  if (expectedIsStringifiedJSON) {
+    const sameMessage = _.isEqual(
+      JSON.parse(actual.body),
+      JSON.parse(expected.body)
+    );
+    assert(sameMessage);
+  } else {
+    assert.equal(actual.body, expected.body);
+  }
 };
 
 const shouldBeAValidResponseMessage = (
@@ -28,10 +39,14 @@ const shouldBeAValidResponseMessage = (
 };
 
 describe("test Response class", function () {
-  it("should create response from Request", function () {
+  it("should create response from Request", async function () {
     const flow = createMockedFlow();
-    const request = flow.next().value as Request;
-    const response = Response.createResponse(crypto, request, RPC_RES_SMALL);
+    const request = (await flow.next()).value as Request;
+    const response = await Response.createResponse(
+      crypto,
+      request,
+      RPC_RES_SMALL
+    );
 
     shouldBeAValidResponse(response, {
       body: RPC_RES_SMALL,
@@ -39,18 +54,22 @@ describe("test Response class", function () {
     });
   });
 
-  it("should create message from Response", function () {
+  it("should create message from Response", async function () {
     const flow = createMockedFlow();
-    const request = flow.next().value as Request;
-    const response = Response.createResponse(crypto, request, RPC_RES_SMALL);
+    const request = (await flow.next()).value as Request;
+    const response = await Response.createResponse(
+      crypto,
+      request,
+      RPC_RES_SMALL
+    );
 
     shouldBeAValidResponseMessage(response.toMessage(), { id: request.id });
   });
 
-  it("should create response from message", function () {
-    const [clientRequest, , exitNodeResponse] = generateMockedFlow(3);
+  it("should create response from message", async function () {
+    const [clientRequest, , exitNodeResponse] = await generateMockedFlow(3);
 
-    const clientResponse = Response.fromMessage(
+    const clientResponse = await Response.fromMessage(
       crypto,
       clientRequest,
       exitNodeResponse.toMessage(),

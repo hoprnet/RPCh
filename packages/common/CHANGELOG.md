@@ -1,5 +1,23 @@
 # @rpch/common
 
+## 0.2.1
+
+### Patch Changes
+
+- Fix breaking bug
+
+## 0.2.0
+
+### Minor Changes
+
+- Introduce compression and many stability improvements
+
+## 0.1.7
+
+### Patch Changes
+
+- Use @rpch/crypto v0.3.4
+
 ## 0.1.6
 
 ### Patch Changes

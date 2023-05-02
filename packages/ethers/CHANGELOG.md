@@ -1,5 +1,35 @@
 # @rpch/ethers
 
+## 0.2.1
+
+### Patch Changes
+
+- Fix breaking bug
+- Updated dependencies
+  - @rpch/common@0.2.1
+  - @rpch/sdk@0.2.1
+
+## 0.2.0
+
+### Minor Changes
+
+- Introduce compression and many stability improvements
+
+### Patch Changes
+
+- Updated dependencies
+  - @rpch/common@0.2.0
+  - @rpch/sdk@0.2.0
+
+## 0.1.7
+
+### Patch Changes
+
+- Use @rpch/crypto v0.3.4
+- Updated dependencies
+  - @rpch/common@0.1.7
+  - @rpch/sdk@0.1.7
+
 ## 0.1.6
 
 ### Patch Changes

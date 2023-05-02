@@ -3,6 +3,8 @@ const {
   FUNDING_SERVICE_URL,
   // Database connection url
   DB_CONNECTION_URL,
+  // Secret for custom authentication
+  SECRET,
 } = process.env;
 
 // Skips commitment check making all fresh nodes go to ready
@@ -39,6 +41,15 @@ const MAX_DB_CONNECTIONS = 18;
 // Used to create
 const AMOUNT_OF_RANDOM_WORDS_FOR_TRIAL_ID = 5;
 
+const METRIC_PREFIX = "discovery_platform";
+
+// payment mode when quota is paid by trial
+const TRIAL_PAYMENT_MODE = "trial";
+
+// client id that will pay for quotas in trial mode
+const TRIAL_CLIENT_ID = "trial";
+const QUEUE_CONCURRENCY_LIMIT = 5;
+
 export {
   PORT,
   FUNDING_SERVICE_URL,
@@ -51,4 +62,9 @@ export {
   SKIP_CHECK_COMMITMENT,
   MAX_DB_CONNECTIONS,
   AMOUNT_OF_RANDOM_WORDS_FOR_TRIAL_ID,
+  METRIC_PREFIX,
+  TRIAL_CLIENT_ID,
+  TRIAL_PAYMENT_MODE,
+  QUEUE_CONCURRENCY_LIMIT,
+  SECRET,
 };

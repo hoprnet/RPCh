@@ -8,10 +8,11 @@ import openChannels from "./tasks/open-channels";
 import registerExitNodes from "./tasks/register-exit-nodes";
 import registerHoprdNodes from "./tasks/register-hoprd-nodes";
 import { createLogger } from "./utils";
+import { body, query } from "express-validator";
 
 // we do not run this build this file via turbo
 /* eslint-disable turbo/no-undeclared-env-vars */
-const { PORT = 3030 } = process.env;
+const { PORT = 3030, DP_SECRET } = process.env;
 
 const log = createLogger();
 const app = express();
@@ -27,102 +28,168 @@ app.use((req, _res, next) => {
   next();
 });
 
-app.post("/add-quota", async (req, res) => {
-  try {
-    const { discoveryPlatformEndpoint, client, quota } = req.body as any;
+app.post(
+  "/add-quota",
+  body("discoveryPlatformEndpoint").exists(),
+  body("client").exists(),
+  body("quota").exists(),
+  async (req, res) => {
+    try {
+      const { discoveryPlatformEndpoint, client, quota } = req.body;
+      if (!DP_SECRET) throw new Error("MISSING DP_SECRET ENV");
 
-    await addQuota(discoveryPlatformEndpoint, client, quota);
-    return res.sendStatus(200);
-  } catch (error) {
-    log.error("Could not 'add-quota'", error);
-    return res.sendStatus(500);
+      await addQuota(discoveryPlatformEndpoint, client, quota, DP_SECRET);
+      return res.sendStatus(200);
+    } catch (error) {
+      log.error("Could not 'add-quota'", error);
+      return res.sendStatus(500);
+    }
   }
-});
+);
 
-app.post("/fund-hoprd-nodes", async (req, res) => {
-  try {
-    const {
-      privateKey,
-      provider,
-      hoprTokenAddress,
-      nativeAmount,
-      hoprAmount,
-      recipients,
-    } = req.body as any;
+app.post(
+  "/fund-hoprd-nodes",
+  body("privateKey").exists(),
+  body("provider").exists(),
+  body("hoprTokenAddress").exists(),
+  body("nativeAmount").exists(),
+  body("hoprAmount").exists(),
+  body("recipients")
+    .exists()
+    .custom(
+      (value) =>
+        Array.isArray(value) && value.every((val) => typeof val === "string")
+    ),
+  async (req, res) => {
+    try {
+      const {
+        privateKey,
+        provider,
+        hoprTokenAddress,
+        nativeAmount,
+        hoprAmount,
+        recipients,
+      } = req.body as {
+        privateKey: string;
+        provider: string;
+        hoprTokenAddress: string;
+        nativeAmount: string;
+        hoprAmount: string;
+        recipients: string[];
+      };
 
-    await fundHoprdNodes(
-      privateKey,
-      provider,
-      hoprTokenAddress,
-      nativeAmount,
-      hoprAmount,
-      recipients
-    );
-    return res.sendStatus(200);
-  } catch (error) {
-    log.error("Could not 'fund-hoprd-nodes'", error);
-    return res.sendStatus(500);
+      await fundHoprdNodes(
+        privateKey,
+        provider,
+        hoprTokenAddress,
+        nativeAmount,
+        hoprAmount,
+        recipients
+      );
+      return res.sendStatus(200);
+    } catch (error) {
+      log.error("Could not 'fund-hoprd-nodes'", error);
+      return res.sendStatus(500);
+    }
   }
-});
+);
 
-app.post("/fund-via-hoprd", async (req, res) => {
-  try {
-    const { hoprdEndpoint, hoprdToken, nativeAmount, hoprAmount, recipient } =
-      req.body as any;
+app.post(
+  "/fund-via-hoprd",
+  body("hoprdEndpoint").exists(),
+  body("hoprdToken").exists(),
+  body("nativeAmount").exists(),
+  body("hoprAmount").exists(),
+  body("recipient").exists(),
+  async (req, res) => {
+    try {
+      const { hoprdEndpoint, hoprdToken, nativeAmount, hoprAmount, recipient } =
+        req.body as {
+          hoprdEndpoint: string;
+          hoprdToken: string;
+          nativeAmount: string;
+          hoprAmount: string;
+          recipient: string;
+        };
 
-    await fundViaHOPRd(
-      hoprdEndpoint,
-      hoprdToken,
-      nativeAmount,
-      hoprAmount,
-      recipient
-    );
-    return res.sendStatus(200);
-  } catch (error) {
-    log.error("Could not 'fund-via-hoprd'", error);
-    return res.sendStatus(500);
+      await fundViaHOPRd(
+        hoprdEndpoint,
+        hoprdToken,
+        nativeAmount,
+        hoprAmount,
+        recipient
+      );
+      return res.sendStatus(200);
+    } catch (error) {
+      log.error("Could not 'fund-via-hoprd'", error);
+      return res.sendStatus(500);
+    }
   }
-});
+);
 
-app.post("/fund-via-wallet", async (req, res) => {
-  try {
-    const {
-      privateKey,
-      provider,
-      hoprTokenAddress,
-      nativeAmount,
-      hoprAmount,
-      recipient,
-    } = req.body as any;
+app.post(
+  "/fund-via-wallet",
+  body("privateKey").exists(),
+  body("provider").exists(),
+  body("hoprTokenAddress").exists(),
+  body("nativeAmount").exists(),
+  body("hoprAmount").exists(),
+  body("recipient").exists(),
+  async (req, res) => {
+    try {
+      const {
+        privateKey,
+        provider,
+        hoprTokenAddress,
+        nativeAmount,
+        hoprAmount,
+        recipient,
+      } = req.body as {
+        privateKey: string;
+        provider: string;
+        hoprTokenAddress: string;
+        nativeAmount: string;
+        hoprAmount: string;
+        recipient: string;
+      };
 
-    await fundViaWallet(
-      privateKey,
-      provider,
-      hoprTokenAddress,
-      nativeAmount,
-      hoprAmount,
-      recipient
-    );
-    return res.sendStatus(200);
-  } catch (error) {
-    log.error("Could not 'fund-via-wallet'", error);
-    return res.sendStatus(500);
+      await fundViaWallet(
+        privateKey,
+        provider,
+        hoprTokenAddress,
+        nativeAmount,
+        hoprAmount,
+        recipient
+      );
+      return res.sendStatus(200);
+    } catch (error) {
+      log.error("Could not 'fund-via-wallet'", error);
+      return res.sendStatus(500);
+    }
   }
-});
+);
 
-app.get("/get-hoprd-token-address", async (req, res) => {
-  try {
-    const { hoprdEndpoint, hoprdToken } = req.query as any;
+app.get(
+  "/get-hoprd-token-address",
+  query("hoprdEndpoint").exists().isString(),
+  query("hoprdToken").exists().isString(),
+  async (req, res) => {
+    try {
+      const { hoprdEndpoint, hoprdToken } = req.query as {
+        hoprdEndpoint: string;
+        hoprdToken: string;
+      };
 
-    const tokenAddress = await hoprd
-      .getInfo(hoprdEndpoint, hoprdToken)
-      .then((res) => res.hoprToken);
-    return res.status(200).send(tokenAddress);
-  } catch (error) {
-    log.error("Could not 'get-hoprd-token-address'", error);
-    return res.sendStatus(500);
+      const tokenAddress = await hoprd
+        .getInfo(hoprdEndpoint, hoprdToken)
+        .then((res) => res.hoprToken);
+      return res.status(200).send(tokenAddress);
+    } catch (error) {
+      log.error("Could not 'get-hoprd-token-address'", error);
+      return res.sendStatus(500);
+    }
   }
-});
+);
 
 app.post("/get-hoprds-addresses", async (req, res) => {
   try {
@@ -165,71 +232,154 @@ app.post("/get-hoprds-addresses", async (req, res) => {
   }
 });
 
-app.post("/open-channels", async (req, res) => {
-  try {
-    const { hoprAmount, hoprdApiEndpoints, hoprdTokens } = req.body as any;
+app.post(
+  "/open-channels",
+  body("hoprAmount").exists(),
+  body("hoprdApiEndpoints")
+    .exists()
+    .custom(
+      (value) =>
+        Array.isArray(value) && value.every((val) => typeof val === "string")
+    ),
+  body("hoprdTokens")
+    .exists()
+    .custom(
+      (value) =>
+        Array.isArray(value) && value.every((val) => typeof val === "string")
+    ),
+  async (req, res) => {
+    try {
+      const { hoprAmount, hoprdApiEndpoints, hoprdTokens } = req.body as {
+        hoprAmount: string;
+        hoprdApiEndpoints: string[];
+        hoprdTokens: string[];
+      };
 
-    await openChannels(hoprAmount, hoprdApiEndpoints, hoprdTokens);
-    return res.sendStatus(200);
-  } catch (error) {
-    log.error("Could not 'open-channels'", error);
-    return res.sendStatus(500);
+      await openChannels(hoprAmount, hoprdApiEndpoints, hoprdTokens);
+      return res.sendStatus(200);
+    } catch (error) {
+      log.error("Could not 'open-channels'", error);
+      return res.sendStatus(500);
+    }
   }
-});
+);
 
-app.post("/register-exit-nodes", async (req, res) => {
-  try {
-    const {
-      discoveryPlatformEndpoint,
-      chainId,
-      hoprdApiEndpoints,
-      hoprdApiEndpointsExt,
-      hoprdApiTokens,
-      exitNodePubKeys,
-    } = req.body as any;
+app.post(
+  "/register-exit-nodes",
+  body("discoveryPlatformEndpoint").exists(),
+  body("client").exists(),
+  body("chainId").exists(),
+  body("hoprdApiEndpoints")
+    .exists()
+    .custom(
+      (value) =>
+        Array.isArray(value) && value.every((val) => typeof val === "string")
+    ),
+  body("hoprdApiEndpointsExt")
+    .exists()
+    .custom(
+      (value) =>
+        Array.isArray(value) && value.every((val) => typeof val === "string")
+    ),
+  body("hoprdApiTokens")
+    .exists()
+    .custom(
+      (value) =>
+        Array.isArray(value) && value.every((val) => typeof val === "string")
+    ),
+  body("exitNodePubKeys")
+    .exists()
+    .custom(
+      (value) =>
+        Array.isArray(value) && value.every((val) => typeof val === "string")
+    ),
+  async (req, res) => {
+    try {
+      const {
+        discoveryPlatformEndpoint,
+        chainId,
+        hoprdApiEndpoints,
+        hoprdApiEndpointsExt,
+        hoprdApiTokens,
+        exitNodePubKeys,
+        client,
+      } = req.body as {
+        discoveryPlatformEndpoint: string;
+        client: string;
+        chainId: string;
+        hoprdApiEndpoints: string[];
+        hoprdApiEndpointsExt: string[];
+        hoprdApiTokens: string[];
+        exitNodePubKeys: string[];
+      };
 
-    await registerExitNodes(
-      discoveryPlatformEndpoint,
-      chainId,
-      hoprdApiEndpoints,
-      hoprdApiEndpointsExt,
-      hoprdApiTokens,
-      exitNodePubKeys
-    );
-    return res.sendStatus(200);
-  } catch (error) {
-    log.error("Could not 'register-exit-nodes'", error);
-    return res.sendStatus(500);
+      await registerExitNodes(
+        discoveryPlatformEndpoint,
+        client,
+        chainId,
+        hoprdApiEndpoints,
+        hoprdApiEndpointsExt,
+        hoprdApiTokens,
+        exitNodePubKeys
+      );
+      return res.sendStatus(200);
+    } catch (error) {
+      log.error("Could not 'register-exit-nodes'", error);
+      return res.sendStatus(500);
+    }
   }
-});
+);
 
-app.post("/register-hoprd-nodes", async (req, res) => {
-  try {
-    const {
-      privateKey,
-      provider,
-      nftAddress,
-      nftId,
-      stakeAddress,
-      registryAddress,
-      peerIds,
-    } = req.body as any;
+app.post(
+  "/register-hoprd-nodes",
+  body("privateKey").exists(),
+  body("provider").exists(),
+  body("nftAddress").exists(),
+  body("nftId").exists(),
+  body("stakeAddress").exists(),
+  body("registryAddress").exists(),
+  body("peerIds")
+    .exists()
+    .custom(
+      (value) =>
+        Array.isArray(value) && value.every((val) => typeof val === "string")
+    ),
+  async (req, res) => {
+    try {
+      const {
+        privateKey,
+        provider,
+        nftAddress,
+        nftId,
+        stakeAddress,
+        registryAddress,
+        peerIds,
+      } = req.body as {
+        privateKey: string;
+        provider: string;
+        nftAddress: string;
+        nftId: string;
+        stakeAddress: string;
+        registryAddress: string;
+        peerIds: string[];
+      };
 
-    await registerHoprdNodes(
-      privateKey,
-      provider,
-      nftAddress,
-      nftId,
-      stakeAddress,
-      registryAddress,
-      peerIds
-    );
-    return res.sendStatus(200);
-  } catch (error) {
-    log.error("Could not 'register-hoprd-nodes'", error);
-    return res.sendStatus(500);
+      await registerHoprdNodes(
+        privateKey,
+        provider,
+        nftAddress,
+        nftId,
+        stakeAddress,
+        registryAddress,
+        peerIds
+      );
+      return res.sendStatus(200);
+    } catch (error) {
+      log.error("Could not 'register-hoprd-nodes'", error);
+      return res.sendStatus(500);
+    }
   }
-});
+);
 
 app.listen(Number(PORT), "0.0.0.0", () => {
   log.normal(`Server is running on port=${PORT}`);

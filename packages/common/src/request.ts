@@ -6,8 +6,9 @@ import type {
   unbox_request,
   Session,
   Identity,
-} from "@rpch/crypto-bridge/nodejs";
+} from "@rpch/crypto-for-nodejs";
 import Message from "./message";
+import Compression from "./compression";
 import {
   generatePseudoRandomId,
   joinPartsToBody,
@@ -37,7 +38,7 @@ export default class Request {
    * @param exitNode
    * @returns Request
    */
-  public static createRequest(
+  public static async createRequest(
     crypto: {
       Envelope: typeof Envelope;
       box_request: typeof box_request;
@@ -47,16 +48,16 @@ export default class Request {
     entryNodeDestination: string,
     exitNodeDestination: string,
     exitNodeReadIdentity: Identity
-  ): Request {
+  ): Promise<Request> {
     const id = generatePseudoRandomId(1e6);
-    const payload = joinPartsToBody(["request", provider, body]);
+    const compressedBody = await Compression.compressRpcRequestAsync(body);
+    const payload = joinPartsToBody(["request", provider, compressedBody]);
     const envelope = new crypto.Envelope(
       utils.toUtf8Bytes(payload),
       entryNodeDestination,
       exitNodeDestination
     );
     const session = crypto.box_request(envelope, exitNodeReadIdentity);
-
     return new Request(
       id,
       provider,
@@ -74,7 +75,7 @@ export default class Request {
    * @param exitNode
    * @returns Request
    */
-  public static fromMessage(
+  public static async fromMessage(
     crypto: {
       Envelope: typeof Envelope;
       unbox_request: typeof unbox_request;
@@ -84,9 +85,8 @@ export default class Request {
     exitNodeWriteIdentity: Identity,
     lastRequestFromClient: bigint,
     updateLastRequestFromClient: (clientId: string, counter: bigint) => any
-  ): Request {
+  ): Promise<Request> {
     const [origin, encrypted] = splitBodyToParts(message.body);
-
     const entryNodeDestination =
       PeerId.createFromB58String(origin).toB58String();
 
@@ -104,16 +104,16 @@ export default class Request {
       entryNodeDestination,
       session.updated_counter()
     );
-
-    const [type, provider, ...remaining] = splitBodyToParts(
+    const [type, provider, compressedBody] = splitBodyToParts(
       utils.toUtf8String(session.get_request_data())
     );
 
+    const body = await Compression.decompressRpcRequestAsync(compressedBody);
     if (type !== "request") throw Error("Message is not a Request");
     return new Request(
       message.id,
       provider,
-      joinPartsToBody(remaining),
+      body,
       entryNodeDestination,
       exitNodeDestination,
       exitNodeWriteIdentity,

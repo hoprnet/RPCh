@@ -41,6 +41,8 @@ start() {
     logs_error=""
     segmentation_error=""
     pluto=false
+
+    echo "The script is still running. Don't worry, you need to wait."
     sleep 10
 
     until [[ $logs1 =~ "Listening for incoming messages from HOPRd" ]]; do
@@ -123,6 +125,25 @@ start() {
     echo "Done 'central-docker-compose'"
     sleep 20
 
+    # add quota to client 'trial'
+    echo "Adding quota to 'trial' in 'discovery-platform'"
+    curl -X POST "http://127.0.0.1:3030/add-quota" \
+        -H "Content-Type: application/json" \
+        -H "x-rpch-client: trial" \
+        -d '{
+            "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
+            "client": "trial",
+            "quota": "500"
+        }'
+    echo "Added quota to client 'trial' in 'discovery-platform'"
+
+    # declare HOPR_API_ENDPOINTS
+    [[ -z "${FORCE_EXT_HOPRD_IP}" ]] && RESOLVED_HOPRD_API_ENDPOINT_1_EXT=$HOPRD_API_ENDPOINT_1_EXT || RESOLVED_HOPRD_API_ENDPOINT_1_EXT="http://${FORCE_EXT_HOPRD_IP}:13301"
+    [[ -z "${FORCE_EXT_HOPRD_IP}" ]] && RESOLVED_HOPRD_API_ENDPOINT_2_EXT=$HOPRD_API_ENDPOINT_2_EXT || RESOLVED_HOPRD_API_ENDPOINT_2_EXT="http://${FORCE_EXT_HOPRD_IP}:13302"
+    [[ -z "${FORCE_EXT_HOPRD_IP}" ]] && RESOLVED_HOPRD_API_ENDPOINT_3_EXT=$HOPRD_API_ENDPOINT_3_EXT || RESOLVED_HOPRD_API_ENDPOINT_3_EXT="http://${FORCE_EXT_HOPRD_IP}:13303"
+    [[ -z "${FORCE_EXT_HOPRD_IP}" ]] && RESOLVED_HOPRD_API_ENDPOINT_4_EXT=$HOPRD_API_ENDPOINT_4_EXT || RESOLVED_HOPRD_API_ENDPOINT_4_EXT="http://${FORCE_EXT_HOPRD_IP}:13304"
+    [[ -z "${FORCE_EXT_HOPRD_IP}" ]] && RESOLVED_HOPRD_API_ENDPOINT_5_EXT=$HOPRD_API_ENDPOINT_5_EXT || RESOLVED_HOPRD_API_ENDPOINT_5_EXT="http://${FORCE_EXT_HOPRD_IP}:13305"
+
     # register nodes
     echo "Registering nodes to discovery-platform"
     scurl -X POST "http://127.0.0.1:3030/register-exit-nodes" \
@@ -130,6 +151,7 @@ start() {
         -d '{
             "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
             "chainId": "31337",
+            "X-Rpch-Client": "trial",
             "hoprdApiEndpoints": [
                 "'$HOPRD_API_ENDPOINT_1'",
                 "'$HOPRD_API_ENDPOINT_2'",
@@ -138,11 +160,11 @@ start() {
                 "'$HOPRD_API_ENDPOINT_5'"
             ],
             "hoprdApiEndpointsExt": [
-                "'$HOPRD_API_ENDPOINT_1_EXT'",
-                "'$HOPRD_API_ENDPOINT_2_EXT'",
-                "'$HOPRD_API_ENDPOINT_3_EXT'",
-                "'$HOPRD_API_ENDPOINT_4_EXT'",
-                "'$HOPRD_API_ENDPOINT_5_EXT'"
+                "'$RESOLVED_HOPRD_API_ENDPOINT_1_EXT'",
+                "'$RESOLVED_HOPRD_API_ENDPOINT_2_EXT'",
+                "'$RESOLVED_HOPRD_API_ENDPOINT_3_EXT'",
+                "'$RESOLVED_HOPRD_API_ENDPOINT_4_EXT'",
+                "'$RESOLVED_HOPRD_API_ENDPOINT_5_EXT'"
             ],
             "hoprdApiTokens": [
                 "'$HOPRD_API_TOKEN'",
@@ -165,23 +187,13 @@ start() {
     echo "Adding quota to 'sandbox' in 'discovery-platform'"
     scurl -X POST "http://127.0.0.1:3030/add-quota" \
         -H "Content-Type: application/json" \
+        -H "x-rpch-client: sandbox" \
         -d '{
             "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
             "client": "sandbox",
             "quota": "500"
         }'
     echo "Added quota to client 'sandbox' in 'discovery-platform'"
-
-    # add quota to client 'trial'
-    echo "Adding quota to 'trial' in 'discovery-platform'"
-    curl -X POST "http://127.0.0.1:3030/add-quota" \
-        -H "Content-Type: application/json" \
-        -d '{
-            "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
-            "client": "trial",
-            "quota": "500"
-        }'
-    echo "Added quota to client 'trial' in 'discovery-platform'"
 
     echo "Sandbox has started!"
 }

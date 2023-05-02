@@ -42,7 +42,6 @@ export default class Message {
       MAX_BYTES - Segment.MAX_SIZE_WITHOUT_BODY
     );
     if (!bodies) return [];
-
     return bodies.map(
       (body, index) => new Segment(this.id, index, bodies.length, body)
     );

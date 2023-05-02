@@ -17,23 +17,13 @@ export const sendRpcRequest = async (
   provider: string
 ): Promise<string> => {
   log.normal("sending request to provider");
-  log.verbose(
-    "sending request to provider",
-    body,
-    provider,
-    log.createMetric({ provider: provider })
-  );
+  log.verbose("sending request to provider", body, provider);
   return fetch(provider, {
     method: "POST",
     body: body,
   }).then(async (res) => {
     const response = await res.text();
-    log.verbose(
-      "response from provider",
-      res.status,
-      response,
-      log.createMetric({ responseStatus: res.status })
-    );
+    log.verbose("response from provider", res.status, response);
     return response;
   });
 };

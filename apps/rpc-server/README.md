@@ -25,3 +25,14 @@ docker run \
 --network=host \
 rpc-server
 ```
+
+## Run natively
+
+
+In the main repo folder:
+```
+yarn 
+yarn build
+cd .\apps\rpc-server\
+yarn start
+```

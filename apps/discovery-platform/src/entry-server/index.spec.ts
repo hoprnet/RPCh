@@ -2,7 +2,6 @@ import { Express } from "express";
 import { entryServer } from ".";
 import { DBInstance } from "../db";
 import nock from "nock";
-import { MockPgInstanceSingleton } from "../db/index.spec";
 import { FundingServiceApi } from "../funding-service-api";
 import * as registeredNode from "../registered-node";
 import request from "supertest";
@@ -13,11 +12,16 @@ import {
   PostFundingResponse,
 } from "../types";
 import assert from "assert";
-import { createClient } from "../client";
+import { MetricManager } from "@rpch/common/build/internal/metric-manager";
+import * as Prometheus from "prom-client";
+import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";
+import path from "path";
+import * as PgMem from "pg-mem";
 
 const FUNDING_SERVICE_URL = "http://localhost:5000";
 const BASE_QUOTA = BigInt(1);
 const FAKE_ACCESS_TOKEN = "EcLjvxdALOT0eq18d8Gzz3DEr3AMG27NtL+++YPSZNE=";
+const SECRET = "SECRET";
 
 const nockFundingRequest = (nodeAddress: string) =>
   nock(FUNDING_SERVICE_URL).post(`/api/request/funds/${nodeAddress}`);
@@ -39,7 +43,11 @@ describe("test entry server", function () {
   let app: Express;
 
   beforeAll(async function () {
-    dbInstance = await MockPgInstanceSingleton.getDbInstance();
+    const migrationsDirectory = path.join(__dirname, "../../migrations");
+    dbInstance = await MockPgInstanceSingleton.getDbInstance(
+      PgMem,
+      migrationsDirectory
+    );
     MockPgInstanceSingleton.getInitialState();
   });
 
@@ -49,10 +57,14 @@ describe("test entry server", function () {
       FUNDING_SERVICE_URL,
       dbInstance
     );
+    const register = new Prometheus.Registry();
+    const metricManager = new MetricManager(Prometheus, register, "test");
     app = entryServer({
       db: dbInstance,
       baseQuota: BASE_QUOTA,
       fundingServiceApi,
+      metricManager: metricManager,
+      secret: SECRET,
     });
   });
 
@@ -65,6 +77,10 @@ describe("test entry server", function () {
     const amountLeft = BigInt(10).toString();
     const peerId = "entry";
     const requestId = 1;
+    const responseRequestTrialClient = await request(app).get(
+      "/api/v1/request/trial"
+    );
+    const trialClientId: string = responseRequestTrialClient.body.client;
 
     const getAccessTokenBody: GetAccessTokenResponse = {
       accessToken: FAKE_ACCESS_TOKEN,
@@ -76,17 +92,21 @@ describe("test entry server", function () {
     await request(app)
       .post("/api/v1/client/quota")
       .send({
-        client: "client",
+        client: trialClientId,
         quota: BigInt(1).toString(),
-      });
+      })
+      .set("x-secret-key", SECRET);
 
     await request(app)
       .post("/api/v1/node/register")
+      .set("X-Rpch-Client", trialClientId)
       .send(mockNode(peerId, true));
 
     const createdNode: {
       body: { node: RegisteredNodeDB | undefined };
-    } = await request(app).get(`/api/v1/node/${peerId}`);
+    } = await request(app)
+      .get(`/api/v1/node/${peerId}`)
+      .set("X-Rpch-Client", trialClientId);
 
     spy.mockImplementation(async () => {
       return createdNode.body.node;
@@ -104,7 +124,7 @@ describe("test entry server", function () {
 
     const requestResponse = await request(app)
       .post("/api/v1/request/entry-node")
-      .send({ client: "client" });
+      .set("X-Rpch-Client", trialClientId);
 
     if (!requestResponse.body || !createdNode.body.node)
       throw new Error("Could not create mock nodes");

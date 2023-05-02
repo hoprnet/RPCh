@@ -1,6 +1,6 @@
 {
   "name": "@rpch/ethers",
-  "version": "0.1.6",
+  "version": "0.2.1",
   "license": "LGPL-3.0",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
@@ -17,13 +17,14 @@
     "@rpch/configs-prettier": "*",
     "@rpch/configs-tsup": "*",
     "@rpch/configs-typescript": "*",
+    "@rpch/crypto-for-nodejs": "0.3.4",
     "nock": "^13.2.9"
   },
   "dependencies": {
     "@ethersproject/properties": "^5.7.0",
     "@ethersproject/providers": "^5.7.2",
-    "@rpch/common": "0.1.6",
-    "@rpch/sdk": "0.1.6"
+    "@rpch/common": "0.2.1",
+    "@rpch/sdk": "0.2.1"
   },
   "peerDependencies": {
     "ethers": "^5.7.2"

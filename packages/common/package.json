@@ -1,6 +1,6 @@
 {
   "name": "@rpch/common",
-  "version": "0.1.6",
+  "version": "0.2.1",
   "license": "LGPL-3.0",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
@@ -12,22 +12,36 @@
     "test": "jest --coverage"
   },
   "devDependencies": {
+    "@ethersproject/providers": "^5.7.2",
+    "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
+    "@nomiclabs/hardhat-ethers": "^2.2.2",
     "@rpch/configs-eslint": "*",
     "@rpch/configs-jest": "*",
     "@rpch/configs-prettier": "*",
     "@rpch/configs-tsup": "*",
     "@rpch/configs-typescript": "*",
+    "@rpch/crypto-for-nodejs": "0.3.4",
+    "@types/chai": "^4.3.4",
     "@types/debug": "^4.1.7",
+    "@types/lodash": "^4.14.194",
     "@types/ws": "^8.5.3",
+    "chai": "^4.3.7",
+    "hardhat": "^2.12.3",
+    "lodash": "^4.17.21",
     "nock": "^13.2.9",
-    "pg-mem": "^2.6.4"
+    "node-pg-migrate": "^6.2.2",
+    "pg-mem": "^2.6.4",
+    "pg-promise": "^11.0.0",
+    "prom-client": "^14.2.0"
   },
   "dependencies": {
-    "@rpch/crypto-bridge": "0.1.6",
-    "cross-fetch": "^3.1.5",
+    "cross-fetch": "3.2.0-alpha.2",
     "debug": "^4.3.4",
     "ethers": "^5.7.2",
     "isomorphic-ws": "^5.0.0",
+    "lz-string": "^1.5.0",
+    "msgpackr": "^1.8.5",
     "peer-id": "^0.16.0",
     "ws": "^8.11.0"
   }

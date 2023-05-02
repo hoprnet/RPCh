@@ -36,13 +36,27 @@ export const createRegisteredNode = async (
  * Get a specific registered node
  * @param dbInstance DBinstance
  * @param peerId id of the node
- * @returns RegisteredNodeDB | undefined
+ * @returns RegisteredNodeDB
  */
 export const getRegisteredNode = async (
   dbInstance: db.DBInstance,
   peerId: string
 ): Promise<RegisteredNodeDB> => {
   const node = await db.getRegisteredNode(dbInstance, peerId);
+  return node;
+};
+
+/**
+ * Delete a specific registered node
+ * @param dbInstance DBinstance
+ * @param peerId id of the node
+ * @returns RegisteredNodeDB
+ */
+export const deleteRegisteredNode = async (
+  dbInstance: db.DBInstance,
+  peerId: string
+): Promise<RegisteredNodeDB> => {
+  const node = await db.deleteRegisteredNode(dbInstance, peerId);
   return node;
 };
 
@@ -108,4 +122,33 @@ export const getRegisteredNodes = async (
   filters?: db.RegisteredNodeFilters
 ): Promise<RegisteredNodeDB[]> => {
   return await db.getRegisteredNodes(dbInstance, filters);
+};
+
+/**
+ * Checks the commitment status of fresh nodes and adds them to a queue for processing.
+ * @param dbInstance The database instance to use for the query.
+ * @param queue The queue to add the nodes to for processing.
+ * @returns A promise that resolves when the function completes.
+ */
+export const checkCommitmentForFreshNodes = async (
+  dbInstance: db.DBInstance,
+  queue: async.QueueObject<RegisteredNodeDB>,
+  cb: (node: RegisteredNodeDB, error: Error | null | undefined) => void
+): Promise<void> => {
+  try {
+    const freshNodes = await getRegisteredNodes(dbInstance, {
+      status: "FRESH",
+    });
+
+    // don't add items to queue if there are still items pending
+    if (queue.length()) return;
+
+    for (const node of freshNodes) {
+      queue.push(node, (err) => {
+        cb(node, err);
+      });
+    }
+  } catch (e) {
+    log.error("Failed to check commitment for fresh nodes", e);
+  }
 };

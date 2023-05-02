@@ -8,8 +8,6 @@ import {
   QuotaDB,
   RegisteredNodeDB,
 } from "../types";
-import migrate from "node-pg-migrate";
-import path from "path";
 
 export type DBInstance = pgp.IDatabase<{}>;
 
@@ -26,19 +24,6 @@ const TABLES = {
   FUNDING_REQUESTS: "funding_requests",
   QUOTAS: "quotas",
   CLIENTS: "clients",
-};
-
-export const runMigrations = async (dbUrl: string) => {
-  const migrationsDirectory = path.join(__dirname, "../../migrations");
-
-  await migrate({
-    schema: "public",
-    direction: "up",
-    count: Infinity,
-    databaseUrl: dbUrl,
-    migrationsTable: "migrations",
-    dir: migrationsDirectory,
-  });
 };
 
 /**
@@ -155,6 +140,18 @@ export const updateRegisteredNode = async (
   }
 };
 
+export const deleteRegisteredNode = async (
+  dbInstance: DBInstance,
+  peerId: string
+): Promise<RegisteredNodeDB> => {
+  const text = `DELETE FROM ${TABLES.REGISTERED_NODES} WHERE id=$<peerId> RETURNING *`;
+  const values = {
+    peerId,
+  };
+  const dbRes: RegisteredNodeDB = await dbInstance.one(text, values);
+
+  return dbRes;
+};
 /**
  * Quota DB functions
  */

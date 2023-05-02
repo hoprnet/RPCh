@@ -5,8 +5,12 @@ import { ethers } from "hardhat";
 import { checkFreshRequests } from ".";
 import { AccessTokenService } from "../access-token";
 import { DBInstance } from "../types";
-import { MockPgInstanceSingleton } from "../db/index.spec";
 import { RequestService } from "../request";
+import Prometheus from "prom-client";
+import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";
+import path from "path";
+import * as PgMem from "pg-mem";
+import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 
 const MOCK_ADDRESS = "0xA10AA7711FD1FA48ACAE6FF00FCB63B0F6AD055F";
 const MOCK_AMOUNT = "1000";
@@ -15,12 +19,14 @@ const MOCK_TIMEOUT = 3_000;
 
 const INITIAL_AMOUNT = ethers.utils.parseEther(MOCK_AMOUNT).toBigInt();
 
-jest.mock("../blockchain", () => {
+jest.mock("@rpch/common", () => {
   return {
-    ...jest.requireActual("../blockchain"),
-    sendTransaction: jest.fn(async () => ({ hash: MOCK_ADDRESS })),
-    waitForTransaction: jest.fn(async () => ({ status: 1 })),
-    getBalance: jest.fn(async () => INITIAL_AMOUNT),
+    ...jest.requireActual("@rpch/common"),
+    blockchain: {
+      sendTransaction: jest.fn(async () => ({ hash: MOCK_ADDRESS })),
+      waitForTransaction: jest.fn(async () => ({ status: 1 })),
+      getBalance: jest.fn(async () => INITIAL_AMOUNT),
+    },
   };
 });
 
@@ -57,11 +63,26 @@ describe("test index.ts", function () {
   let dbInstance: DBInstance;
   let requestService: RequestService;
   let accessTokenService: AccessTokenService;
+  const register = new Prometheus.Registry();
+  const metricManager = new MetricManager(Prometheus, register, "test");
+  const counterSuccessfulFundingNodes = metricManager.createCounter(
+    "counter_funded_nodes_successful",
+    "amount of times we have funded nodes successfully"
+  );
+  const counterFailedFundingNodes = metricManager.createCounter(
+    "counter_funded_nodes_failed",
+    "amount of times we have failed to fund nodes"
+  );
 
   beforeAll(async function () {
-    dbInstance = await MockPgInstanceSingleton.getDbInstance();
+    const migrationsDirectory = path.join(__dirname, "../../migrations");
+    dbInstance = await MockPgInstanceSingleton.getDbInstance(
+      PgMem,
+      migrationsDirectory
+    );
     MockPgInstanceSingleton.getInitialState();
   });
+
   beforeEach(async function () {
     MockPgInstanceSingleton.getInitialState().restore();
     accessTokenService = new AccessTokenService(dbInstance, "SECRET");
@@ -77,11 +98,14 @@ describe("test index.ts", function () {
       accessTokenService,
       requestService
     );
+
     await checkFreshRequests({
       requestService,
       signer: owner,
       confirmations: 0,
       changeState: () => {},
+      counterSuccessfulFundingNodes,
+      counterFailedFundingNodes,
     });
     const queryRequest = await requestService.getRequest(createRequest.id);
     assert.equal(queryRequest?.status, "SUCCESS");
@@ -100,11 +124,14 @@ describe("test index.ts", function () {
       amount: createRequest.amount,
       id: createRequest.id,
     });
+
     await checkFreshRequests({
       requestService,
       signer: owner,
       confirmations: 0,
       changeState: () => {},
+      counterSuccessfulFundingNodes,
+      counterFailedFundingNodes,
     });
     const queryRequest = await requestService.getRequest(createRequest.id);
     assert.equal(queryRequest?.status, "REJECTED-DURING-PROCESSING");
@@ -127,6 +154,8 @@ describe("test index.ts", function () {
       signer: owner,
       confirmations: 0,
       changeState: () => {},
+      counterSuccessfulFundingNodes,
+      counterFailedFundingNodes,
     });
 
     const queryRequest = await requestService.getRequest(createRequest.id);

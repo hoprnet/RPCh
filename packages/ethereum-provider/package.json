@@ -1,0 +1,29 @@
+{
+  "name": "@rpch/ethereum-provider",
+  "version": "0.2.1",
+  "license": "LGPL-3.0",
+  "main": "./build/index.js",
+  "types": "./build/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "dev": "yarn build --watch",
+    "format": "prettier --check \"src/**/*.{ts,md}\"",
+    "lint": "eslint \"src/**/*.ts*\"",
+    "test": "jest --coverage"
+  },
+  "devDependencies": {
+    "@rpch/configs-eslint": "*",
+    "@rpch/configs-jest": "*",
+    "@rpch/configs-prettier": "*",
+    "@rpch/configs-tsup": "*",
+    "@rpch/configs-typescript": "*",
+    "@rpch/crypto-for-nodejs": "0.3.4",
+    "nock": "^13.2.9"
+  },
+  "dependencies": {
+    "@rpch/common": "0.2.1",
+    "@rpch/sdk": "0.2.1",
+    "ethereum-provider": "^0.7.7",
+    "events": "^3.3.0"
+  }
+}
