@@ -17,13 +17,29 @@ import { req_80kb } from "../compression/compression-samples";
 describe("test utils / splitStrByBytes", function () {
   it("should return 1 string", function () {
     const str = "helloworld";
-    assert.equal(utils.toUtf8Bytes(str).byteLength, 10);
-    assert.equal(splitStrByBytes(str, 10).length, 1);
+
+    const res = splitStrByBytes(str, 10);
+    const expected = ["helloworld"];
+
+    assert(res.every((str, i) => expected[i] === str));
   });
   it("should return 3 strings", function () {
     const str = "helloworldhelloworldhelloworld";
+
     assert.equal(utils.toUtf8Bytes(str).byteLength, 30);
-    assert.equal(splitStrByBytes(str, 10).length, 3);
+
+    const res = splitStrByBytes(str, 10);
+    const expected = ["helloworld", "helloworld", "helloworld"];
+
+    assert(res.every((str, i) => expected[i] === str));
+  });
+  it("should respect Utf-8 character sizes", function () {
+    const str = "A𝑨B𝑩C𝑪";
+
+    const res = splitStrByBytes(str, 2);
+    const expected = ["A", "𝑨", "B", "𝑩", "C", "𝑪"];
+
+    assert(res.every((str, i) => expected[i] === str));
   });
 });
 
