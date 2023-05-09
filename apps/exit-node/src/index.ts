@@ -203,7 +203,9 @@ export const start = async (ops: {
       } catch (error) {
         log.normal(
           "Rejected received data from HOPRd: not a valid message",
-          message
+          message,
+          "with error:",
+          error
         );
       }
     }

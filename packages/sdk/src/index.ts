@@ -171,10 +171,12 @@ export default class SDK {
           try {
             const segment = Segment.fromString(message);
             this.segmentCache.onSegment(segment);
-          } catch (e) {
+          } catch (error) {
             log.verbose(
               "rejected received data from HOPRd: not a valid segment",
-              message
+              message,
+              "with error:",
+              error
             );
           }
         }
