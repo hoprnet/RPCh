@@ -59,16 +59,6 @@ services:
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_1}
-    entrypoint:
-      [
-        "/bin/wait-for-it.sh",
-        "http://${HOPRD_API_TOKEN}@pluto:13301/api/v2/account/addresses",
-        "-t",
-        "15",
-        "--",
-        "/usr/bin/tini",
-        "--",
-      ]
   exit-2:
     <<: *exit
     environment:
@@ -77,16 +67,6 @@ services:
       - OPT_IN_METRICS=${OPT_IN_METRICS}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_2}
-    entrypoint:
-      [
-        "/bin/wait-for-it.sh",
-        "http://${HOPRD_API_TOKEN}@pluto:13302/api/v2/account/addresses",
-        "-t",
-        "15",
-        "--",
-        "/usr/bin/tini",
-        "--",
-      ]
   exit-3:
     <<: *exit
     environment:
@@ -95,16 +75,6 @@ services:
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - OPT_IN_METRICS=${OPT_IN_METRICS}
       - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_3}
-    entrypoint:
-      [
-        "/bin/wait-for-it.sh",
-        "http://${HOPRD_API_TOKEN}@pluto:13303/api/v2/account/addresses",
-        "-t",
-        "15",
-        "--",
-        "/usr/bin/tini",
-        "--",
-      ]
   exit-4:
     <<: *exit
     environment:
@@ -113,16 +83,6 @@ services:
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - OPT_IN_METRICS=${OPT_IN_METRICS}
       - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_4}
-    entrypoint:
-      [
-        "/bin/wait-for-it.sh",
-        "http://${HOPRD_API_TOKEN}@pluto:13304/api/v2/account/addresses",
-        "-t",
-        "15",
-        "--",
-        "/usr/bin/tini",
-        "--",
-      ]
   exit-5:
     <<: *exit
     environment:
@@ -131,16 +91,6 @@ services:
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - OPT_IN_METRICS=${OPT_IN_METRICS}
       - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_5}
-    entrypoint:
-      [
-        "/bin/wait-for-it.sh",
-        "http://${HOPRD_API_TOKEN}@pluto:13305/api/v2/account/addresses",
-        "-t",
-        "15",
-        "--",
-        "/usr/bin/tini",
-        "--",
-      ]
 
 # since this file is run first,
 # we create the sandbox network

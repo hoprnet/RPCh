@@ -164,7 +164,7 @@ export default class SDK {
 
       // Refresh messageListener
       if (this.stopMessageListener) this.stopMessageListener();
-      this.stopMessageListener = await hoprd.createMessageListener(
+      const connection = await hoprd.createMessageListener(
         this.entryNode!.apiEndpoint,
         this.entryNode!.apiToken,
         (message) => {
@@ -179,6 +179,9 @@ export default class SDK {
           }
         }
       );
+      this.stopMessageListener = () => {
+        if (connection.close) connection.close();
+      };
       return this.entryNode;
     } catch (error) {
       throw error;

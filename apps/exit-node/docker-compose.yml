@@ -8,6 +8,12 @@ volumes:
 networks:
   hopr-net:
     driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.22.0.0/16
+          gateway: 172.22.0.1
+
 services:
   # hoprd_fluentbit:
   #   image: 'gcr.io/hoprassociation/hopr-fluentbit'
@@ -100,17 +106,6 @@ services:
       - RPCH_PRIVATE_KEY=${RPCH_PRIVATE_KEY}
       - RPCH_DATA_DIR=${RPCH_DATA_DIR}
       - OPT_IN_METRICS=${OPT_IN_METRICS}
-    entrypoint:
-      [
-        "/bin/wait-for-it.sh",
-        "http://${HOPRD_API_TOKEN}@hoprd:3001/api/v2/account/addresses",
-        "-t",
-        "300",
-        "--",
-        "/usr/bin/tini",
-        "--",
-      ]
-    command: "node apps/exit-node/build/index.js"
     networks:
       - hopr-net
     logging:

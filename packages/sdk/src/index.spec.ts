@@ -21,7 +21,9 @@ jest.mock("@rpch/common", () => ({
   hoprd: {
     ...jest.requireActual("@rpch/common").hoprd,
     createMessageListener: jest.fn(async () => {
-      return () => {};
+      return {
+        close: () => {},
+      };
     }),
   },
 }));

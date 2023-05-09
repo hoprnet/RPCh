@@ -1,7 +1,6 @@
 import type Segment from "../segment";
 import { utils } from "ethers";
 import LoggerFactory from "./logger";
-
 export { default as LoggerFactory } from "./logger";
 export const createLogger = LoggerFactory("common");
 
