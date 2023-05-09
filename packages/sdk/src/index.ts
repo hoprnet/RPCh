@@ -270,6 +270,7 @@ export default class SDK {
         responseTime
       );
 
+      this.requestCache.removeRequest(match.request);
       match.resolve(response);
 
       this.reliabilityScore.addMetric(
@@ -277,8 +278,6 @@ export default class SDK {
         match.request.id,
         "success"
       );
-
-      this.requestCache.removeRequest(match.request);
 
       log.verbose("responded to %s with %s", match.request.body, response.body);
     } catch (e) {

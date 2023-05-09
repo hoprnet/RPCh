@@ -94,6 +94,13 @@ export class RPCServer {
           verboseLogs.push(
             `3/3: received response "${rpcResponse.id}" with body "${rpcResponseBody}" for request: "${rpcRequest.id}"`
           );
+          // response has already ended
+          if (!response.writable) {
+            log.verbose(
+              "Cannot respond while the response obj has already ended"
+            );
+            return;
+          }
           response.write(rpcResponse.body);
           response.statusCode = 200;
           response.end();
@@ -105,6 +112,13 @@ export class RPCServer {
             verboseLogs.join(" -> "),
           ].join(" ");
           log.error(errorMsg);
+          // response has already ended
+          if (!response.writable) {
+            log.verbose(
+              "Cannot respond while the response obj has already ended"
+            );
+            return;
+          }
           response.write(
             JSON.stringify({
               jsonrpc: "2.0",
