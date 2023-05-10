@@ -1,7 +1,7 @@
 import type { Server } from "http";
 import levelup, { type LevelUp } from "levelup";
 import leveldown from "leveldown";
-import RPChSDK from "@rpch/sdk";
+import RPChSDK, { type EntryNode, type ExitNode } from "@rpch/sdk";
 import * as RPChCrypto from "@rpch/crypto-for-nodejs";
 import * as server from "./server";
 import { createLogger } from "./utils";
@@ -11,9 +11,35 @@ import {
   DATA_DIR,
   DISCOVERY_PLATFORM_API_ENDPOINT,
   PORT,
+  FORCE_ENTRY_NODE_API_ENDPOINT,
+  FORCE_ENTRY_NODE_API_TOKEN,
+  FORCE_ENTRY_NODE_PEERID,
+  FORCE_EXIT_NODE_PEERID,
+  FORCE_EXIT_NODE_PUBKEY,
 } from "./constants";
 
 const log = createLogger();
+
+// if all needed options have been passed, declare forceEntryNode
+const forceEntryNode: EntryNode | undefined =
+  FORCE_ENTRY_NODE_API_ENDPOINT &&
+  FORCE_ENTRY_NODE_API_TOKEN &&
+  FORCE_ENTRY_NODE_PEERID
+    ? {
+        apiEndpoint: FORCE_ENTRY_NODE_API_ENDPOINT,
+        apiToken: FORCE_ENTRY_NODE_API_TOKEN,
+        peerId: FORCE_ENTRY_NODE_PEERID,
+      }
+    : undefined;
+
+// if all needed options have been passed, declare forceExitNode
+const forceExitNode: ExitNode | undefined =
+  FORCE_EXIT_NODE_PEERID && FORCE_EXIT_NODE_PUBKEY
+    ? {
+        peerId: FORCE_EXIT_NODE_PEERID,
+        pubKey: FORCE_EXIT_NODE_PUBKEY,
+      }
+    : undefined;
 
 /**
  * A class that represents an RPC server.
@@ -58,6 +84,8 @@ export class RPCServer {
         client: this.client,
         timeout: this.timeout,
         discoveryPlatformApiEndpoint: this.discoveryPlatformApiEndpoint,
+        forceEntryNode,
+        forceExitNode,
       },
       async (clientId, counter) => {
         await this.db.put(clientId, counter);

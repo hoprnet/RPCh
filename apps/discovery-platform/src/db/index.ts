@@ -63,7 +63,7 @@ export const getRegisteredNodes = async (
   log.verbose(
     "Registered nodes with filters query DB response",
     filters,
-    dbRes
+    dbRes.length
   );
 
   return dbRes;

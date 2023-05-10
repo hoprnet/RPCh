@@ -20,13 +20,16 @@ docker run \
 -e FUNDING_SERVICE_URL="<YOUR FUNDING SERVICE URL>" \
 -e HOPRD_ACCESS_TOKEN="<YOUR HOPRD ACCESS TOKEN>" \
 -e DB_CONNECTION_URL="<YOUR DB CONNECTION URL>" \
--e DEBUG="rpch*,-*verbose,-*metrics" \
+-e DEBUG="rpch*,-*verbose" \
 discovery-platform
 ```
 
 ## How to create new migrations
+
 You can create new a new migration with `yarn migrate create [name-of-migration]`, after creating this migration you can test it
 inside `db` tests or running docker image. For more info on what you can run with `yarn migrate` check [docs](https://salsita.github.io/node-pg-migrate/#/cli)
+
 ### How migrations are running right now
-Migrations are being ran programmatically in `runMigrations`, this function runs all migrations inside the folder `migrations` 
+
+Migrations are being ran programmatically in `runMigrations`, this function runs all migrations inside the folder `migrations`
 and stores passed migrations in a `migrations` table.
