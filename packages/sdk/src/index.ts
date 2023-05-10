@@ -189,9 +189,7 @@ export default class SDK {
           } catch (error) {
             log.verbose(
               "rejected received data from HOPRd: not a valid segment",
-              message,
-              "with error:",
-              error
+              message
             );
           }
         }
