@@ -115,7 +115,6 @@ const main = () => {
   if (!constants.DB_CONNECTION_URL) {
     throw new Error('Missing "DB_CONNECTION_URL" env variable');
   }
-
   if (!constants.SECRET) {
     throw new Error('Missing "SECRET" env variable');
   }
