@@ -5,7 +5,7 @@ import * as fixtures from "@rpch/common/build/fixtures";
 import { req_80kb } from "@rpch/common/build/compression/compression-samples";
 import assert from "assert";
 import nock from "nock";
-import SDK, { type HoprSdkOps } from "./index";
+import SDK, { type HoprSdkOps, type EntryNode, type ExitNode } from "./index";
 
 const TIMEOUT = 5e3;
 const DISCOVERY_PLATFORM_API_ENDPOINT = "http://discovery_platform";
@@ -56,6 +56,8 @@ const createSdkMock = (
       overwriteOps?.discoveryPlatformApiEndpoint ??
       DISCOVERY_PLATFORM_API_ENDPOINT,
     reliabilityScoreFreshNodeThreshold: 1,
+    forceEntryNode: overwriteOps?.forceEntryNode,
+    forceExitNode: overwriteOps?.forceExitNode,
   };
 
   const sdk = new SDK(ops, store.set, store.get);
@@ -623,6 +625,57 @@ describe("test SDK class", function () {
           clientRequestA.id
         );
       });
+    });
+
+    it("should use forced nodes", async function () {});
+  });
+
+  describe("started with forced nodes", function () {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    let sdk: SDK;
+
+    const mockedEntryNode: EntryNode = {
+      apiEndpoint: ENTRY_NODE_API_ENDPOINT,
+      apiToken: ENTRY_NODE_API_TOKEN,
+      peerId: ENTRY_NODE_PEER_ID,
+    };
+
+    const mockedExitNode: ExitNode = {
+      peerId: EXIT_NODE_PEER_ID,
+      pubKey: EXIT_NODE_PUB_KEY,
+    };
+
+    async function initMockedSdk(overwriteOps?: Partial<HoprSdkOps>) {
+      sdk = createSdkMock(overwriteOps).sdk;
+      await sdk.start();
+    }
+
+    afterEach(async function () {
+      if (sdk) await sdk.stop();
+      nock.cleanAll();
+      jest.clearAllMocks();
+    });
+
+    it("should create request", async function () {
+      await initMockedSdk({
+        forceEntryNode: mockedEntryNode,
+        forceExitNode: mockedExitNode,
+      });
+
+      assert.deepEqual(
+        // @ts-ignore
+        sdk.entryNode,
+        mockedEntryNode,
+        "forced entry node is not correct"
+      );
+      // @ts-ignore
+      assert.equal(sdk.exitNodes.length, 1, "forced entry node is not correct");
+      assert.deepEqual(
+        // @ts-ignore
+        sdk.exitNodes[0],
+        mockedExitNode,
+        "forced entry node is not correct"
+      );
     });
   });
 });
