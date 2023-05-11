@@ -21,6 +21,7 @@ const log = createLogger();
 const MAXIMUM_SEGMENTS_PER_REQUEST = 100;
 const DEADLOCK_MS = 1e3 * 60 * 0.5; // 30s
 const MINIMUM_SCORE_FOR_RELIABLE_NODE = 0.7;
+
 /**
  * HOPR SDK options.
  */
@@ -31,6 +32,8 @@ export type HoprSdkOps = {
   discoveryPlatformApiEndpoint: string;
   reliabilityScoreFreshNodeThreshold?: number;
   reliabilityScoreMaxResponses?: number;
+  forceEntryNode?: EntryNode;
+  forceExitNode?: ExitNode;
 };
 
 /**
@@ -117,50 +120,62 @@ export default class SDK {
     try {
       this.selectingEntryNode = true;
       log.verbose("Selecting entry node");
-      const rawResponse: globalThis.Response = await fetch(
-        new URL(
-          "/api/v1/request/entry-node",
-          discoveryPlatformApiEndpoint
-        ).toString(),
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept-Content": "application/json",
-            "x-rpch-client": this.ops.client,
-          },
-          body: JSON.stringify({
-            exclusionList,
-            client: this.ops.client,
-          }),
-        }
-      );
 
-      // Check for error response
-      if (rawResponse.status !== 200) {
-        log.error(
-          "Failed to request entry node",
-          rawResponse.status,
-          await rawResponse.text()
+      // use forced entry node
+      if (this.ops.forceEntryNode) {
+        this.entryNode = this.ops.forceEntryNode;
+      }
+      // ask discovery platform
+      else {
+        const rawResponse: globalThis.Response = await fetch(
+          new URL(
+            "/api/v1/request/entry-node",
+            discoveryPlatformApiEndpoint
+          ).toString(),
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Accept-Content": "application/json",
+              "x-rpch-client": this.ops.client,
+            },
+            body: JSON.stringify({
+              exclusionList,
+              client: this.ops.client,
+            }),
+          }
         );
-        throw new Error(`Failed to request entry node`);
+
+        // Check for error response
+        if (rawResponse.status !== 200) {
+          log.error(
+            "Failed to request entry node",
+            rawResponse.status,
+            await rawResponse.text()
+          );
+          throw new Error(`Failed to request entry node`);
+        }
+
+        const response: {
+          hoprd_api_endpoint: string;
+          accessToken: string;
+          id: string;
+        } = await rawResponse.json();
+
+        const apiEndpointUrl = new URL(response.hoprd_api_endpoint);
+
+        this.entryNode = {
+          apiEndpoint: apiEndpointUrl.toString(),
+          apiToken: response.accessToken,
+          peerId: response.id,
+        };
       }
 
-      const response: {
-        hoprd_api_endpoint: string;
-        accessToken: string;
-        id: string;
-      } = await rawResponse.json();
-
-      const apiEndpointUrl = new URL(response.hoprd_api_endpoint);
-
-      this.entryNode = {
-        apiEndpoint: apiEndpointUrl.toString(),
-        apiToken: response.accessToken,
-        peerId: response.id,
-      };
-
-      log.verbose("Selected entry node", this.entryNode);
+      log.verbose(
+        "Selected entry node",
+        this.entryNode,
+        `forced=${!!this.ops.forceEntryNode}`
+      );
 
       // Refresh messageListener
       if (this.stopMessageListener) this.stopMessageListener();
@@ -174,9 +189,7 @@ export default class SDK {
           } catch (error) {
             log.verbose(
               "rejected received data from HOPRd: not a valid segment",
-              message,
-              "with error:",
-              error
+              message
             );
           }
         }
@@ -202,37 +215,46 @@ export default class SDK {
   ): Promise<ExitNode[]> {
     log.verbose("Fetching exit nodes");
 
-    const rawResponse = await fetch(
-      new URL(
-        "/api/v1/node?hasExitNode=true",
-        discoveryPlatformApiEndpoint
-      ).toString(),
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "Accept-Content": "application/json",
-          "x-rpch-client": this.ops.client,
-        },
+    if (this.ops.forceExitNode) {
+      log.verbose("Forcing to use exit node", this.ops.forceExitNode);
+      this.exitNodes = [this.ops.forceExitNode];
+    } else {
+      const rawResponse = await fetch(
+        new URL(
+          "/api/v1/node?hasExitNode=true",
+          discoveryPlatformApiEndpoint
+        ).toString(),
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "Accept-Content": "application/json",
+            "x-rpch-client": this.ops.client,
+          },
+        }
+      );
+
+      if (rawResponse.status !== 200) {
+        throw new Error("Failed to fetch exit nodes");
       }
-    );
 
-    if (rawResponse.status !== 200) {
-      throw new Error("Failed to fetch exit nodes");
+      const response: {
+        exit_node_pub_key: string;
+        id: string;
+      }[] = await rawResponse.json();
+
+      this.exitNodes = response.map((item) => ({
+        peerId: item.id,
+        pubKey: item.exit_node_pub_key,
+      }));
     }
-
-    const response: {
-      exit_node_pub_key: string;
-      id: string;
-    }[] = await rawResponse.json();
-
-    this.exitNodes = response.map((item) => ({
-      peerId: item.id,
-      pubKey: item.exit_node_pub_key,
-    }));
 
     if (this.exitNodes.length === 0) throw Error("No exit nodes available");
 
-    log.verbose("Fetched exit nodes", this.exitNodes.length);
+    log.verbose(
+      "Fetched exit nodes",
+      this.exitNodes.length,
+      `forced=${!!this.ops.forceExitNode}`
+    );
     return this.exitNodes;
   }
 

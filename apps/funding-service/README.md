@@ -28,13 +28,16 @@ docker run \
 -e MAX_AMOUNT_OF_TOKENS=100 \
 -e TIMEOUT=3 \
 -e DB_CONNECTION_URL="postgresql://<user>:<password>@<host>:5432/<db-name>" \
--e DEBUG="rpch*,-*verbose,-*metrics" \
+-e DEBUG="rpch*,-*verbose" \
 funding-service
 ```
 
 ## How to create new migrations
+
 You can create new a new migration with `yarn migrate create [name-of-migration]`, after creating this migration you can test it
 inside `db` tests or running docker image. For more info on what you can run with `yarn migrate` check [docs](https://salsita.github.io/node-pg-migrate/#/cli)
+
 ### How migrations are running right now
-Migrations are being ran programmatically in `runMigrations`, this function runs all migrations inside the folder `migrations` 
+
+Migrations are being ran programmatically in `runMigrations`, this function runs all migrations inside the folder `migrations`
 and stores passed migrations in a `migrations` table.

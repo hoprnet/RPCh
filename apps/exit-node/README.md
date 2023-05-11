@@ -19,7 +19,7 @@ After building the image, you will be able to run it with: \
 docker run \
 -e HOPRD_API_ENDPOINT="<YOUR HOPRD API ENDPOINT>" \
 -e HOPRD_API_TOKEN="<YOUR HOPRD API TOKEN>" \
--e DEBUG="rpch*,-*verbose,-*metrics" \
+-e DEBUG="rpch*,-*verbose" \
 -e RPCH_PASSWORD="PleaseChangeMe" \
 -e RPCH_IDENTITY_FILE= \
 -e RPCH_PRIVATE_KEY= \
@@ -37,9 +37,9 @@ docker compose up
 
 When wanting to stop the exit-node and hoprd node, you can:
 
-For linux or windows: ```CTRL + C```
+For linux or windows: `CTRL + C`
 
-For OSX: ```CMD + C```
+For OSX: `CMD + C`
 
 or if you are running the docker as a daemon, execute the following command in the exit-node directory:
 

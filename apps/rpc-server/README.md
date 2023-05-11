@@ -17,7 +17,7 @@ After building the image, you will be able to run it with: \
 
 ```sh
 docker run \
--e DEBUG="rpch*,-*verbose,-*metrics" \
+-e DEBUG="rpch*,-*verbose" \
 -e RESPONSE_TIMEOUT=10000 \
 -e DISCOVERY_PLATFORM_API_ENDPOINT=http://localhost:3020 \
 -e PORT=8080 \
@@ -28,10 +28,10 @@ rpc-server
 
 ## Run natively
 
-
 In the main repo folder:
+
 ```
-yarn 
+yarn
 yarn build
 cd .\apps\rpc-server\
 yarn start
