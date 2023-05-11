@@ -674,7 +674,7 @@ describe("test SDK class", function () {
         // @ts-ignore
         sdk.exitNodes[0],
         mockedExitNode,
-        "forced entry node is not correct"
+        "forced exit node is not correct"
       );
     });
   });
