@@ -669,7 +669,7 @@ describe("test SDK class", function () {
         "forced entry node is not correct"
       );
       // @ts-ignore
-      assert.equal(sdk.exitNodes.length, 1, "forced entry node is not correct");
+      assert.equal(sdk.exitNodes.length, 1, "forced exit nodes length is not correct");
       assert.deepEqual(
         // @ts-ignore
         sdk.exitNodes[0],
