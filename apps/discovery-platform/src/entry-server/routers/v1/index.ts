@@ -30,7 +30,7 @@ import * as constants from "../../../constants";
 import { getNodeSchema, registerNodeSchema } from "./schema";
 import {
   clientExists,
-  doesClientHaveQuota,
+  // doesClientHaveQuota,
   getCache,
   metricMiddleware,
   setCache,
@@ -378,13 +378,13 @@ export const v1Router = (ops: {
           ? constants.TRIAL_CLIENT_ID
           : dbClient?.id;
 
+        // CAUSING OUTAGE
         // // check if client has enough quota
         // const doesClientHaveQuotaResponse = await doesClientHaveQuota(
         //   ops.db,
         //   paidById,
         //   ops.baseQuota
         // );
-
         // if (!doesClientHaveQuotaResponse) {
         //   return res.status(403).json({
         //     body: "Client does not have enough quota",
