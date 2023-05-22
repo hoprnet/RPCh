@@ -39,7 +39,7 @@ services:
   #   environment:
   #     - DEBUG=${DEBUG}
   #     - PORT=3010
-  #     - SECRET_KEY=${SECRET_KEY}
+  #     - SECRET_KEY=${FS_SECRET}
   #     - WALLET_PRIV_KEY=${FUNDING_SERVICE_PRIVATE_KEY}
   #     - DB_CONNECTION_URL=postgresql://postgres:postgres@postgres-db:5432
   #     - FORCE_CHAIN_ID=31337
@@ -60,7 +60,6 @@ services:
     environment:
       - DEBUG=${DEBUG}
       - PORT=3020
-      - SECRET_KEY=${SECRET_KEY}
       - DB_CONNECTION_URL=postgresql://postgres:postgres@postgres-db:5432
       - FUNDING_SERVICE_URL=http://funding-service:3010
       - SKIP_CHECK_COMMITMENT=${SKIP_CHECK_COMMITMENT}

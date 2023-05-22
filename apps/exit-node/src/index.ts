@@ -201,8 +201,8 @@ export const start = async (ops: {
         const segment = Segment.fromString(message);
         cache.onSegment(segment);
       } catch (error) {
-        log.normal(
-          "Rejected received data from HOPRd: not a valid message",
+        log.verbose(
+          "rejected received data from HOPRd: not a valid segment",
           message
         );
       }

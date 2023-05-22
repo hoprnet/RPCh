@@ -3,12 +3,23 @@
   "version": "0.0.0",
   "private": true,
   "license": "LGPL-3.0",
-  "main": "index.js",
-  "type": "module",
   "scripts": {
-    "test:artificial": "k6 run src/rpc-server/artificial.js --out json=results/results-artificial.json",
-    "test:blockwallet": "k6 run src/rpc-server/usage-blockwallet.js --out json=results/results-usage-blockwallet.json",
-    "test:trustwallet": "k6 run src/rpc-server/usage-trustwallet.js --out json=results/results-usage-trustwallet.json",
-    "test:dp": "k6 run src/discovery-platform/index.js --out json=results/results-discovery-platform.json"
+    "build": "exit 0",
+    "dev": "exit 0",
+    "format": "prettier --check \"src/**/*.{js,md}\"",
+    "lint": "eslint \"src/**/*.js*\"",
+    "test": "exit 0",
+    "start:artificial": "k6 run src/rpc-server/artificial.js --out json=results/results-artificial.json",
+    "start:blockwallet": "k6 run src/rpc-server/usage-blockwallet.js --out json=results/results-usage-blockwallet.json",
+    "start:trustwallet": "k6 run src/rpc-server/usage-trustwallet.js --out json=results/results-usage-trustwallet.json",
+    "start:burst": "k6 run src/rpc-server/burst.js --out json=results/results-burst.json",
+    "start:constant": "k6 run src/rpc-server/constant.js --out json=results/results-constant.json",
+    "start:long": "k6 run src/rpc-server/long.js --out json=results/results-long.json",
+    "start:discovery-platform": "k6 run src/discovery-platform/artificial.js --out json=results/results-discovery-platform.json"
+  },
+  "devDependencies": {
+    "@rpch/configs-eslint": "*",
+    "@rpch/ethers": "0.2.1",
+    "@rpch/crypto-for-nodejs": "0.3.4"
   }
 }

@@ -1,9 +1,7 @@
 import http from "k6/http";
-import { check, sleep } from "k6";
+import { check } from "k6";
 import parseHarReq from "../../functions/parseHarReq.js";
-
-import { eth_getCode } from '../../rpc-calls/eth_getCode.js'
-import { eth_call } from '../../rpc-calls/eth_call.js'
+import { eth_getCode } from "../../rpc-calls/eth_getCode.js";
 
 // Test configuration
 export const options = {
@@ -19,27 +17,20 @@ export const options = {
   ],
 };
 
-const URL = "http://localhost:3040/?exit-provider=https://primary.gnosis-chain.rpc.hoprtech.net";
-
 const eth_getCode_parsed = parseHarReq(eth_getCode);
-const eth_call_parsed = parseHarReq(eth_call);
 
 // Simulated user behavior
 export default function () {
+  const URL =
+    __ENV.RPC_SERVER_URL ||
+    "http://localhost:8080/?exit-provider=https://primary.gnosis-chain.rpc.hoprtech.net";
+
   let res = http.post(URL, eth_getCode_parsed.body, eth_getCode_parsed.params);
 
   // Validate response status
-  check(res, { 
+  check(res, {
     "status was 200": (r) => r.status == 200,
-    'verify resp': (r) => r.body.includes('jsonrpc'),
+    "verify resp": (r) =>
+      r.body.includes("jsonrpc") && !r.body.includes("error"),
   });
-  // sleep(1);
-
-  // let res2 = http.post(URL, eth_call_parsed.body, eth_call_parsed.params);
-
-  // Validate response status
-  // check(res2, { 
-  //   "status was 200": (r) => r.status == 200,
-  //   'verify resp': (r) => r.body.includes('jsonrpc'),
-  // });
 }

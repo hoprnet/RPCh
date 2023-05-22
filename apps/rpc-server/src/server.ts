@@ -52,6 +52,12 @@ export const createServer = (
       log.verbose("request received", body, exitProvider);
       onRequest(body, res, exitProvider);
     });
+    req.on("error", (error) => {
+      log.error("Unexpected error occured on http.Request", error);
+    });
+    res.on("error", (error) => {
+      log.error("Unexpected error occured on http.Response", error);
+    });
   });
 
   server.listen(port, host, undefined, () => {

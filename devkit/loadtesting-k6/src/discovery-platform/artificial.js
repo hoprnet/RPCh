@@ -1,5 +1,5 @@
 import http from "k6/http";
-import { check, sleep } from "k6";
+import { check } from "k6";
 
 // Test configuration
 export const options = {
@@ -20,14 +20,14 @@ const URL = "http://localhost:3020/";
 
 // Simulated user behavior
 export default function () {
-    let res = http.get(URL+'api/v1/node');
-    check(res, { 
-      "status was 200": (r) => r.status == 200 || r.status == 304,
-      'verify resp': (r) => r.body.includes('hoprd_api_token'),
-    });
-    let res2 = http.get(URL+'api/v1/node?hasExitNode=true');
-    check(res2, { 
-      "status was 200": (r) => r.status == 200 || r.status == 304,
-      'verify resp': (r) => r.body.includes('hoprd_api_token'),
-    });
+  let res = http.get(URL + "api/v1/node");
+  check(res, {
+    "status was 200": (r) => r.status == 200 || r.status == 304,
+    "verify resp": (r) => r.body.includes("hoprd_api_token"),
+  });
+  let res2 = http.get(URL + "api/v1/node?hasExitNode=true");
+  check(res2, {
+    "status was 200": (r) => r.status == 200 || r.status == 304,
+    "verify resp": (r) => r.body.includes("hoprd_api_token"),
+  });
 }
