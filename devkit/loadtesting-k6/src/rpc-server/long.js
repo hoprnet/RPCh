@@ -35,6 +35,7 @@ export default function () {
   // Validate response status
   check(res, {
     "status was 200": (r) => r.status == 200,
-    "verify resp": (r) => r.body.includes("jsonrpc"),
+    "verify resp": (r) =>
+      r.body.includes("jsonrpc") && !r.body.includes("error"),
   });
 }
