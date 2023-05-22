@@ -14,6 +14,9 @@ Install k6 on test machine: https://k6.io/docs/get-started/installation/
    - `yarn start:artificial` (Artificial usage with `eth_getCode` and `eth_call`)
    - `yarn start:blockwallet` (Real usage of blockwallet)
    - `yarn start:trustwallet` (Real usage of trustwallet)
+   - `yarn start:burst` (Run various burst tests)
+   - `yarn start:constant` (Run various load tests for 10 seconds each)
+   - `yarn start:long` (Run long lived load tests for 1 minute each)
 
 ## How to test Discovery Platform
 
