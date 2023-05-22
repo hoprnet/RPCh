@@ -28,7 +28,8 @@ export default function () {
     let res = http.post(URL, parsedRequest.body, parsedRequest.params);
     check(res, {
       "status was 200": (r) => r.status == 200,
-      "verify resp": (r) => r.body.includes("jsonrpc"),
+      "verify resp": (r) =>
+        r.body.includes("jsonrpc") && !r.body.includes("error"),
     });
     sleep(parsedRequest.waitTillNextCall);
   }

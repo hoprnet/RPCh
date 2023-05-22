@@ -12,6 +12,9 @@
     "start:artificial": "k6 run src/rpc-server/artificial.js --out json=results/results-artificial.json",
     "start:blockwallet": "k6 run src/rpc-server/usage-blockwallet.js --out json=results/results-usage-blockwallet.json",
     "start:trustwallet": "k6 run src/rpc-server/usage-trustwallet.js --out json=results/results-usage-trustwallet.json",
+    "start:burst": "k6 run src/rpc-server/burst.js --out json=results/results-burst.json",
+    "start:constant": "k6 run src/rpc-server/constant.js --out json=results/results-constant.json",
+    "start:long": "k6 run src/rpc-server/long.js --out json=results/results-long.json",
     "start:discovery-platform": "k6 run src/discovery-platform/artificial.js --out json=results/results-discovery-platform.json"
   },
   "devDependencies": {
