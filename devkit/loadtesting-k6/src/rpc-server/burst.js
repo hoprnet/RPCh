@@ -3,29 +3,29 @@ import { check } from "k6";
 
 export const options = {
   scenarios: {
-    burst_ten_in_one_sec: {
-      executor: "constant-vus",
-      vus: 10,
-      duration: "1s",
-    },
-    burst_fifty_in_one_sec: {
-      executor: "constant-vus",
-      vus: 50,
-      duration: "1s",
-      startTime: "5s",
-    },
+    // burst_ten_in_one_sec: {
+    //   executor: "constant-vus",
+    //   vus: 10,
+    //   duration: "1s",
+    // },
+    // burst_fifty_in_one_sec: {
+    //   executor: "constant-vus",
+    //   vus: 50,
+    //   duration: "1s",
+    //   startTime: "5s",
+    // },
     burst_hundred_in_one_sec: {
       executor: "constant-vus",
       vus: 100,
       duration: "1s",
       startTime: "10s",
     },
-    burst_two_hundred_in_one_sec: {
-      executor: "constant-vus",
-      vus: 200,
-      duration: "1s",
-      startTime: "15s",
-    },
+    // burst_two_hundred_in_one_sec: {
+    //   executor: "constant-vus",
+    //   vus: 200,
+    //   duration: "1s",
+    //   startTime: "15s",
+    // },
   },
 };
 

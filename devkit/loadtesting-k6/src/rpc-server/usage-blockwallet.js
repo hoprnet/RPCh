@@ -18,11 +18,12 @@ export const options = {
   stages: [{ duration: "10m", target: 1000 }],
 };
 
-const URL =
-  "http://localhost:3040/?exit-provider=https://primary.gnosis-chain.rpc.hoprtech.net";
-
 // Simulated user behavior
 export default function () {
+  const URL =
+    __ENV.RPC_SERVER_URL ||
+    "http://localhost:8080/?exit-provider=https://primary.gnosis-chain.rpc.hoprtech.net";
+
   for (let i = 0; i < parsed.length; i++) {
     const parsedRequest = parsed[i];
     let res = http.post(URL, parsedRequest.body, parsedRequest.params);
