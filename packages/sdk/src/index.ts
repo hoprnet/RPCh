@@ -266,7 +266,7 @@ export default class SDK {
     // check whether we have a matching request id
     const match = this.requestCache.getRequest(message.id);
     if (!match) {
-      log.error("matching request not found", message.id);
+      log.verbose("matching request not found", message.id);
       return;
     }
 
