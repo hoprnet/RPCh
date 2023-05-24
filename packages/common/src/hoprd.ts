@@ -110,10 +110,10 @@ export const createMessageListener = async (
     apiToken
   );
   let ws = new WebSocketHelper(url, onMessage, {
-    maxTimeWithoutPing: 60e3,
-    attemptToReconnect: true,
-    reconnectDelay: 100,
-    maxReconnectAttempts: 3,
+    maxTimeWithoutPing: options?.maxTimeWithoutPing ?? 60e3,
+    attemptToReconnect: options?.attemptToReconnect ?? true,
+    reconnectDelay: options?.reconnectDelay ?? 100,
+    maxReconnectAttempts: options?.maxReconnectAttempts ?? 3,
   });
   await ws.waitUntilSocketOpen();
 
