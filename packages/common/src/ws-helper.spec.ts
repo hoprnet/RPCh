@@ -35,72 +35,80 @@ describe("test ws class", function () {
       });
     });
 
-    connection = new WebSocketHelper(url, onMessageSpy, 5000, 600e3);
+    connection = new WebSocketHelper(url, onMessageSpy);
     connection.setUpEventHandlers();
     connection.waitUntilSocketOpen().then((conn) => {
       conn.send("i am connected");
     });
   });
   it("connection is lost and re established", (done) => {
-    const retryTimeout = 10;
-    const waitUntilSocketOpenSpy = jest.spyOn(
+    const reconnectDelay = 10;
+    const setUpEventHandlersSpy = jest.spyOn(
       WebSocketHelper.prototype,
-      "waitUntilSocketOpen"
+      "setUpEventHandlers"
     );
     let helper: WebSocketHelper;
 
-    helper = new WebSocketHelper(url, () => {}, retryTimeout, 60e3);
+    helper = new WebSocketHelper(url, () => {}, { reconnectDelay });
     helper.setUpEventHandlers();
+    // @ts-ignore
     helper.socket.on("error", () => {
       // should have been called twice
-      expect(waitUntilSocketOpenSpy.mock.calls.length).toEqual(2);
+      expect(setUpEventHandlersSpy.mock.calls.length).toEqual(2);
       helper.close();
       done();
     });
     helper.waitUntilSocketOpen().then(() => {
-      helper.socket.emit("error", "error");
+      // @ts-ignore
+      helper.socket.emit("error", "error from tests");
     });
   });
   it("on error is emitted when ping is not received", (done) => {
-    const retryTimeout = 100000;
-    const heartbeatTimeout = 1000;
-    const waitUntilSocketOpenSpy = jest.spyOn(
+    const reconnectDelay = 100000;
+    const maxTimeWithoutPing = 1000;
+    const setUpEventHandlersSpy = jest.spyOn(
       WebSocketHelper.prototype,
-      "waitUntilSocketOpen"
+      "setUpEventHandlers"
     );
     let helper: WebSocketHelper;
 
-    helper = new WebSocketHelper(url, () => {}, retryTimeout, heartbeatTimeout);
+    helper = new WebSocketHelper(url, () => {}, {
+      reconnectDelay,
+      maxTimeWithoutPing,
+    });
     helper.setUpEventHandlers();
-    helper.waitUntilSocketOpen();
+    // @ts-ignore
     helper.socket.on("error", () => {
       // should have been called twice because ping was not received
-      expect(waitUntilSocketOpenSpy.mock.calls.length).toBeGreaterThan(1);
+      expect(setUpEventHandlersSpy.mock.calls.length).toBeGreaterThan(1);
       helper.close();
       done();
     });
   });
   it("on error is not emitted when ping is received", (done) => {
-    const heartbeatTimeout = 100;
+    const maxTimeWithoutPing = 100;
 
     server.on("connection", (ws) => {
       const pingInterval = setInterval(() => {
         ws.ping();
-      }, heartbeatTimeout / 4);
+      }, maxTimeWithoutPing / 4);
 
       ws.on("close", () => {
         clearInterval(pingInterval);
       });
     });
 
-    const retryTimeout = 100000;
+    const reconnectDelay = 100000;
     const waitUntilSocketOpenSpy = jest.spyOn(
       WebSocketHelper.prototype,
       "waitUntilSocketOpen"
     );
     let helper: WebSocketHelper;
 
-    helper = new WebSocketHelper(url, () => {}, retryTimeout, heartbeatTimeout);
+    helper = new WebSocketHelper(url, () => {}, {
+      reconnectDelay,
+      maxTimeWithoutPing,
+    });
     helper.setUpEventHandlers();
     helper.waitUntilSocketOpen();
 
@@ -109,6 +117,6 @@ describe("test ws class", function () {
       helper.close();
       expect(waitUntilSocketOpenSpy.mock.calls.length).toEqual(1);
       done();
-    }, heartbeatTimeout * 2);
+    }, maxTimeWithoutPing * 2);
   });
 });
