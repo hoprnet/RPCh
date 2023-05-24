@@ -27,12 +27,13 @@ class WebSocketHelper {
       maxReconnectAttempts?: number;
     }
   ) {
-    this.socket = new WebSocket(url);
     this.waitUntilSocketOpenP = new DeferredPromise<WebSocket>();
     this.maxTimeWithoutPing = options?.maxTimeWithoutPing ?? 60e3;
     this.attemptToReconnect = options?.attemptToReconnect ?? true;
     this.reconnectDelay = options?.reconnectDelay ?? 100;
     this.maxReconnectAttempts = options?.maxReconnectAttempts ?? 3;
+    this.socket = new WebSocket(url);
+    this.setUpEventHandlers();
   }
 
   /**
@@ -74,6 +75,7 @@ class WebSocketHelper {
    * and not reconnect again.
    */
   public close() {
+    log.verbose("Closing WS");
     this.attemptToReconnect = false;
     this.closeInternal();
   }
@@ -84,6 +86,7 @@ class WebSocketHelper {
    * @param error
    */
   private closeWithError(error: any) {
+    log.verbose("Closing WS with error", error);
     this.close();
     this.waitUntilSocketOpenP.reject(error);
   }
@@ -96,7 +99,7 @@ class WebSocketHelper {
     }, this.maxTimeWithoutPing);
   }
 
-  public setUpEventHandlers() {
+  private setUpEventHandlers() {
     this.socket.onmessage = (event) => {
       const body = event.data.toString();
       // message received is an acknowledgement of a
@@ -119,36 +122,45 @@ class WebSocketHelper {
 
     this.socket.on("error", async (event) => {
       try {
-        log.error("WebSocket error:", event);
+        log.error("WebSocket error:", event.message);
 
         // close existing ws
         if (this.connectionIsClosing) {
-          log.error("Ws connection is still closing");
+          log.verbose("WebSocket connection is still closing");
           return;
         }
         this.closeInternal();
 
         // skip if we do not want to reconnect
-        if (!this.attemptToReconnect) return;
-
-        // open new ws
-        this.socket = new WebSocket(this.url);
-        // set up event handlers again
-        this.setUpEventHandlers();
-
-        log.verbose("Established new ws after error");
-      } catch (error) {
-        // skip if we do not want to reconnect
-        // or max attempts were reached
         if (
           !this.attemptToReconnect ||
           ++this.reconnectAttempts >= this.maxReconnectAttempts
         ) {
-          return this.closeWithError(error);
+          throw Error(event.message);
+        }
+
+        // open new ws
+        this.socket = new WebSocket(this.url);
+
+        // set up event handlers again
+        this.setUpEventHandlers();
+
+        log.verbose("WebSocket reconnected");
+      } catch (error) {
+        // we wanted to connect but failed
+        // if we don't want to reconnect
+        if (!this.attemptToReconnect) {
+          return this.closeWithError(`WebSocket failed to connect: ${error}`);
+        }
+        // max attempts were reached
+        else if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+          return this.closeWithError(
+            `WebSocket failed to connect, max attempts reached: ${error}`
+          );
         }
 
         log.error(
-          "WebSocket connection failed, retrying in %s ms...",
+          "WebSocket reconnection failed, retrying in %s ms..",
           this.reconnectDelay,
           error
         );

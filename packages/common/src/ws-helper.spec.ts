@@ -36,21 +36,20 @@ describe("test ws class", function () {
     });
 
     connection = new WebSocketHelper(url, onMessageSpy);
-    connection.setUpEventHandlers();
     connection.waitUntilSocketOpen().then((conn) => {
       conn.send("i am connected");
     });
   });
   it("connection is lost and re established", (done) => {
     const reconnectDelay = 10;
-    const setUpEventHandlersSpy = jest.spyOn(
+    const setUpEventHandlersSpy: jest.SpyInstance<void, [], any> = jest.spyOn(
       WebSocketHelper.prototype,
+      // @ts-ignore
       "setUpEventHandlers"
     );
     let helper: WebSocketHelper;
 
     helper = new WebSocketHelper(url, () => {}, { reconnectDelay });
-    helper.setUpEventHandlers();
     // @ts-ignore
     helper.socket.on("error", () => {
       // should have been called twice
@@ -66,8 +65,9 @@ describe("test ws class", function () {
   it("on error is emitted when ping is not received", (done) => {
     const reconnectDelay = 100000;
     const maxTimeWithoutPing = 1000;
-    const setUpEventHandlersSpy = jest.spyOn(
+    const setUpEventHandlersSpy: jest.SpyInstance<void, [], any> = jest.spyOn(
       WebSocketHelper.prototype,
+      // @ts-ignore
       "setUpEventHandlers"
     );
     let helper: WebSocketHelper;
@@ -76,7 +76,6 @@ describe("test ws class", function () {
       reconnectDelay,
       maxTimeWithoutPing,
     });
-    helper.setUpEventHandlers();
     // @ts-ignore
     helper.socket.on("error", () => {
       // should have been called twice because ping was not received
@@ -109,7 +108,6 @@ describe("test ws class", function () {
       reconnectDelay,
       maxTimeWithoutPing,
     });
-    helper.setUpEventHandlers();
     helper.waitUntilSocketOpen();
 
     // wait for 2 heartbeats
@@ -118,5 +116,33 @@ describe("test ws class", function () {
       expect(waitUntilSocketOpenSpy.mock.calls.length).toEqual(1);
       done();
     }, maxTimeWithoutPing * 2);
+  });
+  it("should throw on reconnect attempt", (done) => {
+    server.close();
+    httpServer.close();
+    const connection = new WebSocketHelper(url, () => {}, {
+      attemptToReconnect: false,
+    });
+
+    connection.waitUntilSocketOpen().catch((error) => {
+      expect(String(error)).toContain("WebSocket failed to connect");
+      done();
+    });
+  });
+  it("should throw when reaching all reconnect attempts", (done) => {
+    server.close();
+    httpServer.close();
+    const connection = new WebSocketHelper(url, () => {}, {
+      maxReconnectAttempts: 5,
+    });
+
+    connection.waitUntilSocketOpen().catch((error) => {
+      expect(String(error)).toContain("max attempts reached");
+      expect(
+        // @ts-ignore
+        connection.reconnectAttempts
+      ).toEqual(5);
+      done();
+    });
   });
 });

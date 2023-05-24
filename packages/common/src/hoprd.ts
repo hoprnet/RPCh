@@ -96,8 +96,12 @@ export const createMessageListener = async (
   apiEndpoint: string,
   apiToken: string,
   onMessage: (message: string) => void,
-  retryTimeout = 5000,
-  maxTimeWithoutPing = 60e3
+  options?: {
+    maxTimeWithoutPing?: number;
+    attemptToReconnect?: boolean;
+    reconnectDelay?: number;
+    maxReconnectAttempts?: number;
+  }
 ) => {
   const [url] = createApiUrl(
     "ws",
@@ -105,13 +109,12 @@ export const createMessageListener = async (
     "/api/v2/messages/websocket",
     apiToken
   );
-  let ws = new WebSocketHelper(
-    url,
-    onMessage,
-    retryTimeout,
-    maxTimeWithoutPing
-  );
-  ws.setUpEventHandlers();
+  let ws = new WebSocketHelper(url, onMessage, {
+    maxTimeWithoutPing: 60e3,
+    attemptToReconnect: true,
+    reconnectDelay: 100,
+    maxReconnectAttempts: 3,
+  });
   await ws.waitUntilSocketOpen();
 
   return ws;
