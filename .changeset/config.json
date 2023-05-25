@@ -5,6 +5,6 @@
   "fixed": [],
   "linked": [],
   "access": "public",
-  "baseBranch": "release/v0.2.1",
+  "baseBranch": "release/v0.2.2",
   "updateInternalDependencies": "patch"
 }
