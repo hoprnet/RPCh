@@ -266,7 +266,7 @@ export default class SDK {
     // check whether we have a matching request id
     const match = this.requestCache.getRequest(message.id);
     if (!match) {
-      log.error("matching request not found", message.id);
+      log.verbose("matching request not found", message.id);
       return;
     }
 
@@ -418,8 +418,10 @@ export default class SDK {
     const exclusionList: string[] = [];
     if (
       entryNodeScore < MINIMUM_SCORE_FOR_RELIABLE_NODE &&
-      this.reliabilityScore.getStatus(this.entryNode!.peerId) === "NON_FRESH"
+      this.reliabilityScore.getStatus(this.entryNode!.peerId) === "NON_FRESH" &&
+      !this.selectingEntryNode
     ) {
+      this.selectingEntryNode = true;
       log.verbose("node is not reliable enough. selecting new entry node");
       exclusionList.push(this.entryNode!.peerId);
       // Try to select entry node 3 times
@@ -444,6 +446,8 @@ export default class SDK {
       } catch (error) {
         log.error("Couldn't find new entry node: ", error);
         this.setDeadlock(DEADLOCK_MS);
+      } finally {
+        this.selectingEntryNode = false;
       }
     }
 
