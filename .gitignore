@@ -44,3 +44,6 @@ apps/rpc-server/db
 
 #k6 results
 devkit/loadtesting-k6/results/*
+
+# temporary
+hopr-sdk/
