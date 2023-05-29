@@ -20,6 +20,7 @@ docker run \
 -e DEBUG="rpch*,-*verbose" \
 -e RESPONSE_TIMEOUT=10000 \
 -e DISCOVERY_PLATFORM_API_ENDPOINT=http://localhost:3020 \
+-e CLIENT="sandbox" \
 -e PORT=8080 \
 -e DATA_DIR=app \
 --network=host \

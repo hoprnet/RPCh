@@ -136,8 +136,9 @@ export class RPCServer {
           const errorMsg = [
             "Error sending request",
             error instanceof Error ? error.message : error,
-            "with trace",
-            verboseLogs.join(" -> "),
+            verboseLogs.length === 0
+              ? ""
+              : `with trace ${verboseLogs.join(" -> ")}`,
           ].join(" ");
           log.error(errorMsg);
           // response has already ended

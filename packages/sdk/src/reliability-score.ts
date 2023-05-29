@@ -135,7 +135,7 @@ export default class ReliabilityScore {
     nodeMetrics.stats = this.getResultsStats(peerId);
   }
 
-  private resetNodeMetrics(peerId: string, nodeMetrics: NodeMetrics) {
+  public resetNodeMetrics(peerId: string, nodeMetrics: NodeMetrics) {
     const [lastRequestId, lastResponse] = Array.from(nodeMetrics.responses).at(
       -1
     ) as [number, ResponseMetric];
@@ -162,6 +162,15 @@ export default class ReliabilityScore {
     );
   }
 
+  public resetOldNodeMetrics(timeout: number): void {
+    const now = new Date().getTime();
+    for (const [peerId, metrics] of this.metrics.entries()) {
+      if (now > metrics.updatedAt.getTime() + timeout) {
+        this.resetNodeMetrics(peerId, metrics);
+      }
+    }
+  }
+
   /**
    * Get node score.
    * @param peerId
@@ -175,20 +184,20 @@ export default class ReliabilityScore {
 
       if (dishonest > 0) {
         this.score.set(peerId, 0);
-        log.normal(
+        log.verbose(
           "node %s is a dishonest node with 0 reliability score",
           peerId
         );
       } else if (sent < this.freshNodeThreshold) {
         this.score.set(peerId, FRESH_NODE_SCORE);
-        log.normal(
+        log.verbose(
           "node %s is a fresh node with 0.2 reliability score",
           peerId
         );
       } else {
         const score = (sent - failed) / sent;
         this.score.set(peerId, score);
-        log.normal("node %s has a %s reliability score", peerId, score);
+        log.verbose("node %s has a %s reliability score", peerId, score);
       }
       return this.score.get(peerId)!;
     } else {

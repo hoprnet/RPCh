@@ -65,14 +65,16 @@ describe("test index.ts", function () {
     assert.equal(json.result, "0x17f88c8");
   });
 
-  describe("should respond with error message", function () {
+  describe("should respond even when deadlocked", function () {
     it("sdk is deadlocked", async function () {
       rpcServer.sdk?.setDeadlock(10000);
       const res = await request
         .post("/?exit-provider=someprovider")
-        .send(JSON.stringify({ id: "1", method: "eth_chainId" }));
+        .send(JSON.stringify({ id: "1", method: "eth_chainId" }))
+        .expect(200);
 
-      expect(res.text).toContain("SDK is deadlocked");
+      const json = JSON.parse(res.text);
+      assert.equal(json.result, "0x01");
       rpcServer.sdk?.setDeadlock(0);
     });
     it("sdk not initialized", async function () {
