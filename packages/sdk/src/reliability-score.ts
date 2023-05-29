@@ -135,6 +135,11 @@ export default class ReliabilityScore {
     nodeMetrics.stats = this.getResultsStats(peerId);
   }
 
+  /**
+   * Reset a node's metrics except dishonest ones.
+   * @param peerId
+   * @param nodeMetrics
+   */
   public resetNodeMetrics(peerId: string, nodeMetrics: NodeMetrics) {
     const [lastRequestId, lastResponse] = Array.from(nodeMetrics.responses).at(
       -1
@@ -162,6 +167,10 @@ export default class ReliabilityScore {
     );
   }
 
+  /**
+   * Wipes old metric data.
+   * @param timeout
+   */
   public resetOldNodeMetrics(timeout: number): void {
     const now = new Date().getTime();
     for (const [peerId, metrics] of this.metrics.entries()) {
