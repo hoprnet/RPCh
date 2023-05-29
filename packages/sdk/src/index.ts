@@ -20,7 +20,7 @@ const log = createLogger();
 const DEFAULT_MAXIMUM_SEGMENTS_PER_REQUEST = 10;
 const DEFAULT_RESET_NODE_METRICS_MS = 1e3 * 60 * 60 * 15; // 15min
 const DEFAULT_DEADLOCK_MS = 1e3 * 60 * 0.5; // 30s
-const DEFAULT_MINIMUM_SCORE_FOR_RELIABLE_NODE = 0.7;
+const DEFAULT_MINIMUM_SCORE_FOR_RELIABLE_NODE = 0.9;
 const DEFAULT_RELIABILITY_SCORE_FRESH_NODE_THRESHOLD = 20;
 const DEFAULT_RELIABILITY_SCORE_MAX_RESPONSES = 100;
 const DEFAULT_MAX_ENTRY_NODES = 2;
@@ -405,8 +405,9 @@ export default class SDK {
       log.verbose("responded to %s with %s", match.request.body, response.body);
     } catch (e) {
       log.error(
-        "failed to decrypt message id %s with body",
+        "failed to decrypt message id %i from %s with body",
         message.id,
+        match.request.exitNodeDestination,
         message.body
       );
       this.handleFailedRequest(match.request, "failed to decrypt");
