@@ -22,6 +22,9 @@ describe("e2e tests", function () {
     sdkStore.get
   );
 
+  // enable debugging
+  provider.sdk.debug.enable("rpch*");
+
   beforeAll(async function () {
     await provider.sdk.start();
   });
