@@ -515,7 +515,9 @@ export default class SDK {
           let logStr = `Using '${this.entryNodes.size}' entry nodes with score:`;
           for (const peerId of this.entryNodes.keys()) {
             logStr += "\n";
-            logStr += `  ${peerId}: ${this.reliabilityScore.getScore(peerId)}`;
+            logStr += `  ${peerId}: ${this.reliabilityScore.getScore(
+              peerId
+            )} ${this.reliabilityScore.getStatus(peerId)}`;
           }
           log.normal(logStr);
         }, 60e3)
