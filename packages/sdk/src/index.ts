@@ -155,13 +155,15 @@ export default class SDK {
   ): Promise<void> {
     if (this.selectingEntryNodes || this.isDeadlocked()) return;
     try {
-      const amountNeeded = this.maxEntryNodes - this.entryNodes.size;
+      // we only need 1 when we force an entry node
+      const amountNeeded =
+        (this.ops.forceEntryNode ? 1 : this.maxEntryNodes) -
+        this.entryNodes.size;
       if (amountNeeded === 0) return;
 
-      // we pretend everything is okay if
-      // we need to force an entry node
       let brokenNodes: string[] = [];
       if (this.ops.forceEntryNode) {
+        // we pretend everything is okay if we need to force an entry node
         brokenNodes = [];
       } else {
         brokenNodes = this.reliabilityScore
@@ -404,11 +406,10 @@ export default class SDK {
       log.normal("received response for %i", match.request.id);
       log.verbose("responded to %s with %s", match.request.body, response.body);
     } catch (e) {
-      log.error(
+      log.verbose(
         "failed to decrypt message id %i from %s with body",
         message.id,
-        match.request.exitNodeDestination,
-        message.body
+        match.request.exitNodeDestination
       );
       this.handleFailedRequest(match.request, "failed to decrypt");
     }
@@ -661,7 +662,6 @@ export default class SDK {
         }
       } catch (e: any) {
         // If there was an error sending the request, remove request from cache and reject promise
-        log.error("failed to send message to hoprd", e);
         this.handleFailedRequest(req, e);
       }
     });
