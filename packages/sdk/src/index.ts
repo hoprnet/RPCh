@@ -172,7 +172,10 @@ export default class SDK {
           .map(({ peerId }) => peerId);
       }
 
-      log.verbose(`Selecting '${amountNeeded}' entry nodes..`);
+      log.verbose(
+        `Selecting '${amountNeeded}' entry nodes and excluding`,
+        brokenNodes.length == 0 ? "none" : brokenNodes.join(",")
+      );
       this.selectingEntryNodes = true;
 
       // get new entry nodes
