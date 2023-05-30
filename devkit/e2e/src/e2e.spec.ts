@@ -27,7 +27,7 @@ describe("e2e tests", function () {
 
   beforeAll(async function () {
     await provider.sdk.start();
-  }, 10e3);
+  });
 
   afterAll(async function () {
     await provider.sdk.stop();

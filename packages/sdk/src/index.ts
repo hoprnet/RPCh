@@ -79,7 +79,7 @@ export type ExitNode = {
  * Send traffic through the RPCh network
  */
 export default class SDK {
-  // default options
+  // various options that can be overwritten by user
   private maximumSegmentsPerRequest: number =
     DEFAULT_MAXIMUM_SEGMENTS_PER_REQUEST;
   private resetNodeMetricsMs: number = DEFAULT_RESET_NODE_METRICS_MS;
@@ -87,8 +87,6 @@ export default class SDK {
   private minimumScoreForReliableNode: number =
     DEFAULT_MINIMUM_SCORE_FOR_RELIABLE_NODE;
   private maxEntryNodes: number = DEFAULT_MAX_ENTRY_NODES;
-  // allows developers to programmatically enable debugging
-  public debug = debug;
   // RPCh crypto library used
   private crypto: typeof RPChCrypto;
   // our chosen entry nodes
@@ -100,12 +98,16 @@ export default class SDK {
   private segmentCache: SegmentCache;
   private requestCache: RequestCache;
   private selectingEntryNodes: boolean = false;
+  // an epoch timestamp that halts selecting new entry nodes
+  public deadlockTimestamp: number | undefined;
   // keeps track a reliability score for every entry-node used
   private reliabilityScore: ReliabilityScore;
-  // an epoch timestamp that stops creating requests until that time has passed
-  public deadlockTimestamp: number | undefined;
+  // allows developers to programmatically enable debugging
+  public debug = debug;
   // toogle to not start if it's already starting
-  public starting: boolean | undefined;
+  public starting: boolean = false;
+  // resolves once SDK has started
+  public startingPromise = new utils.DeferredPromise<void>();
 
   constructor(
     private readonly ops: HoprSdkOps,
@@ -464,9 +466,10 @@ export default class SDK {
   public async start(): Promise<void> {
     // already started
     if (this.isReady) return;
+    // already in the proccess of starting
+    if (this.starting) return this.startingPromise.promise;
 
     try {
-      if (this.starting) throw Error("SDK is already starting");
       this.starting = true;
 
       // fetch entry nodes from discovery platform
@@ -483,8 +486,9 @@ export default class SDK {
           },
         }
       );
+      log.normal("SDK started");
     } catch (e: any) {
-      log.error("Could not start SDK", e.message);
+      log.normal("SDK started with", e.message);
     } finally {
       this.intervals.push(
         setInterval(() => {
@@ -526,6 +530,7 @@ export default class SDK {
         }, 60e3)
       );
 
+      this.startingPromise.resolve();
       this.starting = false;
     }
   }
@@ -534,9 +539,11 @@ export default class SDK {
    * Stop the SDK and clear up tangling processes.
    */
   public async stop(): Promise<void> {
+    // stop all WS listeners
     for (const { stopMessageListener } of this.entryNodes.values()) {
       if (stopMessageListener) stopMessageListener();
     }
+    // remove all intervals
     for (const interval of this.intervals) {
       clearInterval(interval);
     }
