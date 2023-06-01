@@ -1,9 +1,9 @@
 import type { RegisteredNode } from "./db";
 import retry from "async-retry";
 import { createLogger } from "./utils";
-import { HoprSdk } from "../../../hopr-sdk/dist";
+import { HoprSDK } from "../../../hopr-sdk/dist";
 
-const log = createLogger(["reviewer"]);
+const log = createLogger(["review"]);
 
 /**
  * A review of the node once it has
@@ -18,6 +18,16 @@ export type Review = {
   hoprdMessageDelivery: boolean;
   exitNodeGotResponse: boolean;
 };
+
+// export type Check = {
+//   item: keyof Review;
+//   required: boolean;
+// };
+// const mustBeHealthy: Check = {
+//   item: "hoprdHealthGood",
+//   required: true,
+// };
+// const checks = [];
 
 /**
  * The result after a node has been reviewed.
@@ -78,13 +88,15 @@ export async function WrapWithRetry<T>(fn: retry.RetryFunction<T>): Promise<T> {
  * @returns the result
  */
 export default async function review(node: RegisteredNode): Promise<Result> {
+  log.verbose("Review on", node.peerId, "is running");
+
   try {
     const defaultApiEndpoint = node.hoprdApiEndpoint;
     const isDefaultApiEndpointProtected =
       new URL(defaultApiEndpoint).protocol === "https:";
 
-    const sdk = new HoprSdk({
-      url: node.hoprdApiEndpoint,
+    const sdk = new HoprSDK({
+      apiEndpoint: node.hoprdApiEndpoint,
       apiToken: node.hoprdApiToken,
     });
 
@@ -103,11 +115,10 @@ export default async function review(node: RegisteredNode): Promise<Result> {
         // get HOPRd health status
         WrapWithRetry(async function getHoprdHealthGood() {
           const info = await sdk.api.node.getInfo();
-          if (info?.connectivityStatus !== "green")
-            throw Error(
-              `received connectivityStatus '${info?.connectivityStatus}' is 'green'`
-            );
-          return true;
+          return (
+            info?.connectivityStatus === "Green" ||
+            info?.connectivityStatus === "Orange"
+          );
         }).catch((error) => {
           log.verbose("Error while trying to get HOPRd health status", error);
           return false;
@@ -119,8 +130,8 @@ export default async function review(node: RegisteredNode): Promise<Result> {
           const protectedUrl = new URL(defaultApiEndpoint);
           protectedUrl.protocol = "https:";
 
-          const protectedSdk = new HoprSdk({
-            url: protectedUrl.toString(),
+          const protectedSdk = new HoprSDK({
+            apiEndpoint: protectedUrl.toString(),
             apiToken: node.hoprdApiToken,
           });
 
@@ -130,8 +141,9 @@ export default async function review(node: RegisteredNode): Promise<Result> {
               `received version '${version}' via SSL is not a string`
             );
           return true;
-        }).catch((error) => {
-          log.verbose("Error while trying to check for SSL support", error);
+        }).catch((_error) => {
+          // expected error
+          // log.verbose("Error while trying to check for SSL support", error);
           return false;
         }),
       ]);
@@ -145,13 +157,21 @@ export default async function review(node: RegisteredNode): Promise<Result> {
       exitNodeGotResponse: true, // @TODO: check
     };
 
-    return {
+    const result: Result = {
       ...node,
       ...review,
       stable: isNodeStable(node, review),
     };
+    log.verbose(
+      "Review on",
+      result.peerId,
+      "completed",
+      "node is",
+      result.stable ? "stable" : "unstable"
+    );
+    return result;
   } catch (error) {
-    log.verbose("Unexpected error when reviewing node", node, error);
+    log.verbose("Review on", node.peerId, "failed with error", error);
     return {
       ...node,
       hoprdVersion: undefined,

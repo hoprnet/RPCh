@@ -23,7 +23,7 @@ async function start(ops: {
   const metricManager = new MetricManager(
     Prometheus,
     register,
-    constants.METRIC_PREFIX
+    ops.metricPrefix
   );
 
   const app = API({
@@ -32,14 +32,15 @@ async function start(ops: {
   });
 
   // start listening at PORT for requests
-  const server = app.listen(constants.PORT, "0.0.0.0", () => {
-    log.normal("entry server is up");
+  const server = app.listen(ops.port, "0.0.0.0", () => {
+    log.normal("API server is up on port %i", ops.port);
   });
 
   // set server timeout to 30s
   server.setTimeout(30e3);
 
-  const reviewer = new Reviewer();
+  const reviewer = new Reviewer(ops.db, 30e3, 5);
+  reviewer.start();
 
   return () => {
     reviewer.stop();
