@@ -19,7 +19,7 @@ import { createLogger } from "./utils";
 const log = createLogger();
 const DEFAULT_MAXIMUM_SEGMENTS_PER_REQUEST = 10;
 const DEFAULT_RESET_NODE_METRICS_MS = 1e3 * 60 * 60 * 15; // 15min
-const DEFAULT_DEADLOCK_MS = 1e3 * 60 * 0.5; // 30s
+const DEFAULT_DEADLOCK_MS = 1e3 * 5; // 5s
 const DEFAULT_MINIMUM_SCORE_FOR_RELIABLE_NODE = 0.8;
 const DEFAULT_RELIABILITY_SCORE_FRESH_NODE_THRESHOLD = 20;
 const DEFAULT_RELIABILITY_SCORE_MAX_RESPONSES = 100;
@@ -174,7 +174,7 @@ export default class SDK {
           .map(({ peerId }) => peerId);
       }
 
-      log.verbose(
+      log.normal(
         `Selecting '${amountNeeded}' entry nodes and excluding`,
         brokenNodes.length == 0 ? "none" : brokenNodes.join(",")
       );
@@ -210,6 +210,18 @@ export default class SDK {
       throw error;
     } finally {
       this.selectingEntryNodes = false;
+    }
+  }
+
+  /**
+   * Stop WS listener and removes entyr node from our list.
+   * @param peerId
+   */
+  private removeEntryNode(peerId: string): void {
+    const entryNode = this.entryNodes.get(peerId);
+    if (entryNode && !this.isEntryNodeReliable(peerId)) {
+      if (entryNode.stopMessageListener) entryNode.stopMessageListener();
+      this.entryNodes.delete(peerId);
     }
   }
 
@@ -428,12 +440,8 @@ export default class SDK {
    */
   private updateEntryNodeScore(req: Request, result: Result): void {
     this.reliabilityScore.addMetric(req.entryNodeDestination, req.id, result);
-
     // remove entry node as soon as we find its not reliable
-    const entryNode = this.entryNodes.get(req.entryNodeDestination);
-    if (entryNode && !this.isEntryNodeReliable(entryNode.peerId)) {
-      this.entryNodes.delete(req.entryNodeDestination);
-    }
+    this.removeEntryNode(req.entryNodeDestination);
   }
 
   /**
@@ -503,22 +511,19 @@ export default class SDK {
             }
           );
 
+          // remove unstable entry nodes
+          for (const peerId of this.entryNodes.keys()) {
+            if (!this.isEntryNodeReliable(peerId)) this.removeEntryNode(peerId);
+          }
+
           // reset old nodes from reliability score
           this.reliabilityScore.resetOldNodeMetrics(this.resetNodeMetricsMs);
         }, 1e3)
       );
 
-      // update exit nodes every minute
       this.intervals.push(
         setInterval(() => {
-          // fetch exit nodes
-          this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint).catch(
-            (error) => {
-              log.error("Failed to fetch exit nodes", error);
-            }
-          );
-
-          // log some important info
+          // logs the status of the entry nodes
           let logStr = `Using '${this.entryNodes.size}' entry nodes with score:`;
           for (const peerId of this.entryNodes.keys()) {
             logStr += "\n";
@@ -527,6 +532,17 @@ export default class SDK {
             )} ${this.reliabilityScore.getStatus(peerId)}`;
           }
           log.normal(logStr);
+        }, 10e3)
+      );
+
+      this.intervals.push(
+        setInterval(() => {
+          // update exit nodes every minute
+          this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint).catch(
+            (error) => {
+              log.error("Failed to fetch exit nodes", error);
+            }
+          );
         }, 60e3)
       );
 
