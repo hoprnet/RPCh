@@ -1,6 +1,6 @@
 import type { RegisteredNode } from "../db";
 import { createLogger } from "../utils";
-import { HoprSDK } from "../../../../hopr-sdk/dist";
+import { HoprSDK } from "@hoprnet/hopr-sdk";
 import { type CheckResult, createCheck } from "./check";
 
 const log = createLogger(["review"]);
