@@ -26,6 +26,7 @@ async function start(ops: {
     ops.metricPrefix
   );
 
+  // start restful server
   const app = API({
     db: ops.db,
     metricManager: metricManager,
@@ -39,7 +40,8 @@ async function start(ops: {
   // set server timeout to 30s
   server.setTimeout(30e3);
 
-  const reviewer = new Reviewer(ops.db, 30e3, 5);
+  // initializes reviewer
+  const reviewer = new Reviewer(ops.db, metricManager, 30e3, 5);
   reviewer.start();
 
   return () => {
