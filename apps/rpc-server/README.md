@@ -22,6 +22,7 @@ docker run \
 -e DISCOVERY_PLATFORM_API_ENDPOINT=http://localhost:3020 \
 -e PORT=8080 \
 -e DATA_DIR=app \
+-e CLIENT=sandbox \
 --network=host \
 rpc-server
 ```

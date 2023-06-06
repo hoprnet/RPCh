@@ -7,9 +7,9 @@ Install k6 on test machine: https://k6.io/docs/get-started/installation/
 
 ## How to test RPC Server
 
-1. Spin up Sandbox
-2. Spin up RPC Server on http://localhost:3040/
-3. Navigate to `.\devkit\k6-loadtesting\`
+1. Spin up Sandbox, see `devkit/sandbox/README.md`
+2. Spin up RPC Server on `http://localhost:3040/`, see `apps/rpc-server/README.md`
+3. Navigate to `devkit/k6-loadtesting`
 4. Run:
    - `yarn start:artificial` (Artificial usage with `eth_getCode` and `eth_call`)
    - `yarn start:blockwallet` (Real usage of blockwallet)
@@ -22,13 +22,13 @@ Install k6 on test machine: https://k6.io/docs/get-started/installation/
 
 1. Spin up Sandbox
 2. Spin up RPC Server on http://localhost:3040/
-3. Navigate to `.\devkit\k6-loadtesting\`
+3. Navigate to `devkit/k6-loadtesting`
 4. Run:
    - `yarn start:discovery-platform` (Artificial usage with `GET` requests)
 
 ## How to run a flood test
 
 1. Spin up Sandbox or pick pick a discovery platform URL
-2. Navigate to `.\devkit\k6-loadtesting\`
+2. Navigate to `devkit/k6-loadtesting`
 3. Run:
    - `yarn start:flood` (Artificial usage with `GET` requests)

@@ -19,7 +19,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
     ports:
-      - "5432:5432"
+      - "5432"
     networks:
       - sandbox-proxy
     volumes:
