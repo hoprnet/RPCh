@@ -15,7 +15,10 @@ After building the image, you will be able to run it with: \
 
 ```sh
 docker run \
+-e PORT="<YOUR PREFERRED PORT>" \
 -e DB_CONNECTION_URL="<YOUR DB CONNECTION URL>" \
+-e REVIEWER_INTERVAL_MS="<OPTIONAL: how often to queue nodes for review>" \
+-e REVIEWER_CONCURRENCY="<OPTIONAL: how many reviews in parallel>" \
 -e DEBUG="rpch*,-*verbose" \
 availability-monitor
 ```
