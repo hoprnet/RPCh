@@ -16,7 +16,6 @@ describe("e2e tests", function () {
       client: "sandbox",
       timeout: 5000,
       discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
-      disableDeadlock: true,
     },
     sdkStore.set,
     sdkStore.get
@@ -26,8 +25,10 @@ describe("e2e tests", function () {
   provider.sdk.debug.enable("rpch*");
 
   beforeAll(async function () {
+    // sandbox requires 30 seconds to kickstart
+    await fixtures.wait(30000);
     await provider.sdk.start();
-  }, 30e3);
+  }, 60e3);
 
   afterAll(async function () {
     await provider.sdk.stop();
