@@ -98,6 +98,20 @@
         "FORCE_EXIT_NODE_PUBKEY"
       ]
     },
+    "@rpch/availability-monitor#build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "build/**"
+      ],
+      "env": [
+        "PORT",
+        "DB_CONNECTION_URL",
+        "REVIEWER_INTERVAL_MS",
+        "REVIEWER_CONCURRENCY"
+      ]
+    },
     "dev": {
       "dependsOn": [
         "^build"

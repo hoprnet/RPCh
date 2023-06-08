@@ -56,12 +56,15 @@ jobs:
           - discovery-platform
           - rpc-server
           - manager
+          - availability-monitor
         include:
           - project: exit-node
             directory: apps
           - project: funding-service
             directory: apps
           - project: discovery-platform
+            directory: apps
+          - project: availability-monitor
             directory: apps
           - project: rpc-server
             directory: apps
