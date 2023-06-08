@@ -46,7 +46,7 @@ RUN apt-get update && \
 
 COPY --from=installer /app/apps/availability-monitor/package.json .
 COPY --from=installer /app .
-COPY apps/availability-monitor/migrations/ /app/
+# COPY apps/availability-monitor/migrations/ /app/
 
 # switch to normal user, to prevent dangerous root access
 RUN chown -R node:node .
