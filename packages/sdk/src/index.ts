@@ -183,7 +183,7 @@ export default class SDK {
       // get new entry nodes
       let entryNodes: EntryNode[] = [];
       for (let i = 0; i < amountNeeded; i++) {
-        const exclusionList: string[] = [
+        const excludeList: string[] = [
           ...brokenNodes,
           ...entryNodes.map((e) => e.peerId),
         ];
@@ -191,7 +191,7 @@ export default class SDK {
           async () => {
             return this.selectEntryNode(
               discoveryPlatformApiEndpoint,
-              exclusionList
+              excludeList
             );
           },
           {
@@ -232,7 +232,7 @@ export default class SDK {
    */
   private async selectEntryNode(
     discoveryPlatformApiEndpoint: string,
-    exclusionList?: string[]
+    excludeList?: string[]
   ): Promise<EntryNode> {
     log.verbose("Selecting entry node");
 
@@ -256,7 +256,7 @@ export default class SDK {
             "x-rpch-client": this.ops.client,
           },
           body: JSON.stringify({
-            exclusionList,
+            excludeList,
             client: this.ops.client,
           }),
         }
