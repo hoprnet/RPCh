@@ -100,17 +100,17 @@ start() {
 
     echo "Done 'nodes-docker-compose'"
 
-    # fund funding-service wallet
-    echo "Funding funding-service wallet"
-    scurl -X POST "http://127.0.0.1:3030/fund-via-hoprd" \
-        -H "Content-Type: application/json" \
-        -d '{
-            "hoprdEndpoint": "'$HOPRD_API_ENDPOINT_1'",
-            "hoprdToken": "'$HOPRD_API_TOKEN'",
-            "nativeAmount": "'$NATIVE_AMOUNT'",
-            "hoprAmount": "'$HOPR_AMOUNT'",
-            "recipient": "'$FUNDING_SERVICE_ADDRESS'"
-        }'
+    # # fund funding-service wallet
+    # echo "Funding funding-service wallet"
+    # scurl -X POST "http://127.0.0.1:3030/fund-via-hoprd" \
+    #     -H "Content-Type: application/json" \
+    #     -d '{
+    #         "hoprdEndpoint": "'$HOPRD_API_ENDPOINT_1'",
+    #         "hoprdToken": "'$HOPRD_API_TOKEN'",
+    #         "nativeAmount": "'$NATIVE_AMOUNT'",
+    #         "hoprAmount": "'$HOPR_AMOUNT'",
+    #         "recipient": "'$FUNDING_SERVICE_ADDRESS'"
+    #     }'
 
     # get HOPR Token address
     hoprTokenAddress=$(
@@ -124,6 +124,18 @@ start() {
         up -d --remove-orphans --build --force-recreate
     echo "Done 'central-docker-compose'"
     sleep 20
+
+    # add quota to client 'sandbox'
+    echo "Adding quota to 'sandbox' in 'discovery-platform'"
+    scurl -X POST "http://127.0.0.1:3030/add-quota" \
+        -H "Content-Type: application/json" \
+        -H "x-rpch-client: sandbox" \
+        -d '{
+            "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
+            "client": "sandbox",
+            "quota": "500"
+        }'
+    echo "Added quota to client 'sandbox' in 'discovery-platform'"
 
     # add quota to client 'trial'
     echo "Adding quota to 'trial' in 'discovery-platform'"
@@ -182,18 +194,6 @@ start() {
             ]
         }'
     echo "Registered nodes to discovery-platform"
-
-    # add quota to client 'sandbox'
-    echo "Adding quota to 'sandbox' in 'discovery-platform'"
-    scurl -X POST "http://127.0.0.1:3030/add-quota" \
-        -H "Content-Type: application/json" \
-        -H "x-rpch-client: sandbox" \
-        -d '{
-            "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
-            "client": "sandbox",
-            "quota": "500"
-        }'
-    echo "Added quota to client 'sandbox' in 'discovery-platform'"
 
     echo "Sandbox has started!"
 }
