@@ -26,10 +26,14 @@ async function start(ops: {
     ops.metricPrefix
   );
 
+  // initializes reviewer
+  const reviewer = new Reviewer(ops.db, metricManager, 30e3, 5);
+  reviewer.start();
+
   // start restful server
   const app = API({
-    db: ops.db,
-    metricManager: metricManager,
+    metricManager,
+    reviewer,
   });
 
   // start listening at PORT for requests
@@ -39,10 +43,6 @@ async function start(ops: {
 
   // set server timeout to 30s
   server.setTimeout(30e3);
-
-  // initializes reviewer
-  const reviewer = new Reviewer(ops.db, metricManager, 30e3, 5);
-  reviewer.start();
 
   return () => {
     reviewer.stop();

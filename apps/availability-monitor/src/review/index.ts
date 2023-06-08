@@ -23,8 +23,8 @@ const checks = {
     async function checkHoprdHealth(sdk) {
       const info = await sdk.api.node.getInfo();
       if (!info) throw Error("did not receive info");
-      const isOk = ["Green", "Orange"].some(
-        (status) => info.connectivityStatus === status
+      const isOk = ["green", "yellow"].some(
+        (status) => info.connectivityStatus.toLowerCase() === status
       );
       return [isOk, info.connectivityStatus];
     }
@@ -72,6 +72,7 @@ export type Review = {
  * The final result after a review.
  */
 export type Result = Review & {
+  reviewedAt: string;
   isStable: boolean;
 };
 
@@ -100,13 +101,14 @@ export default async function review(node: RegisteredNode): Promise<Result> {
     hoprdWorkingApiEndpoint: {
       checkId: "hoprd-working-api-endpoint",
       passed: !!hoprdVersion && !!hoprdHealth,
-      value: `hoprdVersion=${hoprdVersion},hoprdHealth=${hoprdHealth}`,
+      value: `hoprdVersion=${hoprdVersion?.value},hoprdHealth=${hoprdHealth?.value}`,
     },
     hoprdSSL,
   };
 
   const result: Result = {
     ...review,
+    reviewedAt: new Date().toUTCString(),
     isStable: isNodeStable(node, review),
   };
 

@@ -1,5 +1,7 @@
+import type { NextFunction, Request, Response } from "express";
+import type { Histogram } from "prom-client";
+import type { RegisteredNodeDB, RegisteredNode } from "./db";
 import { utils } from "@rpch/common";
-import { type RegisteredNodeDB, type RegisteredNode } from "./db";
 
 /** Generic logger for this project */
 export const createLogger = utils.LoggerFactory("availability-monitor");
@@ -16,3 +18,20 @@ export function fromDbNode(node: RegisteredNodeDB): RegisteredNode {
     nativeAddress: node.native_address,
   };
 }
+
+/** middleware that will track duration of an express request */
+export const metricMiddleware =
+  (histogramMetric: Histogram<string>) =>
+  (req: Request, res: Response, next: NextFunction) => {
+    const start = process.hrtime();
+    res.on("finish", () => {
+      const end = process.hrtime(start);
+      const durationSeconds = end[0] + end[1] / 1e9;
+      const statusCode = res.statusCode.toString();
+      const method = req.method;
+      const path = req.path;
+
+      histogramMetric.labels(method, path, statusCode).observe(durationSeconds);
+    });
+    next();
+  };

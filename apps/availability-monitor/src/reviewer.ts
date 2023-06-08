@@ -9,6 +9,7 @@ import {
   getRegisteredNode,
 } from "./db";
 import { createLogger, fromDbNode } from "./utils";
+import { callbackify } from "util";
 
 const log = createLogger(["reviewer"]);
 
@@ -30,7 +31,7 @@ export class ReviewQueue {
   public readonly queue: QueueObject<any>;
 
   constructor(concurrency: number) {
-    this.queue = AsyncQueue(review, concurrency);
+    this.queue = AsyncQueue(callbackify(review), concurrency);
   }
 
   public addPriority(
@@ -44,7 +45,10 @@ export class ReviewQueue {
     node: RegisteredNode,
     cb: (error: any, result?: Result) => void
   ): void {
-    this.queue.push<Result, any>(node, cb);
+    this.queue.push<Result, any>(node, (error, result) => {
+      log.verbose("FINIOSHED", error, result);
+      cb(error, result);
+    });
   }
 
   public stop() {
@@ -53,15 +57,22 @@ export class ReviewQueue {
 }
 
 /**
- * Iterates, pulls registered entry nodes,
+ * Pulls registered nodes,
  * and queues reviews for them.
  * Additionally, updates prometheus with the results.
  */
 export default class Reviewer {
   private interval: NodeJS.Timer | undefined;
   private reviewGuage: Gauge;
-  protected reviewQueue: ReviewQueue;
+  private reviewQueue: ReviewQueue;
+  public readonly results: Map<string, Result> = new Map();
 
+  /**
+   * @param db
+   * @param metricManager
+   * @param frequency how often should we try to queue nodes to be reviewed
+   * @param concurrency how many nodes to review in parallel
+   */
   constructor(
     private db: DBInstance,
     metricManager: MetricManager,
@@ -86,6 +97,7 @@ export default class Reviewer {
    * @param result
    */
   private onResult(node: RegisteredNode, result: Result): void {
+    this.results.set(node.peerId, result);
     this.reviewGuage.set(
       {
         peerId: node.peerId,
@@ -116,12 +128,26 @@ export default class Reviewer {
   /**
    * Add node to be reviewed as soon as possible.
    * @param peerId
+   * @returns the review result of the node
    */
-  public async addPriorityReview(peerId: string): Promise<void> {
-    log.verbose("Adding", peerId, "in queue");
-    const node = await getRegisteredNode(this.db, peerId).then(fromDbNode);
-    this.reviewQueue.addPriority(node, (error, result) => {
-      if (!error && result) this.onResult(node, result);
+  public async addPriorityReview(peerId: string): Promise<Result> {
+    return new Promise(async (resolve, reject) => {
+      try {
+        log.verbose("Adding", peerId, "in queue");
+        const node = await getRegisteredNode(this.db, peerId).then(fromDbNode);
+        this.reviewQueue.addPriority(node, (error, result) => {
+          if (error || !result) {
+            log.verbose("Failed to review", peerId, error || result);
+            reject(error);
+          } else {
+            this.onResult(node, result);
+            resolve(result);
+          }
+        });
+      } catch (error) {
+        log.verbose("Failed to addPriorityReview", peerId, error);
+        reject(error);
+      }
     });
   }
 
@@ -137,7 +163,12 @@ export default class Reviewer {
     for (const dbNode of nodes) {
       const node = fromDbNode(dbNode);
       this.reviewQueue.add(node, (error, result) => {
-        if (!error && result) this.onResult(node, result);
+        log.verbose("this.reviewQueue.add", error, result);
+        if (error || !result) {
+          log.verbose("Failed to review", node.peerId, error || result);
+        } else {
+          this.onResult(node, result);
+        }
       });
     }
   }

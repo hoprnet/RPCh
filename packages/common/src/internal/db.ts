@@ -10,13 +10,17 @@ export class MockPgInstanceSingleton {
 
   private constructor(
     private pgMem: typeof PgMem,
-    private migrationsDirectory: string
+    private migrationsDirectory?: string
   ) {}
 
   private async createInstance() {
     let instance = this.pgMem.newDb();
     fixtures.withQueryIntercept(instance);
-    await instance.public.migrate({ migrationsPath: this.migrationsDirectory });
+    if (this.migrationsDirectory) {
+      await instance.public.migrate({
+        migrationsPath: this.migrationsDirectory,
+      });
+    }
     MockPgInstanceSingleton.pgInstance = instance;
     MockPgInstanceSingleton.initialDbState =
       MockPgInstanceSingleton.pgInstance.backup();
@@ -25,7 +29,7 @@ export class MockPgInstanceSingleton {
 
   public static async getInstance(
     pgMem: typeof PgMem,
-    migrationsDirectory: string
+    migrationsDirectory?: string
   ): Promise<PgMem.IMemoryDb> {
     if (!MockPgInstanceSingleton.pgInstance) {
       await new this(pgMem, migrationsDirectory).createInstance();
@@ -35,7 +39,7 @@ export class MockPgInstanceSingleton {
 
   public static async getDbInstance(
     pgMem: typeof PgMem,
-    migrationsDirectory: string
+    migrationsDirectory?: string
   ): Promise<Pgp.IDatabase<{}>> {
     if (!MockPgInstanceSingleton.dbInstance) {
       const instance = await this.getInstance(pgMem, migrationsDirectory);

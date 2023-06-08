@@ -940,10 +940,10 @@
   resolved "https://registry.yarnpkg.com/@graphql-typed-document-node/core/-/core-3.2.0.tgz#5f3d96ec6b2354ad6d8a28bf216a1d97b5426861"
   integrity sha512-mB9oAsNCm9aM3/SOv4YtBMqZbYj10R7dkq8byBqxGY/ncFwhf2oQzMV+LCRlWoDSEBJ3COiR1yeDvMtsoOsuFQ==
 
-"@hoprnet/hopr-sdk@^0.0.1-alpha.5":
-  version "0.0.1-alpha.5"
-  resolved "https://registry.yarnpkg.com/@hoprnet/hopr-sdk/-/hopr-sdk-0.0.1-alpha.5.tgz#6a9f347de7cd8de141c01076e5c160284853b75c"
-  integrity sha512-YQ5MsJY/mqow2ZOMRuVr+fhOOQACLOLGCcnHLy/OacBxranPlDdwZMt702ZjCfVxujqaQfVWgvvV1vzJmZ9y0w==
+"@hoprnet/hopr-sdk@^0.0.1-alpha.6":
+  version "0.0.1-alpha.6"
+  resolved "https://registry.yarnpkg.com/@hoprnet/hopr-sdk/-/hopr-sdk-0.0.1-alpha.6.tgz#234731373b17aee5c254bb07c3bcf2b1f5439a85"
+  integrity sha512-KehsWHGqFHv1DAu90PvzSCifZ8Z0z1ju5jbSViL5t1+g6T82OWpnha1k4JLVO4jjgm0w4DQTciVlfOjFBfpAcQ==
   dependencies:
     cross-fetch "^3.1.5"
     isomorphic-ws "^5.0.0"
