@@ -80,9 +80,9 @@ export default class Reviewer {
     this.reviewGuage = metricManager.createGauge(
       REVIEW_METRIC_NAME,
       REVIEW_METRIC_HELP,
+      // library is incorrectly typed here
+      // @ts-expect-error
       {
-        name: REVIEW_METRIC_NAME,
-        help: REVIEW_METRIC_HELP,
         labelNames: REVIEW_METRIC_LABELS,
       }
     );
