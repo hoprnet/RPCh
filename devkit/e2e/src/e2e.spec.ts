@@ -16,6 +16,7 @@ describe("e2e tests", function () {
       client: "sandbox",
       timeout: 5000,
       discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
+      disableDeadlock: true,
     },
     sdkStore.set,
     sdkStore.get
