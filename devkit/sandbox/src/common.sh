@@ -195,5 +195,8 @@ start() {
         }'
     echo "Registered nodes to discovery-platform"
 
+    # wait a bit for registered nodes
+    sleep 10
+
     echo "Sandbox has started!"
 }
