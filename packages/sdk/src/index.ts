@@ -547,6 +547,7 @@ export default class SDK {
     } catch (e: any) {
       this.startingPromise.reject(e.message);
       log.normal("SDK failed to start", e.message);
+      await this.stop();
     } finally {
       this.starting = false;
     }
