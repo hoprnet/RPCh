@@ -221,7 +221,7 @@ export default class SDK {
    */
   private removeEntryNode(peerId: string): void {
     const entryNode = this.entryNodes.get(peerId);
-    if (entryNode && !this.isEntryNodeReliable(peerId)) {
+    if (entryNode) {
       if (entryNode.stopMessageListener) entryNode.stopMessageListener();
       this.entryNodes.delete(peerId);
     }
@@ -297,10 +297,7 @@ export default class SDK {
 
     // stop message listening from the previous node
     if (this.entryNodes.has(entryNode.peerId)) {
-      const prevEntryNode = this.entryNodes.get(entryNode.peerId);
-      if (prevEntryNode?.stopMessageListener) {
-        prevEntryNode.stopMessageListener();
-      }
+      this.removeEntryNode(entryNode.peerId);
     }
     // create new WS connection
     const connection = await hoprd.createMessageListener(
@@ -560,8 +557,8 @@ export default class SDK {
    */
   public async stop(): Promise<void> {
     // stop all WS listeners
-    for (const { stopMessageListener } of this.entryNodes.values()) {
-      if (stopMessageListener) stopMessageListener();
+    for (const peerId of this.entryNodes.keys()) {
+      this.removeEntryNode(peerId);
     }
     // remove all intervals
     for (const interval of this.intervals) {
