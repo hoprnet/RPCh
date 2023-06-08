@@ -34,7 +34,7 @@ describe("test index.ts", function () {
     request = supertest(rpcServer.server);
   });
 
-  afterEach(async function () {
+  afterAll(async function () {
     await rpcServer.stop();
   });
 
