@@ -557,13 +557,13 @@ export default class SDK {
    * Stop the SDK and clear up tangling processes.
    */
   public async stop(): Promise<void> {
-    // stop all WS listeners
-    for (const peerId of this.entryNodes.keys()) {
-      this.removeEntryNode(peerId);
-    }
     // remove all intervals
     for (const interval of this.intervals) {
       clearInterval(interval);
+    }
+    // stop all WS listeners
+    for (const peerId of this.entryNodes.keys()) {
+      this.removeEntryNode(peerId);
     }
   }
 
