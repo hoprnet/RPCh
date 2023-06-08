@@ -34,6 +34,7 @@ const DEFAULT_MAX_ENTRY_NODES = 2;
  * @param maximumSegmentsPerRequest Optional: Blocks requests that are made up of more than 10 segments
  * @param resetNodeMetricsMs Optional: Reset score metrics after specifies miliseconds
  * @param deadlockMs Optional: How long to pause the SDK before sending more requests to the discovery platform after an error
+ * @param disableDeadlock Optional: Disable deadlocking
  * @param minimumScoreForReliableNode Optional: Nodes with lower score than this will be swapped for new ones
  * @param maxEntryNodes Optional: How many entry nodes to use in parallel
  * @param reliabilityScoreFreshNodeThreshold Optional: The score which is considered fresh for a node
@@ -196,7 +197,7 @@ export default class SDK {
             );
           },
           {
-            retries: 3,
+            retries: 5,
             onRetry: (e, attempt) => {
               log.error("Error while selecting entry node", e);
               log.verbose("Retrying to select entry node, attempt:", attempt);
@@ -495,10 +496,7 @@ export default class SDK {
           },
         }
       );
-      log.normal("SDK started");
-    } catch (e: any) {
-      log.normal("SDK started with", e.message);
-    } finally {
+
       this.intervals.push(
         setInterval(() => {
           // check for expires caches every second
@@ -548,6 +546,11 @@ export default class SDK {
       );
 
       this.startingPromise.resolve();
+      log.normal("SDK started");
+    } catch (e: any) {
+      this.startingPromise.reject(e.message);
+      log.normal("SDK failed to start", e.message);
+    } finally {
       this.starting = false;
     }
   }
