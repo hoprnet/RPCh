@@ -214,7 +214,7 @@ export default class SDK {
   }
 
   /**
-   * Stop WS listener and removes entyr node from our list.
+   * Stop WS listener and removes entry node from our list.
    * @param peerId
    */
   private removeEntryNode(peerId: string): void {
