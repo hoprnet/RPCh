@@ -163,7 +163,6 @@ export default class Reviewer {
     for (const dbNode of nodes) {
       const node = fromDbNode(dbNode);
       this.reviewQueue.add(node, (error, result) => {
-        log.verbose("this.reviewQueue.add", error, result);
         if (error || !result) {
           log.verbose("Failed to review", node.peerId, error || result);
         } else {
