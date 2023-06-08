@@ -49,6 +49,7 @@ export type HoprSdkOps = {
   maximumSegmentsPerRequest?: number;
   resetNodeMetricsMs?: number;
   deadlockMs?: number;
+  disableDeadlock?: boolean;
   minimumScoreForReliableNode?: number;
   maxEntryNodes?: number;
   reliabilityScoreFreshNodeThreshold?: number;
@@ -195,7 +196,7 @@ export default class SDK {
             );
           },
           {
-            retries: 2,
+            retries: 3,
             onRetry: (e, attempt) => {
               log.error("Error while selecting entry node", e);
               log.verbose("Retrying to select entry node, attempt:", attempt);
@@ -206,7 +207,7 @@ export default class SDK {
       }
     } catch (error) {
       log.error("Couldn't find new entry node: ", error);
-      this.setDeadlock(this.deadlockMs);
+      if (!this.ops.disableDeadlock) this.setDeadlock(this.deadlockMs);
       throw error;
     } finally {
       this.selectingEntryNodes = false;
