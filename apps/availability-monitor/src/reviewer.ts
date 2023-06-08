@@ -45,10 +45,7 @@ export class ReviewQueue {
     node: RegisteredNode,
     cb: (error: any, result?: Result) => void
   ): void {
-    this.queue.push<Result, any>(node, (error, result) => {
-      log.verbose("FINIOSHED", error, result);
-      cb(error, result);
-    });
+    this.queue.push<Result, any>(node, cb);
   }
 
   public stop() {
@@ -70,13 +67,13 @@ export default class Reviewer {
   /**
    * @param db
    * @param metricManager
-   * @param frequency how often should we try to queue nodes to be reviewed
+   * @param intervalMs how often should we try to queue nodes to be reviewed
    * @param concurrency how many nodes to review in parallel
    */
   constructor(
     private db: DBInstance,
     metricManager: MetricManager,
-    private frequency: number,
+    private intervalMs: number,
     concurrency: number
   ) {
     this.reviewQueue = new ReviewQueue(concurrency);
@@ -175,7 +172,7 @@ export default class Reviewer {
   /** Start reviewer. */
   public start() {
     log.normal("Started reviewer");
-    this.interval = setInterval(() => this.addReviews(), this.frequency);
+    this.interval = setInterval(() => this.addReviews(), this.intervalMs);
   }
 
   /** Stop reviewer. */

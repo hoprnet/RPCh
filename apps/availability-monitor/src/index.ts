@@ -13,6 +13,8 @@ async function start(ops: {
   db: DBInstance;
   port: number;
   metricPrefix: string;
+  reviewerIntervalMs: number;
+  reviewerConcurrency: number;
 }) {
   // create prometheus registry
   const register = new Prometheus.Registry();
@@ -27,7 +29,12 @@ async function start(ops: {
   );
 
   // initializes reviewer
-  const reviewer = new Reviewer(ops.db, metricManager, 30e3, 5);
+  const reviewer = new Reviewer(
+    ops.db,
+    metricManager,
+    ops.reviewerIntervalMs,
+    ops.reviewerConcurrency
+  );
   reviewer.start();
 
   // start restful server
@@ -53,6 +60,13 @@ function main() {
   if (!constants.DB_CONNECTION_URL) {
     throw new Error('Missing "DB_CONNECTION_URL" env variable');
   }
+  if (!constants.REVIEWER_INTERVAL_MS) {
+    throw new Error('Missing "REVIEWER_INTERVAL_MS" env variable');
+  } else if (isNaN(constants.REVIEWER_INTERVAL_MS)) {
+    throw new Error(
+      `Invalid "REVIEWER_INTERVAL_MS" env variable "${constants.REVIEWER_INTERVAL_MS}"`
+    );
+  }
 
   // init db
   const pgInstance = pgp();
@@ -66,6 +80,8 @@ function main() {
     port: constants.PORT,
     db: dbInstance,
     metricPrefix: constants.METRIC_PREFIX,
+    reviewerIntervalMs: constants.REVIEWER_INTERVAL_MS,
+    reviewerConcurrency: constants.REVIEWER_CONCURRENCY,
   });
 }
 
