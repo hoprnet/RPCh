@@ -1,10 +1,7 @@
 import type Reviewer from "./reviewer";
-import type { Result } from "./review";
-import type { RegisteredNode } from "./db";
 import request from "supertest";
 import assert from "assert";
 import API from "./api";
-import * as fixtures from "@rpch/common/build/fixtures";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 import * as Prometheus from "prom-client";
 import { NODE_A as NODE, RESULT_A as RESULT } from "./fixtures";
