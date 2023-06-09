@@ -12,24 +12,47 @@ import { utils as etherUtils } from "ethers";
 import debug from "debug";
 import fetch from "cross-fetch";
 import retry from "async-retry";
-import ReliabilityScore from "./reliability-score";
+import ReliabilityScore, { type Result } from "./reliability-score";
 import RequestCache from "./request-cache";
 import { createLogger } from "./utils";
 
 const log = createLogger();
-// max number of segments sdk can send to entry node
-const MAXIMUM_SEGMENTS_PER_REQUEST = 100;
-const DEADLOCK_MS = 1e3 * 60 * 0.5; // 30s
-const MINIMUM_SCORE_FOR_RELIABLE_NODE = 0.7;
+const DEFAULT_MAXIMUM_SEGMENTS_PER_REQUEST = 10;
+const DEFAULT_RESET_NODE_METRICS_MS = 1e3 * 60 * 60 * 15; // 15min
+const DEFAULT_DEADLOCK_MS = 1e3 * 5; // 5s
+const DEFAULT_MINIMUM_SCORE_FOR_RELIABLE_NODE = 0.8;
+const DEFAULT_RELIABILITY_SCORE_FRESH_NODE_THRESHOLD = 20;
+const DEFAULT_RELIABILITY_SCORE_MAX_RESPONSES = 100;
+const DEFAULT_MAX_ENTRY_NODES = 2;
 
 /**
  * HOPR SDK options.
+ * @param crypto RPCh crypto library to use
+ * @param discoveryPlatformApiEndpoint The discovery platform API endpoint
+ * @param client The client that will be used to pay for messaging
+ * @param timeout The timeout of pending requests
+ * @param maximumSegmentsPerRequest Optional: Blocks requests that are made up of more than 10 segments
+ * @param resetNodeMetricsMs Optional: Reset score metrics after specifies miliseconds
+ * @param deadlockMs Optional: How long to pause the SDK before sending more requests to the discovery platform after an error
+ * @param disableDeadlock Optional: Disable deadlocking
+ * @param minimumScoreForReliableNode Optional: Nodes with lower score than this will be swapped for new ones
+ * @param maxEntryNodes Optional: How many entry nodes to use in parallel
+ * @param reliabilityScoreFreshNodeThreshold Optional: The score which is considered fresh for a node
+ * @param reliabilityScoreMaxResponses Optional: Maximum amount of responses to keep in memory
+ * @param forceEntryNode Optional: Force to use a specific entry node
+ * @param forceExitNode Optional: Force to use a specific exit node
  */
 export type HoprSdkOps = {
   crypto: typeof RPChCrypto;
+  discoveryPlatformApiEndpoint: string;
   client: string;
   timeout: number;
-  discoveryPlatformApiEndpoint: string;
+  maximumSegmentsPerRequest?: number;
+  resetNodeMetricsMs?: number;
+  deadlockMs?: number;
+  disableDeadlock?: boolean;
+  minimumScoreForReliableNode?: number;
+  maxEntryNodes?: number;
   reliabilityScoreFreshNodeThreshold?: number;
   reliabilityScoreMaxResponses?: number;
   forceEntryNode?: EntryNode;
@@ -43,6 +66,7 @@ export type EntryNode = {
   apiEndpoint: string;
   apiToken: string;
   peerId: string;
+  stopMessageListener?: () => void;
 };
 
 /**
@@ -57,26 +81,35 @@ export type ExitNode = {
  * Send traffic through the RPCh network
  */
 export default class SDK {
-  // allows developers to programmatically enable debugging
-  public debug = debug;
+  // various options that can be overwritten by user
+  private maximumSegmentsPerRequest: number =
+    DEFAULT_MAXIMUM_SEGMENTS_PER_REQUEST;
+  private resetNodeMetricsMs: number = DEFAULT_RESET_NODE_METRICS_MS;
+  private deadlockMs: number = DEFAULT_DEADLOCK_MS;
+  private minimumScoreForReliableNode: number =
+    DEFAULT_MINIMUM_SCORE_FOR_RELIABLE_NODE;
+  private maxEntryNodes: number = DEFAULT_MAX_ENTRY_NODES;
+  // RPCh crypto library used
   private crypto: typeof RPChCrypto;
-  // single interval for the SDK for things that need to be checked.
+  // our chosen entry nodes
+  private entryNodes: Map<string, EntryNode> = new Map();
+  // available exit nodes we can use
+  private exitNodes: ExitNode[] = [];
+  // various intervals used to clear the caches
   private intervals: NodeJS.Timer[] = [];
   private segmentCache: SegmentCache;
   private requestCache: RequestCache;
-  private reliabilityScore: ReliabilityScore;
-  // selected entry node
-  private entryNode?: EntryNode;
-  // available exit nodes
-  private exitNodes: ExitNode[] = [];
-  // stopMessageListener
-  private stopMessageListener?: () => void;
-  // an epoch timestamp that stops creating requests until that time has passed
+  private selectingEntryNodes: boolean = false;
+  // an epoch timestamp that halts selecting new entry nodes
   public deadlockTimestamp: number | undefined;
-  // toggle to not select entry nodes while another one is being selected
-  private selectingEntryNode: boolean | undefined;
+  // keeps track a reliability score for every entry-node used
+  private reliabilityScore: ReliabilityScore;
+  // allows developers to programmatically enable debugging
+  public debug = debug;
   // toogle to not start if it's already starting
-  public starting: boolean | undefined;
+  public starting: boolean = false;
+  // resolves once SDK has started
+  public startingPromise = new utils.DeferredPromise<void>();
 
   constructor(
     private readonly ops: HoprSdkOps,
@@ -89,19 +122,109 @@ export default class SDK {
     this.crypto.set_panic_hook();
     this.segmentCache = new SegmentCache((message) => this.onMessage(message));
     this.requestCache = new RequestCache((request) =>
-      this.onRequestRemoval(request)
+      this.onRequestExpiration(request)
     );
     this.reliabilityScore = new ReliabilityScore(
-      ops.reliabilityScoreFreshNodeThreshold || 20,
-      ops.reliabilityScoreMaxResponses || 100
+      ops.reliabilityScoreFreshNodeThreshold ||
+        DEFAULT_RELIABILITY_SCORE_FRESH_NODE_THRESHOLD,
+      ops.reliabilityScoreMaxResponses ||
+        DEFAULT_RELIABILITY_SCORE_MAX_RESPONSES
     );
+    // set to default if not specified
+    this.maximumSegmentsPerRequest =
+      ops.maximumSegmentsPerRequest ?? DEFAULT_MAXIMUM_SEGMENTS_PER_REQUEST;
+    this.resetNodeMetricsMs =
+      ops.resetNodeMetricsMs ?? DEFAULT_RESET_NODE_METRICS_MS;
+    this.deadlockMs = ops.deadlockMs ?? DEFAULT_DEADLOCK_MS;
+    this.minimumScoreForReliableNode =
+      ops.minimumScoreForReliableNode ??
+      DEFAULT_MINIMUM_SCORE_FOR_RELIABLE_NODE;
+    this.maxEntryNodes = ops.maxEntryNodes ?? DEFAULT_MAX_ENTRY_NODES;
   }
 
   /**
    * @return true if SDK is ready to send requests
    */
   public get isReady(): boolean {
-    return !!this.entryNode && this.exitNodes.length > 0;
+    return this.entryNodes.size > 0 && this.exitNodes.length > 0;
+  }
+
+  /**
+   * Will select until nodes until MAX is reached.
+   * Ignores "bad" nodes.
+   * @param discoveryPlatformApiEndpoint
+   */
+  private async selectEntryNodes(
+    discoveryPlatformApiEndpoint: string
+  ): Promise<void> {
+    if (this.selectingEntryNodes || this.isDeadlocked()) return;
+    try {
+      // we only need 1 when we force an entry node
+      const amountNeeded =
+        (this.ops.forceEntryNode ? 1 : this.maxEntryNodes) -
+        this.entryNodes.size;
+      if (amountNeeded === 0) return;
+
+      let brokenNodes: string[] = [];
+      if (this.ops.forceEntryNode) {
+        // we pretend everything is okay if we need to force an entry node
+        brokenNodes = [];
+      } else {
+        brokenNodes = this.reliabilityScore
+          .getScores()
+          .filter(({ peerId }) => !this.isEntryNodeReliable(peerId))
+          .map(({ peerId }) => peerId);
+      }
+
+      log.normal(
+        `Selecting '${amountNeeded}' entry nodes and excluding`,
+        brokenNodes.length == 0 ? "none" : brokenNodes.join(",")
+      );
+      this.selectingEntryNodes = true;
+
+      // get new entry nodes
+      let entryNodes: EntryNode[] = [];
+      for (let i = 0; i < amountNeeded; i++) {
+        const excludeList: string[] = [
+          ...brokenNodes,
+          ...entryNodes.map((e) => e.peerId),
+        ];
+        const entryNode = await retry(
+          async () => {
+            return this.selectEntryNode(
+              discoveryPlatformApiEndpoint,
+              excludeList
+            );
+          },
+          {
+            retries: 5,
+            onRetry: (e, attempt) => {
+              log.error("Error while selecting entry node", e);
+              log.verbose("Retrying to select entry node, attempt:", attempt);
+            },
+          }
+        );
+        entryNodes.push(entryNode);
+      }
+    } catch (error) {
+      log.error("Couldn't find new entry node: ", error);
+      if (!this.ops.disableDeadlock) this.setDeadlock(this.deadlockMs);
+      throw error;
+    } finally {
+      this.selectingEntryNodes = false;
+    }
+  }
+
+  /**
+   * Stop WS listener and removes entry node from our list.
+   * @param peerId
+   */
+  private removeEntryNode(peerId: string): void {
+    const entryNode = this.entryNodes.get(peerId);
+    if (entryNode) {
+      if (entryNode.stopMessageListener) entryNode.stopMessageListener();
+      this.entryNodes.delete(peerId);
+    }
   }
 
   /**
@@ -111,98 +234,93 @@ export default class SDK {
    */
   private async selectEntryNode(
     discoveryPlatformApiEndpoint: string,
-    exclusionList?: string[]
-  ): Promise<{
-    apiEndpoint: string;
-    apiToken: string;
-    peerId: string;
-  }> {
-    try {
-      this.selectingEntryNode = true;
-      log.verbose("Selecting entry node");
+    excludeList?: string[]
+  ): Promise<EntryNode> {
+    log.verbose("Selecting entry node");
 
-      // use forced entry node
-      if (this.ops.forceEntryNode) {
-        this.entryNode = this.ops.forceEntryNode;
-      }
-      // ask discovery platform
-      else {
-        const rawResponse: globalThis.Response = await fetch(
-          new URL(
-            "/api/v1/request/entry-node",
-            discoveryPlatformApiEndpoint
-          ).toString(),
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Accept-Content": "application/json",
-              "x-rpch-client": this.ops.client,
-            },
-            body: JSON.stringify({
-              exclusionList,
-              client: this.ops.client,
-            }),
-          }
-        );
-
-        // Check for error response
-        if (rawResponse.status !== 200) {
-          log.error(
-            "Failed to request entry node",
-            rawResponse.status,
-            await rawResponse.text()
-          );
-          throw new Error(`Failed to request entry node`);
-        }
-
-        const response: {
-          hoprd_api_endpoint: string;
-          accessToken: string;
-          id: string;
-        } = await rawResponse.json();
-
-        const apiEndpointUrl = new URL(response.hoprd_api_endpoint);
-
-        this.entryNode = {
-          apiEndpoint: apiEndpointUrl.toString(),
-          apiToken: response.accessToken,
-          peerId: response.id,
-        };
-      }
-
-      log.verbose(
-        "Selected entry node",
-        this.entryNode,
-        `forced=${!!this.ops.forceEntryNode}`
-      );
-
-      // Refresh messageListener
-      if (this.stopMessageListener) this.stopMessageListener();
-      const connection = await hoprd.createMessageListener(
-        this.entryNode!.apiEndpoint,
-        this.entryNode!.apiToken,
-        (message) => {
-          try {
-            const segment = Segment.fromString(message);
-            this.segmentCache.onSegment(segment);
-          } catch (error) {
-            log.verbose(
-              "rejected received data from HOPRd: not a valid segment",
-              message
-            );
-          }
-        }
-      );
-      this.stopMessageListener = () => {
-        if (connection.close) connection.close();
-      };
-      return this.entryNode;
-    } catch (error) {
-      throw error;
-    } finally {
-      this.selectingEntryNode = false;
+    let entryNode: EntryNode;
+    // use forced entry node
+    if (this.ops.forceEntryNode) {
+      entryNode = this.ops.forceEntryNode;
     }
+    // ask discovery platform
+    else {
+      const rawResponse: globalThis.Response = await fetch(
+        new URL(
+          "/api/v1/request/entry-node",
+          discoveryPlatformApiEndpoint
+        ).toString(),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept-Content": "application/json",
+            "x-rpch-client": this.ops.client,
+          },
+          body: JSON.stringify({
+            excludeList,
+            client: this.ops.client,
+          }),
+        }
+      );
+
+      // Check for error response
+      if (rawResponse.status !== 200) {
+        log.error(
+          "Failed to request entry node",
+          rawResponse.status,
+          await rawResponse.text()
+        );
+        throw new Error(`Failed to request entry node`);
+      }
+
+      const response: {
+        hoprd_api_endpoint: string;
+        accessToken: string;
+        id: string;
+      } = await rawResponse.json();
+
+      const apiEndpointUrl = new URL(response.hoprd_api_endpoint);
+
+      entryNode = {
+        apiEndpoint: apiEndpointUrl.toString(),
+        apiToken: response.accessToken,
+        peerId: response.id,
+      };
+    }
+
+    log.verbose(
+      "Selected entry node",
+      entryNode,
+      `forced=${!!this.ops.forceEntryNode}`
+    );
+
+    // stop message listening from the previous node
+    if (this.entryNodes.has(entryNode.peerId)) {
+      this.removeEntryNode(entryNode.peerId);
+    }
+    // create new WS connection
+    const connection = await hoprd.createMessageListener(
+      entryNode.apiEndpoint,
+      entryNode.apiToken,
+      (message) => {
+        try {
+          const segment = Segment.fromString(message);
+          this.segmentCache.onSegment(segment);
+        } catch {
+          log.verbose(
+            "rejected received data from HOPRd: not a valid segment",
+            message
+          );
+        }
+      }
+    );
+    entryNode.stopMessageListener = () => {
+      if (connection.close) connection.close();
+    };
+
+    this.entryNodes.set(entryNode.peerId, entryNode);
+    return entryNode;
   }
 
   /**
@@ -266,7 +384,7 @@ export default class SDK {
     // check whether we have a matching request id
     const match = this.requestCache.getRequest(message.id);
     if (!match) {
-      log.error("matching request not found", message.id);
+      log.verbose("matching request not found", message.id);
       return;
     }
 
@@ -301,15 +419,28 @@ export default class SDK {
         "success"
       );
 
+      log.normal("received response for %i", match.request.id);
       log.verbose("responded to %s with %s", match.request.body, response.body);
     } catch (e) {
-      log.error(
-        "failed to decrypt message id %s with body",
+      log.verbose(
+        "failed to decrypt message id %i from %s with body",
         message.id,
-        message.body
+        match.request.exitNodeDestination
       );
       this.handleFailedRequest(match.request, "failed to decrypt");
     }
+  }
+
+  /**
+   * Updates the score of an entry node.
+   * Removes it if it ranks too low.
+   * @param req
+   * @param result
+   */
+  private updateEntryNodeScore(req: Request, result: Result): void {
+    this.reliabilityScore.addMetric(req.entryNodeDestination, req.id, result);
+    // remove entry node as soon as we find its not reliable
+    this.removeEntryNode(req.entryNodeDestination);
   }
 
   /**
@@ -317,10 +448,9 @@ export default class SDK {
    * when the request expires.
    * @param req Request received from cache module.
    */
-  private onRequestRemoval(req: Request): void {
-    // @ts-ignore
-    this.reliabilityScore.addMetric(req.entryNodeDestination, req.id, "failed");
-    log.normal("request %s expired", req.id);
+  private onRequestExpiration(req: Request): void {
+    log.normal("request %i expired", req.id);
+    this.updateEntryNodeScore(req, "failed");
   }
 
   /**
@@ -329,8 +459,9 @@ export default class SDK {
    * @returns void
    */
   public handleFailedRequest(req: Request, reason?: string) {
+    log.normal("request %i failed", req.id, reason || "unknown reason");
     // add metric failed metric
-    this.onRequestRemoval(req);
+    this.updateEntryNodeScore(req, "failed");
     // reject request promise
     this.requestCache.getRequest(req.id)?.reject(`request failed: "${reason}"`);
     this.requestCache.removeRequest(req);
@@ -340,23 +471,18 @@ export default class SDK {
    * Start the SDK and initialize necessary data.
    */
   public async start(): Promise<void> {
+    // already started
     if (this.isReady) return;
+    // already in the proccess of starting
+    if (this.starting) return this.startingPromise.promise;
+
     try {
-      if (this.starting) throw Error("SDK is already starting");
       this.starting = true;
 
-      // fetch required data from discovery platform
-      await retry(
-        () => this.selectEntryNode(this.ops.discoveryPlatformApiEndpoint),
-        {
-          retries: 5,
-          onRetry: (e, attempt) => {
-            log.error("Error while selecting entry node", e);
-            log.verbose("Retrying to select entry node, attempt:", attempt);
-          },
-        }
-      );
+      // fetch entry nodes from discovery platform
+      await this.selectEntryNodes(this.ops.discoveryPlatformApiEndpoint);
 
+      // fetch exit nodes from discovery platform
       await retry(
         () => this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint),
         {
@@ -368,16 +494,46 @@ export default class SDK {
         }
       );
 
-      // check for expires caches every second
       this.intervals.push(
         setInterval(() => {
+          // check for expires caches every second
           this.segmentCache.removeExpired(this.ops.timeout);
           this.requestCache.removeExpired(this.ops.timeout);
+
+          // checks whether to fetch new entry nodes
+          this.selectEntryNodes(this.ops.discoveryPlatformApiEndpoint).catch(
+            (error) => {
+              log.error("Failed to select entry nodes", error);
+            }
+          );
+
+          // remove unstable entry nodes
+          for (const peerId of this.entryNodes.keys()) {
+            if (!this.isEntryNodeReliable(peerId)) this.removeEntryNode(peerId);
+          }
+
+          // reset old nodes from reliability score
+          this.reliabilityScore.resetOldNodeMetrics(this.resetNodeMetricsMs);
         }, 1e3)
       );
-      // update exit nodes every minute
+
       this.intervals.push(
         setInterval(() => {
+          // logs the status of the entry nodes
+          let logStr = `Using '${this.entryNodes.size}' entry nodes with score:`;
+          for (const peerId of this.entryNodes.keys()) {
+            logStr += "\n";
+            logStr += `  ${peerId}: ${this.reliabilityScore.getScore(
+              peerId
+            )} ${this.reliabilityScore.getStatus(peerId)}`;
+          }
+          log.normal(logStr);
+        }, 10e3)
+      );
+
+      this.intervals.push(
+        setInterval(() => {
+          // update exit nodes every minute
           this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint).catch(
             (error) => {
               log.error("Failed to fetch exit nodes", error);
@@ -385,8 +541,13 @@ export default class SDK {
           );
         }, 60e3)
       );
+
+      this.startingPromise.resolve();
+      log.normal("SDK started");
     } catch (e: any) {
-      log.error("Could not start SDK", e.message);
+      this.startingPromise.reject(e.message);
+      log.normal("SDK failed to start", e.message);
+      await this.stop();
     } finally {
       this.starting = false;
     }
@@ -396,10 +557,26 @@ export default class SDK {
    * Stop the SDK and clear up tangling processes.
    */
   public async stop(): Promise<void> {
-    if (this.stopMessageListener) this.stopMessageListener();
+    // remove all intervals
     for (const interval of this.intervals) {
       clearInterval(interval);
     }
+    // stop all WS listeners
+    for (const peerId of this.entryNodes.keys()) {
+      this.removeEntryNode(peerId);
+    }
+  }
+
+  /**
+   * @param entryNode
+   * @returns `true` is entry node is reliable
+   */
+  private isEntryNodeReliable(entryNodePeerId: string): boolean {
+    const score = this.reliabilityScore.getScore(entryNodePeerId);
+    const status = this.reliabilityScore.getStatus(entryNodePeerId);
+    const hasLowScore = score < this.minimumScoreForReliableNode;
+    const isNotFresh = status === "NON_FRESH";
+    return !(hasLowScore && isNotFresh);
   }
 
   /**
@@ -410,53 +587,29 @@ export default class SDK {
    */
   public async createRequest(provider: string, body: string): Promise<Request> {
     if (!this.isReady) throw Error("SDK not ready to create requests");
-    if (this.selectingEntryNode) throw Error("SDK is selecting entry node");
 
-    let entryNodeScore: number = this.reliabilityScore.getScore(
-      this.entryNode!.peerId
+    // get reliable entry nodes
+    const reliableEntryNodes = Array.from(this.entryNodes.values()).filter(
+      (entryNode) => this.isEntryNodeReliable(entryNode.peerId)
     );
-    const exclusionList: string[] = [];
-    if (
-      entryNodeScore < MINIMUM_SCORE_FOR_RELIABLE_NODE &&
-      this.reliabilityScore.getStatus(this.entryNode!.peerId) === "NON_FRESH"
-    ) {
-      log.verbose("node is not reliable enough. selecting new entry node");
-      exclusionList.push(this.entryNode!.peerId);
-      // Try to select entry node 3 times
-      try {
-        await retry(
-          async () => {
-            const selectedEntryNode = await this.selectEntryNode(
-              this.ops.discoveryPlatformApiEndpoint,
-              exclusionList
-            );
-            log.verbose("Received entry node", selectedEntryNode);
-            return selectedEntryNode;
-          },
-          {
-            retries: 3,
-            onRetry: (e, attempt) => {
-              log.error("Error while selecting entry node", e);
-              log.verbose("Retrying to select entry node, attempt:", attempt);
-            },
-          }
-        );
-      } catch (error) {
-        log.error("Couldn't find new entry node: ", error);
-        this.setDeadlock(DEADLOCK_MS);
-      }
+    if (reliableEntryNodes.length === 0) {
+      throw Error("SDK does not have any reliable entry nodes");
     }
+    const entryNode = utils.randomlySelectFromArray(reliableEntryNodes);
 
     // exclude entry node
     const eligibleExitNodes = this.exitNodes.filter(
-      (node) => node.peerId !== this.entryNode?.peerId
+      (node) => node.peerId !== entryNode.peerId
     );
+    if (eligibleExitNodes.length === 0) {
+      throw Error("SDK does not have any eligible exit nodes");
+    }
     const exitNode = utils.randomlySelectFromArray(eligibleExitNodes);
     return await Request.createRequest(
       this.crypto!,
       provider,
       body,
-      this.entryNode!.peerId,
+      entryNode.peerId,
       exitNode.peerId,
       this.crypto!.Identity.load_identity(etherUtils.arrayify(exitNode.pubKey))
     );
@@ -471,8 +624,9 @@ export default class SDK {
     const now = Date.now();
     if (now < this.deadlockTimestamp) {
       log.verbose("SDK is deadlocked until", this.deadlockTimestamp);
+      return true;
     }
-    return now < this.deadlockTimestamp;
+    return false;
   }
 
   /**
@@ -496,16 +650,12 @@ export default class SDK {
       throw Error("SDK not ready to send requests");
     }
 
-    // Check if SDK is deadlocked
-    if (this.isDeadlocked()) {
-      throw Error("SDK is deadlocked");
-    }
-
     return new Promise(async (resolve, reject) => {
+      log.normal("sending request %i", req.id);
       const message = req.toMessage();
       const segments = message.toSegments();
 
-      if (segments.length > MAXIMUM_SEGMENTS_PER_REQUEST) {
+      if (segments.length > this.maximumSegmentsPerRequest) {
         log.error(
           "Request exceeds maximum amount of segments with %s segments",
           segments.length
@@ -518,9 +668,11 @@ export default class SDK {
 
       // Send all segments in parallel using Promise.allSettled
       const sendMessagePromises = segments.map((segment) => {
+        const entryNode = this.entryNodes.get(req.entryNodeDestination);
+        if (!entryNode) throw Error("EntryNode is no longer reliable");
         return hoprd.sendMessage({
-          apiEndpoint: this.entryNode!.apiEndpoint,
-          apiToken: this.entryNode!.apiToken,
+          apiEndpoint: entryNode.apiEndpoint,
+          apiToken: entryNode.apiToken,
           message: segment.toString(),
           destination: req.exitNodeDestination,
           path: [],
@@ -540,7 +692,6 @@ export default class SDK {
         }
       } catch (e: any) {
         // If there was an error sending the request, remove request from cache and reject promise
-        log.error("failed to send message to hoprd", e);
         this.handleFailedRequest(req, e);
       }
     });

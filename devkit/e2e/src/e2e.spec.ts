@@ -5,7 +5,6 @@ import * as fixtures from "@rpch/common/build/fixtures";
 
 const PROVIDER_URL = fixtures.PROVIDER;
 const DISCOVERY_PLATFORM_API_ENDPOINT = "http://localhost:3020";
-const SDK_TIMEOUT = 30e3;
 const sdkStore = fixtures.createAsyncKeyValStore();
 
 jest.setTimeout(1e3 * 60 * 1); // one minute
@@ -15,16 +14,21 @@ describe("e2e tests", function () {
     {
       crypto: PRChCrypto,
       client: "sandbox",
-      timeout: SDK_TIMEOUT,
+      timeout: 5000,
       discoveryPlatformApiEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
     },
     sdkStore.set,
     sdkStore.get
   );
 
+  // enable debugging
+  provider.sdk.debug.enable("rpch*");
+
   beforeAll(async function () {
+    // sandbox requires 30 seconds to kickstart
+    await fixtures.wait(30000);
     await provider.sdk.start();
-  });
+  }, 60e3);
 
   afterAll(async function () {
     await provider.sdk.stop();
