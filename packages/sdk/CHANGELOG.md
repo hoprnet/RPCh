@@ -1,5 +1,13 @@
 # @rpch/sdk
 
+## 0.2.2
+
+### Patch Changes
+
+- Improved entry node re-selection
+- Updated dependencies
+  - @rpch/common@0.2.2
+
 ## 0.2.1
 
 ### Patch Changes

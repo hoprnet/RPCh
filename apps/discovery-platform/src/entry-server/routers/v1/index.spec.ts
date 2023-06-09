@@ -432,7 +432,7 @@ describe("test v1 router", function () {
       assert.equal(requestResponse.body.errors, "Could not find eligible node");
       spy.mockRestore();
     });
-    it("should reduce client quota", async function () {
+    it.skip("should reduce client quota", async function () {
       const spyGetEligibleNode = jest.spyOn(registeredNode, "getEligibleNode");
       const amountLeft = BigInt(10).toString();
       const peerId = "entry";

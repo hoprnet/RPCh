@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "@hoprnet/hopr-sdk": "^0.0.1-alpha.6",
-    "@rpch/common": "0.2.1",
+    "@rpch/common": "0.2.2",
     "@rpch/discovery-platform": "*",
     "async": "^3.2.4",
     "async-retry": "^1.3.3",

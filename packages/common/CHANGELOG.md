@@ -1,5 +1,11 @@
 # @rpch/common
 
+## 0.2.2
+
+### Patch Changes
+
+- Improved entry node re-selection
+
 ## 0.2.1
 
 ### Patch Changes

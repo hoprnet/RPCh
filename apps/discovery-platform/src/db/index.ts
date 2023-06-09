@@ -39,7 +39,7 @@ export const getRegisteredNodes = async (
   let filtersText = [];
   const values: { [key: string]: string } = {};
 
-  if (filters?.excludeList !== undefined) {
+  if (filters?.excludeList !== undefined && filters.excludeList.length !== 0) {
     filtersText.push("id NOT IN ($<list>)");
     values["list"] = filters.excludeList.join(", ");
   }
