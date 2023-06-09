@@ -1,7 +1,7 @@
 import type { Gauge } from "prom-client";
 import { queue as AsyncQueue, QueueObject } from "async";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
-import review, { type Result, listOfChecks } from "./review";
+import review, { type Result } from "./review";
 import {
   type DBInstance,
   type RegisteredNode,
@@ -12,17 +12,6 @@ import { createLogger, fromDbNode } from "./utils";
 import { callbackify } from "util";
 
 const log = createLogger(["reviewer"]);
-
-/** Labels to be used in metrics */
-const REVIEW_METRIC_NAME = "guage_review_result";
-const REVIEW_METRIC_HELP = "whether a node is considered stable";
-const REVIEW_METRIC_LABELS = [
-  "peerId",
-  "hasExitNode",
-  ...listOfChecks.map((str) => (str += "Passed")),
-  ...listOfChecks.map((str) => (str += "Value")),
-  ...listOfChecks.map((str) => (str += "Error")),
-];
 
 /**
  * Queue for multiple node reviews at a time.
@@ -60,7 +49,7 @@ export class ReviewQueue {
  */
 export default class Reviewer {
   private interval: NodeJS.Timer | undefined;
-  private reviewGuage: Gauge;
+  private stabilityGuage: Gauge;
   private reviewQueue: ReviewQueue;
   public readonly results: Map<string, Result> = new Map();
 
@@ -77,13 +66,11 @@ export default class Reviewer {
     concurrency: number
   ) {
     this.reviewQueue = new ReviewQueue(concurrency);
-    this.reviewGuage = metricManager.createGauge(
-      REVIEW_METRIC_NAME,
-      REVIEW_METRIC_HELP,
-      // library is incorrectly typed here
-      // @ts-expect-error
+    this.stabilityGuage = metricManager.createGauge(
+      "availability_monitor_stability",
+      "whether a node is stable",
       {
-        labelNames: REVIEW_METRIC_LABELS,
+        labelNames: ["peer_id"],
       }
     );
   }
@@ -95,28 +82,9 @@ export default class Reviewer {
    */
   private onResult(node: RegisteredNode, result: Result): void {
     this.results.set(node.peerId, result);
-    this.reviewGuage.set(
+    this.stabilityGuage.set(
       {
-        peerId: node.peerId,
-        hasExitNode: Number(node.hasExitNode),
-        hoprdVersionPassed: Number(result.hoprdVersion.passed),
-        hoprdVersionValue: String(result.hoprdVersion.value),
-        hoprdVersionError: String(result.hoprdVersion.error),
-        hoprdHealthPassed: Number(result.hoprdHealth.passed),
-        hoprdHealthValue: String(result.hoprdHealth.value),
-        hoprdHealthError: String(result.hoprdHealth.error),
-        hoprdWorkingApiEndpointPassed: Number(
-          result.hoprdWorkingApiEndpoint.passed
-        ),
-        hoprdWorkingApiEndpointValue: String(
-          result.hoprdWorkingApiEndpoint.value
-        ),
-        hoprdWorkingApiEndpointError: String(
-          result.hoprdWorkingApiEndpoint.error
-        ),
-        hoprdSSLPassed: Number(result.hoprdSSL.passed),
-        hoprdSSLValue: String(result.hoprdSSL.value),
-        hoprdSSLError: String(result.hoprdSSL.error),
+        peer_id: node.peerId,
       },
       Number(result.isStable)
     );

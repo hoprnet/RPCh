@@ -1,5 +1,8 @@
 import type * as Prometheus from "prom-client";
 
+/** Overwriting these values will not use specified prefixes */
+type OmitNameAndHelp<T> = Omit<T, "name" | "help">;
+
 export class MetricManager {
   constructor(
     private promClient: typeof Prometheus,
@@ -11,10 +14,9 @@ export class MetricManager {
     name: string,
     help: string,
     config?: {
-      [key in keyof Omit<
-        Prometheus.CounterConfiguration<string>,
-        "name" | "help"
-      >]: Prometheus.CounterConfiguration<string>[key] | undefined;
+      [key in keyof OmitNameAndHelp<Prometheus.CounterConfiguration<string>>]:
+        | Prometheus.CounterConfiguration<string>[key]
+        | undefined;
     }
   ) {
     return new this.promClient.Counter({
@@ -28,7 +30,11 @@ export class MetricManager {
   public createGauge(
     name: string,
     help: string,
-    config?: Prometheus.GaugeConfiguration<string>
+    config?: {
+      [key in keyof OmitNameAndHelp<Prometheus.GaugeConfiguration<string>>]:
+        | Prometheus.GaugeConfiguration<string>[key]
+        | undefined;
+    }
   ) {
     return new this.promClient.Gauge({
       name: this.appName + "_" + name,
@@ -42,9 +48,8 @@ export class MetricManager {
     name: string,
     help: string,
     config?: {
-      [key in keyof Omit<
-        Prometheus.HistogramConfiguration<string>,
-        "name" | "help"
+      [key in keyof OmitNameAndHelp<
+        Prometheus.HistogramConfiguration<string>
       >]: Prometheus.HistogramConfiguration<string>[key] | undefined;
     }
   ) {
@@ -59,7 +64,11 @@ export class MetricManager {
   public createSummary(
     name: string,
     help: string,
-    config?: Prometheus.SummaryConfiguration<string>
+    config?: {
+      [key in keyof OmitNameAndHelp<Prometheus.SummaryConfiguration<string>>]:
+        | Prometheus.SummaryConfiguration<string>[key]
+        | undefined;
+    }
   ) {
     return new this.promClient.Summary({
       name: this.appName + "_" + name,
