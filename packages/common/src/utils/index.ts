@@ -11,31 +11,19 @@ export const createLogger = LoggerFactory("common");
 export const MAX_BYTES = 400;
 
 /**
- * Split string such that its byte representation does not
- * exceed maxBytes
+ * Split string by bytes.
  * @param str
  * @param maxBytes
  * @returns splitted string
  */
 export const splitStrByBytes = (str: string, maxBytes: number): string[] => {
+  let arr = utils.toUtf8Bytes(str);
   const res: string[] = [];
 
-  let offset = 0;
-  let current = "";
-
-  for (let utf8char of str) {
-    if (offset + utf8char.length > maxBytes) {
-      res.push(current);
-      offset = 0;
-      current = "";
-    }
-
-    offset += utf8char.length;
-    current += utf8char;
-  }
-
-  if (current.length > 0) {
-    res.push(current);
+  while (arr.length > 0) {
+    const index = arr.length > maxBytes ? maxBytes : arr.length;
+    res.push(utils.toUtf8String(arr.slice(0, index)));
+    arr = arr.slice(index, arr.length);
   }
 
   return res;
