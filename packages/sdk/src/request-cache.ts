@@ -19,7 +19,7 @@ export default class RequestCache {
     }
   >();
 
-  constructor(private onRequestRemoval: (req: Request) => void) {}
+  constructor(private onRequestExpiration: (req: Request) => void) {}
 
   /**
    * Add Request to requests map
@@ -67,7 +67,7 @@ export default class RequestCache {
     for (const [key, entry] of this.requests.entries()) {
       if (utils.isExpired(timeout, now, entry.createdAt)) {
         entry.reject("Request timed out");
-        this.onRequestRemoval(entry.request);
+        this.onRequestExpiration(entry.request);
         this.requests.delete(key);
       }
     }
