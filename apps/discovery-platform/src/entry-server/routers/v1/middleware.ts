@@ -7,13 +7,16 @@ import { getClient } from "../../../client";
 
 const log = createLogger(["entry-server", "router", "v1", "middleware"]);
 
-export const getCache = () => {
+export const getCache = <T>(
+  constructKey: (req: Request) => string,
+  modifyPayload: (body: T) => T
+) => {
   return (req: Request, res: Response<any, any>, next: NextFunction) => {
-    let key = req.originalUrl || req.url;
+    let key = constructKey(req);
     let cachedBody = memoryCache.get(key);
     if (cachedBody) {
       log.verbose("Returning cached value for endpoint: ", key);
-      return res.json(cachedBody);
+      return res.json(modifyPayload(cachedBody));
     }
     next();
   };

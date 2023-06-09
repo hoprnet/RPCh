@@ -1,6 +1,8 @@
 const {
   // Api endpoint used for completing funding requests of registered nodes
   FUNDING_SERVICE_URL,
+  // API endpoint used to interact with availability monitor
+  AVAILABILITY_MONITOR_URL,
   // Database connection url
   DB_CONNECTION_URL,
   // Secret for custom authentication
@@ -67,4 +69,5 @@ export {
   TRIAL_PAYMENT_MODE,
   QUEUE_CONCURRENCY_LIMIT,
   SECRET,
+  AVAILABILITY_MONITOR_URL,
 };

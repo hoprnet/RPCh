@@ -45,6 +45,7 @@ export const v1Router = (ops: {
   fundingServiceApi: FundingServiceApi;
   metricManager: MetricManager;
   secret: string;
+  getUnstableNodes: () => string[];
 }) => {
   // Metrics
   const counterSuccessfulRequests = ops.metricManager.createCounter(
@@ -115,7 +116,18 @@ export const v1Router = (ops: {
     "/node",
     metricMiddleware(requestDurationHistogram),
     checkSchema(getNodeSchema),
-    getCache(), // check if response is in cache
+    getCache<RegisteredNodeDB[]>(
+      (req) => req.originalUrl || req.url,
+      (body) => {
+        const unstableNodes = ops.getUnstableNodes();
+        return body.reduce<RegisteredNodeDB[]>((result, node) => {
+          if (!unstableNodes.includes(node.id)) {
+            result.push(node);
+          }
+          return result;
+        }, []);
+      }
+    ), // check if response is in cache
     async (
       req: Request<
         {},
@@ -356,7 +368,10 @@ export const v1Router = (ops: {
             .inc();
           return res.status(400).json({ errors: errors.array() });
         }
-        let { excludeList, client } = req.body;
+        let { excludeList = [], client } = req.body as {
+          excludeList: string[];
+          client?: string;
+        };
 
         if (!client) {
           // check if client was sent in headers
@@ -390,6 +405,19 @@ export const v1Router = (ops: {
         //     body: "Client does not have enough quota",
         //   });
         // }
+
+        // expand 'excludeList' with unstable nodes
+        const unstableNodes = ops.getUnstableNodes();
+        if (unstableNodes.length > 0) {
+          log.verbose(
+            "We have unstable nodes %i, adding to 'excludeList'",
+            unstableNodes.length
+          );
+          for (const unstableNode of unstableNodes) {
+            if (excludeList.includes(unstableNode)) continue;
+            excludeList.push(unstableNode);
+          }
+        }
 
         // choose selected entry node
         const selectedNode = await getEligibleNode(ops.db, { excludeList });

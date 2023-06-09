@@ -38,6 +38,8 @@ const mockNode = (peerId?: string, hasExitNode?: boolean): RegisteredNode => ({
   nativeAddress: "someAddress",
 });
 
+const getUnstableNodesMock = jest.fn(() => ["peerId_unstable"]);
+
 describe("test entry server", function () {
   let dbInstance: DBInstance;
   let app: Express;
@@ -65,6 +67,7 @@ describe("test entry server", function () {
       fundingServiceApi,
       metricManager: metricManager,
       secret: SECRET,
+      getUnstableNodes: getUnstableNodesMock,
     });
   });
 
