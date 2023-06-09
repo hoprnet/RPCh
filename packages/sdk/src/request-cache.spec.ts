@@ -45,7 +45,7 @@ describe("test request cache class", function () {
     requestCache.removeExpired(TIMEOUT);
     assert.equal(requestCache.getRequest(request.id), undefined);
     // @ts-ignore-next-line
-    assert.equal(requestCache.onRequestRemoval.mock.calls.length, 1);
+    assert.equal(requestCache.onRequestExpiration.mock.calls.length, 1);
     jest.useRealTimers();
   });
 });

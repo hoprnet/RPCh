@@ -31,7 +31,7 @@ const sdk = new SDK(
   {
     crypto: RPChCrypto,
     client: "your_client_name",
-    timeout: 20000,
+    timeout: 5000,
     discoveryPlatformApiEndpoint: "https://staging.discovery.rpch.tech",
   },
   setKeyValFunction,

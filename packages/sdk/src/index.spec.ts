@@ -58,6 +58,8 @@ const createSdkMock = (
     reliabilityScoreFreshNodeThreshold: 1,
     forceEntryNode: overwriteOps?.forceEntryNode,
     forceExitNode: overwriteOps?.forceExitNode,
+    maxEntryNodes: 1,
+    maximumSegmentsPerRequest: 100,
   };
 
   const sdk = new SDK(ops, store.set, store.get);
@@ -256,10 +258,10 @@ describe("test SDK class", function () {
       assert(addMetricMock.mock.calls.at(0)?.includes("success"));
     });
 
-    it("should call addMetric when onRequestRemoval is triggered", async function () {
+    it("should call addMetric when onRequestExpiration is triggered", async function () {
       HOPRD_SEND_MESSAGE_NOCK.reply(202, "someresponse");
 
-      const [largeRequest, , largeResponse] = await fixtures.generateMockedFlow(
+      const [largeRequest] = await fixtures.generateMockedFlow(
         3,
         fixtures.RPC_REQ_LARGE,
         undefined,
@@ -274,8 +276,7 @@ describe("test SDK class", function () {
         () => {},
         () => {}
       );
-      // @ts-ignore
-      sdk.onRequestRemoval(largeResponse);
+      sdk["onRequestExpiration"](largeRequest);
       assert.equal(addMetricMock.mock.calls.length, 1);
       assert(addMetricMock.mock.calls.at(0)?.includes("failed"));
     });
@@ -283,29 +284,32 @@ describe("test SDK class", function () {
     describe("should select reliable node", function () {
       it("selects new node when selected node is dishonest", async function () {
         // Make original selected node have a low score
-        // @ts-ignore
-        sdk.reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, 1, "dishonest");
-        // @ts-ignore
-        sdk.reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, 2, "dishonest");
+        // remove nodes
+        sdk["updateEntryNodeScore"](
+          {
+            entryNodeDestination: ENTRY_NODE_PEER_ID,
+          } as any,
+          "dishonest"
+        );
 
         // select a new reliable node
-        // @ts-ignore
-        sdk.selectEntryNode = jest.fn(() => {
-          // @ts-ignore
-          sdk.entryNode = {
-            apiEndpoint: "reliableEndpoint",
-            apiToken: "reliableToken",
-            peerId: "reliablePeerId",
-          };
+        DP_REQ_ENTRY_NOCK.reply(200, {
+          hoprd_api_endpoint: ENTRY_NODE_API_ENDPOINT,
+          hoprd_api_port: ENTRY_NODE_API_PORT,
+          accessToken: ENTRY_NODE_API_TOKEN,
+          id: "someothernode",
         });
-        const request = await sdk.createRequest(
-          fixtures.PROVIDER,
-          fixtures.RPC_REQ_LARGE
+
+        await sdk["selectEntryNodes"](
+          sdk["ops"]["discoveryPlatformApiEndpoint"]
         );
 
         // @ts-ignore
-        assert.equal(sdk.selectEntryNode.mock.calls.length, 1);
-        assert.equal(request.entryNodeDestination, "reliablePeerId");
+        assert.equal(sdk["entryNodes"].size, 1);
+        assert.equal(
+          sdk["entryNodes"].get("someothernode")?.peerId,
+          "someothernode"
+        );
       });
 
       it("does not select new node when node is fresh", async function () {
@@ -325,38 +329,6 @@ describe("test SDK class", function () {
 
         await sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE);
         assert.equal(addMetricsEntryNode.mock.calls.length, 0);
-      });
-
-      it("should not select more than one entry node at a time", async function () {
-        // Make original selected node have a low score
-        // @ts-ignore
-        sdk.reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, 1, "dishonest");
-        // @ts-ignore
-        sdk.reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, 2, "dishonest");
-
-        // select a new reliable node
-        // @ts-ignore
-        sdk.selectEntryNode = jest.fn(() => {
-          // @ts-ignore
-          sdk.entryNode = {
-            apiEndpoint: "reliableEndpoint",
-            apiToken: "reliableToken",
-            peerId: "reliablePeerId",
-          };
-        });
-
-        // send bulk requests
-        try {
-          await Promise.all([
-            sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE),
-            sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE),
-            sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE),
-          ]);
-        } catch (e: any) {
-          assert.equal(e.message, "SDK is selecting entry node");
-          // @ts-ignore
-          assert.equal(sdk.selectEntryNode.mock.calls.length, 1);
-        }
       });
     });
 
@@ -398,15 +370,24 @@ describe("test SDK class", function () {
       }
     });
 
-    it("should not allow sending requests if sdk is deadlocked", async function () {
+    it("should allow sending requests if sdk is deadlocked", async function () {
       sdk.setDeadlock(10e6);
-      const [clientRequest] = await fixtures.generateMockedFlow(3);
-      try {
-        await sdk.sendRequest(clientRequest);
-      } catch (e: any) {
-        expect(e.message).toMatch("SDK is deadlocked");
-      }
-      sdk.setDeadlock(0);
+      HOPRD_SEND_MESSAGE_NOCK.reply(202, "someresponse");
+
+      const [clientRequest, , exitNodeResponse] =
+        await fixtures.generateMockedFlow(3);
+
+      sdk.sendRequest(clientRequest).then((response) => {
+        // this will run when .onMessage resolves request
+        assert.equal(response.id, clientRequest.id);
+        // @ts-ignore
+        const pendingRequest = sdk.requestCache.getRequest(clientRequest.id);
+        assert.equal(pendingRequest, undefined);
+      });
+
+      // return response for sdk sendRequest
+      // @ts-ignore
+      sdk.onMessage(exitNodeResponse.toMessage());
     });
 
     it("should handle failed request", async function () {
@@ -431,7 +412,8 @@ describe("test SDK class", function () {
       // should add failed metric
       assert.equal(
         // @ts-ignore
-        sdk.reliabilityScore.metrics.get(sdk.entryNode?.peerId)?.stats.failed,
+        sdk.reliabilityScore.metrics.get(clientRequest.entryNodeDestination)
+          ?.stats.failed,
         1
       );
     });
@@ -458,18 +440,19 @@ describe("test SDK class", function () {
       } catch (e: any) {
         assert.equal(
           // @ts-ignore
-          sdk.reliabilityScore.metrics.get(sdk.entryNode?.peerId)?.stats.failed,
+          sdk.reliabilityScore.metrics.get(request.entryNodeDestination)?.stats
+            .failed,
           1
         );
       }
       assert.equal(
         // @ts-ignore
-        sdk.reliabilityScore.metrics.get(sdk.entryNode?.peerId)?.sent,
+        sdk.reliabilityScore.metrics.get(request.entryNodeDestination)?.sent,
         1
       );
     });
 
-    it("should call the stopMessageListener if entry node changes", async function () {
+    it("should throw when there are no reliable nodes", async function () {
       DP_REQ_ENTRY_NOCK.reply(200, {
         hoprd_api_endpoint: ENTRY_NODE_API_ENDPOINT,
         hoprd_api_port: ENTRY_NODE_API_PORT,
@@ -477,45 +460,18 @@ describe("test SDK class", function () {
         id: ENTRY_NODE_PEER_ID,
       });
       // @ts-ignore
-      const stopMessageListenerMetric = jest.spyOn(sdk, "stopMessageListener");
-      // @ts-ignore
       sdk.reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, 1, "dishonest");
       // @ts-ignore
       sdk.reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, 2, "dishonest");
 
-      // Check that before node is seen as not reliable enough, messageListener isn't stopped
-      assert.equal(stopMessageListenerMetric.mock.calls.length, 0);
-      await sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE);
-
-      // After createRequest, node should not be reliable enough and messageListener
-      // should've been stopped to refresh entry node
-      assert.equal(stopMessageListenerMetric.mock.calls.length, 1);
-    });
-
-    it("should call the createMessageListener one more time if entry node changes", async function () {
-      DP_REQ_ENTRY_NOCK.reply(200, {
-        hoprd_api_endpoint: ENTRY_NODE_API_ENDPOINT,
-        hoprd_api_port: ENTRY_NODE_API_PORT,
-        accessToken: ENTRY_NODE_API_TOKEN,
-        id: ENTRY_NODE_PEER_ID,
-      });
-      // @ts-ignore
-      const createMessageListenerMetric = jest.spyOn(
-        hoprd,
-        "createMessageListener"
-      );
-      // @ts-ignore
-      sdk.reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, 1, "dishonest");
-      // @ts-ignore
-      sdk.reliabilityScore.addMetric(ENTRY_NODE_PEER_ID, 2, "dishonest");
-
-      // createMessageListener should have been called once (when sdk starts)
-      assert.equal(createMessageListenerMetric.mock.calls.length, 1);
-      await sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE);
-
-      // createMessageListener should have 2 calls after stopping the previous
-      // from old entry node and creating new one with new entry node
-      assert.equal(createMessageListenerMetric.mock.calls.length, 2);
+      // Check that before node is seen as not reliable enough
+      try {
+        await sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE);
+      } catch (e: any) {
+        expect(e.toString()).toContain(
+          "SDK does not have any reliable entry nodes"
+        );
+      }
     });
 
     describe("handling request size", function () {
@@ -662,9 +618,10 @@ describe("test SDK class", function () {
         forceExitNode: mockedExitNode,
       });
 
+      assert.equal(sdk["entryNodes"].size, 1);
       assert.deepEqual(
         // @ts-ignore
-        sdk.entryNode,
+        Array.from(sdk["entryNodes"].values())[0],
         mockedEntryNode,
         "forced entry node is not correct"
       );
