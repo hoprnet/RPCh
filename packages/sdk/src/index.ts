@@ -295,10 +295,9 @@ export default class SDK {
       `forced=${!!this.ops.forceEntryNode}`
     );
 
-    // stop message listening from the previous node
-    if (this.entryNodes.has(entryNode.peerId)) {
-      this.removeEntryNode(entryNode.peerId);
-    }
+    // if entry node already exists (happens when we force entry node)
+    if (this.entryNodes.has(entryNode.peerId)) return entryNode;
+
     // create new WS connection
     const connection = await hoprd.createMessageListener(
       entryNode.apiEndpoint,
