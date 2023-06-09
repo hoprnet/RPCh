@@ -75,7 +75,8 @@
         "BASE_QUOTA",
         "DB_CONNECTION_URL",
         "SKIP_CHECK_COMMITMENT",
-        "SECRET"
+        "SECRET",
+        "AVAILABILITY_MONITOR_URL"
       ]
     },
     "@rpch/rpc-server#build": {
