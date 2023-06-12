@@ -67,7 +67,7 @@ export default class Reviewer {
   ) {
     this.reviewQueue = new ReviewQueue(concurrency);
     this.stabilityGuage = metricManager.createGauge(
-      "availability_monitor_stability",
+      "stability",
       "whether a node is stable",
       {
         labelNames: ["peer_id"],
