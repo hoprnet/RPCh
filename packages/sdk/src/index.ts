@@ -21,7 +21,7 @@ const DEFAULT_MAXIMUM_SEGMENTS_PER_REQUEST = 10;
 const DEFAULT_RESET_NODE_METRICS_MS = 1e3 * 60 * 60 * 15; // 15min
 const DEFAULT_DEADLOCK_MS = 1e3 * 5; // 5s
 const DEFAULT_MINIMUM_SCORE_FOR_RELIABLE_NODE = 0.8;
-const DEFAULT_RELIABILITY_SCORE_FRESH_NODE_THRESHOLD = 5;
+const DEFAULT_RELIABILITY_SCORE_FRESH_NODE_THRESHOLD = 10;
 const DEFAULT_RELIABILITY_SCORE_MAX_RESPONSES = 100;
 const DEFAULT_MAX_ENTRY_NODES = 2;
 
@@ -159,6 +159,8 @@ export default class SDK {
   ): Promise<void> {
     if (this.selectingEntryNodes || this.isDeadlocked()) return;
     try {
+      this.selectingEntryNodes = true;
+
       // we only need 1 when we force an entry node
       const amountNeeded =
         (this.ops.forceEntryNode ? 1 : this.maxEntryNodes) -
@@ -180,7 +182,6 @@ export default class SDK {
         `Selecting '${amountNeeded}' entry nodes and excluding`,
         brokenNodes.length == 0 ? "none" : brokenNodes.join(",")
       );
-      this.selectingEntryNodes = true;
 
       // get new entry nodes
       let entryNodes: EntryNode[] = [];
@@ -220,6 +221,7 @@ export default class SDK {
    * @param peerId
    */
   private removeEntryNode(peerId: string): void {
+    log.verbose("Removing entry node %s", peerId);
     const entryNode = this.entryNodes.get(peerId);
     if (entryNode) {
       if (entryNode.stopMessageListener) entryNode.stopMessageListener();
@@ -295,10 +297,9 @@ export default class SDK {
       `forced=${!!this.ops.forceEntryNode}`
     );
 
-    // stop message listening from the previous node
-    if (this.entryNodes.has(entryNode.peerId)) {
-      this.removeEntryNode(entryNode.peerId);
-    }
+    // if entry node already exists (happens when we force entry node)
+    if (this.entryNodes.has(entryNode.peerId)) return entryNode;
+
     // create new WS connection
     const connection = await hoprd.createMessageListener(
       entryNode.apiEndpoint,
@@ -440,7 +441,9 @@ export default class SDK {
   private updateEntryNodeScore(req: Request, result: Result): void {
     this.reliabilityScore.addMetric(req.entryNodeDestination, req.id, result);
     // remove entry node as soon as we find its not reliable
-    this.removeEntryNode(req.entryNodeDestination);
+    if (!this.isEntryNodeReliable(req.entryNodeDestination)) {
+      this.removeEntryNode(req.entryNodeDestination);
+    }
   }
 
   /**
