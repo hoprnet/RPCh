@@ -128,7 +128,7 @@ const start = async (ops: {
         unstableNodes.length
       );
     } catch (error) {
-      log.error("Error fetching availability monitor nodes");
+      log.error("Error fetching availability monitor nodes", error);
     }
   }, 30e3);
 
