@@ -10,7 +10,7 @@ const checks = {
   hoprdVersion: createCheck<string, [HoprSDK]>(
     "hoprd-version",
     false,
-    async function checkHoprVersion(sdk) {
+    async function checkHoprdVersion(sdk) {
       const version = await sdk.api.node.getVersion();
       if (typeof version !== "string")
         throw Error(`received version '${version}' is not a string`);
@@ -50,6 +50,35 @@ const checks = {
       return [true, true];
     }
   ),
+  hoprdSendMessage: createCheck<string, [HoprSDK]>(
+    "hoprd-send-message",
+    false,
+    async function checkHoprdSendMessage(sdk) {
+      const peers = await sdk.api.node.getPeers({});
+      if (!peers || !peers.connected || peers.connected.length === 0) {
+        throw Error("Not enough peers found to send messages");
+      }
+
+      // get 5 highest quality nodes
+      const highestQuality = peers.connected
+        .sort((a, b) => {
+          return b.quality - a.quality;
+        })
+        .slice(0, 5);
+
+      const results = await Promise.all(
+        highestQuality.map((peer) => {
+          return sdk.api.messages.sendMessage({
+            recipient: peer.peerId,
+            body: "automatic: availability monitor check",
+            path: [], // direct path
+          });
+        })
+      );
+
+      return [true, results.join(",")];
+    }
+  ),
 };
 
 /** List of all checks in a review. */
@@ -58,6 +87,7 @@ export const listOfChecks = [
   "hoprdHealth",
   "hoprdWorkingApiEndpoint",
   "hoprdSSL",
+  "hoprdSendMessage",
 ] as const;
 
 /**
@@ -89,11 +119,13 @@ export default async function review(node: RegisteredNode): Promise<Result> {
     apiToken: node.hoprdApiToken,
   });
 
-  const [hoprdVersion, hoprdHealth, hoprdSSL] = await Promise.all([
-    checks.hoprdVersion.run(sdk),
-    checks.hoprdHealth.run(sdk),
-    checks.hoprdSSL.run(node.hoprdApiEndpoint, node.hoprdApiToken),
-  ]);
+  const [hoprdVersion, hoprdHealth, hoprdSSL, hoprdSendMessage] =
+    await Promise.all([
+      checks.hoprdVersion.run(sdk),
+      checks.hoprdHealth.run(sdk),
+      checks.hoprdSSL.run(node.hoprdApiEndpoint, node.hoprdApiToken),
+      checks.hoprdSendMessage.run(sdk),
+    ]);
 
   const review: Review = {
     hoprdVersion,
@@ -104,6 +136,7 @@ export default async function review(node: RegisteredNode): Promise<Result> {
       value: `hoprdVersion=${hoprdVersion?.value},hoprdHealth=${hoprdHealth?.value}`,
     },
     hoprdSSL,
+    hoprdSendMessage,
   };
 
   const result: Result = {
