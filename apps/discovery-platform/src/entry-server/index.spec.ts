@@ -38,7 +38,8 @@ const mockNode = (peerId?: string, hasExitNode?: boolean): RegisteredNode => ({
   nativeAddress: "someAddress",
 });
 
-const getUnstableNodesMock = jest.fn(() => ["peerId_unstable"]);
+const UNSTABLE_NODE_PEERID = "unstable_peerid";
+const getUnstableNodesMock = () => [UNSTABLE_NODE_PEERID];
 
 describe("test entry server", function () {
   let dbInstance: DBInstance;
@@ -133,6 +134,63 @@ describe("test entry server", function () {
       throw new Error("Could not create mock nodes");
 
     assert.equal(requestResponse.body.id, createdNode.body.node.id);
+    spy.mockRestore();
+  });
+
+  it("should not retrieve unstable entry node", async function () {
+    const spy = jest.spyOn(registeredNode, "getEligibleNode");
+    const amountLeft = BigInt(10).toString();
+    const requestId = 1;
+    const responseRequestTrialClient = await request(app).get(
+      "/api/v1/request/trial"
+    );
+    const trialClientId: string = responseRequestTrialClient.body.client;
+
+    const getAccessTokenBody: GetAccessTokenResponse = {
+      accessToken: FAKE_ACCESS_TOKEN,
+      amountLeft: BigInt(10).toString(),
+      expiredAt: new Date().toISOString(),
+    };
+
+    nockGetApiAccessToken.reply(200, getAccessTokenBody);
+    await request(app)
+      .post("/api/v1/client/quota")
+      .send({
+        client: trialClientId,
+        quota: BigInt(1).toString(),
+      })
+      .set("x-secret-key", SECRET);
+
+    await request(app)
+      .post("/api/v1/node/register")
+      .set("X-Rpch-Client", trialClientId)
+      .send(mockNode(UNSTABLE_NODE_PEERID, true));
+
+    const createdNode: {
+      body: { node: RegisteredNodeDB | undefined };
+    } = await request(app)
+      .get(`/api/v1/node/${UNSTABLE_NODE_PEERID}`)
+      .set("X-Rpch-Client", trialClientId);
+
+    spy.mockImplementation(async () => {
+      return createdNode.body.node;
+    });
+
+    const fundingResponseBody: PostFundingResponse = {
+      amountLeft,
+      id: requestId,
+    };
+
+    nockFundingRequest(createdNode.body.node?.native_address!).reply(
+      200,
+      fundingResponseBody
+    );
+
+    const requestResponse = await request(app)
+      .post("/api/v1/request/entry-node")
+      .set("X-Rpch-Client", trialClientId);
+
+    assert.equal(requestResponse.statusCode, 404);
     spy.mockRestore();
   });
 });

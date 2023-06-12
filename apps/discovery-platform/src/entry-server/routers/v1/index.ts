@@ -149,12 +149,36 @@ export const v1Router = (ops: {
             .inc();
           return res.status(400).json({ errors: errors.array() });
         }
-        const { hasExitNode, excludeList, status } = req.query;
+        let { hasExitNode, excludeList: excludeListStr, status } = req.query;
+
+        let excludeList: string[] = [];
+        if (!excludeListStr) excludeList = [];
+        else if (
+          typeof excludeListStr === "string" &&
+          excludeListStr.length > 0
+        ) {
+          excludeList = excludeListStr.split(",");
+        }
+
+        // expand 'excludeList' with unstable nodes
+        const unstableNodes = ops.getUnstableNodes();
+        if (unstableNodes.length > 0) {
+          log.verbose(
+            "We have %i unstable nodes, adding to 'excludeList'",
+            unstableNodes.length
+          );
+          for (const unstableNode of unstableNodes) {
+            if (excludeList.includes(unstableNode)) continue;
+            excludeList.push(unstableNode);
+          }
+        }
+
         const nodes = await getRegisteredNodes(ops.db, {
-          excludeList: excludeList?.split(", "),
+          excludeList,
           hasExitNode: hasExitNode ? hasExitNode === "true" : undefined,
           status,
         });
+
         // cache response for 1 min
         setCache(req.originalUrl || req.url, 60e3, nodes);
         counterSuccessfulRequests
