@@ -118,13 +118,13 @@ const start = async (ops: {
       ).then((res) => res.json());
       unstableNodes = Array.from(new Map(results).entries()).reduce<string[]>(
         (result, [peerId, { isStable }]) => {
-          if (isStable) result.push(peerId);
+          if (!isStable) result.push(peerId);
           return result;
         },
         []
       );
       log.verbose(
-        "Updated availability monitor nodes %i",
+        "Updated availability monitor unstable nodes %i",
         unstableNodes.length
       );
     } catch (error) {
