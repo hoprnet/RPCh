@@ -416,7 +416,7 @@ describe("test v1 router", function () {
       await request(app)
         .post("/node/register")
         .set("X-Rpch-Client", trialClientId)
-        .send(mockNode(peerId + "2", true));
+        .send(mockNode(UNSTABLE_NODE_PEERID, true));
 
       const firstCreatedNode: {
         body: { node: RegisteredNodeDB | undefined };
@@ -426,7 +426,7 @@ describe("test v1 router", function () {
       const secondCreatedNode: {
         body: { node: RegisteredNodeDB | undefined };
       } = await request(app)
-        .get(`/node/${peerId + "2"}`)
+        .get(`/node/${UNSTABLE_NODE_PEERID}`)
         .set("X-Rpch-Client", trialClientId);
 
       await registeredNode.updateRegisteredNode(dbInstance, {
@@ -451,10 +451,10 @@ describe("test v1 router", function () {
       const requestResponse = await request(app)
         .post("/request/entry-node")
         .set("X-Rpch-Client", trialClientId)
-        .send({ excludeList: ["entry"] });
+        .send({ excludeList: [UNSTABLE_NODE_PEERID] });
 
       assert.equal(requestResponse.status, 200);
-      assert.equal(requestResponse.body.id, secondCreatedNode.body.node?.id);
+      assert.equal(requestResponse.body.id, firstCreatedNode.body.node?.id);
     });
     it("should fail if no entry node is selected", async function () {
       const spy = jest.spyOn(registeredNode, "getEligibleNode");
