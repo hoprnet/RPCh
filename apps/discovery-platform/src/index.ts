@@ -114,7 +114,7 @@ const start = async (ops: {
     try {
       if (!ops.availabilityMonitorUrl) return;
       const results: [string, { isStable: boolean }][] = await fetch(
-        ops.availabilityMonitorUrl
+        `${ops.availabilityMonitorUrl}/api/nodes`
       ).then((res) => res.json());
       unstableNodes = Array.from(new Map(results).entries()).reduce<string[]>(
         (result, [peerId, { isStable }]) => {
