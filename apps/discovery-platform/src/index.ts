@@ -110,7 +110,7 @@ const start = async (ops: {
   );
 
   // fetch node stability data
-  const fetchAvailabilityMonitorNodes = setInterval(async () => {
+  const updateUnstableNodesInterval = setInterval(async () => {
     try {
       if (!ops.availabilityMonitorUrl) return;
       const results: [string, { isStable: boolean }][] = await fetch(
@@ -134,7 +134,7 @@ const start = async (ops: {
 
   return () => {
     clearInterval(checkCommitmentInterval);
-    clearInterval(fetchAvailabilityMonitorNodes);
+    clearInterval(updateUnstableNodesInterval);
   };
 };
 
