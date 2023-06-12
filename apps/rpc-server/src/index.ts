@@ -155,7 +155,7 @@ export class RPCServer {
               id: null,
             })
           );
-          response.statusCode = 200;
+          response.statusCode = 500;
           response.end();
         }
       }
