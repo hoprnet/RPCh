@@ -44,6 +44,9 @@ const mockNode = (peerId?: string, hasExitNode?: boolean): RegisteredNode => ({
   nativeAddress: "someAddress",
 });
 
+const UNSTABLE_NODE_PEERID = "unstable_peerid";
+const getUnstableNodesMock = () => [UNSTABLE_NODE_PEERID];
+
 describe("test v1 router", function () {
   let dbInstance: DBInstance;
   let app: Express;
@@ -73,6 +76,7 @@ describe("test v1 router", function () {
         fundingServiceApi,
         metricManager: metricManager,
         secret: SECRET,
+        getUnstableNodes: getUnstableNodesMock,
       })
     );
   });
@@ -134,10 +138,15 @@ describe("test v1 router", function () {
       .post("/node/register")
       .set("X-Rpch-Client", trialClientId)
       .send(mockNode("exit4", true));
+    await request(app)
+      .post("/node/register")
+      .set("X-Rpch-Client", trialClientId)
+      .send(mockNode(UNSTABLE_NODE_PEERID, true));
 
     const allExitNodes = await request(app)
       .get(`/node?hasExitNode=true`)
       .set("X-Rpch-Client", trialClientId);
+
     assert.equal(allExitNodes.body.length, 2);
   });
 
@@ -160,17 +169,57 @@ describe("test v1 router", function () {
     await request(app)
       .post("/node/register")
       .set("X-Rpch-Client", trialClientId)
+      .send(mockNode(UNSTABLE_NODE_PEERID, false));
+    await request(app)
+      .post("/node/register")
+      .set("X-Rpch-Client", trialClientId)
       .send(mockNode("exit4", true));
 
     const allExitNodes = await request(app)
-      .get(`/node?hasExitNode=${false}&excludeList=notExit2`)
+      .get(`/node?hasExitNode=${false}&excludeList=${UNSTABLE_NODE_PEERID}`)
       .set("X-Rpch-Client", trialClientId);
-    assert.equal(allExitNodes.body.length, 2);
+
+    assert.equal(allExitNodes.body.length, 3);
     assert.equal(
-      allExitNodes.body.findIndex((node: any) => node.id === "notExit2"),
+      allExitNodes.body.findIndex(
+        (node: any) => node.id === UNSTABLE_NODE_PEERID
+      ),
       -1
     );
   });
+
+  it("should get all nodes that are exit node and stable", async function () {
+    const responseRequestTrialClient = await request(app).get("/request/trial");
+    const trialClientId: string = responseRequestTrialClient.body.client;
+
+    await request(app)
+      .post("/node/register")
+      .set("X-Rpch-Client", trialClientId)
+      .send(mockNode("notExit1", false));
+    await request(app)
+      .post("/node/register")
+      .set("X-Rpch-Client", trialClientId)
+      .send(mockNode("notExit2", false));
+    await request(app)
+      .post("/node/register")
+      .set("X-Rpch-Client", trialClientId)
+      .send(mockNode("exit3", true));
+    await request(app)
+      .post("/node/register")
+      .set("X-Rpch-Client", trialClientId)
+      .send(mockNode("exit4", true));
+    await request(app)
+      .post("/node/register")
+      .set("X-Rpch-Client", trialClientId)
+      .send(mockNode(UNSTABLE_NODE_PEERID, true));
+
+    const allExitNodes = await request(app)
+      .get(`/node?hasExitNode=true`)
+      .set("X-Rpch-Client", trialClientId);
+
+    assert.equal(allExitNodes.body.length, 2);
+  });
+
   it("should add quota to a client", async function () {
     const createdQuota = await request(app)
       .post("/client/quota")
@@ -182,6 +231,7 @@ describe("test v1 router", function () {
 
     assert.equal(createdQuota.body.quota.quota, 1);
   });
+
   it("should not add quota to a client if secret is missing or incorrect", async function () {
     const createdQuotaWithoutSecret = await request(app)
       .post("/client/quota")
@@ -201,6 +251,7 @@ describe("test v1 router", function () {
     assert.equal(createdQuotaWithoutSecret.status, 400);
     assert.equal(createdQuotaWithWrongSecret.status, 400);
   });
+
   it("should delete registered node", async function () {
     const node = mockNode();
     const responseRequestTrialClient = await request(app).get("/request/trial");
@@ -221,6 +272,7 @@ describe("test v1 router", function () {
     assert.equal(deletedNode.status, 200);
     assert.equal(deletedNode.body.node.id, node.peerId);
   });
+
   it("should not delete registered node if secret is missing or incorrect", async function () {
     const deletedNodeWithoutSecret = await request(app)
       .delete("/request/entry-node/123")
@@ -240,6 +292,7 @@ describe("test v1 router", function () {
     assert.equal(deletedNodeWithoutSecret.status, 400);
     assert.equal(deletedNodeWithWrongSecret.status, 400);
   });
+
   it("should create trial client", async function () {
     const responseRequestTrialClient = await request(app).get("/request/trial");
     const trialClientId: string = responseRequestTrialClient.body.client;
@@ -252,6 +305,7 @@ describe("test v1 router", function () {
     assert.deepEqual(dbClient?.labels, ["devcon", "some-dash"]);
     assert.equal(!!response.body.client, true);
   });
+
   it("should turn client into premium when adding quota", async function () {
     const spy = jest.spyOn(registeredNode, "getEligibleNode");
 
@@ -271,6 +325,7 @@ describe("test v1 router", function () {
     expect(dbTrialClientAfterAddingQuota?.payment).toEqual("premium");
     spy.mockRestore();
   });
+
   describe("should select an entry node", function () {
     it("should return an entry node", async function () {
       const spy = jest.spyOn(registeredNode, "getEligibleNode");
@@ -361,7 +416,7 @@ describe("test v1 router", function () {
       await request(app)
         .post("/node/register")
         .set("X-Rpch-Client", trialClientId)
-        .send(mockNode(peerId + "2", true));
+        .send(mockNode(UNSTABLE_NODE_PEERID, true));
 
       const firstCreatedNode: {
         body: { node: RegisteredNodeDB | undefined };
@@ -371,7 +426,7 @@ describe("test v1 router", function () {
       const secondCreatedNode: {
         body: { node: RegisteredNodeDB | undefined };
       } = await request(app)
-        .get(`/node/${peerId + "2"}`)
+        .get(`/node/${UNSTABLE_NODE_PEERID}`)
         .set("X-Rpch-Client", trialClientId);
 
       await registeredNode.updateRegisteredNode(dbInstance, {
@@ -396,10 +451,10 @@ describe("test v1 router", function () {
       const requestResponse = await request(app)
         .post("/request/entry-node")
         .set("X-Rpch-Client", trialClientId)
-        .send({ excludeList: ["entry"] });
+        .send({ excludeList: [UNSTABLE_NODE_PEERID] });
 
       assert.equal(requestResponse.status, 200);
-      assert.equal(requestResponse.body.id, secondCreatedNode.body.node?.id);
+      assert.equal(requestResponse.body.id, firstCreatedNode.body.node?.id);
     });
     it("should fail if no entry node is selected", async function () {
       const spy = jest.spyOn(registeredNode, "getEligibleNode");
@@ -578,6 +633,66 @@ describe("test v1 router", function () {
       expect(requestResponse.body).toHaveProperty("id");
 
       spyGetEligibleNode.mockRestore();
+    });
+  });
+
+  describe("should not select unstable entry node", function () {
+    it("should not return an entry node", async function () {
+      const spy = jest.spyOn(registeredNode, "getEligibleNode");
+      const amountLeft = BigInt(10).toString();
+      const peerId = UNSTABLE_NODE_PEERID;
+      const requestId = 1;
+      const responseRequestTrialClient = await request(app).get(
+        "/request/trial"
+      );
+      const trialClientId: string = responseRequestTrialClient.body.client;
+
+      const replyBody: GetAccessTokenResponse = {
+        accessToken: FAKE_ACCESS_TOKEN,
+        amountLeft: BigInt(10).toString(),
+        expiredAt: new Date().toISOString(),
+      };
+
+      nockGetApiAccessToken.reply(200, replyBody);
+      await request(app)
+        .post("/client/quota")
+        .send({
+          client: trialClientId,
+          quota: BigInt("1").toString(),
+        })
+        .set("x-secret-key", SECRET);
+
+      await request(app)
+        .post("/node/register")
+        .set("X-Rpch-Client", trialClientId)
+        .send(mockNode(peerId, true));
+
+      const createdNode: {
+        body: { node: RegisteredNodeDB | undefined };
+      } = await request(app)
+        .get(`/node/${peerId}`)
+        .set("X-Rpch-Client", trialClientId);
+
+      spy.mockImplementation(async () => {
+        return createdNode.body.node;
+      });
+
+      let postFundingResponse: PostFundingResponse = {
+        amountLeft,
+        id: requestId,
+      };
+
+      nockFundingRequest(createdNode.body.node?.native_address!).reply(
+        200,
+        postFundingResponse
+      );
+
+      const requestResponse = await request(app)
+        .post("/request/entry-node")
+        .set("X-Rpch-Client", trialClientId);
+
+      assert.equal(requestResponse.statusCode, 404);
+      spy.mockRestore();
     });
   });
 });

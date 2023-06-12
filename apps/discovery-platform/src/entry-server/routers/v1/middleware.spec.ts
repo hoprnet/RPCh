@@ -27,6 +27,8 @@ const mockNode = (peerId?: string, hasExitNode?: boolean): RegisteredNode => ({
   nativeAddress: "someAddress",
 });
 
+const getUnstableNodesMock = jest.fn(() => ["peerId_unstable"]);
+
 describe("test v1 middleware", function () {
   let dbInstance: DBInstance;
   let app: Express;
@@ -56,6 +58,7 @@ describe("test v1 middleware", function () {
         fundingServiceApi,
         metricManager: metricManager,
         secret: "secret",
+        getUnstableNodes: getUnstableNodesMock,
       })
     );
   });
@@ -106,7 +109,10 @@ describe("test v1 middleware", function () {
         json: jest.fn((args) => args),
       } as unknown as Response;
       setCache("/test", 100, "test");
-      const res = getCache()(mockRequest, mockResponse, {} as any);
+      const res = getCache(
+        (req) => req.originalUrl || req.url,
+        (b) => b
+      )(mockRequest, mockResponse, {} as any);
       assert.equal(res, "test");
     });
     it("should call next if nothing is cached", async () => {
@@ -117,7 +123,10 @@ describe("test v1 middleware", function () {
       } as unknown as Response;
       const mockNext = jest.fn() as NextFunction;
       // result
-      getCache()(mockRequest, mockResponse, mockNext);
+      getCache(
+        (req) => req.originalUrl || req.url,
+        (b) => b
+      )(mockRequest, mockResponse, mockNext);
       expect(mockNext).toHaveBeenCalled();
     });
     it("should cache when request is successful", async function () {

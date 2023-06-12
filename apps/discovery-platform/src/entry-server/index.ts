@@ -12,6 +12,7 @@ export const entryServer = (ops: {
   fundingServiceApi: FundingServiceApi;
   metricManager: MetricManager;
   secret: string;
+  getUnstableNodes: () => string[];
 }) => {
   app.use(compression());
 
@@ -23,6 +24,7 @@ export const entryServer = (ops: {
       fundingServiceApi: ops.fundingServiceApi,
       metricManager: ops.metricManager,
       secret: ops.secret,
+      getUnstableNodes: ops.getUnstableNodes,
     })
   );
 

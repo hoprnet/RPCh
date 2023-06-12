@@ -12,6 +12,7 @@ import { runMigrations } from "@rpch/common/build/internal/db";
 import * as async from "async";
 import path from "path";
 import migrate from "node-pg-migrate";
+import fetch from "node-fetch";
 import type { RegisteredNodeDB } from "./types";
 
 const log = createLogger();
@@ -21,7 +22,11 @@ const start = async (ops: {
   baseQuota: bigint;
   fundingServiceUrl: string;
   secret: string;
+  availabilityMonitorUrl?: string;
 }) => {
+  // populated by availability monitor
+  let unstableNodes: string[] = [];
+
   // run db migrations
   const migrationsDirectory = path.join(__dirname, "../migrations");
   await runMigrations(
@@ -54,6 +59,7 @@ const start = async (ops: {
     fundingServiceApi: fundingServiceApi,
     metricManager: metricManager,
     secret: ops.secret,
+    getUnstableNodes: () => unstableNodes,
   });
 
   // start listening at PORT for requests
@@ -103,8 +109,32 @@ const start = async (ops: {
     60e3
   );
 
+  // fetch node stability data
+  const updateUnstableNodesInterval = setInterval(async () => {
+    try {
+      if (!ops.availabilityMonitorUrl) return;
+      const results: [string, { isStable: boolean }][] = await fetch(
+        ops.availabilityMonitorUrl
+      ).then((res) => res.json());
+      unstableNodes = Array.from(new Map(results).entries()).reduce<string[]>(
+        (result, [peerId, { isStable }]) => {
+          if (isStable) result.push(peerId);
+          return result;
+        },
+        []
+      );
+      log.verbose(
+        "Updated availability monitor nodes %i",
+        unstableNodes.length
+      );
+    } catch (error) {
+      log.error("Error fetching availability monitor nodes");
+    }
+  }, 30e3);
+
   return () => {
     clearInterval(checkCommitmentInterval);
+    clearInterval(updateUnstableNodesInterval);
   };
 };
 
@@ -132,6 +162,7 @@ const main = () => {
     db: dbInstance,
     fundingServiceUrl: constants.FUNDING_SERVICE_URL!,
     secret: constants.SECRET!,
+    availabilityMonitorUrl: constants.AVAILABILITY_MONITOR_URL,
   });
 };
 
