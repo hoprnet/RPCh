@@ -175,6 +175,7 @@ export default class ReliabilityScore {
     const now = new Date().getTime();
     for (const [peerId, metrics] of this.metrics.entries()) {
       if (now > metrics.updatedAt.getTime() + timeout) {
+        log.verbose("resetting old node metrics %s", peerId);
         this.resetNodeMetrics(peerId, metrics);
       }
     }

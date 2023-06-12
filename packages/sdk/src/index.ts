@@ -18,7 +18,7 @@ import { createLogger } from "./utils";
 
 const log = createLogger();
 const DEFAULT_MAXIMUM_SEGMENTS_PER_REQUEST = 10;
-const DEFAULT_RESET_NODE_METRICS_MS = 1e3 * 60 * 60 * 15; // 15min
+const DEFAULT_RESET_NODE_METRICS_MS = 1e3 * 60 * 15; // 15min
 const DEFAULT_DEADLOCK_MS = 1e3 * 5; // 5s
 const DEFAULT_MINIMUM_SCORE_FOR_RELIABLE_NODE = 0.8;
 const DEFAULT_RELIABILITY_SCORE_FRESH_NODE_THRESHOLD = 10;

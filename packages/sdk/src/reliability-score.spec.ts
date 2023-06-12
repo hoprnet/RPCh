@@ -151,6 +151,7 @@ describe("test reliability score class", () => {
       expect(entryNode?.responses.size).toBe(3);
     });
   });
+
   describe("scores:", () => {
     it("should have a score of 0.2 for nonexistent peerIds (fresh nodes)", () => {
       const score = reliabilityScore.getScore("nonexistentPeerId");
