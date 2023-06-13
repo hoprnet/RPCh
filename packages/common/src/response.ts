@@ -64,6 +64,9 @@ export default class Response {
       counter: bigint
     ) => Promise<void>
   ): Promise<Response> {
+    if (!message.body.startsWith("0x"))
+      throw Error("Message is not a Response");
+
     crypto.unbox_response(
       request.session,
       new crypto.Envelope(

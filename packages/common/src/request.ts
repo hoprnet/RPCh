@@ -93,6 +93,8 @@ export default class Request {
     const entryNodeDestination =
       PeerId.createFromB58String(origin).toB58String();
 
+    if (!origin || !encrypted) throw Error("Message is not a Request");
+
     const session = crypto.unbox_request(
       new crypto.Envelope(
         utils.arrayify(encrypted),
