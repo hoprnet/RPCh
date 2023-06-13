@@ -84,11 +84,16 @@ export default class Request {
     exitNodeDestination: string,
     exitNodeWriteIdentity: Identity,
     lastRequestFromClient: bigint,
-    updateLastRequestFromClient: (clientId: string, counter: bigint) => any
+    updateLastRequestFromClient: (
+      clientId: string,
+      counter: bigint
+    ) => Promise<void>
   ): Promise<Request> {
     const [origin, encrypted] = splitBodyToParts(message.body);
     const entryNodeDestination =
       PeerId.createFromB58String(origin).toB58String();
+
+    if (!origin || !encrypted) throw Error("Message is not a Request");
 
     const session = crypto.unbox_request(
       new crypto.Envelope(
@@ -100,7 +105,7 @@ export default class Request {
       lastRequestFromClient
     );
 
-    updateLastRequestFromClient(
+    await updateLastRequestFromClient(
       entryNodeDestination,
       session.updated_counter()
     );

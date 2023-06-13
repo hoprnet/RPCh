@@ -118,7 +118,7 @@ export async function* createMockedFlow(
     exitNodeDestination,
     exitNodeWriteIdentity,
     BigInt(lastRequestFromClient),
-    () => {}
+    async () => {}
   );
   resetDateNow();
   const responseBody: string = (yield exitNodeRequest) || RPC_RES_SMALL;
@@ -140,7 +140,7 @@ export async function* createMockedFlow(
     clientRequest,
     exitNodeResponse.toMessage(),
     BigInt(lastResponseFromExitNode),
-    () => {}
+    async () => {}
   );
   resetDateNow();
   return clientResponse;
@@ -196,10 +196,10 @@ export const createAsyncKeyValStore = () => {
   const store = new Map<string, string>();
 
   return {
-    async set(k: string, v: string) {
-      return store.set(k, v);
+    async set(k: string, v: string): Promise<void> {
+      store.set(k, v);
     },
-    async get(k: string) {
+    async get(k: string): Promise<string | undefined> {
       return store.get(k);
     },
   };

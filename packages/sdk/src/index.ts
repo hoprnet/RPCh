@@ -114,7 +114,7 @@ export default class SDK {
   constructor(
     private readonly ops: HoprSdkOps,
     // eslint-disable-next-line no-unused-vars
-    private setKeyVal: (key: string, val: string) => Promise<any>,
+    private setKeyVal: (key: string, val: string) => Promise<void>,
     // eslint-disable-next-line no-unused-vars
     private getKeyVal: (key: string) => Promise<string | undefined>
   ) {
@@ -401,7 +401,7 @@ export default class SDK {
         message,
         counter,
         (exitNodeId, counter) => {
-          this.setKeyVal(exitNodeId, counter.toString());
+          return this.setKeyVal(exitNodeId, counter.toString());
         }
       );
       const responseTime = Date.now() - match.createdAt.getTime();
@@ -424,11 +424,15 @@ export default class SDK {
       log.verbose("responded to %s with %s", match.request.body, response.body);
     } catch (e) {
       log.verbose(
-        "failed to decrypt message id %i from %s with body",
+        "failed to load received message id %i from %s with error",
         message.id,
-        match.request.exitNodeDestination
+        match.request.exitNodeDestination,
+        e
       );
-      this.handleFailedRequest(match.request, "failed to decrypt");
+      this.handleFailedRequest(
+        match.request,
+        "failed to load received message"
+      );
     }
   }
 
@@ -602,7 +606,7 @@ export default class SDK {
 
     // exclude entry node
     const eligibleExitNodes = this.exitNodes.filter(
-      (node) => node.peerId !== entryNode.peerId
+      (node) => !this.entryNodes.has(node.peerId)
     );
     if (eligibleExitNodes.length === 0) {
       throw Error("SDK does not have any eligible exit nodes");

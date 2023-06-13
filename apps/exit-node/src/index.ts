@@ -107,7 +107,7 @@ export const start = async (ops: {
         myIdentity,
         lastRequestFromClient,
         (clientId, counter) => {
-          db.put(clientId, counter.toString());
+          return db.put(clientId, counter.toString());
         }
       );
 
