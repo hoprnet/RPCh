@@ -43,7 +43,7 @@ if (
 if (FORCE_EXIT_NODE_PEERID || FORCE_EXIT_NODE_PUBKEY) {
   // check if some don't exist
   if ([FORCE_EXIT_NODE_PEERID, FORCE_EXIT_NODE_PUBKEY].some((str) => !str)) {
-    throw Error(`Incomplete options for FORCE_ENTRY_NODE:
+    throw Error(`Incomplete options for FORCE_EXIT_NODE:
       FORCE_EXIT_NODE_PEERID=${FORCE_EXIT_NODE_PEERID}
       FORCE_EXIT_NODE_PUBKEY=${FORCE_EXIT_NODE_PUBKEY}`);
   }
