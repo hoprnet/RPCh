@@ -84,7 +84,10 @@ export default class Request {
     exitNodeDestination: string,
     exitNodeWriteIdentity: Identity,
     lastRequestFromClient: bigint,
-    updateLastRequestFromClient: (clientId: string, counter: bigint) => any
+    updateLastRequestFromClient: (
+      clientId: string,
+      counter: bigint
+    ) => Promise<void>
   ): Promise<Request> {
     const [origin, encrypted] = splitBodyToParts(message.body);
     const entryNodeDestination =
@@ -100,7 +103,7 @@ export default class Request {
       lastRequestFromClient
     );
 
-    updateLastRequestFromClient(
+    await updateLastRequestFromClient(
       entryNodeDestination,
       session.updated_counter()
     );

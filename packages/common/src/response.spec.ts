@@ -74,7 +74,7 @@ describe("test Response class", function () {
       clientRequest,
       exitNodeResponse.toMessage(),
       BigInt(0),
-      () => {}
+      async () => {}
     );
 
     shouldBeAValidResponse(clientResponse, {

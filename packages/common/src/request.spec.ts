@@ -113,7 +113,7 @@ describe("test Request class", function () {
       EXIT_NODE_HOPRD_PEER_ID,
       EXIT_NODE_WRITE_IDENTITY,
       BigInt(0),
-      () => {}
+      async () => {}
     );
 
     shouldBeAValidRequest(request, {

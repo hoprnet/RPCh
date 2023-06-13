@@ -114,7 +114,7 @@ export default class SDK {
   constructor(
     private readonly ops: HoprSdkOps,
     // eslint-disable-next-line no-unused-vars
-    private setKeyVal: (key: string, val: string) => Promise<any>,
+    private setKeyVal: (key: string, val: string) => Promise<void>,
     // eslint-disable-next-line no-unused-vars
     private getKeyVal: (key: string) => Promise<string | undefined>
   ) {
@@ -401,7 +401,7 @@ export default class SDK {
         message,
         counter,
         (exitNodeId, counter) => {
-          this.setKeyVal(exitNodeId, counter.toString());
+          return this.setKeyVal(exitNodeId, counter.toString());
         }
       );
       const responseTime = Date.now() - match.createdAt.getTime();
