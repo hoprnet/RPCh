@@ -5,7 +5,7 @@ const log = createLogger(["websocket"]);
 const HEARTBEAT_ERROR_MSG = "heartbeat was not received";
 
 class WebSocketHelper {
-  private connectionIsClosing: boolean = false; // whether the connection is in the process of closing
+  private attemptingToReconnect: boolean = false; // whether the connection is in the process of reconnecting
   private reconnectAttempts: number = 0; // current reconnect attempts, gets reset
   private socket: WebSocket; // the socket, gets re-initialized on reconnection
   private pingTimeout: NodeJS.Timeout | undefined;
@@ -65,7 +65,6 @@ class WebSocketHelper {
    * Closes connection to the websocket server.
    */
   private closeInternal() {
-    this.connectionIsClosing = true;
     clearTimeout(this.pingTimeout);
     clearTimeout(this.reconnectTimeout);
     this.socket.close();
@@ -126,10 +125,11 @@ class WebSocketHelper {
         log.error("WebSocket error:", error.message);
 
         // close existing ws
-        if (this.connectionIsClosing) {
-          log.verbose("WebSocket connection is still closing");
+        if (this.attemptingToReconnect) {
+          log.verbose("WebSocket connection is still reconnecting");
           return;
         }
+        this.attemptingToReconnect = true;
         this.closeInternal();
 
         // skip if we do not want to reconnect
@@ -174,15 +174,13 @@ class WebSocketHelper {
             `WebSocket failed to connect, unexpected error: ${error}`
           );
         }
+      } finally {
+        this.attemptingToReconnect = false;
       }
     });
 
     this.socket.on("open", () => {
       this.heartbeat();
-    });
-
-    this.socket.on("close", () => {
-      this.connectionIsClosing = false;
     });
 
     this.socket.on("ping", () => {
