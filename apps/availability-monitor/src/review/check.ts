@@ -18,14 +18,12 @@ export type CheckResult<T> = {
  */
 export type Check<T, A extends unknown[]> = {
   id: string;
-  optional: boolean;
   run: (...args: A) => Promise<CheckResult<T>>;
 };
 
 /**
  * Create a check to use in review.
  * @param id
- * @param optional
  * @param run
  * @returns a check
  */
@@ -36,7 +34,6 @@ export function createCheck<T, A extends unknown[]>(
 ): Check<T, A> {
   const check: Check<T, A> = {
     id,
-    optional,
     run: async function RetryRun(...args) {
       const checkResult: CheckResult<T> = {
         checkId: check.id,
@@ -59,7 +56,11 @@ export function createCheck<T, A extends unknown[]>(
         checkResult.passed = false;
         checkResult.error =
           error instanceof Error ? error.message : String(error);
-        log.verbose("Check %s error: %s", check.id, checkResult.error);
+        log.verbose(
+          "OKAY check error for check ID %s",
+          check.id,
+          checkResult.error
+        );
         return checkResult;
       }
     },

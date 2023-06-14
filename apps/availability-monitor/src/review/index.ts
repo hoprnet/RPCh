@@ -79,8 +79,23 @@ const checks = {
       return [true, results.join(",")];
     }
   ),
+  hoprdEnoughPeers: createCheck<string, [HoprSDK, number]>(
+    "hoprd-send-message",
+    false,
+    async function checkHoprdEnoughPeers(sdk, minAmountOfPeers) {
+      const peers = await sdk.api.node.getPeers({
+        quality: 0.8,
+      });
+
+      return [
+        peers.connected.length >= minAmountOfPeers,
+        `${peers.connected.length} >= ${minAmountOfPeers}`,
+      ];
+    }
+  ),
 };
 
+// @TODO: add hoprdOutgoingChannels, exitNode
 /** List of all checks in a review. */
 export const listOfChecks = [
   "hoprdVersion",
@@ -88,6 +103,7 @@ export const listOfChecks = [
   "hoprdWorkingApiEndpoint",
   "hoprdSSL",
   "hoprdSendMessage",
+  "hoprdEnoughPeers",
 ] as const;
 
 /**
@@ -119,13 +135,19 @@ export default async function review(node: RegisteredNode): Promise<Result> {
     apiToken: node.hoprdApiToken,
   });
 
-  const [hoprdVersion, hoprdHealth, hoprdSSL, hoprdSendMessage] =
-    await Promise.all([
-      checks.hoprdVersion.run(sdk),
-      checks.hoprdHealth.run(sdk),
-      checks.hoprdSSL.run(node.hoprdApiEndpoint, node.hoprdApiToken),
-      checks.hoprdSendMessage.run(sdk),
-    ]);
+  const [
+    hoprdVersion,
+    hoprdHealth,
+    hoprdSSL,
+    hoprdSendMessage,
+    hoprdEnoughPeers,
+  ] = await Promise.all([
+    checks.hoprdVersion.run(sdk),
+    checks.hoprdHealth.run(sdk),
+    checks.hoprdSSL.run(node.hoprdApiEndpoint, node.hoprdApiToken),
+    checks.hoprdSendMessage.run(sdk),
+    checks.hoprdEnoughPeers.run(sdk, 200), // TODO make dynamic
+  ]);
 
   const review: Review = {
     hoprdVersion,
@@ -137,6 +159,7 @@ export default async function review(node: RegisteredNode): Promise<Result> {
     },
     hoprdSSL,
     hoprdSendMessage,
+    hoprdEnoughPeers,
   };
 
   const result: Result = {
@@ -167,22 +190,15 @@ export function isNodeStable(node: RegisteredNode, review: Review): boolean {
   // required elements, all must be true
   if (
     [
+      review.hoprdVersion.passed,
       review.hoprdHealth.passed,
       review.hoprdWorkingApiEndpoint.passed,
-      // review.hoprdMessageDelivery,
+      review.hoprdSendMessage,
+      review.hoprdEnoughPeers,
     ].some((b) => !b)
   ) {
     return false;
   }
-
-  // required elements when `hasExitNode`, all must be true
-  // if (node.hasExitNode) {
-  //   if ([review.exitNodeGotResponse].some((b) => !b)) {
-  //     return false;
-  //   }
-  // }
-
-  // @TODO: add hoprdOutgoingChannels
 
   return true;
 }

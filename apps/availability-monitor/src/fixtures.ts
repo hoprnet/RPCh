@@ -49,6 +49,11 @@ export const RESULT_A: Result = {
     passed: true,
     value: "",
   },
+  hoprdEnoughPeers: {
+    checkId: "hoprdEnoughPeers",
+    passed: true,
+    value: "",
+  },
   reviewedAt: new Date("2023-05-08").toUTCString(),
   isStable: true,
 };
