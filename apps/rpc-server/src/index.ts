@@ -111,7 +111,7 @@ export class RPCServer {
           if (!this.sdk) throw Error("SDK not initialized");
           const rpcRequest = await this.sdk.createRequest(exitProvider, body);
           const rpcRequestBody = rpcRequest.toMessage().body;
-          log.verbose("Sending request", rpcRequest.id, rpcRequestBody);
+          log.verbose("Sending request %i %s", rpcRequest.id, rpcRequestBody);
           verboseLogs.push(
             `1/3: created request: "${rpcRequest.id}" with body "${rpcRequestBody}"`
           );

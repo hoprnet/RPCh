@@ -90,6 +90,8 @@ export default class Request {
     ) => Promise<void>
   ): Promise<Request> {
     const [origin, encrypted] = splitBodyToParts(message.body);
+    if (!origin || !encrypted) throw Error("Message is not a Request");
+
     const entryNodeDestination =
       PeerId.createFromB58String(origin).toB58String();
 
@@ -103,7 +105,7 @@ export default class Request {
       lastRequestFromClient
     );
 
-    updateLastRequestFromClient(
+    await updateLastRequestFromClient(
       entryNodeDestination,
       session.updated_counter()
     );

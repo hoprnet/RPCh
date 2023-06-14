@@ -29,7 +29,7 @@ class WebSocketHelper {
     }
   ) {
     this.waitUntilSocketOpenP = new DeferredPromise<WebSocket>();
-    this.maxTimeWithoutPing = options?.maxTimeWithoutPing ?? 60e3;
+    this.maxTimeWithoutPing = options?.maxTimeWithoutPing ?? 33e3; // on HOPRd ping is every 15 seconds
     this.attemptToReconnect = options?.attemptToReconnect ?? true;
     this.reconnectDelay = options?.reconnectDelay ?? 100;
     this.maxReconnectAttempts = options?.maxReconnectAttempts ?? 3;
@@ -186,6 +186,7 @@ class WebSocketHelper {
     });
 
     this.socket.on("ping", () => {
+      log.verbose("received ping");
       this.heartbeat();
     });
   }

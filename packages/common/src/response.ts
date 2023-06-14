@@ -64,6 +64,9 @@ export default class Response {
       counter: bigint
     ) => Promise<void>
   ): Promise<Response> {
+    if (!message.body.startsWith("0x"))
+      throw Error("Message is not a Response");
+
     crypto.unbox_response(
       request.session,
       new crypto.Envelope(
@@ -74,7 +77,7 @@ export default class Response {
       lastResponseFromExitNode
     );
 
-    updateLastResponseFromExitNode(
+    await updateLastResponseFromExitNode(
       request.exitNodeDestination,
       request.session.updated_counter()
     );
