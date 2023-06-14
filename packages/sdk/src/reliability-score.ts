@@ -31,8 +31,8 @@ type NodeMetrics = {
 };
 
 /**
- * Way to measure if the HOPRd entry node
- * we are using is reliable or not.
+ * Way to measure if the HOPRd node
+ * we want to use is reliable or not.
  */
 export default class ReliabilityScore {
   /**

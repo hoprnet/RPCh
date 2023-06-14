@@ -79,7 +79,7 @@ describe("test SDK class", function () {
     it("should fail to create request", async function () {
       await expect(
         sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE)
-      ).rejects.toThrow("SDK not ready to create requests");
+      ).rejects.toThrow("SDK not ready to create requests, no reliable nodes");
     });
 
     it("should fail to send request", async function () {
@@ -87,7 +87,7 @@ describe("test SDK class", function () {
         .value as Request;
 
       await expect(sdk.sendRequest(request)).rejects.toThrow(
-        "SDK not ready to send requests"
+        "SDK not ready to send requests, no reliable nodes"
       );
     });
   });
