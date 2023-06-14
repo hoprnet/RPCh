@@ -103,7 +103,7 @@ export default class Request {
       lastRequestFromClient
     );
 
-    await updateLastRequestFromClient(
+    updateLastRequestFromClient(
       entryNodeDestination,
       session.updated_counter()
     );

@@ -74,7 +74,7 @@ export default class Response {
       lastResponseFromExitNode
     );
 
-    await updateLastResponseFromExitNode(
+    updateLastResponseFromExitNode(
       request.exitNodeDestination,
       request.session.updated_counter()
     );
