@@ -206,6 +206,9 @@ export const start = async (ops: {
           message
         );
       }
+    },
+    {
+      maxReconnectAttempts: Infinity,
     }
   );
 

@@ -151,13 +151,18 @@ export default class SDK {
 
   /**
    * Will select until nodes until MAX is reached.
-   * Ignores "bad" nodes.
+   * Ignores known unreliable nodes.
    * @param discoveryPlatformApiEndpoint
    */
   private async selectEntryNodes(
     discoveryPlatformApiEndpoint: string
   ): Promise<void> {
+    log.normal("selectEntryNodes", {
+      selectingEntryNodes: this.selectingEntryNodes,
+      deadlocked: this.isDeadlocked(),
+    });
     if (this.selectingEntryNodes || this.isDeadlocked()) return;
+
     try {
       this.selectingEntryNodes = true;
 
@@ -174,7 +179,7 @@ export default class SDK {
       } else {
         brokenNodes = this.reliabilityScore
           .getScores()
-          .filter(({ peerId }) => !this.isEntryNodeReliable(peerId))
+          .filter(({ peerId }) => !this.isNodeReliable(peerId))
           .map(({ peerId }) => peerId);
       }
 
@@ -325,7 +330,8 @@ export default class SDK {
   }
 
   /**
-   * Updates exit node list from the Discovery Platform
+   * Updates exit node list from the Discovery Platform,
+   * removes known unreliable nodes.
    * @param discoveryPlatformApiEndpoint
    * @returns list of exit nodes
    */
@@ -445,7 +451,7 @@ export default class SDK {
   private updateEntryNodeScore(req: Request, result: Result): void {
     this.reliabilityScore.addMetric(req.entryNodeDestination, req.id, result);
     // remove entry node as soon as we find its not reliable
-    if (!this.isEntryNodeReliable(req.entryNodeDestination)) {
+    if (!this.isNodeReliable(req.entryNodeDestination)) {
       this.removeEntryNode(req.entryNodeDestination);
     }
   }
@@ -516,7 +522,7 @@ export default class SDK {
 
           // remove unstable entry nodes
           for (const peerId of this.entryNodes.keys()) {
-            if (!this.isEntryNodeReliable(peerId)) this.removeEntryNode(peerId);
+            if (!this.isNodeReliable(peerId)) this.removeEntryNode(peerId);
           }
 
           // reset old nodes from reliability score
@@ -578,7 +584,7 @@ export default class SDK {
    * @param entryNode
    * @returns `true` is entry node is reliable
    */
-  private isEntryNodeReliable(entryNodePeerId: string): boolean {
+  private isNodeReliable(entryNodePeerId: string): boolean {
     const score = this.reliabilityScore.getScore(entryNodePeerId);
     const status = this.reliabilityScore.getStatus(entryNodePeerId);
     const hasLowScore = score < this.minimumScoreForReliableNode;
@@ -593,20 +599,23 @@ export default class SDK {
    * @returns Request
    */
   public async createRequest(provider: string, body: string): Promise<Request> {
-    if (!this.isReady) throw Error("SDK not ready to create requests");
+    if (!this.isReady) {
+      throw Error("SDK not ready to create requests, no reliable nodes");
+    }
 
     // get reliable entry nodes
     const reliableEntryNodes = Array.from(this.entryNodes.values()).filter(
-      (entryNode) => this.isEntryNodeReliable(entryNode.peerId)
+      (entryNode) => this.isNodeReliable(entryNode.peerId)
     );
     if (reliableEntryNodes.length === 0) {
       throw Error("SDK does not have any reliable entry nodes");
     }
     const entryNode = utils.randomlySelectFromArray(reliableEntryNodes);
 
-    // exclude entry node
+    // exclude entry nodes & get reliable exit nodes
     const eligibleExitNodes = this.exitNodes.filter(
-      (node) => !this.entryNodes.has(node.peerId)
+      (node) =>
+        !this.entryNodes.has(node.peerId) && this.isNodeReliable(node.peerId)
     );
     if (eligibleExitNodes.length === 0) {
       throw Error("SDK does not have any eligible exit nodes");
@@ -652,9 +661,9 @@ export default class SDK {
    * @returns Promise<Response>
    */
   public async sendRequest(req: Request): Promise<Response> {
-    // Check if SDK is ready to send requests
+    // check if SDK is ready to send requests
     if (!this.isReady) {
-      throw Error("SDK not ready to send requests");
+      throw Error("SDK not ready to send requests, no reliable nodes");
     }
 
     return new Promise(async (resolve, reject) => {
