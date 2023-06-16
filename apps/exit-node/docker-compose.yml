@@ -47,7 +47,12 @@ services:
     restart: on-failure
     pull_policy: always
     mem_reservation: 300m
-    mem_limit: 2g
+    deploy:
+      resources:
+        reservations:
+          memory: 2G
+        limits:
+          memory: 2G
     container_name: hoprd
     hostname: hoprd
     networks:
