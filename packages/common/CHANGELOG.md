@@ -1,5 +1,11 @@
 # @rpch/common
 
+## 0.2.3
+
+### Patch Changes
+
+- Introduce parallel entry nodes & improve reliability score
+
 ## 0.2.2
 
 ### Patch Changes
