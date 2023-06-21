@@ -179,7 +179,6 @@ describe("test SDK class", function () {
         accessToken: ENTRY_NODE_API_TOKEN,
         id: ENTRY_NODE_PEER_ID,
       });
-
       DP_GET_NODES.reply(200, [
         {
           exit_node_pub_key: EXIT_NODE_PUB_KEY,
@@ -194,6 +193,87 @@ describe("test SDK class", function () {
       nock.cleanAll();
       jest.clearAllMocks();
     });
+
+    it("should select entry node", async function () {
+      assert.equal(sdk["entryNodes"].size, 1);
+      assert.equal(sdk["selectingEntryNodes"], false);
+    });
+
+    it("should re-select entry node when calling selectEntryNodes", async function () {
+      // remove entry node
+      sdk["removeEntryNode"](ENTRY_NODE_PEER_ID);
+
+      // mock response
+      DP_REQ_ENTRY_NOCK.reply(200, {
+        hoprd_api_endpoint: ENTRY_NODE_API_ENDPOINT,
+        hoprd_api_port: ENTRY_NODE_API_PORT,
+        accessToken: ENTRY_NODE_API_TOKEN,
+        id: ENTRY_NODE_PEER_ID,
+      });
+      // re-select entry nodes
+      await sdk["selectEntryNodes"](DISCOVERY_PLATFORM_API_ENDPOINT);
+
+      assert.equal(sdk["entryNodes"].size, 1);
+      assert.equal(sdk["selectingEntryNodes"], false);
+    });
+
+    it("should NOT re-select entry node when calling selectEntryNodes fails", async function () {
+      // remove entry node
+      sdk["removeEntryNode"](ENTRY_NODE_PEER_ID);
+
+      // mock response
+      DP_REQ_ENTRY_NOCK.reply(404).persist(true);
+      try {
+        // re-select entry nodes
+        await sdk["selectEntryNodes"](DISCOVERY_PLATFORM_API_ENDPOINT);
+      } catch (e) {
+        if (e instanceof Error) {
+          assert.equal(e.message, "Failed to request entry node");
+        }
+      }
+
+      assert.equal(sdk["entryNodes"].size, 0);
+      assert.equal(sdk["selectingEntryNodes"], false);
+    }, 7e3);
+
+    it("should re-select entry node when calling selectEntryNode", async function () {
+      // remove entry node
+      sdk["removeEntryNode"](ENTRY_NODE_PEER_ID);
+
+      // mock response
+      DP_REQ_ENTRY_NOCK.reply(200, {
+        hoprd_api_endpoint: ENTRY_NODE_API_ENDPOINT,
+        hoprd_api_port: ENTRY_NODE_API_PORT,
+        accessToken: ENTRY_NODE_API_TOKEN,
+        id: ENTRY_NODE_PEER_ID,
+      });
+      // re-select entry nodes
+      await sdk["selectEntryNode"](DISCOVERY_PLATFORM_API_ENDPOINT);
+
+      assert.equal(sdk["entryNodes"].size, 1);
+      assert.equal(sdk["selectingEntryNodes"], false);
+    });
+
+    it("should NOT re-select entry node when calling selectEntryNode with excluded list", async function () {
+      // remove entry node
+      sdk["removeEntryNode"](ENTRY_NODE_PEER_ID);
+
+      // mock response
+      DP_REQ_ENTRY_NOCK.reply(404).persist(true);
+      try {
+        // re-select entry nodes
+        await sdk["selectEntryNode"](DISCOVERY_PLATFORM_API_ENDPOINT, [
+          ENTRY_NODE_PEER_ID,
+        ]);
+      } catch (e) {
+        if (e instanceof Error) {
+          assert.equal(e.message, "Failed to request entry node");
+        }
+      }
+
+      assert.equal(sdk["entryNodes"].size, 0);
+      assert.equal(sdk["selectingEntryNodes"], false);
+    }, 7e3);
 
     it("should create request", async function () {
       const request = await sdk.createRequest(
@@ -283,15 +363,6 @@ describe("test SDK class", function () {
 
     describe("should select reliable node", function () {
       it("selects new node when selected node is dishonest", async function () {
-        // Make original selected node have a low score
-        // remove nodes
-        sdk["updateEntryNodeScore"](
-          {
-            entryNodeDestination: ENTRY_NODE_PEER_ID,
-          } as any,
-          "dishonest"
-        );
-
         // select a new reliable node
         DP_REQ_ENTRY_NOCK.reply(200, {
           hoprd_api_endpoint: ENTRY_NODE_API_ENDPOINT,
@@ -300,8 +371,13 @@ describe("test SDK class", function () {
           id: "someothernode",
         });
 
-        await sdk["selectEntryNodes"](
-          sdk["ops"]["discoveryPlatformApiEndpoint"]
+        // Make original selected node have a low score
+        // remove nodes
+        await sdk["updateEntryNodeScoreAndSelect"](
+          {
+            entryNodeDestination: ENTRY_NODE_PEER_ID,
+          } as any,
+          "dishonest"
         );
 
         // @ts-ignore
@@ -310,6 +386,7 @@ describe("test SDK class", function () {
           sdk["entryNodes"].get("someothernode")?.peerId,
           "someothernode"
         );
+        assert.equal(sdk["selectingEntryNodes"], false);
       });
 
       it("does not select new node when node is fresh", async function () {

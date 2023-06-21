@@ -157,12 +157,9 @@ export default class SDK {
   private async selectEntryNodes(
     discoveryPlatformApiEndpoint: string
   ): Promise<void> {
-    log.normal("selectEntryNodes", {
-      selectingEntryNodes: this.selectingEntryNodes,
-      deadlocked: this.isDeadlocked(),
-    });
     if (this.selectingEntryNodes || this.isDeadlocked()) return;
 
+    let entryNodes: EntryNode[] = [];
     try {
       this.selectingEntryNodes = true;
 
@@ -189,7 +186,6 @@ export default class SDK {
       );
 
       // get new entry nodes
-      let entryNodes: EntryNode[] = [];
       for (let i = 0; i < amountNeeded; i++) {
         const excludeList: string[] = [
           ...brokenNodes,
@@ -204,6 +200,7 @@ export default class SDK {
           },
           {
             retries: 5,
+            maxTimeout: 1e3,
             onRetry: (e, attempt) => {
               log.error("Error while selecting entry node", e);
               log.verbose("Retrying to select entry node, attempt:", attempt);
@@ -214,9 +211,10 @@ export default class SDK {
       }
     } catch (error) {
       log.error("Couldn't find new entry node: ", error);
-      if (!this.ops.disableDeadlock) this.setDeadlock(this.deadlockMs);
+      this.setDeadlock(this.deadlockMs);
       throw error;
     } finally {
+      log.normal("Selected %i entry nodes", entryNodes.length);
       this.selectingEntryNodes = false;
     }
   }
@@ -226,9 +224,9 @@ export default class SDK {
    * @param peerId
    */
   private removeEntryNode(peerId: string): void {
-    log.verbose("Removing entry node %s", peerId);
     const entryNode = this.entryNodes.get(peerId);
     if (entryNode) {
+      log.verbose("Removing entry node %s", peerId);
       if (entryNode.stopMessageListener) entryNode.stopMessageListener();
       this.entryNodes.delete(peerId);
     }
@@ -297,7 +295,8 @@ export default class SDK {
     }
 
     log.verbose(
-      "Selected entry node",
+      "Selected entry node %s",
+      entryNode.peerId,
       entryNode,
       `forced=${!!this.ops.forceEntryNode}`
     );
@@ -412,7 +411,7 @@ export default class SDK {
       );
       const responseTime = Date.now() - match.createdAt.getTime();
       log.verbose(
-        "response time for request %s: %s ms",
+        "response time for request %s: %i ms",
         match.request.id,
         responseTime
       );
@@ -444,16 +443,28 @@ export default class SDK {
 
   /**
    * Updates the score of an entry node.
-   * Removes it if it ranks too low.
+   * Removes it if it ranks too low and triggers selection.
    * @param req
    * @param result
+   * @returns resolves once update and selection occured
    */
-  private updateEntryNodeScore(req: Request, result: Result): void {
-    this.reliabilityScore.addMetric(req.entryNodeDestination, req.id, result);
-    // remove entry node as soon as we find its not reliable
-    if (!this.isNodeReliable(req.entryNodeDestination)) {
-      this.removeEntryNode(req.entryNodeDestination);
-    }
+  private updateEntryNodeScoreAndSelect(
+    req: Request,
+    result: Result
+  ): Promise<void> {
+    return new Promise<void>((resolve) => {
+      this.reliabilityScore.addMetric(req.entryNodeDestination, req.id, result);
+      // remove entry node as soon as we find its not reliable
+      if (!this.isNodeReliable(req.entryNodeDestination)) {
+        this.removeEntryNode(req.entryNodeDestination);
+        this.selectEntryNodes(this.ops.discoveryPlatformApiEndpoint)
+          .then(resolve)
+          .catch((error) => {
+            log.error("Failed to select entry nodes", error);
+            resolve();
+          });
+      }
+    });
   }
 
   /**
@@ -463,7 +474,7 @@ export default class SDK {
    */
   private onRequestExpiration(req: Request): void {
     log.normal("request %i expired", req.id);
-    this.updateEntryNodeScore(req, "failed");
+    this.updateEntryNodeScoreAndSelect(req, "failed");
   }
 
   /**
@@ -474,7 +485,7 @@ export default class SDK {
   public handleFailedRequest(req: Request, reason?: string) {
     log.normal("request %i failed", req.id, reason || "unknown reason");
     // add metric failed metric
-    this.updateEntryNodeScore(req, "failed");
+    this.updateEntryNodeScoreAndSelect(req, "failed");
     // reject request promise
     this.requestCache.getRequest(req.id)?.reject(`request failed: "${reason}"`);
     this.requestCache.removeRequest(req);
@@ -500,6 +511,7 @@ export default class SDK {
         () => this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint),
         {
           retries: 5,
+          maxTimeout: 1e3,
           onRetry: (e, attempt) => {
             log.error("Error while fetching exit nodes", e);
             log.verbose("Retrying to fetch exit nodes, attempt:", attempt);
@@ -512,18 +524,6 @@ export default class SDK {
           // check for expires caches every second
           this.segmentCache.removeExpired(this.ops.timeout);
           this.requestCache.removeExpired(this.ops.timeout);
-
-          // checks whether to fetch new entry nodes
-          this.selectEntryNodes(this.ops.discoveryPlatformApiEndpoint).catch(
-            (error) => {
-              log.error("Failed to select entry nodes", error);
-            }
-          );
-
-          // remove unstable entry nodes
-          for (const peerId of this.entryNodes.keys()) {
-            if (!this.isNodeReliable(peerId)) this.removeEntryNode(peerId);
-          }
 
           // reset old nodes from reliability score
           this.reliabilityScore.resetOldNodeMetrics(this.resetNodeMetricsMs);
@@ -552,7 +552,7 @@ export default class SDK {
               log.error("Failed to fetch exit nodes", error);
             }
           );
-        }, 60e3)
+        }, 30e3)
       );
 
       this.startingPromise.resolve();
@@ -636,7 +636,7 @@ export default class SDK {
    * @returns boolean
    */
   private isDeadlocked(): boolean {
-    if (!this.deadlockTimestamp) return false;
+    if (this.ops.disableDeadlock || !this.deadlockTimestamp) return false;
     const now = Date.now();
     if (now < this.deadlockTimestamp) {
       log.verbose("SDK is deadlocked until", this.deadlockTimestamp);
