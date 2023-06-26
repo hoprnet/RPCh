@@ -14,6 +14,7 @@ import { createFundingRequest } from "../funding-request";
 import retry from "async-retry";
 
 const log = createLogger(["funding-service-api"]);
+const DEFAULT_MAX_REQUEST_TIMEOUT = 1e3 * 30; // 30 sec
 
 /**
  * API used to fund registered nodes, handles creating and keeping track of pending requests.
@@ -334,6 +335,7 @@ export class FundingServiceApi {
       },
       {
         retries: 3,
+        maxTimeout: DEFAULT_MAX_REQUEST_TIMEOUT,
         ...opts,
       }
     );
