@@ -19,6 +19,7 @@ import { createLogger } from "./utils";
 const log = createLogger();
 const DEFAULT_MAXIMUM_SEGMENTS_PER_REQUEST = 10;
 const DEFAULT_RESET_NODE_METRICS_MS = 1e3 * 60 * 5; // 5 min
+const DEFAULT_ENTRY_NODE_SELECTION_TIMEOUT = 1e3 * 5; // 5 sec
 const DEFAULT_MINIMUM_SCORE_FOR_RELIABLE_NODE = 0.8;
 const DEFAULT_RELIABILITY_SCORE_FRESH_NODE_THRESHOLD = 10;
 const DEFAULT_RELIABILITY_SCORE_MAX_RESPONSES = 100;
@@ -180,7 +181,7 @@ export default class SDK {
       );
 
       // get new entry nodes
-      let entryNodes: EntryNode[] = Array.from(this.entryNodes.values());
+      const entryNodes: EntryNode[] = Array.from(this.entryNodes.values());
       for (let i = 0; i < amountNeeded; i++) {
         const excludeList: string[] = [
           ...brokenNodes,
@@ -518,7 +519,7 @@ export default class SDK {
 
           // reset old nodes from reliability score
           this.reliabilityScore.resetOldNodeMetrics(this.resetNodeMetricsMs);
-        }, 1e3 * 5) // look for entry nodes every 5 seconds - TODO
+        }, DEFAULT_ENTRY_NODE_SELECTION_TIMEOUT) // look for entry nodes every 5 seconds
       );
 
       this.intervals.push(
