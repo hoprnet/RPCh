@@ -24,6 +24,7 @@ const DEFAULT_MINIMUM_SCORE_FOR_RELIABLE_NODE = 0.8;
 const DEFAULT_RELIABILITY_SCORE_FRESH_NODE_THRESHOLD = 10;
 const DEFAULT_RELIABILITY_SCORE_MAX_RESPONSES = 100;
 const DEFAULT_MAX_ENTRY_NODES = 2;
+const MAX_REQUEST_TIMEOUT = 1e3 * 30; // 30 sec
 
 /**
  * HOPR SDK options.
@@ -208,6 +209,7 @@ export default class SDK {
               log.error("Error while selecting entry node", e);
               log.verbose("Retrying to select entry node, attempt:", attempt);
             },
+            maxTimeout: MAX_REQUEST_TIMEOUT,
           }
         );
         entryNodes.push(entryNode);
@@ -504,6 +506,7 @@ export default class SDK {
             log.error("Error while fetching exit nodes", e);
             log.verbose("Retrying to fetch exit nodes, attempt:", attempt);
           },
+          maxTimeout: MAX_REQUEST_TIMEOUT,
         }
       );
 
