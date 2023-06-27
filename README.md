@@ -25,5 +25,18 @@ Checkout [Sandbox](https://github.com/Rpc-h/RPCh/tree/main/devkit/sandbox#sandbo
 
 ### For developers
 
-- coverage: currently we can generate coverage reports for each project, but we do not have a threshold set in which we would fail our CI
-- dependency check: we currently use `check-dependency-version-consistency` to ensure consistency between the dependency version, future plan is to use `depcheck` for every project to ensure all libraries are correctly added per `package.json`
+- coverage: currently we can generate coverage reports for each project,
+  but we do not have a threshold set in which we would fail our CI
+- dependency check: we currently use `check-dependency-version-consistency` to ensure consistency between the dependency version,
+  future plan is to use `depcheck` for every project to ensure all libraries are correctly added per `package.json`
+
+## Deployment
+
+Deployment works mostly automated.
+Whenever changes are pushed/merged to the `main` branch, the CI system will automatically check
+
+- if it can build new application container images
+- if it can publish new npm packages
+
+If an application/package depends on a newer package version from npm,
+ASK Martins
