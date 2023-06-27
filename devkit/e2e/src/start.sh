@@ -18,8 +18,6 @@ trap 'stop; exit 1' SIGINT SIGKILL SIGTERM ERR
 # start sandbox
 start
 
-sleep 60
-
 # Run tests with env variables
 npx jest --ci || exit 1
 
