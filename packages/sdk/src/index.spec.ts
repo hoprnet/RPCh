@@ -361,35 +361,6 @@ describe("test SDK class", function () {
       ).rejects.toThrow();
     });
 
-    it("should not allow creating a request if sdk is deadlocked", async function () {
-      sdk.setDeadlock(10e6);
-      try {
-        await sdk.createRequest(fixtures.PROVIDER, fixtures.RPC_REQ_LARGE);
-      } catch (e: any) {
-        expect(e.message).toMatch("SDK is deadlocked");
-      }
-    });
-
-    it("should allow sending requests if sdk is deadlocked", async function () {
-      sdk.setDeadlock(10e6);
-      HOPRD_SEND_MESSAGE_NOCK.reply(202, "someresponse");
-
-      const [clientRequest, , exitNodeResponse] =
-        await fixtures.generateMockedFlow(3);
-
-      sdk.sendRequest(clientRequest).then((response) => {
-        // this will run when .onMessage resolves request
-        assert.equal(response.id, clientRequest.id);
-        // @ts-ignore
-        const pendingRequest = sdk.requestCache.getRequest(clientRequest.id);
-        assert.equal(pendingRequest, undefined);
-      });
-
-      // return response for sdk sendRequest
-      // @ts-ignore
-      sdk.onMessage(exitNodeResponse.toMessage());
-    });
-
     it("should handle failed request", async function () {
       HOPRD_SEND_MESSAGE_NOCK.reply(400, "error");
       const [clientRequest] = await fixtures.generateMockedFlow(3);

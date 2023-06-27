@@ -19,11 +19,11 @@ import { createLogger } from "./utils";
 const log = createLogger();
 const DEFAULT_MAXIMUM_SEGMENTS_PER_REQUEST = 10;
 const DEFAULT_RESET_NODE_METRICS_MS = 1e3 * 60 * 5; // 5 min
-const DEFAULT_DEADLOCK_MS = 1e3 * 5; // 5s
 const DEFAULT_MINIMUM_SCORE_FOR_RELIABLE_NODE = 0.8;
 const DEFAULT_RELIABILITY_SCORE_FRESH_NODE_THRESHOLD = 10;
 const DEFAULT_RELIABILITY_SCORE_MAX_RESPONSES = 100;
 const DEFAULT_MAX_ENTRY_NODES = 2;
+const ENTRY_NODE_SELECTION_TIMEOUT = 1e3 * 5; // 5 sec
 const MAX_REQUEST_TIMEOUT = 1e3 * 30; // 30 sec
 
 /**
@@ -34,8 +34,6 @@ const MAX_REQUEST_TIMEOUT = 1e3 * 30; // 30 sec
  * @param timeout The timeout of pending requests
  * @param maximumSegmentsPerRequest Optional: Blocks requests that are made up of more than 10 segments
  * @param resetNodeMetricsMs Optional: Reset score metrics after specifies miliseconds
- * @param deadlockMs Optional: How long to pause the SDK before sending more requests to the discovery platform after an error
- * @param disableDeadlock Optional: Disable deadlocking
  * @param minimumScoreForReliableNode Optional: Nodes with lower score than this will be swapped for new ones
  * @param maxEntryNodes Optional: How many entry nodes to use in parallel
  * @param reliabilityScoreFreshNodeThreshold Optional: The score which is considered fresh for a node
@@ -50,8 +48,6 @@ export type HoprSdkOps = {
   timeout: number;
   maximumSegmentsPerRequest?: number;
   resetNodeMetricsMs?: number;
-  deadlockMs?: number;
-  disableDeadlock?: boolean;
   minimumScoreForReliableNode?: number;
   maxEntryNodes?: number;
   reliabilityScoreFreshNodeThreshold?: number;
@@ -86,7 +82,6 @@ export default class SDK {
   private maximumSegmentsPerRequest: number =
     DEFAULT_MAXIMUM_SEGMENTS_PER_REQUEST;
   private resetNodeMetricsMs: number = DEFAULT_RESET_NODE_METRICS_MS;
-  private deadlockMs: number = DEFAULT_DEADLOCK_MS;
   private minimumScoreForReliableNode: number =
     DEFAULT_MINIMUM_SCORE_FOR_RELIABLE_NODE;
   private maxEntryNodes: number = DEFAULT_MAX_ENTRY_NODES;
@@ -101,8 +96,6 @@ export default class SDK {
   private segmentCache: SegmentCache;
   private requestCache: RequestCache;
   private selectingEntryNodes: boolean = false;
-  // an epoch timestamp that halts selecting new entry nodes
-  public deadlockTimestamp: number | undefined;
   // keeps track a reliability score for every entry-node used
   private reliabilityScore: ReliabilityScore;
   // allows developers to programmatically enable debugging
@@ -136,7 +129,6 @@ export default class SDK {
       ops.maximumSegmentsPerRequest ?? DEFAULT_MAXIMUM_SEGMENTS_PER_REQUEST;
     this.resetNodeMetricsMs =
       ops.resetNodeMetricsMs ?? DEFAULT_RESET_NODE_METRICS_MS;
-    this.deadlockMs = ops.deadlockMs ?? DEFAULT_DEADLOCK_MS;
     this.minimumScoreForReliableNode =
       ops.minimumScoreForReliableNode ??
       DEFAULT_MINIMUM_SCORE_FOR_RELIABLE_NODE;
@@ -160,9 +152,8 @@ export default class SDK {
   ): Promise<void> {
     log.normal("selectEntryNodes", {
       selectingEntryNodes: this.selectingEntryNodes,
-      deadlocked: this.isDeadlocked(),
     });
-    if (this.selectingEntryNodes || this.isDeadlocked()) return;
+    if (this.selectingEntryNodes) return;
 
     try {
       this.selectingEntryNodes = true;
@@ -190,13 +181,13 @@ export default class SDK {
       );
 
       // get new entry nodes
-      let entryNodes: EntryNode[] = [];
+      const entryNodes: EntryNode[] = Array.from(this.entryNodes.values());
       for (let i = 0; i < amountNeeded; i++) {
         const excludeList: string[] = [
           ...brokenNodes,
           ...entryNodes.map((e) => e.peerId),
         ];
-        const entryNode = await retry(
+        await retry(
           async () => {
             return this.selectEntryNode(
               discoveryPlatformApiEndpoint,
@@ -212,11 +203,9 @@ export default class SDK {
             maxTimeout: MAX_REQUEST_TIMEOUT,
           }
         );
-        entryNodes.push(entryNode);
       }
     } catch (error) {
       log.error("Couldn't find new entry node: ", error);
-      if (!this.ops.disableDeadlock) this.setDeadlock(this.deadlockMs);
       throw error;
     } finally {
       this.selectingEntryNodes = false;
@@ -530,7 +519,7 @@ export default class SDK {
 
           // reset old nodes from reliability score
           this.reliabilityScore.resetOldNodeMetrics(this.resetNodeMetricsMs);
-        }, 1e3)
+        }, ENTRY_NODE_SELECTION_TIMEOUT) // look for entry nodes every 5 seconds
       );
 
       this.intervals.push(
@@ -632,30 +621,6 @@ export default class SDK {
       exitNode.peerId,
       this.crypto!.Identity.load_identity(etherUtils.arrayify(exitNode.pubKey))
     );
-  }
-
-  /**
-   * Checks if sdk should be in deadlock
-   * @returns boolean
-   */
-  private isDeadlocked(): boolean {
-    if (!this.deadlockTimestamp) return false;
-    const now = Date.now();
-    if (now < this.deadlockTimestamp) {
-      log.verbose("SDK is deadlocked until", this.deadlockTimestamp);
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * Sets timestamp by adding time now and received parameter
-   * @param timeInMs number
-   */
-  public setDeadlock(timeInMs: number): void {
-    const now = Date.now();
-    this.deadlockTimestamp = timeInMs + now;
-    log.verbose("new deadlock timestamp", this.deadlockTimestamp);
   }
 
   /**
