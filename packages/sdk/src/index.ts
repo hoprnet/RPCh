@@ -506,19 +506,19 @@ export default class SDK {
           this.segmentCache.removeExpired(this.ops.timeout);
           this.requestCache.removeExpired(this.ops.timeout);
 
-          // remove unstable entry nodes
+          // first remove unstable entry nodes
           for (const peerId of this.entryNodes.keys()) {
             if (!this.isNodeReliable(peerId)) this.removeEntryNode(peerId);
           }
 
-          // checks whether to fetch new entry nodes
+          // second fetch new entry nodes
           this.selectEntryNodes(this.ops.discoveryPlatformApiEndpoint).catch(
             (error) => {
               log.error("Failed to select entry nodes", error);
             }
           );
 
-          // reset old nodes from reliability score
+          // third reset old nodes from reliability score
           this.reliabilityScore.resetOldNodeMetrics(this.resetNodeMetricsMs);
         }, ENTRY_NODE_SELECTION_TIMEOUT) // look for entry nodes every 5 seconds
       );
@@ -532,6 +532,7 @@ export default class SDK {
               return `${peerId}: ${score} - ${status}`;
             }
           );
+          // keep log a one liner for easy access in grafana
           log.normal(
             `Using '${
               this.entryNodes.size
