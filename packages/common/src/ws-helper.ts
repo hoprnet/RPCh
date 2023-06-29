@@ -14,9 +14,6 @@ class WebSocketHelper {
   private attemptToReconnect: boolean; // whether we should attempt to reconnect
   private reconnectDelay: number; // how many ms to wait before attempting to reconnect
   private maxReconnectAttempts: number; // maximum number of reconnect attempts
-  // resolved when a connection is open
-  // rejects once it has failed connecting (including reconnect attemps)
-  private waitUntilSocketOpenP: DeferredPromise<WebSocket>;
 
   constructor(
     private url: string,
@@ -28,7 +25,6 @@ class WebSocketHelper {
       maxReconnectAttempts?: number;
     }
   ) {
-    this.waitUntilSocketOpenP = new DeferredPromise<WebSocket>();
     this.maxTimeWithoutPing = options?.maxTimeWithoutPing ?? 33e3; // on HOPRd ping is every 15 seconds
     this.attemptToReconnect = options?.attemptToReconnect ?? true;
     this.reconnectDelay = options?.reconnectDelay ?? 100;
@@ -43,22 +39,59 @@ class WebSocketHelper {
    * @returns the websocket instance
    */
   public async waitUntilSocketOpen(): Promise<WebSocket> {
+    const waitUntilSocketOpenP: DeferredPromise<WebSocket> = new DeferredPromise();
     return new Promise<WebSocket>((resolve, reject) => {
-      // if its already open
-      if (this.socket.readyState === this.socket.OPEN) {
-        this.waitUntilSocketOpenP.resolve(this.socket);
-      }
-      // wait for it to open
-      else {
-        this.socket.onopen = () => {
-          log.normal("Listening for incoming messages from HOPRd", this.url);
-          this.reconnectAttempts = 0;
-          this.waitUntilSocketOpenP.resolve(this.socket);
-        };
+      switch (this.socket.readyState) {
+        case WebSocket.CONNECTING:
+          this.waitFromConnecting(waitUntilSocketOpenP);
+          break;
+        case WebSocket.OPEN:
+          waitUntilSocketOpenP.resolve(this.socket);
+          break;
+        case WebSocket.CLOSING:
+          waitUntilSocketOpenP.reject("Socket closing");
+          break;
+        case WebSocket.CLOSED:
+          waitUntilSocketOpenP.reject("Socket already closed");
+          break;
       }
 
-      return this.waitUntilSocketOpenP.promise.then(resolve).catch(reject);
+      return waitUntilSocketOpenP.promise.then(resolve).catch(reject);
     });
+  }
+
+  private waitFromConnecting(waitUntilSocketOpenP: DeferredPromise<WebSocket>) {
+    // Might be better to refactor listener handling for websockets entirely
+    // For now lets attach onetime listeners to only get notified about the next event after connecting
+    const removeListeners = () => {
+      this.socket.removeEventListener("open", openListen);
+      this.socket.removeEventListener("close", closeListen);
+      this.socket.removeEventListener("error", errorListen);
+    };
+    const errorListen = (evt: any): void => {
+      log.error("Error connecting WS", evt);
+      removeListeners();
+      waitUntilSocketOpenP.reject(this.socket);
+    };
+    const closeListen = (evt: any) => {
+      log.error(
+        "Closing connecting WS with code",
+        evt.code,
+        "and reason",
+        evt.reason
+      );
+      removeListeners();
+      waitUntilSocketOpenP.reject(this.socket);
+    };
+    const openListen = () => {
+      log.normal("Listening for incoming messages from HOPRd", this.url);
+      this.reconnectAttempts = 0;
+      removeListeners();
+      waitUntilSocketOpenP.resolve(this.socket);
+    };
+    this.socket.addEventListener("open", openListen);
+    this.socket.addEventListener("close", closeListen);
+    this.socket.addEventListener("error", errorListen);
   }
 
   /**
@@ -88,7 +121,6 @@ class WebSocketHelper {
   private closeWithError(error: any) {
     log.verbose("Closing WS with error", error);
     this.close();
-    this.waitUntilSocketOpenP.reject(error);
   }
 
   private heartbeat() {
@@ -100,7 +132,7 @@ class WebSocketHelper {
   }
 
   private setUpEventHandlers() {
-    this.socket.onmessage = (event) => {
+    this.socket.onmessage = event => {
       const body = event.data.toString();
       // message received is an acknowledgement of a
       // message we have send, we can safely ignore this
@@ -120,7 +152,7 @@ class WebSocketHelper {
       this.onMessage(message);
     };
 
-    this.socket.on("error", async (error) => {
+    this.socket.on("error", async error => {
       try {
         log.error("WebSocket error:", error.message);
 
@@ -148,7 +180,7 @@ class WebSocketHelper {
           error.message
         );
         // wait a bit before reconnection attempt
-        await new Promise<void>((resolve) => {
+        await new Promise<void>(resolve => {
           this.reconnectTimeout = setTimeout(resolve, this.reconnectDelay);
         });
 
