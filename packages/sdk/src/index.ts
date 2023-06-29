@@ -234,7 +234,7 @@ export default class SDK {
   private async selectEntryNode(
     discoveryPlatformApiEndpoint: string,
     excludeList?: string[]
-  ): Promise<EntryNode> {
+  ): Promise<void> {
     log.verbose("Selecting entry node");
 
     let entryNode: EntryNode;
@@ -294,31 +294,34 @@ export default class SDK {
       `forced=${!!this.ops.forceEntryNode}`
     );
 
-    // if entry node already exists (happens when we force entry node)
-    if (this.entryNodes.has(entryNode.peerId)) return entryNode;
-
-    // create new WS connection
-    const connection = await hoprd.createMessageListener(
-      entryNode.apiEndpoint,
-      entryNode.apiToken,
-      (message) => {
-        try {
-          const segment = Segment.fromString(message);
-          this.segmentCache.onSegment(segment);
-        } catch {
-          log.verbose(
-            "rejected received data from HOPRd: not a valid segment",
-            message
-          );
-        }
-      }
-    );
-    entryNode.stopMessageListener = () => {
-      if (connection.close) connection.close();
-    };
-
-    this.entryNodes.set(entryNode.peerId, entryNode);
-    return entryNode;
+    // create new WS connection if not already established
+    if (!this.entryNodes.has(entryNode.peerId)) {
+      hoprd
+        .createMessageListener(
+          entryNode.apiEndpoint,
+          entryNode.apiToken,
+          (message: any) => {
+            try {
+              const segment = Segment.fromString(message);
+              this.segmentCache.onSegment(segment);
+            } catch {
+              log.verbose(
+                "rejected received data from HOPRd: not a valid segment",
+                message
+              );
+            }
+          }
+        )
+        .then((connection: any) => {
+          entryNode.stopMessageListener = () => {
+            if (connection.close) connection.close();
+          };
+          this.entryNodes.set(entryNode.peerId, entryNode);
+        })
+        .catch((err: any) => {
+          log.error("Error creating message listener on entryNode:", err);
+        });
+    }
   }
 
   /**
