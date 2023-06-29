@@ -164,12 +164,12 @@ export default class SDK {
         this.entryNodes.size;
       if (amountNeeded === 0) return;
 
-      let brokenNodes: string[] = [];
+      let brokenNodeIds: string[] = [];
       if (this.ops.forceEntryNode) {
         // we pretend everything is okay if we need to force an entry node
-        brokenNodes = [];
+        brokenNodeIds = [];
       } else {
-        brokenNodes = this.reliabilityScore
+        brokenNodeIds = this.reliabilityScore
           .getScores()
           .filter(({ peerId }) => !this.isNodeReliable(peerId))
           .map(({ peerId }) => peerId);
@@ -177,16 +177,17 @@ export default class SDK {
 
       log.normal(
         `Selecting '${amountNeeded}' entry nodes and excluding`,
-        brokenNodes.length == 0 ? "none" : brokenNodes.join(",")
+        brokenNodeIds.length == 0 ? "none" : brokenNodeIds.join(",")
       );
 
       // get new entry nodes
-      const entryNodes: EntryNode[] = Array.from(this.entryNodes.values());
+      const entryNodeIds: string[] = Array.from(this.entryNodes.values()).map(
+        (e) => e.peerId
+      );
       for (let i = 0; i < amountNeeded; i++) {
-        const excludeList: string[] = [
-          ...brokenNodes,
-          ...entryNodes.map((e) => e.peerId),
-        ];
+        const excludeList: string[] = Array.from(
+          new Set([...brokenNodeIds, ...entryNodeIds]).values()
+        );
         await retry(
           async () => {
             return this.selectEntryNode(
@@ -505,34 +506,38 @@ export default class SDK {
           this.segmentCache.removeExpired(this.ops.timeout);
           this.requestCache.removeExpired(this.ops.timeout);
 
-          // checks whether to fetch new entry nodes
+          // first remove unstable entry nodes
+          for (const peerId of this.entryNodes.keys()) {
+            if (!this.isNodeReliable(peerId)) this.removeEntryNode(peerId);
+          }
+
+          // second fetch new entry nodes
           this.selectEntryNodes(this.ops.discoveryPlatformApiEndpoint).catch(
             (error) => {
               log.error("Failed to select entry nodes", error);
             }
           );
 
-          // remove unstable entry nodes
-          for (const peerId of this.entryNodes.keys()) {
-            if (!this.isNodeReliable(peerId)) this.removeEntryNode(peerId);
-          }
-
-          // reset old nodes from reliability score
+          // third reset old nodes from reliability score
           this.reliabilityScore.resetOldNodeMetrics(this.resetNodeMetricsMs);
         }, ENTRY_NODE_SELECTION_TIMEOUT) // look for entry nodes every 5 seconds
       );
 
       this.intervals.push(
         setInterval(() => {
-          // logs the status of the entry nodes
-          let logStr = `Using '${this.entryNodes.size}' entry nodes with score:`;
-          for (const peerId of this.entryNodes.keys()) {
-            logStr += "\n";
-            logStr += `  ${peerId}: ${this.reliabilityScore.getScore(
-              peerId
-            )} ${this.reliabilityScore.getStatus(peerId)}`;
-          }
-          log.normal(logStr);
+          const nodeScores = Array.from(this.entryNodes.keys()).map(
+            (peerId) => {
+              const score = this.reliabilityScore.getScore(peerId);
+              const status = this.reliabilityScore.getStatus(peerId);
+              return `${peerId}: ${score} - ${status}`;
+            }
+          );
+          // keep log a one liner for easy access in grafana
+          log.normal(
+            `Using '${
+              this.entryNodes.size
+            }' entry nodes with scores: ${nodeScores.join(", ")}`
+          );
         }, 10e3)
       );
 
