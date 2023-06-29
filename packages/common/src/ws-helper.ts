@@ -39,28 +39,28 @@ class WebSocketHelper {
    * @returns the websocket instance
    */
   public async waitUntilSocketOpen(): Promise<WebSocket> {
-    const waitUntilSocketOpenP: DeferredPromise<WebSocket> = new DeferredPromise();
+    const waitPrms: DeferredPromise<WebSocket> = new DeferredPromise();
     return new Promise<WebSocket>((resolve, reject) => {
       switch (this.socket.readyState) {
         case WebSocket.CONNECTING:
-          this.waitFromConnecting(waitUntilSocketOpenP);
+          this.waitFromConnecting(waitPrms);
           break;
         case WebSocket.OPEN:
-          waitUntilSocketOpenP.resolve(this.socket);
+          waitPrms.resolve(this.socket);
           break;
         case WebSocket.CLOSING:
-          waitUntilSocketOpenP.reject("Socket closing");
+          waitPrms.reject("Socket closing");
           break;
         case WebSocket.CLOSED:
-          waitUntilSocketOpenP.reject("Socket already closed");
+          waitPrms.reject("Socket already closed");
           break;
       }
 
-      return waitUntilSocketOpenP.promise.then(resolve).catch(reject);
+      return waitPrms.promise.then(resolve).catch(reject);
     });
   }
 
-  private waitFromConnecting(waitUntilSocketOpenP: DeferredPromise<WebSocket>) {
+  private waitFromConnecting(waitPrms: DeferredPromise<WebSocket>) {
     // Might be better to refactor listener handling for websockets entirely
     // For now lets attach onetime listeners to only get notified about the next event after connecting
     const removeListeners = () => {
@@ -71,7 +71,7 @@ class WebSocketHelper {
     const errorListen = (evt: any): void => {
       log.error("Error connecting WS", evt);
       removeListeners();
-      waitUntilSocketOpenP.reject(this.socket);
+      waitPrms.reject(this.socket);
     };
     const closeListen = (evt: any) => {
       log.error(
@@ -81,13 +81,13 @@ class WebSocketHelper {
         evt.reason
       );
       removeListeners();
-      waitUntilSocketOpenP.reject(this.socket);
+      waitPrms.reject(this.socket);
     };
     const openListen = () => {
       log.normal("Listening for incoming messages from HOPRd", this.url);
       this.reconnectAttempts = 0;
       removeListeners();
-      waitUntilSocketOpenP.resolve(this.socket);
+      waitPrms.resolve(this.socket);
     };
     this.socket.addEventListener("open", openListen);
     this.socket.addEventListener("close", closeListen);
@@ -132,7 +132,7 @@ class WebSocketHelper {
   }
 
   private setUpEventHandlers() {
-    this.socket.onmessage = event => {
+    this.socket.onmessage = (event) => {
       const body = event.data.toString();
       // message received is an acknowledgement of a
       // message we have send, we can safely ignore this
@@ -152,7 +152,7 @@ class WebSocketHelper {
       this.onMessage(message);
     };
 
-    this.socket.on("error", async error => {
+    this.socket.on("error", async (error) => {
       try {
         log.error("WebSocket error:", error.message);
 
@@ -180,7 +180,7 @@ class WebSocketHelper {
           error.message
         );
         // wait a bit before reconnection attempt
-        await new Promise<void>(resolve => {
+        await new Promise<void>((resolve) => {
           this.reconnectTimeout = setTimeout(resolve, this.reconnectDelay);
         });
 
