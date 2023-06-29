@@ -7,7 +7,7 @@ const HEARTBEAT_ERROR_MSG = "heartbeat was not received";
 class WebSocketHelper {
   private attemptingToReconnect: boolean = false; // whether the connection is in the process of reconnecting
   private reconnectAttempts: number = 0; // current reconnect attempts, gets reset
-  private socket: WebSocket; // the socket, gets re-initialized on reconnection
+  private socket: WebSocket | undefined; // the socket, gets re-initialized on reconnection
   private pingTimeout: NodeJS.Timeout | undefined;
   private reconnectTimeout: NodeJS.Timeout | undefined;
   private maxTimeWithoutPing: number; // maximum ms that we allow to the connection to live without ping
@@ -17,7 +17,7 @@ class WebSocketHelper {
 
   constructor(
     private url: string,
-    private onMessage: (data: string) => void,
+    private onEvent: (action: string, data: any) => void,
     options?: {
       maxTimeWithoutPing?: number;
       attemptToReconnect?: boolean;
@@ -29,69 +29,7 @@ class WebSocketHelper {
     this.attemptToReconnect = options?.attemptToReconnect ?? true;
     this.reconnectDelay = options?.reconnectDelay ?? 100;
     this.maxReconnectAttempts = options?.maxReconnectAttempts ?? 3;
-    this.socket = new WebSocket(url);
-    this.setUpEventHandlers();
-  }
-
-  /**
-   * Resolves if we have successfully opened a connection.
-   * Reject if we didn't.
-   * @returns the websocket instance
-   */
-  public async waitUntilSocketOpen(): Promise<WebSocket> {
-    const waitPrms: DeferredPromise<WebSocket> = new DeferredPromise();
-    return new Promise<WebSocket>((resolve, reject) => {
-      switch (this.socket.readyState) {
-        case WebSocket.CONNECTING:
-          this.waitFromConnecting(waitPrms);
-          break;
-        case WebSocket.OPEN:
-          waitPrms.resolve(this.socket);
-          break;
-        case WebSocket.CLOSING:
-          waitPrms.reject("Socket closing");
-          break;
-        case WebSocket.CLOSED:
-          waitPrms.reject("Socket already closed");
-          break;
-      }
-
-      return waitPrms.promise.then(resolve).catch(reject);
-    });
-  }
-
-  private waitFromConnecting(waitPrms: DeferredPromise<WebSocket>) {
-    // Might be better to refactor listener handling for websockets entirely
-    // For now lets attach onetime listeners to only get notified about the next event after connecting
-    const removeListeners = () => {
-      this.socket.removeEventListener("open", openListen);
-      this.socket.removeEventListener("close", closeListen);
-      this.socket.removeEventListener("error", errorListen);
-    };
-    const errorListen = (evt: any): void => {
-      log.error("Error connecting WS", evt);
-      removeListeners();
-      waitPrms.reject(this.socket);
-    };
-    const closeListen = (evt: any) => {
-      log.error(
-        "Closing connecting WS with code",
-        evt.code,
-        "and reason",
-        evt.reason
-      );
-      removeListeners();
-      waitPrms.reject(this.socket);
-    };
-    const openListen = () => {
-      log.normal("Listening for incoming messages from HOPRd", this.url);
-      this.reconnectAttempts = 0;
-      removeListeners();
-      waitPrms.resolve(this.socket);
-    };
-    this.socket.addEventListener("open", openListen);
-    this.socket.addEventListener("close", closeListen);
-    this.socket.addEventListener("error", errorListen);
+    this.initialize();
   }
 
   /**
@@ -100,7 +38,6 @@ class WebSocketHelper {
   private closeInternal() {
     clearTimeout(this.pingTimeout);
     clearTimeout(this.reconnectTimeout);
-    this.socket.close();
   }
 
   /**
@@ -108,9 +45,10 @@ class WebSocketHelper {
    * and not reconnect again.
    */
   public close() {
-    log.verbose("Closing WS");
+    log.verbose("Closing WS regularly");
     this.attemptToReconnect = false;
     this.closeInternal();
+    this.socket!.close();
   }
 
   /**
@@ -126,13 +64,22 @@ class WebSocketHelper {
   private heartbeat() {
     clearTimeout(this.pingTimeout);
     this.pingTimeout = setTimeout(() => {
-      log.error("did not receive heartbeat");
-      this.socket.emit("error", new Error(HEARTBEAT_ERROR_MSG));
+      log.error("WebSocket did not receive heartbeat");
+      this.socket!.emit("error", new Error(HEARTBEAT_ERROR_MSG));
     }, this.maxTimeWithoutPing);
   }
 
-  private setUpEventHandlers() {
-    this.socket.onmessage = (event) => {
+  private initialize() {
+    this.socket = new WebSocket(this.url);
+
+    // fired when connection established
+    this.socket.on("open", () => {
+      this.onEvent("open", null);
+      this.heartbeat();
+    });
+
+    // fired on incoming message
+    this.socket.on("message", (event: any) => {
       const body = event.data.toString();
       // message received is an acknowledgement of a
       // message we have send, we can safely ignore this
@@ -149,76 +96,53 @@ class WebSocketHelper {
       if (!message) return;
       log.verbose("decoded received body", message);
 
-      this.onMessage(message);
-    };
+      this.onEvent("message", message);
+    });
 
-    this.socket.on("error", async (error) => {
-      try {
-        log.error("WebSocket error:", error.message);
-
-        // close existing ws
-        if (this.attemptingToReconnect) {
-          log.verbose("WebSocket connection is still reconnecting");
-          return;
-        }
-        this.attemptingToReconnect = true;
-        this.closeInternal();
-
-        // skip if we do not want to reconnect
-        // if its heartbeat issue, we always want to reconnect
-        if (
-          error.message !== HEARTBEAT_ERROR_MSG &&
-          (!this.attemptToReconnect ||
-            ++this.reconnectAttempts >= this.maxReconnectAttempts)
-        ) {
-          throw error;
-        }
-
-        log.error(
-          "WebSocket connection failed, retrying in %s ms..",
-          this.reconnectDelay,
-          error.message
-        );
-        // wait a bit before reconnection attempt
-        await new Promise<void>((resolve) => {
-          this.reconnectTimeout = setTimeout(resolve, this.reconnectDelay);
-        });
-
-        // reconnect: open new ws
-        this.socket = new WebSocket(this.url);
-        // set up event handlers again
-        this.setUpEventHandlers();
-
-        log.verbose("WebSocket reconnected");
-      } catch (error) {
-        // we wanted to connect but failed
-        // if we don't want to reconnect
-        if (!this.attemptToReconnect) {
-          return this.closeWithError(`WebSocket failed to connect: ${error}`);
-        }
-        // max attempts were reached
-        else if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-          return this.closeWithError(
-            `WebSocket failed to connect, max attempts reached: ${error}`
-          );
-        } else {
-          return this.closeWithError(
-            `WebSocket failed to connect, unexpected error: ${error}`
-          );
-        }
-      } finally {
-        this.attemptingToReconnect = false;
+    // fired when connection closed due to error
+    this.socket.on("error", (error: any): void => {
+      log.error("WebSocket error:", error.message);
+      this.onEvent("error", error);
+      this.closeInternal();
+      // always try reconnecting on heartbeat
+      if (error.message === HEARTBEAT_ERROR_MSG) {
+        this.reconnectOnHeartbeatError();
+      }
+      // count non heartbeat reconnection attempts
+      if (this.reconnectAttempts < this.maxReconnectAttempts) {
+        this.reconnectOnError();
       }
     });
 
-    this.socket.on("open", () => {
-      this.heartbeat();
+    this.socket.on("close", (evt: any) => {
+      this.onEvent("close", evt);
     });
 
     this.socket.on("ping", () => {
       log.verbose("received ping");
       this.heartbeat();
     });
+  }
+
+  private reconnectOnHeartbeatError() {
+    log.normal(
+      `WebSocket reconnect after heartbeat failure in ${this.reconnectDelay} ms`
+    );
+    this.reconnectTimeout = setTimeout(() => {
+      this.initialize();
+    }, this.reconnectDelay);
+  }
+
+  private reconnectOnError() {
+    log.normal(
+      `WebSocket reconnect after error. Attempting #${
+        this.reconnectAttempts + 1
+      } reconnect in ${this.reconnectDelay} ms`
+    );
+    this.reconnectTimeout = setTimeout(() => {
+      this.reconnectAttempts++;
+      this.initialize();
+    }, this.reconnectDelay);
   }
 }
 
