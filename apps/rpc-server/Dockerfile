@@ -40,6 +40,7 @@ WORKDIR /app
 
 # Install the dependencies.
 COPY .gitignore .gitignore
+COPY packages-tgz packages-tgz 
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/yarn.lock ./yarn.lock
 RUN yarn install --frozen-lockfile
