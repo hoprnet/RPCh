@@ -43,6 +43,7 @@ export class RPChProvider extends JsonRpcProvider {
     if (!this.sdk.isReady && !this.sdk.starting) {
       await this.sdk.start();
     }
+    await this.sdk.waitForReliableNode(1e3);
 
     const payload = {
       method: method,

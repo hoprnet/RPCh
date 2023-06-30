@@ -100,6 +100,7 @@ export class RPCServer {
       }
     );
     await this.sdk.start();
+    await this.sdk.waitForReliableNode(1e3);
 
     log.normal("Starting rpc-server");
     const result = server.createServer(
