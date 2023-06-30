@@ -130,6 +130,7 @@ describe("test SDK class", function () {
         });
 
       await mock.sdk.start();
+      await mock.sdk.waitForReliableNode(1e3);
 
       assert.equal(selectEntryNodeMock.mock.calls.length, 2);
     });

@@ -35,6 +35,7 @@ describe("test rpch ethereum provider", function () {
 
   beforeAll(async function () {
     await provider.sdk.start();
+    await provider.sdk.waitForReliableNode(1e3);
   });
 
   afterAll(async function () {
