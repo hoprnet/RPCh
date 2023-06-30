@@ -101,7 +101,7 @@ class WebSocketHelper {
     });
 
     // fired when connection closed due to error
-    this.socket.on("error", (error: any): void => {
+    this.socket.on("error", (error: ErrorEvent): void => {
       log.error("onError", error.message);
       this.closeInternal();
       this.onEvent("error", error);
@@ -114,7 +114,7 @@ class WebSocketHelper {
       }
     });
 
-    this.socket.on("close", (evt: any) => {
+    this.socket.on("close", (evt: CloseEvent) => {
       log.normal("onClose", evt);
       this.onEvent("close", evt);
     });

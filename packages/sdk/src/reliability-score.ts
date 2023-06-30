@@ -28,6 +28,7 @@ type NodeMetrics = {
   stats: Stats;
   sent: number;
   updatedAt: Date;
+  wsConnected: boolean;
 };
 
 /**
@@ -113,11 +114,24 @@ export default class ReliabilityScore {
         stats: { success: 0, dishonest: 0, failed: 0 },
         sent: 0,
         updatedAt: new Date(),
+        wsConnected: false,
       };
       this.metrics.set(peerId, nodeMetrics);
     }
 
     return nodeMetrics;
+  }
+
+  public onWSevent(peerId: string, action: string) {
+    const nodeMetrics = this.getNodeMetrics(peerId);
+    switch (action) {
+      case "open":
+        nodeMetrics.wsConnected = true;
+        break;
+      default:
+        nodeMetrics.wsConnected = false;
+        break;
+    }
   }
 
   private updateNodeMetrics(
@@ -214,6 +228,19 @@ export default class ReliabilityScore {
     } else {
       return FRESH_NODE_SCORE;
     }
+  }
+
+  /**
+   * Return true if websocket currently in connected state.
+   * @param peerId
+   * @returns peerId score.
+   */
+  public isWSconnected(peerId: string) {
+    const nodeMetrics = this.metrics.get(peerId);
+    if (nodeMetrics) {
+      return nodeMetrics.wsConnected;
+    }
+    return false;
   }
 
   /**
