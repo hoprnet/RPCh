@@ -139,6 +139,7 @@ export default class SDK {
    * @return true if SDK is ready to send requests
    */
   public get isReady(): boolean {
+    // TODO should check reliability as well
     return this.entryNodes.size > 0 && this.exitNodes.length > 0;
   }
 
@@ -601,6 +602,11 @@ export default class SDK {
    * @returns `true` is entry node is reliable
    */
   private isNodeReliable(entryNodePeerId: string): boolean {
+    const wsConnected = this.reliabilityScore.isWSconnected(entryNodePeerId);
+    // let websocket connection be the first indicator
+    if (!wsConnected) {
+      return false;
+    }
     const score = this.reliabilityScore.getScore(entryNodePeerId);
     const status = this.reliabilityScore.getStatus(entryNodePeerId);
     const hasLowScore = score < this.minimumScoreForReliableNode;
