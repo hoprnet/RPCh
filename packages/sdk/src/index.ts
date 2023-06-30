@@ -145,6 +145,39 @@ export default class SDK {
   }
 
   /**
+   * Waits until a reliable node is present or at max **timeout** ms.
+   * @param timeout in ms
+   */
+  public async waitForReliableNode(timeout: number) {
+    const check = () => {
+      const reliableEntryNodes = Array.from(this.entryNodes.values()).filter(
+        (entryNode) => this.isNodeReliable(entryNode.peerId)
+      );
+      return reliableEntryNodes.length > 0;
+    };
+
+    let elapsed = 0;
+    return new Promise<void>((resolve, reject) => {
+      if (check()) {
+        return resolve();
+      }
+
+      const timeCheck = () => {
+        elapsed += 10;
+        if (check()) {
+          return resolve();
+        }
+        if (elapsed > timeout) {
+          return reject();
+        }
+        setTimeout(timeCheck, 10);
+      };
+
+      setTimeout(timeCheck, 10);
+    });
+  }
+
+  /**
    * Will select until nodes until MAX is reached.
    * Ignores known unreliable nodes.
    * @param discoveryPlatformApiEndpoint
