@@ -4,10 +4,10 @@
 
 The purpose of this folder is to store packed *.tgz's of packages that we are not published on npm.
 
-## Hwo to use 
+## How to use 
 
-1. Update the version in the `pakcage.json` to a new one (for example `0.2.1-local.0`)
-2. Make a GitHub tag with that version so it will be easy to pinpoint in GitHub history
+1. Update the version in the `package.json` to a new one (for example `0.2.1-local.0`)
+2. Make a GitHub tag with that version, so it will be easy to pinpoint in GitHub history
 3. Build package you want with `yarn build`
 4. Place the built package in the `./packages-tgz` folder 
 5. Import the local package from the `./packages-tgz`
