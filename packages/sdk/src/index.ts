@@ -296,21 +296,12 @@ export default class SDK {
 
     // create new WS connection if not already established
     if (!this.entryNodes.has(entryNode.peerId)) {
+      const listen = this.onWSevent(entryNode.peerId);
       hoprd
         .createMessageListener(
           entryNode.apiEndpoint,
           entryNode.apiToken,
-          (message: any) => {
-            try {
-              const segment = Segment.fromString(message);
-              this.segmentCache.onSegment(segment);
-            } catch {
-              log.verbose(
-                "rejected received data from HOPRd: not a valid segment",
-                message
-              );
-            }
-          }
+          listen
         )
         .then((connection: any) => {
           entryNode.stopMessageListener = () => {
@@ -322,6 +313,31 @@ export default class SDK {
           log.error("Error creating message listener on entryNode:", err);
         });
     }
+  }
+
+  private onWSevent(peerId: string) {
+    return (action: string, data: any): void => {
+      switch (action) {
+        case "message":
+          // handle incoming messages
+          try {
+            const segment = Segment.fromString(data);
+            this.segmentCache.onSegment(segment);
+          } catch {
+            log.verbose(
+              "rejected received data from HOPRd: not a valid segment",
+              data
+            );
+          }
+          break;
+
+        default: {
+          // forward events to reliabilityScore
+          this.reliabilityScore.onWSevent(peerId, action);
+          break;
+        }
+      }
+    };
   }
 
   /**

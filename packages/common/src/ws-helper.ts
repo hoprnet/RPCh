@@ -12,6 +12,7 @@ class WebSocketHelper {
   private reconnectTimeout: NodeJS.Timeout | undefined;
   private maxTimeWithoutPing: number; // maximum ms that we allow to the connection to live without ping
   private attemptToReconnect: boolean; // whether we should attempt to reconnect
+  // TODO use increasing reconnect delays
   private reconnectDelay: number; // how many ms to wait before attempting to reconnect
   private maxReconnectAttempts: number; // maximum number of reconnect attempts
 
@@ -114,7 +115,7 @@ class WebSocketHelper {
     });
 
     this.socket.on("close", (evt: any) => {
-        log.normal("onClose", evt);
+      log.normal("onClose", evt);
       this.onEvent("close", evt);
     });
 
