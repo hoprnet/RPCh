@@ -39,19 +39,21 @@ describe("test ws class", function () {
       conn.send("i am connected");
     });
   });
+
   it("connection is lost and re-established", (done) => {
     const reconnectDelay = 10;
     const connection = new WebSocketHelper(url, () => {}, {
       reconnectDelay,
       attemptToReconnect: true,
     });
-
     // 1. wait for it to connect first time
     connection.waitUntilSocketOpen().then(() => {
       // 3. wait for reconnection logic to triger
-      connection["socket"].on("error", () => {
+      connection["socket"].on("error", (e) => {
+        console.log("foo2", e);
         // 4. wait for successful connection
-        connection.waitUntilSocketOpen().then(() => {
+        connection.waitUntilSocketOpen().then((e2) => {
+          console.log("foo3", e2);
           expect(connection["reconnectAttempts"]).toEqual(1);
           connection.close();
           done();
