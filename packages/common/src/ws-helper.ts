@@ -4,6 +4,13 @@ import { WebSocket } from "isomorphic-ws";
 const log = createLogger(["websocket"]);
 const HEARTBEAT_ERROR_MSG = "heartbeat was not received";
 
+export type onEventParameterType =
+  | { action: "open" }
+  | { action: "message"; message: string }
+  | { action: "close"; event: CloseEvent }
+  | { action: "error"; event: ErrorEvent };
+export type onEventType = (evt: onEventParameterType) => void;
+
 class WebSocketHelper {
   private attemptingToReconnect: boolean = false; // whether the connection is in the process of reconnecting
   private reconnectAttempts: number = 0; // current reconnect attempts, gets reset
@@ -11,23 +18,20 @@ class WebSocketHelper {
   private pingTimeout: NodeJS.Timeout | undefined;
   private reconnectTimeout: NodeJS.Timeout | undefined;
   private maxTimeWithoutPing: number; // maximum ms that we allow to the connection to live without ping
-  private attemptToReconnect: boolean; // whether we should attempt to reconnect
   // TODO use increasing reconnect delays
   private reconnectDelay: number; // how many ms to wait before attempting to reconnect
   private maxReconnectAttempts: number; // maximum number of reconnect attempts
 
   constructor(
     private url: string,
-    private onEvent: (action: string, data: any) => void,
+    private onEvent: onEventType,
     options?: {
       maxTimeWithoutPing?: number;
-      attemptToReconnect?: boolean;
       reconnectDelay?: number;
       maxReconnectAttempts?: number;
     }
   ) {
     this.maxTimeWithoutPing = options?.maxTimeWithoutPing ?? 33e3; // on HOPRd ping is every 15 seconds
-    this.attemptToReconnect = options?.attemptToReconnect ?? true;
     this.reconnectDelay = options?.reconnectDelay ?? 100;
     this.maxReconnectAttempts = options?.maxReconnectAttempts ?? 3;
     this.initialize();
@@ -47,9 +51,16 @@ class WebSocketHelper {
    */
   public close() {
     log.verbose("Closing regularly");
-    this.attemptToReconnect = false;
     this.closeInternal();
     this.socket!.close();
+  }
+
+  /**
+   * Send message through socket.
+   * @param message - string
+   */
+  public send(message: string) {
+    this.socket!.send(message);
   }
 
   /**
@@ -75,7 +86,7 @@ class WebSocketHelper {
 
     // fired when connection established
     this.socket.on("open", () => {
-      this.onEvent("open", null);
+      this.onEvent({ action: "open" });
       this.heartbeat();
     });
 
@@ -97,14 +108,13 @@ class WebSocketHelper {
       if (!message) return;
       log.verbose("decoded received body", message);
 
-      this.onEvent("message", message);
+      this.onEvent({ action: "message", message });
     });
 
     // fired when connection closed due to error
     this.socket.on("error", (error: ErrorEvent): void => {
       log.error("onError", error.message);
       this.closeInternal();
-      this.onEvent("error", error);
       if (error.message === HEARTBEAT_ERROR_MSG) {
         // always try reconnecting on heartbeat
         this.reconnectOnHeartbeatError();
@@ -112,11 +122,13 @@ class WebSocketHelper {
         // count non heartbeat reconnection attempts
         this.reconnectOnError();
       }
+
+      this.onEvent({ action: "error", event: error });
     });
 
     this.socket.on("close", (evt: CloseEvent) => {
       log.normal("onClose", evt);
-      this.onEvent("close", evt);
+      this.onEvent({ action: "close", event: evt });
     });
 
     this.socket.on("ping", () => {
