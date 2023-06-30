@@ -196,15 +196,19 @@ export const start = async (ops: {
   const connection = await ops.hoprd.createMessageListener(
     ops.apiEndpoint,
     ops.apiToken || "",
-    (message: string) => {
-      try {
-        const segment = Segment.fromString(message);
-        cache.onSegment(segment);
-      } catch (error) {
-        log.verbose(
-          "rejected received data from HOPRd: not a valid segment",
-          message
-        );
+    (evt) => {
+      switch (evt.action) {
+        case "message":
+          try {
+            const segment = Segment.fromString(evt.message);
+            cache.onSegment(segment);
+          } catch (error) {
+            log.verbose(
+              "rejected received data from HOPRd: not a valid segment",
+              evt.message
+            );
+          }
+          break;
       }
     },
     {

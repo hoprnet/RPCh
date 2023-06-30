@@ -8,6 +8,7 @@ import {
   hoprd,
   utils,
 } from "@rpch/common";
+import type { onEventType } from "@rpch/common";
 import { utils as etherUtils } from "ethers";
 import debug from "debug";
 import fetch from "cross-fetch";
@@ -316,25 +317,25 @@ export default class SDK {
     }
   }
 
-  private onWSevent(peerId: string) {
-    return (action: string, data: any): void => {
-      switch (action) {
+  private onWSevent(peerId: string): onEventType {
+    return (evt) => {
+      switch (evt.action) {
         case "message":
           // handle incoming messages
           try {
-            const segment = Segment.fromString(data);
+            const segment = Segment.fromString(evt.message);
             this.segmentCache.onSegment(segment);
           } catch {
             log.verbose(
               "rejected received data from HOPRd: not a valid segment",
-              data
+              evt.message
             );
           }
           break;
 
         default: {
           // forward events to reliabilityScore
-          this.reliabilityScore.onWSevent(peerId, action);
+          this.reliabilityScore.onWSevent(peerId, evt.action);
           break;
         }
       }

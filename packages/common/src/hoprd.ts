@@ -1,6 +1,7 @@
 import { createLogger, createApiUrl } from "./utils";
 import fetch from "cross-fetch";
 import WebSocketHelper from "./ws-helper";
+import type { onEventType } from "./ws-helper";
 
 const log = createLogger(["hoprd"]);
 
@@ -96,7 +97,7 @@ export const sendMessage = async ({
 export const createMessageListener = async (
   apiEndpoint: string,
   apiToken: string,
-  onEvent: (action: string, data: any) => void,
+  onEvent: onEventType,
   options?: {
     maxTimeWithoutPing?: number;
     attemptToReconnect?: boolean;
@@ -112,7 +113,6 @@ export const createMessageListener = async (
   );
   return new WebSocketHelper(url, onEvent, {
     maxTimeWithoutPing: options?.maxTimeWithoutPing ?? 60e3,
-    attemptToReconnect: options?.attemptToReconnect ?? true,
     reconnectDelay: options?.reconnectDelay ?? 100,
     maxReconnectAttempts: options?.maxReconnectAttempts ?? 3,
   });
