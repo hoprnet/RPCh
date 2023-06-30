@@ -4,7 +4,7 @@ import MemDown from "memdown";
 import { utils } from "ethers";
 import { start as startExitNode } from "./index";
 import * as Prometheus from "prom-client";
-import { WebSocketHelper } from "@rpch/common";
+import { WebSocketHelper, type onEventType } from "@rpch/common";
 
 jest.mock("leveldown", () => MemDown);
 
@@ -30,12 +30,9 @@ const createMockedSetup = async (optInMetrics = false) => {
   const hoprd = {
     sendMessage: jest.fn(async () => "MOCK_SEND_MSG_RESPONSE"),
     createMessageListener: jest.fn(
-      async (
-        _apiEndpoint: string,
-        _apiToken: string,
-        onMessage: (message: string) => void
-      ) => {
-        triggerMessageListenerOnMessage = onMessage;
+      async (_apiEndpoint: string, _apiToken: string, onEvent: onEventType) => {
+        triggerMessageListenerOnMessage = (msg) =>
+          onEvent({ action: "message", message: msg });
         return { close: () => {} } as WebSocketHelper;
       }
     ),

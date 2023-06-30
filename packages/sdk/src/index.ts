@@ -7,8 +7,8 @@ import {
   Segment,
   hoprd,
   utils,
+  type onEventType,
 } from "@rpch/common";
-import type { onEventType } from "@rpch/common";
 import { utils as etherUtils } from "ethers";
 import debug from "debug";
 import fetch from "cross-fetch";
