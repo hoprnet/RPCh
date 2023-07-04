@@ -1,5 +1,6 @@
 import fetch from "cross-fetch";
 import { WebSocketHelper, type onEventType } from "@rpch/common";
+import * as Reliability from "./reliability";
 
 import { createLogger } from "./utils";
 
@@ -8,12 +9,15 @@ const log = createLogger(["nodes-collector"]);
 const apiEntryNode = "/api/v1/request/entry-node";
 const apiWebSocket = "/api/v2/messages/websocket";
 
+const timeoutImmediateFetch = 100;
+const timeoutOptimizeFetch = 3e3;
+const timeoutRegularFetch = 30e3;
+
 /**
 nodes come in pairs
 
 entry node, exit node
 
-websocket ping with timestamp
 sent message with timestamp
 received message with timestamp
 
@@ -37,19 +41,19 @@ type ExitNode = {
   pubKey: string;
 };
 
-type Reliability = {
-  onlineHistory: { date: number; online: boolean }[];
+export type NodesCollectorOps = {
+  entryNodesTarget: number;
 };
 
-export type NodesCollectorOps = {};
-
-const defaultOps: NodesCollectorOps = {};
+const defaultOps: NodesCollectorOps = {
+  entryNodesTarget: 10,
+};
 
 export default class NodesCollector {
   private readonly ops: NodesCollectorOps;
   private readonly entryNodes = new Map<string, EntryNode>();
   private readonly exitNodes = new Map<string, ExitNode>();
-  private readonly reliabilities = new Map<string, Reliability>();
+  private readonly reliabilities = new Map<string, Reliability.Reliability>();
 
   constructor(
     private readonly discoveryPlatformEndpoint: string,
@@ -61,6 +65,9 @@ export default class NodesCollector {
       ...defaultOps,
       ...ops,
     };
+
+    // start fetching entry nodes
+    setTimeout(() => this.fetchEntryNodes());
   }
 
   private fetchEntryNodes() {
@@ -105,7 +112,27 @@ export default class NodesCollector {
       peerId: id,
     };
     this.entryNodes.set(id, newNode);
-    this.reliabilities.set(id, emptyReliability());
+    this.reliabilities.set(id, Reliability.empty());
+    this.scheduleEntryNodeFetching();
+  }
+
+  private scheduleEntryNodeFetching() {
+    // immediately fetch new nodes if too few - should be refactored into getting more nodes in one call
+    if (this.entryNodes.size < this.ops.entryNodesTarget) {
+      setTimeout(() => this.fetchEntryNodes(), timeoutImmediateFetch);
+      return;
+    }
+    const reliables = Array.from(this.entryNodes.keys()).filter((pId) => {
+      const rel = this.reliabilities.get(pId);
+      return Reliability.isReliable(rel!);
+    });
+    if (reliables.length < this.ops.entryNodesTarget) {
+      // fetch new nodes faster if reliable nodes are missing
+      setTimeout(() => this.fetchEntryNodes(), timeoutOptimizeFetch);
+    } else {
+      // fetch regularly to avoid node starvation
+      setTimeout(() => this.fetchEntryNodes(), timeoutRegularFetch);
+    }
   }
 
   private onWSevent(peerId: string): onEventType {
@@ -131,14 +158,7 @@ export default class NodesCollector {
 
   private updateOnlineHistory(peerId: string, online: boolean) {
     const cur = this.reliabilities.get(peerId);
-    const entry = { date: Date.now(), online };
-    cur!.onlineHistory.push(entry);
-    this.reliabilities.set(peerId, cur!);
+    const next = Reliability.updateOnline(cur!, online);
+    this.reliabilities.set(peerId, next);
   }
-}
-
-function emptyReliability(): Reliability {
-  return {
-    onlineHistory: [],
-  };
 }
