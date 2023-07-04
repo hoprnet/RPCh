@@ -6,6 +6,7 @@ const HEARTBEAT_ERROR_MSG = "heartbeat was not received";
 
 export type onEventParameterType =
   | { action: "open" }
+  | { action: "ping" }
   | { action: "message"; message: string }
   | { action: "close"; event: CloseEvent }
   | { action: "error"; event: ErrorEvent };
@@ -134,6 +135,7 @@ class WebSocketHelper {
     this.socket.on("ping", () => {
       log.verbose("onPing");
       this.heartbeat();
+      this.onEvent({ action: "ping" });
     });
   }
 
