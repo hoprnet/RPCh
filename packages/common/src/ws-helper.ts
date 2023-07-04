@@ -12,10 +12,10 @@ export type onEventParameterType =
   | { action: "error"; event: ErrorEvent };
 export type onEventType = (evt: onEventParameterType) => void;
 
-class WebSocketHelper {
+export default class WebSocketHelper {
   private attemptingToReconnect: boolean = false; // whether the connection is in the process of reconnecting
   private reconnectAttempts: number = 0; // current reconnect attempts, gets reset
-  private socket: WebSocket | undefined; // the socket, gets re-initialized on reconnection
+  private socket!: WebSocket; // the socket, gets re-initialized on reconnection
   private pingTimeout: NodeJS.Timeout | undefined;
   private reconnectTimeout: NodeJS.Timeout | undefined;
   private maxTimeWithoutPing: number; // maximum ms that we allow to the connection to live without ping
@@ -24,7 +24,7 @@ class WebSocketHelper {
   private maxReconnectAttempts: number; // maximum number of reconnect attempts
 
   constructor(
-    private url: string,
+    private url: URL,
     private onEvent: onEventType,
     options?: {
       maxTimeWithoutPing?: number;
@@ -53,7 +53,7 @@ class WebSocketHelper {
   public close() {
     log.verbose("Closing regularly");
     this.closeInternal();
-    this.socket!.close();
+    this.socket.close();
   }
 
   /**
@@ -61,7 +61,7 @@ class WebSocketHelper {
    * @param message - string
    */
   public send(message: string) {
-    this.socket!.send(message);
+    this.socket.send(message);
   }
 
   /**
@@ -78,7 +78,7 @@ class WebSocketHelper {
     clearTimeout(this.pingTimeout);
     this.pingTimeout = setTimeout(() => {
       log.error(HEARTBEAT_ERROR_MSG);
-      this.socket!.emit("error", new Error(HEARTBEAT_ERROR_MSG));
+      this.socket.emit("error", new Error(HEARTBEAT_ERROR_MSG));
     }, this.maxTimeWithoutPing);
   }
 
@@ -160,5 +160,3 @@ class WebSocketHelper {
     }, this.reconnectDelay);
   }
 }
-
-export default WebSocketHelper;
