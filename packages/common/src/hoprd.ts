@@ -111,7 +111,7 @@ export const createMessageListener = async (
     "/api/v2/messages/websocket",
     apiToken
   );
-  return new WebSocketHelper(url, onEvent, {
+  return new WebSocketHelper(new URL(url), onEvent, {
     maxTimeWithoutPing: options?.maxTimeWithoutPing ?? 60e3,
     reconnectDelay: options?.reconnectDelay ?? 100,
     maxReconnectAttempts: options?.maxReconnectAttempts ?? 3,
