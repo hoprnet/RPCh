@@ -8,10 +8,13 @@ const log = createLogger(["nodes-collector"]);
 
 const apiEntryNode = "/api/v1/request/entry-node";
 const apiWebSocket = "/api/v2/messages/websocket";
+const apiExitNode = "/api/v1/node?hasExitNode=true";
 
-const timeoutImmediateFetch = 100;
-const timeoutOptimizeFetch = 3e3;
-const timeoutRegularFetch = 30e3;
+const timeoutImmediateFetchEntryNode = 100;
+const timeoutOptimizeFetchEntryNode = 3e3;
+const timeoutRegularFetchEntryNode = 30e3;
+
+const timeoutRegularFetchExitNodes = 60e3 * 5; // 5 min
 
 /**
 nodes come in pairs
@@ -41,6 +44,11 @@ type ExitNode = {
   pubKey: string;
 };
 
+type ResponseExitNode = {
+  exit_node_pub_key: string;
+  id: string;
+};
+
 export type NodesCollectorOps = {
   entryNodesTarget: number;
 };
@@ -66,16 +74,17 @@ export default class NodesCollector {
       ...ops,
     };
 
-    // start fetching entry nodes
+    // start fetching entry / exit nodes
     setTimeout(() => this.fetchEntryNodes());
+    setTimeout(() => this.fetchExitNodes());
   }
 
   private fetchEntryNodes() {
     const excludeList = Array.from(this.entryNodes.keys());
     const url = new URL(apiEntryNode, this.discoveryPlatformEndpoint);
     const headers = {
+      Accept: "application/json",
       "Content-Type": "application/json",
-      "Accept-Content": "application/json",
       "x-rpch-client": this.apiClient,
     };
     const body = JSON.stringify({
@@ -90,7 +99,25 @@ export default class NodesCollector {
         }
         throw new Error(`wrong status ${resp}`);
       })
+      .then((json) => this.responseEntryNode(json))
       .catch((err) => log.error("Error requesting entry node:", err));
+  }
+
+  private fetchExitNodes() {
+    const url = new URL(apiExitNode, this.discoveryPlatformEndpoint);
+    const headers = {
+      Accept: "application/json",
+      "x-rpch-client": this.apiClient,
+    };
+    fetch(url, { headers })
+      .then((resp) => {
+        if (resp.status === 200) {
+          return resp.json();
+        }
+        throw new Error(`wrong status ${resp}`);
+      })
+      .then((json) => this.responseExitNode(json))
+      .catch((err) => log.error("Error requesting exit node:", err));
   }
 
   private responseEntryNode({
@@ -111,28 +138,47 @@ export default class NodesCollector {
       connection,
       peerId: id,
     };
+    log.info("Response entry node", newNode);
     this.entryNodes.set(id, newNode);
     this.reliabilities.set(id, Reliability.empty());
     this.scheduleEntryNodeFetching();
   }
 
+  private responseExitNode(resp: ResponseExitNode[]) {
+    const exitNodes = resp.map(({ exit_node_pub_key, id }) => ({
+      peerId: id,
+      pubKey: exit_node_pub_key,
+    }));
+    log.info("Response exit nodes", exitNodes);
+    exitNodes.forEach((node) => this.exitNodes.set(node.peerId, node));
+    this.scheduleExitNodeFetching();
+  }
+
   private scheduleEntryNodeFetching() {
     // immediately fetch new nodes if too few - should be refactored into getting more nodes in one call
     if (this.entryNodes.size < this.ops.entryNodesTarget) {
-      setTimeout(() => this.fetchEntryNodes(), timeoutImmediateFetch);
+      setTimeout(() => this.fetchEntryNodes(), timeoutImmediateFetchEntryNode);
       return;
     }
+
+    // check reliable nodes
     const reliables = Array.from(this.entryNodes.keys()).filter((pId) => {
       const rel = this.reliabilities.get(pId);
       return Reliability.isReliable(rel!);
     });
+
     if (reliables.length < this.ops.entryNodesTarget) {
       // fetch new nodes faster if reliable nodes are missing
-      setTimeout(() => this.fetchEntryNodes(), timeoutOptimizeFetch);
+      setTimeout(() => this.fetchEntryNodes(), timeoutOptimizeFetchEntryNode);
     } else {
       // fetch regularly to avoid node starvation
-      setTimeout(() => this.fetchEntryNodes(), timeoutRegularFetch);
+      setTimeout(() => this.fetchEntryNodes(), timeoutRegularFetchEntryNode);
     }
+  }
+
+  private scheduleExitNodeFetching() {
+    // fetch regularly to avoid node starvation
+    setTimeout(() => this.fetchExitNodes(), timeoutRegularFetchExitNodes);
   }
 
   private onWSevent(peerId: string): onEventType {
