@@ -16,6 +16,7 @@ import retry from "async-retry";
 import ReliabilityScore, { type Result } from "./reliability-score";
 import RequestCache from "./request-cache";
 import { createLogger } from "./utils";
+import NodesCollector from "./nodes-collector";
 
 const log = createLogger();
 const DEFAULT_MAXIMUM_SEGMENTS_PER_REQUEST = 10;
