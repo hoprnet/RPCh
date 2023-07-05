@@ -253,13 +253,14 @@ export default class SDK {
   ): Promise<Response> {
     return new Promise(async (resolve, reject) => {
       const { entryNode, exitNode } = await this.nodesColl
-        .getReliableNodePair(timeout)
+        .findReliableNodePair(timeout)
         .catch((err) => {
           // keep stacktrace intact
           return reject(
             `Error finding reliable entry - exit node pair: ${err}`
           );
         });
+      this.nodesColl.recordOngoing(entryNode.id, exitNode.id);
       const req = await Request.createRequest(
         this.crypto!,
         provider,

@@ -1,7 +1,6 @@
 import fetch from "cross-fetch";
 import { WebSocketHelper, type onEventType } from "@rpch/common";
 import * as Reliability from "./reliability";
-
 import { createLogger } from "./utils";
 
 const log = createLogger(["nodes-collector"]);
@@ -29,7 +28,7 @@ received message with timestamp
 working node pairs with timestamps
 */
 
-type EntryNode = {
+export type EntryNode = {
   apiEndpoint: URL;
   apiToken: string;
   peerId: string;
@@ -37,15 +36,15 @@ type EntryNode = {
   recommendedExitNodes: ExitNode[];
 };
 
+export type ExitNode = {
+  peerId: string;
+  pubKey: string;
+};
+
 type ResponseEntryNode = {
   hoprd_api_endpoint: string;
   accessToken: string;
   id: string;
-};
-
-type ExitNode = {
-  peerId: string;
-  pubKey: string;
 };
 
 type ResponseExitNode = {
@@ -92,6 +91,17 @@ export default class NodesCollector {
       intervalExpireReliabilities
     );
   }
+
+  /**
+   * This is the main entry for finding reliable node pair based on recent node behaviours.
+   * Will need testing and adjustments to increase reliability.
+   *
+   */
+  public findReliableNodePair = async (
+    timeout: number
+  ): Promise<{ entryNode: EntryNode; exitNode: ExitNode }> => {
+    return new Promise((resolve, reject) => {});
+  };
 
   public hasReliableNodePair = () => {
     const reliables = this.filterReliableIds();
@@ -277,4 +287,58 @@ export default class NodesCollector {
       }
     }
   };
+
+  private doFindReliableNodePair = ():
+    | { entryNode: EntryNode; exitNode: ExitNode }
+    | string => {
+    const entryNodeIds = Array.from(this.entryNodes.keys());
+    // 1. take online nodes
+    const onlineIds = entryNodeIds.filter((id) => {
+      const rel = this.reliabilities.get(id)!;
+      return Reliability.isOnline(rel);
+    });
+
+    if (onlineIds.length === 0) {
+      return "no online nodes";
+    }
+
+    // 2. map last exits into ids
+    const successfulExits = onlineIds
+      .map((id) => {
+        const rel = this.reliabilities.get(id)!;
+        return { id, entry: Reliability.getLastExitSuccess(rel) };
+      })
+      // 3. filter successful
+      .filter(function ({ entry }) {
+        return !!entry;
+      });
+
+    // 3. sort by latest
+    const latestSuccesses = successfulExits
+      .sort(function ({ entry: { date: dateA } }, { entry: { date: dateB } }) {
+        return dateB - dateA;
+      })
+      // 4. discard last exits
+      .map(function ({ id }) {
+        return id;
+      })
+      // 4. take first five
+      .slice(0, 5);
+
+    // 5. filter unused online nodes
+    const unusedOnlineIds = onlineIds.filter(function (id) {
+      return !latestSuccesses.includes(id);
+    });
+
+    // 6. give a random online node a chance of 1% to avoid total node starvation
+    if (unusedOnlineIds.length > 0 && Math.random() < 0.01) {
+      const id =
+        unusedOnlineIds[Math.floor(Math.random() * unusedOnlineIds.length)];
+      const entryNode = this.entryNodes.get(id)!;
+    }
+  };
+}
+
+function randomEl<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
 }
