@@ -93,30 +93,30 @@ export default class NodesCollector {
     );
   }
 
-  public hasReliableNodePair() {
+  public hasReliableNodePair = () => {
     const reliables = this.filterReliableIds();
     return reliables.length > 0 && this.genericExitNodes.size > 0;
-  }
+  };
 
-  public recordSuccess(entryPeerId: string, exitPeerId: string) {
+  public recordSuccess = (entryPeerId: string, exitPeerId: string) => {
     const cur = this.reliabilities.get(entryPeerId);
     if (cur) {
       // record only tracked nodes
       const next = Reliability.updateExitNode(cur, exitPeerId, true);
       this.reliabilities.set(entryPeerId, next);
     }
-  }
+  };
 
-  public recordFailure(entryPeerId: string, exitPeerId: string) {
+  public recordFailure = (entryPeerId: string, exitPeerId: string) => {
     const cur = this.reliabilities.get(entryPeerId);
     if (cur) {
       // record only tracked nodes
       const next = Reliability.updateExitNode(cur, exitPeerId, false);
       this.reliabilities.set(entryPeerId, next);
     }
-  }
+  };
 
-  private fetchEntryNodes() {
+  private fetchEntryNodes = () => {
     const excludeList = Array.from(this.entryNodes.keys());
     const url = new URL(apiEntryNode, this.discoveryPlatformEndpoint);
     const headers = {
@@ -136,11 +136,11 @@ export default class NodesCollector {
         }
         throw new Error(`wrong status ${resp}`);
       })
-      .then((json) => this.responseEntryNode(json))
+      .then(this.responseEntryNode)
       .catch((err) => log.error("Error requesting entry node:", err));
-  }
+  };
 
-  private fetchExitNodes() {
+  private fetchExitNodes = () => {
     const url = new URL(apiExitNode, this.discoveryPlatformEndpoint);
     const headers = {
       Accept: "application/json",
@@ -153,15 +153,15 @@ export default class NodesCollector {
         }
         throw new Error(`wrong status ${resp}`);
       })
-      .then((json) => this.responseExitNode(json))
+      .then(this.responseExitNode)
       .catch((err) => log.error("Error requesting exit node:", err));
-  }
+  };
 
-  private responseEntryNode({
+  private responseEntryNode = ({
     hoprd_api_endpoint,
     accessToken,
     id,
-  }: ResponseEntryNode) {
+  }: ResponseEntryNode) => {
     const apiEndpoint = new URL(hoprd_api_endpoint);
     const wsURL = new URL(hoprd_api_endpoint);
     wsURL.protocol = apiEndpoint.protocol === "https:" ? "wss:" : "ws:";
@@ -180,9 +180,9 @@ export default class NodesCollector {
     this.entryNodes.set(id, newNode);
     this.reliabilities.set(id, Reliability.empty());
     this.scheduleEntryNodeFetching();
-  }
+  };
 
-  private responseExitNode(resp: ResponseExitNode[]) {
+  private responseExitNode = (resp: ResponseExitNode[]) => {
     const exitNodes = resp.map(({ exit_node_pub_key, id }) => ({
       peerId: id,
       pubKey: exit_node_pub_key,
@@ -190,9 +190,9 @@ export default class NodesCollector {
     log.info("Response exit nodes", exitNodes);
     exitNodes.forEach((node) => this.genericExitNodes.set(node.peerId, node));
     this.scheduleExitNodeFetching();
-  }
+  };
 
-  private scheduleEntryNodeFetching() {
+  private scheduleEntryNodeFetching = () => {
     clearTimeout(this.timerRefEntryNodes);
     // immediately fetch new nodes if too few - should be refactored into getting more nodes in one call
     if (this.entryNodes.size < this.ops.entryNodesTarget) {
@@ -218,18 +218,18 @@ export default class NodesCollector {
         timeoutRegularFetchEntryNode
       );
     }
-  }
+  };
 
-  private scheduleExitNodeFetching() {
+  private scheduleExitNodeFetching = () => {
     clearTimeout(this.timerRefExitNodes);
     // fetch regularly to avoid node starvation
     this.timerRefExitNodes = setTimeout(
       () => this.fetchExitNodes(),
       timeoutRegularFetchExitNodes
     );
-  }
+  };
 
-  private onWSevent(peerId: string): onEventType {
+  private onWSevent = (peerId: string): onEventType => {
     return (evt) => {
       switch (evt.action) {
         case "open":
@@ -248,25 +248,25 @@ export default class NodesCollector {
           break;
       }
     };
-  }
+  };
 
-  private updateOnlineHistory(peerId: string, online: boolean) {
+  private updateOnlineHistory = (peerId: string, online: boolean) => {
     const cur = this.reliabilities.get(peerId);
     if (cur) {
       // update only tracked nodes
       const next = Reliability.updateOnline(cur, online);
       this.reliabilities.set(peerId, next);
     }
-  }
+  };
 
-  private filterReliableIds() {
+  private filterReliableIds = () => {
     return Array.from(this.entryNodes.keys()).filter((pId) => {
       const rel = this.reliabilities.get(pId);
       return Reliability.isReliable(rel!);
     });
-  }
+  };
 
-  private expireReliabilities() {
+  private expireReliabilities = () => {
     for (const id of this.reliabilities.keys()) {
       const rel = this.reliabilities.get(id)!;
       const next = Reliability.expireOlderThan(rel, this.ops.maxReliabilityAge);
@@ -276,5 +276,5 @@ export default class NodesCollector {
         this.entryNodes.delete(id);
       }
     }
-  }
+  };
 }
