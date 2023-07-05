@@ -1,12 +1,16 @@
 export type OnlineHistoryEntry = { date: number; online: boolean };
 
+export type NodeHistoryEntry = { date: number; success: boolean };
+
 export type Reliability = {
   onlineHistory: OnlineHistoryEntry[];
+  exitNodesHistory: Map<string, NodeHistoryEntry[]>;
 };
 
 export function empty(): Reliability {
   return {
     onlineHistory: [],
+    exitNodesHistory: new Map(),
   };
 }
 
