@@ -16,6 +16,8 @@ const timeoutRegularFetchEntryNode = 30e3;
 
 const timeoutRegularFetchExitNodes = 60e3 * 5; // 5 min
 
+const intervalExpireReliabilities = 60e3 * 5; // 5 min
+
 /**
 nodes come in pairs
 
@@ -53,10 +55,12 @@ type ResponseExitNode = {
 
 export type NodesCollectorOps = {
   entryNodesTarget: number;
+  maxReliabilityAge: number;
 };
 
 const defaultOps: NodesCollectorOps = {
   entryNodesTarget: 10,
+  maxReliabilityAge: 60e3 * 5, // 5 min
 };
 
 export default class NodesCollector {
@@ -67,6 +71,7 @@ export default class NodesCollector {
   private readonly reliabilities = new Map<string, Reliability.Reliability>();
   private timerRefEntryNodes: ReturnType<typeof setTimeout>;
   private timerRefExitNodes: ReturnType<typeof setTimeout>;
+  private timerRefExpiration: ReturnType<typeof setTimeout>;
 
   constructor(
     private readonly discoveryPlatformEndpoint: string,
@@ -82,6 +87,33 @@ export default class NodesCollector {
     // start fetching entry / exit nodes
     this.timerRefEntryNodes = setTimeout(() => this.fetchEntryNodes());
     this.timerRefExitNodes = setTimeout(() => this.fetchExitNodes());
+    this.timerRefExpiration = setInterval(
+      () => this.expireReliabilities(),
+      intervalExpireReliabilities
+    );
+  }
+
+  public hasReliableNodePair() {
+    const reliables = this.filterReliableIds();
+    return reliables.length > 0 && this.genericExitNodes.size > 0;
+  }
+
+  public recordSuccess(entryPeerId: string, exitPeerId: string) {
+    const cur = this.reliabilities.get(entryPeerId);
+    if (cur) {
+      // record only tracked nodes
+      const next = Reliability.updateExitNode(cur, exitPeerId, true);
+      this.reliabilities.set(entryPeerId, next);
+    }
+  }
+
+  public recordFailure(entryPeerId: string, exitPeerId: string) {
+    const cur = this.reliabilities.get(entryPeerId);
+    if (cur) {
+      // record only tracked nodes
+      const next = Reliability.updateExitNode(cur, exitPeerId, false);
+      this.reliabilities.set(entryPeerId, next);
+    }
   }
 
   private fetchEntryNodes() {
@@ -172,11 +204,7 @@ export default class NodesCollector {
     }
 
     // check reliable nodes
-    const reliables = Array.from(this.entryNodes.keys()).filter((pId) => {
-      const rel = this.reliabilities.get(pId);
-      return Reliability.isReliable(rel!);
-    });
-
+    const reliables = this.filterReliableIds();
     if (reliables.length < this.ops.entryNodesTarget) {
       // fetch new nodes faster if reliable nodes are missing
       this.timerRefEntryNodes = setTimeout(
@@ -224,7 +252,29 @@ export default class NodesCollector {
 
   private updateOnlineHistory(peerId: string, online: boolean) {
     const cur = this.reliabilities.get(peerId);
-    const next = Reliability.updateOnline(cur!, online);
-    this.reliabilities.set(peerId, next);
+    if (cur) {
+      // update only tracked nodes
+      const next = Reliability.updateOnline(cur, online);
+      this.reliabilities.set(peerId, next);
+    }
+  }
+
+  private filterReliableIds() {
+    return Array.from(this.entryNodes.keys()).filter((pId) => {
+      const rel = this.reliabilities.get(pId);
+      return Reliability.isReliable(rel!);
+    });
+  }
+
+  private expireReliabilities() {
+    for (const id of this.reliabilities.keys()) {
+      const rel = this.reliabilities.get(id)!;
+      const next = Reliability.expireOlderThan(rel, this.ops.maxReliabilityAge);
+      if (Reliability.isEmpty(next)) {
+        // remove node
+        this.reliabilities.delete(id);
+        this.entryNodes.delete(id);
+      }
+    }
   }
 }
