@@ -24,36 +24,43 @@ export const NODE_A: RegisteredNode = fromDbNode(NODE_A_DB);
 
 // mocked node's result
 export const RESULT_A: Result = {
-  hoprdVersion: {
-    checkId: "hoprdVersion",
-    passed: true,
-    value: "1.2.0",
+  stabilityReview: {
+    hoprdVersion: {
+      checkId: "hoprdVersion",
+      passed: true,
+      value: "1.2.0",
+    },
+    hoprdHealth: {
+      checkId: "hoprdHealth",
+      passed: true,
+      value: "green",
+    },
+    hoprdSSL: {
+      checkId: "hoprdSSL",
+      passed: true,
+      value: "",
+    },
+    hoprdSendMessage: {
+      checkId: "hoprdSendMessage",
+      passed: true,
+      value: "",
+    },
+    hoprdPeers: {
+      checkId: "hoprdPeers",
+      passed: true,
+      value: "",
+    },
+    hoprdOpenOutgoingChannels: {
+      checkId: "hoprdOpenOutgoingChannels",
+      passed: true,
+      value: "",
+    },
   },
-  hoprdHealth: {
-    checkId: "hoprdHealth",
-    passed: true,
-    value: "green",
+  connectivityReview: {
+    outgoingChannels: {},
+    exitNodesToOutgoingChannels: {},
   },
-  hoprdWorkingApiEndpoint: {
-    checkId: "hoprdWorkingApiEndpoint",
-    passed: true,
-    value: "",
-  },
-  hoprdSSL: {
-    checkId: "hoprdSSL",
-    passed: true,
-    value: "",
-  },
-  hoprdSendMessage: {
-    checkId: "hoprdSendMessage",
-    passed: true,
-    value: "",
-  },
-  hoprdEnoughPeers: {
-    checkId: "hoprdEnoughPeers",
-    passed: true,
-    value: "",
-  },
+  deliveryOdds: 1,
   reviewedAt: new Date("2023-05-08").toUTCString(),
   isStable: true,
 };
