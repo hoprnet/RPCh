@@ -32,7 +32,9 @@ type EntryNode = {
   apiToken: string;
   peerId: string;
   connection: any;
+  recommendedExitNodes: ExitNode[];
 };
+
 type ResponseEntryNode = {
   hoprd_api_endpoint: string;
   accessToken: string;
@@ -60,8 +62,11 @@ const defaultOps: NodesCollectorOps = {
 export default class NodesCollector {
   private readonly ops: NodesCollectorOps;
   private readonly entryNodes = new Map<string, EntryNode>();
-  private readonly exitNodes = new Map<string, ExitNode>();
+  // will be removed once exit nodes are recommended for entry nodes
+  private readonly genericExitNodes = new Map<string, ExitNode>();
   private readonly reliabilities = new Map<string, Reliability.Reliability>();
+  private timerRefEntryNodes: ReturnType<typeof setTimeout>;
+  private timerRefExitNodes: ReturnType<typeof setTimeout>;
 
   constructor(
     private readonly discoveryPlatformEndpoint: string,
@@ -75,8 +80,8 @@ export default class NodesCollector {
     };
 
     // start fetching entry / exit nodes
-    setTimeout(() => this.fetchEntryNodes());
-    setTimeout(() => this.fetchExitNodes());
+    this.timerRefEntryNodes = setTimeout(() => this.fetchEntryNodes());
+    this.timerRefExitNodes = setTimeout(() => this.fetchExitNodes());
   }
 
   private fetchEntryNodes() {
@@ -137,6 +142,7 @@ export default class NodesCollector {
       apiToken: accessToken,
       connection,
       peerId: id,
+      recommendedExitNodes: [],
     };
     log.info("Response entry node", newNode);
     this.entryNodes.set(id, newNode);
@@ -150,14 +156,18 @@ export default class NodesCollector {
       pubKey: exit_node_pub_key,
     }));
     log.info("Response exit nodes", exitNodes);
-    exitNodes.forEach((node) => this.exitNodes.set(node.peerId, node));
+    exitNodes.forEach((node) => this.genericExitNodes.set(node.peerId, node));
     this.scheduleExitNodeFetching();
   }
 
   private scheduleEntryNodeFetching() {
+    clearTimeout(this.timerRefEntryNodes);
     // immediately fetch new nodes if too few - should be refactored into getting more nodes in one call
     if (this.entryNodes.size < this.ops.entryNodesTarget) {
-      setTimeout(() => this.fetchEntryNodes(), timeoutImmediateFetchEntryNode);
+      this.timerRefEntryNodes = setTimeout(
+        () => this.fetchEntryNodes(),
+        timeoutImmediateFetchEntryNode
+      );
       return;
     }
 
@@ -169,16 +179,26 @@ export default class NodesCollector {
 
     if (reliables.length < this.ops.entryNodesTarget) {
       // fetch new nodes faster if reliable nodes are missing
-      setTimeout(() => this.fetchEntryNodes(), timeoutOptimizeFetchEntryNode);
+      this.timerRefEntryNodes = setTimeout(
+        () => this.fetchEntryNodes(),
+        timeoutOptimizeFetchEntryNode
+      );
     } else {
       // fetch regularly to avoid node starvation
-      setTimeout(() => this.fetchEntryNodes(), timeoutRegularFetchEntryNode);
+      this.timerRefEntryNodes = setTimeout(
+        () => this.fetchEntryNodes(),
+        timeoutRegularFetchEntryNode
+      );
     }
   }
 
   private scheduleExitNodeFetching() {
+    clearTimeout(this.timerRefExitNodes);
     // fetch regularly to avoid node starvation
-    setTimeout(() => this.fetchExitNodes(), timeoutRegularFetchExitNodes);
+    this.timerRefExitNodes = setTimeout(
+      () => this.fetchExitNodes(),
+      timeoutRegularFetchExitNodes
+    );
   }
 
   private onWSevent(peerId: string): onEventType {
