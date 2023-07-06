@@ -92,7 +92,7 @@ export default class WebSocketHelper {
     });
 
     // fired on incoming message
-    this.socket.on("message", (event: any) => {
+    this.socket.onmessage = (event) => {
       const body = event.data.toString();
       // message received is an acknowledgement of a
       // message we have send, we can safely ignore this
@@ -110,7 +110,7 @@ export default class WebSocketHelper {
       log.verbose("decoded received body", message);
 
       this.onEvent({ action: "message", message });
-    });
+    };
 
     // fired when connection closed due to error
     this.socket.on("error", (error: ErrorEvent): void => {
