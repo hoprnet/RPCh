@@ -93,6 +93,12 @@ export default class NodesCollector {
     );
   }
 
+  public stop = () => {
+    clearTimeout(this.timerRefEntryNodes);
+    clearTimeout(this.timerRefExitNodes);
+    clearTimeout(this.timerRefExpiration);
+  };
+
   /**
    * This is the main entry for finding reliable node pair based on recent node behaviours.
    */
@@ -138,6 +144,7 @@ export default class NodesCollector {
       this.reliabilities.set(entryPeerId, next);
     }
   };
+
   public recordSuccess = (entryPeerId: string, exitPeerId: string) => {
     const cur = this.reliabilities.get(entryPeerId);
     if (cur) {

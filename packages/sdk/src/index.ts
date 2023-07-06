@@ -104,7 +104,9 @@ export default class SDK {
   ) {
     this.crypto = ops.crypto;
     this.crypto.set_panic_hook();
-    this.segmentCache = new SegmentCache((message) => this.onMessage(message));
+    this.segmentCache = new SegmentCache((message: any) =>
+      this.onMessage(message)
+    );
     this.requestCache = new RequestCache((request) =>
       this.onRequestExpiration(request)
     );
@@ -130,6 +132,10 @@ export default class SDK {
       }, CACHES_EXPIRATION_TIMEOUT) // look for entry nodes every 5 seconds
     );
   }
+
+  public stop = () => {
+    this.intervals.forEach(clearInterval);
+  };
 
   private onWSmessage(_peerId: string, message: string) {
     // handle incoming messages
@@ -242,7 +248,7 @@ export default class SDK {
   public async sendRequest(
     provider: string,
     body: string,
-    timeout: 5e3
+    timeout: number = 5e3
   ): Promise<Response> {
     return new Promise(async (resolve, reject) => {
       const res = await this.nodesColl
@@ -287,7 +293,7 @@ export default class SDK {
       this.requestCache.addRequest(req, resolve, reject);
 
       // Send all segments in parallel using Promise.allSettled
-      const sendMessagePromises = segments.map((segment) => {
+      const sendMessagePromises = segments.map((segment: any) => {
         return hoprd.sendMessage({
           apiEndpoint: entryNode.apiEndpoint.toString(),
           apiToken: entryNode.apiToken,
@@ -301,7 +307,7 @@ export default class SDK {
       try {
         const results = await Promise.allSettled(sendMessagePromises);
         const rejectedResults = results.filter(
-          (result) => result.status === "rejected"
+          (result: any) => result.status === "rejected"
         );
 
         if (rejectedResults.length > 0) {
