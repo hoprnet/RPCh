@@ -77,7 +77,7 @@ jobs:
 
       - name: Calculate environment variables
         shell: sh
-        run: echo "SHORT_SHA=`echo $GITHUB_SHA | cut -c1-7`" >> $GITHUB_ENV
+        run: echo "SHORT_SHA=`echo ${{ github.event.pull_request.head.sha }} | cut -c1-7`" >> $GITHUB_ENV
 
       - name: Login to GCP
         id: gcloud
