@@ -1,14 +1,14 @@
 import type { RegisteredNode } from "../db";
 import { createLogger } from "../utils";
-import { HoprSDK, api } from "@hoprnet/hopr-sdk";
+import {
+  HoprSDK,
+  type GetChannelResponseType as Channel,
+} from "@hoprnet/hopr-sdk";
 import { type CheckResult, createCheck } from "./check";
 import measureAveragePingToAll from "./ping";
 import { MIN_AMOUNT_PEERS, MIN_AMOUNT_CHANNELS } from "../constants";
 
 const log = createLogger(["review"]);
-
-/** Return type of sdk.api.channels.getChannels() */
-type Channel = Awaited<ReturnType<(typeof api)["getChannels"]>>["outgoing"][0];
 
 /** Checks made by interacting with the HOPRd node */
 const checks = {

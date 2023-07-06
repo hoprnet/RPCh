@@ -29,6 +29,7 @@ export async function measureAveragePing(
     if (result > 0) results.push(result);
   }
 
+  if (results.length === 0) return -1;
   return results.reduce((a, b) => a + b) / results.length;
 }
 
