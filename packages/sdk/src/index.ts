@@ -131,13 +131,6 @@ export default class SDK {
     );
   }
 
-  /**
-   * @return true if SDK is ready to send requests
-   */
-  public get isReady(): boolean {
-    return this.nodesColl.hasReliableNodePair();
-  }
-
   private onWSmessage(_peerId: string, message: string) {
     // handle incoming messages
     try {
@@ -252,7 +245,7 @@ export default class SDK {
     timeout: 5e3
   ): Promise<Response> {
     return new Promise(async (resolve, reject) => {
-      const { entryNode, exitNode } = await this.nodesColl
+      const res = await this.nodesColl
         .findReliableNodePair(timeout)
         .catch((err) => {
           // keep stacktrace intact
@@ -260,7 +253,14 @@ export default class SDK {
             `Error finding reliable entry - exit node pair: ${err}`
           );
         });
-      this.nodesColl.recordOngoing(entryNode.id, exitNode.id);
+      if (!res) {
+        return reject(
+          `No return when searching entry - exit node pair, should never happen`
+        );
+      }
+
+      const { entryNode, exitNode } = res;
+      this.nodesColl.recordOngoing(entryNode.peerId, exitNode.peerId);
       const req = await Request.createRequest(
         this.crypto!,
         provider,
@@ -289,7 +289,7 @@ export default class SDK {
       // Send all segments in parallel using Promise.allSettled
       const sendMessagePromises = segments.map((segment) => {
         return hoprd.sendMessage({
-          apiEndpoint: entryNode.apiEndpoint,
+          apiEndpoint: entryNode.apiEndpoint.toString(),
           apiToken: entryNode.apiToken,
           message: segment.toString(),
           destination: req.exitNodeDestination,
