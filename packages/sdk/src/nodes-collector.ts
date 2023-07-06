@@ -100,7 +100,9 @@ export default class NodesCollector {
   public findReliableNodePair = async (
     timeout: number
   ): Promise<{ entryNode: EntryNode; exitNode: ExitNode }> => {
-    return new Promise((resolve, reject) => {});
+    return new Promise((resolve, reject) => {
+
+    });
   };
 
   public hasReliableNodePair = () => {
@@ -108,21 +110,44 @@ export default class NodesCollector {
     return reliables.length > 0 && this.genericExitNodes.size > 0;
   };
 
+  public recordOngoing = (entryPeerId: string, exitPeerId: string) => {
+    const cur = this.reliabilities.get(entryPeerId);
+    if (cur) {
+      // record only tracked nodes
+      const next = Reliability.setExitNodeOngoing(cur, exitPeerId);
+      this.reliabilities.set(entryPeerId, next);
+    }
+
+  }
   public recordSuccess = (entryPeerId: string, exitPeerId: string) => {
     const cur = this.reliabilities.get(entryPeerId);
     if (cur) {
       // record only tracked nodes
-      const next = Reliability.updateExitNode(cur, exitPeerId, true);
-      this.reliabilities.set(entryPeerId, next);
-    }
+      const res = Reliability.updateExitNodeSuccess(cur, exitPeerId, true);
+      switch (res.res) {
+          case "ok":
+      this.reliabilities.set(entryPeerId, res.rel)
+          break;
+          case "error":
+              log.error("Error recording success", res.reason, entryPeerId, exitPeerId);
+          break;
+      }
+      }
   };
 
   public recordFailure = (entryPeerId: string, exitPeerId: string) => {
     const cur = this.reliabilities.get(entryPeerId);
     if (cur) {
       // record only tracked nodes
-      const next = Reliability.updateExitNode(cur, exitPeerId, false);
-      this.reliabilities.set(entryPeerId, next);
+      const res = Reliability.updateExitNodeSuccess(cur, exitPeerId, false);
+      switch (res.res) {
+          case "ok":
+      this.reliabilities.set(entryPeerId, res.rel);
+      break;
+      case "error":
+              log.error("Error recording failure", res.reason, entryPeerId, exitPeerId);
+      break;
+      }
     }
   };
 
@@ -288,9 +313,7 @@ export default class NodesCollector {
     }
   };
 
-  private doFindReliableNodePair = ():
-    | { entryNode: EntryNode; exitNode: ExitNode }
-    | string => {
+  private doFindReliableNodePair = (): { entryNode: EntryNode; exitNode: ExitNode } | string => {
     const entryNodeIds = Array.from(this.entryNodes.keys());
     // 1. take online nodes
     const onlineIds = entryNodeIds.filter((id) => {
@@ -301,6 +324,21 @@ export default class NodesCollector {
     if (onlineIds.length === 0) {
       return "no online nodes";
     }
+
+    // 2. map all latest online successes
+    const allLastExitSuccesses = onlineIds.reduce(
+        (acc, id) => {
+            const rel = this.reliabilities.get(id)!;
+            const successes = Reliability.getLastExitSuccesses(rel);
+            const successesWid = successes.map(function(s) {
+                return s.id = id;
+            });
+            acc.push({id, successes});
+            return acc;
+        }, []);
+
+    // 3. sort them by date
+    allLastExitSuccesses.sort(function(
 
     // 2. map last exits into ids
     const successfulExits = onlineIds
@@ -332,8 +370,7 @@ export default class NodesCollector {
 
     // 6. give a random online node a chance of 1% to avoid total node starvation
     if (unusedOnlineIds.length > 0 && Math.random() < 0.01) {
-      const id =
-        unusedOnlineIds[Math.floor(Math.random() * unusedOnlineIds.length)];
+      const id = randomEl(unusedOnlineIds);
       const entryNode = this.entryNodes.get(id)!;
     }
   };

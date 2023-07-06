@@ -1,7 +1,3 @@
-import { createLogger } from "./utils";
-
-const log = createLogger(["reliability"]);
-
 export type OnlineHistoryEntry = { date: number; online: boolean };
 
 export type NodeHistoryEntry = {
@@ -22,7 +18,7 @@ export function empty(): Reliability {
   };
 }
 
-export function updateOnline(rel: Reliability, online: boolean) {
+export function updateOnline(rel: Reliability, online: boolean): Reliability {
   const entry = { date: Date.now(), online };
   rel.onlineHistory.unshift(entry);
   return rel;
@@ -31,7 +27,7 @@ export function updateOnline(rel: Reliability, online: boolean) {
 export function expireOlderThan(
   { onlineHistory, exitNodesHistory }: Reliability,
   timeout: number
-) {
+): Reliability {
   // remove old online history entries
   const threshold = Date.now() - timeout;
   const onlineIdx = onlineHistory.findIndex(function ({ date }) {
@@ -62,7 +58,10 @@ export function expireOlderThan(
   };
 }
 
-export function setExitNodeOngoing(rel: Reliability, peerId: string) {
+export function setExitNodeOngoing(
+  rel: Reliability,
+  peerId: string
+): Reliability {
   const entry = { started: Date.now(), success: false, ongoing: true };
   let hist = rel.exitNodesHistory.get(peerId);
   if (hist) {
@@ -78,15 +77,19 @@ export function updateExitNodeSuccess(
   rel: Reliability,
   peerId: string,
   success: boolean
-) {
+): { res: "ok"; rel: Reliability } | { res: "error"; reason: string } {
   const hist = rel.exitNodesHistory.get(peerId);
   if (!hist) {
-    log.error(`Error updating exit node: no history found for ${peerId}`);
-    return;
+    return {
+      res: "error",
+      reason: `no history found for ${peerId}`,
+    };
   }
   if (hist.length === 0) {
-    log.error(`Error updating exit node: empty history for ${peerId}`);
-    return;
+    return {
+      res: "error",
+      reason: `empty history for ${peerId}`,
+    };
   }
 
   const entry = {
@@ -97,10 +100,13 @@ export function updateExitNodeSuccess(
   };
   hist[0] = entry;
   rel.exitNodesHistory.set(peerId, hist);
-  return rel;
+  return { res: "ok", rel };
 }
 
-export function isEmpty({ onlineHistory, exitNodesHistory }: Reliability) {
+export function isEmpty({
+  onlineHistory,
+  exitNodesHistory,
+}: Reliability): boolean {
   for (const hist of exitNodesHistory.values()) {
     if (hist.length > 0) {
       return false;
@@ -109,7 +115,7 @@ export function isEmpty({ onlineHistory, exitNodesHistory }: Reliability) {
   return onlineHistory.length === 0;
 }
 
-export function isOnline(rel: Reliability) {
+export function isOnline(rel: Reliability): boolean {
   // no history - means no websocket connection, or unused for long period
   if (rel.onlineHistory.length === 0) {
     return false;
@@ -118,7 +124,10 @@ export function isOnline(rel: Reliability) {
   return rel.onlineHistory[0].online;
 }
 
-export function isCurrentlyFailure(rel: Reliability, exitNodeId: string) {
+export function isCurrentlyFailure(
+  rel: Reliability,
+  exitNodeId: string
+): boolean {
   const hist = rel.exitNodesHistory.get(exitNodeId);
   if (hist && hist.length > 0) {
     return !hist[0].success;
