@@ -16,15 +16,11 @@ import type { EntryNode, ExitNode } from "./nodes-collector";
  * This will no scale well, but might be enough to understand reliability problems for now.
  *
  */
-export default function ({
-  entryNodes,
-  exitNodes,
-  reliabilities,
-}: {
-  entryNodes: Map<string, EntryNode>;
-  exitNodes: Map<string, ExitNode>;
-  reliabilities: Map<string, Reliability.Reliability>;
-}):
+export default function (
+  entryNodes: Map<string, EntryNode>,
+  exitNodes: Map<string, ExitNode>,
+  reliabilities: Map<string, Reliability.Reliability>
+):
   | { res: "ok"; entryNode: EntryNode; exitNode: ExitNode }
   | { res: "error"; reason: string } {
   const entryIds = Array.from(entryNodes.keys());

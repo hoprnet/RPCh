@@ -2,6 +2,7 @@ import fetch from "cross-fetch";
 import { WebSocketHelper, type onEventType } from "@rpch/common";
 import * as Reliability from "./reliability";
 import { createLogger } from "./utils";
+import selectNodes from "./nodes-selector";
 
 const log = createLogger(["nodes-collector"]);
 
@@ -94,20 +95,39 @@ export default class NodesCollector {
 
   /**
    * This is the main entry for finding reliable node pair based on recent node behaviours.
-   * Will need testing and adjustments to increase reliability.
-   *
    */
   public findReliableNodePair = async (
     timeout: number
   ): Promise<{ entryNode: EntryNode; exitNode: ExitNode }> => {
     return new Promise((resolve, reject) => {
-
+      const start = Date.now();
+      const check = () => {
+        const now = Date.now();
+        const elapsed = now - start;
+        const res = selectNodes(
+          this.entryNodes,
+          this.genericExitNodes,
+          this.reliabilities
+        );
+        switch (res.res) {
+          case "ok":
+            resolve({
+              entryNode: res.entryNode,
+              exitNode: res.exitNode,
+            });
+            break;
+          case "error":
+            log.info("Select nodes returned", res.reason, "at", now);
+            if (elapsed > timeout) {
+              reject(`timeout after ${elapsed} ms`);
+            } else {
+              setTimeout(check, 100);
+            }
+            break;
+        }
+      };
+      check();
     });
-  };
-
-  public hasReliableNodePair = () => {
-    const reliables = this.filterReliableIds();
-    return reliables.length > 0 && this.genericExitNodes.size > 0;
   };
 
   public recordOngoing = (entryPeerId: string, exitPeerId: string) => {
@@ -117,22 +137,28 @@ export default class NodesCollector {
       const next = Reliability.setExitNodeOngoing(cur, exitPeerId);
       this.reliabilities.set(entryPeerId, next);
     }
-
-  }
+  };
   public recordSuccess = (entryPeerId: string, exitPeerId: string) => {
     const cur = this.reliabilities.get(entryPeerId);
     if (cur) {
       // record only tracked nodes
       const res = Reliability.updateExitNodeSuccess(cur, exitPeerId, true);
       switch (res.res) {
-          case "ok":
-      this.reliabilities.set(entryPeerId, res.rel)
+        case "ok":
+          this.reliabilities.set(entryPeerId, res.rel);
           break;
-          case "error":
-              log.error("Error recording success", res.reason, entryPeerId, exitPeerId);
+        case "error":
+          log.error(
+            "Error recording success",
+            res.reason,
+            "entryPeerId",
+            entryPeerId,
+            "exitPeerId",
+            exitPeerId
+          );
           break;
       }
-      }
+    }
   };
 
   public recordFailure = (entryPeerId: string, exitPeerId: string) => {
@@ -141,12 +167,19 @@ export default class NodesCollector {
       // record only tracked nodes
       const res = Reliability.updateExitNodeSuccess(cur, exitPeerId, false);
       switch (res.res) {
-          case "ok":
-      this.reliabilities.set(entryPeerId, res.rel);
-      break;
-      case "error":
-              log.error("Error recording failure", res.reason, entryPeerId, exitPeerId);
-      break;
+        case "ok":
+          this.reliabilities.set(entryPeerId, res.rel);
+          break;
+        case "error":
+          log.error(
+            "Error recording failure",
+            res.reason,
+            "entryPeerId",
+            entryPeerId,
+            "exitPeerId",
+            exitPeerId
+          );
+          break;
       }
     }
   };
@@ -238,9 +271,9 @@ export default class NodesCollector {
       return;
     }
 
-    // check reliable nodes
-    const reliables = this.filterReliableIds();
-    if (reliables.length < this.ops.entryNodesTarget) {
+    // check online nodes
+    const onlineIds = this.filterOnlineIds();
+    if (onlineIds.length < this.ops.entryNodesTarget) {
       // fetch new nodes faster if reliable nodes are missing
       this.timerRefEntryNodes = setTimeout(
         () => this.fetchEntryNodes(),
@@ -294,10 +327,10 @@ export default class NodesCollector {
     }
   };
 
-  private filterReliableIds = () => {
+  private filterOnlineIds = () => {
     return Array.from(this.entryNodes.keys()).filter((pId) => {
       const rel = this.reliabilities.get(pId);
-      return Reliability.isReliable(rel!);
+      return Reliability.isOnline(rel!);
     });
   };
 
@@ -312,70 +345,4 @@ export default class NodesCollector {
       }
     }
   };
-
-  private doFindReliableNodePair = (): { entryNode: EntryNode; exitNode: ExitNode } | string => {
-    const entryNodeIds = Array.from(this.entryNodes.keys());
-    // 1. take online nodes
-    const onlineIds = entryNodeIds.filter((id) => {
-      const rel = this.reliabilities.get(id)!;
-      return Reliability.isOnline(rel);
-    });
-
-    if (onlineIds.length === 0) {
-      return "no online nodes";
-    }
-
-    // 2. map all latest online successes
-    const allLastExitSuccesses = onlineIds.reduce(
-        (acc, id) => {
-            const rel = this.reliabilities.get(id)!;
-            const successes = Reliability.getLastExitSuccesses(rel);
-            const successesWid = successes.map(function(s) {
-                return s.id = id;
-            });
-            acc.push({id, successes});
-            return acc;
-        }, []);
-
-    // 3. sort them by date
-    allLastExitSuccesses.sort(function(
-
-    // 2. map last exits into ids
-    const successfulExits = onlineIds
-      .map((id) => {
-        const rel = this.reliabilities.get(id)!;
-        return { id, entry: Reliability.getLastExitSuccess(rel) };
-      })
-      // 3. filter successful
-      .filter(function ({ entry }) {
-        return !!entry;
-      });
-
-    // 3. sort by latest
-    const latestSuccesses = successfulExits
-      .sort(function ({ entry: { date: dateA } }, { entry: { date: dateB } }) {
-        return dateB - dateA;
-      })
-      // 4. discard last exits
-      .map(function ({ id }) {
-        return id;
-      })
-      // 4. take first five
-      .slice(0, 5);
-
-    // 5. filter unused online nodes
-    const unusedOnlineIds = onlineIds.filter(function (id) {
-      return !latestSuccesses.includes(id);
-    });
-
-    // 6. give a random online node a chance of 1% to avoid total node starvation
-    if (unusedOnlineIds.length > 0 && Math.random() < 0.01) {
-      const id = randomEl(unusedOnlineIds);
-      const entryNode = this.entryNodes.get(id)!;
-    }
-  };
-}
-
-function randomEl<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
 }
