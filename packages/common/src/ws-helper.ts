@@ -87,18 +87,18 @@ export default class WebSocketHelper {
 
     // fired when connection established
     this.socket.on("open", () => {
+      log.verbose("onOpen", this.url.host);
       this.onEvent({ action: "open" });
       this.heartbeat();
     });
 
     // fired on incoming message
+    // NOTE `on("message",` gets websocket frames while `onmessage` gets whole MessageEvents
     this.socket.onmessage = (event) => {
       const body = event.data.toString();
       // message received is an acknowledgement of a
       // message we have send, we can safely ignore this
       if (body.startsWith("ack:")) return;
-
-      log.verbose("onMessage received body from HOPRd", body);
 
       let message: string | undefined;
       try {
@@ -106,10 +106,10 @@ export default class WebSocketHelper {
       } catch (error) {
         log.error(error);
       }
-      if (!message) return;
-      log.verbose("decoded received body", message);
-
-      this.onEvent({ action: "message", message });
+      if (message) {
+        log.verbose("onmessage", this.url.host, message);
+        this.onEvent({ action: "message", message });
+      }
     };
 
     // fired when connection closed due to error
@@ -128,13 +128,13 @@ export default class WebSocketHelper {
     });
 
     this.socket.on("close", (evt: CloseEvent) => {
-      log.normal("onClose", evt);
+      log.verbose("onClose", this.url.host, evt);
       this.onEvent({ action: "close", event: evt });
     });
 
     this.socket.on("ping", () => {
-      log.verbose("onPing");
       this.heartbeat();
+      log.verbose("onPing");
       this.onEvent({ action: "ping" });
     });
   }
