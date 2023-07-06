@@ -249,6 +249,7 @@ export default class NodesCollector {
     const wsURL = new URL(hoprd_api_endpoint);
     wsURL.protocol = apiEndpoint.protocol === "https:" ? "wss:" : "ws:";
     wsURL.pathname = apiWebSocket;
+    wsURL.search = `?apiToken=${accessToken}`;
     const onEvent = this.onWSevent(id);
     // create websocket connection
     const connection = new WebSocketHelper(wsURL, onEvent);
