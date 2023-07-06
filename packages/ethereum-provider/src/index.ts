@@ -34,12 +34,6 @@ export class RPChEthereumProvider
     params?: Array<any>;
   }): Promise<unknown> {
     log.verbose("Using SEND", request.method);
-    log.verbose("is sdk ready?", this.sdk.isReady);
-
-    if (!this.sdk.isReady && !this.sdk.starting) {
-      await this.sdk.start();
-    }
-    await this.sdk.waitForReliableNode(1e3);
 
     const payload = {
       method: request.method,
@@ -48,25 +42,23 @@ export class RPChEthereumProvider
       jsonrpc: "2.0",
     };
 
-    const rpchRequest = await this.sdk.createRequest(
-      this.url,
-      JSON.stringify(payload)
-    );
-
-    log.verbose("Created request", rpchRequest.id);
+    log.verbose("Created request");
 
     try {
-      const rpchResponse = await this.sdk.sendRequest(rpchRequest);
+      const rpchResponse = await this.sdk.sendRequest(
+        this.url,
+        JSON.stringify(payload)
+      );
 
       const response = getResult(
         parseResponse(rpchResponse)
       ) as JsonRpc.Response["result"];
 
-      log.verbose("Received response for request", rpchRequest.id);
+      log.verbose("Received response for request");
 
       return response;
     } catch (error) {
-      log.error("Did not receive response for request", rpchRequest.id);
+      log.error("Did not receive response for request");
       throw error;
     }
   }
