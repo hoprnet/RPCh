@@ -217,7 +217,7 @@ export default class NodesCollector {
         if (resp.status === 200) {
           return resp.json();
         }
-        throw new Error(`wrong status ${resp}`);
+        throw new Error(`wrong status ${resp.status} ${resp.statusText}`);
       })
       .then(this.responseEntryNode)
       .catch((err) => log.error("Error requesting entry node:", err));
