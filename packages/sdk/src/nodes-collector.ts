@@ -124,6 +124,14 @@ export default class NodesCollector {
             break;
           case "error":
             log.info("Select nodes returned", res.reason, "at", now);
+            log.verbose(
+              "entryNodes",
+              this.entryNodes,
+              "exitNodes",
+              this.genericExitNodes,
+              "reliabilities",
+              this.reliabilities
+            );
             if (elapsed > timeout) {
               reject(`timeout after ${elapsed} ms`);
             } else {
@@ -251,7 +259,7 @@ export default class NodesCollector {
       peerId: id,
       recommendedExitNodes: [],
     };
-    log.info("Response entry node", newNode);
+    log.info("Response entry node", newNode.peerId);
     this.entryNodes.set(id, newNode);
     this.reliabilities.set(id, Reliability.empty());
     this.scheduleEntryNodeFetching();
