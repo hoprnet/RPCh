@@ -110,7 +110,9 @@
         "PORT",
         "DB_CONNECTION_URL",
         "REVIEWER_INTERVAL_MS",
-        "REVIEWER_CONCURRENCY"
+        "REVIEWER_CONCURRENCY",
+        "MIN_AMOUNT_PEERS",
+        "MIN_AMOUNT_CHANNELS"
       ]
     },
     "dev": {
