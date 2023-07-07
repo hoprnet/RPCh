@@ -383,6 +383,8 @@ export default class NodesCollector {
       .flat();
     log.verbose(entryStr);
     log.verbose(exitStr);
-    rels.forEach(log.verbose);
+    rels.forEach(function (l) {
+      log.verbose(l);
+    });
   }
 }

@@ -187,7 +187,7 @@ export function prettyPrintOnlineHistory({
     // count missing successes from reduction
     const diff = last - start;
     const dStr = diff === 0 ? "_" : `-${diff}ms`;
-    acc.unshift(`(${e}O|${dStr})`);
+    acc.unshift(`(${s}O|${dStr})`);
   }
   if (e > 0) {
     // count missing errors from reduction
