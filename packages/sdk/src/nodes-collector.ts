@@ -18,6 +18,8 @@ const timeoutRegularFetchExitNodes = 60e3 * 5; // 5 min
 
 const intervalExpireReliabilities = 60e3 * 5; // 5 min
 
+const intervalDebugPrint = 60e3; // 1 min
+
 /**
 nodes come in pairs
 
@@ -60,7 +62,7 @@ export type NodesCollectorOps = {
 
 const defaultOps: NodesCollectorOps = {
   entryNodesTarget: 10,
-  maxReliabilityAge: 60e3 * 5, // 5 min
+  maxReliabilityAge: 60e3 * 20, // 20(+/-5) min
 };
 
 export default class NodesCollector {
@@ -71,7 +73,8 @@ export default class NodesCollector {
   private readonly reliabilities = new Map<string, Reliability.Reliability>();
   private timerRefEntryNodes: ReturnType<typeof setTimeout>;
   private timerRefExitNodes: ReturnType<typeof setTimeout>;
-  private timerRefExpiration: ReturnType<typeof setTimeout>;
+  private intervalRefExpiration: ReturnType<typeof setInterval>;
+  private intervalRefDebugPrint: ReturnType<typeof setInterval>;
 
   constructor(
     private readonly discoveryPlatformEndpoint: string,
@@ -87,16 +90,21 @@ export default class NodesCollector {
     // start fetching entry / exit nodes
     this.timerRefEntryNodes = setTimeout(() => this.fetchEntryNodes());
     this.timerRefExitNodes = setTimeout(() => this.fetchExitNodes());
-    this.timerRefExpiration = setInterval(
+    this.intervalRefExpiration = setInterval(
       () => this.expireReliabilities(),
       intervalExpireReliabilities
+    );
+    this.intervalRefDebugPrint = setInterval(
+      () => this.prettryPrintState(),
+      intervalDebugPrint
     );
   }
 
   public stop = () => {
     clearTimeout(this.timerRefEntryNodes);
     clearTimeout(this.timerRefExitNodes);
-    clearTimeout(this.timerRefExpiration);
+    clearInterval(this.intervalRefExpiration);
+    clearInterval(this.intervalRefDebugPrint);
   };
 
   /**
@@ -123,8 +131,7 @@ export default class NodesCollector {
             });
             break;
           case "error":
-            log.info("Select nodes returned", res.reason, "at", now);
-            this.prettryPrintState();
+            log.error("Error selecting nodes", res.reason);
             if (elapsed > timeout) {
               reject(`timeout after ${elapsed} ms`);
             } else {
