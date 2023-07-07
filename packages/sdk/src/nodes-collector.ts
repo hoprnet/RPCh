@@ -369,7 +369,7 @@ export default class NodesCollector {
         return peerId;
       })
       .join(", ");
-    const entryStr = `%{this.entryNodes.size} entry nodes: [${entryIds}]`;
+    const entryStr = `${this.entryNodes.size} entry nodes: [${entryIds}]`;
     const rels = entryNodes
       .map(({ peerId }) => {
         const shortPid = `${peerId.substring(0, 3)}..${peerId.substring(
@@ -378,11 +378,11 @@ export default class NodesCollector {
         const rel = this.reliabilities.get(peerId)!;
         const onlines = Reliability.prettyPrintOnlineHistory(rel);
         const exits = Reliability.prettyPrintExitNodesHistory(rel);
-        return [`e${shortPid}:${onlines}`, `e${shortPid}:${exits}`];
+        return [`online ${shortPid}:${onlines}`, `exits ${shortPid}:${exits}`];
       })
       .flat();
-    log.verbose("entry nodes", entryStr);
-    log.verbose("exit nodes", exitStr);
+    log.verbose(entryStr);
+    log.verbose(exitStr);
     rels.forEach(log.verbose);
   }
 }
