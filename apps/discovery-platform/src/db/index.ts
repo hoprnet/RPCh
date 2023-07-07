@@ -14,6 +14,7 @@ export type DBInstance = pgp.IDatabase<{}>;
 export type RegisteredNodeFilters = {
   hasExitNode?: boolean;
   excludeList?: string[];
+  includeList?: string[];
   status?: RegisteredNodeDB["status"];
 };
 
@@ -42,6 +43,10 @@ export const getRegisteredNodes = async (
   if (filters?.excludeList !== undefined && filters.excludeList.length !== 0) {
     filtersText.push("id NOT IN ($<list>)");
     values["list"] = filters.excludeList.join(", ");
+  }
+  if (filters?.includeList !== undefined && filters.includeList.length !== 0) {
+    filtersText.push("id IN ($<list>)");
+    values["list"] = filters.includeList.join(", ");
   }
   if (filters?.hasExitNode !== undefined) {
     filtersText.push("has_exit_node=$<exitNode>");

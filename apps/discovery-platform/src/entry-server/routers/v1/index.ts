@@ -22,7 +22,12 @@ import {
   getRegisteredNode,
   getRegisteredNodes,
 } from "../../../registered-node";
-import { ClientDB, RegisteredNode, RegisteredNodeDB } from "../../../types";
+import type {
+  ClientDB,
+  RegisteredNode,
+  RegisteredNodeDB,
+  AvailabilityMonitorResult,
+} from "../../../types";
 import { createLogger, isListSafe } from "../../../utils";
 import { errors } from "pg-promise";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
@@ -45,8 +50,18 @@ export const v1Router = (ops: {
   fundingServiceApi: FundingServiceApi;
   metricManager: MetricManager;
   secret: string;
-  getUnstableNodes: () => string[];
+  getAvailabilityMonitorResults: () => Map<string, AvailabilityMonitorResult>;
 }) => {
+  /** @return an array of unstable peer ids */
+  function getUnstableNodes() {
+    return Array.from(ops.getAvailabilityMonitorResults().entries()).reduce<
+      string[]
+    >((result, [peerId, { isStable }]) => {
+      if (!isStable) result.push(peerId);
+      return result;
+    }, []);
+  }
+
   // Metrics
   const counterSuccessfulRequests = ops.metricManager.createCounter(
     "counter_successful_request",
@@ -119,7 +134,7 @@ export const v1Router = (ops: {
     getCache<RegisteredNodeDB[]>(
       (req) => req.originalUrl || req.url,
       (body) => {
-        const unstableNodes = ops.getUnstableNodes();
+        const unstableNodes = getUnstableNodes();
         return body.reduce<RegisteredNodeDB[]>((result, node) => {
           if (!unstableNodes.includes(node.id)) {
             result.push(node);
@@ -161,7 +176,7 @@ export const v1Router = (ops: {
         }
 
         // expand 'excludeList' with unstable nodes
-        const unstableNodes = ops.getUnstableNodes();
+        const unstableNodes = getUnstableNodes();
         if (unstableNodes.length > 0) {
           log.verbose(
             "We have %i unstable nodes, adding to 'excludeList'",
@@ -431,7 +446,7 @@ export const v1Router = (ops: {
         // }
 
         // expand 'excludeList' with unstable nodes
-        const unstableNodes = ops.getUnstableNodes();
+        const unstableNodes = getUnstableNodes();
         if (unstableNodes.length > 0) {
           log.verbose(
             "We have unstable nodes %i, adding to 'excludeList'",
@@ -484,6 +499,162 @@ export const v1Router = (ops: {
         return res.json({
           ...selectedNode,
           accessToken: selectedNode.hoprd_api_token,
+        });
+      } catch (e) {
+        log.error("Can not retrieve entry node", e);
+        counterFailedRequests
+          .labels({ method: req.method, path: req.path, status: 500 })
+          .inc();
+        return res.status(500).json({ errors: "Unexpected error" });
+      }
+    }
+  );
+
+  router.post(
+    "/request/one-hop-delivery-routes",
+    metricMiddleware(requestDurationHistogram),
+    body("excludeList")
+      .optional()
+      .custom((value) => isListSafe(value)),
+    body("amount").optional().isInt({ min: 1, max: 10 }),
+    async (req, res) => {
+      try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+          log.verbose("validation error", errors.array());
+          counterFailedRequests
+            .labels({ method: req.method, path: req.path, status: 400 })
+            .inc();
+          return res.status(400).json({ errors: errors.array() });
+        }
+        let {
+          excludeList = [],
+          amount = 1,
+          client,
+        } = req.body as {
+          excludeList: string[];
+          amount: number;
+          client?: string;
+        };
+
+        if (!client) {
+          // check if client was sent in headers
+          client = req.headers["x-rpch-client"] as string;
+        }
+
+        if (!client) {
+          return res
+            .status(400)
+            .json({ errors: "client was not sent in request" });
+        }
+
+        let dbClient = await getClient(ops.db, client);
+
+        const clientIsTrialMode =
+          dbClient?.payment === constants.TRIAL_PAYMENT_MODE;
+        // set who is going to pay for quota
+        const paidById = clientIsTrialMode
+          ? constants.TRIAL_CLIENT_ID
+          : dbClient?.id;
+
+        // TODO: check if client has enough quota
+
+        // using the availability monitor results
+        // we create a object keyed by WORKING entry nodes
+        // linked with WORKING exit nodes which availability-monitor
+        // has proven connectivity between them
+        const routes = Array.from(
+          ops.getAvailabilityMonitorResults().entries()
+        ).reduce<{ entryNodePeerId: string; exitNodePeerIds: string[] }[]>(
+          (result, [entryNodePeerId, info]) => {
+            const { outgoingChannels, exitNodesToOutgoingChannels } =
+              info.connectivityReview;
+            const intermediatePeerIds: string[] = [];
+            const exitNodePeerIds: string[] = [];
+
+            // entry nodes must be stable
+            if (info.isStable && !excludeList.includes(entryNodePeerId)) {
+              // find intermediate nodes with working PING
+              for (const [intermediatePeerId, ping] of Object.entries(
+                outgoingChannels
+              )) {
+                if (ping > 0) intermediatePeerIds.push(intermediatePeerId);
+              }
+
+              // find exit nodes which have working PING with one of the intermediate nodes
+              for (const [exitNodePeerId, outgoingChannels] of Object.entries(
+                exitNodesToOutgoingChannels
+              )) {
+                for (const [intermediatePeerId, ping] of Object.entries(
+                  outgoingChannels
+                )) {
+                  if (
+                    intermediatePeerIds.includes(intermediatePeerId) &&
+                    ping > 0 &&
+                    !exitNodePeerIds.includes(exitNodePeerId)
+                  ) {
+                    exitNodePeerIds.push(exitNodePeerId);
+                  }
+                }
+              }
+
+              // update result if we have found working routes
+              if (exitNodePeerIds.length > 0) {
+                result.push({ entryNodePeerId, exitNodePeerIds });
+              }
+            }
+
+            return result;
+          },
+          []
+        );
+
+        // return 404 if we didn't find enough working nodes
+        if (routes.length < amount) {
+          return res.status(404).json({
+            errors: `client requested ${amount} routes but only found ${routes.length}`,
+          });
+        }
+
+        // get a random selection of routes
+        const selectedRoutes = routes
+          .sort(() => 0.5 - Math.random())
+          .slice(0, amount);
+
+        // get all PeerIds we need to pull from the DB
+        const allPeerIds = selectedRoutes.reduce<string[]>(
+          (result, { entryNodePeerId, exitNodePeerIds }) => {
+            if (!result.includes(entryNodePeerId)) result.push(entryNodePeerId);
+            for (const exitNodePeerId of exitNodePeerIds) {
+              if (!result.includes(exitNodePeerId)) result.push(exitNodePeerId);
+            }
+            return result;
+          },
+          []
+        );
+
+        // get node data for all peerids
+        const allPeerIdsData = await getRegisteredNodes(ops.db, {
+          includeList: allPeerIds,
+        });
+
+        // TODO: handle funding
+
+        // create negative quota (showing that the client has used up initial quota)
+        await createQuota(ops.db, {
+          clientId: dbClient.id,
+          quota: ops.baseQuota * BigInt(amount) * BigInt(-1),
+          actionTaker: "discovery platform",
+          paidBy: paidById,
+        });
+
+        counterSuccessfulRequests
+          .labels({ method: req.method, path: req.path, status: 200 })
+          .inc();
+
+        return res.json({
+          routes,
+          nodes: allPeerIdsData,
         });
       } catch (e) {
         log.error("Can not retrieve entry node", e);
