@@ -1,3 +1,6 @@
+const FRESH_SCORE = 0.8; // general score when considered fresh
+const FRESHNESS_THRESHOLD = 5; // how many request successes/failures are needed to calculate score
+
 export type OnlineHistoryEntry = { date: number; online: boolean };
 
 export type NodeHistoryEntry = {
@@ -144,6 +147,20 @@ export function isCurrentlyBusy(
     return !hist[0].ended;
   }
   return false;
+}
+
+export function calculate(
+  { exitNodesHistory }: Reliability,
+  exitNodeId: string
+): number {
+  const hist = exitNodesHistory.get(exitNodeId);
+  if (!hist || hist.length < FRESHNESS_THRESHOLD) {
+    return FRESH_SCORE;
+  }
+  const success = hist.filter(function ({ success }) {
+    return success;
+  });
+  return success.length / hist.length;
 }
 
 export function prettyPrintOnlineHistory({

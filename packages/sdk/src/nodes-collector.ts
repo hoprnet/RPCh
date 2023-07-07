@@ -62,7 +62,7 @@ export type NodesCollectorOps = {
 
 const defaultOps: NodesCollectorOps = {
   entryNodesTarget: 10,
-  maxReliabilityAge: 60e3 * 20, // 20(+/-5) min
+  maxReliabilityAge: 60e3 * 30, // 30(+/-5) min
 };
 
 export default class NodesCollector {

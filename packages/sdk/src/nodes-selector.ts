@@ -1,6 +1,8 @@
 import * as Reliability from "./reliability";
 import type { EntryNode, ExitNode } from "./nodes-collector";
 
+const RELIABILITY_THRESHOLD = 0.59; // general threshold used when running 2nd PASS
+
 /**
  * This algorithm will be subject to change.
  * It is the base of how entry and exit nodes are selected.
@@ -66,9 +68,9 @@ export default function (
   }
 
   ////
-  // 2. Pass: randomly select non busy node pair
+  // 2. Pass: select reliable non busy node pair
 
-  const nonBusyEntryExits = onlineIds
+  const nonBusyWreliabilityEntryExits = onlineIds
     .map(function (entryId) {
       const rel = reliabilities.get(entryId)!;
       const nonbusyIds = Array.from(exitNodes.keys()).filter(function (exitId) {
@@ -78,17 +80,21 @@ export default function (
         return {
           entryNode: entryNodes.get(entryId)!,
           exitNode: exitNodes.get(exitId)!,
+          rel: Reliability.calculate(rel, exitId),
         };
       });
     })
-    .flat();
+    .flat()
+    .filter(function ({ rel }) {
+      return rel > RELIABILITY_THRESHOLD;
+    });
 
-  if (nonBusyEntryExits.length > 0) {
-    const el = randomEl(nonBusyEntryExits);
+  if (nonBusyWreliabilityEntryExits.length > 0) {
+    const el = randomEl(nonBusyWreliabilityEntryExits);
     return { ...el, res: "ok" };
   }
 
-  return { res: "error", reason: "no idle entry - exit pair found" };
+  return { res: "error", reason: "no reliable idle entry - exit pair found" };
 }
 
 function randomEl<T>(arr: T[]): T {
