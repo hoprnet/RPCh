@@ -271,7 +271,10 @@ export default class NodesCollector {
       peerId: id,
       pubKey: exit_node_pub_key,
     }));
-    log.info("Response exit nodes", exitNodes);
+    log.info(
+      "Response exit nodes",
+      exitNodes.map(({ peerId }) => peerId).join(" ")
+    );
     exitNodes.forEach((node) => this.genericExitNodes.set(node.peerId, node));
     this.scheduleExitNodeFetching();
   };
