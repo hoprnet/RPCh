@@ -57,13 +57,13 @@ describe("test review", function () {
 
   it("should review stable node as stable", async function () {
     mockHoprdApi(NODE.hoprdApiEndpoint);
-    const result = await review(NODE);
+    const result = await review({ node: NODE, exitNodes: [] });
     assert(result.isStable);
   });
 
   it("should review unstable node as unstable", async function () {
     mockHoprdApi(NODE.hoprdApiEndpoint, { badHealth: true });
-    const result = await review(NODE);
+    const result = await review({ node: NODE, exitNodes: [] });
     assert(!result.isStable);
   });
 
@@ -72,17 +72,17 @@ describe("test review", function () {
       failingVersion: true,
       badHealth: true,
     });
-    const result = await review(NODE);
-    assert(!result.hoprdVersion.passed);
-    assert(!result.hoprdHealth.passed);
-    assert(!result.hoprdSSL.passed);
+    const result = await review({ node: NODE, exitNodes: [] });
+    assert(!result.stabilityReview.hoprdVersion.passed);
+    assert(!result.stabilityReview.hoprdHealth.passed);
+    assert(!result.stabilityReview.hoprdSSL.passed);
   });
 
   it("should correctly identify working SSL", async function () {
     mockHoprdApi(NODE.hoprdApiEndpoint, {
       workingSSL: true,
     });
-    const result = await review(NODE);
-    assert(result.hoprdSSL.passed);
+    const result = await review({ node: NODE, exitNodes: [] });
+    assert(result.stabilityReview.hoprdSSL.passed);
   });
 });

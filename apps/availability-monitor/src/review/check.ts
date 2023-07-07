@@ -29,7 +29,6 @@ export type Check<T, A extends unknown[]> = {
  */
 export function createCheck<T, A extends unknown[]>(
   id: string,
-  optional: boolean,
   run: (...args: A) => Promise<[passed: boolean, value: T]>
 ): Check<T, A> {
   const check: Check<T, A> = {

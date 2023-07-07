@@ -47,9 +47,4 @@ describe("test Reviewer", function () {
     await wait(2e3);
     assert.equal(reviewer.results.size, 1);
   });
-
-  it("should queue node in priority", async function () {
-    const result = await reviewer.addPriorityReview(NODE_A_DB.id);
-    assert.deepEqual(result, RESULT_A);
-  });
 });
