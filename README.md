@@ -30,13 +30,31 @@ Checkout [Sandbox](https://github.com/Rpc-h/RPCh/tree/main/devkit/sandbox#sandbo
 - dependency check: we currently use `check-dependency-version-consistency` to ensure consistency between the dependency version,
   future plan is to use `depcheck` for every project to ensure all libraries are correctly added per `package.json`
 
+## Changelogs
+
+This project aims to use [Changesets](https://turbo.build/repo/docs/handbook/publishing-packages/versioning-and-publishing) for versioning.
+We will gradually add changesets for new releases/tags, so that given some time we will have every app/package covered.
+
+## Tagging scheme
+
+This monorepo will use the usual tagging scheme for monorepos:
+Tags are usually only created prior to releases. See [Deployment](##Deployment) section.
+
+```
+appname/vX.X.X
+
+appname - application or package name to be released with that tag
+/ - slash separator
+v - single letter 'v'
+X.X.X - Semver versioning for that app or package
+```
+
 ## Deployment
 
-Deployment works mostly automated.
-Whenever changes are pushed/merged to the `main` branch, the CI system will automatically check
+Deployment works automated.
+For staging, pull requests are built and merges/pushes to the `main` branch will also trigger builds.
+For production, this works a little bit different.
+Whenever a new tags is updated (usually alongside corresponding changeset changes) on `main` the automation will check
 
 - if it can build new application container images
 - if it can publish new npm packages
-
-If an application/package depends on a newer package version from npm,
-ASK Martins
