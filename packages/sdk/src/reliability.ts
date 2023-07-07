@@ -142,13 +142,60 @@ export function prettyPrintOnlineHistory({
     return "[]";
   }
   const last = onlineHistory[0].date;
-  const strs = onlineHistory.map(function ({ date, online }) {
-    const diff = last - date;
-    const v = online ? "O" : "_";
+  const { s, e, start, acc } = onlineHistory.reduce(
+    function (
+      {
+        s,
+        e,
+        start,
+        acc,
+      }: { s: number; e: number; start: number; acc: string[] },
+      { date, online }
+    ) {
+      if (online && e > 0) {
+        // switch to success, count errors
+        const diff = last - start;
+        const dStr = diff === 0 ? "_" : `-${diff}ms`;
+        acc.unshift(`(${e}_|${dStr})`);
+      }
+      if (!online && s > 0) {
+        // switch to error, count successes
+        const diff = last - start;
+        const dStr = diff === 0 ? "_" : `-${diff}ms`;
+        acc.unshift(`(${e}O|${dStr})`);
+      }
+
+      if (online && s > 0) {
+        // accum online
+        return { s: s + 1, e, acc, start };
+      }
+      if (!online && e > 0) {
+        // accum offline
+        return { s, e: e + 1, acc, start };
+      }
+      if (online) {
+        // start online
+        return { s: 1, e: 0, acc, start: date };
+      } else {
+        //start offline
+        return { s: 0, e: 1, acc, start: date };
+      }
+    },
+    { s: 0, e: 0, start: 0, acc: [] }
+  );
+  if (s > 0) {
+    // count missing successes from reduction
+    const diff = last - start;
     const dStr = diff === 0 ? "_" : `-${diff}ms`;
-    return `(${v}|${dStr})`;
-  });
-  return `[${strs.join(",")}]`;
+    acc.unshift(`(${e}O|${dStr})`);
+  }
+  if (e > 0) {
+    // count missing errors from reduction
+    const diff = last - start;
+    const dStr = diff === 0 ? "_" : `-${diff}ms`;
+    acc.unshift(`(${e}_|${dStr})`);
+  }
+  return `[${acc.join(",")}]`;
 }
 
 export function prettyPrintExitNodesHistory({
