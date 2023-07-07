@@ -51,7 +51,10 @@ export default function (
       const nonFailureIds = Array.from(exitNodes.keys()).filter(function (
         exitId
       ) {
-        return !Reliability.isCurrentlyFailure(rel, exitId);
+        // remove entry nodes
+        return (
+          exitId !== entryId && !Reliability.isCurrentlyFailure(rel, exitId)
+        );
       });
       return nonFailureIds.map(function (exitId) {
         return {
@@ -74,7 +77,8 @@ export default function (
     .map(function (entryId) {
       const rel = reliabilities.get(entryId)!;
       const nonbusyIds = Array.from(exitNodes.keys()).filter(function (exitId) {
-        return !Reliability.isCurrentlyBusy(rel, exitId);
+        // remove entry nodes
+        return exitId !== entryId && !Reliability.isCurrentlyBusy(rel, exitId);
       });
       return nonbusyIds.map(function (exitId) {
         return {
