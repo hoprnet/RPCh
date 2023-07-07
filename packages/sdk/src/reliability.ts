@@ -227,7 +227,7 @@ export function prettyPrintExitNodesHistory({
 }: Reliability): string {
   const all = Array.from(exitNodesHistory.entries()).map(([id, hist]) => {
     if (hist.length === 0) {
-      return "";
+      return `${shortPeerId(id)}:[]`;
     }
     const last = hist[0].started;
     const strs = hist.map((e) => {
