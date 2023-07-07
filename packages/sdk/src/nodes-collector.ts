@@ -3,6 +3,7 @@ import { WebSocketHelper, type onEventType } from "@rpch/common";
 import * as Reliability from "./reliability";
 import { createLogger } from "./utils";
 import selectNodes from "./nodes-selector";
+import { shortPeerId } from "./utils";
 
 const log = createLogger(["nodes-collector"]);
 
@@ -368,23 +369,17 @@ export default class NodesCollector {
   private prettryPrintState() {
     const exitNodes = Array.from(this.genericExitNodes.values());
     const exitIds = exitNodes
-      .map(function ({ peerId }) {
-        return peerId;
-      })
-      .join(", ");
+      .map(({ peerId }) => shortPeerId(peerId))
+      .join(" ");
     const exitStr = `${this.genericExitNodes.size} exit nodes: [${exitIds}]`;
     const entryNodes = Array.from(this.entryNodes.values());
     const entryIds = entryNodes
-      .map(function ({ peerId }) {
-        return peerId;
-      })
-      .join(", ");
+      .map(({ peerId }) => shortPeerId(peerId))
+      .join(" ");
     const entryStr = `${this.entryNodes.size} entry nodes: [${entryIds}]`;
     const rels = entryNodes
       .map(({ peerId }) => {
-        const shortPid = `${peerId.substring(0, 3)}..${peerId.substring(
-          peerId.length - 5
-        )}`;
+        const shortPid = shortPeerId(peerId);
         const rel = this.reliabilities.get(peerId)!;
         const onlines = Reliability.prettyPrintOnlineHistory(rel);
         const exits = Reliability.prettyPrintExitNodesHistory(rel);
@@ -393,8 +388,6 @@ export default class NodesCollector {
       .flat();
     log.verbose(entryStr);
     log.verbose(exitStr);
-    rels.forEach(function (l) {
-      log.verbose(l);
-    });
+    rels.forEach((l) => log.verbose(l));
   }
 }

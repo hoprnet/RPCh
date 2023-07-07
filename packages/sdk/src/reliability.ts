@@ -1,3 +1,5 @@
+import { shortPeerId } from "./utils";
+
 const FRESH_SCORE = 0.8; // general score when considered fresh
 const FRESHNESS_THRESHOLD = 5; // how many request successes/failures are needed to calculate score
 
@@ -33,9 +35,7 @@ export function expireOlderThan(
 ): Reliability {
   // remove old online history entries
   const threshold = Date.now() - timeout;
-  const onlineIdx = onlineHistory.findIndex(function ({ date }) {
-    return date < threshold;
-  });
+  const onlineIdx = onlineHistory.findIndex(({ date }) => date < threshold);
   if (onlineIdx >= 0) {
     onlineHistory = onlineHistory.slice(0, onlineIdx);
   }
@@ -43,12 +43,11 @@ export function expireOlderThan(
   // remove old exit nodes history entries
   for (const id of exitNodesHistory.keys()) {
     const hist = exitNodesHistory.get(id)!;
-    const idx = hist.findIndex(function ({ ended }) {
+    const idx = hist.findIndex(({ ended }) => {
       if (ended) {
         return ended < threshold;
-      } else {
-        return false;
       }
+      return false;
     });
     if (idx >= 0) {
       exitNodesHistory.set(id, hist.slice(0, idx));
@@ -157,9 +156,7 @@ export function calculate(
   if (!hist || hist.length < FRESHNESS_THRESHOLD) {
     return FRESH_SCORE;
   }
-  const success = hist.filter(function ({ success }) {
-    return success;
-  });
+  const success = hist.filter(({ success }) => success);
   return success.length / hist.length;
 }
 
@@ -171,7 +168,7 @@ export function prettyPrintOnlineHistory({
   }
   const last = onlineHistory[0].date;
   const { s, e, start, acc } = onlineHistory.reduce(
-    function (
+    (
       {
         s,
         e,
@@ -179,18 +176,18 @@ export function prettyPrintOnlineHistory({
         acc,
       }: { s: number; e: number; start: number; acc: string[] },
       { date, online }
-    ) {
+    ) => {
       if (online && e > 0) {
         // switch to success, count errors
         const diff = last - start;
         const dStr = diff === 0 ? "_" : `-${diff}ms`;
-        acc.unshift(`(${e}_|${dStr})`);
+        acc.unshift(`(_${e}|${dStr})`);
       }
       if (!online && s > 0) {
         // switch to error, count successes
         const diff = last - start;
         const dStr = diff === 0 ? "_" : `-${diff}ms`;
-        acc.unshift(`(${e}O|${dStr})`);
+        acc.unshift(`(o${e}|${dStr})`);
       }
 
       if (online && s > 0) {
@@ -204,10 +201,9 @@ export function prettyPrintOnlineHistory({
       if (online) {
         // start online
         return { s: 1, e: 0, acc, start: date };
-      } else {
-        //start offline
-        return { s: 0, e: 1, acc, start: date };
       }
+      //start offline
+      return { s: 0, e: 1, acc, start: date };
     },
     { s: 0, e: 0, start: 0, acc: [] }
   );
@@ -215,37 +211,36 @@ export function prettyPrintOnlineHistory({
     // count missing successes from reduction
     const diff = last - start;
     const dStr = diff === 0 ? "_" : `-${diff}ms`;
-    acc.unshift(`(${s}O|${dStr})`);
+    acc.unshift(`(o${s}|${dStr})`);
   }
   if (e > 0) {
     // count missing errors from reduction
     const diff = last - start;
     const dStr = diff === 0 ? "_" : `-${diff}ms`;
-    acc.unshift(`(${e}_|${dStr})`);
+    acc.unshift(`(_${e}|${dStr})`);
   }
-  return `[${acc.join(",")}]`;
+  return `[${acc.join(" ")}]`;
 }
 
 export function prettyPrintExitNodesHistory({
   exitNodesHistory,
 }: Reliability): string {
-  const all = Array.from(exitNodesHistory.entries()).map(function ([id, hist]) {
+  const all = Array.from(exitNodesHistory.entries()).map(([id, hist]) => {
     if (hist.length === 0) {
       return "";
     }
     const last = hist[0].started;
-    const strs = hist.map(function (e) {
+    const strs = hist.map((e) => {
       const diff = last - e.started;
       const dStr = diff === 0 ? "_" : `-${diff}ms`;
       if (e.ended) {
         const dur = e.ended - e.started;
-        const suc = e.success ? "O" : "_";
+        const suc = e.success ? "o" : "_";
         return `(${suc}|${dur}ms|${dStr})`;
       }
       return `(..|${dStr})`;
     });
-    const shortPid = `${id.substring(0, 3)}..${id.substring(id.length - 5)}`;
-    return `x${shortPid}:[${strs.join(",")}]`;
+    return `${shortPeerId(id)}:[${strs.join(" ")}]`;
   });
-  return `{${all.join(" - ")}}`;
+  return `{${all.join(" ")}}`;
 }

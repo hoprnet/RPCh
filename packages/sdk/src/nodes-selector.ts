@@ -33,7 +33,7 @@ export default function (
     return { res: "error", reason: "no entry nodes" };
   }
 
-  const onlineIds = entryIds.filter(function (id) {
+  const onlineIds = entryIds.filter((id) => {
     const rel = reliabilities.get(id)!;
     return Reliability.isOnline(rel);
   });
@@ -45,23 +45,17 @@ export default function (
   // 1. Pass: gather all recently working combinations
 
   const workingEntryExits = onlineIds
-    .map(function (entryId) {
+    .map((entryId) => {
       const rel = reliabilities.get(entryId)!;
-      // take all exit nodes and remove recent failures, coincidentally will remove ongoing requests as well
-      const nonFailureIds = Array.from(exitNodes.keys()).filter(function (
-        exitId
-      ) {
-        // remove entry nodes
-        return (
+      // take all exit nodes and remove entry nodes, recent failures, ongoing requests
+      const nonFailureIds = Array.from(exitNodes.keys()).filter(
+        (exitId) =>
           exitId !== entryId && !Reliability.isCurrentlyFailure(rel, exitId)
-        );
-      });
-      return nonFailureIds.map(function (exitId) {
-        return {
-          entryNode: entryNodes.get(entryId)!,
-          exitNode: exitNodes.get(exitId)!,
-        };
-      });
+      );
+      return nonFailureIds.map((exitId) => ({
+        entryNode: entryNodes.get(entryId)!,
+        exitNode: exitNodes.get(exitId)!,
+      }));
     })
     .flat();
 
@@ -74,24 +68,21 @@ export default function (
   // 2. Pass: select reliable non busy node pair
 
   const nonBusyWreliabilityEntryExits = onlineIds
-    .map(function (entryId) {
+    .map((entryId) => {
       const rel = reliabilities.get(entryId)!;
-      const nonbusyIds = Array.from(exitNodes.keys()).filter(function (exitId) {
-        // remove entry nodes
-        return exitId !== entryId && !Reliability.isCurrentlyBusy(rel, exitId);
-      });
-      return nonbusyIds.map(function (exitId) {
-        return {
-          entryNode: entryNodes.get(entryId)!,
-          exitNode: exitNodes.get(exitId)!,
-          rel: Reliability.calculate(rel, exitId),
-        };
-      });
+      // take all exit nodes and remove entry nodes and currently busy nodes
+      const nonbusyIds = Array.from(exitNodes.keys()).filter(
+        (exitId) =>
+          exitId !== entryId && !Reliability.isCurrentlyBusy(rel, exitId)
+      );
+      return nonbusyIds.map((exitId) => ({
+        entryNode: entryNodes.get(entryId)!,
+        exitNode: exitNodes.get(exitId)!,
+        rel: Reliability.calculate(rel, exitId),
+      }));
     })
     .flat()
-    .filter(function ({ rel }) {
-      return rel > RELIABILITY_THRESHOLD;
-    });
+    .filter(({ rel }) => rel > RELIABILITY_THRESHOLD);
 
   if (nonBusyWreliabilityEntryExits.length > 0) {
     const el = randomEl(nonBusyWreliabilityEntryExits);
