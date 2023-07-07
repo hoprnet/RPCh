@@ -10,7 +10,10 @@ import type { EntryNode, ExitNode } from "./nodes-collector";
  *
  * For every entry node there is an LIFO queue of its online state.
  * Every entry node also keeps LIFO queues of their failed/success pairings with exit nodes.
- * For now we just take all exit nodes, combine them with all entry nodes, remove all recent failures and ongoing requests.
+ *
+ * 1. Pass checks if we have recently working entry - exit pairs or fresh ones.
+ * - if none found
+ * 2. Pass checks if we have non busy entry - exit pairs and choses randomly
  *
  * This essentially means that each entry - exit node pair can only handle one request concurrently.
  * This will no scale well, but might be enough to understand reliability problems for now.
@@ -28,7 +31,6 @@ export default function (
     return { res: "error", reason: "no entry nodes" };
   }
 
-  // 1. determine online entry nodes
   const onlineIds = entryIds.filter(function (id) {
     const rel = reliabilities.get(id)!;
     return Reliability.isOnline(rel);
@@ -37,15 +39,19 @@ export default function (
     return { res: "error", reason: "no online entry nodes" };
   }
 
-  // 2. gather all tryable entry - exit node pairs
-  const entryExitSelection = onlineIds
+  ////
+  // 1. Pass: gather all recently working combinations
+
+  const workingEntryExits = onlineIds
     .map(function (entryId) {
       const rel = reliabilities.get(entryId)!;
       // take all exit nodes and remove recent failures, coincidentally will remove ongoing requests as well
-      const tryableIds = Array.from(exitNodes.keys()).filter(function (exitId) {
+      const nonFailureIds = Array.from(exitNodes.keys()).filter(function (
+        exitId
+      ) {
         return !Reliability.isCurrentlyFailure(rel, exitId);
       });
-      return tryableIds.map(function (exitId) {
+      return nonFailureIds.map(function (exitId) {
         return {
           entryNode: entryNodes.get(entryId)!,
           exitNode: exitNodes.get(exitId)!,
@@ -54,12 +60,35 @@ export default function (
     })
     .flat();
 
-  if (entryExitSelection.length === 0) {
-    return { res: "error", reason: "no tryable entry - exit pair found" };
+  if (workingEntryExits.length > 0) {
+    const el = randomEl(workingEntryExits);
+    return { ...el, res: "ok" };
   }
 
-  const el = randomEl(entryExitSelection);
-  return { ...el, res: "ok" };
+  ////
+  // 2. Pass: randomly select non busy node pair
+
+  const nonBusyEntryExits = onlineIds
+    .map(function (entryId) {
+      const rel = reliabilities.get(entryId)!;
+      const nonbusyIds = Array.from(exitNodes.keys()).filter(function (exitId) {
+        return !Reliability.isCurrentlyBusy(rel, exitId);
+      });
+      return nonbusyIds.map(function (exitId) {
+        return {
+          entryNode: entryNodes.get(entryId)!,
+          exitNode: exitNodes.get(exitId)!,
+        };
+      });
+    })
+    .flat();
+
+  if (nonBusyEntryExits.length > 0) {
+    const el = randomEl(nonBusyEntryExits);
+    return { ...el, res: "ok" };
+  }
+
+  return { res: "error", reason: "no idle entry - exit pair found" };
 }
 
 function randomEl<T>(arr: T[]): T {

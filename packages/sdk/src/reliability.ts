@@ -125,12 +125,23 @@ export function isOnline(rel: Reliability): boolean {
 }
 
 export function isCurrentlyFailure(
-  rel: Reliability,
+  { exitNodesHistory }: Reliability,
   exitNodeId: string
 ): boolean {
-  const hist = rel.exitNodesHistory.get(exitNodeId);
+  const hist = exitNodesHistory.get(exitNodeId);
   if (hist && hist.length > 0) {
     return !hist[0].success;
+  }
+  return false;
+}
+
+export function isCurrentlyBusy(
+  { exitNodesHistory }: Reliability,
+  exitNodeId: string
+): boolean {
+  const hist = exitNodesHistory.get(exitNodeId);
+  if (hist && hist.length > 0) {
+    return !hist[0].ended;
   }
   return false;
 }
