@@ -124,14 +124,7 @@ export default class NodesCollector {
             break;
           case "error":
             log.info("Select nodes returned", res.reason, "at", now);
-            log.verbose(
-              "entryNodes",
-              this.entryNodes,
-              "exitNodes",
-              this.genericExitNodes,
-              "reliabilities",
-              this.reliabilities
-            );
+            this.prettryPrintState();
             if (elapsed > timeout) {
               reject(`timeout after ${elapsed} ms`);
             } else {
@@ -361,4 +354,35 @@ export default class NodesCollector {
       }
     }
   };
+
+  private prettryPrintState() {
+    const exitNodes = Array.from(this.genericExitNodes.values());
+    const exitIds = exitNodes
+      .map(function ({ peerId }) {
+        return peerId;
+      })
+      .join(", ");
+    const exitStr = `${this.genericExitNodes.size} exit nodes: [${exitIds}]`;
+    const entryNodes = Array.from(this.entryNodes.values());
+    const entryIds = entryNodes
+      .map(function ({ peerId }) {
+        return peerId;
+      })
+      .join(", ");
+    const entryStr = `%{this.entryNodes.size} entry nodes: [${entryIds}]`;
+    const rels = entryNodes
+      .map(({ peerId }) => {
+        const shortPid = `${peerId.substring(0, 3)}..${peerId.substring(
+          peerId.length - 5
+        )}`;
+        const rel = this.reliabilities.get(peerId)!;
+        const onlines = Reliability.prettyPrintOnlineHistory(rel);
+        const exits = Reliability.prettyPrintExitNodesHistory(rel);
+        return [`e${shortPid}:${onlines}`, `e${shortPid}:${exits}`];
+      })
+      .flat();
+    log.verbose("entry nodes", entryStr);
+    log.verbose("exit nodes", exitStr);
+    rels.forEach(log.verbose);
+  }
 }

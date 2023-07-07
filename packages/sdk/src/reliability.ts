@@ -134,3 +134,43 @@ export function isCurrentlyFailure(
   }
   return false;
 }
+
+export function prettyPrintOnlineHistory({
+  onlineHistory,
+}: Reliability): string {
+  if (onlineHistory.length === 0) {
+    return "[]";
+  }
+  const last = onlineHistory[0].date;
+  const strs = onlineHistory.map(function ({ date, online }) {
+    const diff = last - date;
+    const v = online ? "O" : "_";
+    const dStr = diff === 0 ? "_" : `-${diff}ms`;
+    return `(${v}|${dStr})`;
+  });
+  return `[${strs.join(",")}]`;
+}
+
+export function prettyPrintExitNodesHistory({
+  exitNodesHistory,
+}: Reliability): string {
+  const all = Array.from(exitNodesHistory.entries()).map(function ([id, hist]) {
+    if (hist.length === 0) {
+      return "";
+    }
+    const last = hist[0].started;
+    const strs = hist.map(function (e) {
+      const diff = last - e.started;
+      const dStr = diff === 0 ? "_" : `-${diff}ms`;
+      if (e.ended) {
+        const dur = e.ended - e.started;
+        const suc = e.success ? "O" : "_";
+        return `(${suc}|${dur}ms|${dStr})`;
+      }
+      return `(..|${dStr})`;
+    });
+    const shortPid = `${id.substring(0, 3)}..${id.substring(id.length - 5)}`;
+    return `x${shortPid}:[${strs.join(",")}]`;
+  });
+  return `{${all.join(" - ")}}`;
+}
