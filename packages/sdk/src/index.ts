@@ -254,7 +254,7 @@ export default class SDK {
   public async sendRequest(
     provider: string,
     body: string,
-    timeout: number = 5e3
+    timeout: number = 500
   ): Promise<Response> {
     return new Promise(async (resolve, reject) => {
       const res = await this.nodesColl
