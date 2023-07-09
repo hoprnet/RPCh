@@ -1,7 +1,7 @@
 import { shortPeerId } from "./utils";
 
-const FRESH_SCORE = 0.8; // general score when considered fresh
-const FRESHNESS_THRESHOLD = 5; // how many request successes/failures are needed to calculate score
+const FRESH_SCORE = 0.81; // general score when considered fresh
+const FRESHNESS_THRESHOLD = 10; // how many request successes/failures are needed to calculate score
 
 const MAX_ONLINE_HISTORY_LENGTH = 100;
 
@@ -11,7 +11,8 @@ export type NodeHistoryEntry = {
   started: number;
   ended?: number;
   success: boolean;
-  peerId: string;
+  entryId: string;
+  exitId: string;
   requestId: number;
 };
 
@@ -75,12 +76,15 @@ export function expireOlderThan(
 
 export function startRequest(
   rel: Reliability,
-  peerId: string,
-  requestId: number
+  {
+    entryId,
+    exitId,
+    requestId,
+  }: { entryId: string; exitId: string; requestId: number }
 ): { res: "ok"; rel: Reliability } | { res: "error"; reason: string } {
-  const logRef = { peerId, requestId };
+  const logRef = { exitId: shortPeerId(exitId), requestId };
 
-  let hist = rel.exitNodesHistory.get(peerId);
+  let hist = rel.exitNodesHistory.get(exitId);
   if (hist) {
     const histEntryIdx = hist.findIndex(
       ({ requestId: rId }) => rId === requestId
@@ -102,7 +106,8 @@ export function startRequest(
   const entry = {
     started: Date.now(),
     success: false,
-    peerId,
+    exitId,
+    entryId,
     requestId,
     ended: undefined,
   };
@@ -111,19 +116,21 @@ export function startRequest(
   } else {
     hist = [entry];
   }
-  rel.exitNodesHistory.set(peerId, hist);
+  rel.exitNodesHistory.set(exitId, hist);
   rel.requestHistory.set(requestId, entry);
   return { res: "ok", rel };
 }
 
-export function finishRequestWithResult(
+export function finishRequest(
   rel: Reliability,
-  peerId: string,
-  requestId: number,
-  result: boolean
+  {
+    exitId,
+    requestId,
+    result,
+  }: { exitId: string; requestId: number; result: boolean }
 ): { res: "ok"; rel: Reliability } | { res: "error"; reason: string } {
-  const logRef = { peerId, requestId };
-  const hist = rel.exitNodesHistory.get(peerId);
+  const logRef = { exitId: shortPeerId(exitId), requestId };
+  const hist = rel.exitNodesHistory.get(exitId);
   if (!hist) {
     return {
       res: "error",
@@ -165,7 +172,7 @@ export function finishRequestWithResult(
     success: result,
   };
   hist[histEntryIdx] = entry;
-  rel.exitNodesHistory.set(peerId, hist);
+  rel.exitNodesHistory.set(exitId, hist);
   rel.requestHistory.set(requestId, entry);
   return { res: "ok", rel };
 }

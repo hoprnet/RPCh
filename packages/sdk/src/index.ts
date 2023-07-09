@@ -187,10 +187,12 @@ export default class SDK {
       this.requestCache.removeRequest(match.request);
       match.resolve(response);
 
-      this.nodesColl.recordSuccess(
-        match.request.entryNodeDestination,
-        match.request.exitNodeDestination
-      );
+      this.nodesColl.finishRequest({
+        entryId: match.request.entryNodeDestination,
+        exitId: match.request.exitNodeDestination,
+        requestId: match.request.id,
+        result: true,
+      });
 
       log.normal("received response for %i", match.request.id);
       log.verbose("responded to %s with %s", match.request.body, response.body);
@@ -215,10 +217,12 @@ export default class SDK {
    */
   private onRequestExpiration(req: Request): void {
     log.normal("request %i expired", req.id);
-    this.nodesColl.recordFailure(
-      req.entryNodeDestination,
-      req.exitNodeDestination
-    );
+    this.nodesColl.finishRequest({
+      entryId: req.entryNodeDestination,
+      exitId: req.exitNodeDestination,
+      requestId: req.id,
+      result: false,
+    });
   }
 
   /**
@@ -229,10 +233,12 @@ export default class SDK {
   public handleFailedRequest(req: Request, reason?: string) {
     log.normal("request %i failed", req.id, reason || "unknown reason");
     // add metric failed metric
-    this.nodesColl.recordFailure(
-      req.entryNodeDestination,
-      req.exitNodeDestination
-    );
+    this.nodesColl.finishRequest({
+      entryId: req.entryNodeDestination,
+      exitId: req.exitNodeDestination,
+      requestId: req.id,
+      result: false,
+    });
     // reject request promise
     this.requestCache.getRequest(req.id)?.reject(`request failed: "${reason}"`);
     this.requestCache.removeRequest(req);
@@ -266,7 +272,6 @@ export default class SDK {
       }
 
       const { entryNode, exitNode } = res;
-      this.nodesColl.recordOngoing(entryNode.peerId, exitNode.peerId);
       const req = await Request.createRequest(
         this.crypto!,
         provider,
@@ -277,6 +282,11 @@ export default class SDK {
           etherUtils.arrayify(exitNode.pubKey)
         )
       );
+      this.nodesColl.startRequest({
+        entryId: entryNode.peerId,
+        exitId: exitNode.peerId,
+        requestId: req.id,
+      });
       log.normal("sending request %i", req.id);
       const message = req.toMessage();
       const segments = message.toSegments();

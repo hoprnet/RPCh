@@ -145,58 +145,71 @@ export default class NodesCollector {
     });
   };
 
-  public recordOngoing = (entryPeerId: string, exitPeerId: string) => {
-    const cur = this.reliabilities.get(entryPeerId);
-    if (cur) {
-      // record only tracked nodes
-      const next = Reliability.setExitNodeOngoing(cur, exitPeerId);
-      this.reliabilities.set(entryPeerId, next);
+  public startRequest = ({
+    entryId,
+    exitId,
+    requestId,
+  }: {
+    entryId: string;
+    exitId: string;
+    requestId: number;
+  }) => {
+    const logRef = {
+      entryId: shortPeerId(entryId),
+      exitId: shortPeerId(exitId),
+      requestId,
+    };
+    const cur = this.reliabilities.get(entryId);
+    // record only tracked nodes
+    if (!cur) {
+      log.info(`Dropping startRequest for`, logRef);
+      return;
+    }
+
+    const res = Reliability.startRequest(cur, { entryId, exitId, requestId });
+    switch (res.res) {
+      case "ok":
+        this.reliabilities.set(entryId, res.rel);
+        break;
+      case "error":
+        log.error(`Error starting request:`, res.reason, "for", logRef);
+        break;
     }
   };
 
-  public recordSuccess = (entryPeerId: string, exitPeerId: string) => {
-    const cur = this.reliabilities.get(entryPeerId);
-    if (cur) {
-      // record only tracked nodes
-      const res = Reliability.updateExitNodeSuccess(cur, exitPeerId, true);
-      switch (res.res) {
-        case "ok":
-          this.reliabilities.set(entryPeerId, res.rel);
-          break;
-        case "error":
-          log.error(
-            "Error recording success",
-            res.reason,
-            "entryPeerId",
-            entryPeerId,
-            "exitPeerId",
-            exitPeerId
-          );
-          break;
-      }
-    }
-  };
+  public finishRequest = ({
+    entryId,
+    exitId,
+    requestId,
+    result,
+  }: {
+    entryId: string;
+    exitId: string;
+    requestId: number;
+    result: boolean;
+  }) => {
+    const logRef = {
+      entryId: shortPeerId(entryId),
+      exitId: shortPeerId(exitId),
+      requestId,
+      result,
+    };
 
-  public recordFailure = (entryPeerId: string, exitPeerId: string) => {
-    const cur = this.reliabilities.get(entryPeerId);
-    if (cur) {
-      // record only tracked nodes
-      const res = Reliability.updateExitNodeSuccess(cur, exitPeerId, false);
-      switch (res.res) {
-        case "ok":
-          this.reliabilities.set(entryPeerId, res.rel);
-          break;
-        case "error":
-          log.error(
-            "Error recording failure",
-            res.reason,
-            "entryPeerId",
-            entryPeerId,
-            "exitPeerId",
-            exitPeerId
-          );
-          break;
-      }
+    const cur = this.reliabilities.get(entryId);
+    // record only tracked nodes
+    if (!cur) {
+      log.info(`Dropping finishRequest for`, logRef);
+      return;
+    }
+
+    const res = Reliability.finishRequest(cur, { exitId, requestId, result });
+    switch (res.res) {
+      case "ok":
+        this.reliabilities.set(entryId, res.rel);
+        break;
+      case "error":
+        log.error(`Error finishing request:`, res.reason, "for", logRef);
+        break;
     }
   };
 
