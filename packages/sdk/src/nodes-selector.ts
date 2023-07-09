@@ -3,10 +3,10 @@ import type { EntryNode, ExitNode } from "./nodes-collector";
 const EXPERIMENTAL_RELIABILITY_THRESHOLD = 0.59; // general threshold used when running 2nd PASS
 
 /**
- * Use initial algorithm of counting message successes and calculating a score based on that.
+ * Initial algorithm of counting message successes and calculating a score based on that.
  *
  */
-export default function (
+export function initialAlgo(
   entryNodes: Map<string, EntryNode>,
   exitNodes: Map<string, ExitNode>,
   reliabilities: Map<string, Reliability.Reliability>
@@ -60,7 +60,7 @@ export default function (
  * This will no scale well, but might be enough to understand reliability problems for now.
  *
  */
-export function experimental(
+export default function experimental(
   entryNodes: Map<string, EntryNode>,
   exitNodes: Map<string, ExitNode>,
   reliabilities: Map<string, Reliability.Reliability>
