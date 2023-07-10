@@ -159,7 +159,10 @@ export default class SDK {
     if (!message.body.startsWith("0x")) {
       log.verbose("message is not a response", message.id, message.body);
       return;
+    } else {
+      log.verbose("message is a response", message.id, message.body);
     }
+
     // check whether we have a matching request id
     const match = this.requestCache.getRequest(message.id);
     if (!match) {
