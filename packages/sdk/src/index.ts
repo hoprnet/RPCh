@@ -185,12 +185,11 @@ export default class SDK {
       );
       const responseTime = Date.now() - match.createdAt.getTime();
       log.verbose(
-        "response time for request %s: %s ms",
+        "response time for request %s: %s ms, counter %i",
         match.request.id,
-        responseTime
+        responseTime,
+        counter
       );
-
-      match.resolve(response);
 
       this.nodesColl.finishRequest({
         entryId: match.request.entryNodeDestination,
@@ -199,8 +198,8 @@ export default class SDK {
         result: true,
       });
 
-      log.normal("received response for %i", match.request.id);
       log.verbose("responded to %s with %s", match.request.body, response.body);
+      match.resolve(response);
     } catch (e) {
       log.verbose(
         "failed to load received message id %i from %s with error",
