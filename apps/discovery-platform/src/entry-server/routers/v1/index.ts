@@ -573,6 +573,7 @@ export const v1Router = (ops: {
           const exitNodePeerIds: string[] = [];
 
           // entry nodes must be STABLE and have at least ONE outgoing channel
+          // exclude entry nodes which are passed in the excluded list
           if (
             entryNodeInfo.isStableAndHasOutgoingChannel &&
             !excludeList.includes(entryNodePeerId)
@@ -616,10 +617,11 @@ export const v1Router = (ops: {
 
         // get a random selection of routes
         const selectedRoutes = routes
-          .sort(() => 0.5 - Math.random())
+          .sort(() => 0.5 - Math.random()) // shuffles array
           .slice(0, Math.max(routes.length, amount));
 
-        // get all PeerIds we need to pull from the DB
+        // get a unique Set of all PeerIds we need to pull data
+        // for within the DB
         const allPeerIdsSet = selectedRoutes.reduce<Set<string>>(
           (result, { entryNodePeerId, exitNodePeerIds }) => {
             result.add(entryNodePeerId);
