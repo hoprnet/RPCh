@@ -17,5 +17,6 @@ export type AvailabilityMonitorResult = {
     };
   };
   isStable: boolean;
+  isStableAndHasOutgoingChannel: boolean;
   deliveryOdds: number;
 };

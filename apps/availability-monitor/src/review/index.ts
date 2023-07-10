@@ -6,7 +6,11 @@ import {
 } from "@hoprnet/hopr-sdk";
 import { type CheckResult, createCheck } from "./check";
 import measureAveragePingToAll from "./ping";
-import { MIN_AMOUNT_PEERS, MIN_AMOUNT_CHANNELS } from "../constants";
+import {
+  MIN_AMOUNT_PEERS,
+  MIN_AMOUNT_CHANNELS,
+  HOPRD_REQS_TIMEOUT,
+} from "../constants";
 
 const log = createLogger(["review"]);
 
@@ -45,7 +49,7 @@ const checks = {
       const protectedSdk = new HoprSDK({
         apiEndpoint: protectedUrl.toString(),
         apiToken,
-        timeout: 1000,
+        timeout: HOPRD_REQS_TIMEOUT,
       });
 
       const version = await protectedSdk.api.node.getVersion();
@@ -145,6 +149,7 @@ export type Result = {
   connectivityReview: ConnectivityReview;
   reviewedAt: string;
   isStable: boolean;
+  isStableAndHasOutgoingChannel: boolean;
   deliveryOdds: number;
 };
 
@@ -160,12 +165,12 @@ export default async function review({
   node: RegisteredNode;
   exitNodes: RegisteredNode[];
 }): Promise<Result> {
-  log.verbose("Review on", node.peerId, "is running");
+  log.normal("Review on", node.peerId, "is running");
 
   const sdk = new HoprSDK({
     apiEndpoint: node.hoprdApiEndpoint,
     apiToken: node.hoprdApiToken,
-    timeout: 1000,
+    timeout: HOPRD_REQS_TIMEOUT,
   });
 
   const [
@@ -193,6 +198,8 @@ export default async function review({
     hoprdOpenOutgoingChannels,
   };
   const isStable = isNodeStable(node, stabilityReview);
+  const isStableAndHasOutgoingChannel =
+    isStable && hoprdOpenOutgoingChannels.passed;
 
   // only continue with ConnectivityReview if node is stable
   let connectivityReview: ConnectivityReview = {
@@ -214,7 +221,7 @@ export default async function review({
         const tempSdk = new HoprSDK({
           apiEndpoint: exitNode.hoprdApiEndpoint,
           apiToken: exitNode.hoprdApiToken,
-          timeout: 1000,
+          timeout: HOPRD_REQS_TIMEOUT,
         });
         return measureAveragePingToAll(
           tempSdk,
@@ -239,14 +246,18 @@ export default async function review({
     stabilityReview,
     connectivityReview,
     reviewedAt: new Date().toUTCString(),
-    isStable: isNodeStable(node, stabilityReview),
+    isStable,
+    isStableAndHasOutgoingChannel,
     deliveryOdds: measureOddsOfDelivery(outgoingChannels, connectivityReview),
   };
 
-  log.verbose(
-    "Review on %s completed, node is %s with %i delivery score",
+  log.normal(
+    "Review on %s completed, node is %s with %i outgoing channels and %i delivery score",
     node.peerId,
     result.isStable ? "stable" : "unstable",
+    hoprdOpenOutgoingChannels.value
+      ? hoprdOpenOutgoingChannels.value.length
+      : 0,
     result.deliveryOdds
   );
 
@@ -271,7 +282,6 @@ export function isNodeStable(
       review.hoprdHealth.passed,
       review.hoprdSendMessage,
       review.hoprdPeers,
-      review.hoprdOpenOutgoingChannels,
     ].some((b) => !b)
   ) {
     return false;

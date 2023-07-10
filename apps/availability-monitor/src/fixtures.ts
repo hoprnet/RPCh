@@ -63,4 +63,5 @@ export const RESULT_A: Result = {
   deliveryOdds: 1,
   reviewedAt: new Date("2023-05-08").toUTCString(),
   isStable: true,
+  isStableAndHasOutgoingChannel: true,
 };

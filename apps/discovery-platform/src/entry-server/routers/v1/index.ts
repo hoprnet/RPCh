@@ -563,51 +563,56 @@ export const v1Router = (ops: {
         // we create a object keyed by WORKING entry nodes
         // linked with WORKING exit nodes which availability-monitor
         // has proven connectivity between them
-        const routes = Array.from(
-          ops.getAvailabilityMonitorResults().entries()
-        ).reduce<{ entryNodePeerId: string; exitNodePeerIds: string[] }[]>(
-          (result, [entryNodePeerId, info]) => {
-            const { outgoingChannels, exitNodesToOutgoingChannels } =
-              info.connectivityReview;
-            const intermediatePeerIds: string[] = [];
-            const exitNodePeerIds: string[] = [];
+        const amResults = ops.getAvailabilityMonitorResults();
+        const routes = Array.from(amResults.entries()).reduce<
+          { entryNodePeerId: string; exitNodePeerIds: string[] }[]
+        >((result, [entryNodePeerId, entryNodeInfo]) => {
+          const { outgoingChannels, exitNodesToOutgoingChannels } =
+            entryNodeInfo.connectivityReview;
+          const intermediatePeerIds: string[] = [];
+          const exitNodePeerIds: string[] = [];
 
-            // entry nodes must be stable
-            if (info.isStable && !excludeList.includes(entryNodePeerId)) {
-              // find intermediate nodes with working PING
+          // entry nodes must be STABLE and have at least ONE outgoing channel
+          if (
+            entryNodeInfo.isStableAndHasOutgoingChannel &&
+            !excludeList.includes(entryNodePeerId)
+          ) {
+            // find intermediate nodes with working PING
+            for (const [intermediatePeerId, ping] of Object.entries(
+              outgoingChannels
+            )) {
+              if (ping > 0) intermediatePeerIds.push(intermediatePeerId);
+            }
+
+            // find exit nodes which are STABLE and have a working PING with one of the intermediate nodes
+            for (const [exitNodePeerId, outgoingChannels] of Object.entries(
+              exitNodesToOutgoingChannels
+            )) {
+              const exitNodeInfo = amResults.get(exitNodePeerId);
+              // exit node must be stable
+              if (!exitNodeInfo || !exitNodeInfo.isStable) continue;
+
               for (const [intermediatePeerId, ping] of Object.entries(
                 outgoingChannels
               )) {
-                if (ping > 0) intermediatePeerIds.push(intermediatePeerId);
-              }
-
-              // find exit nodes which have working PING with one of the intermediate nodes
-              for (const [exitNodePeerId, outgoingChannels] of Object.entries(
-                exitNodesToOutgoingChannels
-              )) {
-                for (const [intermediatePeerId, ping] of Object.entries(
-                  outgoingChannels
-                )) {
-                  if (
-                    intermediatePeerIds.includes(intermediatePeerId) &&
-                    ping > 0 &&
-                    !exitNodePeerIds.includes(exitNodePeerId)
-                  ) {
-                    exitNodePeerIds.push(exitNodePeerId);
-                  }
+                if (
+                  intermediatePeerIds.includes(intermediatePeerId) &&
+                  ping > 0 &&
+                  !exitNodePeerIds.includes(exitNodePeerId)
+                ) {
+                  exitNodePeerIds.push(exitNodePeerId);
                 }
-              }
-
-              // update result if we have found working routes
-              if (exitNodePeerIds.length > 0) {
-                result.push({ entryNodePeerId, exitNodePeerIds });
               }
             }
 
-            return result;
-          },
-          []
-        );
+            // update result if we have found working routes
+            if (exitNodePeerIds.length > 0) {
+              result.push({ entryNodePeerId, exitNodePeerIds });
+            }
+          }
+
+          return result;
+        }, []);
 
         // get a random selection of routes
         const selectedRoutes = routes
