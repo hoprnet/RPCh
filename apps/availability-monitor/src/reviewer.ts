@@ -75,7 +75,7 @@ export default class Reviewer {
       {
         peer_id: node.peerId,
       },
-      Number(result.isStable)
+      Number(result.isStableAndHasOutgoingChannel)
     );
   }
 

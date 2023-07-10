@@ -13,7 +13,7 @@ import * as async from "async";
 import path from "path";
 import migrate from "node-pg-migrate";
 import fetch from "node-fetch";
-import type { RegisteredNodeDB } from "./types";
+import type { RegisteredNodeDB, AvailabilityMonitorResult } from "./types";
 
 const log = createLogger();
 
@@ -24,8 +24,7 @@ const start = async (ops: {
   secret: string;
   availabilityMonitorUrl?: string;
 }) => {
-  // populated by availability monitor
-  let unstableNodes: string[] = [];
+  let availabilityMonitorResults = new Map<string, AvailabilityMonitorResult>();
 
   // run db migrations
   const migrationsDirectory = path.join(__dirname, "../migrations");
@@ -59,7 +58,7 @@ const start = async (ops: {
     fundingServiceApi: fundingServiceApi,
     metricManager: metricManager,
     secret: ops.secret,
-    getUnstableNodes: () => unstableNodes,
+    getAvailabilityMonitorResults: () => availabilityMonitorResults,
   });
 
   // start listening at PORT for requests
@@ -109,32 +108,26 @@ const start = async (ops: {
     60e3
   );
 
-  // fetch node stability data
-  const updateUnstableNodesInterval = setInterval(async () => {
+  // fetch and cache availability monitor results
+  const updateAvailabilityMonitorResultsInterval = setInterval(async () => {
     try {
       if (!ops.availabilityMonitorUrl) return;
-      const results: [string, { isStable: boolean }][] = await fetch(
+      const response: [string, AvailabilityMonitorResult][] = await fetch(
         `${ops.availabilityMonitorUrl}/api/nodes`
       ).then((res) => res.json());
-      unstableNodes = Array.from(new Map(results).entries()).reduce<string[]>(
-        (result, [peerId, { isStable }]) => {
-          if (!isStable) result.push(peerId);
-          return result;
-        },
-        []
-      );
+      availabilityMonitorResults = new Map(response);
       log.verbose(
-        "Updated availability monitor unstable nodes %i",
-        unstableNodes.length
+        "Updated availability monitor results with size %i",
+        availabilityMonitorResults.size
       );
     } catch (error) {
-      log.error("Error fetching availability monitor nodes", error);
+      log.error("Error fetching availability monitor results", error);
     }
-  }, 30e3);
+  }, 1000);
 
   return () => {
     clearInterval(checkCommitmentInterval);
-    clearInterval(updateUnstableNodesInterval);
+    clearInterval(updateAvailabilityMonitorResultsInterval);
   };
 };
 

@@ -27,7 +27,8 @@ const mockNode = (peerId?: string, hasExitNode?: boolean): RegisteredNode => ({
   nativeAddress: "someAddress",
 });
 
-const getUnstableNodesMock = jest.fn(() => ["peerId_unstable"]);
+const getAvailabilityMonitorResultsMock = () =>
+  new Map<string, any>([["peerId_unstable", {}]]);
 
 describe("test v1 middleware", function () {
   let dbInstance: DBInstance;
@@ -58,7 +59,7 @@ describe("test v1 middleware", function () {
         fundingServiceApi,
         metricManager: metricManager,
         secret: "secret",
-        getUnstableNodes: getUnstableNodesMock,
+        getAvailabilityMonitorResults: getAvailabilityMonitorResultsMock,
       })
     );
   });

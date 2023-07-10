@@ -4,6 +4,8 @@ import { FundingServiceApi } from "../funding-service-api";
 import { v1Router } from "./routers/v1";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 import compression from "compression";
+import type { AvailabilityMonitorResult } from "../types";
+
 const app = express();
 
 export const entryServer = (ops: {
@@ -12,7 +14,7 @@ export const entryServer = (ops: {
   fundingServiceApi: FundingServiceApi;
   metricManager: MetricManager;
   secret: string;
-  getUnstableNodes: () => string[];
+  getAvailabilityMonitorResults: () => Map<string, AvailabilityMonitorResult>;
 }) => {
   app.use(compression());
 
@@ -24,7 +26,7 @@ export const entryServer = (ops: {
       fundingServiceApi: ops.fundingServiceApi,
       metricManager: ops.metricManager,
       secret: ops.secret,
-      getUnstableNodes: ops.getUnstableNodes,
+      getAvailabilityMonitorResults: ops.getAvailabilityMonitorResults,
     })
   );
 

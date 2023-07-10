@@ -45,7 +45,8 @@ const mockNode = (peerId?: string, hasExitNode?: boolean): RegisteredNode => ({
 });
 
 const UNSTABLE_NODE_PEERID = "unstable_peerid";
-const getUnstableNodesMock = () => [UNSTABLE_NODE_PEERID];
+const getAvailabilityMonitorResultsMock = () =>
+  new Map<string, any>([[UNSTABLE_NODE_PEERID, {}]]);
 
 describe("test v1 router", function () {
   let dbInstance: DBInstance;
@@ -76,7 +77,7 @@ describe("test v1 router", function () {
         fundingServiceApi,
         metricManager: metricManager,
         secret: SECRET,
-        getUnstableNodes: getUnstableNodesMock,
+        getAvailabilityMonitorResults: getAvailabilityMonitorResultsMock,
       })
     );
   });
