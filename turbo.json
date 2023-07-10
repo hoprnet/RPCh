@@ -112,7 +112,8 @@
         "REVIEWER_INTERVAL_MS",
         "REVIEWER_CONCURRENCY",
         "MIN_AMOUNT_PEERS",
-        "MIN_AMOUNT_CHANNELS"
+        "MIN_AMOUNT_CHANNELS",
+        "HOPRD_REQS_TIMEOUT"
       ]
     },
     "dev": {
