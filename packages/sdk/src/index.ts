@@ -161,6 +161,7 @@ export default class SDK {
       log.verbose("matching request not found", message.id);
       return;
     }
+    this.requestCache.removeRequest(match.request);
 
     try {
       const counter = await this.getKeyVal(
@@ -184,7 +185,6 @@ export default class SDK {
         responseTime
       );
 
-      this.requestCache.removeRequest(match.request);
       match.resolve(response);
 
       this.nodesColl.finishRequest({
