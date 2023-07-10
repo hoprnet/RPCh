@@ -155,6 +155,11 @@ export default class SDK {
    * @param message Message received from cache module
    */
   private async onMessage(message: Message): Promise<void> {
+    // check whether we have a response
+    if (!message.body.startsWith("0x")) {
+      log.verbose("message is not a response", message.id);
+      return;
+    }
     // check whether we have a matching request id
     const match = this.requestCache.getRequest(message.id);
     if (!match) {
