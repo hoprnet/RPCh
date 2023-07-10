@@ -157,7 +157,7 @@ export default class SDK {
   private async onMessage(message: Message): Promise<void> {
     // check whether we have a response
     if (!message.body.startsWith("0x")) {
-      log.verbose("message is not a response", message.id);
+      log.verbose("message is not a response", message.id, message.body);
       return;
     }
     // check whether we have a matching request id
