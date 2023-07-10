@@ -609,33 +609,25 @@ export const v1Router = (ops: {
           []
         );
 
-        // return 404 if we didn't find enough working nodes
-        if (routes.length < amount) {
-          return res.status(404).json({
-            errors: `client requested ${amount} routes but only found ${routes.length}`,
-          });
-        }
-
         // get a random selection of routes
         const selectedRoutes = routes
           .sort(() => 0.5 - Math.random())
-          .slice(0, amount);
+          .slice(0, Math.max(routes.length, amount));
 
         // get all PeerIds we need to pull from the DB
-        const allPeerIds = selectedRoutes.reduce<string[]>(
+        const allPeerIdsSet = selectedRoutes.reduce<Set<string>>(
           (result, { entryNodePeerId, exitNodePeerIds }) => {
-            if (!result.includes(entryNodePeerId)) result.push(entryNodePeerId);
-            for (const exitNodePeerId of exitNodePeerIds) {
-              if (!result.includes(exitNodePeerId)) result.push(exitNodePeerId);
-            }
+            result.add(entryNodePeerId);
+            for (const exitNodePeerId of exitNodePeerIds)
+              result.add(exitNodePeerId);
             return result;
           },
-          []
+          new Set()
         );
 
         // get node data for all peerids
         const allPeerIdsData = await getRegisteredNodes(ops.db, {
-          includeList: allPeerIds,
+          includeList: Array.from(allPeerIdsSet.values()),
         });
 
         // TODO: handle funding
@@ -653,7 +645,7 @@ export const v1Router = (ops: {
           .inc();
 
         return res.json({
-          routes,
+          selectedRoutes: routes,
           nodes: allPeerIdsData,
         });
       } catch (e) {
