@@ -1,19 +1,7 @@
 import assert from "assert";
 import * as fixtures from "@rpch/common/build/fixtures";
 import * as RPChCrypto from "@rpch/crypto-for-nodejs";
-import mockSdk from "@rpch/sdk/build/index.mock";
 import { RPChEthereumProvider } from ".";
-
-// mock HOPRd interactions
-jest.mock("@rpch/common", () => ({
-  ...jest.requireActual("@rpch/common"),
-  hoprd: {
-    sendMessage: jest.fn(async () => "MOCK_SEND_MSG_RESPONSE"),
-    createMessageListener: jest.fn(async () => {
-      return () => {};
-    }),
-  },
-}));
 
 const PROVIDER_URL = fixtures.PROVIDER;
 const TIMEOUT = 5e3;
@@ -32,18 +20,6 @@ describe("test rpch ethereum provider", function () {
     sdkStore.set,
     sdkStore.get
   );
-
-  beforeAll(async function () {
-    await provider.sdk.start();
-    await provider.sdk.waitForReliableNode(1e3);
-  });
-
-  afterAll(async function () {
-    await provider.sdk.stop();
-  });
-
-  // hook to emulate responses from the exit node
-  provider.sdk = mockSdk(provider.sdk);
 
   it("should get chain id", async function () {
     const res = await provider.request({ method: "eth_chainId", params: [] });

@@ -4,7 +4,7 @@ import WebSocketHelper from "./ws-helper";
 import type { onEventType } from "./ws-helper";
 
 describe("test ws class", function () {
-  const url = "ws://localhost:1234";
+  const url = new URL("ws://localhost:1234");
   let server: WS.Server;
   let httpServer: http.Server;
 
