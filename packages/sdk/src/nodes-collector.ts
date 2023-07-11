@@ -132,8 +132,8 @@ export default class NodesCollector {
             });
             break;
           case "error":
-            log.error("Error selecting nodes", res.reason);
             if (elapsed > timeout) {
+              log.error("Error selecting nodes", res.reason, "after", timeout);
               reject(`timeout after ${elapsed} ms`);
             } else {
               setTimeout(check, 100);
