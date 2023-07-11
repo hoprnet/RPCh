@@ -11,9 +11,9 @@ const apiEntryNode = "/api/v1/request/entry-node";
 const apiWebSocket = "/api/v2/messages/websocket";
 const apiExitNode = "/api/v1/node?hasExitNode=true";
 
-const timeoutImmediateFetchEntryNode = 100;
-const timeoutOptimizeFetchEntryNode = 3e3;
-const timeoutRegularFetchEntryNode = 30e3;
+const timeoutImmediateFetchEntryNode = 100; // 100 ms
+const timeoutOptimizeFetchEntryNode = 5e3; // 5 sec
+const timeoutRegularFetchEntryNode = 60e3; // 1 min
 
 const timeoutRegularFetchExitNodes = 60e3 * 5; // 5 min
 
@@ -62,7 +62,7 @@ export type NodesCollectorOps = {
 };
 
 const defaultOps: NodesCollectorOps = {
-  entryNodesTarget: 10,
+  entryNodesTarget: 5,
   maxReliabilityAge: 60e3 * 30, // 30(+/-5) min
 };
 
@@ -307,7 +307,7 @@ export default class NodesCollector {
     // check online nodes
     const onlineIds = this.filterOnlineIds();
     if (onlineIds.length < this.ops.entryNodesTarget) {
-      // fetch new nodes faster if reliable nodes are missing
+      // fetch new nodes faster if online nodes are missing
       this.timerRefEntryNodes = setTimeout(
         () => this.fetchEntryNodes(),
         timeoutOptimizeFetchEntryNode
