@@ -68,6 +68,7 @@ describe("test index.ts", function () {
   afterEach(() => {
     Prometheus.register.clear();
   });
+
   it("should call all the right methods when a Request is received", async function () {
     const mock = await createMockedSetup();
 
@@ -91,6 +92,7 @@ describe("test index.ts", function () {
 
     mock.stopExitNode();
   });
+
   describe("test metrics", function () {
     it("should not send metrics when user does not opt in", async function () {
       const mock = await createMockedSetup(false);
@@ -117,6 +119,7 @@ describe("test index.ts", function () {
 
       mock.stopExitNode();
     });
+
     it("should  send metrics when user does  opt in", async function () {
       const mock = await createMockedSetup(true);
 
