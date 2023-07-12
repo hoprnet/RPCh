@@ -1,0 +1,27 @@
+{
+  "name": "@rpch/crypto",
+  "version": "0.4.0",
+  "license": "LGPL-3.0",
+  "main": "./build/index.js",
+  "types": "./build/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "dev": "yarn build --watch",
+    "format": "prettier --check \"src/**/*.{ts,md}\"",
+    "lint": "eslint \"src/**/*.ts*\"",
+    "test": "jest --coverage"
+  },
+  "devDependencies": {
+    "@rpch/configs-eslint": "*",
+    "@rpch/configs-jest": "*",
+    "@rpch/configs-prettier": "*",
+    "@rpch/configs-tsup": "*",
+    "@rpch/configs-typescript": "*",
+    "@types/blake2": "^4.0.1"
+  },
+  "dependencies": {
+    "bigint-buffer": "^1.1.5",
+    "blake2": "^5.0.0",
+    "secp256k1": "^5.0.0"
+  }
+}
