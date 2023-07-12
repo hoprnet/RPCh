@@ -3,7 +3,6 @@ import * as Reliability from "./reliability";
 describe("test reliability", function () {
   it("should track multiple requests correctly", function () {
     let res = Reliability.startRequest(Reliability.empty(), {
-      entryId: "entry1",
       exitId: "exit1",
       requestId: 1,
     });
@@ -12,7 +11,6 @@ describe("test reliability", function () {
     }
 
     res = Reliability.startRequest(res.rel, {
-      entryId: "entry2",
       exitId: "exit2",
       requestId: 2,
     });
@@ -21,7 +19,6 @@ describe("test reliability", function () {
     }
 
     res = Reliability.startRequest(res.rel, {
-      entryId: "entry3",
       exitId: "exit3",
       requestId: 3,
     });
@@ -82,7 +79,6 @@ describe("test reliability", function () {
 
   it("should expire requests correctly", function () {
     let res = Reliability.startRequest(Reliability.empty(), {
-      entryId: "entry1",
       exitId: "exit1",
       requestId: 1,
     });

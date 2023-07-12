@@ -166,7 +166,7 @@ export default class NodesCollector {
       return;
     }
 
-    const res = Reliability.startRequest(cur, { entryId, exitId, requestId });
+    const res = Reliability.startRequest(cur, { exitId, requestId });
     switch (res.res) {
       case "ok":
         this.reliabilities.set(entryId, res.rel);

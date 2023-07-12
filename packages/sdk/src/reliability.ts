@@ -12,7 +12,6 @@ export type RequestEntry = {
   started: number;
   ended?: number;
   success: boolean;
-  entryId: string;
   exitId: string;
   requestId: number;
 };
@@ -60,11 +59,7 @@ export function expireOlderThan(
 
 export function startRequest(
   rel: Reliability,
-  {
-    entryId,
-    exitId,
-    requestId,
-  }: { entryId: string; exitId: string; requestId: number }
+  { exitId, requestId }: { exitId: string; requestId: number }
 ): { res: "ok"; rel: Reliability } | { res: "error"; reason: string } {
   const logRef = { exitId: shortPeerId(exitId), requestId };
 
@@ -79,7 +74,6 @@ export function startRequest(
     started: Date.now(),
     success: false,
     exitId,
-    entryId,
     requestId,
     ended: undefined,
   };
