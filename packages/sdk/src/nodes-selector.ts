@@ -49,7 +49,7 @@ export default function experimental(
       // take all exit nodes and remove entry node, recent failures, ongoing requests
       const nonFailureIds = Array.from(exitNodes.keys()).filter(
         (exitId) =>
-          exitId !== entryId && !Reliability.isCurrentlyFailure(rel, exitId)
+          exitId !== entryId && !Reliability.isCurrentlySuccessful(rel, exitId)
       );
       return nonFailureIds.map((exitId) => ({
         entryNode: entryNodes.get(entryId)!,
