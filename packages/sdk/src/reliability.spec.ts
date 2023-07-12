@@ -62,7 +62,7 @@ describe("test reliability", function () {
 
     res = Reliability.finishRequest(res.rel, {
       exitId: "exit3",
-      requestId: 1,
+      requestId: 3,
       result: true,
     });
     if (!("rel" in res)) {

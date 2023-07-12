@@ -47,11 +47,11 @@ export default function experimental(
     .map((entryId) => {
       const rel = reliabilities.get(entryId)!;
       // take all exit nodes and remove entry node, recent failures, ongoing requests
-      const nonFailureIds = Array.from(exitNodes.keys()).filter(
+      const successIds = Array.from(exitNodes.keys()).filter(
         (exitId) =>
-          exitId !== entryId && !Reliability.isCurrentlySuccessful(rel, exitId)
+          exitId !== entryId && Reliability.isCurrentlySuccessful(rel, exitId)
       );
-      return nonFailureIds.map((exitId) => ({
+      return successIds.map((exitId) => ({
         entryNode: entryNodes.get(entryId)!,
         exitNode: exitNodes.get(exitId)!,
       }));

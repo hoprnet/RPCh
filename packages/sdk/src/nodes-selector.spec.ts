@@ -20,7 +20,7 @@ describe("test nodes-selector", function () {
               {
                 started: 0,
                 ended: 0,
-                success: false,
+                success: true,
                 exitId: "exit1",
                 requestId: 1,
               },
@@ -91,16 +91,36 @@ describe("test nodes-selector", function () {
         "entry1",
         {
           onlineHistory: [{ date: 0, online: true }],
-          exitNodesHistory: new Map([["exit1", [1]]]),
+          exitNodesHistory: new Map([1, 2, 3].map((id) => [`exit${id}`, [id]])),
           requestHistory: new Map([
             [
               1,
               {
                 started: 0,
                 ended: 0,
-                success: true,
+                success: false,
                 exitId: "exit1",
                 requestId: 1,
+              },
+            ],
+            [
+              2,
+              {
+                started: 0,
+                ended: 0,
+                success: false,
+                exitId: "exit2",
+                requestId: 2,
+              },
+            ],
+            [
+              3,
+              {
+                started: 0,
+                ended: 0,
+                success: false,
+                exitId: "exit3",
+                requestId: 3,
               },
             ],
           ]),
@@ -149,7 +169,7 @@ describe("test nodes-selector", function () {
     switch (res.res) {
       case "ok":
         expect(res.entryNode).toMatchObject(entryNode("entry2"));
-        expect(res.exitNode).toMatchObject(exitNode("exit2"));
+        expect(res.exitNode.peerId).toMatch(/^exit1|exit3$/);
         break;
       case "error":
         throw new Error(res.reason);
@@ -157,7 +177,7 @@ describe("test nodes-selector", function () {
     }
   });
 
-  it("Fails selecting node pair", function () {
+  it("fails selecting node pair", function () {
     const entryNodes = new Map(
       ["entry1", "entry2", "entry3"].map((id) => [id, entryNode(id)])
     );
@@ -169,7 +189,7 @@ describe("test nodes-selector", function () {
         "entry1",
         {
           onlineHistory: [{ date: 0, online: true }],
-          exitNodesHistory: new Map([["exit1", [1]]]),
+          exitNodesHistory: new Map([1, 2, 3].map((id) => [`exit${id}`, [id]])),
           requestHistory: new Map([
             [
               1,
@@ -181,6 +201,26 @@ describe("test nodes-selector", function () {
                 requestId: 1,
               },
             ],
+            [
+              2,
+              {
+                started: 0,
+                ended: 0,
+                success: false,
+                exitId: "exit2",
+                requestId: 2,
+              },
+            ],
+            [
+              3,
+              {
+                started: 0,
+                ended: 0,
+                success: false,
+                exitId: "exit3",
+                requestId: 3,
+              },
+            ],
           ]),
         },
       ],
@@ -188,8 +228,17 @@ describe("test nodes-selector", function () {
         "entry2",
         {
           onlineHistory: [{ date: 0, online: true }],
-          exitNodesHistory: new Map([["exit2", [2]]]),
+          exitNodesHistory: new Map([1, 2, 3].map((id) => [`exit${id}`, [id]])),
           requestHistory: new Map([
+            [
+              1,
+              {
+                started: 0,
+                success: false,
+                exitId: "exit1",
+                requestId: 1,
+              },
+            ],
             [
               2,
               {
@@ -197,6 +246,15 @@ describe("test nodes-selector", function () {
                 success: false,
                 exitId: "exit2",
                 requestId: 2,
+              },
+            ],
+            [
+              3,
+              {
+                started: 0,
+                success: false,
+                exitId: "exit3",
+                requestId: 3,
               },
             ],
           ]),
@@ -237,7 +295,7 @@ describe("test nodes-selector", function () {
 
 function entryNode(id: string) {
   return {
-    apiEndpoint: new URL(""),
+    apiEndpoint: new URL(`http://${id}`),
     apiToken: "",
     peerId: id,
     connection: null,
