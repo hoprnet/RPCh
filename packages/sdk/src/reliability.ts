@@ -4,10 +4,11 @@ const FRESH_SCORE = 0.81; // general score when considered fresh
 const FRESHNESS_THRESHOLD = 10; // how many request successes/failures are needed to calculate score
 
 const MAX_ONLINE_HISTORY_LENGTH = 100;
+const MAX_EXIT_NODES_HISTORY_LENGTH = 100;
 
-export type OnlineHistoryEntry = { date: number; online: boolean };
+export type OnlineEntry = { date: number; online: boolean };
 
-export type NodeHistoryEntry = {
+export type RequestEntry = {
   started: number;
   ended?: number;
   success: boolean;
@@ -17,9 +18,9 @@ export type NodeHistoryEntry = {
 };
 
 export type Reliability = {
-  onlineHistory: OnlineHistoryEntry[]; // LIFO queue
-  exitNodesHistory: Map<string, NodeHistoryEntry[]>; // exitNodePeerId -> LIFO queue
-  requestHistory: Map<number, NodeHistoryEntry>; // requestId -> NodeHistoryEntry
+  onlineHistory: OnlineEntry[]; // LIFO queue, most recent element is at front
+  exitNodesHistory: Map<string, number[]>; // exitId -> requestIds LIFO
+  requestHistory: Map<number, RequestEntry>; // requestId -> RequestEntry
 };
 
 export function empty(): Reliability {
@@ -40,38 +41,21 @@ export function updateOnline(rel: Reliability, online: boolean): Reliability {
 }
 
 export function expireOlderThan(
-  { onlineHistory, exitNodesHistory, requestHistory }: Reliability,
+  rel: Reliability,
   timeout: number
 ): Reliability {
   const threshold = Date.now() - timeout;
 
-  // remove old exit nodes history entries
-  for (const id of exitNodesHistory.keys()) {
-    const hist = exitNodesHistory.get(id)!;
-    const idx = hist.findIndex(({ ended }) => {
-      if (ended) {
-        return ended < threshold;
-      }
-      return false;
-    });
-    if (idx >= 0) {
-      exitNodesHistory.set(id, hist.slice(0, idx));
-    }
-  }
-
   // remove old request history entries
-  for (const id of requestHistory.keys()) {
-    const entry = requestHistory.get(id)!;
+  for (const id of rel.requestHistory.keys()) {
+    const entry = rel.requestHistory.get(id)!;
     if (entry.ended && entry.ended < threshold) {
-      requestHistory.delete(id);
+      rel.requestHistory.delete(id);
+      removeExitNodesHistory(rel, entry.exitId, entry.requestId);
     }
   }
 
-  return {
-    onlineHistory,
-    exitNodesHistory,
-    requestHistory,
-  };
+  return rel;
 }
 
 export function startRequest(
@@ -84,18 +68,6 @@ export function startRequest(
 ): { res: "ok"; rel: Reliability } | { res: "error"; reason: string } {
   const logRef = { exitId: shortPeerId(exitId), requestId };
 
-  let hist = rel.exitNodesHistory.get(exitId);
-  if (hist) {
-    const histEntryIdx = hist.findIndex(
-      ({ requestId: rId }) => rId === requestId
-    );
-    if (histEntryIdx >= 0) {
-      return {
-        res: "error",
-        reason: `node history already contains ${logRef}`,
-      };
-    }
-  }
   if (rel.requestHistory.has(requestId)) {
     return {
       res: "error",
@@ -111,13 +83,8 @@ export function startRequest(
     requestId,
     ended: undefined,
   };
-  if (hist) {
-    hist.unshift(entry);
-  } else {
-    hist = [entry];
-  }
-  rel.exitNodesHistory.set(exitId, hist);
   rel.requestHistory.set(requestId, entry);
+  addExitNodesHistory(rel, exitId, requestId);
   return { res: "ok", rel };
 }
 
@@ -130,28 +97,6 @@ export function finishRequest(
   }: { exitId: string; requestId: number; result: boolean }
 ): { res: "ok"; rel: Reliability } | { res: "error"; reason: string } {
   const logRef = { exitId: shortPeerId(exitId), requestId };
-  const hist = rel.exitNodesHistory.get(exitId);
-  if (!hist) {
-    return {
-      res: "error",
-      reason: `no node history found for ${logRef}`,
-    };
-  }
-  if (hist.length === 0) {
-    return {
-      res: "error",
-      reason: `empty node history for ${logRef}`,
-    };
-  }
-  const histEntryIdx = hist.findIndex(
-    ({ requestId: rId }) => rId === requestId
-  );
-  if (histEntryIdx < 0) {
-    return {
-      res: "error",
-      reason: `node history does not contain ${logRef}`,
-    };
-  }
   const reqEntry = rel.requestHistory.get(requestId);
   if (!reqEntry) {
     return {
@@ -171,24 +116,16 @@ export function finishRequest(
     ended: Date.now(),
     success: result,
   };
-  hist[histEntryIdx] = entry;
-  rel.exitNodesHistory.set(exitId, hist);
   rel.requestHistory.set(requestId, entry);
   return { res: "ok", rel };
 }
 
 export function isEmpty({
   onlineHistory,
-  exitNodesHistory,
   requestHistory,
 }: Reliability): boolean {
   if (requestHistory.size > 0) {
     return false;
-  }
-  for (const hist of exitNodesHistory.values()) {
-    if (hist.length > 0) {
-      return false;
-    }
   }
   return onlineHistory.length === 0;
 }
@@ -202,38 +139,47 @@ export function isOnline(rel: Reliability): boolean {
   return rel.onlineHistory[0].online;
 }
 
-export function isCurrentlyFailure(
-  { exitNodesHistory }: Reliability,
+/**
+ * Will return true if last request was successfull.
+ * False if not or still ongoing.
+ */
+export function isCurrentlySuccessful(
+  { exitNodesHistory, requestHistory }: Reliability,
   exitNodeId: string
 ): boolean {
   const hist = exitNodesHistory.get(exitNodeId);
   if (hist && hist.length > 0) {
-    return !hist[0].success;
+    const req = requestHistory.get(hist[0])!;
+    return req.success;
   }
   return false;
 }
 
+/**
+ * Will return true if last request is still onoing.
+ */
 export function isCurrentlyBusy(
-  { exitNodesHistory }: Reliability,
+  { exitNodesHistory, requestHistory }: Reliability,
   exitNodeId: string
 ): boolean {
   const hist = exitNodesHistory.get(exitNodeId);
   if (hist && hist.length > 0) {
-    return !hist[0].ended;
+    const req = requestHistory.get(hist[0])!;
+    return !req.ended;
   }
   return false;
 }
 
 export function calculate(
-  { exitNodesHistory }: Reliability,
+  { exitNodesHistory, requestHistory }: Reliability,
   exitNodeId: string
 ): number {
   const hist = exitNodesHistory.get(exitNodeId);
   if (!hist || hist.length < FRESHNESS_THRESHOLD) {
     return FRESH_SCORE;
   }
-  const success = hist.filter(({ success }) => success);
-  return success.length / hist.length;
+  const successes = hist.filter((rId) => requestHistory.get(rId)!.success);
+  return successes.length / hist.length;
 }
 
 export function prettyPrintOnlineHistory({
@@ -300,18 +246,20 @@ export function prettyPrintOnlineHistory({
 
 export function prettyPrintExitNodesHistory({
   exitNodesHistory,
+  requestHistory,
 }: Reliability): string {
   const all = Array.from(exitNodesHistory.entries()).map(([id, hist]) => {
     if (hist.length === 0) {
       return `${shortPeerId(id)}:[]`;
     }
-    const last = hist[0].started;
-    const strs = hist.map((e) => {
-      const diff = last - e.started;
+    const last = requestHistory.get(hist[0])!.started;
+    const strs = hist.map((rId) => {
+      const req = requestHistory.get(rId)!;
+      const diff = last - req.started;
       const dStr = diff === 0 ? "_" : `-${diff}ms`;
-      if (e.ended) {
-        const dur = e.ended - e.started;
-        const suc = e.success ? "o" : "_";
+      if (req.ended) {
+        const dur = req.ended - req.started;
+        const suc = req.success ? "o" : "_";
         return `(${suc}|${dur}ms|${dStr})`;
       }
       return `(..|${dStr})`;
@@ -319,4 +267,36 @@ export function prettyPrintExitNodesHistory({
     return `${shortPeerId(id)}:[${strs.join(" ")}]`;
   });
   return `{${all.join(" ")}}`;
+}
+
+function addExitNodesHistory(
+  rel: Reliability,
+  exitId: string,
+  requestId: number
+) {
+  if (rel.exitNodesHistory.has(exitId)) {
+    const hist = rel.exitNodesHistory.get(exitId)!;
+    hist.unshift(requestId);
+    while (hist.length > MAX_EXIT_NODES_HISTORY_LENGTH) {
+      hist.pop();
+    }
+  } else {
+    rel.exitNodesHistory.set(exitId, [requestId]);
+  }
+}
+
+function removeExitNodesHistory(
+  rel: Reliability,
+  exitId: string,
+  requestId: number
+) {
+  const hist = rel.exitNodesHistory.get(exitId);
+  if (hist) {
+    const newHist = hist.filter((rId) => rId !== requestId);
+    if (newHist.length === 0) {
+      rel.exitNodesHistory.delete(exitId);
+    } else {
+      rel.exitNodesHistory.set(exitId, newHist);
+    }
+  }
 }

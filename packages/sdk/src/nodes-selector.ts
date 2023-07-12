@@ -3,46 +3,6 @@ import type { EntryNode, ExitNode } from "./nodes-collector";
 const EXPERIMENTAL_RELIABILITY_THRESHOLD = 0.59; // general threshold used when running 2nd PASS
 
 /**
- * Initial algorithm of counting message successes and calculating a score based on that.
- *
- */
-export function initialAlgo(
-  entryNodes: Map<string, EntryNode>,
-  exitNodes: Map<string, ExitNode>,
-  reliabilities: Map<string, Reliability.Reliability>
-):
-  | { res: "ok"; entryNode: EntryNode; exitNode: ExitNode }
-  | { res: "error"; reason: string } {
-  const entryIds = Array.from(entryNodes.keys());
-  if (entryIds.length === 0) {
-    return { res: "error", reason: "no entry nodes" };
-  }
-
-  const freshOrReliableEntryExits = entryIds
-    .map((entryId) => {
-      const rel = reliabilities.get(entryId)!;
-      const freshOrReliables = Array.from(exitNodes.keys()).filter(
-        (exitId) =>
-          exitId !== entryId && Reliability.calculate(rel, exitId) >= 0.8
-      );
-      return freshOrReliables.map((exitId) => ({
-        entryNode: entryNodes.get(entryId)!,
-        exitNode: exitNodes.get(exitId)!,
-      }));
-    })
-    .flat();
-
-  if (freshOrReliableEntryExits.length > 0) {
-    const el = randomEl(freshOrReliableEntryExits);
-    return { ...el, res: "ok" };
-  }
-
-  return {
-    res: "error",
-    reason: "no fresh or reliable entry - exit pair found",
-  };
-}
-/**
  * This algorithm will be subject to change.
  * It is the base of how entry and exit nodes are selected.
  * Needs testing with more data.
@@ -86,7 +46,7 @@ export default function experimental(
   const workingEntryExits = onlineIds
     .map((entryId) => {
       const rel = reliabilities.get(entryId)!;
-      // take all exit nodes and remove entry nodes, recent failures, ongoing requests
+      // take all exit nodes and remove entry node, recent failures, ongoing requests
       const nonFailureIds = Array.from(exitNodes.keys()).filter(
         (exitId) =>
           exitId !== entryId && !Reliability.isCurrentlyFailure(rel, exitId)
