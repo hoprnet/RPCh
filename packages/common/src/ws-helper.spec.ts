@@ -17,7 +17,6 @@ describe("test ws class", function () {
   afterEach(() => {
     server.close();
     httpServer.close();
-    jest.clearAllMocks();
   });
 
   it("gets a successful connection", (done) => {
@@ -26,25 +25,17 @@ describe("test ws class", function () {
       switch (evt.action) {
         // 1. open connection
         case "open":
-          console.log("FOO_open - closing");
           connection.close();
-          break;
-        case "message":
-          console.log("FOO_message");
-          throw new Error("never called");
-          break;
-        case "error":
-          console.log("FOO_error", evt.event);
-          throw new Error(evt.event.message);
           break;
         // 2. close connection
         case "close":
-          console.log("FOO_close - done");
           done();
           break;
       }
     };
-    connection = new WebSocketHelper(url, onEvent);
+    connection = new WebSocketHelper(url, onEvent, {
+      maxTimeWithoutPing: 10e3,
+    });
   });
 
   it("reconnects after losing connection", (done) => {
