@@ -29,12 +29,10 @@ describe("test ws class", function () {
           connection.close();
           break;
         case "message":
-          connection.close();
-          throw new Error();
+          throw new Error("never called");
           break;
         case "error":
-          connection.close();
-          throw new Error();
+          throw new Error(evt.event.message);
           break;
         // 2. close connection
         case "close":
