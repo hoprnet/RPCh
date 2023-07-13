@@ -27,6 +27,14 @@ describe("test ws class", function () {
         case "open":
           connection.close();
           break;
+        case "message":
+          connection.close();
+          throw new Error("should not receive a message");
+          break;
+        case "error":
+          connection.close();
+          throw new Error(`unexpected error: ${evt.event}`);
+          break;
         // 2. close connection
         case "close":
           done();
