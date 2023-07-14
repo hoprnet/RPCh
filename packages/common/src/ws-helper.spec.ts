@@ -46,7 +46,7 @@ describe("test ws class", function () {
         maxTimeWithoutPing: 10e3,
       });
     });
-  }, 100000);
+  });
 
   it("reconnects after losing connection", (done) => {
     const reconnectDelay = 10;
