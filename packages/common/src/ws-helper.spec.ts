@@ -22,33 +22,51 @@ describe("test ws class", function () {
   let callcount = 0;
 
   it("gets a successful connection", (done) => {
-    console.log("FOO_ callcount", callcount++);
-    let connection: WebSocketHelper;
-    let openHappened = false;
-    const onEvent: onEventType = (evt) => {
-      console.log("event", evt.action, evt);
-      switch (evt.action) {
-        // 1. open connection
-        case "open":
-          openHappened = true;
-          connection.close();
-          break;
-        case "message":
-          done("unexpected message");
-          break;
-        case "error":
-          done(`unexpected error: ${evt.event}`);
-          break;
-        // 2. close connection
-        case "close":
-          expect(openHappened).toBe(true);
-          done();
-          break;
-      }
-    };
-    console.log("FOO_ new WebSocketHelper");
-    connection = new WebSocketHelper(url, onEvent);
-    console.log("FOO_ done constructing WebSocketHelper");
+    console.log("FOO_ testing timers");
+    const t = setTimeout(() => {
+      console.log("FOO_ should not happen after");
+    });
+    console.log("FOO_ happens before");
+    clearTimeout(t);
+
+    setTimeout(() => {
+      console.log("FOO_ 2nd timer test");
+      const t2 = setTimeout(() => {
+        console.log("FOO_ 2nd should not happen after");
+      }, 10);
+      console.log("FOO_ 2nd should happen before");
+      clearTimeout(t2);
+    });
+
+    setTimeout(() => {
+      console.log("FOO_ callcount", callcount++);
+      let connection: WebSocketHelper;
+      let openHappened = false;
+      const onEvent: onEventType = (evt) => {
+        console.log("event", evt.action, evt);
+        switch (evt.action) {
+          // 1. open connection
+          case "open":
+            openHappened = true;
+            connection.close();
+            break;
+          case "message":
+            done("unexpected message");
+            break;
+          case "error":
+            done(`unexpected error: ${evt.event}`);
+            break;
+          // 2. close connection
+          case "close":
+            expect(openHappened).toBe(true);
+            done();
+            break;
+        }
+      };
+      console.log("FOO_ new WebSocketHelper");
+      connection = new WebSocketHelper(url, onEvent);
+      console.log("FOO_ done constructing WebSocketHelper");
+    }, 100);
   }, 100e3);
 
   it("reconnects after losing connection", (done) => {
