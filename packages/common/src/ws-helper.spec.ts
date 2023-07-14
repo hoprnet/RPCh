@@ -64,7 +64,7 @@ describe("test ws class", function () {
           // 4. wait for successful connection
           else if (count == 1) {
             count++;
-            expect(errorHappened).toBeTruthy();
+            expect(errorHappened).toBe(true);
             expect(connection["reconnectAttempts"]).toEqual(1);
             connection.close();
             done();
