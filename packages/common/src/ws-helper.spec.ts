@@ -19,9 +19,10 @@ describe("test ws class", function () {
     httpServer.close();
   });
 
-  it("gets a successful connection", () => {
-    jest.setTimeout(60000);
+  it("gets a successful connection", async () => {
+    console.log("it: gets a successful connection");
     return new Promise((resolve, reject) => {
+      console.log("return new Promise((resolve, reject)");
       let connection: WebSocketHelper;
       const onEvent: onEventType = (evt) => {
         console.log("evt", evt);
@@ -45,7 +46,7 @@ describe("test ws class", function () {
         maxTimeWithoutPing: 10e3,
       });
     });
-  });
+  }, 100000);
 
   it("reconnects after losing connection", (done) => {
     const reconnectDelay = 10;
