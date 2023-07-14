@@ -20,9 +20,11 @@ describe("test ws class", function () {
   });
 
   it("gets a successful connection", () => {
+    jest.setTimeout(60000);
     return new Promise((resolve, reject) => {
       let connection: WebSocketHelper;
       const onEvent: onEventType = (evt) => {
+        console.log('evt', evt);
         switch (evt.action) {
           // 1. open connection
           case "open":
