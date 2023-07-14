@@ -26,12 +26,15 @@ describe("test ws class", function () {
         // 1. open connection
         case "open":
           connection.close();
+          connection["socket"].terminate();
           break;
         case "message":
           connection.close();
+          connection["socket"].terminate();
           throw new Error("should not receive message");
         case "error":
           connection.close();
+          connection["socket"].terminate();
           throw new Error(`unexpected error: ${evt.event}`);
         // 2. close connection
         case "close":
