@@ -27,7 +27,6 @@ describe("e2e tests", function () {
   beforeAll(async function () {
     // sandbox requires 30 seconds to kickstart
     await fixtures.wait(30000);
-    await provider.sdk.start();
   }, 60e3);
 
   afterAll(async function () {

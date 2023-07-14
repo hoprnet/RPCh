@@ -83,6 +83,7 @@ export default class WebSocketHelper {
   }
 
   private initialize() {
+    this.socket?.close();
     this.socket = new WebSocket(this.url);
 
     // fired when connection established
@@ -143,6 +144,7 @@ export default class WebSocketHelper {
     log.normal(
       `WebSocket reconnect after heartbeat failure in ${this.reconnectDelay} ms`
     );
+    clearTimeout(this.reconnectTimeout);
     this.reconnectTimeout = setTimeout(() => {
       this.initialize();
     }, this.reconnectDelay);
@@ -154,6 +156,7 @@ export default class WebSocketHelper {
         this.reconnectAttempts + 1
       } reconnect in ${this.reconnectDelay} ms`
     );
+    clearTimeout(this.reconnectTimeout);
     this.reconnectTimeout = setTimeout(() => {
       this.reconnectAttempts++;
       this.initialize();
