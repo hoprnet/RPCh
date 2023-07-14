@@ -45,6 +45,7 @@ describe("test ws class", function () {
       connection = new WebSocketHelper(url, onEvent, {
         maxTimeWithoutPing: 10e3,
       });
+      console.log("END");
     });
   });
 
