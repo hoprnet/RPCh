@@ -42,9 +42,7 @@ export default class WebSocketHelper {
    * Closes connection to the websocket server.
    */
   private closeInternal() {
-    console.log("FOO_ closeInternal");
-    const t = clearTimeout(this.pingTimeout);
-    console.log("FOO_ clearTimeout", t);
+    clearTimeout(this.pingTimeout);
     clearTimeout(this.reconnectTimeout);
   }
 
@@ -53,7 +51,6 @@ export default class WebSocketHelper {
    * and not reconnect again.
    */
   public close() {
-    console.log("FOO_ close");
     log.verbose("Closing regularly");
     this.closeInternal();
     this.socket.close();
