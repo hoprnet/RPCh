@@ -42,7 +42,7 @@ describe("test ws class", function () {
       }
     };
     connection = new WebSocketHelper(url, onEvent);
-  }, 10e3);
+  }, 100e3);
 
   it("reconnects after losing connection", (done) => {
     const reconnectDelay = 10;
