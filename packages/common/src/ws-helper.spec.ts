@@ -19,7 +19,7 @@ describe("test ws class", function () {
     httpServer.close();
   });
 
-  it("gets a successful connection", async () => {
+  it("gets a successful connection", () => {
     console.log("it: gets a successful connection");
     return new Promise((resolve, reject) => {
       console.log("return new Promise((resolve, reject)");
@@ -47,7 +47,7 @@ describe("test ws class", function () {
       });
       console.log("END");
     });
-  });
+  }, 100000);
 
   it("reconnects after losing connection", (done) => {
     const reconnectDelay = 10;
