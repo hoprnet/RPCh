@@ -21,27 +21,31 @@ describe("test ws class", function () {
 
   it("gets a successful connection", (done) => {
     let connection: WebSocketHelper;
+    let openHappened = false;
     const onEvent: onEventType = (evt) => {
+      console.log("event", evt.action, event);
       switch (evt.action) {
         // 1. open connection
         case "open":
+          openHappened = true;
           connection.close();
           break;
         case "message":
-          connection.close();
           done("unexpected message");
           break;
         case "error":
-          connection.close();
           done(`unexpected error: ${evt.event}`);
           break;
         // 2. close connection
         case "close":
+          expect(openHappened).toBe(true);
           done();
           break;
       }
     };
+    console.log("new WebSocketHelper");
     connection = new WebSocketHelper(url, onEvent);
+    console.log("done constructing WebSocketHelper");
   }, 100e3);
 
   it("reconnects after losing connection", (done) => {
