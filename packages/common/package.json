@@ -9,7 +9,7 @@
     "dev": "yarn build --watch",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "eslint \"src/**/*.ts*\"",
-    "test": "jest --coverage --runInBand"
+    "test": "jest --coverage --runInBand --detectOpenHandles"
   },
   "devDependencies": {
     "@ethersproject/providers": "^5.7.2",
