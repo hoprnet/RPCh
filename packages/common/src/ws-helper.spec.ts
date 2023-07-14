@@ -19,31 +19,30 @@ describe("test ws class", function () {
     httpServer.close();
   });
 
-  it("gets a successful connection", () => {
-    return new Promise((resolve, reject) => {
-      let connection: WebSocketHelper;
-      const onEvent: onEventType = (evt) => {
-        switch (evt.action) {
-          // 1. open connection
-          case "open":
-            connection.close();
-            break;
-          case "message":
-            connection.close();
-            return reject("should not receive a message");
-          case "error":
-            connection.close();
-            return reject(`receiving unexpected error: ${evt.event}`);
-          // 2. close connection
-          case "close":
-            return resolve(true);
-        }
-      };
-      connection = new WebSocketHelper(url, onEvent, {
-        maxTimeWithoutPing: 10e3,
-      });
-    });
-  });
+  it("gets a successful connection", (done) => {
+    let connection: WebSocketHelper;
+    const onEvent: onEventType = (evt) => {
+      switch (evt.action) {
+        // 1. open connection
+        case "open":
+          connection.close();
+          break;
+        case "message":
+          connection.close();
+          done("unexpected message");
+          break;
+        case "error":
+          connection.close();
+          done(`unexpected error: ${evt.event}`);
+          break;
+        // 2. close connection
+        case "close":
+          done();
+          break;
+      }
+    };
+    connection = new WebSocketHelper(url, onEvent);
+  }, 10e3);
 
   it("reconnects after losing connection", (done) => {
     const reconnectDelay = 10;
