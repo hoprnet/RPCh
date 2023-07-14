@@ -19,11 +19,14 @@ describe("test ws class", function () {
     httpServer.close();
   });
 
+  let callcount = 0;
+
   it("gets a successful connection", (done) => {
+    console.log("FOO_ callcount", callcount++);
     let connection: WebSocketHelper;
     let openHappened = false;
     const onEvent: onEventType = (evt) => {
-      console.log("event", evt.action, event);
+      console.log("event", evt.action, evt);
       switch (evt.action) {
         // 1. open connection
         case "open":
@@ -43,9 +46,9 @@ describe("test ws class", function () {
           break;
       }
     };
-    console.log("new WebSocketHelper");
+    console.log("FOO_ new WebSocketHelper");
     connection = new WebSocketHelper(url, onEvent);
-    console.log("done constructing WebSocketHelper");
+    console.log("FOO_ done constructing WebSocketHelper");
   }, 100e3);
 
   it("reconnects after losing connection", (done) => {
