@@ -30,15 +30,6 @@ describe("test ws class", function () {
     clearTimeout(t);
 
     setTimeout(() => {
-      console.log("FOO_ 2nd timer test");
-      const t2 = setTimeout(() => {
-        console.log("FOO_ 2nd should not happen after");
-      }, 10);
-      console.log("FOO_ 2nd should happen before");
-      clearTimeout(t2);
-    });
-
-    setTimeout(() => {
       console.log("FOO_ callcount", callcount++);
       let connection: WebSocketHelper;
       let openHappened = false;
@@ -66,7 +57,7 @@ describe("test ws class", function () {
       console.log("FOO_ new WebSocketHelper");
       connection = new WebSocketHelper(url, onEvent);
       console.log("FOO_ done constructing WebSocketHelper");
-    }, 100);
+    }, 10);
   }, 100e3);
 
   it("reconnects after losing connection", (done) => {
