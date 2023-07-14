@@ -88,8 +88,8 @@ export default class WebSocketHelper {
     // fired when connection established
     this.socket.on("open", () => {
       log.verbose("onOpen", this.url.host);
-      this.onEvent({ action: "open" });
       this.heartbeat();
+      this.onEvent({ action: "open" });
     });
 
     // fired on incoming message
