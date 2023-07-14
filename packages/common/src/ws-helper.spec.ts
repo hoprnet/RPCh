@@ -46,44 +46,44 @@ describe("test ws class", function () {
     connection = new WebSocketHelper(url, onEvent);
   }, 100e3);
 
-  it("reconnects after losing connection", (done) => {
-    const reconnectDelay = 10;
+  it("emits an error when ping is not received", (done) => {
     let connection: WebSocketHelper;
-    let count = 0;
-    let errorHappened = false;
     const onEvent: onEventType = (evt) => {
       switch (evt.action) {
-        case "open":
-          // 1. wait for it to connect first time
-          if (count === 0) {
-            count++;
-            // 2. throw error and force it to reconnect
-            connection["socket"]!.emit(
-              "error",
-              new Error("test: force disconnect")
-            );
-          }
-          // 4. wait for successful connection
-          else if (count == 1) {
-            count++;
-            expect(errorHappened).toBe(true);
-            expect(connection["reconnectAttempts"]).toEqual(1);
-            connection.close();
-            done();
-          }
-
-          break;
         case "error":
-          // 3. wait for reconnection logic to triger
-          errorHappened = true;
-          break;
-        default:
+          expect(evt.event.message).toContain("heartbeat");
+          connection.close();
+          done();
           break;
       }
     };
     connection = new WebSocketHelper(url, onEvent, {
-      reconnectDelay,
-      maxReconnectAttempts: 3,
+      maxTimeWithoutPing: 100,
     });
+  });
+
+  it("does not reconnect if instructed to", (done) => {
+    server.close();
+    httpServer.close();
+    let connection: WebSocketHelper;
+    let count = 0;
+    const onEvent: onEventType = (evt) => {
+      switch (evt.action) {
+        case "error": {
+          count++;
+          break;
+        }
+      }
+    };
+
+    connection = new WebSocketHelper(url, onEvent, {
+      maxReconnectAttempts: 0,
+    });
+
+    setTimeout(() => {
+      connection.close();
+      expect(count).toEqual(1);
+      done();
+    }, 1e3);
   });
 });
