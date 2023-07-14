@@ -32,11 +32,6 @@ start() {
     # Extract HOPRD_API_TOKEN from env file
     source $DIR/.env
 
-    logs1=""
-    logs2=""
-    logs3=""
-    logs4=""
-    logs5=""
     logs_pluto=""
     logs_error=""
     segmentation_error=""
@@ -44,42 +39,6 @@ start() {
 
     echo "The script is still running. Don't worry, you need to wait."
     sleep 10
-
-    until [[ $logs1 =~ "Listening for incoming messages from HOPRd" ]]; do
-        docker logs sandbox-nodes-exit-1-1 &> $DIR/logs
-        logs1=$(cat $DIR/logs)
-        sleep 1
-    done
-    echo "Node 1 running"
-
-    until [[ $logs2 =~ "Listening for incoming messages from HOPRd" ]]; do
-        docker logs sandbox-nodes-exit-2-1 &> $DIR/logs
-        logs2=$(cat $DIR/logs)
-        sleep 1
-    done
-    echo "Node 2 running"
-
-    until [[ $logs3 =~ "Listening for incoming messages from HOPRd" ]]; do
-        docker logs sandbox-nodes-exit-3-1 &> $DIR/logs
-        logs3=$(cat $DIR/logs)
-        sleep 1
-    done
-    echo "Node 3 running"
-
-    until [[ $logs4 =~ "Listening for incoming messages from HOPRd" ]]; do
-        docker logs sandbox-nodes-exit-4-1 &> $DIR/logs
-        logs4=$(cat $DIR/logs)
-        sleep 1
-    done
-    echo "Node 4 running"
-
-    until [[ $logs5 =~ "Listening for incoming messages from HOPRd" ]]; do
-        docker logs sandbox-nodes-exit-5-1 &> $DIR/logs
-        logs5=$(cat $DIR/logs)
-        sleep 1
-    done
-    echo "Node 5 running"
-    echo "All nodes ready!"
 
     echo "Waiting for node to find each other and channels to open"
     until [[ $pluto == true ]]; do

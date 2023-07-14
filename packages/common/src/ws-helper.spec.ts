@@ -23,7 +23,6 @@ describe("test ws class", function () {
     let connection: WebSocketHelper;
     let openHappened = false;
     const onEvent: onEventType = (evt) => {
-      console.log("event", evt.action, evt);
       switch (evt.action) {
         // 1. open connection
         case "open":
