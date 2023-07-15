@@ -135,6 +135,7 @@ export default class SDK {
 
   public stop = () => {
     this.intervals.forEach(clearInterval);
+    this.nodesColl.stop();
   };
 
   private onWSmessage(_peerId: string, message: string) {
