@@ -44,7 +44,7 @@ const mockNode = (peerId?: string, hasExitNode?: boolean): RegisteredNode => ({
   nativeAddress: "someAddress",
 });
 
-const UNSTABLE_NODE_PEERID = "unstable_peerid";
+const UNSTABLE_NODE_PEERID = "unstablePeerId";
 const getAvailabilityMonitorResultsMock = () =>
   new Map<string, any>([[UNSTABLE_NODE_PEERID, {}]]);
 
@@ -388,6 +388,7 @@ describe("test v1 router", function () {
     it("should return an entry node that is not in the exclude list", async function () {
       const amountLeft = BigInt(10).toString();
       const peerId = "entry";
+      const secondPeerId = "secondEntry";
       const requestId = 1;
       const responseRequestTrialClient = await request(app).get(
         "/request/trial"
@@ -409,10 +410,16 @@ describe("test v1 router", function () {
         })
         .set("x-secret-key", SECRET);
 
+      // register entry nodes to discovery platform
       await request(app)
         .post("/node/register")
         .set("X-Rpch-Client", trialClientId)
         .send(mockNode(peerId, true));
+
+      await request(app)
+        .post("/node/register")
+        .set("X-Rpch-Client", trialClientId)
+        .send(mockNode(secondPeerId, true));
 
       await request(app)
         .post("/node/register")
@@ -424,18 +431,31 @@ describe("test v1 router", function () {
       } = await request(app)
         .get(`/node/${peerId}`)
         .set("X-Rpch-Client", trialClientId);
+
       const secondCreatedNode: {
+        body: { node: RegisteredNodeDB | undefined };
+      } = await request(app)
+        .get(`/node/${secondPeerId}`)
+        .set("X-Rpch-Client", trialClientId);
+
+      const unstableCreatedNode: {
         body: { node: RegisteredNodeDB | undefined };
       } = await request(app)
         .get(`/node/${UNSTABLE_NODE_PEERID}`)
         .set("X-Rpch-Client", trialClientId);
 
+      // update created registered nodes to ready state
+      // so they are eligible to be chosen
       await registeredNode.updateRegisteredNode(dbInstance, {
         ...firstCreatedNode.body.node!,
         status: "READY",
       });
       await registeredNode.updateRegisteredNode(dbInstance, {
         ...secondCreatedNode.body.node!,
+        status: "READY",
+      });
+      await registeredNode.updateRegisteredNode(dbInstance, {
+        ...unstableCreatedNode.body.node!,
         status: "READY",
       });
 
@@ -449,13 +469,14 @@ describe("test v1 router", function () {
         postFundingResponse
       );
 
+      // exclude first entry node and unstable node
       const requestResponse = await request(app)
         .post("/request/entry-node")
         .set("X-Rpch-Client", trialClientId)
-        .send({ excludeList: [UNSTABLE_NODE_PEERID] });
+        .send({ excludeList: [UNSTABLE_NODE_PEERID, peerId] });
 
       assert.equal(requestResponse.status, 200);
-      assert.equal(requestResponse.body.id, firstCreatedNode.body.node?.id);
+      assert.equal(requestResponse.body.id, secondCreatedNode.body.node?.id);
     });
     it("should fail if no entry node is selected", async function () {
       const spy = jest.spyOn(registeredNode, "getEligibleNode");
@@ -639,8 +660,9 @@ describe("test v1 router", function () {
 
   describe("should not select unstable entry node", function () {
     it("should not return an entry node", async function () {
-      const spy = jest.spyOn(registeredNode, "getEligibleNode");
       const amountLeft = BigInt(10).toString();
+      // this peerId will be added to exclude list
+      // automatically because of the availability monitor mock
       const peerId = UNSTABLE_NODE_PEERID;
       const requestId = 1;
       const responseRequestTrialClient = await request(app).get(
@@ -674,10 +696,6 @@ describe("test v1 router", function () {
         .get(`/node/${peerId}`)
         .set("X-Rpch-Client", trialClientId);
 
-      spy.mockImplementation(async () => {
-        return createdNode.body.node;
-      });
-
       let postFundingResponse: PostFundingResponse = {
         amountLeft,
         id: requestId,
@@ -693,7 +711,6 @@ describe("test v1 router", function () {
         .set("X-Rpch-Client", trialClientId);
 
       assert.equal(requestResponse.statusCode, 404);
-      spy.mockRestore();
     });
   });
 });

@@ -38,15 +38,15 @@ export const getRegisteredNodes = async (
   log.verbose("Querying for Registered nodes with filters", filters);
   let baseText = `SELECT * FROM ${TABLES.REGISTERED_NODES}`;
   let filtersText = [];
-  const values: { [key: string]: string } = {};
+  const values: { [key: string]: string | string[] } = {};
 
   if (filters?.excludeList !== undefined && filters.excludeList.length !== 0) {
-    filtersText.push("id NOT IN ($<list>)");
-    values["list"] = filters.excludeList.join(", ");
+    filtersText.push("id NOT IN ($<list:csv>)");
+    values["list"] = filters.excludeList;
   }
   if (filters?.includeList !== undefined && filters.includeList.length !== 0) {
-    filtersText.push("id IN ($<list>)");
-    values["list"] = filters.includeList.join(", ");
+    filtersText.push("id IN ($<list:csv>)");
+    values["list"] = filters.includeList;
   }
   if (filters?.hasExitNode !== undefined) {
     filtersText.push("has_exit_node=$<exitNode>");
@@ -60,7 +60,7 @@ export const getRegisteredNodes = async (
   const sqlText = filtersText.length
     ? baseText + " WHERE " + filtersText.join(" AND ")
     : baseText;
-
+  console.log(sqlText, filtersText, values);
   const dbRes: RegisteredNodeDB[] = await dbInstance.manyOrNone(
     sqlText,
     values
