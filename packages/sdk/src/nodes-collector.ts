@@ -265,6 +265,11 @@ export default class NodesCollector {
     accessToken,
     id,
   }: ResponseEntryNode) => {
+    // only use entry node if we not already do so
+    if (this.entryNodes.has(id)) {
+      log.info("Got already tracked entry node", id);
+      return;
+    }
     const apiEndpoint = new URL(hoprd_api_endpoint);
     const wsURL = new URL(hoprd_api_endpoint);
     wsURL.protocol = apiEndpoint.protocol === "https:" ? "wss:" : "ws:";
@@ -280,7 +285,7 @@ export default class NodesCollector {
       peerId: id,
       recommendedExitNodes: [],
     };
-    log.info("Response entry node", newNode.peerId);
+    log.info("New entry node", newNode.peerId);
     this.entryNodes.set(id, newNode);
     this.reliabilities.set(id, Reliability.empty());
   };
