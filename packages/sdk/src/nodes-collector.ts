@@ -239,7 +239,7 @@ export default class NodesCollector {
       })
       .then(this.responseEntryNode)
       .catch((err) => log.error("Error requesting entry node:", err))
-      .finally(() => this.scheduleEntryNodeFetching());
+      .finally(this.scheduleEntryNodeFetching);
   };
 
   private fetchExitNodes = () => {
@@ -257,7 +257,7 @@ export default class NodesCollector {
       })
       .then(this.responseExitNode)
       .catch((err) => log.error("Error requesting exit node:", err))
-      .finally(() => this.scheduleExitNodeFetching());
+      .finally(this.scheduleExitNodeFetching);
   };
 
   private responseEntryNode = ({

@@ -8,7 +8,7 @@ describe("test ws class", function () {
   let server: WS.Server;
   let httpServer: http.Server;
 
-  beforeEach(function () {
+  beforeEach(() => {
     httpServer = http.createServer();
     server = new WS.Server({ server: httpServer });
     httpServer.listen(1234);
@@ -21,24 +21,22 @@ describe("test ws class", function () {
 
   it("gets a successful connection", (done) => {
     let connection: WebSocketHelper;
-    let openHappened = false;
+    const eventHist: string[] = [];
     const onEvent: onEventType = (evt) => {
       switch (evt.action) {
         // 1. open connection
         case "open":
-          openHappened = true;
+          eventHist.push("open");
           connection.close();
-          break;
-        case "message":
-          done("unexpected message");
-          break;
-        case "error":
-          done(`unexpected error: ${evt.event}`);
           break;
         // 2. close connection
         case "close":
-          expect(openHappened).toBe(true);
+          eventHist.push("close");
+          expect(eventHist).toEqual(["open", "close"]);
           done();
+          break;
+        default:
+          eventHist.push(evt.action);
           break;
       }
     };
@@ -48,35 +46,42 @@ describe("test ws class", function () {
   it("reconnects after losing connection", (done) => {
     const reconnectDelay = 10;
     let connection: WebSocketHelper;
-    let count = 0;
-    let errorHappened = false;
+    const eventHist: string[] = [];
     const onEvent: onEventType = (evt) => {
       switch (evt.action) {
         case "open":
+          eventHist.push("open");
           // 1. wait for it to connect first time
-          if (count === 0) {
-            count++;
+          if (eventHist.length === 1) {
             // 2. throw error and force it to reconnect
             connection["socket"]!.emit(
               "error",
               new Error("test: force disconnect")
             );
-          }
-          // 4. wait for successful connection
-          else if (count == 1) {
-            count++;
-            expect(errorHappened).toBeTruthy();
-            expect(connection["reconnectAttempts"]).toEqual(1);
+          } else if (eventHist.length === 4) {
+            // 4. close after reconnect
             connection.close();
-            done();
           }
 
           break;
-        case "error":
-          // 3. wait for reconnection logic to triger
-          errorHappened = true;
+        case "close":
+          // 3. handle close after error
+          eventHist.push("close");
+          if (eventHist.length > 3) {
+            // 5. final close after reconnect
+            expect(eventHist).toEqual([
+              "open",
+              "error",
+              "close",
+              "open",
+              "close",
+            ]);
+            expect(connection["reconnectAttempts"]).toEqual(1);
+            done();
+          }
           break;
         default:
+          eventHist.push(evt.action);
           break;
       }
     };
@@ -88,12 +93,21 @@ describe("test ws class", function () {
 
   it("emits an error when ping is not received", (done) => {
     let connection: WebSocketHelper;
+    const eventHist: string[] = [];
     const onEvent: onEventType = (evt) => {
       switch (evt.action) {
         case "error":
+          eventHist.push("error");
           expect(evt.event.message).toContain("heartbeat");
           connection.close();
+          break;
+        case "close":
+          eventHist.push("close");
+          expect(eventHist).toEqual(["open", "error", "close"]);
           done();
+          break;
+        default:
+          eventHist.push(evt.action);
           break;
       }
     };
@@ -106,24 +120,24 @@ describe("test ws class", function () {
     server.close();
     httpServer.close();
     let connection: WebSocketHelper;
-    let count = 0;
+    const eventHist: string[] = [];
     const onEvent: onEventType = (evt) => {
+      console.log(evt);
       switch (evt.action) {
-        case "error": {
-          count++;
+        case "close":
+          eventHist.push("close");
+          expect(eventHist).toEqual(["error", "close"]);
+          connection.close();
+          done();
+
+        default:
+          eventHist.push(evt.action);
           break;
-        }
       }
     };
 
     connection = new WebSocketHelper(url, onEvent, {
       maxReconnectAttempts: 0,
     });
-
-    setTimeout(() => {
-      connection.close();
-      expect(count).toEqual(1);
-      done();
-    }, 1e3);
   });
 });

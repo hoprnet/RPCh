@@ -65,10 +65,10 @@ export default class WebSocketHelper {
     this.stop();
     if (error.message === HEARTBEAT_ERROR_MSG) {
       // always try reconnecting on heartbeat
-      setTimeout(() => this.reconnectOnHeartbeatError());
+      this.reconnectOnHeartbeatError();
     } else if (this.reconnectAttempts < this.maxReconnectAttempts) {
       // count non heartbeat reconnection attempts
-      setTimeout(() => this.reconnectOnError());
+      this.reconnectOnError();
     }
     this.onEvent({ action: "error", event: error });
   };
