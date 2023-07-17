@@ -234,7 +234,8 @@ export default class NodesCollector {
         throw new Error(`wrong status ${resp.status} ${resp.statusText}`);
       })
       .then(this.responseEntryNode)
-      .catch((err) => log.error("Error requesting entry node:", err));
+      .catch((err) => log.error("Error requesting entry node:", err))
+      .finally(() => this.scheduleEntryNodeFetching());
   };
 
   private fetchExitNodes = () => {
@@ -251,7 +252,8 @@ export default class NodesCollector {
         throw new Error(`wrong status ${resp}`);
       })
       .then(this.responseExitNode)
-      .catch((err) => log.error("Error requesting exit node:", err));
+      .catch((err) => log.error("Error requesting exit node:", err))
+      .finally(() => this.scheduleExitNodeFetching());
   };
 
   private responseEntryNode = ({
@@ -277,7 +279,6 @@ export default class NodesCollector {
     log.info("Response entry node", newNode.peerId);
     this.entryNodes.set(id, newNode);
     this.reliabilities.set(id, Reliability.empty());
-    this.scheduleEntryNodeFetching();
   };
 
   private responseExitNode = (resp: ResponseExitNode[]) => {
@@ -290,7 +291,6 @@ export default class NodesCollector {
       exitNodes.map(({ peerId }) => peerId).join(" ")
     );
     exitNodes.forEach((node) => this.genericExitNodes.set(node.peerId, node));
-    this.scheduleExitNodeFetching();
   };
 
   private scheduleEntryNodeFetching = () => {
