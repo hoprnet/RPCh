@@ -251,6 +251,21 @@ export default class SDK {
   }
 
   /**
+   * Resolves true when node pairs are awailable.
+   */
+  public async isReady(timeout: number = 10e3): Promise<boolean> {
+    return new Promise(async (resolve, reject) => {
+      return resolve(
+        !!this.nodesColl.findReliableNodePair(timeout).catch((err) => {
+          // keep stacktrace intact
+          return reject(
+            `Error finding reliable entry - exit node pair during isReady: ${err}`
+          );
+        })
+      );
+    });
+  }
+
   /**
    * Sends a Request through the RPCh network
    * @param provider

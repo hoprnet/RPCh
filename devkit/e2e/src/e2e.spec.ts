@@ -26,11 +26,15 @@ describe("e2e tests", function () {
 
   beforeAll(async function () {
     // sandbox requires 30 seconds to kickstart
-    await fixtures.wait(30000);
+    console.log("waiting for is ready");
+    await provider.sdk.isReady(60e3);
+    console.log("done waiting for is ready");
   }, 60e3);
 
   afterAll(async function () {
+    console.log("stopping sdk");
     await provider.sdk.stop();
+    console.log("done stopping sdk");
   });
 
   it("should get chain id", async function () {
