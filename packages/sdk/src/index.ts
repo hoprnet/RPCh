@@ -255,13 +255,21 @@ export default class SDK {
    */
   public async isReady(timeout: number = 10e3): Promise<boolean> {
     return new Promise(async (resolve, reject) => {
-      return resolve(
-        !!this.nodesColl.findReliableNodePair(timeout).catch((err) => {
+      const res = await this.nodesColl
+        .findReliableNodePair(timeout)
+        .catch((err) => {
           // keep stacktrace intact
           return reject(
             `Error finding reliable entry - exit node pair during isReady: ${err}`
           );
-        })
+        });
+
+      if (!res) {
+        return false;
+      }
+      return ["entryNode", "exitNode"].reduce(
+        (acc, attr) => acc && attr in res,
+        true
       );
     });
   }
