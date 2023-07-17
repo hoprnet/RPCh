@@ -43,7 +43,6 @@ start() {
     pluto=false
 
     echo "The script is still running. Don't worry, you need to wait."
-    sleep 10
 
     until [[ $logs1 =~ "onOpen" ]]; do
         docker logs sandbox-nodes-exit-1-1 &> $DIR/logs
@@ -123,18 +122,22 @@ start() {
         docker compose -f $DIR/central-docker-compose.yml -p sandbox-central \
         up -d --remove-orphans --build --force-recreate
     echo "Done 'central-docker-compose'"
-    sleep 20
 
+    exit_code=1
     # add quota to client 'sandbox'
-    echo "Adding quota to 'sandbox' in 'discovery-platform'"
-    scurl -X POST "http://127.0.0.1:3030/add-quota" \
-        -H "Content-Type: application/json" \
-        -H "x-rpch-client: sandbox" \
-        -d '{
-            "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
-            "client": "sandbox",
-            "quota": "500"
-        }'
+    until [[ $exit_code == 0 ]]; do
+        echo "Try adding quota to 'sandbox' in 'discovery-platform'"
+        scurl -X POST "http://127.0.0.1:3030/add-quota" \
+            -H "Content-Type: application/json" \
+            -H "x-rpch-client: sandbox" \
+            -d '{
+                "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
+                "client": "sandbox",
+                "quota": "500"
+            }'
+        exit_code=$?
+        sleep 1
+    done
     echo "Added quota to client 'sandbox' in 'discovery-platform'"
 
     # add quota to client 'trial'
