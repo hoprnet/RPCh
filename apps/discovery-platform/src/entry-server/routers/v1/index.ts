@@ -448,10 +448,8 @@ export const v1Router = (ops: {
         //   });
         // }
 
-        console.log({ excludeList });
         // expand 'excludeList' with unstable nodes
         const unstableNodes = getUnstableNodes();
-        console.log({ unstableNodes });
         if (unstableNodes.length > 0) {
           log.verbose(
             "We have unstable nodes %i, adding to 'excludeList'",

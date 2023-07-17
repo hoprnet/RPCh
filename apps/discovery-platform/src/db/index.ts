@@ -60,7 +60,7 @@ export const getRegisteredNodes = async (
   const sqlText = filtersText.length
     ? baseText + " WHERE " + filtersText.join(" AND ")
     : baseText;
-  console.log(sqlText, filtersText, values);
+
   const dbRes: RegisteredNodeDB[] = await dbInstance.manyOrNone(
     sqlText,
     values
