@@ -127,7 +127,7 @@ start() {
     # add quota to client 'sandbox'
     until [[ $exit_code == 0 ]]; do
         echo "Try adding quota to 'sandbox' in 'discovery-platform'"
-        scurl -X POST "http://127.0.0.1:3030/add-quota" \
+        curl --silent --show-error --fail -X POST "http://127.0.0.1:3030/add-quota" \
             -H "Content-Type: application/json" \
             -H "x-rpch-client: sandbox" \
             -d '{
