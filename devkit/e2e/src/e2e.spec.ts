@@ -20,7 +20,6 @@ describe("e2e tests", function () {
 
   afterAll(() => {
     sdk.stop();
-    return new Promise((resolve) => setTimeout(resolve, 1000)); // wait for 1 sec to close websockt
   });
 
   it("should get chain id", async function () {
@@ -42,6 +41,7 @@ describe("e2e tests", function () {
     );
     assert.equal(balance._isBigNumber, true);
   });
+
   it("should get network version", async function () {
     const provider = new ethers.RPChProvider(PROVIDER_URL, sdk);
     const network = await provider.send("net_version", []);

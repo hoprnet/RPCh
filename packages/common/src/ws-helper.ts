@@ -95,42 +95,7 @@ export default class WebSocketHelper {
     this.initialize();
   }
 
-  /**
-   * We want to close the connection,
-   * and not reconnect again.
-   */
-  public close() {
-    log.verbose("Closing regularly");
-    this.stop();
-  }
-
-  /**
-   * Send message through socket.
-   * @param message - string
-   */
-  public send(message: string) {
-    this.socket.send(message);
-  }
-
-  /**
-   * Closes connection to the websocket server.
-   * Makes `waitUntilSocketOpen` reject.
-   * @param error
-   */
-  private closeWithError(error: any) {
-    log.verbose("Closing with error", error);
-    this.close();
-  }
-
-  private heartbeat() {
-    clearTimeout(this.pingTimeout);
-    this.pingTimeout = setTimeout(() => {
-      log.error(HEARTBEAT_ERROR_MSG);
-      this.socket.emit("error", new Error(HEARTBEAT_ERROR_MSG));
-    }, this.maxTimeWithoutPing);
-  }
-
-  private initialize() {
+  private initialize = () => {
     this.socket = new WebSocket(this.url);
 
     // fired when connection established
@@ -146,37 +111,65 @@ export default class WebSocketHelper {
     this.socket.on("close", this.listenClose);
 
     this.socket.on("ping", this.listenPing);
-  }
+  };
 
-  private stop() {
+  private stop = () => {
     clearTimeout(this.pingTimeout);
     clearTimeout(this.reconnectTimeout);
-    this.socket.removeEventListener("open", this.listenOpen);
-    this.socket.onmessage = null;
-    this.socket.removeEventListener(
-      "error",
-      this.listenError as (evt: any) => void
-    );
-    this.socket.removeEventListener(
-      "close",
-      this.listenClose as (evt: any) => void
-    );
-
-    // this.socket.removeEventListener("ping", this.listenPing as (evt: any) => void);
 
     this.socket.close();
-  }
+    this.socket.off("open", this.listenOpen);
+    this.socket.onmessage = null;
+    this.socket.off("error", this.listenError);
+    this.socket.off("close", this.listenClose);
+    this.socket.off("ping", this.listenPing);
+  };
 
-  private reconnectOnHeartbeatError() {
+  /**
+   * We want to close the connection,
+   * and not reconnect again.
+   */
+  public close = () => {
+    log.verbose("Closing regularly");
+    this.stop();
+  };
+
+  /**
+   * Send message through socket.
+   * @param message - string
+   */
+  public send = (message: string) => {
+    this.socket.send(message);
+  };
+
+  /**
+   * Closes connection to the websocket server.
+   * Makes `waitUntilSocketOpen` reject.
+   * @param error
+   */
+  private closeWithError = (error: any) => {
+    log.verbose("Closing with error", error);
+    this.stop();
+  };
+
+  private heartbeat = () => {
+    clearTimeout(this.pingTimeout);
+    this.pingTimeout = setTimeout(() => {
+      log.error(HEARTBEAT_ERROR_MSG);
+      this.socket.emit("error", new Error(HEARTBEAT_ERROR_MSG));
+    }, this.maxTimeWithoutPing);
+  };
+
+  private reconnectOnHeartbeatError = () => {
     log.normal(
       `WebSocket reconnect after heartbeat failure in ${this.reconnectDelay} ms`
     );
     this.reconnectTimeout = setTimeout(() => {
       this.initialize();
     }, this.reconnectDelay);
-  }
+  };
 
-  private reconnectOnError() {
+  private reconnectOnError = () => {
     log.normal(
       `WebSocket reconnect after error. Attempting #${
         this.reconnectAttempts + 1
@@ -186,5 +179,5 @@ export default class WebSocketHelper {
       this.reconnectAttempts++;
       this.initialize();
     }, this.reconnectDelay);
-  }
+  };
 }
