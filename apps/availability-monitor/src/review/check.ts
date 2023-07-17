@@ -1,6 +1,6 @@
 import retry from "async-retry";
-import { createLogger, wrapTimeout } from "../utils";
-import { REVIEW_TIMEOUT } from "../constants";
+import { createLogger } from "../utils";
+// import { REVIEW_TIMEOUT } from "../constants";
 
 const log = createLogger(["review", "check"]);
 
