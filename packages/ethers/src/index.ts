@@ -1,6 +1,6 @@
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { deepCopy } from "@ethersproject/properties";
-import SDK, { type HoprSdkOps } from "@rpch/sdk";
+import SDK from "@rpch/sdk";
 import { parseResponse, getResult, createLogger } from "./utils";
 
 const log = createLogger();
@@ -11,22 +11,11 @@ const log = createLogger();
  * @extends JsonRpcProvider
  */
 export class RPChProvider extends JsonRpcProvider {
-  public sdk: SDK;
-
   /**
    * @param hoprSdkOps - The options object for the SDK instance.
-   * @param setKeyVal - Function that sets a key-value pair in storage.
-   * @param getKeyVal - Function that retrieves the value corresponding to a key from storage.
    */
-  constructor(
-    public readonly url: string,
-    hoprSdkOps: HoprSdkOps,
-    setKeyVal: (key: string, val: string) => Promise<any>,
-    getKeyVal: (key: string) => Promise<string | undefined>
-  ) {
+  constructor(public readonly url: string, public readonly sdk: SDK) {
     super(url);
-    // initializes the RPCh SDK
-    this.sdk = new SDK(hoprSdkOps, setKeyVal, getKeyVal);
   }
 
   /**

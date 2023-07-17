@@ -42,7 +42,7 @@ start() {
     segmentation_error=""
     pluto=false
 
-    echo "The script is still running. Don't worry, you need to wait."
+    echo "Waiting for exit nodes setup"
 
     until [[ $logs1 =~ "onOpen" ]]; do
         docker logs sandbox-nodes-exit-1-1 &> $DIR/logs

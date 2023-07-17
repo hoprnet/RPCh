@@ -131,6 +131,8 @@ export default class WebSocketHelper {
     this.socket.on("close", (evt: CloseEvent) => {
       log.verbose("onClose", this.url.host, evt);
       this.onEvent({ action: "close", event: evt });
+      // remove callback
+      this.onEvent = function () {};
     });
 
     this.socket.on("ping", () => {

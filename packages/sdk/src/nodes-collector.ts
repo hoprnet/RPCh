@@ -11,7 +11,7 @@ const apiEntryNode = "/api/v1/request/entry-node";
 const apiWebSocket = "/api/v2/messages/websocket";
 const apiExitNode = "/api/v1/node?hasExitNode=true";
 
-const timeoutImmediateFetchEntryNode = 100; // 100 ms
+const timeoutImmediateFetchEntryNode = 333; // 333 ms
 const timeoutOptimizeFetchEntryNode = 5e3; // 5 sec
 const timeoutRegularFetchEntryNode = 60e3; // 1 min
 
@@ -106,6 +106,10 @@ export default class NodesCollector {
     clearTimeout(this.timerRefExitNodes);
     clearInterval(this.intervalRefExpiration);
     clearInterval(this.intervalRefDebugPrint);
+    this.entryNodes.forEach((node) => node.connection.close());
+    this.entryNodes.clear();
+    this.genericExitNodes.clear();
+    this.reliabilities.clear();
   };
 
   /**

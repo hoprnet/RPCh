@@ -265,11 +265,13 @@ export default class SDK {
         });
 
       if (!res) {
-        return false;
+        return resolve(false);
       }
-      return ["entryNode", "exitNode"].reduce(
-        (acc, attr) => acc && attr in res,
-        true
+      return resolve(
+        ["entryNode", "exitNode"].reduce(
+          (acc, attr) => acc && attr in res,
+          true
+        )
       );
     });
   }
