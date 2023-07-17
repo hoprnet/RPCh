@@ -45,7 +45,8 @@ export function createCheck<T, A extends unknown[]>(
       try {
         log.verbose("running check %s for %s", check.id);
         const [passed, value] = await retry(
-          () => wrapTimeout(run(...args), REVIEW_TIMEOUT),
+          () => run(...args),
+          // () => wrapTimeout(run(...args), REVIEW_TIMEOUT), // REMOVE timeout for debugging
           {
             retries: 2,
             minTimeout: 500,
