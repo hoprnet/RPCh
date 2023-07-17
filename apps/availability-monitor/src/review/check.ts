@@ -42,7 +42,9 @@ export function createCheck<T, A extends unknown[]>(
         error: undefined,
       };
 
+      const tempId = Math.floor(Math.random() * 1e8);
       try {
+        log.verbose("running check", check.id, tempId);
         const [passed, value] = await retry(() => run(...args), {
           retries: 2,
           minTimeout: 500,
@@ -62,6 +64,8 @@ export function createCheck<T, A extends unknown[]>(
           checkResult.error
         );
         return checkResult;
+      } finally {
+        log.verbose("finished check", check.id, tempId);
       }
     },
   };
