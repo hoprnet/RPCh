@@ -1,5 +1,6 @@
 import retry from "async-retry";
-import { createLogger } from "../utils";
+import { createLogger, wrapTimeout } from "../utils";
+import { REVIEW_TIMEOUT } from "../constants";
 
 const log = createLogger(["review", "check"]);
 
@@ -42,12 +43,15 @@ export function createCheck<T, A extends unknown[]>(
       };
 
       try {
-        const [passed, value] = await retry(() => run(...args), {
-          retries: 2,
-          minTimeout: 500,
-          maxTimeout: 500,
-          maxRetryTime: 2e3,
-        });
+        log.verbose("running check %s for %s", check.id);
+        const [passed, value] = await retry(
+          () => wrapTimeout(run(...args), REVIEW_TIMEOUT),
+          {
+            retries: 2,
+            minTimeout: 500,
+            maxTimeout: 500,
+          }
+        );
         checkResult.passed = passed;
         checkResult.value = value;
         return checkResult;
@@ -61,6 +65,8 @@ export function createCheck<T, A extends unknown[]>(
           checkResult.error
         );
         return checkResult;
+      } finally {
+        log.verbose("check finished %s", check.id);
       }
     },
   };
