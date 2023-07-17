@@ -22,11 +22,6 @@ export default class WebSocketHelper {
   // TODO use increasing reconnect delays
   private reconnectDelay: number; // how many ms to wait before attempting to reconnect
   private maxReconnectAttempts: number; // maximum number of reconnect attempts
-  private listenOpen: () => void;
-  private listenClose: (evt: CloseEvent) => void;
-  private listenError: (evt: ErrorEvent) => void;
-  private listenPing: () => void;
-  private listenMessage: (evt: MessageEvent) => void;
 
   constructor(
     private url: URL,
@@ -41,88 +36,71 @@ export default class WebSocketHelper {
     this.reconnectDelay = options?.reconnectDelay ?? 100;
     this.maxReconnectAttempts = options?.maxReconnectAttempts ?? 3;
 
-    // create listeners
-    this.listenOpen = () => {
-      log.verbose("onOpen", this.url.host);
-      this.heartbeat();
-      this.onEvent({ action: "open" });
-    };
-
-    this.listenClose = (evt: CloseEvent) => {
-      log.verbose("onClose", this.url.host, evt);
-      this.onEvent({ action: "close", event: evt });
-      // remove callback
-      this.onEvent = function () {};
-    };
-
-    this.listenError = (error: ErrorEvent): void => {
-      log.error("onError", error.message);
-      this.stop();
-      if (error.message === HEARTBEAT_ERROR_MSG) {
-        // always try reconnecting on heartbeat
-        setTimeout(() => this.reconnectOnHeartbeatError());
-      } else if (this.reconnectAttempts < this.maxReconnectAttempts) {
-        // count non heartbeat reconnection attempts
-        setTimeout(() => this.reconnectOnError());
-      }
-      this.onEvent({ action: "error", event: error });
-    };
-
-    this.listenPing = () => {
-      this.heartbeat();
-      log.verbose("onPing");
-      this.onEvent({ action: "ping" });
-    };
-
-    this.listenMessage = (event) => {
-      const body = event.data.toString();
-      // message received is an acknowledgement of a
-      // message we have send, we can safely ignore this
-      if (body.startsWith("ack:")) return;
-
-      let message: string | undefined;
-      try {
-        message = decodeIncomingBody(body);
-      } catch (error) {
-        log.error(error);
-      }
-      if (message) {
-        log.verbose("onmessage", this.url.host, message);
-        this.onEvent({ action: "message", message });
-      }
-    };
-
     this.initialize();
   }
 
   private initialize = () => {
     this.socket = new WebSocket(this.url);
-
-    // fired when connection established
-    this.socket.on("open", this.listenOpen);
-
-    // fired on incoming message
+    this.socket.on("open", this.onOpen);
+    this.socket.on("close", this.onClose);
+    this.socket.on("ping", this.onPing);
+    this.socket.on("error", this.onError);
     // NOTE `on("message",` gets websocket frames while `onmessage` gets whole MessageEvents
-    this.socket.onmessage = this.listenMessage as (evt: any) => void;
+    this.socket.onmessage = this.onMessage as (evt: any) => void;
+  };
 
-    // fired when connection closed due to error
-    this.socket.on("error", this.listenError);
+  private onOpen = () => {
+    log.verbose("onOpen", this.url.host);
+    this.heartbeat();
+    this.onEvent({ action: "open" });
+  };
 
-    this.socket.on("close", this.listenClose);
+  private onClose = (evt: CloseEvent) => {
+    log.verbose("onClose", this.url.host, evt);
+    this.onEvent({ action: "close", event: evt });
+  };
 
-    this.socket.on("ping", this.listenPing);
+  private onError = (error: ErrorEvent) => {
+    log.error("onError", error.message);
+    this.stop();
+    if (error.message === HEARTBEAT_ERROR_MSG) {
+      // always try reconnecting on heartbeat
+      setTimeout(() => this.reconnectOnHeartbeatError());
+    } else if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      // count non heartbeat reconnection attempts
+      setTimeout(() => this.reconnectOnError());
+    }
+    this.onEvent({ action: "error", event: error });
+  };
+
+  private onPing = () => {
+    this.heartbeat();
+    log.verbose("onPing");
+    this.onEvent({ action: "ping" });
+  };
+
+  private onMessage = (event: MessageEvent) => {
+    const body = event.data.toString();
+    // message received is an acknowledgement of a
+    // message we have send, we can safely ignore this
+    if (body.startsWith("ack:")) return;
+
+    let message: string | undefined;
+    try {
+      message = decodeIncomingBody(body);
+    } catch (error) {
+      log.error(error);
+    }
+    if (message) {
+      log.verbose("onmessage", this.url.host, message);
+      this.onEvent({ action: "message", message });
+    }
   };
 
   private stop = () => {
     clearTimeout(this.pingTimeout);
     clearTimeout(this.reconnectTimeout);
-
     this.socket.close();
-    this.socket.off("open", this.listenOpen);
-    this.socket.onmessage = null;
-    this.socket.off("error", this.listenError);
-    this.socket.off("close", this.listenClose);
-    this.socket.off("ping", this.listenPing);
   };
 
   /**
