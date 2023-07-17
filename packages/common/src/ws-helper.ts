@@ -54,6 +54,12 @@ export default class WebSocketHelper {
     log.verbose("Closing regularly");
     this.closeInternal();
     this.socket.close();
+    // remove event listeners, since we are no longer interested
+    this.socket.on("open", function () {});
+    this.socket.onmessage = null;
+    this.socket.on("error", function () {});
+    this.socket.on("close", function () {});
+    this.socket.on("ping", function () {});
   }
 
   /**
