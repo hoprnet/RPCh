@@ -41,12 +41,13 @@ This monorepo will use the usual tagging scheme for monorepos:
 Tags are usually only created prior to releases. See [Deployment](##Deployment) section.
 
 ```
-appname/vX.X.X
+org/appname-vX.X.X
 
-appname - application or package name to be released with that tag
-/ - slash separator
-v - single letter 'v'
-X.X.X - Semver versioning for that app or package
+org  # organization name, usually @rpch
+appname  # application or package name to be released with that tag
+-  # slash separator
+v  # single letter 'v'
+X.X.X  # Semver versioning for that app or package
 ```
 
 ## Deployment

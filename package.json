@@ -20,7 +20,7 @@
     "test:e2e": "turbo run start --filter @rpch/e2e"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.25.2",
+    "@changesets/cli": "^2.26.2",
     "check-dependency-version-consistency": "^3.0.3",
     "turbo": "^1.6.3"
   },
