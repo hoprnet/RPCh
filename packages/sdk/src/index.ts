@@ -10,21 +10,16 @@ import {
 } from "@rpch/common";
 import { utils as etherUtils } from "ethers";
 import debug from "debug";
-import fetch from "cross-fetch";
-import retry from "async-retry";
-import ReliabilityScore, { type Result } from "./reliability-score";
 import RequestCache from "./request-cache";
 import { createLogger } from "./utils";
+import NodesCollector from "./nodes-collector";
 
 const log = createLogger();
 const DEFAULT_MAXIMUM_SEGMENTS_PER_REQUEST = 10;
 const DEFAULT_RESET_NODE_METRICS_MS = 1e3 * 60 * 5; // 5 min
 const DEFAULT_MINIMUM_SCORE_FOR_RELIABLE_NODE = 0.8;
-const DEFAULT_RELIABILITY_SCORE_FRESH_NODE_THRESHOLD = 10;
-const DEFAULT_RELIABILITY_SCORE_MAX_RESPONSES = 100;
 const DEFAULT_MAX_ENTRY_NODES = 2;
-const ENTRY_NODE_SELECTION_TIMEOUT = 1e3 * 5; // 5 sec
-const MAX_REQUEST_TIMEOUT = 1e3 * 30; // 30 sec
+const CACHES_EXPIRATION_TIMEOUT = 1e3 * 5; // 5 sec
 
 /**
  * HOPR SDK options.
@@ -87,17 +82,12 @@ export default class SDK {
   private maxEntryNodes: number = DEFAULT_MAX_ENTRY_NODES;
   // RPCh crypto library used
   private crypto: typeof RPChCrypto;
-  // our chosen entry nodes
-  private entryNodes: Map<string, EntryNode> = new Map();
-  // available exit nodes we can use
-  private exitNodes: ExitNode[] = [];
   // various intervals used to clear the caches
   private intervals: NodeJS.Timer[] = [];
   private segmentCache: SegmentCache;
   private requestCache: RequestCache;
   private selectingEntryNodes: boolean = false;
-  // keeps track a reliability score for every entry-node used
-  private reliabilityScore: ReliabilityScore;
+  private nodesColl: NodesCollector;
   // allows developers to programmatically enable debugging
   public debug = debug;
   // toogle to not start if it's already starting
@@ -114,15 +104,11 @@ export default class SDK {
   ) {
     this.crypto = ops.crypto;
     this.crypto.set_panic_hook();
-    this.segmentCache = new SegmentCache((message) => this.onMessage(message));
+    this.segmentCache = new SegmentCache((message: any) =>
+      this.onMessage(message)
+    );
     this.requestCache = new RequestCache((request) =>
       this.onRequestExpiration(request)
-    );
-    this.reliabilityScore = new ReliabilityScore(
-      ops.reliabilityScoreFreshNodeThreshold ||
-        DEFAULT_RELIABILITY_SCORE_FRESH_NODE_THRESHOLD,
-      ops.reliabilityScoreMaxResponses ||
-        DEFAULT_RELIABILITY_SCORE_MAX_RESPONSES
     );
     // set to default if not specified
     this.maximumSegmentsPerRequest =
@@ -133,246 +119,36 @@ export default class SDK {
       ops.minimumScoreForReliableNode ??
       DEFAULT_MINIMUM_SCORE_FOR_RELIABLE_NODE;
     this.maxEntryNodes = ops.maxEntryNodes ?? DEFAULT_MAX_ENTRY_NODES;
+    this.nodesColl = new NodesCollector(
+      ops.discoveryPlatformApiEndpoint,
+      ops.client,
+      (peerId, message) => this.onWSmessage(peerId, message)
+    );
+    this.intervals.push(
+      setInterval(() => {
+        // check for expires caches every second
+        this.segmentCache.removeExpired(this.ops.timeout);
+        this.requestCache.removeExpired(this.ops.timeout);
+      }, CACHES_EXPIRATION_TIMEOUT) // look for entry nodes every 5 seconds
+    );
   }
 
-  /**
-   * @return true if SDK is ready to send requests
-   */
-  public get isReady(): boolean {
-    return this.entryNodes.size > 0 && this.exitNodes.length > 0;
-  }
+  public stop = () => {
+    this.intervals.forEach(clearInterval);
+    this.nodesColl.stop();
+  };
 
-  /**
-   * Will select until nodes until MAX is reached.
-   * Ignores known unreliable nodes.
-   * @param discoveryPlatformApiEndpoint
-   */
-  private async selectEntryNodes(
-    discoveryPlatformApiEndpoint: string
-  ): Promise<void> {
-    log.normal("selectEntryNodes", {
-      selectingEntryNodes: this.selectingEntryNodes,
-    });
-    if (this.selectingEntryNodes) return;
-
+  private onWSmessage(_peerId: string, message: string) {
+    // handle incoming messages
     try {
-      this.selectingEntryNodes = true;
-
-      // we only need 1 when we force an entry node
-      const amountNeeded =
-        (this.ops.forceEntryNode ? 1 : this.maxEntryNodes) -
-        this.entryNodes.size;
-      if (amountNeeded === 0) return;
-
-      let brokenNodeIds: string[] = [];
-      if (this.ops.forceEntryNode) {
-        // we pretend everything is okay if we need to force an entry node
-        brokenNodeIds = [];
-      } else {
-        brokenNodeIds = this.reliabilityScore
-          .getScores()
-          .filter(({ peerId }) => !this.isNodeReliable(peerId))
-          .map(({ peerId }) => peerId);
-      }
-
-      log.normal(
-        `Selecting '${amountNeeded}' entry nodes and excluding`,
-        brokenNodeIds.length == 0 ? "none" : brokenNodeIds.join(",")
+      const segment = Segment.fromString(message);
+      this.segmentCache.onSegment(segment);
+    } catch {
+      log.verbose(
+        "rejected received data from HOPRd: not a valid segment",
+        message
       );
-
-      // get new entry nodes
-      const entryNodeIds: string[] = Array.from(this.entryNodes.values()).map(
-        (e) => e.peerId
-      );
-      for (let i = 0; i < amountNeeded; i++) {
-        const excludeList: string[] = Array.from(
-          new Set([...brokenNodeIds, ...entryNodeIds]).values()
-        );
-        await retry(
-          async () => {
-            return this.selectEntryNode(
-              discoveryPlatformApiEndpoint,
-              excludeList
-            );
-          },
-          {
-            retries: 5,
-            onRetry: (e, attempt) => {
-              log.error("Error while selecting entry node", e);
-              log.verbose("Retrying to select entry node, attempt:", attempt);
-            },
-            maxTimeout: MAX_REQUEST_TIMEOUT,
-          }
-        );
-      }
-    } catch (error) {
-      log.error("Couldn't find new entry node: ", error);
-      throw error;
-    } finally {
-      this.selectingEntryNodes = false;
     }
-  }
-
-  /**
-   * Stop WS listener and removes entry node from our list.
-   * @param peerId
-   */
-  private removeEntryNode(peerId: string): void {
-    log.verbose("Removing entry node %s", peerId);
-    const entryNode = this.entryNodes.get(peerId);
-    if (entryNode) {
-      if (entryNode.stopMessageListener) entryNode.stopMessageListener();
-      this.entryNodes.delete(peerId);
-    }
-  }
-
-  /**
-   * Requests the Discovery Platform for an Entry Node.
-   * @param discoveryPlatformApiEndpoint
-   * @return entry node details
-   */
-  private async selectEntryNode(
-    discoveryPlatformApiEndpoint: string,
-    excludeList?: string[]
-  ): Promise<EntryNode> {
-    log.verbose("Selecting entry node");
-
-    let entryNode: EntryNode;
-    // use forced entry node
-    if (this.ops.forceEntryNode) {
-      entryNode = this.ops.forceEntryNode;
-    }
-    // ask discovery platform
-    else {
-      const rawResponse: globalThis.Response = await fetch(
-        new URL(
-          "/api/v1/request/entry-node",
-          discoveryPlatformApiEndpoint
-        ).toString(),
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept-Content": "application/json",
-            "x-rpch-client": this.ops.client,
-          },
-          body: JSON.stringify({
-            excludeList,
-            client: this.ops.client,
-          }),
-        }
-      );
-
-      // Check for error response
-      if (rawResponse.status !== 200) {
-        log.error(
-          "Failed to request entry node",
-          rawResponse.status,
-          await rawResponse.text()
-        );
-        throw new Error(`Failed to request entry node`);
-      }
-
-      const response: {
-        hoprd_api_endpoint: string;
-        accessToken: string;
-        id: string;
-      } = await rawResponse.json();
-
-      const apiEndpointUrl = new URL(response.hoprd_api_endpoint);
-
-      entryNode = {
-        apiEndpoint: apiEndpointUrl.toString(),
-        apiToken: response.accessToken,
-        peerId: response.id,
-      };
-    }
-
-    log.verbose(
-      "Selected entry node",
-      entryNode,
-      `forced=${!!this.ops.forceEntryNode}`
-    );
-
-    // if entry node already exists (happens when we force entry node)
-    if (this.entryNodes.has(entryNode.peerId)) return entryNode;
-
-    // create new WS connection
-    const connection = await hoprd.createMessageListener(
-      entryNode.apiEndpoint,
-      entryNode.apiToken,
-      (message) => {
-        try {
-          const segment = Segment.fromString(message);
-          this.segmentCache.onSegment(segment);
-        } catch {
-          log.verbose(
-            "rejected received data from HOPRd: not a valid segment",
-            message
-          );
-        }
-      }
-    );
-    entryNode.stopMessageListener = () => {
-      if (connection.close) connection.close();
-    };
-
-    this.entryNodes.set(entryNode.peerId, entryNode);
-    return entryNode;
-  }
-
-  /**
-   * Updates exit node list from the Discovery Platform,
-   * removes known unreliable nodes.
-   * @param discoveryPlatformApiEndpoint
-   * @returns list of exit nodes
-   */
-  private async fetchExitNodes(
-    discoveryPlatformApiEndpoint: string
-  ): Promise<ExitNode[]> {
-    log.verbose("Fetching exit nodes");
-
-    if (this.ops.forceExitNode) {
-      log.verbose("Forcing to use exit node", this.ops.forceExitNode);
-      this.exitNodes = [this.ops.forceExitNode];
-    } else {
-      const rawResponse = await fetch(
-        new URL(
-          "/api/v1/node?hasExitNode=true",
-          discoveryPlatformApiEndpoint
-        ).toString(),
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "Accept-Content": "application/json",
-            "x-rpch-client": this.ops.client,
-          },
-        }
-      );
-
-      if (rawResponse.status !== 200) {
-        throw new Error("Failed to fetch exit nodes");
-      }
-
-      const response: {
-        exit_node_pub_key: string;
-        id: string;
-      }[] = await rawResponse.json();
-
-      this.exitNodes = response.map((item) => ({
-        peerId: item.id,
-        pubKey: item.exit_node_pub_key,
-      }));
-    }
-
-    if (this.exitNodes.length === 0) throw Error("No exit nodes available");
-
-    log.verbose(
-      "Fetched exit nodes",
-      this.exitNodes.length,
-      `forced=${!!this.ops.forceExitNode}`
-    );
-    return this.exitNodes;
   }
 
   /**
@@ -380,12 +156,19 @@ export default class SDK {
    * @param message Message received from cache module
    */
   private async onMessage(message: Message): Promise<void> {
+    // check whether we have a response
+    if (!message.body.startsWith("0x")) {
+      log.verbose("message is not a response", message.id, message.body);
+      return;
+    }
+
     // check whether we have a matching request id
     const match = this.requestCache.getRequest(message.id);
     if (!match) {
       log.verbose("matching request not found", message.id);
       return;
     }
+    this.requestCache.removeRequest(match.request);
 
     try {
       const counter = await this.getKeyVal(
@@ -404,22 +187,21 @@ export default class SDK {
       );
       const responseTime = Date.now() - match.createdAt.getTime();
       log.verbose(
-        "response time for request %s: %s ms",
+        "response time for request %s: %s ms, counter %i",
         match.request.id,
-        responseTime
+        responseTime,
+        counter
       );
 
-      this.requestCache.removeRequest(match.request);
-      match.resolve(response);
+      this.nodesColl.finishRequest({
+        entryId: match.request.entryNodeDestination,
+        exitId: match.request.exitNodeDestination,
+        requestId: match.request.id,
+        result: true,
+      });
 
-      this.reliabilityScore.addMetric(
-        match.request.entryNodeDestination,
-        match.request.id,
-        "success"
-      );
-
-      log.normal("received response for %i", match.request.id);
       log.verbose("responded to %s with %s", match.request.body, response.body);
+      match.resolve(response);
     } catch (e) {
       log.verbose(
         "failed to load received message id %i from %s with error",
@@ -435,27 +217,18 @@ export default class SDK {
   }
 
   /**
-   * Updates the score of an entry node.
-   * Removes it if it ranks too low.
-   * @param req
-   * @param result
-   */
-  private updateEntryNodeScore(req: Request, result: Result): void {
-    this.reliabilityScore.addMetric(req.entryNodeDestination, req.id, result);
-    // remove entry node as soon as we find its not reliable
-    if (!this.isNodeReliable(req.entryNodeDestination)) {
-      this.removeEntryNode(req.entryNodeDestination);
-    }
-  }
-
-  /**
    * Adds a failed metric to the reliability score
    * when the request expires.
    * @param req Request received from cache module.
    */
   private onRequestExpiration(req: Request): void {
     log.normal("request %i expired", req.id);
-    this.updateEntryNodeScore(req, "failed");
+    this.nodesColl.finishRequest({
+      entryId: req.entryNodeDestination,
+      exitId: req.exitNodeDestination,
+      requestId: req.id,
+      result: false,
+    });
   }
 
   /**
@@ -466,180 +239,85 @@ export default class SDK {
   public handleFailedRequest(req: Request, reason?: string) {
     log.normal("request %i failed", req.id, reason || "unknown reason");
     // add metric failed metric
-    this.updateEntryNodeScore(req, "failed");
+    this.nodesColl.finishRequest({
+      entryId: req.entryNodeDestination,
+      exitId: req.exitNodeDestination,
+      requestId: req.id,
+      result: false,
+    });
     // reject request promise
     this.requestCache.getRequest(req.id)?.reject(`request failed: "${reason}"`);
     this.requestCache.removeRequest(req);
   }
 
   /**
-   * Start the SDK and initialize necessary data.
+   * Resolves true when node pairs are awailable.
    */
-  public async start(): Promise<void> {
-    // already started
-    if (this.isReady) return;
-    // already in the proccess of starting
-    if (this.starting) return this.startingPromise.promise;
-
-    try {
-      this.starting = true;
-
-      // fetch entry nodes from discovery platform
-      await this.selectEntryNodes(this.ops.discoveryPlatformApiEndpoint);
-
-      // fetch exit nodes from discovery platform
-      await retry(
-        () => this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint),
-        {
-          retries: 5,
-          onRetry: (e, attempt) => {
-            log.error("Error while fetching exit nodes", e);
-            log.verbose("Retrying to fetch exit nodes, attempt:", attempt);
-          },
-          maxTimeout: MAX_REQUEST_TIMEOUT,
-        }
-      );
-
-      this.intervals.push(
-        setInterval(() => {
-          // check for expires caches every second
-          this.segmentCache.removeExpired(this.ops.timeout);
-          this.requestCache.removeExpired(this.ops.timeout);
-
-          // first remove unstable entry nodes
-          for (const peerId of this.entryNodes.keys()) {
-            if (!this.isNodeReliable(peerId)) this.removeEntryNode(peerId);
-          }
-
-          // second fetch new entry nodes
-          this.selectEntryNodes(this.ops.discoveryPlatformApiEndpoint).catch(
-            (error) => {
-              log.error("Failed to select entry nodes", error);
-            }
+  public async isReady(timeout: number = 10e3): Promise<boolean> {
+    return new Promise(async (resolve, reject) => {
+      const res = await this.nodesColl
+        .findReliableNodePair(timeout)
+        .catch((err) => {
+          // keep stacktrace intact
+          return reject(
+            `Error finding reliable entry - exit node pair during isReady: ${err}`
           );
+        });
 
-          // third reset old nodes from reliability score
-          this.reliabilityScore.resetOldNodeMetrics(this.resetNodeMetricsMs);
-        }, ENTRY_NODE_SELECTION_TIMEOUT) // look for entry nodes every 5 seconds
+      if (!res) {
+        return resolve(false);
+      }
+      return resolve(
+        ["entryNode", "exitNode"].reduce(
+          (acc, attr) => acc && attr in res,
+          true
+        )
       );
-
-      this.intervals.push(
-        setInterval(() => {
-          const nodeScores = Array.from(this.entryNodes.keys()).map(
-            (peerId) => {
-              const score = this.reliabilityScore.getScore(peerId);
-              const status = this.reliabilityScore.getStatus(peerId);
-              return `${peerId}: ${score} - ${status}`;
-            }
-          );
-          // keep log a one liner for easy access in grafana
-          log.normal(
-            `Using '${
-              this.entryNodes.size
-            }' entry nodes with scores: ${nodeScores.join(", ")}`
-          );
-        }, 10e3)
-      );
-
-      this.intervals.push(
-        setInterval(() => {
-          // update exit nodes every minute
-          this.fetchExitNodes(this.ops.discoveryPlatformApiEndpoint).catch(
-            (error) => {
-              log.error("Failed to fetch exit nodes", error);
-            }
-          );
-        }, 60e3)
-      );
-
-      this.startingPromise.resolve();
-      log.normal("SDK started");
-    } catch (e: any) {
-      this.startingPromise.reject(e.message);
-      log.normal("SDK failed to start", e.message);
-      await this.stop();
-    } finally {
-      this.starting = false;
-    }
-  }
-
-  /**
-   * Stop the SDK and clear up tangling processes.
-   */
-  public async stop(): Promise<void> {
-    // remove all intervals
-    for (const interval of this.intervals) {
-      clearInterval(interval);
-    }
-    // stop all WS listeners
-    for (const peerId of this.entryNodes.keys()) {
-      this.removeEntryNode(peerId);
-    }
-  }
-
-  /**
-   * @param entryNode
-   * @returns `true` is entry node is reliable
-   */
-  private isNodeReliable(entryNodePeerId: string): boolean {
-    const score = this.reliabilityScore.getScore(entryNodePeerId);
-    const status = this.reliabilityScore.getStatus(entryNodePeerId);
-    const hasLowScore = score < this.minimumScoreForReliableNode;
-    const isNotFresh = status === "NON_FRESH";
-    return !(hasLowScore && isNotFresh);
-  }
-
-  /**
-   * Creates a Request instance that can be sent through the RPCh network
-   * @param provider
-   * @param body
-   * @returns Request
-   */
-  public async createRequest(provider: string, body: string): Promise<Request> {
-    if (!this.isReady) {
-      throw Error("SDK not ready to create requests, no reliable nodes");
-    }
-
-    // get reliable entry nodes
-    const reliableEntryNodes = Array.from(this.entryNodes.values()).filter(
-      (entryNode) => this.isNodeReliable(entryNode.peerId)
-    );
-    if (reliableEntryNodes.length === 0) {
-      throw Error("SDK does not have any reliable entry nodes");
-    }
-    const entryNode = utils.randomlySelectFromArray(reliableEntryNodes);
-
-    // exclude entry nodes & get reliable exit nodes
-    const eligibleExitNodes = this.exitNodes.filter(
-      (node) =>
-        !this.entryNodes.has(node.peerId) && this.isNodeReliable(node.peerId)
-    );
-    if (eligibleExitNodes.length === 0) {
-      throw Error("SDK does not have any eligible exit nodes");
-    }
-    const exitNode = utils.randomlySelectFromArray(eligibleExitNodes);
-    return await Request.createRequest(
-      this.crypto!,
-      provider,
-      body,
-      entryNode.peerId,
-      exitNode.peerId,
-      this.crypto!.Identity.load_identity(etherUtils.arrayify(exitNode.pubKey))
-    );
+    });
   }
 
   /**
    * Sends a Request through the RPCh network
-   * @param req Request
+   * @param provider
+   * @param body
    * @returns Promise<Response>
    */
-  public async sendRequest(req: Request): Promise<Response> {
-    // check if SDK is ready to send requests
-    if (!this.isReady) {
-      throw Error("SDK not ready to send requests, no reliable nodes");
-    }
-
+  public async sendRequest(
+    provider: string,
+    body: string,
+    timeout: number = 10e3
+  ): Promise<Response> {
     return new Promise(async (resolve, reject) => {
+      const res = await this.nodesColl
+        .findReliableNodePair(timeout)
+        .catch((err) => {
+          // keep stacktrace intact
+          return reject(
+            `Error finding reliable entry - exit node pair: ${err}`
+          );
+        });
+      if (!res) {
+        return reject(
+          `No return when searching entry - exit node pair, should never happen`
+        );
+      }
+
+      const { entryNode, exitNode } = res;
+      const req = await Request.createRequest(
+        this.crypto!,
+        provider,
+        body,
+        entryNode.peerId,
+        exitNode.peerId,
+        this.crypto!.Identity.load_identity(
+          etherUtils.arrayify(exitNode.pubKey)
+        )
+      );
+      this.nodesColl.startRequest({
+        entryId: entryNode.peerId,
+        exitId: exitNode.peerId,
+        requestId: req.id,
+      });
       log.normal("sending request %i", req.id);
       const message = req.toMessage();
       const segments = message.toSegments();
@@ -656,11 +334,9 @@ export default class SDK {
       this.requestCache.addRequest(req, resolve, reject);
 
       // Send all segments in parallel using Promise.allSettled
-      const sendMessagePromises = segments.map((segment) => {
-        const entryNode = this.entryNodes.get(req.entryNodeDestination);
-        if (!entryNode) throw Error("EntryNode is no longer reliable");
+      const sendMessagePromises = segments.map((segment: any) => {
         return hoprd.sendMessage({
-          apiEndpoint: entryNode.apiEndpoint,
+          apiEndpoint: entryNode.apiEndpoint.toString(),
           apiToken: entryNode.apiToken,
           message: segment.toString(),
           destination: req.exitNodeDestination,
@@ -672,16 +348,19 @@ export default class SDK {
       try {
         const results = await Promise.allSettled(sendMessagePromises);
         const rejectedResults = results.filter(
-          (result) => result.status === "rejected"
+          (result: any) => result.status === "rejected"
         );
 
         if (rejectedResults.length > 0) {
           // If any promises were rejected, remove request from cache and reject promise
-          this.handleFailedRequest(req, "not all segments were delivered");
+          const reason = "not all segments were delivered";
+          this.handleFailedRequest(req, reason);
+          reject(reason);
         }
       } catch (e: any) {
         // If there was an error sending the request, remove request from cache and reject promise
         this.handleFailedRequest(req, e);
+        reject(e);
       }
     });
   }

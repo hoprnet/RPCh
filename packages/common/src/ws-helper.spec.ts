@@ -1,14 +1,14 @@
 import http from "http";
 import WS from "isomorphic-ws";
 import WebSocketHelper from "./ws-helper";
-import * as fixtures from "./fixtures";
+import type { onEventType } from "./ws-helper";
 
 describe("test ws class", function () {
-  const url = "ws://localhost:1234";
+  const url = new URL("ws://localhost:1234");
   let server: WS.Server;
   let httpServer: http.Server;
 
-  beforeEach(function () {
+  beforeEach(() => {
     httpServer = http.createServer();
     server = new WS.Server({ server: httpServer });
     httpServer.listen(1234);
@@ -17,123 +17,127 @@ describe("test ws class", function () {
   afterEach(() => {
     server.close();
     httpServer.close();
-    jest.clearAllMocks();
   });
 
   it("gets a successful connection", (done) => {
     let connection: WebSocketHelper;
-    const onMessageSpy = jest.fn((_data) => {
-      // on message listener works
-      connection.close();
-      done();
-    });
+    const eventHist: string[] = [];
+    const onEvent: onEventType = (evt) => {
+      switch (evt.action) {
+        // 1. open connection
+        case "open":
+          eventHist.push("open");
+          connection.close();
+          break;
+        // 2. close connection
+        case "close":
+          eventHist.push("close");
+          expect(eventHist).toEqual(["open", "close"]);
+          done();
+          break;
+        default:
+          eventHist.push(evt.action);
+          break;
+      }
+    };
+    connection = new WebSocketHelper(url, onEvent);
+  });
 
-    server.on("connection", (ws) => {
-      ws.on("message", () => {
-        ws.send(fixtures.ENCODED_HOPRD_MESSAGE);
-      });
-    });
+  it("reconnects after losing connection", (done) => {
+    const reconnectDelay = 10;
+    let connection: WebSocketHelper;
+    const eventHist: string[] = [];
+    const onEvent: onEventType = (evt) => {
+      switch (evt.action) {
+        case "open":
+          eventHist.push("open");
+          // 1. wait for it to connect first time
+          if (eventHist.length === 1) {
+            // 2. throw error and force it to reconnect
+            connection["socket"]!.emit(
+              "error",
+              new Error("test: force disconnect")
+            );
+          } else if (eventHist.length === 4) {
+            // 4. close after reconnect
+            connection.close();
+          }
 
-    connection = new WebSocketHelper(url, onMessageSpy);
-    connection.waitUntilSocketOpen().then((conn) => {
-      conn.send("i am connected");
+          break;
+        case "close":
+          // 3. handle close after error
+          eventHist.push("close");
+          if (eventHist.length > 3) {
+            // 5. final close after reconnect
+            expect(eventHist).toEqual([
+              "open",
+              "error",
+              "close",
+              "open",
+              "close",
+            ]);
+            expect(connection["reconnectAttempts"]).toEqual(1);
+            done();
+          }
+          break;
+        default:
+          eventHist.push(evt.action);
+          break;
+      }
+    };
+    connection = new WebSocketHelper(url, onEvent, {
+      reconnectDelay,
+      maxReconnectAttempts: 3,
     });
   });
-  it("connection is lost and re-established", (done) => {
-    const reconnectDelay = 10;
-    const connection = new WebSocketHelper(url, () => {}, {
-      reconnectDelay,
-      attemptToReconnect: true,
-    });
 
-    // 1. wait for it to connect first time
-    connection.waitUntilSocketOpen().then(() => {
-      // 3. wait for reconnection logic to triger
-      connection["socket"].on("error", () => {
-        // 4. wait for successful connection
-        connection.waitUntilSocketOpen().then(() => {
-          expect(connection["reconnectAttempts"]).toEqual(1);
+  it("emits an error when ping is not received", (done) => {
+    let connection: WebSocketHelper;
+    const eventHist: string[] = [];
+    const onEvent: onEventType = (evt) => {
+      switch (evt.action) {
+        case "error":
+          eventHist.push("error");
+          expect(evt.event.message).toContain("heartbeat");
+          connection.close();
+          break;
+        case "close":
+          eventHist.push("close");
+          expect(eventHist).toEqual(["open", "error", "close"]);
+          done();
+          break;
+        default:
+          eventHist.push(evt.action);
+          break;
+      }
+    };
+    connection = new WebSocketHelper(url, onEvent, {
+      maxTimeWithoutPing: 100,
+    });
+  });
+
+  it("does not reconnect if instructed to", (done) => {
+    server.close();
+    httpServer.close();
+    let connection: WebSocketHelper;
+    const eventHist: string[] = [];
+    const onEvent: onEventType = (evt) => {
+      console.log(evt);
+      switch (evt.action) {
+        case "close":
+          eventHist.push("close");
+          expect(eventHist).toEqual(["error", "close"]);
           connection.close();
           done();
-        });
-      });
 
-      // 2. throw error and force it to reconnect
-      connection["socket"].emit("error", new Error("test: force disconnect"));
-    });
-  });
-  it("on error is emitted when ping is not received", (done) => {
-    const connection = new WebSocketHelper(url, () => {}, {
-      maxTimeWithoutPing: 1e3,
-    });
+        default:
+          eventHist.push(evt.action);
+          break;
+      }
+    };
 
-    connection["socket"].on("error", (error) => {
-      connection.close();
-      expect(error.message).toContain("heartbeat");
-      done();
-    });
-  });
-  it("on error is not emitted when ping is received", (done) => {
-    const maxTimeWithoutPing = 100;
-
-    server.on("connection", (ws) => {
-      const pingInterval = setInterval(() => {
-        ws.ping();
-      }, maxTimeWithoutPing / 4);
-
-      ws.on("close", () => {
-        clearInterval(pingInterval);
-      });
-    });
-
-    const reconnectDelay = 100000;
-    const waitUntilSocketOpenSpy = jest.spyOn(
-      WebSocketHelper.prototype,
-      "waitUntilSocketOpen"
-    );
-    let helper: WebSocketHelper;
-
-    helper = new WebSocketHelper(url, () => {}, {
-      reconnectDelay,
-      maxTimeWithoutPing,
-    });
-    helper.waitUntilSocketOpen();
-
-    // wait for 2 heartbeats
-    setTimeout(() => {
-      helper.close();
-      expect(waitUntilSocketOpenSpy.mock.calls.length).toEqual(1);
-      done();
-    }, maxTimeWithoutPing * 2);
-  });
-  it("should throw on reconnect attempt", (done) => {
-    server.close();
-    httpServer.close();
-    const connection = new WebSocketHelper(url, () => {}, {
-      attemptToReconnect: false,
-    });
-
-    connection.waitUntilSocketOpen().catch((error) => {
-      connection.close();
-      expect(String(error)).toContain("WebSocket failed to connect");
-      done();
-    });
-  });
-  it("should throw when reaching all reconnect attempts", (done) => {
-    server.close();
-    httpServer.close();
-    const connection = new WebSocketHelper(url, () => {}, {
-      maxReconnectAttempts: 5,
-    });
-
-    connection.waitUntilSocketOpen().catch((error) => {
-      connection.close();
-      expect(String(error)).toContain("max attempts reached");
-      expect(
-        // @ts-ignore
-        connection.reconnectAttempts
-      ).toEqual(5);
-      done();
+    connection = new WebSocketHelper(url, onEvent, {
+      maxReconnectAttempts: 0,
     });
   });
 });

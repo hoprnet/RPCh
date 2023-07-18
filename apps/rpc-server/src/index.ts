@@ -99,7 +99,6 @@ export class RPCServer {
         }
       }
     );
-    await this.sdk.start();
 
     log.normal("Starting rpc-server");
     const result = server.createServer(
@@ -109,19 +108,11 @@ export class RPCServer {
         let verboseLogs: string[] = [];
         try {
           if (!this.sdk) throw Error("SDK not initialized");
-          const rpcRequest = await this.sdk.createRequest(exitProvider, body);
-          const rpcRequestBody = rpcRequest.toMessage().body;
-          log.verbose("Sending request %i %s", rpcRequest.id, rpcRequestBody);
           verboseLogs.push(
-            `1/3: created request: "${rpcRequest.id}" with body "${rpcRequestBody}"`
+            `1/2: sending request: "${exitProvider}" with body "${body}"`
           );
-          const rpcResponse = await this.sdk.sendRequest(rpcRequest);
-          const rpcResponseBody = rpcResponse.toMessage().body;
-          verboseLogs.push(`2/3: send request: "${rpcRequest.id}"`);
-          log.verbose("Received response", rpcRequest.id, rpcResponseBody);
-          verboseLogs.push(
-            `3/3: received response "${rpcResponse.id}" with body "${rpcResponseBody}" for request: "${rpcRequest.id}"`
-          );
+          const rpcResponse = await this.sdk.sendRequest(exitProvider, body);
+          verboseLogs.push(`2/2: received response: "${rpcResponse}"`);
           // response has already ended
           if (!response.writable) {
             log.verbose(

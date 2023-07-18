@@ -14,7 +14,7 @@ const {
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3040;
 const RESPONSE_TIMEOUT = process.env.RESPONSE_TIMEOUT
   ? Number(process.env.RESPONSE_TIMEOUT)
-  : 10000;
+  : 30000;
 
 // if any of the FORCE_ENTRY_* options are provided
 // make sure they are all present

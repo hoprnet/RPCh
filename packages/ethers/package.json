@@ -8,8 +8,7 @@
     "build": "tsup",
     "dev": "yarn build --watch",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
-    "lint": "eslint \"src/**/*.ts*\"",
-    "test": "jest --coverage"
+    "lint": "eslint \"src/**/*.ts*\""
   },
   "devDependencies": {
     "@rpch/configs-eslint": "*",

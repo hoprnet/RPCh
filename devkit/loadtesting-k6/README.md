@@ -8,7 +8,7 @@ Install k6 on test machine: https://k6.io/docs/get-started/installation/
 ## How to test RPC Server
 
 1. Spin up Sandbox
-2. Spin up RPC Server on http://localhost:3040/
+2. Spin up RPC Server on http://localhost:8080/
 3. Navigate to `.\devkit\k6-loadtesting\`
 4. Run:
    - `yarn start:artificial` (Artificial usage with `eth_getCode` and `eth_call`)

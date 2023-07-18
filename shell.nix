@@ -15,6 +15,8 @@ mkShell {
   nativeBuildInputs = [
     nodejs-16_x
     (yarn.override { nodejs = nodejs-16_x; })
+    # load testing
+    k6
 
     # custom pkg groups
     linuxPkgs

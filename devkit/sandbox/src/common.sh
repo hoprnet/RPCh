@@ -42,38 +42,37 @@ start() {
     segmentation_error=""
     pluto=false
 
-    echo "The script is still running. Don't worry, you need to wait."
-    sleep 10
+    echo "Waiting for exit nodes setup"
 
-    until [[ $logs1 =~ "Listening for incoming messages from HOPRd" ]]; do
+    until [[ $logs1 =~ "onOpen" ]]; do
         docker logs sandbox-nodes-exit-1-1 &> $DIR/logs
         logs1=$(cat $DIR/logs)
         sleep 1
     done
     echo "Node 1 running"
 
-    until [[ $logs2 =~ "Listening for incoming messages from HOPRd" ]]; do
+    until [[ $logs2 =~ "onOpen" ]]; do
         docker logs sandbox-nodes-exit-2-1 &> $DIR/logs
         logs2=$(cat $DIR/logs)
         sleep 1
     done
     echo "Node 2 running"
 
-    until [[ $logs3 =~ "Listening for incoming messages from HOPRd" ]]; do
+    until [[ $logs3 =~ "onOpen" ]]; do
         docker logs sandbox-nodes-exit-3-1 &> $DIR/logs
         logs3=$(cat $DIR/logs)
         sleep 1
     done
     echo "Node 3 running"
 
-    until [[ $logs4 =~ "Listening for incoming messages from HOPRd" ]]; do
+    until [[ $logs4 =~ "onOpen" ]]; do
         docker logs sandbox-nodes-exit-4-1 &> $DIR/logs
         logs4=$(cat $DIR/logs)
         sleep 1
     done
     echo "Node 4 running"
 
-    until [[ $logs5 =~ "Listening for incoming messages from HOPRd" ]]; do
+    until [[ $logs5 =~ "onOpen" ]]; do
         docker logs sandbox-nodes-exit-5-1 &> $DIR/logs
         logs5=$(cat $DIR/logs)
         sleep 1
@@ -123,18 +122,22 @@ start() {
         docker compose -f $DIR/central-docker-compose.yml -p sandbox-central \
         up -d --remove-orphans --build --force-recreate
     echo "Done 'central-docker-compose'"
-    sleep 20
 
-    # add quota to client 'sandbox'
-    echo "Adding quota to 'sandbox' in 'discovery-platform'"
-    scurl -X POST "http://127.0.0.1:3030/add-quota" \
-        -H "Content-Type: application/json" \
-        -H "x-rpch-client: sandbox" \
-        -d '{
-            "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
-            "client": "sandbox",
-            "quota": "500"
-        }'
+    exit_code=1
+    # add quota to client 'sandbox', try as long as it takes for the DP to become available
+    until [[ $exit_code == 0 ]]; do
+        echo "Try adding quota to 'sandbox' in 'discovery-platform'"
+        curl --silent --show-error --fail -X POST "http://127.0.0.1:3030/add-quota" \
+            -H "Content-Type: application/json" \
+            -H "x-rpch-client: sandbox" \
+            -d '{
+                "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
+                "client": "sandbox",
+                "quota": "500"
+            }'
+        exit_code=$?
+        sleep 1
+    done
     echo "Added quota to client 'sandbox' in 'discovery-platform'"
 
     # add quota to client 'trial'

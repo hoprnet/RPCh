@@ -24,9 +24,10 @@ export default function CreateLoggerFactory(namespace: string) {
     const error = normal.extend("error");
 
     return {
+      error,
+      info: normal,
       normal,
       verbose,
-      error,
     };
   };
 }

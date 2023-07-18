@@ -1,6 +1,7 @@
 import { createLogger, createApiUrl } from "./utils";
 import fetch from "cross-fetch";
 import WebSocketHelper from "./ws-helper";
+import type { onEventType } from "./ws-helper";
 
 const log = createLogger(["hoprd"]);
 
@@ -89,13 +90,14 @@ export const sendMessage = async ({
 
 /**
  * Subscribes to the HOPRd endpoint for incoming messages.
- * @param onMessage called everytime a new HOPRd message is received
+ * @param onEvent called everytime a websocket event happens
+ *        ("message", data) - incoming message from HOPRd
  * @returns websocket listener
  */
 export const createMessageListener = async (
   apiEndpoint: string,
   apiToken: string,
-  onMessage: (message: string) => void,
+  onEvent: onEventType,
   options?: {
     maxTimeWithoutPing?: number;
     attemptToReconnect?: boolean;
@@ -109,15 +111,11 @@ export const createMessageListener = async (
     "/api/v2/messages/websocket",
     apiToken
   );
-  let ws = new WebSocketHelper(url, onMessage, {
+  return new WebSocketHelper(new URL(url), onEvent, {
     maxTimeWithoutPing: options?.maxTimeWithoutPing ?? 60e3,
-    attemptToReconnect: options?.attemptToReconnect ?? true,
     reconnectDelay: options?.reconnectDelay ?? 100,
     maxReconnectAttempts: options?.maxReconnectAttempts ?? 3,
   });
-  await ws.waitUntilSocketOpen();
-
-  return ws;
 };
 
 /**
