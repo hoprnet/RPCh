@@ -124,7 +124,7 @@ start() {
     echo "Done 'central-docker-compose'"
 
     exit_code=1
-    # add quota to client 'sandbox'
+    # add quota to client 'sandbox', try as long as it takes for the DP to become available
     until [[ $exit_code == 0 ]]; do
         echo "Try adding quota to 'sandbox' in 'discovery-platform'"
         curl --silent --show-error --fail -X POST "http://127.0.0.1:3030/add-quota" \
