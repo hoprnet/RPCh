@@ -87,7 +87,6 @@ export const getEligibleNode = async (
     ...filters,
     status: "READY",
   });
-  console.log({ readyNodes });
   if (readyNodes.length) {
     // choose selected entry node
     const selectedNode = utils.randomlySelectFromArray(readyNodes);

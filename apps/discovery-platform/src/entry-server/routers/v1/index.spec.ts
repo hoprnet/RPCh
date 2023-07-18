@@ -561,7 +561,6 @@ describe("test v1 router", function () {
         .set("X-Rpch-Client", trialClientId)
         .send({ excludeList: [peerId, secondPeerId] });
 
-      console.log({ requestResponse });
       assert.equal(requestResponse.status, 404);
       assert.deepEqual(requestResponse.body, {
         errors: "Could not find eligible node",
