@@ -478,6 +478,210 @@ describe("test v1 router", function () {
       assert.equal(requestResponse.status, 200);
       assert.equal(requestResponse.body.id, secondCreatedNode.body.node?.id);
     });
+    it("should return 404 when all entry nodes are on exclude list", async function () {
+      const amountLeft = BigInt(10).toString();
+      const peerId = "entry";
+      const secondPeerId = "secondEntry";
+      const requestId = 1;
+      const responseRequestTrialClient = await request(app).get(
+        "/request/trial"
+      );
+      const trialClientId: string = responseRequestTrialClient.body.client;
+
+      const replyBody: GetAccessTokenResponse = {
+        accessToken: FAKE_ACCESS_TOKEN,
+        amountLeft: BigInt(10).toString(),
+        expiredAt: new Date().toISOString(),
+      };
+
+      nockGetApiAccessToken.reply(200, replyBody);
+      await request(app)
+        .post("/client/quota")
+        .send({
+          client: trialClientId,
+          quota: 1,
+        })
+        .set("x-secret-key", SECRET);
+
+      // register entry nodes to discovery platform
+      await request(app)
+        .post("/node/register")
+        .set("X-Rpch-Client", trialClientId)
+        .send(mockNode(peerId, true));
+
+      await request(app)
+        .post("/node/register")
+        .set("X-Rpch-Client", trialClientId)
+        .send(mockNode(secondPeerId, true));
+
+      // This node is automatically added to the exclude list
+      // because of availability monitor mock. If it does not exist in db
+      // pg-mem will throw an error https://github.com/oguimbal/pg-mem/issues/342
+      await request(app)
+        .post("/node/register")
+        .set("X-Rpch-Client", trialClientId)
+        .send(mockNode(UNSTABLE_NODE_PEERID, true));
+
+      const firstCreatedNode: {
+        body: { node: RegisteredNodeDB | undefined };
+      } = await request(app)
+        .get(`/node/${peerId}`)
+        .set("X-Rpch-Client", trialClientId);
+
+      const secondCreatedNode: {
+        body: { node: RegisteredNodeDB | undefined };
+      } = await request(app)
+        .get(`/node/${secondPeerId}`)
+        .set("X-Rpch-Client", trialClientId);
+
+      // update created registered nodes to ready state
+      // so they are eligible to be chosen
+      await registeredNode.updateRegisteredNode(dbInstance, {
+        ...firstCreatedNode.body.node!,
+        status: "READY",
+      });
+      await registeredNode.updateRegisteredNode(dbInstance, {
+        ...secondCreatedNode.body.node!,
+        status: "READY",
+      });
+
+      let postFundingResponse: PostFundingResponse = {
+        amountLeft,
+        id: requestId,
+      };
+
+      nockFundingRequest(secondCreatedNode.body.node?.native_address!).reply(
+        200,
+        postFundingResponse
+      );
+
+      // exclude all available nodes
+      const requestResponse = await request(app)
+        .post("/request/entry-node")
+        .set("X-Rpch-Client", trialClientId)
+        .send({ excludeList: [peerId, secondPeerId] });
+
+      console.log({ requestResponse });
+      assert.equal(requestResponse.status, 404);
+      assert.deepEqual(requestResponse.body, {
+        errors: "Could not find eligible node",
+      });
+    });
+    it.only("should return an entry node when adding recently received node was put on the exclude list in a subsequent call", async function () {
+      const amountLeft = BigInt(10).toString();
+      const peerId = "entry";
+      const secondPeerId = "secondEntry";
+      const thirdPeerId = "thirdEntry";
+      const requestId = 1;
+      const responseRequestTrialClient = await request(app).get(
+        "/request/trial"
+      );
+      const trialClientId: string = responseRequestTrialClient.body.client;
+
+      const replyBody: GetAccessTokenResponse = {
+        accessToken: FAKE_ACCESS_TOKEN,
+        amountLeft: BigInt(10).toString(),
+        expiredAt: new Date().toISOString(),
+      };
+
+      nockGetApiAccessToken.reply(200, replyBody);
+      await request(app)
+        .post("/client/quota")
+        .send({
+          client: trialClientId,
+          quota: 1,
+        })
+        .set("x-secret-key", SECRET);
+
+      // register entry nodes to discovery platform
+      await request(app)
+        .post("/node/register")
+        .set("X-Rpch-Client", trialClientId)
+        .send(mockNode(peerId, true));
+
+      await request(app)
+        .post("/node/register")
+        .set("X-Rpch-Client", trialClientId)
+        .send(mockNode(secondPeerId, true));
+
+      await request(app)
+        .post("/node/register")
+        .set("X-Rpch-Client", trialClientId)
+        .send(mockNode(thirdPeerId, true));
+
+      // This node is automatically added to the exclude list
+      // because of availability monitor mock. If it does not exist in db
+      // pg-mem will throw an error https://github.com/oguimbal/pg-mem/issues/342
+      await request(app)
+        .post("/node/register")
+        .set("X-Rpch-Client", trialClientId)
+        .send(mockNode(UNSTABLE_NODE_PEERID, true));
+
+      const firstCreatedNode: {
+        body: { node: RegisteredNodeDB | undefined };
+      } = await request(app)
+        .get(`/node/${peerId}`)
+        .set("X-Rpch-Client", trialClientId);
+
+      const secondCreatedNode: {
+        body: { node: RegisteredNodeDB | undefined };
+      } = await request(app)
+        .get(`/node/${secondPeerId}`)
+        .set("X-Rpch-Client", trialClientId);
+
+      const thirdCreatedNode: {
+        body: { node: RegisteredNodeDB | undefined };
+      } = await request(app)
+        .get(`/node/${thirdPeerId}`)
+        .set("X-Rpch-Client", trialClientId);
+
+      // update created registered nodes to ready state
+      // so they are eligible to be chosen
+      await registeredNode.updateRegisteredNode(dbInstance, {
+        ...firstCreatedNode.body.node!,
+        status: "READY",
+      });
+      await registeredNode.updateRegisteredNode(dbInstance, {
+        ...secondCreatedNode.body.node!,
+        status: "READY",
+      });
+      await registeredNode.updateRegisteredNode(dbInstance, {
+        ...thirdCreatedNode.body.node!,
+        status: "READY",
+      });
+
+      let postFundingResponse: PostFundingResponse = {
+        amountLeft,
+        id: requestId,
+      };
+
+      nockFundingRequest(secondCreatedNode.body.node?.native_address!).reply(
+        200,
+        postFundingResponse
+      );
+
+      // exclude first entry node, should receive second or third entry node
+      const requestResponse = await request(app)
+        .post("/request/entry-node")
+        .set("X-Rpch-Client", trialClientId)
+        .send({ excludeList: [peerId] });
+
+      // test received node is not the node passed in exclude list
+      assert.equal(requestResponse.status, 200);
+      assert.notEqual(requestResponse.body.id, peerId);
+
+      // exclude first entry node and the subsequent node that was received
+      const secondRequestResponse = await request(app)
+        .post("/request/entry-node")
+        .set("X-Rpch-Client", trialClientId)
+        .send({ excludeList: [peerId, requestResponse.body.id] });
+
+      // test a node was received
+      assert.equal(requestResponse.status, 200);
+      // test the node received was not part of exclude list
+      assert.notEqual(secondRequestResponse.body.id, peerId);
+      assert.notEqual(secondRequestResponse.body.id, requestResponse.body.id);
+    });
     it("should fail if no entry node is selected", async function () {
       const spy = jest.spyOn(registeredNode, "getEligibleNode");
 

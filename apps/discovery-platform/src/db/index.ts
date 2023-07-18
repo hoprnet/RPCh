@@ -40,6 +40,8 @@ export const getRegisteredNodes = async (
   let filtersText = [];
   const values: { [key: string]: string | string[] } = {};
 
+  // using :csv formats an array to a comma separated list
+  // source https://github.com/vitaly-t/pg-promise#csv-filter
   if (filters?.excludeList !== undefined && filters.excludeList.length !== 0) {
     filtersText.push("id NOT IN ($<list:csv>)");
     values["list"] = filters.excludeList;
@@ -65,6 +67,7 @@ export const getRegisteredNodes = async (
     sqlText,
     values
   );
+
   log.verbose(
     "Registered nodes with filters query DB response",
     filters,
