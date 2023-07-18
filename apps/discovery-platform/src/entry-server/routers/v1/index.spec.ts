@@ -566,7 +566,7 @@ describe("test v1 router", function () {
         errors: "Could not find eligible node",
       });
     });
-    it.only("should return an entry node when adding recently received node was put on the exclude list in a subsequent call", async function () {
+    it("should return an entry node when adding recently received node was put on the exclude list in a subsequent call", async function () {
       const amountLeft = BigInt(10).toString();
       const peerId = "entry";
       const secondPeerId = "secondEntry";
