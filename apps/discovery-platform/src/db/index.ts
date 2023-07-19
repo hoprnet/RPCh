@@ -38,15 +38,17 @@ export const getRegisteredNodes = async (
   log.verbose("Querying for Registered nodes with filters", filters);
   let baseText = `SELECT * FROM ${TABLES.REGISTERED_NODES}`;
   let filtersText = [];
-  const values: { [key: string]: string } = {};
+  const values: { [key: string]: string | string[] } = {};
 
+  // using :csv formats an array to a comma separated list
+  // source https://github.com/vitaly-t/pg-promise#csv-filter
   if (filters?.excludeList !== undefined && filters.excludeList.length !== 0) {
-    filtersText.push("id NOT IN ($<list>)");
-    values["list"] = filters.excludeList.join(", ");
+    filtersText.push("id NOT IN ($<list:csv>)");
+    values["list"] = filters.excludeList;
   }
   if (filters?.includeList !== undefined && filters.includeList.length !== 0) {
-    filtersText.push("id IN ($<list>)");
-    values["list"] = filters.includeList.join(", ");
+    filtersText.push("id IN ($<list:csv>)");
+    values["list"] = filters.includeList;
   }
   if (filters?.hasExitNode !== undefined) {
     filtersText.push("has_exit_node=$<exitNode>");
@@ -65,6 +67,7 @@ export const getRegisteredNodes = async (
     sqlText,
     values
   );
+
   log.verbose(
     "Registered nodes with filters query DB response",
     filters,

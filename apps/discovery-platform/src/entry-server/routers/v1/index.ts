@@ -396,7 +396,10 @@ export const v1Router = (ops: {
     metricMiddleware(requestDurationHistogram),
     body("excludeList")
       .optional()
-      .custom((value) => isListSafe(value)),
+      .isArray()
+      .withMessage("Must be an array")
+      .custom((arr) => arr.every((item: unknown) => typeof item === "string"))
+      .withMessage("Every item in the array must be a string"),
     async (req, res) => {
       try {
         const errors = validationResult(req);
@@ -515,7 +518,10 @@ export const v1Router = (ops: {
     metricMiddleware(requestDurationHistogram),
     body("excludeList")
       .optional()
-      .custom((value) => isListSafe(value)),
+      .isArray()
+      .withMessage("Must be an array")
+      .custom((arr) => arr.every((item: unknown) => typeof item === "string"))
+      .withMessage("Every item in the array must be a string"),
     body("amount").optional().isInt({ min: 1, max: 10 }),
     async (req, res) => {
       try {
