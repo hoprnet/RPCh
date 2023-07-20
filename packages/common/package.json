@@ -36,7 +36,6 @@
     "prom-client": "^14.2.0"
   },
   "dependencies": {
-    "cross-fetch": "4.0.0",
     "debug": "^4.3.4",
     "ethers": "^5.7.2",
     "isomorphic-ws": "^5.0.0",

@@ -12,7 +12,6 @@ import { runMigrations } from "@rpch/common/build/internal/db";
 import * as async from "async";
 import path from "path";
 import migrate from "node-pg-migrate";
-import fetch from "node-fetch";
 import type { RegisteredNodeDB, AvailabilityMonitorResult } from "./types";
 
 const log = createLogger();
@@ -112,9 +111,11 @@ const start = async (ops: {
   const updateAvailabilityMonitorResultsInterval = setInterval(async () => {
     try {
       if (!ops.availabilityMonitorUrl) return;
-      const response: [string, AvailabilityMonitorResult][] = await fetch(
+      const response = await fetch(
         `${ops.availabilityMonitorUrl}/api/nodes`
-      ).then((res) => res.json());
+      ).then(
+        (res) => res.json() as unknown as [string, AvailabilityMonitorResult][]
+      );
       availabilityMonitorResults = new Map(response);
       log.verbose(
         "Updated availability monitor results with size %i",

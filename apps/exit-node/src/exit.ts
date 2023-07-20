@@ -1,7 +1,6 @@
 /**
  * Responsible for creating external requests to a provider.
  */
-import fetch from "node-fetch";
 import { createLogger } from "./utils";
 
 const log = createLogger(["exit"]);

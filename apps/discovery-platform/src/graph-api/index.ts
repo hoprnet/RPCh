@@ -1,5 +1,4 @@
 import { gql } from "graphql-request";
-import fetch from "node-fetch";
 import { RegisteredNodeDB, GetAccountChannelsResponse } from "../types";
 import { createLogger } from "../utils";
 import * as constants from "../constants";
@@ -73,7 +72,8 @@ export const checkCommitment = async (ops: {
       }),
     });
 
-    const graphRes: GetAccountChannelsResponse = await channels.json();
+    const graphRes =
+      (await channels.json()) as unknown as GetAccountChannelsResponse;
 
     log.verbose([
       "Received information from the graph",
@@ -132,7 +132,8 @@ export const getUpdatedAccounts = async (blockNumber: number) => {
       ),
     });
 
-    const graphRes: GetAccountChannelsResponse = await channels.json();
+    const graphRes =
+      (await channels.json()) as unknown as GetAccountChannelsResponse;
 
     log.verbose([
       "Received information from the graph",

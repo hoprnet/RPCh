@@ -2,7 +2,6 @@
  * Various HOPRd API functions.
  * TODO: replace with HOPRd SDK once its published
  */
-import fetch from "node-fetch";
 import { utils } from "@rpch/common";
 
 export async function getBalances(
@@ -19,7 +18,7 @@ export async function getBalances(
   return fetch(url, {
     method: "GET",
     headers,
-  }).then((res) => res.json());
+  }).then((res) => res.json() as unknown as { hopr: string; native: string });
 }
 
 export async function withdraw(
@@ -28,7 +27,7 @@ export async function withdraw(
   currency: "NATIVE" | "HOPR",
   amount: string,
   recipient: string
-) {
+): Promise<string> {
   const [url, headers] = utils.createApiUrl(
     "http",
     hoprdEndpoint,
@@ -45,8 +44,8 @@ export async function withdraw(
       recipient,
     }),
   })
-    .then((res) => res.json())
-    .then((res: { receipt: string }) => res.receipt);
+    .then((res) => res.json() as unknown as { receipt: string })
+    .then((res) => res.receipt);
 }
 
 export async function getAddresses(
@@ -63,7 +62,7 @@ export async function getAddresses(
   return fetch(url.toString(), {
     method: "GET",
     headers,
-  }).then((res) => res.json());
+  }).then((res) => res.json() as unknown as { hopr: string; native: string });
 }
 
 export async function getInfo(
@@ -80,9 +79,7 @@ export async function getInfo(
   return fetch(url.toString(), {
     method: "GET",
     headers,
-  })
-    .then((res) => res.json())
-    .then((res: { hoprToken: string }) => res);
+  }).then((res) => res.json() as unknown as { hoprToken: string });
 }
 
 export async function openChannel(

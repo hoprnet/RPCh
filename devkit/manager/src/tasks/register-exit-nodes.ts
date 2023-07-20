@@ -1,4 +1,3 @@
-import fetch from "node-fetch";
 import { utils as ethersUtils } from "ethers";
 import { utils } from "@rpch/common";
 import { getAddresses } from "../hoprd";
@@ -43,7 +42,7 @@ async function registerNode(
       exitNodePubKey,
       nativeAddress,
     }),
-  }).then((res) => res.json());
+  }).then((res) => res.json() as any);
 }
 
 export default async function main(
