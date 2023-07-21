@@ -113,7 +113,8 @@
         "REVIEWER_CONCURRENCY",
         "MIN_AMOUNT_PEERS",
         "MIN_AMOUNT_CHANNELS",
-        "HOPRD_REQS_TIMEOUT"
+        "HOPRD_REQS_TIMEOUT",
+        "CHECK_TIMEOUT"
       ]
     },
     "dev": {

@@ -10,6 +10,7 @@ import {
   MIN_AMOUNT_PEERS,
   MIN_AMOUNT_CHANNELS,
   HOPRD_REQS_TIMEOUT,
+  CHECK_TIMEOUT,
 } from "../constants";
 
 const log = createLogger(["review"]);
@@ -19,22 +20,24 @@ const checks = {
   hoprdVersion: createCheck<string, [HoprSDK]>(
     "hoprd-version",
     async function checkHoprdVersion(sdk) {
-      const version = await sdk.api.node.getVersion();
+      const version = await sdk.api.node.getVersion({});
       if (typeof version !== "string")
         throw Error(`received version '${version}' is not a string`);
       return [true, version];
-    }
+    },
+    CHECK_TIMEOUT
   ),
   hoprdHealth: createCheck<string, [HoprSDK]>(
     "hoprd-health",
     async function checkHoprdHealth(sdk) {
-      const info = await sdk.api.node.getInfo();
+      const info = await sdk.api.node.getInfo({});
       if (!info) throw Error("did not receive info");
       const isOk = ["green", "yellow"].some(
         (status) => info.connectivityStatus.toLowerCase() === status
       );
       return [isOk, info.connectivityStatus];
-    }
+    },
+    CHECK_TIMEOUT
   ),
   hoprdSSL: createCheck<boolean, [string, string]>(
     "hoprd-ssl",
@@ -52,10 +55,11 @@ const checks = {
         timeout: HOPRD_REQS_TIMEOUT,
       });
 
-      const version = await protectedSdk.api.node.getVersion();
+      const version = await protectedSdk.api.node.getVersion({});
       if (typeof version !== "string") return [false, false];
       return [true, true];
-    }
+    },
+    CHECK_TIMEOUT
   ),
   hoprdSendMessage: createCheck<string, [HoprSDK]>(
     "hoprd-send-message",
@@ -83,7 +87,8 @@ const checks = {
       );
 
       return [true, results.join(",")];
-    }
+    },
+    CHECK_TIMEOUT
   ),
   hoprdPeers: createCheck<number, [HoprSDK, number]>(
     "hoprd-peers",
@@ -96,16 +101,18 @@ const checks = {
         peers.connected.length >= minAmountOfPeers,
         peers.connected.length,
       ];
-    }
+    },
+    CHECK_TIMEOUT
   ),
   hoprdOpenOutgoingChannels: createCheck<Channel[], [HoprSDK, number]>(
     "hoprd-open-outgoing-channels",
     async function checkHoprdOpenChannels(sdk, minChannels) {
-      const channels = await sdk.api.channels.getChannels();
+      const channels = await sdk.api.channels.getChannels({});
       const outgoing = channels.outgoing.filter((c) => c.status === "Open");
 
       return [outgoing.length >= minChannels, outgoing];
-    }
+    },
+    CHECK_TIMEOUT
   ),
 };
 

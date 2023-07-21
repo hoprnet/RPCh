@@ -35,3 +35,26 @@ export const metricMiddleware =
     });
     next();
   };
+
+/**
+ * Wrap a promise with a timeout,
+ * if timeout is reached, promise is discarded.
+ * @param prom promise to be wrapped
+ * @param time miliseconds
+ * @returns
+ */
+export async function withTimeout<T>(
+  fn: () => Promise<T>,
+  timeout: number
+): Promise<T> {
+  let timer: NodeJS.Timeout;
+  return Promise.race([
+    fn(),
+    // reject after timeout
+    new Promise(
+      (_r, rej) => (timer = setTimeout(() => rej("check timeout"), timeout))
+    ),
+  ])
+    .then((res) => res as T)
+    .finally(() => clearTimeout(timer));
+}
