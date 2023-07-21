@@ -10,7 +10,7 @@ describe("test check", function () {
           setTimeout(() => resolve([true, ""]), 100);
         });
       },
-      50
+      0
     );
 
     const result = await check.run();
