@@ -114,7 +114,7 @@
         "MIN_AMOUNT_PEERS",
         "MIN_AMOUNT_CHANNELS",
         "HOPRD_REQS_TIMEOUT",
-        "REVIEW_TIMEOUT"
+        "CHECK_TIMEOUT"
       ]
     },
     "dev": {

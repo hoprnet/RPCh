@@ -1,6 +1,5 @@
 import retry from "async-retry";
-import { createLogger } from "../utils";
-// import { REVIEW_TIMEOUT } from "../constants";
+import { createLogger, withTimeout } from "../utils";
 
 const log = createLogger(["review", "check"]);
 
@@ -26,11 +25,13 @@ export type Check<T, A extends unknown[]> = {
  * Create a check to use in review.
  * @param id
  * @param run
+ * @param timeout
  * @returns a check
  */
 export function createCheck<T, A extends unknown[]>(
   id: string,
-  run: (...args: A) => Promise<[passed: boolean, value: T]>
+  run: (...args: A) => Promise<[passed: boolean, value: T]>,
+  timeout: number
 ): Check<T, A> {
   const check: Check<T, A> = {
     id,
@@ -45,8 +46,7 @@ export function createCheck<T, A extends unknown[]>(
       try {
         log.verbose("running check %s for %s", check.id);
         const [passed, value] = await retry(
-          () => run(...args),
-          // () => wrapTimeout(run(...args), REVIEW_TIMEOUT), // REMOVE timeout for debugging
+          () => withTimeout(() => run(...args), timeout),
           {
             retries: 2,
             minTimeout: 500,

@@ -43,13 +43,18 @@ export const metricMiddleware =
  * @param time miliseconds
  * @returns
  */
-export async function wrapTimeout(
-  prom: Promise<any>,
-  time: number
-): Promise<any> {
+export async function withTimeout<T>(
+  fn: () => Promise<T>,
+  timeout: number
+): Promise<T> {
   let timer: NodeJS.Timeout;
   return Promise.race([
-    prom,
-    new Promise((_r, rej) => (timer = setTimeout(rej, time))),
-  ]).finally(() => clearTimeout(timer));
+    fn(),
+    // reject after timeout
+    new Promise(
+      (_r, rej) => (timer = setTimeout(() => rej("check timeout"), timeout))
+    ),
+  ])
+    .then((res) => res as T)
+    .finally(() => clearTimeout(timer));
 }
