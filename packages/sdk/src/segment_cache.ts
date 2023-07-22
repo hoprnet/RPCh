@@ -1,4 +1,4 @@
-import type { Segment } from "segment";
+import type { Segment } from "./segment";
 
 export type Cache = Map<number, Entry>; // requestId -> segmentNr -> Segment
 
@@ -6,6 +6,10 @@ type Entry = {
   segments: Map<number, Segment>;
   count: number; // count entrie manually to avoid iterating through whole map
 };
+
+export function empty(): Cache {
+  return new Map();
+}
 
 export function incoming(cache: Cache, segment: Segment) {
   // handle invalid segment
@@ -41,7 +45,7 @@ export function incoming(cache: Cache, segment: Segment) {
 
   // creating new entry
   const entry = {
-    segments: new Map([segment.nr, segment]),
+    segments: new Map([[segment.nr, segment]]),
     count: 1,
   };
   cache.set(segment.requestId, entry);
