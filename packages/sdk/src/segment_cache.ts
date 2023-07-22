@@ -15,7 +15,7 @@ export function incoming(cache: Cache, segment: Segment) {
 
   // handle single part segment without cache
   if (segment.totalCount === 1) {
-    return { res: "complete-no-cache", segments: [segment] };
+    return { res: "complete", segments: [segment] };
   }
 
   // adding to existing segments
