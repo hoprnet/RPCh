@@ -7,7 +7,7 @@ type Entry = {
   count: number; // count entrie manually to avoid iterating through whole map
 };
 
-export function empty(): Cache {
+export function init(): Cache {
   return new Map();
 }
 
@@ -19,7 +19,7 @@ export function incoming(cache: Cache, segment: Segment) {
 
   // handle single part segment without cache
   if (segment.totalCount === 1) {
-    return { res: "complete", segments: [segment] };
+    return { res: "complete", segments: new Map([[segment.nr, segment]]) };
   }
 
   // adding to existing segments
@@ -36,8 +36,7 @@ export function incoming(cache: Cache, segment: Segment) {
 
     // check if we are completing
     if (segment.totalCount === entry.count) {
-      const segments = Array.from(entry.segments.values());
-      return { res: "complete", segments };
+      return { res: "complete", segments: entry.segments };
     }
 
     return { res: "inserted" };
