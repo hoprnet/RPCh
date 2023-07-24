@@ -1,10 +1,8 @@
 import type * as RPChCrypto from "@rpch/crypto";
 import {
-  Cache as SegmentCache,
   Message,
   Request,
   Response,
-  Segment,
   hoprd,
   utils,
 } from "@rpch/common";
@@ -13,6 +11,8 @@ import debug from "debug";
 import RequestCache from "./old-request-cache";
 import { createLogger } from "./utils";
 import NodesCollector from "./nodes-collector";
+import Segment from './segment';
+import SegmentCache from './segment-cache';
 
 const log = createLogger();
 const DEFAULT_MAXIMUM_SEGMENTS_PER_REQUEST = 10;
@@ -84,10 +84,11 @@ export default class SDK {
   private crypto: typeof RPChCrypto;
   // various intervals used to clear the caches
   private intervals: NodeJS.Timer[] = [];
-  private segmentCache: SegmentCache;
+  // private segmentCache: SegmentCache;
   private requestCache: RequestCache;
   private selectingEntryNodes: boolean = false;
   private nodesColl: NodesCollector;
+  private segmentCache : SegmentCache.Cache;
   // allows developers to programmatically enable debugging
   public debug = debug;
   // toogle to not start if it's already starting
@@ -104,9 +105,7 @@ export default class SDK {
   ) {
     this.crypto = ops.crypto;
     this.crypto.set_panic_hook();
-    this.segmentCache = new SegmentCache((message: any) =>
-      this.onMessage(message)
-    );
+    this.segmentCache = SegmentCache.init();
     this.requestCache = new RequestCache((request) =>
       this.onRequestExpiration(request)
     );
@@ -127,7 +126,6 @@ export default class SDK {
     this.intervals.push(
       setInterval(() => {
         // check for expires caches every second
-        this.segmentCache.removeExpired(this.ops.timeout);
         this.requestCache.removeExpired(this.ops.timeout);
       }, CACHES_EXPIRATION_TIMEOUT) // look for entry nodes every 5 seconds
     );
@@ -139,16 +137,26 @@ export default class SDK {
   };
 
   private onWSmessage(_peerId: string, message: string) {
-    // handle incoming messages
-    try {
-      const segment = Segment.fromString(message);
-      this.segmentCache.onSegment(segment);
-    } catch {
-      log.verbose(
-        "rejected received data from HOPRd: not a valid segment",
-        message
-      );
-    }
+      const segRes = Segment.fromString(message);
+      if (segRes.success) {
+          const cacheRes = SegmentCache.incoming(this.segmentCache, segRes.segment);
+          switch (cacheRes.result) {
+              "error":
+                  log.error(`error caching segment: ${cacheRes.reason}`);
+              break;
+              "complete":
+                  this.completeSegments(cacheRes.segments);
+              break;
+              "already-cached":
+                  log.info("already cached", Segment.toString(segRes.segment))
+              break;
+              "inserted":
+                  log.verbose("inserted new segment", Segment.toString(segRes.segment));
+              break;
+          }
+      } else {
+          log.error(`error creating segment: ${segRes.error}`)
+      }
   }
 
   /**

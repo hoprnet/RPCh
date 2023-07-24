@@ -32,3 +32,7 @@ export function fromString(
     },
   };
 }
+
+export function toString({ requestId, nr, totalCount }: Segment) {
+  return `segment[rId: ${requestId}, nr: ${nr}, total: ${totalCount}`;
+}

@@ -2,6 +2,10 @@ import type { PartialRequest, Request } from "./request";
 
 export type Cache = Map<number, Request>; // id -> Request
 
+export function init(): Cache {
+  return new Map();
+}
+
 /**
  * Add request to cache and return generated id.
  */

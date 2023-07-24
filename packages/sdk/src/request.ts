@@ -10,6 +10,7 @@ import type {
 export type PartialRequest = {
   provider: string;
   body: string;
+  createdAt: number;
   entryNodeId: string; // peerID
   exitNodeId: string; // peerID
   exitNodeReadIdentity: Identity;
@@ -44,6 +45,7 @@ export function create(
   return {
     provider,
     body,
+    createdAt: Date.now(),
     entryNodeId,
     exitNodeId,
     exitNodeReadIdentity,
