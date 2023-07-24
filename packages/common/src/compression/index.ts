@@ -28,9 +28,7 @@ import LZString from "lz-string";
  */
 
 export default class Compression {
-  public static async compressRpcRequestAsync(
-    requestBody: JSONObject
-  ): Promise<CompressedPayload> {
+  public static compressRpcRequest(requestBody: JSONObject): CompressedPayload {
     let compressionDiagram: CompressedPayload = "0000000000";
     let jsonTmp: JSONObject = null;
     let payloadIsJSON = false;
@@ -134,9 +132,7 @@ export default class Compression {
     // @ts-ignore-end
   }
 
-  public static async decompressRpcRequestAsync(
-    compressedBody: string
-  ): Promise<JSONObject> {
+  public static decompressRpcRequest(compressedBody: string): JSONObject {
     // @ts-ignore-start
     let compressionDiagram: CompressedPayload = compressedBody.substring(0, 10);
     // @ts-ignore-end
