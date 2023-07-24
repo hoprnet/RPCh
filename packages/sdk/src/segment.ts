@@ -1,5 +1,3 @@
-import { utils } from "@rpch/common";
-
 export type Segment = {
   requestId: number;
   nr: number;
@@ -7,17 +5,30 @@ export type Segment = {
   body: string;
 };
 
-export function fromString(str: string): Segment {
-  const [msgId_, segmentNr_, segmentsLength_, body] =
-    utils.splitBodyToParts(str);
+export function fromString(
+  str: string
+): { success: true; segment: Segment } | { success: false; error: string } {
+  const parts = str.split("|");
+  if (parts.length === 0) {
+    return { success: false, error: "empty string" };
+  }
 
-  const msgId = Number(msgId_);
-  const segmentNr = Number(segmentNr_);
-  const segmentsLength = Number(segmentsLength_);
+  const count = parseInt(parts[0], 10);
+  if (count !== 4) {
+    return { success: false, error: `invalid segment parts: ${count}` };
+  }
+
+  const requestId = parseInt(parts[1], 10);
+  const nr = parseInt(parts[2], 10);
+  const totalCount = parseInt(parts[3], 10);
+  const body = parts[4];
   return {
-    requestId: msgId,
-    nr: segmentNr,
-    totalCount: segmentsLength,
-    body,
+    success: true,
+    segment: {
+      requestId,
+      nr,
+      totalCount,
+      body,
+    },
   };
 }
