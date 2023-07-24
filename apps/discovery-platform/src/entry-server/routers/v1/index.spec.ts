@@ -123,26 +123,28 @@ describe("test v1 router", function () {
     const responseRequestTrialClient = await request(app).get("/request/trial");
     const trialClientId: string = responseRequestTrialClient.body.client;
 
-    await request(app)
-      .post("/node/register")
-      .set("X-Rpch-Client", trialClientId)
-      .send(mockNode("notExit1", false));
-    await request(app)
-      .post("/node/register")
-      .set("X-Rpch-Client", trialClientId)
-      .send(mockNode("notExit2", false));
-    await request(app)
-      .post("/node/register")
-      .set("X-Rpch-Client", trialClientId)
-      .send(mockNode("exit3", true));
-    await request(app)
-      .post("/node/register")
-      .set("X-Rpch-Client", trialClientId)
-      .send(mockNode("exit4", true));
-    await request(app)
-      .post("/node/register")
-      .set("X-Rpch-Client", trialClientId)
-      .send(mockNode(UNSTABLE_NODE_PEERID, true));
+    await Promise.all([
+      request(app)
+        .post("/node/register")
+        .set("X-Rpch-Client", trialClientId)
+        .send(mockNode("notExit1", false)),
+      request(app)
+        .post("/node/register")
+        .set("X-Rpch-Client", trialClientId)
+        .send(mockNode("notExit2", false)),
+      request(app)
+        .post("/node/register")
+        .set("X-Rpch-Client", trialClientId)
+        .send(mockNode("exit3", true)),
+      request(app)
+        .post("/node/register")
+        .set("X-Rpch-Client", trialClientId)
+        .send(mockNode("exit4", true)),
+      request(app)
+        .post("/node/register")
+        .set("X-Rpch-Client", trialClientId)
+        .send(mockNode(UNSTABLE_NODE_PEERID, true)),
+    ]);
 
     const allExitNodes = await request(app)
       .get(`/node?hasExitNode=true`)
@@ -155,26 +157,28 @@ describe("test v1 router", function () {
     const responseRequestTrialClient = await request(app).get("/request/trial");
     const trialClientId: string = responseRequestTrialClient.body.client;
 
-    await request(app)
-      .post("/node/register")
-      .set("X-Rpch-Client", trialClientId)
-      .send(mockNode("notExit1", false));
-    await request(app)
-      .post("/node/register")
-      .set("X-Rpch-Client", trialClientId)
-      .send(mockNode("notExit2", false));
-    await request(app)
-      .post("/node/register")
-      .set("X-Rpch-Client", trialClientId)
-      .send(mockNode("notExit3", false));
-    await request(app)
-      .post("/node/register")
-      .set("X-Rpch-Client", trialClientId)
-      .send(mockNode(UNSTABLE_NODE_PEERID, false));
-    await request(app)
-      .post("/node/register")
-      .set("X-Rpch-Client", trialClientId)
-      .send(mockNode("exit4", true));
+    await Promise.all([
+      request(app)
+        .post("/node/register")
+        .set("X-Rpch-Client", trialClientId)
+        .send(mockNode("notExit1", false)),
+      request(app)
+        .post("/node/register")
+        .set("X-Rpch-Client", trialClientId)
+        .send(mockNode("notExit2", false)),
+      request(app)
+        .post("/node/register")
+        .set("X-Rpch-Client", trialClientId)
+        .send(mockNode("notExit3", false)),
+      request(app)
+        .post("/node/register")
+        .set("X-Rpch-Client", trialClientId)
+        .send(mockNode(UNSTABLE_NODE_PEERID, false)),
+      request(app)
+        .post("/node/register")
+        .set("X-Rpch-Client", trialClientId)
+        .send(mockNode("exit4", true)),
+    ]);
 
     const allExitNodes = await request(app)
       .get(`/node?hasExitNode=${false}&excludeList=${UNSTABLE_NODE_PEERID}`)
@@ -193,26 +197,28 @@ describe("test v1 router", function () {
     const responseRequestTrialClient = await request(app).get("/request/trial");
     const trialClientId: string = responseRequestTrialClient.body.client;
 
-    await request(app)
-      .post("/node/register")
-      .set("X-Rpch-Client", trialClientId)
-      .send(mockNode("notExit1", false));
-    await request(app)
-      .post("/node/register")
-      .set("X-Rpch-Client", trialClientId)
-      .send(mockNode("notExit2", false));
-    await request(app)
-      .post("/node/register")
-      .set("X-Rpch-Client", trialClientId)
-      .send(mockNode("exit3", true));
-    await request(app)
-      .post("/node/register")
-      .set("X-Rpch-Client", trialClientId)
-      .send(mockNode("exit4", true));
-    await request(app)
-      .post("/node/register")
-      .set("X-Rpch-Client", trialClientId)
-      .send(mockNode(UNSTABLE_NODE_PEERID, true));
+    await Promise.all([
+      request(app)
+        .post("/node/register")
+        .set("X-Rpch-Client", trialClientId)
+        .send(mockNode("notExit1", false)),
+      request(app)
+        .post("/node/register")
+        .set("X-Rpch-Client", trialClientId)
+        .send(mockNode("notExit2", false)),
+      request(app)
+        .post("/node/register")
+        .set("X-Rpch-Client", trialClientId)
+        .send(mockNode("exit3", true)),
+      request(app)
+        .post("/node/register")
+        .set("X-Rpch-Client", trialClientId)
+        .send(mockNode("exit4", true)),
+      request(app)
+        .post("/node/register")
+        .set("X-Rpch-Client", trialClientId)
+        .send(mockNode(UNSTABLE_NODE_PEERID, true)),
+    ]);
 
     const allExitNodes = await request(app)
       .get(`/node?hasExitNode=true`)

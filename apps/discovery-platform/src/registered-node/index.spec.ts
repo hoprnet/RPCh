@@ -169,7 +169,7 @@ describe("test registered node functions", function () {
   it("should keep updated_at updated", async function () {
     await createRegisteredNode(dbInstance, mockNode("1"));
     const node = await getRegisteredNode(dbInstance, "1");
-    await wait(1);
+    await wait(100);
     await updateRegisteredNode(dbInstance, {
       ...node,
       status: "READY",

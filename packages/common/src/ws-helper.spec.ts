@@ -122,7 +122,6 @@ describe("test ws class", function () {
     let connection: WebSocketHelper;
     const eventHist: string[] = [];
     const onEvent: onEventType = (evt) => {
-      console.log(evt);
       switch (evt.action) {
         case "close":
           eventHist.push("close");
