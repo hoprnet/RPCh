@@ -19,7 +19,6 @@
     "@rpch/configs-typescript": "*",
     "@rpch/crypto": "0.3.4",
     "@rpch/crypto-for-nodejs": "0.3.4",
-    "nock": "^13.2.9",
     "@types/async-retry": "^1.4.5"
   },
   "dependencies": {

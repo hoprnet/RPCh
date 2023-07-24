@@ -22,7 +22,6 @@
     "@types/compression": "^1.7.2",
     "@types/express": "^4.17.17",
     "@types/supertest": "^2.0.12",
-    "nock": "^13.2.9",
     "pg-mem": "^2.6.4",
     "supertest": "^6.3.3"
   },

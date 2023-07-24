@@ -29,7 +29,6 @@
     "chai": "^4.3.7",
     "hardhat": "^2.12.3",
     "lodash": "^4.17.21",
-    "nock": "^13.2.9",
     "node-pg-migrate": "^6.2.2",
     "pg-mem": "^2.6.4",
     "pg-promise": "^11.0.0",
