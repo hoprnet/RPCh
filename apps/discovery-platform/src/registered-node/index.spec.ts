@@ -169,6 +169,8 @@ describe("test registered node functions", function () {
   it("should keep updated_at updated", async function () {
     await createRegisteredNode(dbInstance, mockNode("1"));
     const node = await getRegisteredNode(dbInstance, "1");
+    // waiting for 2ms instead of 1ms since setTimeout is not entirely exact
+    // see https://nodejs.org/dist/latest-v17.x/docs/api/timers.html#settimeoutcallback-delay-args
     await wait(2);
     await updateRegisteredNode(dbInstance, {
       ...node,
