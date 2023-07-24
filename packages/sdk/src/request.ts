@@ -1,13 +1,11 @@
 import { utils } from "ethers";
-import Compression from "@rpch/common";
+import { compression } from "@rpch/common";
 import type {
   Envelope,
   box_request,
   Session,
   Identity,
 } from "@rpch/crypto-for-nodejs";
-
-import * as RequestCache from "./old-request-cache";
 
 export type PartialRequest = {
   provider: string;
@@ -35,7 +33,7 @@ export function create(
   exitNodeId: string,
   exitNodeReadIdentity: Identity
 ): PartialRequest {
-  const compressedBody = Compression.compressRpcRequest(body);
+  const compressedBody = compression.compressRpcRequest(body);
   const payload = [3, "request", provider, compressedBody].join("|");
   const envelope = new crypto.Envelope(
     utils.toUtf8Bytes(payload),

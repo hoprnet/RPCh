@@ -10,7 +10,7 @@ import {
 } from "@rpch/common";
 import { utils as etherUtils } from "ethers";
 import debug from "debug";
-import RequestCache from "./request-cache";
+import RequestCache from "./old-request-cache";
 import { createLogger } from "./utils";
 import NodesCollector from "./nodes-collector";
 
