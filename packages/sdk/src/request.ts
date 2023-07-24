@@ -7,7 +7,7 @@ import type {
   Identity,
 } from "@rpch/crypto-for-nodejs";
 
-import * as RequestCache from "./request-cache";
+import * as RequestCache from "./old-request-cache";
 
 export type PartialRequest = {
   provider: string;
@@ -52,14 +52,3 @@ export function create(
     session,
   };
 }
-
-function generateId(requestCache: RequestCache.Cache) {
-  let id = Math.floor(Math.random() * 1e6);
-  while (requestCache.has(id)) {
-    id = Math.floor(Math.random() * 1e6);
-  }
-  return id;
-}
-const id = generateId(requestCache);
-requestCache.set(id, request);
-return request;
