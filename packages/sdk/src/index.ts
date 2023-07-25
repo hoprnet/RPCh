@@ -1,18 +1,18 @@
 import type * as RPChCrypto from "@rpch/crypto";
-import {
-  Message,
-  Request,
-  Response,
-  hoprd,
-  utils,
-} from "@rpch/common";
+import { Message, Response, hoprd, utils } from "@rpch/common";
+import type {
+  Envelope,
+  unbox_response,
+  box_response,
+} from "@rpch/crypto-for-nodejs";
 import { utils as etherUtils } from "ethers";
 import debug from "debug";
-import RequestCache from "./old-request-cache";
 import { createLogger } from "./utils";
 import NodesCollector from "./nodes-collector";
-import Segment from './segment';
-import SegmentCache from './segment-cache';
+import * as Request from "./request";
+import * as RequestCache from "./request-cache";
+import * as Segment from "./segment";
+import * as SegmentCache from "./segment-cache";
 
 const log = createLogger();
 const DEFAULT_MAXIMUM_SEGMENTS_PER_REQUEST = 10;
@@ -82,13 +82,11 @@ export default class SDK {
   private maxEntryNodes: number = DEFAULT_MAX_ENTRY_NODES;
   // RPCh crypto library used
   private crypto: typeof RPChCrypto;
-  // various intervals used to clear the caches
-  private intervals: NodeJS.Timer[] = [];
   // private segmentCache: SegmentCache;
-  private requestCache: RequestCache;
   private selectingEntryNodes: boolean = false;
   private nodesColl: NodesCollector;
-  private segmentCache : SegmentCache.Cache;
+  private requestCache: RequestCache.Cache;
+  private segmentCache: SegmentCache.Cache;
   // allows developers to programmatically enable debugging
   public debug = debug;
   // toogle to not start if it's already starting
@@ -105,10 +103,8 @@ export default class SDK {
   ) {
     this.crypto = ops.crypto;
     this.crypto.set_panic_hook();
+    this.requestCache = RequestCache.init();
     this.segmentCache = SegmentCache.init();
-    this.requestCache = new RequestCache((request) =>
-      this.onRequestExpiration(request)
-    );
     // set to default if not specified
     this.maximumSegmentsPerRequest =
       ops.maximumSegmentsPerRequest ?? DEFAULT_MAXIMUM_SEGMENTS_PER_REQUEST;
@@ -123,66 +119,68 @@ export default class SDK {
       ops.client,
       (peerId, message) => this.onWSmessage(peerId, message)
     );
-    this.intervals.push(
-      setInterval(() => {
-        // check for expires caches every second
-        this.requestCache.removeExpired(this.ops.timeout);
-      }, CACHES_EXPIRATION_TIMEOUT) // look for entry nodes every 5 seconds
-    );
   }
 
   public stop = () => {
-    this.intervals.forEach(clearInterval);
     this.nodesColl.stop();
   };
 
   private onWSmessage(_peerId: string, message: string) {
-      const segRes = Segment.fromString(message);
-      if (segRes.success) {
-          const cacheRes = SegmentCache.incoming(this.segmentCache, segRes.segment);
-          switch (cacheRes.result) {
-              "error":
-                  log.error(`error caching segment: ${cacheRes.reason}`);
-              break;
-              "complete":
-                  this.completeSegments(cacheRes.segments);
-              break;
-              "already-cached":
-                  log.info("already cached", Segment.toString(segRes.segment))
-              break;
-              "inserted":
-                  log.verbose("inserted new segment", Segment.toString(segRes.segment));
-              break;
-          }
-      } else {
-          log.error(`error creating segment: ${segRes.error}`)
-      }
+    const segRes = Segment.fromString(message);
+    if (!segRes.success) {
+      log.error("error creating segment", segRes.error);
+      return;
+    }
+    const segment = segRes.segment;
+    if (!this.requestCache.has(segment.requestId)) {
+      log.info("dropping unrelated request segment", Segment.toString(segment));
+      return;
+    }
+
+    const cacheRes = SegmentCache.incoming(this.segmentCache, segment);
+    switch (cacheRes.res) {
+      case "complete":
+        this.completeSegmentsEntry(cacheRes.entry!);
+        break;
+      case "error":
+        log.error(`error caching segment: ${cacheRes.reason}`);
+        break;
+      case "already-cached":
+        log.info("already cached", Segment.toString(segment));
+        break;
+      case "inserted":
+        log.verbose("inserted new segment", Segment.toString(segment));
+        break;
+    }
   }
 
-  /**
-   * Resolve request promise and delete the request from map
-   * @param message Message received from cache module
-   */
-  private async onMessage(message: Message): Promise<void> {
-    // check whether we have a response
-    if (!message.body.startsWith("0x")) {
-      log.verbose("message is not a response", message.id, message.body);
+  private async completeSegmentsEntry(entry: SegmentCache.Entry) {
+    const firstSeg = entry.segments.get(0)!;
+    if (!firstSeg.body.startsWith("0x")) {
+      log.info("message is not a response", firstSeg.requestId);
       return;
     }
 
-    // check whether we have a matching request id
-    const match = this.requestCache.getRequest(message.id);
-    if (!match) {
-      log.verbose("matching request not found", message.id);
-      return;
-    }
-    this.requestCache.removeRequest(match.request);
+    const request = this.requestCache.get(firstSeg.requestId)!;
+    this.requestCache.delete(firstSeg.requestId);
+
+    const message = SegmentCache.toMessage(entry);
+    const counter = await this.getKeyVal(request.exitNodeId).then((k) =>
+      BigInt(k || "0")
+    );
+
+    const result = this.crypto.unbox_response(
+      request.session,
+      new this.crypto.Envelope(
+        utils.arrayify(message),
+        request.entryNodeId,
+        request.exitNodeId
+      ),
+      counter
+    );
+    console.log("result", result);
 
     try {
-      const counter = await this.getKeyVal(
-        match.request.exitNodeDestination
-      ).then((k) => BigInt(k || "0"));
-
       // construct Response from Message
       const response = await Response.fromMessage(
         this.crypto!,

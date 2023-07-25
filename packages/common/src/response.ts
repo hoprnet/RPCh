@@ -1,4 +1,7 @@
 import type Request from "./request";
+import { utils } from "ethers";
+import debug from "debug";
+import { createLogger } from "./utils";
 import type {
   Envelope,
   unbox_response,
@@ -7,8 +10,8 @@ import type {
 import Message from "./message";
 import * as Compression from "./compression";
 import { joinPartsToBody, splitBodyToParts } from "./utils";
-import { utils } from "ethers";
 
+const log = createLogger(["response"]);
 /**
  * Represents a response made by a RPCh.
  * To be send over the HOPR network via Response.toMessage().
@@ -27,10 +30,8 @@ export default class Response {
    * @return Response
    */
   public static async createResponse(
-    crypto: {
-      Envelope: typeof Envelope;
-      box_response: typeof box_response;
-    },
+    // @ts-ignore
+    crypto,
     request: Request,
     body: string
   ): Promise<Response> {
@@ -41,7 +42,8 @@ export default class Response {
       request.entryNodeDestination,
       request.exitNodeDestination
     );
-    crypto.box_response(request.session, envelope);
+    const resBox = crypto.box_response(request.session, envelope);
+    log.info("FOO_resBox", resBox);
     return new Response(request.id, body, request);
   }
 
@@ -52,10 +54,8 @@ export default class Response {
    * @returns Request
    */
   public static async fromMessage(
-    crypto: {
-      Envelope: typeof Envelope;
-      unbox_response: typeof unbox_response;
-    },
+    // @ts-ignore
+    crypto,
     request: Request,
     message: Message,
     lastResponseFromExitNode: bigint,
@@ -66,17 +66,30 @@ export default class Response {
   ): Promise<Response> {
     if (!message.body.startsWith("0x"))
       throw Error("Message is not a Response");
+    const payload = [3, "request", "foobar", "barfoo"].join("|");
+    const envelope = new crypto.Envelope(
+      utils.toUtf8Bytes(payload),
+      request.exitNodeDestination,
+      request.entryNodeDestination
+    );
+    const EXIT_NODE_PUB_KEY_A =
+      "0x021d5401d6fa65591e4a08a2fdff6c7687f1de5a2326ed8ade69b69e6fe9b9d59f";
+    const exitNodeReadIdentity = crypto.Identity.load_identity(
+      utils.arrayify(EXIT_NODE_PUB_KEY_A)
+    );
+    const session = crypto.box_request(envelope, exitNodeReadIdentity);
 
-    crypto.unbox_response(
-      request.session,
+    const resUnbox = crypto.unbox_response(
+      session,
       new crypto.Envelope(
         utils.arrayify(message.body),
         request.entryNodeDestination,
         request.exitNodeDestination
       ),
-      lastResponseFromExitNode
+      BigInt(11)
     );
 
+    log.info("FOO_resUnbox", resUnbox);
     await updateLastResponseFromExitNode(
       request.exitNodeDestination,
       request.session.updated_counter()

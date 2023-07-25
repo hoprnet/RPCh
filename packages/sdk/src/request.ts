@@ -7,7 +7,7 @@ import type {
   Identity,
 } from "@rpch/crypto-for-nodejs";
 
-export type PartialRequest = {
+export type RequestData = {
   provider: string;
   body: string;
   createdAt: number;
@@ -17,7 +17,11 @@ export type PartialRequest = {
   session: Session;
 };
 
-export type Request = PartialRequest & { id: number };
+export type Request = RequestData & {
+  id: number;
+  resolve: (body: string) => void;
+  reject: (error: string) => void;
+};
 
 /**
  * Creates a request without the id.
@@ -33,7 +37,7 @@ export function create(
   entryNodeId: string,
   exitNodeId: string,
   exitNodeReadIdentity: Identity
-): PartialRequest {
+): RequestData {
   const compressedBody = compression.compressRpcRequest(body);
   const payload = [3, "request", provider, compressedBody].join("|");
   const envelope = new crypto.Envelope(
