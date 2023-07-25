@@ -8,7 +8,8 @@ import type {
 } from "@rpch/crypto-for-nodejs";
 import type { Segment } from "./segment";
 
-export type RequestData = {
+export type Request = {
+  id: number;
   provider: string;
   body: string;
   createdAt: number;
@@ -17,10 +18,6 @@ export type RequestData = {
   exitNodeReadIdentity: Identity;
   session: Session;
 };
-
-export interface Request extends RequestData {
-  id: number;
-}
 
 // Maximum bytes we should be sending within the HOPR network.
 const MAX_BYTES = 400;
@@ -36,12 +33,13 @@ export function create(
     Envelope: typeof Envelope;
     box_request: typeof box_request;
   },
+  id: number,
   provider: string,
   body: string,
   entryId: string,
   exitId: string,
   exitNodeReadIdentity: Identity
-): RequestData {
+): Request {
   const compressedBody = compression.compressRpcRequest(body);
   const payload = [3, "request", provider, compressedBody].join("|");
   const envelope = new crypto.Envelope(
@@ -51,6 +49,7 @@ export function create(
   );
   const session = crypto.box_request(envelope, exitNodeReadIdentity);
   return {
+    id,
     provider,
     body,
     createdAt: Date.now(),

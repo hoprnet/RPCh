@@ -1,10 +1,12 @@
-import type { RequestData, Request } from "./request";
+import { Response as CommonResponse } from "@rpch/common";
+import type { Request } from "./request";
 
 export type Cache = Map<number, Entry>; // id -> Request
 
 export type Entry = Request & {
-  resolve: (body: string) => void;
+  resolve: (res: CommonResponse) => void;
   reject: (error: string) => void;
+  timer: ReturnType<typeof setTimeout>;
 };
 
 export function init(): Cache {
@@ -14,21 +16,34 @@ export function init(): Cache {
 /**
  * Add request data to cache and return generated id.
  */
-export function addData(
-  requestCache: Cache,
-  reqData: RequestData,
-  resolve: (body: string) => void,
-  reject: (error: string) => void
-): number {
-  const id = generateId(requestCache);
-  const request = { ...reqData, id, resolve, reject };
-  requestCache.set(id, request);
-  return id;
+export function add(
+  cache: Cache,
+  request: Request,
+  resolve: (res: CommonResponse) => void,
+  reject: (error: string) => void,
+  timer: ReturnType<typeof setTimeout>
+): Entry {
+  const entry = { ...request, resolve, reject, timer };
+  cache.set(request.id, entry);
+  return entry;
 }
 
-function generateId(requestCache: Cache) {
+/**
+ * Remove request id from cache.
+ */
+export function remove(cache: Cache, id: number) {
+  const t = cache.get(id)?.timer;
+  clearTimeout(t);
+  cache.delete(id);
+}
+
+/**
+ * Generate an available request id.
+ * Will loop indefinitely if all request ids are taken (max ~1e7).
+ */
+export function generateId(cache: Cache): number {
   let id = Math.floor(Math.random() * 1e6);
-  while (requestCache.has(id)) {
+  while (cache.has(id)) {
     id = Math.floor(Math.random() * 1e6);
   }
   return id;

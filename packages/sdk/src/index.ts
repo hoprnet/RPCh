@@ -15,7 +15,6 @@ const DEFAULT_MAXIMUM_SEGMENTS_PER_REQUEST = 10;
 const DEFAULT_RESET_NODE_METRICS_MS = 1e3 * 60 * 5; // 5 min
 const DEFAULT_MINIMUM_SCORE_FOR_RELIABLE_NODE = 0.8;
 const DEFAULT_MAX_ENTRY_NODES = 2;
-const CACHES_EXPIRATION_TIMEOUT = 1e3 * 5; // 5 sec
 
 /**
  * HOPR SDK options.
@@ -161,8 +160,8 @@ export default class SDK {
     }
 
     const request = this.requestCache.get(firstSeg.requestId)!;
-    this.requestCache.delete(firstSeg.requestId);
-    this.segmentCache.delete(firstSeg.requestId);
+    RequestCache.remove(this.requestCache, request.id);
+    SegmentCache.remove(this.segmentCache, request.id);
 
     const message = SegmentCache.toMessage(entry);
     const counter = await this.getKeyVal(request.exitId).then((k) =>
@@ -188,7 +187,8 @@ export default class SDK {
       });
 
       log.verbose("responded to %s with %s", request.body, res.body);
-      return request.resolve(new CommonResponse(request.id, res.body, request));
+      // @ts-ignore
+      return request.resolve(new CommonResponse(request.id, res.body, null));
     } else {
       log.error("Error extracting message", res.error);
       this.nodesColl.finishRequest({
@@ -199,21 +199,6 @@ export default class SDK {
       });
       return request.reject("Unable to process response");
     }
-  }
-
-  /**
-   * Adds a failed metric to the reliability score
-   * when the request expires.
-   * @param req Request received from cache module.
-   */
-  private onRequestExpiration(req: Request): void {
-    log.normal("request %i expired", req.id);
-    this.nodesColl.finishRequest({
-      entryId: req.entryNodeDestination,
-      exitId: req.exitNodeDestination,
-      requestId: req.id,
-      result: false,
-    });
   }
 
   /**
@@ -252,8 +237,8 @@ export default class SDK {
     provider: string,
     body: string,
     timeout: number = 10e3
-  ): Promise<Response> {
-    return new Promise(async (resolve, reject) => {
+  ): Promise<CommonResponse> {
+    return new Promise<CommonResponse>(async (resolve, reject) => {
       const res = await this.nodesColl
         .findReliableNodePair(timeout)
         .catch((err) => {
@@ -269,8 +254,10 @@ export default class SDK {
       }
 
       const { entryNode, exitNode } = res;
+      const id = RequestCache.generateId(this.requestCache);
       const request = Request.create(
         this.crypto,
+        id,
         provider,
         body,
         entryNode.peerId,
@@ -280,21 +267,29 @@ export default class SDK {
         )
       );
 
-      const segments = Request.toSegments(request);
-      if (segments.length > this.maximumSegmentsPerRequest) {
-        log.error(
-          "Request exceeds maximum amount of segments with %s segments",
-          segments.length
-        );
-        return reject("Request is too big");
-      }
+      const timer = setTimeout(() => {
+        log.error("request expired", request.id);
+        this.rejectRequest(request);
+        return reject("request timed out");
+      }, timeout);
+
+      RequestCache.add(this.requestCache, request, resolve, reject, timer);
 
       this.nodesColl.startRequest({
         entryId: entryNode.peerId,
         exitId: exitNode.peerId,
         requestId: request.id,
       });
-      RequestCache.addData(this.requestCache, request, resolve, reject);
+
+      const segments = Request.toSegments(request);
+      if (segments.length > this.maximumSegmentsPerRequest) {
+        log.error(
+          "Request exceeds maximum amount of segments with %s segments",
+          segments.length
+        );
+        this.rejectRequest(request);
+        return reject("Request is too big");
+      }
 
       log.info("sending request %i", request.id);
 
@@ -304,7 +299,7 @@ export default class SDK {
           apiEndpoint: entryNode.apiEndpoint.toString(),
           apiToken: entryNode.apiToken,
           message: segment.toString(),
-          destination: request.exitNodeDestination,
+          destination: request.exitId,
           path: [],
         });
       });
@@ -318,27 +313,26 @@ export default class SDK {
 
         if (rejectedResults.length > 0) {
           // If any promises were rejected, remove request from cache and reject promise
-          this.requestCache.delete(request.id);
-          this.nodesColl.finishRequest({
-            entryId: request.entryId,
-            exitId: request.exitId,
-            requestId: request.id,
-            result: false,
-          });
           log.error("Failed sending segments", rejectedResults);
+          this.rejectRequest(request);
           return reject("not all segments were delivered");
         }
       } catch (err) {
-        this.requestCache.delete(request.id);
-        this.nodesColl.finishRequest({
-          entryId: request.entryId,
-          exitId: request.exitId,
-          requestId: request.id,
-          result: false,
-        });
         log.error("Error during sending segments", err);
+        this.rejectRequest(request);
         return reject("Error during sending segments");
       }
     });
+  }
+
+  private rejectRequest(request: Request.Request) {
+    this.nodesColl.finishRequest({
+      entryId: request.entryId,
+      exitId: request.exitId,
+      requestId: request.id,
+      result: false,
+    });
+    RequestCache.remove(this.requestCache, request.id);
+    SegmentCache.remove(this.segmentCache, request.id);
   }
 }

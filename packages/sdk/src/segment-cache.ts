@@ -75,3 +75,11 @@ export function toMessage({ segments, count }: Entry) {
   }
   return res;
 }
+
+/**
+ * Remove everything related to request id.
+ *
+ */
+export function remove(cache: Cache, requestId: number) {
+  cache.delete(requestId);
+}
