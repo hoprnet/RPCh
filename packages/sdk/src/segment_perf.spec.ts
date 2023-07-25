@@ -4,7 +4,7 @@ import {
 } from "@rpch/common";
 import * as SegmentCache from "./segment-cache";
 import * as Segment from "./segment";
-import segments5000 from "./segments_5000";
+import segments5000 from "./segment_perf_5000";
 
 describe("test performance of incoming messages", function () {
   it("running old segment cache first", function () {
