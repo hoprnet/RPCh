@@ -1,56 +1,75 @@
-import { Cache as SegmentCache, Segment } from "@rpch/common";
-import { empty, incoming } from "./segment_cache";
-import * as NewSegment from "./segment";
+import {
+  Cache as CommonSegmentCache,
+  Segment as CommonSegment,
+} from "@rpch/common";
+import * as SegmentCache from "./segment-cache";
+import * as Segment from "./segment";
 import segments5000 from "./segments_5000";
 
 describe("test performance of incoming messages", function () {
   it("running old segment cache first", function () {
-    const scOld = new SegmentCache(
+    const scOld = new CommonSegmentCache(
       function () {},
       function () {}
     );
     const ts = performance.now();
     segments5000.forEach(function (s: string) {
-      const segment = Segment.fromString(s);
+      const segment = CommonSegment.fromString(s);
       scOld.onSegment(segment);
     });
     const later = performance.now();
-    console.log("took old", later - ts, "ns");
+    const diff = later - ts;
     expect(later).toBeGreaterThan(ts);
 
-    const scNew = empty();
+    const scNew = SegmentCache.init();
     const ts2 = performance.now();
     segments5000.forEach(function (s: string) {
-      const segment = NewSegment.fromString(s);
-      incoming(scNew, segment);
+      const res1 = Segment.fromString(s);
+      // @ts-ignore
+      const res2 = SegmentCache.incoming(scNew, res1.segment);
+      if (res2.res === "complete") {
+        // @ts-ignore
+        SegmentCache.toMessage(res2.segments);
+      }
     });
     const later2 = performance.now();
-    console.log("took new", later2 - ts2, "ns");
+    const diff2 = later2 - ts2;
     expect(later2).toBeGreaterThan(ts2);
+
+    console.log("old segment cache first", diff, "vs new", diff2);
+    expect(diff2).toBeLessThan(diff);
   });
 
   it("running new segment cache first", function () {
-    const scNew = empty();
+    const scNew = SegmentCache.init();
     const ts2 = performance.now();
     segments5000.forEach(function (s: string) {
-      const segment = NewSegment.fromString(s);
-      incoming(scNew, segment);
+      const res1 = Segment.fromString(s);
+      // @ts-ignore
+      const res2 = SegmentCache.incoming(scNew, res1.segment);
+      if (res2.res === "complete") {
+        // @ts-ignore
+        SegmentCache.toMessage(res2.segments);
+      }
     });
     const later2 = performance.now();
-    console.log("took new", later2 - ts2, "ns");
+    const diff2 = later2 - ts2;
     expect(later2).toBeGreaterThan(ts2);
 
-    const scOld = new SegmentCache(
+    const scOld = new CommonSegmentCache(
       function () {},
       function () {}
     );
     const ts = performance.now();
     segments5000.forEach(function (s: string) {
-      const segment = Segment.fromString(s);
+      const segment = CommonSegment.fromString(s);
       scOld.onSegment(segment);
     });
     const later = performance.now();
-    console.log("took old", later - ts, "ns");
+    const diff = later - ts;
     expect(later).toBeGreaterThan(ts);
+
+    console.log("new segment cache first", diff2, "vs old", diff);
+    expect(diff2).toBeLessThan(diff);
   });
 });
