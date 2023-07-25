@@ -17,11 +17,7 @@ export function messageToBody(
   try {
     crypto.unbox_response(
       request.session,
-      new crypto.Envelope(
-        utils.arrayify(msg),
-        request.entryNodeId,
-        request.exitNodeId
-      ),
+      new crypto.Envelope(utils.arrayify(msg), request.entryId, request.exitId),
       counter
     );
   } catch (err) {
