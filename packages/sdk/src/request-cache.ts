@@ -1,6 +1,11 @@
 import type { RequestData, Request } from "./request";
 
-export type Cache = Map<number, Request>; // id -> Request
+export type Cache = Map<number, Entry>; // id -> Request
+
+export type Entry = Request & {
+  resolve: (body: string) => void;
+  reject: (error: string) => void;
+};
 
 export function init(): Cache {
   return new Map();

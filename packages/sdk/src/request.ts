@@ -6,6 +6,7 @@ import type {
   Session,
   Identity,
 } from "@rpch/crypto-for-nodejs";
+import type { Segment } from "./segment";
 
 export type RequestData = {
   provider: string;
@@ -17,17 +18,14 @@ export type RequestData = {
   session: Session;
 };
 
-export type Request = RequestData & {
+export interface Request extends RequestData {
   id: number;
-  resolve: (body: string) => void;
-  reject: (error: string) => void;
-};
+}
 
-/**
- * Maximum bytes we should be sending
- * within the HOPR network.
- */
+// Maximum bytes we should be sending within the HOPR network.
 const MAX_BYTES = 400;
+// Maximum segment overhead is 17 bytes, could be as little as 13 though (e.g. `4|999999|999|999|` vs `4|999999|9|9|`)
+const MAX_SEGMENT_BODY = MAX_BYTES - 17;
 
 /**
  * Creates a request without the id.
@@ -61,4 +59,24 @@ export function create(
     exitNodeReadIdentity,
     session,
   };
+}
+
+export function toSegments(req: Request): Segment[] {
+  const body = [
+    2,
+    req.entryId,
+    utils.hexlify(req.session.get_request_data()),
+  ].join("|");
+
+  const chunks: string[] = [];
+  for (let i = 0; i < body.length; i += MAX_SEGMENT_BODY) {
+    chunks.push(body.slice(i, i + MAX_SEGMENT_BODY));
+  }
+
+  return chunks.map((c, nr) => ({
+    requestId: req.id,
+    nr,
+    totalCount: chunks.length,
+    body: c,
+  }));
 }
