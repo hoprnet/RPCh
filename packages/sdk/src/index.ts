@@ -1,5 +1,5 @@
 import type * as RPChCrypto from "@rpch/crypto";
-import { Response as CommonResponse, hoprd, utils } from "@rpch/common";
+import { Response as CommonResponse, hoprd } from "@rpch/common";
 import { utils as etherUtils } from "ethers";
 import debug from "debug";
 import { createLogger } from "./utils";
@@ -77,17 +77,11 @@ export default class SDK {
   private maxEntryNodes: number = DEFAULT_MAX_ENTRY_NODES;
   // RPCh crypto library used
   private crypto: typeof RPChCrypto;
-  // private segmentCache: SegmentCache;
-  private selectingEntryNodes: boolean = false;
   private nodesColl: NodesCollector;
   private requestCache: RequestCache.Cache;
   private segmentCache: SegmentCache.Cache;
   // allows developers to programmatically enable debugging
   public debug = debug;
-  // toogle to not start if it's already starting
-  public starting: boolean = false;
-  // resolves once SDK has started
-  public startingPromise = new utils.DeferredPromise<void>();
 
   constructor(
     private readonly ops: HoprSdkOps,
