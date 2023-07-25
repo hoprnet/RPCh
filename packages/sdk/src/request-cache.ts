@@ -12,9 +12,9 @@ export function init(): Cache {
 }
 
 /**
- * Add request to cache and return generated id.
+ * Add request data to cache and return generated id.
  */
-export function addRequest(
+export function addData(
   requestCache: Cache,
   reqData: RequestData,
   resolve: (body: string) => void,

@@ -217,25 +217,6 @@ export default class SDK {
   }
 
   /**
-   * Remove request from requestCache and add failed metric
-   * @param req Request
-   * @returns void
-   */
-  public handleFailedRequest(req: Request, reason?: string) {
-    log.normal("request %i failed", req.id, reason || "unknown reason");
-    // add metric failed metric
-    this.nodesColl.finishRequest({
-      entryId: req.entryNodeDestination,
-      exitId: req.exitNodeDestination,
-      requestId: req.id,
-      result: false,
-    });
-    // reject request promise
-    this.requestCache.getRequest(req.id)?.reject(`request failed: "${reason}"`);
-    this.requestCache.removeRequest(req);
-  }
-
-  /**
    * Resolves true when node pairs are awailable.
    */
   public async isReady(timeout: number = 10e3): Promise<boolean> {
@@ -288,8 +269,8 @@ export default class SDK {
       }
 
       const { entryNode, exitNode } = res;
-      const req = await Request.createRequest(
-        this.crypto!,
+      const request = Request.create(
+        this.crypto,
         provider,
         body,
         entryNode.peerId,
@@ -298,16 +279,8 @@ export default class SDK {
           etherUtils.arrayify(exitNode.pubKey)
         )
       );
-      this.nodesColl.startRequest({
-        entryId: entryNode.peerId,
-        exitId: exitNode.peerId,
-        requestId: req.id,
-      });
-      log.info("sending request %i", req.id);
 
-      const message = req.toMessage();
-      const segments = message.toSegments();
-
+      const segments = Request.toSegments(request);
       if (segments.length > this.maximumSegmentsPerRequest) {
         log.error(
           "Request exceeds maximum amount of segments with %s segments",
@@ -316,8 +289,14 @@ export default class SDK {
         return reject("Request is too big");
       }
 
-      // Add request to request cache
-      this.requestCache.addRequest(req, resolve, reject);
+      this.nodesColl.startRequest({
+        entryId: entryNode.peerId,
+        exitId: exitNode.peerId,
+        requestId: request.id,
+      });
+      RequestCache.addData(this.requestCache, request, resolve, reject);
+
+      log.info("sending request %i", request.id);
 
       // Send all segments in parallel using Promise.allSettled
       const sendMessagePromises = segments.map((segment: any) => {
@@ -325,7 +304,7 @@ export default class SDK {
           apiEndpoint: entryNode.apiEndpoint.toString(),
           apiToken: entryNode.apiToken,
           message: segment.toString(),
-          destination: req.exitNodeDestination,
+          destination: request.exitNodeDestination,
           path: [],
         });
       });
@@ -339,14 +318,26 @@ export default class SDK {
 
         if (rejectedResults.length > 0) {
           // If any promises were rejected, remove request from cache and reject promise
-          const reason = "not all segments were delivered";
-          this.handleFailedRequest(req, reason);
-          reject(reason);
+          this.requestCache.delete(request.id);
+          this.nodesColl.finishRequest({
+            entryId: request.entryId,
+            exitId: request.exitId,
+            requestId: request.id,
+            result: false,
+          });
+          log.error("Failed sending segments", rejectedResults);
+          return reject("not all segments were delivered");
         }
-      } catch (e: any) {
-        // If there was an error sending the request, remove request from cache and reject promise
-        this.handleFailedRequest(req, e);
-        reject(e);
+      } catch (err) {
+        this.requestCache.delete(request.id);
+        this.nodesColl.finishRequest({
+          entryId: request.entryId,
+          exitId: request.exitId,
+          requestId: request.id,
+          result: false,
+        });
+        log.error("Error during sending segments", err);
+        return reject("Error during sending segments");
       }
     });
   }

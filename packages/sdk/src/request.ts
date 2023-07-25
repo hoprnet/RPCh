@@ -61,12 +61,12 @@ export function create(
   };
 }
 
+/**
+ * Convert request to segments.
+ */
 export function toSegments(req: Request): Segment[] {
-  const body = [
-    2,
-    req.entryId,
-    utils.hexlify(req.session.get_request_data()),
-  ].join("|");
+  const hexData = utils.hexlify(req.session.get_request_data());
+  const body = [2, req.entryId, hexData].join("|");
 
   const chunks: string[] = [];
   for (let i = 0; i < body.length; i += MAX_SEGMENT_BODY) {
