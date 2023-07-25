@@ -13,7 +13,6 @@ import request from "supertest";
 import assert from "assert";
 import { RegisteredNode } from "../../../types";
 
-const FUNDING_SERVICE_URL = "http://localhost:5000";
 const BASE_QUOTA = BigInt(1);
 
 const mockNode = (peerId?: string, hasExitNode?: boolean): RegisteredNode => ({

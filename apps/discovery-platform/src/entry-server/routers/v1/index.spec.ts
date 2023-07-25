@@ -9,12 +9,7 @@ import {
   getSumOfQuotasPaidByClient,
 } from "../../../quota";
 import * as registeredNode from "../../../registered-node";
-import {
-  RegisteredNode,
-  RegisteredNodeDB,
-  GetAccessTokenResponse,
-  PostFundingResponse,
-} from "../../../types";
+import { RegisteredNode, RegisteredNodeDB } from "../../../types";
 import memoryCache from "memory-cache";
 import * as Prometheus from "prom-client";
 import path from "path";
@@ -22,9 +17,7 @@ import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";
 import * as PgMem from "pg-mem";
 
-const FUNDING_SERVICE_URL = "http://localhost:5000";
 const BASE_QUOTA = BigInt(1);
-const FAKE_ACCESS_TOKEN = "EcLjvxdALOT0eq18d8Gzz3DEr3AMG27NtL+++YPSZNE=";
 const SECRET = "SECRET";
 
 const mockNode = (peerId?: string, hasExitNode?: boolean): RegisteredNode => ({
@@ -318,19 +311,11 @@ describe("test v1 router", function () {
   describe("should select an entry node", function () {
     it("should return an entry node", async function () {
       const spy = jest.spyOn(registeredNode, "getEligibleNode");
-      const amountLeft = BigInt(10).toString();
       const peerId = "entry";
-      const requestId = 1;
       const responseRequestTrialClient = await request(app).get(
         "/request/trial"
       );
       const trialClientId: string = responseRequestTrialClient.body.client;
-
-      const replyBody: GetAccessTokenResponse = {
-        accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: BigInt(10).toString(),
-        expiredAt: new Date().toISOString(),
-      };
 
       await request(app)
         .post("/client/quota")
@@ -363,10 +348,8 @@ describe("test v1 router", function () {
       spy.mockRestore();
     });
     it("should return an entry node that is not in the exclude list", async function () {
-      const amountLeft = BigInt(10).toString();
       const peerId = "entry";
       const secondPeerId = "secondEntry";
-      const requestId = 1;
       const responseRequestTrialClient = await request(app).get(
         "/request/trial"
       );
@@ -439,10 +422,8 @@ describe("test v1 router", function () {
       assert.equal(requestResponse.body.id, secondCreatedNode.body.node?.id);
     });
     it("should return 404 when all entry nodes are on exclude list", async function () {
-      const amountLeft = BigInt(10).toString();
       const peerId = "entry";
       const secondPeerId = "secondEntry";
-      const requestId = 1;
       const responseRequestTrialClient = await request(app).get(
         "/request/trial"
       );
@@ -510,11 +491,9 @@ describe("test v1 router", function () {
       });
     });
     it("should return an entry node when adding recently received node was put on the exclude list in a subsequent call", async function () {
-      const amountLeft = BigInt(10).toString();
       const peerId = "entry";
       const secondPeerId = "secondEntry";
       const thirdPeerId = "thirdEntry";
-      const requestId = 1;
       const responseRequestTrialClient = await request(app).get(
         "/request/trial"
       );
@@ -634,9 +613,7 @@ describe("test v1 router", function () {
     });
     it.skip("should reduce client quota", async function () {
       const spyGetEligibleNode = jest.spyOn(registeredNode, "getEligibleNode");
-      const amountLeft = BigInt(10).toString();
       const peerId = "entry";
-      const requestId = 1;
 
       const responseRequestTrialClient = await request(app).get(
         "/request/trial"
@@ -685,9 +662,7 @@ describe("test v1 router", function () {
     });
     it("should be able to use trial mode client and reduce quota", async function () {
       const spyGetEligibleNode = jest.spyOn(registeredNode, "getEligibleNode");
-      const amountLeft = BigInt(10).toString();
       const peerId = "entry";
-      const requestId = 1;
 
       const responseRequestTrialClient = await request(app).get(
         "/request/trial"
@@ -746,11 +721,9 @@ describe("test v1 router", function () {
 
   describe("should not select unstable entry node", function () {
     it("should not return an entry node", async function () {
-      const amountLeft = BigInt(10).toString();
       // this peerId will be added to exclude list
       // automatically because of the availability monitor mock
       const peerId = UNSTABLE_NODE_PEERID;
-      const requestId = 1;
       const responseRequestTrialClient = await request(app).get(
         "/request/trial"
       );
@@ -769,9 +742,7 @@ describe("test v1 router", function () {
         .set("X-Rpch-Client", trialClientId)
         .send(mockNode(peerId, true));
 
-      const createdNode: {
-        body: { node: RegisteredNodeDB | undefined };
-      } = await request(app)
+      await request(app)
         .get(`/node/${peerId}`)
         .set("X-Rpch-Client", trialClientId);
 

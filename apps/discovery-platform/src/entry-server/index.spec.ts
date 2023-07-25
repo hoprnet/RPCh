@@ -11,9 +11,7 @@ import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";
 import path from "path";
 import * as PgMem from "pg-mem";
 
-const FUNDING_SERVICE_URL = "http://localhost:5000";
 const BASE_QUOTA = BigInt(1);
-const FAKE_ACCESS_TOKEN = "EcLjvxdALOT0eq18d8Gzz3DEr3AMG27NtL+++YPSZNE=";
 const SECRET = "SECRET";
 
 const mockNode = (peerId?: string, hasExitNode?: boolean): RegisteredNode => ({
@@ -62,9 +60,7 @@ describe("test entry server", function () {
 
   it("should retrieve an entry node", async function () {
     const spy = jest.spyOn(registeredNode, "getEligibleNode");
-    const amountLeft = BigInt(10).toString();
     const peerId = "entry";
-    const requestId = 1;
     const responseRequestTrialClient = await request(app).get(
       "/api/v1/request/trial"
     );
@@ -106,8 +102,6 @@ describe("test entry server", function () {
 
   it("should not retrieve unstable entry node", async function () {
     const spy = jest.spyOn(registeredNode, "getEligibleNode");
-    const amountLeft = BigInt(10).toString();
-    const requestId = 1;
     const responseRequestTrialClient = await request(app).get(
       "/api/v1/request/trial"
     );
