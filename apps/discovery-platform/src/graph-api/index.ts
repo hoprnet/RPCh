@@ -40,6 +40,29 @@ const getAccountsFromBlockChange = gql`
 `;
 
 /**
+ * Fetches channel data from subgraph
+ * @param nodeId
+ * @returns channels
+ */
+export async function getChannelsFromGraph(
+  nodeId: string
+): Promise<GetAccountChannelsResponse> {
+  // make query
+  const channels = await fetch(constants.SUBGRAPH_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      query: getCommitmentQuery,
+      variables: { id: nodeId },
+    }),
+  });
+
+  return (await channels.json()) as unknown as GetAccountChannelsResponse;
+}
+
+/**
  * Check commitment for a specific node
  * @param node RegisteredNodeDB
  * @param minBalance Minimum balance needed for node to be considered committed
@@ -47,6 +70,7 @@ const getAccountsFromBlockChange = gql`
  * @returns boolean | undefined
  */
 export const checkCommitment = async (ops: {
+  channels: GetAccountChannelsResponse;
   node: RegisteredNodeDB;
   minBalance: number;
   minChannels: number;
@@ -57,31 +81,13 @@ export const checkCommitment = async (ops: {
     // Assume node has committed to hopr if it is running in development
     if (constants.SKIP_CHECK_COMMITMENT) return true;
 
-    const variables = {
-      id: ops.node.id,
-    };
-    // make query
-    const channels = await fetch(constants.SUBGRAPH_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        query: getCommitmentQuery,
-        variables,
-      }),
-    });
-
-    const graphRes =
-      (await channels.json()) as unknown as GetAccountChannelsResponse;
-
     log.verbose([
       "Received information from the graph",
-      JSON.stringify(graphRes, utils.bigIntReplacer),
+      JSON.stringify(ops.channels, utils.bigIntReplacer),
     ]);
 
     // check if it has enough balance and enough open channels
-    if (validateNode(graphRes, ops.minBalance, ops.minChannels)) {
+    if (validateNode(ops.channels, ops.minBalance, ops.minChannels)) {
       return true;
     }
 

@@ -1,10 +1,9 @@
 import { DBInstance, updateRegisteredNode } from "./db";
 import { entryServer } from "./entry-server";
-import { FundingServiceApi } from "./funding-service-api";
 import { createLogger } from "./utils";
 import pgp from "pg-promise";
 import { checkCommitmentForFreshNodes } from "./registered-node";
-import { checkCommitment } from "./graph-api";
+import { checkCommitment, getChannelsFromGraph } from "./graph-api";
 import * as constants from "./constants";
 import * as Prometheus from "prom-client";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
@@ -33,12 +32,6 @@ const start = async (ops: {
     migrate
   );
 
-  // init services
-  const fundingServiceApi = new FundingServiceApi(
-    ops.fundingServiceUrl,
-    ops.db
-  );
-
   // create prometheus registry
   const register = new Prometheus.Registry();
 
@@ -54,7 +47,6 @@ const start = async (ops: {
   const app = entryServer({
     db: ops.db,
     baseQuota: ops.baseQuota,
-    fundingServiceApi: fundingServiceApi,
     metricManager: metricManager,
     secret: ops.secret,
     getAvailabilityMonitorResults: () => availabilityMonitorResults,
@@ -73,7 +65,9 @@ const start = async (ops: {
   const queueCheckCommitment = async.queue(
     async (task: RegisteredNodeDB, callback) => {
       try {
+        const channels = await getChannelsFromGraph(task.id);
         const nodeIsCommitted = await checkCommitment({
+          channels,
           node: task,
           minBalance: constants.BALANCE_THRESHOLD,
           minChannels: constants.CHANNELS_THRESHOLD,
