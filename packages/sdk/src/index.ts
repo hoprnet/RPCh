@@ -1,5 +1,5 @@
 import type * as RPChCrypto from "@rpch/crypto";
-import { Message, Response, hoprd, utils } from "@rpch/common";
+import { Message, Response as CommonResponse, hoprd, utils } from "@rpch/common";
 import type {
   Envelope,
   unbox_response,
@@ -13,6 +13,7 @@ import * as Request from "./request";
 import * as RequestCache from "./request-cache";
 import * as Segment from "./segment";
 import * as SegmentCache from "./segment-cache";
+import * as Response from './response';
 
 const log = createLogger();
 const DEFAULT_MAXIMUM_SEGMENTS_PER_REQUEST = 10;
@@ -163,41 +164,18 @@ export default class SDK {
 
     const request = this.requestCache.get(firstSeg.requestId)!;
     this.requestCache.delete(firstSeg.requestId);
+    this.segmentCache.delete(firstSeg.requestId);
 
     const message = SegmentCache.toMessage(entry);
     const counter = await this.getKeyVal(request.exitNodeId).then((k) =>
       BigInt(k || "0")
     );
 
-    const result = this.crypto.unbox_response(
-      request.session,
-      new this.crypto.Envelope(
-        utils.arrayify(message),
-        request.entryNodeId,
-        request.exitNodeId
-      ),
-      counter
-    );
-    console.log("result", result);
-
-    try {
-      // construct Response from Message
-      const response = await Response.fromMessage(
-        this.crypto!,
-        match.request,
-        message,
-        counter,
-        (exitNodeId, counter) => {
-          return this.setKeyVal(exitNodeId, counter.toString());
-        }
-      );
-      const responseTime = Date.now() - match.createdAt.getTime();
-      log.verbose(
-        "response time for request %s: %s ms, counter %i",
-        match.request.id,
-        responseTime,
-        counter
-      );
+    const res = Response.messageToBody(message, request, counter, this.crypto);
+    if (res.success) {
+    await this.setKeyVal(request.exitNodeId, res.counter);
+      const responseTime = Date.now() - request.createdAt;
+      log.verbose( "response time for request %s: %s ms, counter %i", request.id, responseTime, counter);
 
       this.nodesColl.finishRequest({
         entryId: match.request.entryNodeDestination,
@@ -206,19 +184,13 @@ export default class SDK {
         result: true,
       });
 
-      log.verbose("responded to %s with %s", match.request.body, response.body);
-      match.resolve(response);
-    } catch (e) {
-      log.verbose(
-        "failed to load received message id %i from %s with error",
-        message.id,
-        match.request.exitNodeDestination,
-        e
-      );
-      this.handleFailedRequest(
-        match.request,
-        "failed to load received message"
-      );
+      log.verbose("responded to %s with %s", request.body, res.body);
+      return request.resolve(new CommonResponse(request.id, res.body, request));
+    }
+    else {
+        log.error("Error extracting message", res.error);
+        this.nodesColl.finishRequest({ entryId: req.entryNodeId, exitId: req.exitNodeId, requestId: req.id, result: false, });
+        return request.reject("Unable to process response");
     }
   }
 
@@ -324,7 +296,8 @@ export default class SDK {
         exitId: exitNode.peerId,
         requestId: req.id,
       });
-      log.normal("sending request %i", req.id);
+      log.info("sending request %i", req.id);
+
       const message = req.toMessage();
       const segments = message.toSegments();
 

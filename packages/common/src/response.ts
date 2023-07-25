@@ -1,17 +1,14 @@
 import type Request from "./request";
-import { utils } from "ethers";
-import debug from "debug";
-import { createLogger } from "./utils";
 import type {
   Envelope,
   unbox_response,
   box_response,
 } from "@rpch/crypto-for-nodejs";
 import Message from "./message";
-import * as Compression from "./compression";
+import Compression from "./compression";
 import { joinPartsToBody, splitBodyToParts } from "./utils";
+import { utils } from "ethers";
 
-const log = createLogger(["response"]);
 /**
  * Represents a response made by a RPCh.
  * To be send over the HOPR network via Response.toMessage().
@@ -30,20 +27,21 @@ export default class Response {
    * @return Response
    */
   public static async createResponse(
-    // @ts-ignore
-    crypto,
+    crypto: {
+      Envelope: typeof Envelope;
+      box_response: typeof box_response;
+    },
     request: Request,
     body: string
   ): Promise<Response> {
-    const compressedBody = Compression.compressRpcRequest(body);
+    const compressedBody = await Compression.compressRpcRequestAsync(body);
     const payload = joinPartsToBody(["response", compressedBody]);
     const envelope = new crypto.Envelope(
       utils.toUtf8Bytes(payload),
       request.entryNodeDestination,
       request.exitNodeDestination
     );
-    const resBox = crypto.box_response(request.session, envelope);
-    log.info("FOO_resBox", resBox);
+    crypto.box_response(request.session, envelope);
     return new Response(request.id, body, request);
   }
 
@@ -54,8 +52,10 @@ export default class Response {
    * @returns Request
    */
   public static async fromMessage(
-    // @ts-ignore
-    crypto,
+    crypto: {
+      Envelope: typeof Envelope;
+      unbox_response: typeof unbox_response;
+    },
     request: Request,
     message: Message,
     lastResponseFromExitNode: bigint,
@@ -66,30 +66,17 @@ export default class Response {
   ): Promise<Response> {
     if (!message.body.startsWith("0x"))
       throw Error("Message is not a Response");
-    const payload = [3, "request", "foobar", "barfoo"].join("|");
-    const envelope = new crypto.Envelope(
-      utils.toUtf8Bytes(payload),
-      request.exitNodeDestination,
-      request.entryNodeDestination
-    );
-    const EXIT_NODE_PUB_KEY_A =
-      "0x021d5401d6fa65591e4a08a2fdff6c7687f1de5a2326ed8ade69b69e6fe9b9d59f";
-    const exitNodeReadIdentity = crypto.Identity.load_identity(
-      utils.arrayify(EXIT_NODE_PUB_KEY_A)
-    );
-    const session = crypto.box_request(envelope, exitNodeReadIdentity);
 
-    const resUnbox = crypto.unbox_response(
-      session,
+    crypto.unbox_response(
+      request.session,
       new crypto.Envelope(
         utils.arrayify(message.body),
         request.entryNodeDestination,
         request.exitNodeDestination
       ),
-      BigInt(11)
+      lastResponseFromExitNode
     );
 
-    log.info("FOO_resUnbox", resUnbox);
     await updateLastResponseFromExitNode(
       request.exitNodeDestination,
       request.session.updated_counter()
@@ -97,8 +84,9 @@ export default class Response {
 
     const decrypted = utils.toUtf8String(request.session.get_response_data());
     const [type, compressedDecrypted] = splitBodyToParts(decrypted);
-    const decompressedDecrypted =
-      Compression.decompressRpcRequest(compressedDecrypted);
+    const decompressedDecrypted = await Compression.decompressRpcRequestAsync(
+      compressedDecrypted
+    );
     if (type !== "response") throw Error("Message is not a Response");
     return new Response(request.id, decompressedDecrypted, request);
   }
