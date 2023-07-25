@@ -24,6 +24,12 @@ export type Request = RequestData & {
 };
 
 /**
+ * Maximum bytes we should be sending
+ * within the HOPR network.
+ */
+const MAX_BYTES = 400;
+
+/**
  * Creates a request without the id.
  * It holds all request data but will need to get an id from requestCache.
  */
