@@ -2,7 +2,7 @@
 
 # use slim version of node on Debian bullseye for smaller image sizes
 # Specify platform to be amd because arm doesn't work
-FROM --platform=linux/amd64 node:16-bullseye-slim as builder
+FROM --platform=linux/amd64 node:18-bullseye-slim as builder
 
 # use bash to have source command and persistent environment.
 SHELL ["/bin/bash", "-lc"]
@@ -32,7 +32,7 @@ RUN turbo prune --scope="@rpch/rpc-server" --docker
 
 # Add lockfile and package.json's of isolated subworkspace.
 # Specify platform to be amd because arm doesn't work
-FROM --platform=linux/amd64 node:16-bullseye-slim AS installer
+FROM --platform=linux/amd64 node:18-bullseye-slim AS installer
 RUN apt-get update && \
   apt-get install -y libc6 && \
   rm -rf /var/lib/apt/lists/*
@@ -52,7 +52,7 @@ RUN yarn run build --scope="@rpch/rpc-server"
 
 #  Copy only the necesary files to run the app.
 # Specify platform to be amd because arm doesn't work
-FROM --platform=linux/amd64 node:16-bullseye-slim AS runner
+FROM --platform=linux/amd64 node:18-bullseye-slim AS runner
 
 WORKDIR /app
 

@@ -20,7 +20,7 @@ This includes:
 ### Getting started
 
 1. Install
-   - nodejs `v16`
+   - nodejs `v18`
    - latest version of `docker` and `docker-compose`
 2. Clone this repository
 3. Download dependencies with `yarn`

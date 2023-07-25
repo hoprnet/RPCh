@@ -15,7 +15,7 @@ We have four main project folders:
 
 ### Getting started
 
-1. Install nodejs `v16`
+1. Install nodejs `v18`
 2. Download dependencies with `yarn`
 3. Build everything with `yarn build`
 

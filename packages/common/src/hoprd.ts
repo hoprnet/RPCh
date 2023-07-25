@@ -1,5 +1,4 @@
 import { createLogger, createApiUrl } from "./utils";
-import fetch from "cross-fetch";
 import WebSocketHelper from "./ws-helper";
 import type { onEventType } from "./ws-helper";
 
@@ -142,7 +141,7 @@ export const fetchPeerId = async ({
 
   if (response.status === 200) {
     log.verbose("received addresses from HOPRd node");
-    const result: { native: string; hopr: string } = await response.json();
+    const result = (await response.json()) as { native: string; hopr: string };
     return result.hopr;
   } else {
     log.error(

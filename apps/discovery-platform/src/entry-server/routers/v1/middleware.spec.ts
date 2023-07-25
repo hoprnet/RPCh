@@ -6,7 +6,6 @@ import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 import * as PgMem from "pg-mem";
 import * as Prometheus from "prom-client";
-import { FundingServiceApi } from "../../../funding-service-api";
 import { v1Router } from ".";
 import memoryCache from "memory-cache";
 import express from "express";
@@ -14,7 +13,6 @@ import request from "supertest";
 import assert from "assert";
 import { RegisteredNode } from "../../../types";
 
-const FUNDING_SERVICE_URL = "http://localhost:5000";
 const BASE_QUOTA = BigInt(1);
 
 const mockNode = (peerId?: string, hasExitNode?: boolean): RegisteredNode => ({
@@ -45,10 +43,6 @@ describe("test v1 middleware", function () {
 
   beforeEach(async function () {
     MockPgInstanceSingleton.getInitialState().restore();
-    const fundingServiceApi = new FundingServiceApi(
-      FUNDING_SERVICE_URL,
-      dbInstance
-    );
     const register = new Prometheus.Registry();
     const metricManager = new MetricManager(Prometheus, register, "test");
     app = express().use(
@@ -56,7 +50,6 @@ describe("test v1 middleware", function () {
       v1Router({
         db: dbInstance,
         baseQuota: BASE_QUOTA,
-        fundingServiceApi,
         metricManager: metricManager,
         secret: "secret",
         getAvailabilityMonitorResults: getAvailabilityMonitorResultsMock,

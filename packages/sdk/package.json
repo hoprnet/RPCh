@@ -19,12 +19,10 @@
     "@rpch/configs-typescript": "*",
     "@rpch/crypto": "0.3.4",
     "@rpch/crypto-for-nodejs": "0.3.4",
-    "nock": "^13.2.9",
     "@types/async-retry": "^1.4.5"
   },
   "dependencies": {
     "@rpch/common": "0.2.3",
-    "cross-fetch": "3.2.0-alpha.2",
     "ethers": "^5.7.2",
     "async-retry": "^1.3.3"
   }

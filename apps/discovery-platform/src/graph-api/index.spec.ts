@@ -1,10 +1,6 @@
 import assert from "assert";
 import { checkCommitment, validateNode } from "./index";
 import { RegisteredNodeDB, GetAccountChannelsResponse } from "../types";
-import nock from "nock";
-
-const GRAPH_HOPR_URL =
-  "https://api.thegraph.com/subgraphs/name/hoprnet/hopr-channels";
 
 const mockGraphResponse: (
   numOfChannels: number,
@@ -76,10 +72,9 @@ describe("test graph api functions", function () {
       const node: RegisteredNodeDB = createMockNode();
       const MIN_BALANCE = 1;
       const MIN_CHANNELS_OPEN = 5;
-      nock(GRAPH_HOPR_URL).post(/.*/).reply(200, mockGraphResponse(3, "1"), {
-        "content-type": "application/json",
-      });
+
       const isCommitted = await checkCommitment({
+        channels: mockGraphResponse(1, "1"),
         node,
         minBalance: MIN_BALANCE,
         minChannels: MIN_CHANNELS_OPEN,
@@ -90,10 +85,9 @@ describe("test graph api functions", function () {
       const node: RegisteredNodeDB = createMockNode();
       const MIN_BALANCE = 1;
       const MIN_CHANNELS_OPEN = 5;
-      nock(GRAPH_HOPR_URL).post(/.*/).reply(200, mockGraphResponse(5, "1"), {
-        "content-type": "application/json",
-      });
+
       const isCommitted = await checkCommitment({
+        channels: mockGraphResponse(6, "1"),
         node,
         minBalance: MIN_BALANCE,
         minChannels: MIN_CHANNELS_OPEN,

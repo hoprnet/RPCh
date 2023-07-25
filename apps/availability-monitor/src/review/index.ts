@@ -16,7 +16,7 @@ import {
 const log = createLogger(["review"]);
 
 /** Checks made by interacting with the HOPRd node */
-const checks = {
+export const checks = {
   hoprdVersion: createCheck<string, [HoprSDK]>(
     "hoprd-version",
     async function checkHoprdVersion(sdk) {

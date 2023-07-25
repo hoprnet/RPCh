@@ -1,22 +1,15 @@
 import assert from "assert";
 import express, { type Express } from "express";
-import nock from "nock";
 import request from "supertest";
 import { v1Router } from ".";
 import { getClient } from "../../../client";
 import { DBInstance } from "../../../db";
-import { FundingServiceApi } from "../../../funding-service-api";
 import {
   getSumOfQuotasUsedByClient,
   getSumOfQuotasPaidByClient,
 } from "../../../quota";
 import * as registeredNode from "../../../registered-node";
-import {
-  RegisteredNode,
-  RegisteredNodeDB,
-  GetAccessTokenResponse,
-  PostFundingResponse,
-} from "../../../types";
+import { RegisteredNode, RegisteredNodeDB } from "../../../types";
 import memoryCache from "memory-cache";
 import * as Prometheus from "prom-client";
 import path from "path";
@@ -24,15 +17,8 @@ import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";
 import * as PgMem from "pg-mem";
 
-const FUNDING_SERVICE_URL = "http://localhost:5000";
 const BASE_QUOTA = BigInt(1);
-const FAKE_ACCESS_TOKEN = "EcLjvxdALOT0eq18d8Gzz3DEr3AMG27NtL+++YPSZNE=";
 const SECRET = "SECRET";
-
-const nockFundingRequest = (nodeAddress: string) =>
-  nock(FUNDING_SERVICE_URL).post(`/api/request/funds/${nodeAddress}`);
-const nockGetApiAccessToken =
-  nock(FUNDING_SERVICE_URL).get("/api/access-token");
 
 const mockNode = (peerId?: string, hasExitNode?: boolean): RegisteredNode => ({
   hasExitNode: hasExitNode ?? true,
@@ -63,10 +49,6 @@ describe("test v1 router", function () {
 
   beforeEach(async function () {
     MockPgInstanceSingleton.getInitialState().restore();
-    const fundingServiceApi = new FundingServiceApi(
-      FUNDING_SERVICE_URL,
-      dbInstance
-    );
     const register = new Prometheus.Registry();
     const metricManager = new MetricManager(Prometheus, register, "test");
     app = express().use(
@@ -74,7 +56,6 @@ describe("test v1 router", function () {
       v1Router({
         db: dbInstance,
         baseQuota: BASE_QUOTA,
-        fundingServiceApi,
         metricManager: metricManager,
         secret: SECRET,
         getAvailabilityMonitorResults: getAvailabilityMonitorResultsMock,
@@ -336,21 +317,12 @@ describe("test v1 router", function () {
   describe("should select an entry node", function () {
     it("should return an entry node", async function () {
       const spy = jest.spyOn(registeredNode, "getEligibleNode");
-      const amountLeft = BigInt(10).toString();
       const peerId = "entry";
-      const requestId = 1;
       const responseRequestTrialClient = await request(app).get(
         "/request/trial"
       );
       const trialClientId: string = responseRequestTrialClient.body.client;
 
-      const replyBody: GetAccessTokenResponse = {
-        accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: BigInt(10).toString(),
-        expiredAt: new Date().toISOString(),
-      };
-
-      nockGetApiAccessToken.reply(200, replyBody);
       await request(app)
         .post("/client/quota")
         .send({
@@ -374,16 +346,6 @@ describe("test v1 router", function () {
         return createdNode.body.node;
       });
 
-      let postFundingResponse: PostFundingResponse = {
-        amountLeft,
-        id: requestId,
-      };
-
-      nockFundingRequest(createdNode.body.node?.native_address!).reply(
-        200,
-        postFundingResponse
-      );
-
       const requestResponse = await request(app)
         .post("/request/entry-node")
         .set("X-Rpch-Client", trialClientId);
@@ -392,22 +354,13 @@ describe("test v1 router", function () {
       spy.mockRestore();
     });
     it("should return an entry node that is not in the exclude list", async function () {
-      const amountLeft = BigInt(10).toString();
       const peerId = "entry";
       const secondPeerId = "secondEntry";
-      const requestId = 1;
       const responseRequestTrialClient = await request(app).get(
         "/request/trial"
       );
       const trialClientId: string = responseRequestTrialClient.body.client;
 
-      const replyBody: GetAccessTokenResponse = {
-        accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: BigInt(10).toString(),
-        expiredAt: new Date().toISOString(),
-      };
-
-      nockGetApiAccessToken.reply(200, replyBody);
       await request(app)
         .post("/client/quota")
         .send({
@@ -465,16 +418,6 @@ describe("test v1 router", function () {
         status: "READY",
       });
 
-      let postFundingResponse: PostFundingResponse = {
-        amountLeft,
-        id: requestId,
-      };
-
-      nockFundingRequest(secondCreatedNode.body.node?.native_address!).reply(
-        200,
-        postFundingResponse
-      );
-
       // exclude first entry node and unstable node
       const requestResponse = await request(app)
         .post("/request/entry-node")
@@ -485,22 +428,13 @@ describe("test v1 router", function () {
       assert.equal(requestResponse.body.id, secondCreatedNode.body.node?.id);
     });
     it("should return 404 when all entry nodes are on exclude list", async function () {
-      const amountLeft = BigInt(10).toString();
       const peerId = "entry";
       const secondPeerId = "secondEntry";
-      const requestId = 1;
       const responseRequestTrialClient = await request(app).get(
         "/request/trial"
       );
       const trialClientId: string = responseRequestTrialClient.body.client;
 
-      const replyBody: GetAccessTokenResponse = {
-        accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: BigInt(10).toString(),
-        expiredAt: new Date().toISOString(),
-      };
-
-      nockGetApiAccessToken.reply(200, replyBody);
       await request(app)
         .post("/client/quota")
         .send({
@@ -551,16 +485,6 @@ describe("test v1 router", function () {
         status: "READY",
       });
 
-      let postFundingResponse: PostFundingResponse = {
-        amountLeft,
-        id: requestId,
-      };
-
-      nockFundingRequest(secondCreatedNode.body.node?.native_address!).reply(
-        200,
-        postFundingResponse
-      );
-
       // exclude all available nodes
       const requestResponse = await request(app)
         .post("/request/entry-node")
@@ -573,23 +497,14 @@ describe("test v1 router", function () {
       });
     });
     it("should return an entry node when adding recently received node was put on the exclude list in a subsequent call", async function () {
-      const amountLeft = BigInt(10).toString();
       const peerId = "entry";
       const secondPeerId = "secondEntry";
       const thirdPeerId = "thirdEntry";
-      const requestId = 1;
       const responseRequestTrialClient = await request(app).get(
         "/request/trial"
       );
       const trialClientId: string = responseRequestTrialClient.body.client;
 
-      const replyBody: GetAccessTokenResponse = {
-        accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: BigInt(10).toString(),
-        expiredAt: new Date().toISOString(),
-      };
-
-      nockGetApiAccessToken.reply(200, replyBody);
       await request(app)
         .post("/client/quota")
         .send({
@@ -655,16 +570,6 @@ describe("test v1 router", function () {
         status: "READY",
       });
 
-      let postFundingResponse: PostFundingResponse = {
-        amountLeft,
-        id: requestId,
-      };
-
-      nockFundingRequest(secondCreatedNode.body.node?.native_address!).reply(
-        200,
-        postFundingResponse
-      );
-
       // exclude first entry node, should receive second or third entry node
       const requestResponse = await request(app)
         .post("/request/entry-node")
@@ -690,17 +595,11 @@ describe("test v1 router", function () {
     it("should fail if no entry node is selected", async function () {
       const spy = jest.spyOn(registeredNode, "getEligibleNode");
 
-      const apiAccessTokenResponse: GetAccessTokenResponse = {
-        accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: BigInt(10).toString(),
-        expiredAt: new Date().toISOString(),
-      };
-
       const responseRequestTrialClient = await request(app).get(
         "/request/trial"
       );
       const trialClientId: string = responseRequestTrialClient.body.client;
-      nockGetApiAccessToken.reply(200, apiAccessTokenResponse);
+
       await request(app)
         .post("/client/quota")
         .send({
@@ -720,22 +619,12 @@ describe("test v1 router", function () {
     });
     it.skip("should reduce client quota", async function () {
       const spyGetEligibleNode = jest.spyOn(registeredNode, "getEligibleNode");
-      const amountLeft = BigInt(10).toString();
       const peerId = "entry";
-      const requestId = 1;
-
-      const apiTokenResponse: GetAccessTokenResponse = {
-        accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: BigInt(10).toString(),
-        expiredAt: new Date().toISOString(),
-      };
 
       const responseRequestTrialClient = await request(app).get(
         "/request/trial"
       );
       const trialClientId: string = responseRequestTrialClient.body.client;
-
-      nockGetApiAccessToken.reply(200, apiTokenResponse);
 
       // add quota to newClient
       await request(app)
@@ -761,17 +650,6 @@ describe("test v1 router", function () {
         return createdNode.body.node;
       });
 
-      const fundingResponse: PostFundingResponse = {
-        amountLeft,
-        id: requestId,
-      };
-
-      // mocks response from funding request
-      nockFundingRequest(createdNode.body.node?.native_address!).reply(
-        200,
-        fundingResponse
-      );
-
       // use quota twice expecting the second time for it to fail
       await request(app)
         .post("/request/entry-node")
@@ -790,17 +668,7 @@ describe("test v1 router", function () {
     });
     it("should be able to use trial mode client and reduce quota", async function () {
       const spyGetEligibleNode = jest.spyOn(registeredNode, "getEligibleNode");
-      const amountLeft = BigInt(10).toString();
       const peerId = "entry";
-      const requestId = 1;
-
-      const apiTokenResponse: GetAccessTokenResponse = {
-        accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: BigInt(10).toString(),
-        expiredAt: new Date().toISOString(),
-      };
-
-      nockGetApiAccessToken.reply(200, apiTokenResponse);
 
       const responseRequestTrialClient = await request(app).get(
         "/request/trial"
@@ -829,16 +697,6 @@ describe("test v1 router", function () {
       spyGetEligibleNode.mockImplementation(async () => {
         return createdNode.body.node;
       });
-
-      const fundingResponse: PostFundingResponse = {
-        amountLeft,
-        id: requestId,
-      };
-
-      nockFundingRequest(createdNode.body.node?.native_address!).reply(
-        200,
-        fundingResponse
-      );
 
       const trialClientQuotaBefore = await getSumOfQuotasPaidByClient(
         dbInstance,
@@ -869,23 +727,14 @@ describe("test v1 router", function () {
 
   describe("should not select unstable entry node", function () {
     it("should not return an entry node", async function () {
-      const amountLeft = BigInt(10).toString();
       // this peerId will be added to exclude list
       // automatically because of the availability monitor mock
       const peerId = UNSTABLE_NODE_PEERID;
-      const requestId = 1;
       const responseRequestTrialClient = await request(app).get(
         "/request/trial"
       );
       const trialClientId: string = responseRequestTrialClient.body.client;
 
-      const replyBody: GetAccessTokenResponse = {
-        accessToken: FAKE_ACCESS_TOKEN,
-        amountLeft: BigInt(10).toString(),
-        expiredAt: new Date().toISOString(),
-      };
-
-      nockGetApiAccessToken.reply(200, replyBody);
       await request(app)
         .post("/client/quota")
         .send({
@@ -899,21 +748,9 @@ describe("test v1 router", function () {
         .set("X-Rpch-Client", trialClientId)
         .send(mockNode(peerId, true));
 
-      const createdNode: {
-        body: { node: RegisteredNodeDB | undefined };
-      } = await request(app)
+      await request(app)
         .get(`/node/${peerId}`)
         .set("X-Rpch-Client", trialClientId);
-
-      let postFundingResponse: PostFundingResponse = {
-        amountLeft,
-        id: requestId,
-      };
-
-      nockFundingRequest(createdNode.body.node?.native_address!).reply(
-        200,
-        postFundingResponse
-      );
 
       const requestResponse = await request(app)
         .post("/request/entry-node")

@@ -1,5 +1,5 @@
 import { createLogger, decodeIncomingBody } from "./utils";
-import { WebSocket } from "isomorphic-ws";
+import { WebSocket, CloseEvent, ErrorEvent, MessageEvent } from "isomorphic-ws";
 
 const log = createLogger(["websocket"]);
 const HEARTBEAT_ERROR_MSG = "heartbeat was not received";

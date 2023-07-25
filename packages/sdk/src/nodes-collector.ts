@@ -1,4 +1,3 @@
-import fetch from "cross-fetch";
 import { WebSocketHelper, type onEventType } from "@rpch/common";
 import * as Reliability from "./reliability";
 import { createLogger } from "./utils";
@@ -233,7 +232,11 @@ export default class NodesCollector {
     fetch(url, { method: "POST", headers, body })
       .then((resp) => {
         if (resp.status === 200) {
-          return resp.json();
+          return resp.json() as unknown as {
+            hoprd_api_endpoint: string;
+            accessToken: string;
+            id: string;
+          };
         }
         throw new Error(`wrong status ${resp.status} ${resp.statusText}`);
       })
@@ -251,7 +254,7 @@ export default class NodesCollector {
     fetch(url, { headers })
       .then((resp) => {
         if (resp.status === 200) {
-          return resp.json();
+          return resp.json() as unknown as ResponseExitNode[];
         }
         throw new Error(`wrong status ${resp}`);
       })

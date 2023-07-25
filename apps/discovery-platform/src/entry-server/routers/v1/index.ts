@@ -14,7 +14,6 @@ import {
   updateClient,
 } from "../../../client";
 import { DBInstance, deleteRegisteredNode } from "../../../db";
-import { FundingServiceApi } from "../../../funding-service-api";
 import { createQuota } from "../../../quota";
 import {
   createRegisteredNode,
@@ -47,7 +46,6 @@ const log = createLogger(["entry-server", "router", "v1"]);
 export const v1Router = (ops: {
   db: DBInstance;
   baseQuota: bigint;
-  fundingServiceApi: FundingServiceApi;
   metricManager: MetricManager;
   secret: string;
   getAvailabilityMonitorResults: () => Map<string, AvailabilityMonitorResult>;
@@ -232,26 +230,6 @@ export const v1Router = (ops: {
         return res.json({ node });
       } catch (e) {
         log.error("Can not get node with id", e);
-        counterFailedRequests
-          .labels({ method: req.method, path: req.path, status: 500 })
-          .inc();
-        return res.status(500).json({ errors: "Unexpected error" });
-      }
-    }
-  );
-
-  router.get(
-    "/funding-service/funds",
-    metricMiddleware(requestDurationHistogram),
-    async (req, res) => {
-      try {
-        const funds = await ops.fundingServiceApi.getAvailableFunds();
-        counterSuccessfulRequests
-          .labels({ method: req.method, path: req.path, status: 200 })
-          .inc();
-        return res.json({ body: funds });
-      } catch (e) {
-        log.error("Can not retrieve funds from funding service", e);
         counterFailedRequests
           .labels({ method: req.method, path: req.path, status: 500 })
           .inc();

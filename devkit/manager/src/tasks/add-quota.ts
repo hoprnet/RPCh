@@ -1,4 +1,3 @@
-import fetch from "node-fetch";
 import { utils } from "@rpch/common";
 import { createLogger } from "../utils";
 
