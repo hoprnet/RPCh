@@ -121,7 +121,7 @@ export default class SDK {
   private onWSmessage(_peerId: string, message: string) {
     const segRes = Segment.fromString(message);
     if (!segRes.success) {
-      log.info("cannot create segment", segRes.error, message);
+      log.info("cannot create segment", segRes.error);
       return;
     }
     const segment = segRes.segment;
@@ -139,7 +139,7 @@ export default class SDK {
         this.completeSegmentsEntry(cacheRes.entry!);
         break;
       case "error":
-        log.error(`error caching segment: ${cacheRes.reason}`);
+        log.error("error caching segment", cacheRes.reason);
         break;
       case "already-cached":
         log.info("already cached", Segment.prettyPrint(segment));
