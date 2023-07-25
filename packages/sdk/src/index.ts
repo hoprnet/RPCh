@@ -159,7 +159,6 @@ export default class SDK {
 
     const request = this.requestCache.get(firstSeg.requestId)!;
     RequestCache.remove(this.requestCache, request.id);
-    SegmentCache.remove(this.segmentCache, request.id);
 
     const message = SegmentCache.toMessage(entry);
     const counter = await this.getKeyVal(request.exitId).then((k) =>

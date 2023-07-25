@@ -4,7 +4,7 @@ export type Cache = Map<number, Entry>; // requestId -> segmentNr -> Segment
 
 export type Entry = {
   segments: Map<number, Segment>;
-  count: number; // count entrie manually to avoid iterating through whole map
+  count: number; // count segments manually to avoid iterating whole map
 };
 
 export function init(): Cache {
