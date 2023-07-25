@@ -1,10 +1,5 @@
 import type * as RPChCrypto from "@rpch/crypto";
-import { Message, Response as CommonResponse, hoprd, utils } from "@rpch/common";
-import type {
-  Envelope,
-  unbox_response,
-  box_response,
-} from "@rpch/crypto-for-nodejs";
+import { Response as CommonResponse, hoprd, utils } from "@rpch/common";
 import { utils as etherUtils } from "ethers";
 import debug from "debug";
 import { createLogger } from "./utils";
@@ -13,7 +8,7 @@ import * as Request from "./request";
 import * as RequestCache from "./request-cache";
 import * as Segment from "./segment";
 import * as SegmentCache from "./segment-cache";
-import * as Response from './response';
+import * as Response from "./response";
 
 const log = createLogger();
 const DEFAULT_MAXIMUM_SEGMENTS_PER_REQUEST = 10;
@@ -167,30 +162,39 @@ export default class SDK {
     this.segmentCache.delete(firstSeg.requestId);
 
     const message = SegmentCache.toMessage(entry);
-    const counter = await this.getKeyVal(request.exitNodeId).then((k) =>
+    const counter = await this.getKeyVal(request.exitId).then((k) =>
       BigInt(k || "0")
     );
 
     const res = Response.messageToBody(message, request, counter, this.crypto);
     if (res.success) {
-    await this.setKeyVal(request.exitNodeId, res.counter);
+      await this.setKeyVal(request.exitId, res.counter.toString());
       const responseTime = Date.now() - request.createdAt;
-      log.verbose( "response time for request %s: %s ms, counter %i", request.id, responseTime, counter);
+      log.verbose(
+        "response time for request %s: %s ms, counter %i",
+        request.id,
+        responseTime,
+        counter
+      );
 
       this.nodesColl.finishRequest({
-        entryId: match.request.entryNodeDestination,
-        exitId: match.request.exitNodeDestination,
-        requestId: match.request.id,
+        entryId: request.entryId,
+        exitId: request.exitId,
+        requestId: request.id,
         result: true,
       });
 
       log.verbose("responded to %s with %s", request.body, res.body);
       return request.resolve(new CommonResponse(request.id, res.body, request));
-    }
-    else {
-        log.error("Error extracting message", res.error);
-        this.nodesColl.finishRequest({ entryId: req.entryNodeId, exitId: req.exitNodeId, requestId: req.id, result: false, });
-        return request.reject("Unable to process response");
+    } else {
+      log.error("Error extracting message", res.error);
+      this.nodesColl.finishRequest({
+        entryId: request.entryId,
+        exitId: request.exitId,
+        requestId: request.id,
+        result: false,
+      });
+      return request.reject("Unable to process response");
     }
   }
 

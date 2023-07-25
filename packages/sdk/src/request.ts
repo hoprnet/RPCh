@@ -11,8 +11,8 @@ export type RequestData = {
   provider: string;
   body: string;
   createdAt: number;
-  entryNodeId: string; // peerID
-  exitNodeId: string; // peerID
+  entryId: string; // peerID
+  exitId: string; // peerID
   exitNodeReadIdentity: Identity;
   session: Session;
 };
@@ -34,24 +34,24 @@ export function create(
   },
   provider: string,
   body: string,
-  entryNodeId: string,
-  exitNodeId: string,
+  entryId: string,
+  exitId: string,
   exitNodeReadIdentity: Identity
 ): RequestData {
   const compressedBody = compression.compressRpcRequest(body);
   const payload = [3, "request", provider, compressedBody].join("|");
   const envelope = new crypto.Envelope(
     utils.toUtf8Bytes(payload),
-    entryNodeId,
-    exitNodeId
+    entryId,
+    exitId
   );
   const session = crypto.box_request(envelope, exitNodeReadIdentity);
   return {
     provider,
     body,
     createdAt: Date.now(),
-    entryNodeId,
-    exitNodeId,
+    entryId,
+    exitId,
     exitNodeReadIdentity,
     session,
   };

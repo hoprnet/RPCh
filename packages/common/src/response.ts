@@ -5,7 +5,7 @@ import type {
   box_response,
 } from "@rpch/crypto-for-nodejs";
 import Message from "./message";
-import Compression from "./compression";
+import * as compression from "./compression";
 import { joinPartsToBody, splitBodyToParts } from "./utils";
 import { utils } from "ethers";
 
@@ -14,7 +14,7 @@ import { utils } from "ethers";
  * To be send over the HOPR network via Response.toMessage().
  */
 export default class Response {
-  private constructor(
+  public constructor(
     public readonly id: number,
     public readonly body: string,
     public readonly request: Request
@@ -34,7 +34,7 @@ export default class Response {
     request: Request,
     body: string
   ): Promise<Response> {
-    const compressedBody = await Compression.compressRpcRequestAsync(body);
+    const compressedBody = compression.compressRpcRequest(body);
     const payload = joinPartsToBody(["response", compressedBody]);
     const envelope = new crypto.Envelope(
       utils.toUtf8Bytes(payload),
@@ -84,9 +84,8 @@ export default class Response {
 
     const decrypted = utils.toUtf8String(request.session.get_response_data());
     const [type, compressedDecrypted] = splitBodyToParts(decrypted);
-    const decompressedDecrypted = await Compression.decompressRpcRequestAsync(
-      compressedDecrypted
-    );
+    const decompressedDecrypted =
+      compression.decompressRpcRequest(compressedDecrypted);
     if (type !== "response") throw Error("Message is not a Response");
     return new Response(request.id, decompressedDecrypted, request);
   }
