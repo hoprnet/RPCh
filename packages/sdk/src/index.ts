@@ -123,7 +123,7 @@ export default class SDK {
   private onWSmessage(_peerId: string, message: string) {
     const segRes = Segment.fromString(message);
     if (!segRes.success) {
-      log.info("error creating segment", segRes.error, message);
+      log.info("cannot create segment", segRes.error, message);
       return;
     }
     const segment = segRes.segment;
