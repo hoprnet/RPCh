@@ -298,7 +298,7 @@ export default class SDK {
         return hoprd.sendMessage({
           apiEndpoint: entryNode.apiEndpoint.toString(),
           apiToken: entryNode.apiToken,
-          message: segment.toString(),
+          message: Segment.toPayload(segment),
           destination: request.exitId,
           path: [],
         });
