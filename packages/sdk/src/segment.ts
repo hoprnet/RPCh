@@ -33,6 +33,16 @@ export function fromString(
   };
 }
 
-export function toString({ requestId, nr, totalCount }: Segment) {
+/**
+ * Convert segment to payload.
+ */
+export function toPayload({ requestId, nr, totalCount, body }: Segment) {
+  return [4, requestId, nr, totalCount, body].join("|");
+}
+
+/**
+ * Pretty print segment in human readable form.
+ */
+export function prettyPrint({ requestId, nr, totalCount }: Segment) {
   return `segment[rId: ${requestId}, nr: ${nr}, total: ${totalCount}`;
 }

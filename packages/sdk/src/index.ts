@@ -129,7 +129,10 @@ export default class SDK {
     }
     const segment = segRes.segment;
     if (!this.requestCache.has(segment.requestId)) {
-      log.info("dropping unrelated request segment", Segment.toString(segment));
+      log.info(
+        "dropping unrelated request segment",
+        Segment.prettyPrint(segment)
+      );
       return;
     }
 
@@ -142,10 +145,10 @@ export default class SDK {
         log.error(`error caching segment: ${cacheRes.reason}`);
         break;
       case "already-cached":
-        log.info("already cached", Segment.toString(segment));
+        log.info("already cached", Segment.prettyPrint(segment));
         break;
       case "inserted":
-        log.verbose("inserted new segment", Segment.toString(segment));
+        log.verbose("inserted new segment", Segment.prettyPrint(segment));
         break;
     }
   }
