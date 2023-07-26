@@ -1,5 +1,5 @@
 /* eslint-disable */
-import Compression from "./index";
+import * as Compression from "./index";
 import {
   res_normal,
   res_compress_key_problem0,
@@ -19,7 +19,7 @@ async function main() {
     JSON.stringify(res_80kb).length
   );
   console.log("repeat(10) length", JSON.stringify(res_80kb).repeat(10).length);
-  const resultCompressed = await Compression.compressRpcRequestAsync(
+  const resultCompressed = Compression.compressRpcRequest(
     JSON.stringify(res_80kb)
   );
   let toUtf8Bytes = utils.toUtf8Bytes(resultCompressed);

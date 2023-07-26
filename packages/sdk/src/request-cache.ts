@@ -1,75 +1,50 @@
-import { Request, Response, utils } from "@rpch/common";
-import { createLogger } from "./utils";
+import { Response as CommonResponse } from "@rpch/common";
+import type { Request } from "./request";
 
-const log = createLogger(["request-cache"]);
+export type Cache = Map<number, Entry>; // id -> Request
+
+export type Entry = Request & {
+  resolve: (res: CommonResponse) => void;
+  reject: (error: string) => void;
+  timer: ReturnType<typeof setTimeout>;
+};
+
+export function init(): Cache {
+  return new Map();
+}
 
 /**
- * Keeps in cache the Requests which have been sent by the SDK.
- * As soon as the upstream class finds a matching Response, it will remove the Request from the Request Cache.
+ * Add request data to cache and return generated id.
  */
-export default class RequestCache {
-  // requests we have made to another relay, keyed by message.id
-  private requests = new Map<
-    number,
-    {
-      request: Request;
-      createdAt: Date;
-      resolve: (value: Response | PromiseLike<Response>) => void;
-      reject: (reason?: any) => void;
-    }
-  >();
+export function add(
+  cache: Cache,
+  request: Request,
+  resolve: (res: CommonResponse) => void,
+  reject: (error: string) => void,
+  timer: ReturnType<typeof setTimeout>
+): Entry {
+  const entry = { ...request, resolve, reject, timer };
+  cache.set(request.id, entry);
+  return entry;
+}
 
-  constructor(private onRequestExpiration: (req: Request) => void) {}
+/**
+ * Remove request id from cache.
+ */
+export function remove(cache: Cache, id: number) {
+  const t = cache.get(id)?.timer;
+  clearTimeout(t);
+  cache.delete(id);
+}
 
-  /**
-   * Add Request to requests map
-   * @param req
-   * @param resolve resolve executor that is ran when the response is received
-   * @param reject rejects the promise when the request runs into a timeout
-   */
-  public addRequest(
-    request: Request,
-    resolve: (value: Response | PromiseLike<Response>) => void,
-    reject: (reason?: any) => void
-  ): void {
-    this.requests.set(request.id, {
-      request,
-      createdAt: new Date(),
-      resolve,
-      reject,
-    });
+/**
+ * Generate an available request id.
+ * Will loop indefinitely if all request ids are taken (max ~1e7).
+ */
+export function generateId(cache: Cache): number {
+  let id = Math.floor(Math.random() * 1e6);
+  while (cache.has(id)) {
+    id = Math.floor(Math.random() * 1e6);
   }
-
-  /**
-   * Get a request from the request map
-   * @param id of the request
-   */
-  public getRequest(id: number) {
-    return this.requests.get(id);
-  }
-
-  /**
-   * Remove request from requests map
-   * @param req request to remove
-   */
-  public removeRequest(req: Request): void {
-    this.requests.delete(req.id);
-  }
-
-  /**
-   * Given a timeout, removes expired requests.
-   * @param timeout How many ms after a Request was created.
-   */
-  public removeExpired(timeout: number): void {
-    const now = new Date();
-
-    log.verbose("requests", this.requests.size);
-    for (const [key, entry] of this.requests.entries()) {
-      if (utils.isExpired(timeout, now, entry.createdAt)) {
-        entry.reject("Request timed out");
-        this.onRequestExpiration(entry.request);
-        this.requests.delete(key);
-      }
-    }
-  }
+  return id;
 }

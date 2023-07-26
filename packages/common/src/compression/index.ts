@@ -27,384 +27,361 @@ import LZString from "lz-string";
  * 0 no.9 - TBD
  */
 
-export default class Compression {
-  public static async compressRpcRequestAsync(
-    requestBody: JSONObject
-  ): Promise<CompressedPayload> {
-    let compressionDiagram: CompressedPayload = "0000000000";
-    let jsonTmp: JSONObject = null;
-    let payloadIsJSON = false;
-    try {
-      if (typeof requestBody === "string") {
-        jsonTmp = JSON.parse(requestBody);
-        payloadIsJSON = true;
-      } else {
-        jsonTmp = JSON.parse(JSON.stringify(requestBody));
-        payloadIsJSON = true;
-        compressionDiagram = Compression.compressionDiagramUpdate(
-          compressionDiagram,
-          7,
-          true
-        );
-      }
-    } catch (e) {
-      jsonTmp = requestBody;
-    }
-
-    //Compress 'method' Value
-    if (payloadIsJSON) {
-      let result = Compression.compressRPCMethodValue(jsonTmp);
-      if (result.compressed) {
-        compressionDiagram = Compression.compressionDiagramUpdate(
-          compressionDiagram,
-          6,
-          true
-        );
-        jsonTmp = result.json;
-      }
-
-      //Compress 'result'{} keys
-      result = Compression.compressRPCSomeObjectKeys(jsonTmp, "result");
-      if (result.compressed) {
-        compressionDiagram = Compression.compressionDiagramUpdate(
-          compressionDiagram,
-          4,
-          true
-        );
-        jsonTmp = result.json;
-      }
-
-      //Compress 'params'{} keys
-      result = Compression.compressRPCSomeObjectKeys(jsonTmp, "params");
-      if (result.compressed) {
-        compressionDiagram = Compression.compressionDiagramUpdate(
-          compressionDiagram,
-          3,
-          true
-        );
-        jsonTmp = result.json;
-      }
-
-      //Compress 'error'{} keys
-      result = Compression.compressRPCSomeObjectKeys(jsonTmp, "error");
-      if (result.compressed) {
-        compressionDiagram = Compression.compressionDiagramUpdate(
-          compressionDiagram,
-          5,
-          true
-        );
-        jsonTmp = result.json;
-      }
-
-      //Compress main keys
-      result = Compression.compressRPCMainObjectKeys(jsonTmp);
-      if (result.compressed) {
-        compressionDiagram = Compression.compressionDiagramUpdate(
-          compressionDiagram,
-          2,
-          true
-        );
-        jsonTmp = result.json;
-      }
-
-      //Compress msgpackr
-      jsonTmp = pack(jsonTmp);
-      jsonTmp = jsonTmp.toString("binary"); //  'ucs2', 'base64' and 'binary' also work https://stackoverflow.com/questions/6182315/how-can-i-do-base64-encoding-in-node-js
-      compressionDiagram = Compression.compressionDiagramUpdate(
+export function compressRpcRequest(requestBody: JSONObject): CompressedPayload {
+  let compressionDiagram: CompressedPayload = "0000000000";
+  let jsonTmp: JSONObject = null;
+  let payloadIsJSON = false;
+  try {
+    if (typeof requestBody === "string") {
+      jsonTmp = JSON.parse(requestBody);
+      payloadIsJSON = true;
+    } else {
+      jsonTmp = JSON.parse(JSON.stringify(requestBody));
+      payloadIsJSON = true;
+      compressionDiagram = compressionDiagramUpdate(
         compressionDiagram,
-        1,
+        7,
         true
       );
     }
-
-    if (jsonTmp.length > MAX_BYTES - 10) {
-      const zipped = LZString.compressToUTF16(jsonTmp);
-
-      if (zipped.length < jsonTmp.length) {
-        jsonTmp = zipped;
-        compressionDiagram = Compression.compressionDiagramUpdate(
-          compressionDiagram,
-          0,
-          true
-        );
-      }
-    }
-    // @ts-ignore-start
-    return compressionDiagram + jsonTmp;
-    // @ts-ignore-end
+  } catch (e) {
+    jsonTmp = requestBody;
   }
 
-  public static async decompressRpcRequestAsync(
-    compressedBody: string
-  ): Promise<JSONObject> {
-    // @ts-ignore-start
-    let compressionDiagram: CompressedPayload = compressedBody.substring(0, 10);
-    // @ts-ignore-end
-
-    if (!/^[01]+$/.test(compressionDiagram)) {
-      return compressedBody;
+  //Compress 'method' Value
+  if (payloadIsJSON) {
+    let result = compressRPCMethodValue(jsonTmp);
+    if (result.compressed) {
+      compressionDiagram = compressionDiagramUpdate(
+        compressionDiagram,
+        6,
+        true
+      );
+      jsonTmp = result.json;
     }
 
-    let jsonTmp: JSONObject = compressedBody.substring(10);
-
-    if (compressionDiagram[0] === "1") {
-      jsonTmp = LZString.decompressFromUTF16(jsonTmp);
+    //Compress 'result'{} keys
+    result = compressRPCSomeObjectKeys(jsonTmp, "result");
+    if (result.compressed) {
+      compressionDiagram = compressionDiagramUpdate(
+        compressionDiagram,
+        4,
+        true
+      );
+      jsonTmp = result.json;
     }
 
-    if (compressionDiagram[1] === "1") {
-      const msgpackrBuffer = Buffer.from(jsonTmp, "binary");
-      jsonTmp = unpack(msgpackrBuffer);
+    //Compress 'params'{} keys
+    result = compressRPCSomeObjectKeys(jsonTmp, "params");
+    if (result.compressed) {
+      compressionDiagram = compressionDiagramUpdate(
+        compressionDiagram,
+        3,
+        true
+      );
+      jsonTmp = result.json;
     }
 
-    if (compressionDiagram[2] === "1") {
-      jsonTmp = Compression.decompressRPCMainObjectKeys(jsonTmp);
+    //Compress 'error'{} keys
+    result = compressRPCSomeObjectKeys(jsonTmp, "error");
+    if (result.compressed) {
+      compressionDiagram = compressionDiagramUpdate(
+        compressionDiagram,
+        5,
+        true
+      );
+      jsonTmp = result.json;
     }
 
-    if (compressionDiagram[5] === "1") {
-      jsonTmp = Compression.decompressRPCSomeObjectKeys(jsonTmp, "error");
+    //Compress main keys
+    result = compressRPCMainObjectKeys(jsonTmp);
+    if (result.compressed) {
+      compressionDiagram = compressionDiagramUpdate(
+        compressionDiagram,
+        2,
+        true
+      );
+      jsonTmp = result.json;
     }
 
-    if (compressionDiagram[4] === "1") {
-      jsonTmp = Compression.decompressRPCSomeObjectKeys(jsonTmp, "result");
-    }
-
-    if (compressionDiagram[3] === "1") {
-      jsonTmp = Compression.decompressRPCSomeObjectKeys(jsonTmp, "params");
-    }
-
-    if (compressionDiagram[6] === "1") {
-      jsonTmp = Compression.decompressRPCMethodValue(jsonTmp);
-    }
-
-    if (compressionDiagram[1] === "1" && compressionDiagram[7] === "0") {
-      jsonTmp = JSON.stringify(jsonTmp);
-    }
-
-    return jsonTmp;
+    //Compress msgpackr
+    jsonTmp = pack(jsonTmp);
+    jsonTmp = jsonTmp.toString("binary"); //  'ucs2', 'base64' and 'binary' also work https://stackoverflow.com/questions/6182315/how-can-i-do-base64-encoding-in-node-js
+    compressionDiagram = compressionDiagramUpdate(compressionDiagram, 1, true);
   }
 
-  private static getCompressedKeyId(
-    key: string,
-    dictionary: Dictionary
-  ): string | null | PropertyKey {
-    let id = null;
-    const dictionaryKeys: string[] = Object.keys(dictionary);
+  if (jsonTmp.length > MAX_BYTES - 10) {
+    const zipped = LZString.compressToUTF16(jsonTmp);
 
-    for (let i = 0; i < dictionaryKeys.length; i++) {
-      if (key === dictionary[dictionaryKeys[i]]) {
-        id = dictionaryKeys[i];
-        break;
-      }
+    if (zipped.length < jsonTmp.length) {
+      jsonTmp = zipped;
+      compressionDiagram = compressionDiagramUpdate(
+        compressionDiagram,
+        0,
+        true
+      );
     }
+  }
+  // @ts-ignore-start
+  return compressionDiagram + jsonTmp;
+  // @ts-ignore-end
+}
 
-    return id;
+export function decompressRpcRequest(compressedBody: string): JSONObject {
+  // @ts-ignore-start
+  let compressionDiagram: CompressedPayload = compressedBody.substring(0, 10);
+  // @ts-ignore-end
+
+  if (!/^[01]+$/.test(compressionDiagram)) {
+    return compressedBody;
   }
 
-  private static getDecompressedKeyId(
-    key: string,
-    dictionary: Dictionary
-  ): string | null | PropertyKey {
-    return dictionary[key];
+  let jsonTmp: JSONObject = compressedBody.substring(10);
+
+  if (compressionDiagram[0] === "1") {
+    jsonTmp = LZString.decompressFromUTF16(jsonTmp);
   }
 
-  private static compressRPCMethodValue(input: JSONObject): JSONObject {
-    let result: JSONObject = {
-      compressed: false,
-      json: JSON.parse(JSON.stringify(input)),
-    };
+  if (compressionDiagram[1] === "1") {
+    const msgpackrBuffer = Buffer.from(jsonTmp, "binary");
+    jsonTmp = unpack(msgpackrBuffer);
+  }
 
-    if (input["method"]) {
-      const method: string = input["method"];
-      const methodId = Compression.getCompressedKeyId(method, methodValueMap);
-      if (methodId) {
-        result.json["method"] = methodId;
-        result.compressed = true;
-      }
+  if (compressionDiagram[2] === "1") {
+    jsonTmp = decompressRPCMainObjectKeys(jsonTmp);
+  }
+
+  if (compressionDiagram[5] === "1") {
+    jsonTmp = decompressRPCSomeObjectKeys(jsonTmp, "error");
+  }
+
+  if (compressionDiagram[4] === "1") {
+    jsonTmp = decompressRPCSomeObjectKeys(jsonTmp, "result");
+  }
+
+  if (compressionDiagram[3] === "1") {
+    jsonTmp = decompressRPCSomeObjectKeys(jsonTmp, "params");
+  }
+
+  if (compressionDiagram[6] === "1") {
+    jsonTmp = decompressRPCMethodValue(jsonTmp);
+  }
+
+  if (compressionDiagram[1] === "1" && compressionDiagram[7] === "0") {
+    jsonTmp = JSON.stringify(jsonTmp);
+  }
+
+  return jsonTmp;
+}
+
+function getCompressedKeyId(
+  key: string,
+  dictionary: Dictionary
+): string | null | PropertyKey {
+  let id = null;
+  const dictionaryKeys: string[] = Object.keys(dictionary);
+
+  for (let i = 0; i < dictionaryKeys.length; i++) {
+    if (key === dictionary[dictionaryKeys[i]]) {
+      id = dictionaryKeys[i];
+      break;
     }
-
-    return result;
   }
 
-  private static decompressRPCMethodValue(input: JSONObject): JSONObject {
-    let result: JSONObject = JSON.parse(JSON.stringify(input));
-    const methodId: string = input["method"];
-    const methodName = Compression.getDecompressedKeyId(
-      methodId,
-      methodValueMap
-    );
-    result["method"] = methodName;
-    return result;
+  return id;
+}
+
+function getDecompressedKeyId(
+  key: string,
+  dictionary: Dictionary
+): string | null | PropertyKey {
+  return dictionary[key];
+}
+
+function compressRPCMethodValue(input: JSONObject): JSONObject {
+  let result: JSONObject = {
+    compressed: false,
+    json: JSON.parse(JSON.stringify(input)),
+  };
+
+  if (input["method"]) {
+    const method: string = input["method"];
+    const methodId = getCompressedKeyId(method, methodValueMap);
+    if (methodId) {
+      result.json["method"] = methodId;
+      result.compressed = true;
+    }
   }
 
-  //  TODO: In future we could use recurrence here
-  private static compressRPCSomeObjectKeys(
-    input: JSONObject,
-    objectKey: string
-  ): JSONObject {
-    let result: JSONObject = {
-      compressed: false,
-      json: JSON.parse(JSON.stringify(input)),
-    };
+  return result;
+}
 
-    if (!input[objectKey]) return result;
+function decompressRPCMethodValue(input: JSONObject): JSONObject {
+  let result: JSONObject = JSON.parse(JSON.stringify(input));
+  const methodId: string = input["method"];
+  const methodName = getDecompressedKeyId(methodId, methodValueMap);
+  result["method"] = methodName;
+  return result;
+}
 
-    const isArray = utils.isArray(input[objectKey]);
-    const isObject = utils.isJsonObject(input[objectKey]);
-    if (!isArray && !isObject) return result;
+//  TODO: In future we could use recurrence here
+function compressRPCSomeObjectKeys(
+  input: JSONObject,
+  objectKey: string
+): JSONObject {
+  let result: JSONObject = {
+    compressed: false,
+    json: JSON.parse(JSON.stringify(input)),
+  };
 
-    const dictionaryKeys: string[] = Object.keys(resultOrParamsKeyMap);
-    const isArrayWithAtLeastOneJsonObject =
-      utils.isArrayWithAtLeastOneJsonObject(input[objectKey]);
-    if (isArrayWithAtLeastOneJsonObject) {
-      //check if new keys do not create conflicts with old keys
-      let cantContinue = false;
-      for (let i = 0; i < input[objectKey].length; i++) {
-        if (!utils.isJsonObject(input[objectKey][i])) continue;
-        const tmpObjKeys: string[] = Object.keys(input[objectKey][i]);
-        cantContinue = utils.findCommonElement(dictionaryKeys, tmpObjKeys);
-        if (cantContinue) return result;
-      }
+  if (!input[objectKey]) return result;
 
-      for (let i = 0; i < input[objectKey].length; i++) {
-        if (!utils.isJsonObject(input[objectKey][i])) continue;
-        let tmpObj = JSON.parse(JSON.stringify(input[objectKey][i]));
-        const tmpObjKeys: string[] = Object.keys(input[objectKey][i]);
+  const isArray = utils.isArray(input[objectKey]);
+  const isObject = utils.isJsonObject(input[objectKey]);
+  if (!isArray && !isObject) return result;
 
-        for (let k = 0; k < tmpObjKeys.length; k++) {
-          const oldKey: any = tmpObjKeys[k];
-          const keyId = Compression.getCompressedKeyId(
-            oldKey,
-            resultOrParamsKeyMap
-          );
-          if (keyId) {
-            tmpObj[keyId] = input[objectKey][i][oldKey];
-            delete tmpObj[oldKey];
-            result.compressed = true;
-          }
-        }
-        result.json[objectKey][i] = JSON.parse(JSON.stringify(tmpObj));
-      }
-    } else if (isObject) {
-      //check if new keys do not create conflicts with old keys
-      const tmpObjKeys: string[] = Object.keys(input[objectKey]);
-      const cantContinue = utils.findCommonElement(dictionaryKeys, tmpObjKeys);
+  const dictionaryKeys: string[] = Object.keys(resultOrParamsKeyMap);
+  const isArrayWithAtLeastOneJsonObject = utils.isArrayWithAtLeastOneJsonObject(
+    input[objectKey]
+  );
+  if (isArrayWithAtLeastOneJsonObject) {
+    //check if new keys do not create conflicts with old keys
+    let cantContinue = false;
+    for (let i = 0; i < input[objectKey].length; i++) {
+      if (!utils.isJsonObject(input[objectKey][i])) continue;
+      const tmpObjKeys: string[] = Object.keys(input[objectKey][i]);
+      cantContinue = utils.findCommonElement(dictionaryKeys, tmpObjKeys);
       if (cantContinue) return result;
+    }
 
-      let tmpObj = JSON.parse(JSON.stringify(input[objectKey]));
+    for (let i = 0; i < input[objectKey].length; i++) {
+      if (!utils.isJsonObject(input[objectKey][i])) continue;
+      let tmpObj = JSON.parse(JSON.stringify(input[objectKey][i]));
+      const tmpObjKeys: string[] = Object.keys(input[objectKey][i]);
 
       for (let k = 0; k < tmpObjKeys.length; k++) {
         const oldKey: any = tmpObjKeys[k];
-        const keyId = Compression.getCompressedKeyId(
-          oldKey,
-          resultOrParamsKeyMap
-        );
+        const keyId = getCompressedKeyId(oldKey, resultOrParamsKeyMap);
         if (keyId) {
-          tmpObj[keyId] = input[objectKey][oldKey];
+          tmpObj[keyId] = input[objectKey][i][oldKey];
           delete tmpObj[oldKey];
           result.compressed = true;
         }
       }
-
-      result.json[objectKey] = JSON.parse(JSON.stringify(tmpObj));
+      result.json[objectKey][i] = JSON.parse(JSON.stringify(tmpObj));
     }
-
-    return result;
-  }
-
-  private static decompressRPCSomeObjectKeys(
-    input: JSONObject,
-    objectKey: string
-  ): JSONObject {
-    let result: JSONObject = JSON.parse(JSON.stringify(input));
-    const isObject = utils.isJsonObject(input[objectKey]);
-    const isArrayWithAtLeastOneJsonObject =
-      utils.isArrayWithAtLeastOneJsonObject(input[objectKey]);
-    if (isArrayWithAtLeastOneJsonObject) {
-      for (let i = 0; i < input[objectKey].length; i++) {
-        if (!utils.isJsonObject(input[objectKey][i])) continue;
-        let tmpObj = JSON.parse(JSON.stringify(input[objectKey][i]));
-        const tmpObjKeys: string[] = Object.keys(input[objectKey][i]);
-
-        for (let k = 0; k < tmpObjKeys.length; k++) {
-          const oldKey: any = tmpObjKeys[k];
-          const newKey = Compression.getDecompressedKeyId(
-            oldKey,
-            resultOrParamsKeyMap
-          );
-          if (newKey) {
-            tmpObj[newKey] = input[objectKey][i][oldKey];
-            delete tmpObj[oldKey];
-          }
-        }
-        result[objectKey][i] = tmpObj;
-      }
-    } else if (isObject) {
-      const tmpObjKeys: string[] = Object.keys(input[objectKey]);
-
-      for (let k = 0; k < tmpObjKeys.length; k++) {
-        const oldKey: any = tmpObjKeys[k];
-        const newKey = Compression.getDecompressedKeyId(
-          oldKey,
-          resultOrParamsKeyMap
-        );
-        if (newKey) {
-          result[objectKey][newKey] = input[objectKey][oldKey];
-          delete result[objectKey][oldKey];
-        }
-      }
-    }
-
-    return result;
-  }
-
-  private static compressRPCMainObjectKeys(input: JSONObject): JSONObject {
-    let result: JSONObject = {
-      compressed: false,
-      json: JSON.parse(JSON.stringify(input)),
-    };
-
+  } else if (isObject) {
     //check if new keys do not create conflicts with old keys
-    const tmpObjKeys: string[] = Object.keys(input);
-    const dictionaryKeys: string[] = Object.keys(mainKeyMap);
+    const tmpObjKeys: string[] = Object.keys(input[objectKey]);
     const cantContinue = utils.findCommonElement(dictionaryKeys, tmpObjKeys);
     if (cantContinue) return result;
 
+    let tmpObj = JSON.parse(JSON.stringify(input[objectKey]));
+
     for (let k = 0; k < tmpObjKeys.length; k++) {
       const oldKey: any = tmpObjKeys[k];
-      const keyId = Compression.getCompressedKeyId(oldKey, mainKeyMap);
+      const keyId = getCompressedKeyId(oldKey, resultOrParamsKeyMap);
       if (keyId) {
-        result.json[keyId] = input[oldKey];
-        delete result.json[oldKey];
+        tmpObj[keyId] = input[objectKey][oldKey];
+        delete tmpObj[oldKey];
         result.compressed = true;
       }
     }
 
-    return result;
+    result.json[objectKey] = JSON.parse(JSON.stringify(tmpObj));
   }
 
-  private static decompressRPCMainObjectKeys(input: JSONObject): JSONObject {
-    let result: JSONObject = JSON.parse(JSON.stringify(input));
-    const tmpObjKeys: string[] = Object.keys(input);
+  return result;
+}
+
+function decompressRPCSomeObjectKeys(
+  input: JSONObject,
+  objectKey: string
+): JSONObject {
+  let result: JSONObject = JSON.parse(JSON.stringify(input));
+  const isObject = utils.isJsonObject(input[objectKey]);
+  const isArrayWithAtLeastOneJsonObject = utils.isArrayWithAtLeastOneJsonObject(
+    input[objectKey]
+  );
+  if (isArrayWithAtLeastOneJsonObject) {
+    for (let i = 0; i < input[objectKey].length; i++) {
+      if (!utils.isJsonObject(input[objectKey][i])) continue;
+      let tmpObj = JSON.parse(JSON.stringify(input[objectKey][i]));
+      const tmpObjKeys: string[] = Object.keys(input[objectKey][i]);
+
+      for (let k = 0; k < tmpObjKeys.length; k++) {
+        const oldKey: any = tmpObjKeys[k];
+        const newKey = getDecompressedKeyId(oldKey, resultOrParamsKeyMap);
+        if (newKey) {
+          tmpObj[newKey] = input[objectKey][i][oldKey];
+          delete tmpObj[oldKey];
+        }
+      }
+      result[objectKey][i] = tmpObj;
+    }
+  } else if (isObject) {
+    const tmpObjKeys: string[] = Object.keys(input[objectKey]);
+
     for (let k = 0; k < tmpObjKeys.length; k++) {
       const oldKey: any = tmpObjKeys[k];
-      const newKey = Compression.getDecompressedKeyId(oldKey, mainKeyMap);
+      const newKey = getDecompressedKeyId(oldKey, resultOrParamsKeyMap);
       if (newKey) {
-        result[newKey] = input[oldKey];
-        delete result[oldKey];
+        result[objectKey][newKey] = input[objectKey][oldKey];
+        delete result[objectKey][oldKey];
       }
     }
-    return result;
   }
 
-  private static compressionDiagramUpdate = (
-    string: string,
-    index: number,
-    replacement: Boolean
-  ): CompressedPayload => {
-    // @ts-ignore-start
-    return `${string.substring(0, index)}${
-      replacement ? "1" : "0"
-    }${string.substring(index + 1)}`;
-    // @ts-ignore-end
+  return result;
+}
+
+function compressRPCMainObjectKeys(input: JSONObject): JSONObject {
+  let result: JSONObject = {
+    compressed: false,
+    json: JSON.parse(JSON.stringify(input)),
   };
+
+  //check if new keys do not create conflicts with old keys
+  const tmpObjKeys: string[] = Object.keys(input);
+  const dictionaryKeys: string[] = Object.keys(mainKeyMap);
+  const cantContinue = utils.findCommonElement(dictionaryKeys, tmpObjKeys);
+  if (cantContinue) return result;
+
+  for (let k = 0; k < tmpObjKeys.length; k++) {
+    const oldKey: any = tmpObjKeys[k];
+    const keyId = getCompressedKeyId(oldKey, mainKeyMap);
+    if (keyId) {
+      result.json[keyId] = input[oldKey];
+      delete result.json[oldKey];
+      result.compressed = true;
+    }
+  }
+
+  return result;
+}
+
+function decompressRPCMainObjectKeys(input: JSONObject): JSONObject {
+  let result: JSONObject = JSON.parse(JSON.stringify(input));
+  const tmpObjKeys: string[] = Object.keys(input);
+  for (let k = 0; k < tmpObjKeys.length; k++) {
+    const oldKey: any = tmpObjKeys[k];
+    const newKey = getDecompressedKeyId(oldKey, mainKeyMap);
+    if (newKey) {
+      result[newKey] = input[oldKey];
+      delete result[oldKey];
+    }
+  }
+  return result;
+}
+
+function compressionDiagramUpdate(
+  string: string,
+  index: number,
+  replacement: Boolean
+): CompressedPayload {
+  // @ts-ignore-start
+  return `${string.substring(0, index)}${
+    replacement ? "1" : "0"
+  }${string.substring(index + 1)}`;
+  // @ts-ignore-end
 }

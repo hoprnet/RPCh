@@ -1,25 +1,20 @@
 import type * as RPChCrypto from "@rpch/crypto";
-import {
-  Cache as SegmentCache,
-  Message,
-  Request,
-  Response,
-  Segment,
-  hoprd,
-  utils,
-} from "@rpch/common";
+import { Response as CommonResponse, hoprd } from "@rpch/common";
 import { utils as etherUtils } from "ethers";
 import debug from "debug";
-import RequestCache from "./request-cache";
 import { createLogger } from "./utils";
 import NodesCollector from "./nodes-collector";
+import * as Request from "./request";
+import * as RequestCache from "./request-cache";
+import * as Segment from "./segment";
+import * as SegmentCache from "./segment-cache";
+import * as Response from "./response";
 
 const log = createLogger();
 const DEFAULT_MAXIMUM_SEGMENTS_PER_REQUEST = 10;
 const DEFAULT_RESET_NODE_METRICS_MS = 1e3 * 60 * 5; // 5 min
 const DEFAULT_MINIMUM_SCORE_FOR_RELIABLE_NODE = 0.8;
 const DEFAULT_MAX_ENTRY_NODES = 2;
-const CACHES_EXPIRATION_TIMEOUT = 1e3 * 5; // 5 sec
 
 /**
  * HOPR SDK options.
@@ -82,18 +77,11 @@ export default class SDK {
   private maxEntryNodes: number = DEFAULT_MAX_ENTRY_NODES;
   // RPCh crypto library used
   private crypto: typeof RPChCrypto;
-  // various intervals used to clear the caches
-  private intervals: NodeJS.Timer[] = [];
-  private segmentCache: SegmentCache;
-  private requestCache: RequestCache;
-  private selectingEntryNodes: boolean = false;
   private nodesColl: NodesCollector;
+  private requestCache: RequestCache.Cache;
+  private segmentCache: SegmentCache.Cache;
   // allows developers to programmatically enable debugging
   public debug = debug;
-  // toogle to not start if it's already starting
-  public starting: boolean = false;
-  // resolves once SDK has started
-  public startingPromise = new utils.DeferredPromise<void>();
 
   constructor(
     private readonly ops: HoprSdkOps,
@@ -104,12 +92,8 @@ export default class SDK {
   ) {
     this.crypto = ops.crypto;
     this.crypto.set_panic_hook();
-    this.segmentCache = new SegmentCache((message: any) =>
-      this.onMessage(message)
-    );
-    this.requestCache = new RequestCache((request) =>
-      this.onRequestExpiration(request)
-    );
+    this.requestCache = RequestCache.init();
+    this.segmentCache = SegmentCache.init();
     // set to default if not specified
     this.maximumSegmentsPerRequest =
       ops.maximumSegmentsPerRequest ?? DEFAULT_MAXIMUM_SEGMENTS_PER_REQUEST;
@@ -124,130 +108,94 @@ export default class SDK {
       ops.client,
       (peerId, message) => this.onWSmessage(peerId, message)
     );
-    this.intervals.push(
-      setInterval(() => {
-        // check for expires caches every second
-        this.segmentCache.removeExpired(this.ops.timeout);
-        this.requestCache.removeExpired(this.ops.timeout);
-      }, CACHES_EXPIRATION_TIMEOUT) // look for entry nodes every 5 seconds
-    );
   }
 
   public stop = () => {
-    this.intervals.forEach(clearInterval);
     this.nodesColl.stop();
+    for (const [rId] of this.requestCache) {
+      RequestCache.remove(this.requestCache, rId);
+      SegmentCache.remove(this.segmentCache, rId);
+    }
   };
 
   private onWSmessage(_peerId: string, message: string) {
-    // handle incoming messages
-    try {
-      const segment = Segment.fromString(message);
-      this.segmentCache.onSegment(segment);
-    } catch {
-      log.verbose(
-        "rejected received data from HOPRd: not a valid segment",
-        message
+    const segRes = Segment.fromString(message);
+    if (!segRes.success) {
+      log.info("cannot create segment", segRes.error);
+      return;
+    }
+    const segment = segRes.segment;
+    if (!this.requestCache.has(segment.requestId)) {
+      log.info(
+        "dropping unrelated request segment",
+        Segment.prettyPrint(segment)
       );
+      return;
+    }
+
+    const cacheRes = SegmentCache.incoming(this.segmentCache, segment);
+    switch (cacheRes.res) {
+      case "complete":
+        this.completeSegmentsEntry(cacheRes.entry!);
+        break;
+      case "error":
+        log.error("error caching segment", cacheRes.reason);
+        break;
+      case "already-cached":
+        log.info("already cached", Segment.prettyPrint(segment));
+        break;
+      case "inserted":
+        log.verbose("inserted new segment", Segment.prettyPrint(segment));
+        break;
     }
   }
 
-  /**
-   * Resolve request promise and delete the request from map
-   * @param message Message received from cache module
-   */
-  private async onMessage(message: Message): Promise<void> {
-    // check whether we have a response
-    if (!message.body.startsWith("0x")) {
-      log.verbose("message is not a response", message.id, message.body);
+  private async completeSegmentsEntry(entry: SegmentCache.Entry) {
+    const firstSeg = entry.segments.get(0)!;
+    if (!firstSeg.body.startsWith("0x")) {
+      log.info("message is not a response", firstSeg.requestId);
       return;
     }
 
-    // check whether we have a matching request id
-    const match = this.requestCache.getRequest(message.id);
-    if (!match) {
-      log.verbose("matching request not found", message.id);
-      return;
-    }
-    this.requestCache.removeRequest(match.request);
+    const request = this.requestCache.get(firstSeg.requestId)!;
+    RequestCache.remove(this.requestCache, request.id);
 
-    try {
-      const counter = await this.getKeyVal(
-        match.request.exitNodeDestination
-      ).then((k) => BigInt(k || "0"));
+    const message = SegmentCache.toMessage(entry);
+    const counter = await this.getKeyVal(request.exitId).then((k) =>
+      BigInt(k || "0")
+    );
 
-      // construct Response from Message
-      const response = await Response.fromMessage(
-        this.crypto!,
-        match.request,
-        message,
-        counter,
-        (exitNodeId, counter) => {
-          return this.setKeyVal(exitNodeId, counter.toString());
-        }
-      );
-      const responseTime = Date.now() - match.createdAt.getTime();
+    const res = Response.messageToBody(message, request, counter, this.crypto);
+    if (res.success) {
+      await this.setKeyVal(request.exitId, res.counter.toString());
+      const responseTime = Date.now() - request.createdAt;
       log.verbose(
         "response time for request %s: %s ms, counter %i",
-        match.request.id,
+        request.id,
         responseTime,
         counter
       );
 
       this.nodesColl.finishRequest({
-        entryId: match.request.entryNodeDestination,
-        exitId: match.request.exitNodeDestination,
-        requestId: match.request.id,
+        entryId: request.entryId,
+        exitId: request.exitId,
+        requestId: request.id,
         result: true,
       });
 
-      log.verbose("responded to %s with %s", match.request.body, response.body);
-      match.resolve(response);
-    } catch (e) {
-      log.verbose(
-        "failed to load received message id %i from %s with error",
-        message.id,
-        match.request.exitNodeDestination,
-        e
-      );
-      this.handleFailedRequest(
-        match.request,
-        "failed to load received message"
-      );
+      log.verbose("responded to %s with %s", request.body, res.body);
+      // @ts-ignore
+      return request.resolve(new CommonResponse(request.id, res.body, null));
+    } else {
+      log.error("Error extracting message", res.error);
+      this.nodesColl.finishRequest({
+        entryId: request.entryId,
+        exitId: request.exitId,
+        requestId: request.id,
+        result: false,
+      });
+      return request.reject("Unable to process response");
     }
-  }
-
-  /**
-   * Adds a failed metric to the reliability score
-   * when the request expires.
-   * @param req Request received from cache module.
-   */
-  private onRequestExpiration(req: Request): void {
-    log.normal("request %i expired", req.id);
-    this.nodesColl.finishRequest({
-      entryId: req.entryNodeDestination,
-      exitId: req.exitNodeDestination,
-      requestId: req.id,
-      result: false,
-    });
-  }
-
-  /**
-   * Remove request from requestCache and add failed metric
-   * @param req Request
-   * @returns void
-   */
-  public handleFailedRequest(req: Request, reason?: string) {
-    log.normal("request %i failed", req.id, reason || "unknown reason");
-    // add metric failed metric
-    this.nodesColl.finishRequest({
-      entryId: req.entryNodeDestination,
-      exitId: req.exitNodeDestination,
-      requestId: req.id,
-      result: false,
-    });
-    // reject request promise
-    this.requestCache.getRequest(req.id)?.reject(`request failed: "${reason}"`);
-    this.requestCache.removeRequest(req);
   }
 
   /**
@@ -286,8 +234,8 @@ export default class SDK {
     provider: string,
     body: string,
     timeout: number = 10e3
-  ): Promise<Response> {
-    return new Promise(async (resolve, reject) => {
+  ): Promise<CommonResponse> {
+    return new Promise<CommonResponse>(async (resolve, reject) => {
       const res = await this.nodesColl
         .findReliableNodePair(timeout)
         .catch((err) => {
@@ -303,8 +251,10 @@ export default class SDK {
       }
 
       const { entryNode, exitNode } = res;
-      const req = await Request.createRequest(
-        this.crypto!,
+      const id = RequestCache.generateId(this.requestCache);
+      const request = Request.create(
+        this.crypto,
+        id,
         provider,
         body,
         entryNode.peerId,
@@ -313,33 +263,40 @@ export default class SDK {
           etherUtils.arrayify(exitNode.pubKey)
         )
       );
+
+      const timer = setTimeout(() => {
+        log.error("request expired", request.id);
+        this.rejectRequest(request);
+        return reject("request timed out");
+      }, timeout);
+
+      RequestCache.add(this.requestCache, request, resolve, reject, timer);
+
       this.nodesColl.startRequest({
         entryId: entryNode.peerId,
         exitId: exitNode.peerId,
-        requestId: req.id,
+        requestId: request.id,
       });
-      log.normal("sending request %i", req.id);
-      const message = req.toMessage();
-      const segments = message.toSegments();
 
+      const segments = Request.toSegments(request);
       if (segments.length > this.maximumSegmentsPerRequest) {
         log.error(
           "Request exceeds maximum amount of segments with %s segments",
           segments.length
         );
+        this.rejectRequest(request);
         return reject("Request is too big");
       }
 
-      // Add request to request cache
-      this.requestCache.addRequest(req, resolve, reject);
+      log.info("sending request %i", request.id);
 
       // Send all segments in parallel using Promise.allSettled
       const sendMessagePromises = segments.map((segment: any) => {
         return hoprd.sendMessage({
           apiEndpoint: entryNode.apiEndpoint.toString(),
           apiToken: entryNode.apiToken,
-          message: segment.toString(),
-          destination: req.exitNodeDestination,
+          message: Segment.toPayload(segment),
+          destination: request.exitId,
           path: [],
         });
       });
@@ -353,15 +310,26 @@ export default class SDK {
 
         if (rejectedResults.length > 0) {
           // If any promises were rejected, remove request from cache and reject promise
-          const reason = "not all segments were delivered";
-          this.handleFailedRequest(req, reason);
-          reject(reason);
+          log.error("Failed sending segments", rejectedResults);
+          this.rejectRequest(request);
+          return reject("not all segments were delivered");
         }
-      } catch (e: any) {
-        // If there was an error sending the request, remove request from cache and reject promise
-        this.handleFailedRequest(req, e);
-        reject(e);
+      } catch (err) {
+        log.error("Error during sending segments", err);
+        this.rejectRequest(request);
+        return reject("Error during sending segments");
       }
     });
+  }
+
+  private rejectRequest(request: Request.Request) {
+    this.nodesColl.finishRequest({
+      entryId: request.entryId,
+      exitId: request.exitId,
+      requestId: request.id,
+      result: false,
+    });
+    RequestCache.remove(this.requestCache, request.id);
+    SegmentCache.remove(this.segmentCache, request.id);
   }
 }
