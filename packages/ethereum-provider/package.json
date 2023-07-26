@@ -1,6 +1,6 @@
 {
   "name": "@rpch/ethereum-provider",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "license": "LGPL-3.0",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
@@ -19,8 +19,8 @@
     "@rpch/crypto-for-nodejs": "0.3.4"
   },
   "dependencies": {
-    "@rpch/common": "0.2.3",
-    "@rpch/sdk": "0.2.3",
+    "@rpch/common": "0.3.0",
+    "@rpch/sdk": "0.3.0",
     "ethereum-provider": "^0.7.7",
     "events": "^3.3.0"
   }

@@ -1,5 +1,22 @@
 # @rpch/sdk
 
+## 0.3.0
+
+### Minor Changes
+
+- 191b247: Updates to support nodejs v18 and native fetch
+- fc83313: Refactored SDK for performance improvements specifically on incoming messages.
+
+  - removes needless array conversion on segment building
+  - correctly drops incoming segments that are not tied to a request
+  - remove needless async handling in compression module
+
+### Patch Changes
+
+- Updated dependencies [191b247]
+- Updated dependencies [fc83313]
+  - @rpch/common@0.3.0
+
 ## 0.2.3
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@rpch/manager",
-  "version": "0.0.6",
+  "version": "0.1.0",
   "private": true,
   "license": "LGPL-3.0",
   "scripts": {
@@ -20,7 +20,7 @@
     "@types/express": "^4.17.17"
   },
   "dependencies": {
-    "@rpch/common": "0.2.3",
+    "@rpch/common": "0.3.0",
     "async-retry": "^1.3.3",
     "ethers": "^5.7.2",
     "express": "^4.18.2",
