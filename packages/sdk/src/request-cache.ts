@@ -1,10 +1,10 @@
-import { Response as CommonResponse } from "@rpch/common";
 import type { Request } from "./request";
+import type { RPCresult, RPCerror } from "./index";
 
 export type Cache = Map<number, Entry>; // id -> Request
 
 export type Entry = Request & {
-  resolve: (res: CommonResponse) => void;
+  resolve: (res: RPCresult | RPCerror) => void;
   reject: (error: string) => void;
   timer: ReturnType<typeof setTimeout>;
 };
@@ -19,7 +19,7 @@ export function init(): Cache {
 export function add(
   cache: Cache,
   request: Request,
-  resolve: (res: CommonResponse) => void,
+  resolve: (res: RPCresult | RPCerror) => void,
   reject: (error: string) => void,
   timer: ReturnType<typeof setTimeout>
 ): Entry {
