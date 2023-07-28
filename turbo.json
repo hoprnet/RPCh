@@ -88,15 +88,10 @@
       ],
       "env": [
         "PORT",
-        "DATA_DIR",
         "RESPONSE_TIMEOUT",
         "DISCOVERY_PLATFORM_API_ENDPOINT",
         "CLIENT",
-        "FORCE_ENTRY_NODE_API_ENDPOINT",
-        "FORCE_ENTRY_NODE_API_TOKEN",
-        "FORCE_ENTRY_NODE_PEERID",
-        "FORCE_EXIT_NODE_PEERID",
-        "FORCE_EXIT_NODE_PUBKEY"
+        "EXIT_PROVDER"
       ]
     },
     "@rpch/availability-monitor#build": {
