@@ -179,8 +179,13 @@ export default class SDK {
       });
 
       log.verbose("responded to %s with %s", request.body, res.body);
-      // @ts-ignore
-      return request.resolve(new CommonResponse(request.id, res.body, null));
+      try {
+        const json = JSON.parse(res.body);
+        return request.resolve(json);
+      } catch (err) {
+        log.error("Parsing response JSON failed with:", err);
+        return request.reject("Unable to parse response");
+      }
     } else {
       log.error("Error extracting message", res.error);
       this.nodesColl.finishRequest({
