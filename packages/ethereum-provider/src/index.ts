@@ -12,7 +12,7 @@ export class RPChEthereumProvider
 {
   _nextId: number = 1;
 
-  constructor(private url: string, private readonly sdk: RPChSDK) {
+  constructor(private readonly sdk: RPChSDK) {
     super();
   }
 

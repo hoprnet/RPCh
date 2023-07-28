@@ -1,7 +1,6 @@
 import type * as RPChCrypto from "@rpch/crypto";
 import { hoprd } from "@rpch/common";
 import { utils as etherUtils } from "ethers";
-import debug from "debug";
 import { createLogger } from "./utils";
 import NodesCollector from "./nodes-collector";
 import * as Request from "./request";
@@ -82,8 +81,6 @@ export default class SDK {
   private readonly segmentCache: SegmentCache.Cache;
   private readonly counterStore: Map<string, bigint> = new Map();
   private readonly ops: HoprSdkOps;
-  // allows developers to programmatically enable debugging
-  public debug = debug;
 
   /**
    * Construct an SDK instance enabling RPCh requests.
