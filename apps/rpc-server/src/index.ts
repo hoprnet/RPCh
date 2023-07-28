@@ -132,7 +132,18 @@ function createServer(sdk: RPChSDK) {
   });
 }
 
-// if this file is the entrypoint of the nodejs process
+/**
+ * RPC server - uses RPChSDK to perform JSON-RPC requests.
+ *
+ * Reads ENV vars:
+ *
+ * CLIENT - client id, identifier of your wallet/application, required
+ * RESPONSE_TIMEOUT - default request-response timeout, optional, can be overridden per request
+ * EXIT_PROVDER - default rpc provider endpoint, optional, can be overridden per request
+ * PORT - default port to run on, optional
+ *
+ * See **RPChSDK.RequestOps** for overridable per request parameters.
+ */
 if (require.main === module) {
   if (!process.env.CLIENT) {
     throw new Error("Missing 'CLIENT' env var.");
