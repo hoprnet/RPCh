@@ -233,7 +233,7 @@ export default class SDK {
   public async sendRequest(
     provider: string,
     body: string,
-    timeout: number = 30e3
+    timeout: number = 10e3
   ): Promise<CommonResponse> {
     return new Promise<CommonResponse>(async (resolve, reject) => {
       const res = await this.nodesColl
