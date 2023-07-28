@@ -11,14 +11,14 @@ import * as SegmentCache from "./segment-cache";
 import * as Response from "./response";
 
 export type RPCrequest = {
-  jsonrpc: "2.0";
+  readonly jsonrpc: "2.0";
   id?: string | number | null;
   method: string;
   params?: any[] | object;
 };
 
 export type RPCresponse = {
-  jsonrpc: "2.0";
+  readonly jsonrpc: "2.0";
   id?: string | number | null;
 };
 

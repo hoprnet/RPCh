@@ -1,8 +1,8 @@
 import EventEmitter from "events";
 import type { JsonRpc, EthereumProvider } from "ethereum-provider";
 
-import SDK, { HoprSdkOps } from "@rpch/sdk";
-import { createLogger, getResult, parseResponse } from "./utils";
+import RPChSDK from "@rpch/sdk";
+import { createLogger, getResult } from "./utils";
 
 const log = createLogger();
 
@@ -10,18 +10,10 @@ export class RPChEthereumProvider
   extends EventEmitter
   implements EthereumProvider
 {
-  sdk: SDK;
   _nextId: number = 1;
 
-  constructor(
-    private url: string,
-    hoprSdkOps: HoprSdkOps,
-    setKeyVal: (key: string, val: string) => Promise<any>,
-    getKeyVal: (key: string) => Promise<string | undefined>
-  ) {
+  constructor(private url: string, private readonly sdk: RPChSDK) {
     super();
-    // initializes the RPCh SDK
-    this.sdk = new SDK(hoprSdkOps, setKeyVal, getKeyVal);
   }
 
   /**
@@ -39,20 +31,14 @@ export class RPChEthereumProvider
       method: request.method,
       params: request.params,
       id: this._nextId++,
-      jsonrpc: "2.0",
+      jsonrpc: "2.0" as const,
     };
 
     log.verbose("Created request");
 
     try {
-      const rpchResponse = await this.sdk.sendRequest(
-        this.url,
-        JSON.stringify(payload)
-      );
-
-      const response = getResult(
-        parseResponse(rpchResponse)
-      ) as JsonRpc.Response["result"];
+      const rpchResponse = await this.sdk.send(payload);
+      const response = getResult(rpchResponse) as JsonRpc.Response["result"];
 
       log.verbose("Received response for request");
 
