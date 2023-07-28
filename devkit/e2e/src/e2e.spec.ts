@@ -24,19 +24,19 @@ describe("e2e tests", function () {
   });
 
   it("should get chain id", async function () {
-    const provider = new ethers.RPChProvider(sdk);
+    const provider = new ethers.RPChProvider(PROVIDER_URL, sdk);
     const network = await provider.getNetwork();
     assert.equal(network.chainId, 100);
   });
 
   it("should get block number", async function () {
-    const provider = new ethers.RPChProvider(sdk);
+    const provider = new ethers.RPChProvider(PROVIDER_URL, sdk);
     const blockNumber = await provider.getBlockNumber();
     assert.equal(typeof blockNumber, "number");
   });
 
   it("should get balance", async function () {
-    const provider = new ethers.RPChProvider(sdk);
+    const provider = new ethers.RPChProvider(PROVIDER_URL, sdk);
     const balance = await provider.getBalance(
       "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
     );
@@ -44,7 +44,7 @@ describe("e2e tests", function () {
   });
 
   it("should get network version", async function () {
-    const provider = new ethers.RPChProvider(sdk);
+    const provider = new ethers.RPChProvider(PROVIDER_URL, sdk);
     const network = await provider.send("net_version", []);
     assert.equal(network, 100);
   });
