@@ -6,9 +6,9 @@ import RPChSDK, {
   RPCerror,
 } from "@rpch/sdk";
 import * as RPChCrypto from "@rpch/crypto-for-nodejs";
-import { createLogger } from "./utils";
+import { utils } from "@rpch/common";
 
-const log = createLogger();
+const log = utils.LoggerFactory("rpc-server")();
 
 function toURL(urlStr: string): null | URL {
   // not all browsers support this
