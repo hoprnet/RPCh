@@ -85,8 +85,13 @@ export default class SDK {
   // allows developers to programmatically enable debugging
   public debug = debug;
 
+  /**
+   * Construct an SDK instance enabling RPCh requests.
+   * @param clientIdentifier your unique string used to identify how many requests your client/wallet pushes through the network
+   * @param crypto crypto instantiation for RPCh, use `@rpch/crypto-for-nodejs` or `@rpch/crypto-for-web`
+   **/
   constructor(
-    private readonly clientId: string,
+    private readonly clientIdentifier: string,
     private readonly crypto: typeof RPChCrypto,
     ops: HoprSdkOps = {}
   ) {
@@ -100,7 +105,7 @@ export default class SDK {
     this.segmentCache = SegmentCache.init();
     this.nodesColl = new NodesCollector(
       this.ops.discoveryPlatformURL!,
-      this.clientId,
+      this.clientIdentifier,
       (peerId, message) => this.onWSmessage(peerId, message)
     );
   }
