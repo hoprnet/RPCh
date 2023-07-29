@@ -20,16 +20,11 @@ const intervalExpireReliabilities = 60e3 * 5; // 5 min
 
 const intervalDebugPrint = 60e3; // 1 min
 
-/**
-nodes come in pairs
+let slidingNodesWindow: int = 2;
 
-entry node, exit node
-
-sent message with timestamp
-received message with timestamp
-
-working node pairs with timestamps
-*/
+// these parameters are subject to change and we need to find the best possible combinations
+const latencyThreshold = 5e3;
+const requestThreshold = 15;
 
 export type EntryNode = {
   apiEndpoint: URL;
@@ -55,10 +50,6 @@ type ResponseExitNode = {
   id: string;
 };
 
-export type NodesCollectorOps = {
-  entryNodesTarget: number;
-  maxReliabilityAge: number;
-};
 
 const defaultOps: NodesCollectorOps = {
   entryNodesTarget: 5,
