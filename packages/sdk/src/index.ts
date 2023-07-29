@@ -2,7 +2,8 @@ import type * as RPChCrypto from "@rpch/crypto";
 import { hoprd } from "@rpch/common";
 import { utils as etherUtils } from "ethers";
 import { createLogger } from "./utils";
-import NodesCollector from "./nodes-collector";
+import * as Nodes from "./nodes";
+import * as NodesAPI from "./nodes-api";
 import * as Request from "./request";
 import * as RequestCache from "./request-cache";
 import * as Segment from "./segment";
@@ -76,19 +77,20 @@ const log = createLogger();
  * Send traffic through the RPCh network
  */
 export default class SDK {
-  private readonly nodesColl: NodesCollector;
   private readonly requestCache: RequestCache.Cache;
   private readonly segmentCache: SegmentCache.Cache;
   private readonly counterStore: Map<string, bigint> = new Map();
+  private readonly nodes: Nodes.Nodes;
   private readonly ops: HoprSdkOps;
 
   /**
    * Construct an SDK instance enabling RPCh requests.
-   * @param clientIdentifier your unique string used to identify how many requests your client/wallet pushes through the network
+   * @param cliendId your unique string used to identify how many requests your client/wallet pushes through the network
    * @param crypto crypto instantiation for RPCh, use `@rpch/crypto-for-nodejs` or `@rpch/crypto-for-web`
+   * @param ops, see **HoprSdkOps**
    **/
   constructor(
-    private readonly clientIdentifier: string,
+    private readonly clientId: string,
     private readonly crypto: typeof RPChCrypto,
     ops: HoprSdkOps = {}
   ) {
@@ -100,18 +102,28 @@ export default class SDK {
     this.crypto.set_panic_hook();
     this.requestCache = RequestCache.init();
     this.segmentCache = SegmentCache.init();
-    this.nodesColl = new NodesCollector(
-      this.ops.discoveryPlatformURL!,
-      this.clientIdentifier,
-      (peerId, message) => this.onWSmessage(peerId, message)
-    );
+    this.nodes = Nodes.init();
+    NodesAPI.fetchEntryNode({
+      excludeList: [],
+      discoveryPlatformURL: this.ops.discoveryPlatformURL!,
+      clientId: this.clientId,
+    })
+      .then(this.onEntryNode)
+      .catch(this.onEntryNodeError);
   }
 
   public stop = () => {
-    this.nodesColl.stop();
     for (const [rId] of this.requestCache) {
       RequestCache.remove(this.requestCache, rId);
       SegmentCache.remove(this.segmentCache, rId);
+    }
+  };
+
+  private onEntryNode = (entryNode: Nodes.EntryNode) => {
+    Nodes.newEntryNode(this.nodes, entryNode);
+    const wsEntryNode = Nodes.needsWebSocket(this.nodes);
+    if (wsEntryNode) {
+      NodesAPI.openWebSocket(entryNode, this.onWSevent(entryNode.peerId));
     }
   };
 
