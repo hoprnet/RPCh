@@ -7,14 +7,14 @@ const apiExitNode = "/api/v1/node?hasExitNode=true";
 
 export function fetchEntryNode({
   excludeList,
-  discoveryPlatformURL,
+  discoveryPlatformEndpoint,
   clientId,
 }: {
   excludeList: string[];
-  discoveryPlatformURL: string;
+  discoveryPlatformEndpoint: string;
   clientId: string;
 }): Promise<EntryNode> {
-  const url = new URL(apiEntryNode, discoveryPlatformURL);
+  const url = new URL(apiEntryNode, discoveryPlatformEndpoint);
   const headers = {
     Accept: "application/json",
     "Content-Type": "application/json",
@@ -43,16 +43,16 @@ export function fetchEntryNode({
 }
 
 export function fetchExitNodes({
-  discoveryPlatformURL,
-  apiClient,
+  discoveryPlatformEndpoint,
+  clientId,
 }: {
-  discoveryPlatformURL: string;
-  apiClient: string;
+  discoveryPlatformEndpoint: string;
+  clientId: string;
 }): Promise<ExitNode[]> {
-  const url = new URL(apiExitNode, discoveryPlatformURL);
+  const url = new URL(apiExitNode, discoveryPlatformEndpoint);
   const headers = {
     Accept: "application/json",
-    "x-rpch-client": apiClient,
+    "x-rpch-client": clientId,
   };
 
   return fetch(url, { headers }).then((resp) => {
