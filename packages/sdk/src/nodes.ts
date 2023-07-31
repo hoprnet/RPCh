@@ -10,20 +10,11 @@ export type Nodes = {
   outphasing: Set<string>; // no longer eligable entry nodes
 };
 
-export enum CommandLabel {
-  NeedEntryNode,
-  NeedExitNode,
-  OpenWebSocket,
-  CloseWebSocket,
-  None,
-}
-
 export type Command =
-  | { label: CommandLabel.NeedEntryNode; excludeIds: string[] }
-  | { label: CommandLabel.NeedExitNode }
-  | { label: CommandLabel.OpenWebSocket; entryNode: EntryNode }
-  | { label: CommandLabel.CloseWebSocket; entryNode: EntryNode }
-  | { label: CommandLabel.None };
+  | { readonly cmd: "needEntryNode"; excludeIds: string[] }
+  | { readonly cmd: "needExitNode" }
+  | { readonly cmd: "openWebSocket"; entryNode: EntryNode }
+  | { readonly cmd: "" };
 
 export type Pair = { entryNode: EntryNode; exitNode: ExitNode };
 export type PairIds = { entryId: string; exitId: string };
@@ -68,12 +59,12 @@ export function init(): Nodes {
 export function reachReady(nodes: Nodes): Command {
   // check entry nodes
   if (nodes.entryNodes.size === 0) {
-    return { label: CommandLabel.NeedEntryNode, excludeIds: [] };
+    return { cmd: "needEntryNode", excludeIds: [] };
   }
 
   // check exit nodes
   if (nodes.exitNodes.size === 0) {
-    return { label: CommandLabel.NeedExitNode };
+    return { cmd: "needExitNode" };
   }
 
   // check if we have valid entry nodes
@@ -82,24 +73,24 @@ export function reachReady(nodes: Nodes): Command {
   );
   if (entryNodes.length === 0) {
     const excludeIds = Array.from(nodes.entryNodes.keys());
-    return { label: CommandLabel.NeedEntryNode, excludeIds: excludeIds };
+    return { cmd: "needEntryNode", excludeIds };
   }
 
-  return { label: CommandLabel.None };
+  return { cmd: "" };
 }
 
 /**
  * node pair can be returned as soon as we have a valid entry / exit node with a connected entry node websocket.
  */
-export function reachNodePair(nodes: Nodes): { cmd: Command; nodePair?: Pair } {
+export function reachNodePair(nodes: Nodes): Command & { nodePair?: Pair } {
   // check entry nodes
   if (nodes.entryNodes.size === 0) {
-    return { cmd: { label: CommandLabel.NeedEntryNode, excludeIds: [] } };
+    return { cmd: "needEntryNode", excludeIds: [] };
   }
 
   // check exit nodes
   if (nodes.exitNodes.size === 0) {
-    return { cmd: { label: CommandLabel.NeedExitNode } };
+    return { cmd: "needExitNode" };
   }
 
   // check if we have valid entry nodes
@@ -108,9 +99,7 @@ export function reachNodePair(nodes: Nodes): { cmd: Command; nodePair?: Pair } {
   );
   if (entryNodes.length === 0) {
     const excludeIds = Array.from(nodes.entryNodes.keys());
-    return {
-      cmd: { label: CommandLabel.NeedEntryNode, excludeIds: excludeIds },
-    };
+    return { cmd: "needEntryNode", excludeIds: excludeIds };
   }
 
   // check if we have an open websocket entry node
@@ -123,10 +112,10 @@ export function reachNodePair(nodes: Nodes): { cmd: Command; nodePair?: Pair } {
     if (connNodes.length === 0) {
       // no connecting webSocket and no open nodes
       const entryNode = randomEl(entryNodes);
-      return { cmd: { label: CommandLabel.OpenWebSocket, entryNode } };
+      return { cmd: "openWebSocket", entryNode };
     }
     // wait for connecting webSocket
-    return { cmd: { label: CommandLabel.None } };
+    return { cmd: "" };
   }
 
   // prioritize recommendedExits
@@ -137,16 +126,10 @@ export function reachNodePair(nodes: Nodes): { cmd: Command; nodePair?: Pair } {
   );
   if (recExits.length > 0) {
     const exitNode = randomEl(recExits);
-    return {
-      cmd: { label: CommandLabel.None },
-      nodePair: { entryNode, exitNode },
-    };
+    return { cmd: "", nodePair: { entryNode, exitNode } };
   }
   const exitNode = randomEl(exitNodes);
-  return {
-    cmd: { label: CommandLabel.None },
-    nodePair: { entryNode, exitNode },
-  };
+  return { cmd: "", nodePair: { entryNode, exitNode } };
 }
 
 export function newEntryNode(nodes: Nodes, entryNode: EntryNode) {

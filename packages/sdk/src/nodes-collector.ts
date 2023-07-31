@@ -10,6 +10,8 @@ const log = createLogger(["nodes-collector"]);
 export default class NodesCollector {
   private readonly nodes: Nodes.Nodes = Nodes.init();
   private actTimer: ReturnType<typeof setTimeout> = setTimeout(function () {});
+  private ongoingFetchEntry = false;
+  private ongoingFetchExit = false;
 
   constructor(
     private readonly discoveryPlatformEndpoint: string,
@@ -28,11 +30,11 @@ export default class NodesCollector {
       const check = () => {
         const now = Date.now();
         const elapsed = now - start;
-        const cmd = Nodes.reachReady(this.nodes);
-        if (cmd.label === Nodes.CommandLabel.None) {
+        const res = Nodes.reachReady(this.nodes);
+        if (res.cmd === "") {
           return resolve(true);
         }
-        this.actOnCmd(cmd);
+        this.actOnCmd(res);
         if (elapsed > timeout) {
           log.error("Timeout waiting for ready", elapsed);
           return reject(`timeout after ${elapsed} ms`);
@@ -52,11 +54,11 @@ export default class NodesCollector {
       const check = () => {
         const now = Date.now();
         const elapsed = now - start;
-        const { cmd, nodePair } = Nodes.reachNodePair(this.nodes);
-        if (nodePair) {
-          return resolve(nodePair);
+        const res = Nodes.reachNodePair(this.nodes);
+        if (res.nodePair) {
+          return resolve(res.nodePair);
         }
-        this.actOnCmd(cmd);
+        this.actOnCmd(res);
         if (elapsed > timeout) {
           log.error("Timeout waiting for node pair", elapsed);
           return reject(`timeout after ${elapsed} ms`);
@@ -93,18 +95,15 @@ export default class NodesCollector {
   private actOnCmd = (cmd: Nodes.Command) => {
     log.verbose("actOnCmd", cmd);
     clearTimeout(this.actTimer);
-    switch (cmd.label) {
-      case Nodes.CommandLabel.NeedEntryNode:
+    switch (cmd.cmd) {
+      case "needEntryNode":
         this.fetchEntryNode(cmd.excludeIds);
         break;
-      case Nodes.CommandLabel.NeedExitNode:
+      case "needExitNode":
         this.fetchExitNodes();
         break;
-      case Nodes.CommandLabel.OpenWebSocket:
+      case "openWebSocket":
         this.openWebSocket(cmd.entryNode);
-        break;
-      case Nodes.CommandLabel.CloseWebSocket:
-        this.closeWebSocket(cmd.entryNode);
         break;
       default:
         break;
@@ -112,13 +111,20 @@ export default class NodesCollector {
   };
 
   private fetchEntryNode = (excludeIds: string[]) => {
+    if (this.ongoingFetchEntry) {
+      return;
+    }
+    this.ongoingFetchEntry = true;
     NodesAPI.fetchEntryNode({
       excludeList: excludeIds,
       discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
       clientId: this.clientId,
     })
       .then(this.onEntryNode)
-      .catch(this.onEntryNodeError);
+      .catch(this.onEntryNodeError)
+      .finally(() => {
+        this.ongoingFetchEntry = false;
+      });
   };
 
   private onEntryNode = (entryNode: Nodes.EntryNode) => {
@@ -134,12 +140,19 @@ export default class NodesCollector {
   };
 
   private fetchExitNodes = () => {
+    if (this.ongoingFetchExit) {
+      return;
+    }
+    this.ongoingFetchExit = true;
     NodesAPI.fetchExitNodes({
       discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
       clientId: this.clientId,
     })
       .then(this.onExitNodes)
-      .catch(this.onExitNodesError);
+      .catch(this.onExitNodesError)
+      .finally(() => {
+        this.ongoingFetchExit = false;
+      });
   };
 
   private onExitNodes = (exitNodes: Nodes.ExitNode[]) => {
@@ -169,9 +182,5 @@ export default class NodesCollector {
       }
     );
     Nodes.addWSconn(this.nodes, entryNode, wsConn);
-  };
-
-  private closeWebSocket = (entryNode: Nodes.EntryNode) => {
-    entryNode.wsConn?.close();
   };
 }
