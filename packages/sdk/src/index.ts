@@ -1,7 +1,6 @@
 import type * as RPChCrypto from "@rpch/crypto";
-import { Response as CommonResponse, hoprd } from "@rpch/common";
+import { hoprd } from "@rpch/common";
 import { utils as etherUtils } from "ethers";
-import debug from "debug";
 import { createLogger } from "./utils";
 import NodesCollector from "./nodes-collector";
 import * as Request from "./request";
@@ -10,102 +9,100 @@ import * as Segment from "./segment";
 import * as SegmentCache from "./segment-cache";
 import * as Response from "./response";
 
-const log = createLogger();
-const DEFAULT_MAXIMUM_SEGMENTS_PER_REQUEST = 10;
-const DEFAULT_RESET_NODE_METRICS_MS = 1e3 * 60 * 5; // 5 min
-const DEFAULT_MINIMUM_SCORE_FOR_RELIABLE_NODE = 0.8;
-const DEFAULT_MAX_ENTRY_NODES = 2;
+export type RPCrequest = {
+  readonly jsonrpc: "2.0";
+  id?: string | number | null;
+  method: string;
+  params?: any[] | object;
+};
+
+export type RPCresponse = {
+  readonly jsonrpc: "2.0";
+  id?: string | number | null;
+};
+
+export type RPCresult = RPCresponse & {
+  result: any;
+};
+
+export type RPCerror = RPCresponse & {
+  error: {
+    code: number;
+    message: string;
+    data?: any;
+  };
+};
 
 /**
- * HOPR SDK options.
- * @param crypto RPCh crypto library to use
- * @param discoveryPlatformApiEndpoint The discovery platform API endpoint
- * @param client The client that will be used to pay for messaging
- * @param timeout The timeout of pending requests
- * @param maximumSegmentsPerRequest Optional: Blocks requests that are made up of more than 10 segments
- * @param resetNodeMetricsMs Optional: Reset score metrics after specifies miliseconds
- * @param minimumScoreForReliableNode Optional: Nodes with lower score than this will be swapped for new ones
- * @param maxEntryNodes Optional: How many entry nodes to use in parallel
- * @param reliabilityScoreFreshNodeThreshold Optional: The score which is considered fresh for a node
- * @param reliabilityScoreMaxResponses Optional: Maximum amount of responses to keep in memory
- * @param forceEntryNode Optional: Force to use a specific entry node
- * @param forceExitNode Optional: Force to use a specific exit node
+ * HOPR SDK options provide global defaults.
+ * There are sane defaults for all of them.
+ * Most of those values can be overridden per request.
+ * See **RequestOps** for specifics.
+ * See **defaultOps** for defaults.
+ *
+ * @param discoveryPlatformURL discovery platform API endpoint
+ * @param timeout - timeout for receiving responses
+ * @param provider - target rpc provider
  */
 export type HoprSdkOps = {
-  crypto: typeof RPChCrypto;
-  discoveryPlatformApiEndpoint: string;
-  client: string;
-  timeout: number;
-  maximumSegmentsPerRequest?: number;
-  resetNodeMetricsMs?: number;
-  minimumScoreForReliableNode?: number;
-  maxEntryNodes?: number;
-  reliabilityScoreFreshNodeThreshold?: number;
-  reliabilityScoreMaxResponses?: number;
-  forceEntryNode?: EntryNode;
-  forceExitNode?: ExitNode;
+  discoveryPlatformURL?: string;
+  timeout?: number;
+  provider?: string;
 };
 
 /**
- * Entry Node details
- */
-export type EntryNode = {
-  apiEndpoint: string;
-  apiToken: string;
-  peerId: string;
-  stopMessageListener?: () => void;
+ * Global defaults.
+ * See **HoprSdkOps** for details.
+ **/
+const defaultOps: HoprSdkOps = {
+  discoveryPlatformURL: "https://discovery.rpch.tech",
+  timeout: 30e3,
+  provider: "https://primary.gnosis-chain.rpc.hoprtech.net",
 };
 
 /**
- * Exit Node details
+ * Overridable parameters per request.
+ * See **HoprSdkOps** for details.
  */
-export type ExitNode = {
-  peerId: string;
-  pubKey: string;
+export type RequestOps = {
+  timeout?: number;
+  provider?: string;
 };
+
+const MAX_REQUEST_SEGMENTS = 10;
+const log = createLogger();
 
 /**
  * Send traffic through the RPCh network
  */
 export default class SDK {
-  // various options that can be overwritten by user
-  private maximumSegmentsPerRequest: number =
-    DEFAULT_MAXIMUM_SEGMENTS_PER_REQUEST;
-  private resetNodeMetricsMs: number = DEFAULT_RESET_NODE_METRICS_MS;
-  private minimumScoreForReliableNode: number =
-    DEFAULT_MINIMUM_SCORE_FOR_RELIABLE_NODE;
-  private maxEntryNodes: number = DEFAULT_MAX_ENTRY_NODES;
-  // RPCh crypto library used
-  private crypto: typeof RPChCrypto;
-  private nodesColl: NodesCollector;
-  private requestCache: RequestCache.Cache;
-  private segmentCache: SegmentCache.Cache;
-  // allows developers to programmatically enable debugging
-  public debug = debug;
+  private readonly nodesColl: NodesCollector;
+  private readonly requestCache: RequestCache.Cache;
+  private readonly segmentCache: SegmentCache.Cache;
+  private readonly counterStore: Map<string, bigint> = new Map();
+  private readonly ops: HoprSdkOps;
 
+  /**
+   * Construct an SDK instance enabling RPCh requests.
+   * @param clientIdentifier your unique string used to identify how many requests your client/wallet pushes through the network
+   * @param crypto crypto instantiation for RPCh, use `@rpch/crypto-for-nodejs` or `@rpch/crypto-for-web`
+   **/
   constructor(
-    private readonly ops: HoprSdkOps,
-    // eslint-disable-next-line no-unused-vars
-    private setKeyVal: (key: string, val: string) => Promise<void>,
-    // eslint-disable-next-line no-unused-vars
-    private getKeyVal: (key: string) => Promise<string | undefined>
+    private readonly clientIdentifier: string,
+    private readonly crypto: typeof RPChCrypto,
+    ops: HoprSdkOps = {}
   ) {
-    this.crypto = ops.crypto;
+    this.ops = {
+      ...defaultOps,
+      ...ops,
+    };
+    this.crypto = crypto;
     this.crypto.set_panic_hook();
     this.requestCache = RequestCache.init();
     this.segmentCache = SegmentCache.init();
-    // set to default if not specified
-    this.maximumSegmentsPerRequest =
-      ops.maximumSegmentsPerRequest ?? DEFAULT_MAXIMUM_SEGMENTS_PER_REQUEST;
-    this.resetNodeMetricsMs =
-      ops.resetNodeMetricsMs ?? DEFAULT_RESET_NODE_METRICS_MS;
-    this.minimumScoreForReliableNode =
-      ops.minimumScoreForReliableNode ??
-      DEFAULT_MINIMUM_SCORE_FOR_RELIABLE_NODE;
-    this.maxEntryNodes = ops.maxEntryNodes ?? DEFAULT_MAX_ENTRY_NODES;
     this.nodesColl = new NodesCollector(
-      ops.discoveryPlatformApiEndpoint,
-      ops.client,
+      this.ops.discoveryPlatformURL!,
+      this.clientIdentifier,
       (peerId, message) => this.onWSmessage(peerId, message)
     );
   }
@@ -161,13 +158,11 @@ export default class SDK {
     RequestCache.remove(this.requestCache, request.id);
 
     const message = SegmentCache.toMessage(entry);
-    const counter = await this.getKeyVal(request.exitId).then((k) =>
-      BigInt(k || "0")
-    );
+    const counter = this.counterStore.get(request.exitId) || BigInt(0);
 
     const res = Response.messageToBody(message, request, counter, this.crypto);
     if (res.success) {
-      await this.setKeyVal(request.exitId, res.counter.toString());
+      this.counterStore.set(request.exitId, res.counter);
       const responseTime = Date.now() - request.createdAt;
       log.verbose(
         "response time for request %s: %s ms, counter %i",
@@ -184,8 +179,13 @@ export default class SDK {
       });
 
       log.verbose("responded to %s with %s", request.body, res.body);
-      // @ts-ignore
-      return request.resolve(new CommonResponse(request.id, res.body, null));
+      try {
+        const json = JSON.parse(res.body);
+        return request.resolve(json);
+      } catch (err) {
+        log.error("Parsing response JSON failed with:", err);
+        return request.reject("Unable to parse response");
+      }
     } else {
       log.error("Error extracting message", res.error);
       this.nodesColl.finishRequest({
@@ -200,11 +200,13 @@ export default class SDK {
 
   /**
    * Resolves true when node pairs are awailable.
+   * If no timeout specified, global timeout is used.
    */
-  public async isReady(timeout: number = 10e3): Promise<boolean> {
+  public async isReady(timeout?: number): Promise<boolean> {
+    const _timeout = timeout ? timeout : this.ops.timeout!;
     return new Promise(async (resolve, reject) => {
       const res = await this.nodesColl
-        .findReliableNodePair(timeout)
+        .findReliableNodePair(_timeout)
         .catch((err) => {
           // keep stacktrace intact
           return reject(
@@ -225,38 +227,38 @@ export default class SDK {
   }
 
   /**
-   * Sends a Request through the RPCh network
-   * @param provider
-   * @param body
-   * @returns Promise<Response>
+   * Send an **RPCrequest** via RPCh.
+   * See **RequestOps** for overridable options.
    */
-  public async sendRequest(
-    provider: string,
-    body: string,
-    timeout: number = 30e3
-  ): Promise<CommonResponse> {
-    return new Promise<CommonResponse>(async (resolve, reject) => {
+  public async send(
+    req: RPCrequest,
+    ops?: RequestOps
+  ): Promise<RPCresult | RPCerror> {
+    const reqOps = {
+      ...this.ops,
+      ...ops,
+    };
+    return new Promise(async (resolve, reject) => {
+      // gather entry - exit node pair
       const res = await this.nodesColl
-        .findReliableNodePair(timeout)
-        .catch((err) => {
-          // keep stacktrace intact
-          return reject(
-            `Error finding reliable entry - exit node pair: ${err}`
-          );
-        });
+        .findReliableNodePair(reqOps.timeout!)
+        .catch((_err) =>
+          reject(`Error finding reliable entry - exit node pair.`)
+        );
       if (!res) {
         return reject(
           `No return when searching entry - exit node pair, should never happen`
         );
       }
 
+      // create request
       const { entryNode, exitNode } = res;
       const id = RequestCache.generateId(this.requestCache);
       const request = Request.create(
         this.crypto,
         id,
-        provider,
-        body,
+        reqOps.provider!,
+        JSON.stringify(req),
         entryNode.peerId,
         exitNode.peerId,
         this.crypto!.Identity.load_identity(
@@ -264,12 +266,14 @@ export default class SDK {
         )
       );
 
+      // set request expiration timer
       const timer = setTimeout(() => {
         log.error("request expired", request.id);
         this.rejectRequest(request);
         return reject("request timed out");
-      }, timeout);
+      }, reqOps.timeout!);
 
+      // track request
       RequestCache.add(this.requestCache, request, resolve, reject, timer);
 
       this.nodesColl.startRequest({
@@ -278,16 +282,18 @@ export default class SDK {
         requestId: request.id,
       });
 
+      // split request to segments
       const segments = Request.toSegments(request);
-      if (segments.length > this.maximumSegmentsPerRequest) {
+      if (segments.length > MAX_REQUEST_SEGMENTS) {
         log.error(
           "Request exceeds maximum amount of segments with %s segments",
           segments.length
         );
         this.rejectRequest(request);
-        return reject("Request is too big");
+        return reject("Request exceeds maximum size of 3830b");
       }
 
+      // send request to hoprd
       log.info("sending request %i", request.id);
 
       // Send all segments in parallel using Promise.allSettled
@@ -308,13 +314,14 @@ export default class SDK {
           (result: any) => result.status === "rejected"
         );
 
+        // check rejected segment sending
         if (rejectedResults.length > 0) {
-          // If any promises were rejected, remove request from cache and reject promise
           log.error("Failed sending segments", rejectedResults);
           this.rejectRequest(request);
           return reject("not all segments were delivered");
         }
       } catch (err) {
+        // check other errors
         log.error("Error during sending segments", err);
         this.rejectRequest(request);
         return reject("Error during sending segments");

@@ -1,7 +1,7 @@
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { deepCopy } from "@ethersproject/properties";
-import SDK from "@rpch/sdk";
-import { parseResponse, getResult, createLogger } from "./utils";
+import RPChSDK from "@rpch/sdk";
+import { getResult, createLogger } from "./utils";
 
 const log = createLogger();
 
@@ -11,10 +11,7 @@ const log = createLogger();
  * @extends JsonRpcProvider
  */
 export class RPChProvider extends JsonRpcProvider {
-  /**
-   * @param hoprSdkOps - The options object for the SDK instance.
-   */
-  constructor(public readonly url: string, public readonly sdk: SDK) {
+  constructor(public readonly url: string, public readonly sdk: RPChSDK) {
     super(url);
   }
 
@@ -32,7 +29,7 @@ export class RPChProvider extends JsonRpcProvider {
       method: method,
       params: params,
       id: this._nextId++,
-      jsonrpc: "2.0",
+      jsonrpc: "2.0" as const,
     };
 
     this.emit("debug", {
@@ -49,10 +46,9 @@ export class RPChProvider extends JsonRpcProvider {
     }
 
     try {
-      const rpchResponsePromise = this.sdk.sendRequest(
-        this.url,
-        JSON.stringify(payload)
-      );
+      const rpchResponsePromise = this.sdk.send(payload, {
+        provider: this.url,
+      });
       log.verbose("Send request");
 
       // Cache the fetch, but clear it on the next event loop
@@ -65,7 +61,7 @@ export class RPChProvider extends JsonRpcProvider {
       }
 
       const rpchResponse = await rpchResponsePromise;
-      const response = getResult(parseResponse(rpchResponse));
+      const response = getResult(rpchResponse);
       log.verbose("Received response for request");
       this.emit("debug", {
         action: "response",
