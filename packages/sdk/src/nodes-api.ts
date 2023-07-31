@@ -89,5 +89,7 @@ export function openWebSocket(
   wsURL.protocol = apiEndpoint.protocol === "https:" ? "wss:" : "ws:";
   wsURL.pathname = apiWebSocket;
   wsURL.search = `?apiToken=${accessToken}`;
-  return new WebSocketHelper(wsURL, onEvent);
+  return new WebSocketHelper(wsURL, onEvent, {
+    maxReconnectAttempts: 0,
+  });
 }
