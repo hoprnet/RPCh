@@ -10,31 +10,26 @@ import { utils } from "@rpch/common";
 
 const log = utils.LoggerFactory("rpc-server")();
 
-function toURL(urlStr: string): null | URL {
-  // not all browsers support this
-  if ("canParse" in URL) {
-    // @ts-ignore
-    if (URL.canParse(urlStr)) {
-      return new URL(urlStr);
-    }
-    return null;
-  }
+function toURL(urlStr: string, host: string): null | URL {
   try {
-    return new URL(urlStr);
+    return new URL(urlStr, host);
   } catch (_err: any) /* TypeError */ {
     return null;
   }
 }
 
-function extractParams(urlStr: undefined | string): RequestOps {
-  if (!urlStr) {
+function extractParams(
+  urlStr: undefined | string,
+  host: undefined | string
+): RequestOps {
+  if (!urlStr || !host) {
     return {};
   }
-  const url = toURL(urlStr);
+  const url = toURL(urlStr, `http://${host}`); // see https://nodejs.org/api/http.html#messageurl
   if (!url) {
     return {};
   }
-  const exitProvider = url.searchParams.get("exitProvider");
+  const exitProvider = url.searchParams.get("exit-provider");
   const timeout = url.searchParams.get("timeout");
   const params: Record<string, string> = {};
   if (exitProvider != null) {
@@ -116,10 +111,15 @@ function createServer(sdk: RPChSDK) {
     });
 
     req.on("data", async (data) => {
-      const params = extractParams(req.url);
+      const params = extractParams(req.url, req.headers.host);
       const result = parseBody(data.toString());
       if (result.success) {
-        log.info("sending request", result.req, "with params", params);
+        log.info(
+          "sending request",
+          result.req,
+          "with params",
+          JSON.stringify(params)
+        );
         sendRequest(sdk, result.req, params, res);
       } else {
         log.info(
