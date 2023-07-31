@@ -89,14 +89,16 @@ function sendRequest(
     .catch((err: any) => {
       log.error("Error sending request", err);
       res.statusCode = 500;
-      res.write({
-        jsonrpc: req.jsonrpc,
-        error: {
-          code: -32603,
-          message: `Internal JSON-RPC error: "${err}"`,
-        },
-        id: req.id,
-      });
+      res.write(
+        JSON.stringify({
+          jsonrpc: req.jsonrpc,
+          error: {
+            code: -32603,
+            message: `Internal JSON-RPC error: "${err}"`,
+          },
+          id: req.id,
+        })
+      );
     })
     .finally(() => {
       res.end();
