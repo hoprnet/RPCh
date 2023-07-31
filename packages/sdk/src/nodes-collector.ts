@@ -12,6 +12,7 @@ export default class NodesCollector {
   private actTimer: ReturnType<typeof setTimeout> = setTimeout(function () {});
   private ongoingFetchEntry = false;
   private ongoingFetchExit = false;
+  private ongoingOpeningSocket = false;
 
   constructor(
     private readonly discoveryPlatformEndpoint: string,
@@ -171,14 +172,20 @@ export default class NodesCollector {
   };
 
   private openWebSocket = (entryNode: Nodes.EntryNode) => {
+    if (this.ongoingOpeningSocket) {
+      return;
+    }
+    this.ongoingOpeningSocket = true;
     const wsConn = NodesAPI.openWebSocket(
       entryNode,
       (evt: onEventParameterType) => {
+        console.log("onEventParameterType", evt);
         switch (evt.action) {
           case "message":
             this.onWSmessage(evt.message);
             break;
           default:
+            this.ongoingOpeningSocket = false;
             Nodes.onWSevt(this.nodes, entryNode, evt);
             break;
         }
