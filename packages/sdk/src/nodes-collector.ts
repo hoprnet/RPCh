@@ -19,7 +19,10 @@ export default class NodesCollector {
     private readonly onWSmessage: (message: string) => void
   ) {}
 
-  public stop = () => {};
+  public stop = () => {
+    Nodes.stop(this.nodes);
+    clearTimeout(this.actTimer);
+  };
 
   /**
    * Ready for request receival, no websocket yet.

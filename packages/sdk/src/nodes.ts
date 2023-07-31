@@ -234,6 +234,12 @@ function postRequest(nodes: Nodes, { entryNode, exitNode }: Pair) {
   }
 }
 
+export function stop(nodes: Nodes) {
+  for (const entryNode of nodes.entryNodes.values()) {
+    entryNode.wsConn?.close();
+  }
+}
+
 function randomEl<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
