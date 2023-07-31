@@ -1,5 +1,5 @@
 import type * as RPChCrypto from "@rpch/crypto";
-import { hoprd, type onEventParameterType } from "@rpch/common";
+import { hoprd } from "@rpch/common";
 import { utils as etherUtils } from "ethers";
 import { createLogger } from "./utils";
 import NodesCollector from "./nodes-collector";
@@ -114,7 +114,7 @@ export default class SDK {
    */
   public async isReady(timeout?: number): Promise<boolean> {
     const timeout_ = timeout ? timeout : this.ops.timeout!;
-    return this.nodesColl.readyNodePair(timeout_).then((_) => true);
+    return this.nodesColl.ready(timeout_).then((_) => true);
   }
 
   /**
@@ -132,7 +132,7 @@ export default class SDK {
     return new Promise(async (resolve, reject) => {
       // gather entry - exit node pair
       const res = await this.nodesColl
-        .readyNodePair(reqOps.timeout!)
+        .requestNodePair(reqOps.timeout!)
         .catch((err) => {
           log.error("Error finding node pair", err);
           return reject(`Could not find node pair in ${reqOps.timeout} ms`);
@@ -165,12 +165,7 @@ export default class SDK {
 
       // track request
       RequestCache.add(this.requestCache, request, resolve, reject, timer);
-
-      this.nodesColl.requestStarted({
-        entryId: entryNode.peerId,
-        exitId: exitNode.peerId,
-        requestId: request.id,
-      });
+      this.nodesColl.requestStarted(request);
 
       // split request to segments
       const segments = Request.toSegments(request);
@@ -281,13 +276,7 @@ export default class SDK {
         responseTime,
         counter
       );
-
-      this.nodesColl.requestSucceeded({
-        entryId: request.entryId,
-        exitId: request.exitId,
-        requestId: request.id,
-        responseTime,
-      });
+      this.nodesColl.requestSucceeded(request, responseTime);
 
       log.verbose("responded to %s with %s", request.body, res.body);
       try {
@@ -299,22 +288,13 @@ export default class SDK {
       }
     } else {
       log.error("Error extracting message", res.error);
-      this.nodesColl.requestFailed({
-        entryId: request.entryId,
-        exitId: request.exitId,
-        requestId: request.id,
-      });
+      this.nodesColl.requestFailed(request);
       return request.reject("Unable to process response");
     }
   }
 
   private rejectRequest(request: Request.Request) {
-    this.nodesColl.requestFinished({
-      entryId: request.entryId,
-      exitId: request.exitId,
-      requestId: request.id,
-      result: false,
-    });
+    this.nodesColl.requestFailed(request);
     RequestCache.remove(this.requestCache, request.id);
     SegmentCache.remove(this.segmentCache, request.id);
   }

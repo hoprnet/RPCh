@@ -26,6 +26,7 @@ export type Command =
   | { label: CommandLabel.None };
 
 export type Pair = { entryNode: EntryNode; exitNode: ExitNode };
+export type PairIds = { entryId: string; exitId: string };
 
 export type EntryNode = {
   apiEndpoint: URL;
@@ -44,7 +45,7 @@ export type ExitNode = {
   pubKey: string;
 };
 
-enum WSstate {
+export enum WSstate {
   Disconnected,
   Connecting,
   Open,
@@ -186,9 +187,11 @@ export function addWSconn(
 
 export function requestStarted(
   nodes: Nodes,
-  { entryNode, exitNode }: Pair,
+  { entryId, exitId }: PairIds,
   _requestId: number
 ): Command {
+  const entryNode = nodes.entryNodes.get(entryId)!;
+  const exitNode = nodes.exitNodes.get(exitId)!;
   entryNode.ongoingRequests++;
   exitNode.ongoingRequests++;
   if (entryNode.ongoingRequests > requestThreshold) {
@@ -199,27 +202,31 @@ export function requestStarted(
 
 export function requestSucceeded(
   nodes: Nodes,
-  pair: Pair,
+  { entryId, exitId }: PairIds,
   _requestId: number,
   responseTime: number
 ): Command {
+  const entryNode = nodes.entryNodes.get(entryId)!;
+  const exitNode = nodes.exitNodes.get(exitId)!;
   if (responseTime > latencyThreshold) {
-    pair.entryNode.latencyViolations++;
-    if (pair.entryNode.latencyViolations > latencyViolationsThreshold) {
-      nodes.outphasing.add(pair.entryNode.peerId);
+    entryNode.latencyViolations++;
+    if (entryNode.latencyViolations > latencyViolationsThreshold) {
+      nodes.outphasing.add(entryNode.peerId);
     }
   }
-  postRequest(nodes, pair);
+  postRequest(nodes, { entryNode, exitNode });
   return reachReady(nodes);
 }
 
 export function requestFailed(
   nodes: Nodes,
-  pair: Pair,
+  { entryId, exitId }: PairIds,
   _requestId: number
 ): Command {
-  nodes.outphasing.add(pair.entryNode.peerId);
-  postRequest(nodes, pair);
+  const entryNode = nodes.entryNodes.get(entryId)!;
+  const exitNode = nodes.exitNodes.get(exitId)!;
+  nodes.outphasing.add(entryNode.peerId);
+  postRequest(nodes, { entryNode, exitNode });
   return reachReady(nodes);
 }
 
@@ -230,7 +237,7 @@ function postRequest(nodes: Nodes, { entryNode, exitNode }: Pair) {
   // close websocket if possible
   if (entryNode.ongoingRequests === 0) {
     entryNode.wsState = WSstate.Disconnecting;
-    entryNode.wsConn.close();
+    entryNode.wsConn?.close();
 
     // check if outphasing entry node
     if (nodes.outphasing.has(entryNode.peerId)) {

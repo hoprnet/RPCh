@@ -1,5 +1,6 @@
 import { type onEventParameterType } from "@rpch/common";
 
+import type { Request } from "./request";
 import * as Nodes from "./nodes";
 import * as NodesAPI from "./nodes-api";
 import { createLogger } from "./utils";
@@ -66,27 +67,26 @@ export default class NodesCollector {
     });
   };
 
-  public requestStarted = (pair: Nodes.Pair, requestId: number) => {
-    const res = Nodes.requestStarted(this.nodes, pair, requestId);
+  public requestStarted = ({ entryId, exitId, id }: Request) => {
+    const res = Nodes.requestStarted(this.nodes, { entryId, exitId }, id);
     this.actOnCmd(res);
   };
 
   public requestSucceeded = (
-    pair: Nodes.Pair,
-    requestId: number,
+    { entryId, exitId, id }: Request,
     responseTime: number
   ) => {
     const res = Nodes.requestSucceeded(
       this.nodes,
-      pair,
-      requestId,
+      { entryId, exitId },
+      id,
       responseTime
     );
     this.actOnCmd(res);
   };
 
-  public requestFailed = (pair: Nodes.Pair, requestId: number) => {
-    const res = Nodes.requestFailed(this.nodes, pair, requestId);
+  public requestFailed = ({ entryId, exitId, id }: Request) => {
+    const res = Nodes.requestFailed(this.nodes, { entryId, exitId }, id);
     this.actOnCmd(res);
   };
 
