@@ -83,11 +83,12 @@ function sendRequest(
     .send(req, params)
     .then((resp: RPCresult | RPCerror) => {
       log.verbose("receiving response", resp);
-      res.write(JSON.stringify(resp));
       res.statusCode = 200;
+      res.write(JSON.stringify(resp));
     })
     .catch((err: any) => {
       log.error("Error sending request", err);
+      res.statusCode = 500;
       res.write({
         jsonrpc: req.jsonrpc,
         error: {
@@ -96,7 +97,6 @@ function sendRequest(
         },
         id: req.id,
       });
-      res.statusCode = 500;
     })
     .finally(() => {
       res.end();
@@ -117,15 +117,20 @@ function createServer(sdk: RPChSDK) {
       const params = extractParams(req.url);
       const result = parseBody(data.toString);
       if (result.success) {
-        log.verbose("sending request", result.req, "with params", params);
+        log.info("sending request", result.req, "with params", params);
         sendRequest(sdk, result.req, params, res);
       } else {
-        log.info("invalid JSON request", data.toString());
+        log.info(
+          "Parse error:",
+          result.error,
+          "- during request:",
+          data.toString()
+        );
         res.statusCode = 500;
         res.write(
           JSON.stringify({
             jsonrpc: "2.0",
-            error: { code: -32700, message: "Parse error" },
+            error: { code: -32700, message: `Parse error: ${result.error}` },
             id: result.id,
           })
         );
