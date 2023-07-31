@@ -97,7 +97,7 @@ export default class NodesCollector {
   };
 
   private actOnCmd = (cmd: Nodes.Command) => {
-    log.verbose("actOnCmd", cmd);
+    console.log("actOnCmd", cmd.cmd);
     clearTimeout(this.actTimer);
     switch (cmd.cmd) {
       case "needEntryNode":
