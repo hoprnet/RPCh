@@ -91,6 +91,7 @@ export default class NodesCollector {
   };
 
   private actOnCmd = (cmd: Nodes.Command) => {
+    log.verbose("actOnCmd", cmd);
     clearTimeout(this.actTimer);
     switch (cmd.label) {
       case Nodes.CommandLabel.NeedEntryNode:
@@ -126,7 +127,7 @@ export default class NodesCollector {
 
   private onEntryNodeError = (err: string) => {
     log.error("Error requesting entry node", err);
-    setTimeout(() => {
+    this.actTimer = setTimeout(() => {
       const res = Nodes.reachReady(this.nodes);
       this.actOnCmd(res);
     }, 555);
@@ -147,7 +148,7 @@ export default class NodesCollector {
 
   private onExitNodesError = (err: string) => {
     log.error("Error requesting exit nodes", err);
-    setTimeout(() => {
+    this.actTimer = setTimeout(() => {
       const res = Nodes.reachReady(this.nodes);
       this.actOnCmd(res);
     }, 555);
