@@ -89,7 +89,7 @@ function sendRequest(
           jsonrpc: req.jsonrpc,
           error: {
             code: -32603,
-            message: `Internal JSON-RPC error: "${err}"`,
+            message: `Internal JSON-RPC error: ${err}`,
           },
           id: req.id,
         })
