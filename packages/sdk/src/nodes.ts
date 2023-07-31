@@ -147,6 +147,7 @@ export function onWSevt(
   entryNode: EntryNode,
   evt: onEventParameterType
 ) {
+  console.log("onWSevt", evt);
   switch (evt.action) {
     case "open":
       entryNode.wsState = WSstate.Open;
