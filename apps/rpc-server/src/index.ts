@@ -115,7 +115,7 @@ function createServer(sdk: RPChSDK) {
 
     req.on("data", async (data) => {
       const params = extractParams(req.url);
-      const result = parseBody(data.toString);
+      const result = parseBody(data.toString());
       if (result.success) {
         log.info("sending request", result.req, "with params", params);
         sendRequest(sdk, result.req, params, res);
