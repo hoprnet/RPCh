@@ -118,17 +118,27 @@ export function reachNodePair(nodes: Nodes): Command & { nodePair?: Pair } {
     return { cmd: "" };
   }
 
-  // prioritize recommendedExits
+  // choose entry node and prepare exit nodes selection
   const entryNode = randomEl(openNodes);
   const exitNodes = Array.from(nodes.exitNodes.values());
-  const recExits = exitNodes.filter(({ peerId }) =>
+  // remove entry node from exit nodes
+  const availableExitNodes = exitNodes.filter(
+    ({ peerId }) => entryNode.peerId !== peerId
+  );
+  // check if we can need more exits
+  if (availableExitNodes.length === 0) {
+    return { cmd: "needExitNode" };
+  }
+
+  // prioritize recommended exit nodes
+  const recExits = availableExitNodes.filter(({ peerId }) =>
     entryNode.recommendedExits.has(peerId)
   );
   if (recExits.length > 0) {
     const exitNode = randomEl(recExits);
     return { cmd: "", nodePair: { entryNode, exitNode } };
   }
-  const exitNode = randomEl(exitNodes);
+  const exitNode = randomEl(availableExitNodes);
   return { cmd: "", nodePair: { entryNode, exitNode } };
 }
 
