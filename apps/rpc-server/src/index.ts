@@ -120,12 +120,15 @@ function createServer(sdk: RPChSDK) {
         log.verbose("sending request", result.req, "with params", params);
         sendRequest(sdk, result.req, params, res);
       } else {
-        res.write({
-          jsonrpc: "2.0",
-          error: { code: -32700, message: "Parse error" },
-          id: result.id,
-        });
+        log.info("invalid JSON request", data.toString());
         res.statusCode = 500;
+        res.write(
+          JSON.stringify({
+            jsonrpc: "2.0",
+            error: { code: -32700, message: "Parse error" },
+            id: result.id,
+          })
+        );
         res.end();
       }
     });
@@ -150,7 +153,6 @@ if (require.main === module) {
   }
 
   const clientId = process.env.CLIENT;
-
   const ops: Record<string, any> = {};
   if (process.env.DISCOVERY_PLATFORM_API_ENDPOINT) {
     ops.discoveryPlatformURL = process.env.DISCOVERY_PLATFORM_API_ENDPOINT;
@@ -171,6 +173,8 @@ if (require.main === module) {
   const sdk = new RPChSDK(clientId, RPChCrypto, ops);
   const server = createServer(sdk);
   server.listen(port, "0.0.0.0", () => {
-    log.verbose(`rpc server started on '0.0.0.0:${port}'`);
+    log.verbose(
+      `rpc server started on '0.0.0.0:${port}' with ${JSON.stringify(ops)}`
+    );
   });
 }
