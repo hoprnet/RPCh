@@ -143,13 +143,17 @@ export function reachNodePair(nodes: Nodes): Command & { nodePair?: Pair } {
 }
 
 export function newEntryNode(nodes: Nodes, entryNode: EntryNode) {
-  nodes.entryNodes.set(entryNode.peerId, entryNode);
+  if (!nodes.entryNodes.has(entryNode.peerId)) {
+    nodes.entryNodes.set(entryNode.peerId, entryNode);
+  }
 }
 
 export function addExitNodes(nodes: Nodes, exitNodes: ExitNode[]) {
-  exitNodes.forEach((exitNode) =>
-    nodes.exitNodes.set(exitNode.peerId, exitNode)
-  );
+  exitNodes.forEach((exitNode) => {
+    if (!nodes.exitNodes.has(exitNode.peerId)) {
+      nodes.exitNodes.set(exitNode.peerId, exitNode);
+    }
+  });
 }
 
 export function onWSevt(
