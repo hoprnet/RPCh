@@ -25,25 +25,28 @@ export function fetchEntryNode({
     client: clientId,
   });
 
-  return fetch(url, { method: "POST", headers, body }).then((resp) => {
-    if (resp.status === 200) {
-      const res = resp.json() as unknown as {
-        hoprd_api_endpoint: string;
-        accessToken: string;
-        id: string;
-      };
+  return fetch(url, { method: "POST", headers, body })
+    .then((resp) => {
+      if (resp.status === 200) {
+        return resp.json() as unknown as {
+          hoprd_api_endpoint: string;
+          accessToken: string;
+          id: string;
+        };
+      }
+      throw new Error(`wrong status ${resp.status} ${resp.statusText}`);
+    })
+    .then((json) => {
       return {
-        apiEndpoint: new URL(res.hoprd_api_endpoint),
-        accessToken: res.accessToken,
+        apiEndpoint: new URL(json.hoprd_api_endpoint),
+        accessToken: json.accessToken,
         latencyViolations: 0,
         ongoingRequests: 0,
-        peerId: res.id,
+        peerId: json.id,
         recommendedExits: new Set(),
         wsState: WSstate.Disconnected,
       };
-    }
-    throw new Error(`wrong status ${resp.status} ${resp.statusText}`);
-  });
+    });
 }
 
 export function fetchExitNodes({
@@ -59,20 +62,23 @@ export function fetchExitNodes({
     "x-rpch-client": clientId,
   };
 
-  return fetch(url, { headers }).then((resp) => {
-    if (resp.status === 200) {
-      const res = resp.json() as unknown as {
-        exit_node_pub_key: string;
-        id: string;
-      }[];
-      return res.map(({ exit_node_pub_key, id }) => ({
+  return fetch(url, { headers })
+    .then((resp) => {
+      if (resp.status === 200) {
+        return resp.json() as unknown as {
+          exit_node_pub_key: string;
+          id: string;
+        }[];
+      }
+      throw new Error(`wrong status ${resp}`);
+    })
+    .then((json) => {
+      return json.map(({ exit_node_pub_key, id }) => ({
         ongoingRequests: 0,
         pubKey: exit_node_pub_key,
         peerId: id,
       }));
-    }
-    throw new Error(`wrong status ${resp}`);
-  });
+    });
 }
 
 export function openWebSocket(
