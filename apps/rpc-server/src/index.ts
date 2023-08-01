@@ -1,9 +1,10 @@
 import http from "http";
 import RPChSDK, {
-  type RequestOps,
   RPCrequest,
   RPCresult,
   RPCerror,
+  type Ops as RPChOps,
+  type RequestOps as RPChRequestOps,
 } from "@rpch/sdk";
 import * as RPChCrypto from "@rpch/crypto-for-nodejs";
 import { utils } from "@rpch/common";
@@ -21,7 +22,7 @@ function toURL(urlStr: string, host: string): null | URL {
 function extractParams(
   urlStr: undefined | string,
   host: undefined | string
-): RequestOps {
+): RPChRequestOps {
   if (!urlStr || !host) {
     return {};
   }
@@ -71,7 +72,7 @@ function parseBody(
 function sendRequest(
   sdk: RPChSDK,
   req: RPCrequest,
-  params: RequestOps,
+  params: RPChRequestOps,
   res: http.ServerResponse
 ) {
   sdk
@@ -142,6 +143,16 @@ function createServer(sdk: RPChSDK) {
   });
 }
 
+async function start(sdk: RPChSDK, port: number, ops: RPChOps) {
+  await sdk.isReady();
+  const server = createServer(sdk);
+  server.listen(port, "0.0.0.0", () => {
+    log.verbose(
+      `rpc server started on '0.0.0.0:${port}' with ${JSON.stringify(ops)}`
+    );
+  });
+}
+
 /**
  * RPC server - uses RPChSDK to perform JSON-RPC requests.
  *
@@ -178,10 +189,5 @@ if (require.main === module) {
   }
 
   const sdk = new RPChSDK(clientId, RPChCrypto, ops);
-  const server = createServer(sdk);
-  server.listen(port, "0.0.0.0", () => {
-    log.verbose(
-      `rpc server started on '0.0.0.0:${port}' with ${JSON.stringify(ops)}`
-    );
-  });
+  start(sdk, port, ops);
 }
