@@ -191,6 +191,15 @@ export default class NodesCollector {
     wsURL.search = `?apiToken=${entryNode.accessToken}`;
     const socket = new WebSocket(wsURL);
     Nodes.addWebSocket(this.nodes, entryNode, socket);
+    socket.on("open", () => (this.ongoingOpeningSocket = false));
+    socket.on("error", (err) => {
+      log.error("WSERR", err, entryNode.peerId);
+      this.ongoingOpeningSocket = false;
+    });
+    socket.on("close", () => {
+      log.info("WSCLOSE", entryNode.peerId);
+      this.ongoingOpeningSocket = false;
+    });
     socket.onmessage = (event: MessageEvent) => {
       const body = event.data.toString();
       // message received is an acknowledgement of a
