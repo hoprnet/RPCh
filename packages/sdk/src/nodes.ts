@@ -307,6 +307,17 @@ function postRequest(
   }
 }
 
+export function addWebSocket(
+  nodes: Nodes,
+  entryNode: EntryNode,
+  socket: WebSocket
+) {
+  const entryData = nodes.entryDatas.get(entryNode.peerId);
+  if (entryData) {
+    entryData.webSocket = socket;
+  }
+}
+
 export function stop(nodes: Nodes) {
   for (const entryData of nodes.entryDatas.values()) {
     entryData.webSocket?.close();
