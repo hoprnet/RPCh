@@ -162,7 +162,7 @@ if (require.main === module) {
   const clientId = process.env.CLIENT;
   const ops: Record<string, any> = {};
   if (process.env.DISCOVERY_PLATFORM_API_ENDPOINT) {
-    ops.discoveryPlatformURL = process.env.DISCOVERY_PLATFORM_API_ENDPOINT;
+    ops.discoveryPlatformEndpoint = process.env.DISCOVERY_PLATFORM_API_ENDPOINT;
   }
   if (process.env.RESPONSE_TIMEOUT) {
     ops.timeout = process.env.RESPONSE_TIMEOUT;
