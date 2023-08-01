@@ -3,7 +3,6 @@ import RPChSDK, {
   RPCrequest,
   RPCresult,
   RPCerror,
-  type Ops as RPChOps,
   type RequestOps as RPChRequestOps,
 } from "@rpch/sdk";
 import * as RPChCrypto from "@rpch/crypto-for-nodejs";
@@ -143,16 +142,6 @@ function createServer(sdk: RPChSDK) {
   });
 }
 
-async function start(sdk: RPChSDK, port: number, ops: RPChOps) {
-  await sdk.isReady();
-  const server = createServer(sdk);
-  server.listen(port, "0.0.0.0", () => {
-    log.verbose(
-      `rpc server started on '0.0.0.0:${port}' with ${JSON.stringify(ops)}`
-    );
-  });
-}
-
 /**
  * RPC server - uses RPChSDK to perform JSON-RPC requests.
  *
@@ -189,5 +178,10 @@ if (require.main === module) {
   }
 
   const sdk = new RPChSDK(clientId, RPChCrypto, ops);
-  start(sdk, port, ops);
+  const server = createServer(sdk);
+  server.listen(port, "0.0.0.0", () => {
+    log.verbose(
+      `rpc server started on '0.0.0.0:${port}' with ${JSON.stringify(ops)}`
+    );
+  });
 }

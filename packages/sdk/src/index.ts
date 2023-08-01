@@ -114,7 +114,7 @@ export default class SDK {
    */
   public async isReady(timeout?: number): Promise<boolean> {
     const timeout_ = timeout ? timeout : this.ops.timeout!;
-    return this.nodesColl.requestNodePair(timeout_).then((_) => true);
+    return this.nodesColl.ready(timeout_).then((_) => true);
   }
 
   /**
