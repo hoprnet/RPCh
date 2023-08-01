@@ -1,5 +1,5 @@
 import { WebSocketHelper, type onEventType } from "@rpch/common";
-import { type EntryNode, type ExitNode, WSstate } from "./nodes";
+import { type EntryNode, type ExitNode } from "./nodes";
 
 const apiEntryNode = "/api/v1/request/entry-node";
 const apiWebSocket = "/api/v2/messages/websocket";
@@ -40,11 +40,8 @@ export function fetchEntryNode({
       return {
         apiEndpoint: new URL(json.hoprd_api_endpoint),
         accessToken: json.accessToken,
-        latencyViolations: 0,
-        ongoingRequests: 0,
         peerId: json.id,
         recommendedExits: new Set(),
-        wsState: WSstate.Disconnected,
       };
     });
 }
@@ -74,7 +71,6 @@ export function fetchExitNodes({
     })
     .then((json) => {
       return json.map(({ exit_node_pub_key, id }) => ({
-        ongoingRequests: 0,
         pubKey: exit_node_pub_key,
         peerId: id,
       }));
