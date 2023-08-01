@@ -1,19 +1,40 @@
-import type { WebSocketHelper, onEventParameterType } from "@rpch/common";
-// these parameters are subject to change and we need to find the best possible combinations
-const latencyThreshold = 5e3;
-const latencyViolationsThreshold = 2;
-const requestThreshold = 5;
+import { WebSocket } from "isomorphic-ws";
+/**
+ * Performance and reliability parameters.
+ * These parameters are subject to change and we need to find the best possible combinations.
+ *
+ * latencyThresholdEntry - when a request took longer than this, mark the entry node with a latency violation
+ * latencyThresholdExit - when a request took longer than this, mark the exit node with a latency violation
+ * latencyViolationsThresholdEntry - amount of violations allowed before outphasing that entry node
+ * latencyViolationsThresholdExit - amount of violations allowed before outphasing that exit node
+ * requestThresholdEntry - amount of handled request before outphasing that entry node
+ * requestThresholdExit - amount of handled request before outphasing that exit node
+ * failedRequestThresholdEntry - amount of allowed failing requests before outphasing entry node
+ * failedRequestThresholdExit - amount of allowed failing requests before outphasing exit node
+ */
+const latencyThresholdEntry = 10e3;
+const latencyThresholdExit = 10e3;
+const latencyViolationsThresholdEntry = 2;
+const latencyViolationsThresholdExit = 2;
+const requestThresholdEntry = 100;
+const requestThresholdExit = 10;
+const failedRequestThresholdEntry = 1;
+const failedRequestThresholdExit = 1;
 
 export type Nodes = {
   entryNodes: Map<string, EntryNode>; // peerId -> EntryNode
   exitNodes: Map<string, ExitNode>; // peerId -> ExitNode
-  outphasing: Set<string>; // no longer eligable entry nodes
+  outphasingEntries: Set<string>; // no longer eligable entry nodes
+  outphasingExits: Set<string>; // no longer eligable exit nodes
+  entryDatas: Map<string, EntryData>; // entry node peerId -> entry node data
+  exitDatas: Map<string, ExitData>; // exit node peerId -> exit node data
 };
 
 export type Command =
   | { readonly cmd: "needEntryNode"; excludeIds: string[] }
   | { readonly cmd: "needExitNode" }
   | { readonly cmd: "openWebSocket"; entryNode: EntryNode }
+  | { readonly cmd: "stateError"; info: string }
   | { readonly cmd: "" };
 
 export type Pair = { entryNode: EntryNode; exitNode: ExitNode };
@@ -22,33 +43,36 @@ export type PairIds = { entryId: string; exitId: string };
 export type EntryNode = {
   apiEndpoint: URL;
   accessToken: string;
-  latencyViolations: number;
-  ongoingRequests: number;
   peerId: string;
   recommendedExits: Set<string>;
-  wsState: WSstate;
-  wsConn?: WebSocketHelper;
 };
 
 export type ExitNode = {
-  ongoingRequests: number;
   peerId: string;
   pubKey: string;
 };
 
-export enum WSstate {
-  Disconnected,
-  Connecting,
-  Open,
-  Error,
-  Disconnecting,
-}
+type EntryData = {
+  failedRequests: number;
+  latencyViolations: number;
+  ongoingRequests: number;
+  webSocket?: WebSocket;
+};
+
+type ExitData = {
+  failedRequests: number;
+  latencyViolations: number;
+  ongoingRequests: number;
+};
 
 export function init(): Nodes {
   return {
     entryNodes: new Map(),
     exitNodes: new Map(),
-    outphasing: new Set(),
+    outphasingEntries: new Set(),
+    outphasingExits: new Set(),
+    entryDatas: new Map(),
+    exitDatas: new Map(),
   };
 }
 
@@ -57,23 +81,21 @@ export function init(): Nodes {
  * no websocket connection in this state
  */
 export function reachReady(nodes: Nodes): Command {
-  // check entry nodes
-  if (nodes.entryNodes.size === 0) {
-    return { cmd: "needEntryNode", excludeIds: [] };
-  }
-
-  // check exit nodes
-  if (nodes.exitNodes.size === 0) {
-    return { cmd: "needExitNode" };
-  }
-
   // check if we have valid entry nodes
   const entryNodes = Array.from(nodes.entryNodes.values()).filter(
-    ({ peerId }) => !nodes.outphasing.has(peerId)
+    ({ peerId }) => !nodes.outphasingEntries.has(peerId)
   );
   if (entryNodes.length === 0) {
     const excludeIds = Array.from(nodes.entryNodes.keys());
     return { cmd: "needEntryNode", excludeIds };
+  }
+
+  // check if we have valid exit nodes
+  const exitNodes = Array.from(nodes.exitNodes.values()).filter(
+    ({ peerId }) => !nodes.outphasingExits.has(peerId)
+  );
+  if (exitNodes.length === 0) {
+    return { cmd: "needExitNode" };
   }
 
   return { cmd: "" };
@@ -83,31 +105,34 @@ export function reachReady(nodes: Nodes): Command {
  * node pair can be returned as soon as we have a valid entry / exit node with a connected entry node websocket.
  */
 export function reachNodePair(nodes: Nodes): Command & { nodePair?: Pair } {
-  // check entry nodes
-  if (nodes.entryNodes.size === 0) {
-    return { cmd: "needEntryNode", excludeIds: [] };
-  }
-
-  // check exit nodes
-  if (nodes.exitNodes.size === 0) {
-    return { cmd: "needExitNode" };
-  }
-
   // check if we have valid entry nodes
   const entryNodes = Array.from(nodes.entryNodes.values()).filter(
-    ({ peerId }) => !nodes.outphasing.has(peerId)
+    ({ peerId }) => !nodes.outphasingEntries.has(peerId)
   );
   if (entryNodes.length === 0) {
     const excludeIds = Array.from(nodes.entryNodes.keys());
-    return { cmd: "needEntryNode", excludeIds: excludeIds };
+    return { cmd: "needEntryNode", excludeIds };
+  }
+
+  // check if we have valid exit nodes
+  const exitNodes = Array.from(nodes.exitNodes.values()).filter(
+    ({ peerId }) => !nodes.outphasingExits.has(peerId)
+  );
+  if (exitNodes.length === 0) {
+    return { cmd: "needExitNode" };
   }
 
   // check if we have an open websocket entry node
-  const openNodes = entryNodes.filter(({ wsState }) => wsState == WSstate.Open);
+  const openNodes = entryNodes.filter(
+    ({ peerId }) =>
+      nodes.entryDatas.get(peerId)!.webSocket?.readyState === WebSocket.OPEN
+  );
   if (openNodes.length === 0) {
     // check if we have connecting websocket entry node
     const connNodes = entryNodes.filter(
-      ({ wsState }) => wsState == WSstate.Connecting
+      ({ peerId }) =>
+        nodes.entryDatas.get(peerId)!.webSocket?.readyState ===
+        WebSocket.CONNECTING
     );
     if (connNodes.length === 0) {
       // no connecting webSocket and no open nodes
@@ -120,7 +145,6 @@ export function reachNodePair(nodes: Nodes): Command & { nodePair?: Pair } {
 
   // choose entry node and prepare exit nodes selection
   const entryNode = randomEl(openNodes);
-  const exitNodes = Array.from(nodes.exitNodes.values());
   // remove entry node from exit nodes
   const availableExitNodes = exitNodes.filter(
     ({ peerId }) => entryNode.peerId !== peerId
@@ -145,6 +169,11 @@ export function reachNodePair(nodes: Nodes): Command & { nodePair?: Pair } {
 export function newEntryNode(nodes: Nodes, entryNode: EntryNode) {
   if (!nodes.entryNodes.has(entryNode.peerId)) {
     nodes.entryNodes.set(entryNode.peerId, entryNode);
+    nodes.entryDatas.set(entryNode.peerId, {
+      failedRequests: 0,
+      latencyViolations: 0,
+      ongoingRequests: 0,
+    });
   }
 }
 
@@ -152,35 +181,13 @@ export function addExitNodes(nodes: Nodes, exitNodes: ExitNode[]) {
   exitNodes.forEach((exitNode) => {
     if (!nodes.exitNodes.has(exitNode.peerId)) {
       nodes.exitNodes.set(exitNode.peerId, exitNode);
+      nodes.exitDatas.set(exitNode.peerId, {
+        failedRequests: 0,
+        latencyViolations: 0,
+        ongoingRequests: 0,
+      });
     }
   });
-}
-
-export function onWSevt(
-  nodes: Nodes,
-  entryNode: EntryNode,
-  evt: onEventParameterType
-) {
-  console.log("onWSevt", evt);
-  switch (evt.action) {
-    case "open":
-      entryNode.wsState = WSstate.Open;
-      break;
-    case "close":
-      entryNode.wsState = WSstate.Disconnected;
-      break;
-    case "error":
-      entryNode.wsState = WSstate.Error;
-      break;
-  }
-}
-
-export function addWSconn(
-  nodes: Nodes,
-  entryNode: EntryNode,
-  wsConn: WebSocketHelper
-) {
-  entryNode.wsConn = wsConn;
 }
 
 export function requestStarted(
@@ -188,12 +195,21 @@ export function requestStarted(
   { entryId, exitId }: PairIds,
   _requestId: number
 ): Command {
-  const entryNode = nodes.entryNodes.get(entryId)!;
-  const exitNode = nodes.exitNodes.get(exitId)!;
-  entryNode.ongoingRequests++;
-  exitNode.ongoingRequests++;
-  if (entryNode.ongoingRequests > requestThreshold) {
-    nodes.outphasing.add(entryNode.peerId);
+  const entryData = nodes.entryDatas.get(entryId);
+  if (!entryData) {
+    return { cmd: "stateError", info: "no entryData" };
+  }
+  const exitData = nodes.exitDatas.get(exitId);
+  if (!exitData) {
+    return { cmd: "stateError", info: "no exitData" };
+  }
+  entryData.ongoingRequests++;
+  exitData.ongoingRequests++;
+  if (entryData.ongoingRequests > requestThresholdEntry) {
+    nodes.outphasingEntries.add(entryId);
+  }
+  if (exitData.ongoingRequests > requestThresholdExit) {
+    nodes.outphasingExits.add(exitId);
   }
   return reachReady(nodes);
 }
@@ -204,15 +220,29 @@ export function requestSucceeded(
   _requestId: number,
   responseTime: number
 ): Command {
-  const entryNode = nodes.entryNodes.get(entryId)!;
-  const exitNode = nodes.exitNodes.get(exitId)!;
-  if (responseTime > latencyThreshold) {
-    entryNode.latencyViolations++;
-    if (entryNode.latencyViolations > latencyViolationsThreshold) {
-      nodes.outphasing.add(entryNode.peerId);
+  const entryData = nodes.entryDatas.get(entryId);
+  if (!entryData) {
+    return { cmd: "stateError", info: "no entryData" };
+  }
+  const exitData = nodes.exitDatas.get(exitId);
+  if (!exitData) {
+    return { cmd: "stateError", info: "no exitData" };
+  }
+  entryData.ongoingRequests--;
+  exitData.ongoingRequests--;
+  if (responseTime > latencyThresholdEntry) {
+    entryData.latencyViolations++;
+    if (entryData.latencyViolations > latencyViolationsThresholdEntry) {
+      nodes.outphasingEntries.add(entryId);
     }
   }
-  postRequest(nodes, { entryNode, exitNode });
+  if (responseTime > latencyThresholdExit) {
+    exitData.latencyViolations++;
+    if (exitData.latencyViolations > latencyViolationsThresholdExit) {
+      nodes.outphasingExits.add(exitId);
+    }
+  }
+  postRequest(nodes, { entryId, entryData, exitId, exitData });
   return reachReady(nodes);
 }
 
@@ -221,37 +251,65 @@ export function requestFailed(
   { entryId, exitId }: PairIds,
   _requestId: number
 ): Command {
-  const entryNode = nodes.entryNodes.get(entryId)!;
-  const exitNode = nodes.exitNodes.get(exitId)!;
-  nodes.outphasing.add(entryNode.peerId);
-  postRequest(nodes, { entryNode, exitNode });
+  const entryData = nodes.entryDatas.get(entryId);
+  if (!entryData) {
+    return { cmd: "stateError", info: "no entryData" };
+  }
+  const exitData = nodes.exitDatas.get(exitId);
+  if (!exitData) {
+    return { cmd: "stateError", info: "no exitData" };
+  }
+  entryData.ongoingRequests--;
+  exitData.ongoingRequests--;
+  entryData.failedRequests++;
+  if (entryData.failedRequests > failedRequestThresholdEntry) {
+    nodes.outphasingEntries.add(entryId);
+  }
+  exitData.failedRequests++;
+  if (exitData.failedRequests > failedRequestThresholdExit) {
+    nodes.outphasingExits.add(exitId);
+  }
+  postRequest(nodes, { entryId, entryData, exitId, exitData });
   return reachReady(nodes);
 }
 
-function postRequest(nodes: Nodes, { entryNode, exitNode }: Pair) {
-  entryNode.ongoingRequests--;
-  exitNode.ongoingRequests--;
-
+function postRequest(
+  nodes: Nodes,
+  {
+    entryId,
+    entryData,
+    exitId,
+    exitData,
+  }: {
+    entryId: string;
+    entryData: EntryData;
+    exitId: string;
+    exitData: ExitData;
+  }
+) {
   // close websocket if possible
-  if (entryNode.ongoingRequests === 0) {
-    entryNode.wsState = WSstate.Disconnecting;
-    entryNode.wsConn?.close();
+  if (entryData.ongoingRequests === 0) {
+    entryData.webSocket?.close();
 
     // check if outphasing entry node
-    if (nodes.outphasing.has(entryNode.peerId)) {
-      nodes.outphasing.delete(entryNode.peerId);
-      nodes.entryNodes.delete(entryNode.peerId);
-      // see if we can opportunistically remove exit node
-      if (exitNode.ongoingRequests === 0) {
-        nodes.exitNodes.delete(exitNode.peerId);
-      }
+    if (nodes.outphasingEntries.has(entryId)) {
+      nodes.outphasingEntries.delete(entryId);
+      nodes.entryNodes.delete(entryId);
+      nodes.entryDatas.delete(entryId);
     }
+  }
+
+  // check if outphasing exit node
+  if (exitData.ongoingRequests === 0 && nodes.outphasingExits.has(exitId)) {
+    nodes.outphasingExits.delete(exitId);
+    nodes.exitNodes.delete(exitId);
+    nodes.exitDatas.delete(exitId);
   }
 }
 
 export function stop(nodes: Nodes) {
-  for (const entryNode of nodes.entryNodes.values()) {
-    entryNode.wsConn?.close();
+  for (const entryData of nodes.entryDatas.values()) {
+    entryData.webSocket?.close();
   }
 }
 
