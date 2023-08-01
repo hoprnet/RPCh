@@ -324,6 +324,27 @@ export function stop(nodes: Nodes) {
   }
 }
 
+export function prettyPrint(nodes: Nodes) {
+  const entryNodes = `ent:${
+    nodes.entryNodes.size - nodes.outphasingEntries.size
+  }/${nodes.entryNodes.size}`;
+  const exitNodes = `ex:${nodes.exitNodes.size - nodes.outphasingExits.size}/${
+    nodes.exitNodes.size
+  }`;
+  const dataEntries = Array.from(nodes.entryDatas.entries())
+    .map(
+      ([id, ed]) =>
+        `${id}:${ed.ongoingRequests}or,${ed.latencyViolations}lv,${ed.webSocket?.readyState}`
+    )
+    .join(";");
+  const dataExits = Array.from(nodes.exitDatas.entries())
+    .map(
+      ([id, ed]) => `${id}:${ed.ongoingRequests}or,${ed.latencyViolations}lv`
+    )
+    .join(";");
+  return [entryNodes, exitNodes, dataEntries, dataExits].join("-");
+}
+
 function randomEl<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }

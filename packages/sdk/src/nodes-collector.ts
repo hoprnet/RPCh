@@ -77,6 +77,7 @@ export default class NodesCollector {
 
   public requestStarted = ({ entryId, exitId, id }: Request) => {
     const res = Nodes.requestStarted(this.nodes, { entryId, exitId }, id);
+    log.verbose("requestStarted", Nodes.prettyPrint(this.nodes));
     this.actOnCmd(res);
   };
 
@@ -90,16 +91,18 @@ export default class NodesCollector {
       id,
       responseTime
     );
+    log.verbose("requestSucceeded", Nodes.prettyPrint(this.nodes));
     this.actOnCmd(res);
   };
 
   public requestFailed = ({ entryId, exitId, id }: Request) => {
     const res = Nodes.requestFailed(this.nodes, { entryId, exitId }, id);
+    log.verbose("requestFailed", Nodes.prettyPrint(this.nodes));
     this.actOnCmd(res);
   };
 
   private actOnCmd = (cmd: Nodes.Command) => {
-    console.log("actOnCmd", cmd.cmd);
+    log.verbose("actOnCmd", cmd.cmd, Nodes.prettyPrint(this.nodes));
     clearTimeout(this.actTimer);
     switch (cmd.cmd) {
       case "needEntryNode":
@@ -110,6 +113,9 @@ export default class NodesCollector {
         break;
       case "openWebSocket":
         this.openWebSocket(cmd.entryNode);
+        break;
+      case "stateError":
+        log.error("Internal state error", cmd.info);
         break;
       default:
         break;
