@@ -76,9 +76,8 @@ export default class NodesCollector {
   };
 
   public requestStarted = ({ entryId, exitId, id }: Request) => {
-    const res = Nodes.requestStarted(this.nodes, { entryId, exitId }, id);
+    Nodes.requestStarted(this.nodes, { entryId, exitId }, id);
     log.verbose("requestStarted", Nodes.prettyPrint(this.nodes));
-    this.actOnCmd(res);
   };
 
   public requestSucceeded = (
