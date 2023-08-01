@@ -1,9 +1,8 @@
-import { WebSocketHelper, type onEventType } from "@rpch/common";
 import { type EntryNode, type ExitNode } from "./nodes";
 
 const apiEntryNode = "/api/v1/request/entry-node";
-const apiWebSocket = "/api/v2/messages/websocket";
 const apiExitNode = "/api/v1/node?hasExitNode=true";
+const apiNode = "/api/v1/node";
 
 export function fetchEntryNode({
   excludeList,
@@ -70,22 +69,34 @@ export function fetchExitNodes({
       throw new Error(`wrong status ${resp}`);
     })
     .then((json) => {
-      return json.map(({ exit_node_pub_key, id }) => ({
-        pubKey: exit_node_pub_key,
-        peerId: id,
-      }));
+      if (json[0]) {
+        fetchNode({ discoveryPlatformEndpoint, clientId }, json[0].id);
+      }
+      return [{ pubKey: json[0].exit_node_pub_key, peerId: json[0].id }];
     });
 }
 
-export function openWebSocket(
-  { apiEndpoint, accessToken }: EntryNode,
-  onEvent: onEventType
+function fetchNode(
+  {
+    discoveryPlatformEndpoint,
+    clientId,
+  }: { discoveryPlatformEndpoint: string; clientId: string },
+  peerId: string
 ) {
-  const wsURL = new URL(apiEndpoint.toString());
-  wsURL.protocol = apiEndpoint.protocol === "https:" ? "wss:" : "ws:";
-  wsURL.pathname = apiWebSocket;
-  wsURL.search = `?apiToken=${accessToken}`;
-  return new WebSocketHelper(wsURL, onEvent, {
-    maxReconnectAttempts: 0,
-  });
+  const url = new URL(`${apiNode}/${peerId}`, discoveryPlatformEndpoint);
+  const headers = {
+    Accept: "application/json",
+    "x-rpch-client": clientId,
+  };
+
+  return fetch(url, { headers })
+    .then((resp) => {
+      if (resp.status === 200) {
+        return resp.json();
+      }
+      throw new Error(`wrong status ${resp}`);
+    })
+    .then((json) => {
+      console.log("NODE", json);
+    });
 }
