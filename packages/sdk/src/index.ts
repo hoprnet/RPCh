@@ -44,7 +44,7 @@ export type RPCerror = RPCresponse & {
  * @param timeout - timeout for receiving responses
  * @param provider - target rpc provider
  */
-export type HoprSdkOps = {
+export type Ops = {
   discoveryPlatformEndpoint?: string;
   timeout?: number;
   provider?: string;
@@ -52,9 +52,9 @@ export type HoprSdkOps = {
 
 /**
  * Global defaults.
- * See **HoprSdkOps** for details.
+ * See **Ops** for details.
  **/
-const defaultOps: HoprSdkOps = {
+const defaultOps: Ops = {
   discoveryPlatformEndpoint: "https://discovery.rpch.tech",
   timeout: 30e3,
   provider: "https://primary.gnosis-chain.rpc.hoprtech.net",
@@ -62,7 +62,7 @@ const defaultOps: HoprSdkOps = {
 
 /**
  * Overridable parameters per request.
- * See **HoprSdkOps** for details.
+ * See **Ops** for details.
  */
 export type RequestOps = {
   timeout?: number;
@@ -80,18 +80,18 @@ export default class SDK {
   private readonly segmentCache: SegmentCache.Cache;
   private readonly counterStore: Map<string, bigint> = new Map();
   private readonly nodesColl: NodesCollector;
-  private readonly ops: HoprSdkOps;
+  private readonly ops: Ops;
 
   /**
    * Construct an SDK instance enabling RPCh requests.
    * @param cliendId your unique string used to identify how many requests your client/wallet pushes through the network
    * @param crypto crypto instantiation for RPCh, use `@rpch/crypto-for-nodejs` or `@rpch/crypto-for-web`
-   * @param ops, see **HoprSdkOps**
+   * @param ops, see **Ops**
    **/
   constructor(
     private readonly clientId: string,
     private readonly crypto: typeof RPChCrypto,
-    ops: HoprSdkOps = {}
+    ops: Ops = {}
   ) {
     this.ops = {
       ...defaultOps,
@@ -114,7 +114,7 @@ export default class SDK {
    */
   public async isReady(timeout?: number): Promise<boolean> {
     const timeout_ = timeout ? timeout : this.ops.timeout!;
-    return this.nodesColl.ready(timeout_).then((_) => true);
+    return this.nodesColl.requestNodePair(timeout_).then((_) => true);
   }
 
   /**
