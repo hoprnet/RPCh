@@ -1,5 +1,6 @@
 import { WebSocket } from "isomorphic-ws";
 import { shortPeerId } from "./utils";
+
 /**
  * Performance and reliability parameters.
  * These parameters are subject to change and we need to find the best possible combinations.
@@ -17,8 +18,6 @@ const latencyThresholdEntry = 10e3;
 const latencyThresholdExit = 10e3;
 const latencyViolationsThresholdEntry = 2;
 const latencyViolationsThresholdExit = 2;
-const requestThresholdEntry = 100;
-const requestThresholdExit = 10;
 const failedRequestThresholdEntry = 1;
 const failedRequestThresholdExit = 1;
 
@@ -57,6 +56,7 @@ type EntryData = {
   failedRequests: number;
   latencyViolations: number;
   ongoingRequests: number;
+  totalRequests: number;
   webSocket?: WebSocket;
 };
 
@@ -64,6 +64,7 @@ type ExitData = {
   failedRequests: number;
   latencyViolations: number;
   ongoingRequests: number;
+  totalRequests: number;
 };
 
 export function init(): Nodes {
@@ -174,6 +175,7 @@ export function newEntryNode(nodes: Nodes, entryNode: EntryNode) {
       failedRequests: 0,
       latencyViolations: 0,
       ongoingRequests: 0,
+      totalRequests: 0,
     });
   }
 }
@@ -186,6 +188,7 @@ export function addExitNodes(nodes: Nodes, exitNodes: ExitNode[]) {
         failedRequests: 0,
         latencyViolations: 0,
         ongoingRequests: 0,
+        totalRequests: 0,
       });
     }
   });
@@ -195,7 +198,7 @@ export function requestStarted(
   nodes: Nodes,
   { entryId, exitId }: PairIds,
   _requestId: number
-): Command {
+) {
   const entryData = nodes.entryDatas.get(entryId);
   if (!entryData) {
     return { cmd: "stateError", info: "no entryData" };
@@ -206,13 +209,8 @@ export function requestStarted(
   }
   entryData.ongoingRequests++;
   exitData.ongoingRequests++;
-  if (entryData.ongoingRequests > requestThresholdEntry) {
-    nodes.outphasingEntries.add(entryId);
-  }
-  if (exitData.ongoingRequests > requestThresholdExit) {
-    nodes.outphasingExits.add(exitId);
-  }
-  return reachReady(nodes);
+  entryData.totalRequests++;
+  exitData.totalRequests++;
 }
 
 export function requestSucceeded(
@@ -335,17 +333,19 @@ export function prettyPrint(nodes: Nodes) {
   const dataEntries = Array.from(nodes.entryDatas.entries())
     .map(
       ([id, ed]) =>
-        `en${shortPeerId(id)}:${ed.ongoingRequests}/${ed.failedRequests}r,${
-          ed.latencyViolations
-        }l,${ed.webSocket?.readyState}`
+        `en${shortPeerId(id)}:(${ed.ongoingRequests})${
+          ed.totalRequests - ed.failedRequests
+        }/${ed.totalRequests}r,${ed.latencyViolations}l,${
+          ed.webSocket?.readyState
+        }`
     )
     .join(";");
   const dataExits = Array.from(nodes.exitDatas.entries())
     .map(
       ([id, ed]) =>
-        `ex${shortPeerId(id)}:${ed.ongoingRequests}/${ed.failedRequests}r,${
-          ed.latencyViolations
-        }l`
+        `ex${shortPeerId(id)}:(${ed.ongoingRequests})${
+          ed.totalRequests - ed.failedRequests
+        }/${ed.totalRequests}r,${ed.latencyViolations}l`
     )
     .join(";");
   return [entryNodes, exitNodes, dataEntries, dataExits].join("-");
