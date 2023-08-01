@@ -1,4 +1,5 @@
-import { type onEventParameterType } from "@rpch/common";
+import { WebSocket, MessageEvent } from "isomorphic-ws";
+import { utils } from "ethers";
 
 import type { Request } from "./request";
 import * as Nodes from "./nodes";
@@ -6,6 +7,7 @@ import * as NodesAPI from "./nodes-api";
 import { createLogger } from "./utils";
 
 const log = createLogger(["nodes-collector"]);
+const apiWebSocket = "/api/v2/messages/websocket";
 
 export default class NodesCollector {
   private readonly nodes: Nodes.Nodes = Nodes.init();
@@ -176,21 +178,31 @@ export default class NodesCollector {
       return;
     }
     this.ongoingOpeningSocket = true;
-    const wsConn = NodesAPI.openWebSocket(
-      entryNode,
-      (evt: onEventParameterType) => {
-        console.log("onEventParameterType", evt);
-        switch (evt.action) {
-          case "message":
-            this.onWSmessage(evt.message);
-            break;
-          default:
-            this.ongoingOpeningSocket = false;
-            Nodes.onWSevt(this.nodes, entryNode, evt);
-            break;
-        }
+    const wsURL = new URL(entryNode.apiEndpoint.toString());
+    wsURL.protocol =
+      entryNode.apiEndpoint.protocol === "https:" ? "wss:" : "ws:";
+    wsURL.pathname = apiWebSocket;
+    wsURL.search = `?apiToken=${entryNode.accessToken}`;
+    const socket = new WebSocket(wsURL);
+    Nodes.addWebSocket(this.nodes, entryNode, socket);
+    socket.onmessage = (event: MessageEvent) => {
+      const body = event.data.toString();
+      // message received is an acknowledgement of a
+      // message we have send, we can safely ignore this
+      if (body.startsWith("ack:")) {
+        return;
       }
-    );
-    Nodes.addWSconn(this.nodes, entryNode, wsConn);
+
+      let msg: string | undefined;
+      try {
+        msg = utils.toUtf8String(
+          utils.RLP.decode(new Uint8Array(JSON.parse(`[${body}]`)))[0]
+        );
+      } catch (error) {
+        log.error("Error decoding message:", error);
+        return;
+      }
+      this.onWSmessage(msg);
+    };
   };
 }
