@@ -69,10 +69,14 @@ export function fetchExitNodes({
       throw new Error(`wrong status ${resp}`);
     })
     .then((json) => {
-      if (json[0]) {
-        fetchNode({ discoveryPlatformEndpoint, clientId }, json[0].id);
-      }
-      return [{ pubKey: json[0].exit_node_pub_key, peerId: json[0].id }];
+      //      if (json[0]) {
+      //        fetchNode({ discoveryPlatformEndpoint, clientId }, json[0].id);
+      //      }
+      //      return [{ pubKey: json[0].exit_node_pub_key, peerId: json[0].id }];
+      return json.map(({ exit_node_pub_key, id }) => ({
+        pubKey: exit_node_pub_key,
+        peerId: id,
+      }));
     });
 }
 
