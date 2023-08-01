@@ -1,4 +1,5 @@
 import { WebSocket } from "isomorphic-ws";
+import { shortPeerId } from "./utils";
 /**
  * Performance and reliability parameters.
  * These parameters are subject to change and we need to find the best possible combinations.
@@ -325,7 +326,7 @@ export function stop(nodes: Nodes) {
 }
 
 export function prettyPrint(nodes: Nodes) {
-  const entryNodes = `ent:${
+  const entryNodes = `en:${
     nodes.entryNodes.size - nodes.outphasingEntries.size
   }/${nodes.entryNodes.size}`;
   const exitNodes = `ex:${nodes.exitNodes.size - nodes.outphasingExits.size}/${
@@ -334,12 +335,17 @@ export function prettyPrint(nodes: Nodes) {
   const dataEntries = Array.from(nodes.entryDatas.entries())
     .map(
       ([id, ed]) =>
-        `${id}:${ed.ongoingRequests}or,${ed.latencyViolations}lv,${ed.webSocket?.readyState}`
+        `en${shortPeerId(id)}:${ed.ongoingRequests}/${ed.failedRequests}r,${
+          ed.latencyViolations
+        }l,${ed.webSocket?.readyState}`
     )
     .join(";");
   const dataExits = Array.from(nodes.exitDatas.entries())
     .map(
-      ([id, ed]) => `${id}:${ed.ongoingRequests}or,${ed.latencyViolations}lv`
+      ([id, ed]) =>
+        `ex${shortPeerId(id)}:${ed.ongoingRequests}/${ed.failedRequests}r,${
+          ed.latencyViolations
+        }l`
     )
     .join(";");
   return [entryNodes, exitNodes, dataEntries, dataExits].join("-");
