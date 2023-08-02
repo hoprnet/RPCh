@@ -130,6 +130,7 @@ export default class SDK {
       ...this.ops,
       ...ops,
     };
+    const endFrame = Date.now() + reqOps.timeout!;
     return new Promise(async (resolve, reject) => {
       // gather entry - exit node pair
       const res = await this.nodesColl
@@ -162,7 +163,7 @@ export default class SDK {
         log.error("request expired", request.id);
         this.rejectRequest(request);
         return reject("request timed out");
-      }, reqOps.timeout!);
+      }, endFrame - Date.now());
 
       // track request
       RequestCache.add(this.requestCache, request, resolve, reject, timer);

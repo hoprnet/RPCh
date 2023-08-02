@@ -31,12 +31,12 @@ function extractParams(
   }
   const exitProvider = url.searchParams.get("exit-provider");
   const timeout = url.searchParams.get("timeout");
-  const params: Record<string, string> = {};
+  const params: Record<string, string | number> = {};
   if (exitProvider != null) {
     params.exitProvider = exitProvider;
   }
   if (timeout != null) {
-    params.timeout = timeout;
+    params.timeout = parseInt(timeout, 10);
   }
   return params;
 }
@@ -165,7 +165,7 @@ if (require.main === module) {
     ops.discoveryPlatformEndpoint = process.env.DISCOVERY_PLATFORM_API_ENDPOINT;
   }
   if (process.env.RESPONSE_TIMEOUT) {
-    ops.timeout = process.env.RESPONSE_TIMEOUT;
+    ops.timeout = parseInt(process.env.RESPONSE_TIMEOUT, 10);
   }
   if (process.env.EXIT_PROVDER) {
     ops.provider = process.env.EXIT_PROVDER;
