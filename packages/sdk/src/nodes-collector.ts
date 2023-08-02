@@ -4,7 +4,7 @@ import { utils } from "ethers";
 import type { Request } from "./request";
 import * as Nodes from "./nodes";
 import * as NodesAPI from "./nodes-api";
-import { createLogger } from "./utils";
+import { createLogger, shortPeerId } from "./utils";
 
 const log = createLogger(["nodes-collector"]);
 const apiWebSocket = "/api/v2/messages/websocket";
@@ -222,15 +222,15 @@ export default class NodesCollector {
     const socket = new WebSocket(wsURL);
     Nodes.addWebSocket(this.nodes, entryNode, socket);
     socket.on("open", () => {
-      log.info("WS open", entryNode.peerId);
+      log.info("WS open", shortPeerId(entryNode.peerId));
       this.webSocketOpenings.delete(entryNode.peerId);
     });
     socket.on("error", (err) => {
-      log.error("WS error", entryNode.peerId, err);
+      log.error("WS error", shortPeerId(entryNode.peerId), err);
       this.webSocketOpenings.delete(entryNode.peerId);
     });
     socket.on("close", () => {
-      log.info("WS close", entryNode.peerId);
+      log.info("WS close", shortPeerId(entryNode.peerId));
       this.webSocketOpenings.delete(entryNode.peerId);
     });
     socket.onmessage = (event: MessageEvent) => {
