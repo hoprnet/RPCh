@@ -100,7 +100,7 @@ export default class NodesCollector {
       "requestSucceeded",
       id,
       "actOnCmd",
-      res,
+      res.cmd,
       Nodes.prettyPrint(this.nodes)
     );
     this.actOnCmd(res);
@@ -112,7 +112,7 @@ export default class NodesCollector {
       "requestFailed",
       id,
       "actOnCmd",
-      res,
+      res.cmd,
       Nodes.prettyPrint(this.nodes)
     );
     this.actOnCmd(res);
@@ -167,7 +167,7 @@ export default class NodesCollector {
         "timer after onEntryNodeError reachReady",
         err,
         "actOnCmd",
-        res,
+        res.cmd,
         Nodes.prettyPrint(this.nodes)
       );
       this.actOnCmd(res);
@@ -202,7 +202,7 @@ export default class NodesCollector {
         "timer after onExitNodesError reachReady",
         err,
         "actOnCmd",
-        res,
+        res.cmd,
         Nodes.prettyPrint(this.nodes)
       );
       this.actOnCmd(res);
@@ -221,7 +221,10 @@ export default class NodesCollector {
     wsURL.search = `?apiToken=${entryNode.accessToken}`;
     const socket = new WebSocket(wsURL);
     Nodes.addWebSocket(this.nodes, entryNode, socket);
-    socket.on("open", () => this.webSocketOpenings.delete(entryNode.peerId));
+    socket.on("open", () => {
+      log.info("WS open", entryNode.peerId);
+      this.webSocketOpenings.delete(entryNode.peerId);
+    });
     socket.on("error", (err) => {
       log.error("WS error", entryNode.peerId, err);
       this.webSocketOpenings.delete(entryNode.peerId);
