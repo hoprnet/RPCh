@@ -82,7 +82,6 @@ export default class NodesCollector {
   };
 
   public requestStarted = ({ entryId, exitId, id }: Request) => {
-    Nodes.requestStarted(this.nodes, { entryId, exitId }, id);
     log.verbose(
       "requestStarted",
       id,
@@ -91,12 +90,21 @@ export default class NodesCollector {
         exitId
       )}`
     );
+    Nodes.requestStarted(this.nodes, { entryId, exitId }, id);
   };
 
   public requestSucceeded = (
     { entryId, exitId, id }: Request,
     responseTime: number
   ) => {
+    log.verbose(
+      "requestSucceeded",
+      id,
+      `${Nodes.prettyPrintEntry(this.nodes, entryId)}->${Nodes.prettyPrintExit(
+        this.nodes,
+        exitId
+      )}`
+    );
     const res = Nodes.requestSucceeded(
       this.nodes,
       { entryId, exitId },
@@ -104,13 +112,7 @@ export default class NodesCollector {
       responseTime
     );
     log.verbose(
-      "requestSucceeded",
-      id,
-      `${Nodes.prettyPrintEntry(this.nodes, entryId)}->${Nodes.prettyPrintExit(
-        this.nodes,
-        exitId
-      )}`,
-      "actOnCmd",
+      "requestSucceeded actOnCmd",
       res.cmd,
       Nodes.prettyPrint(this.nodes)
     );
@@ -118,15 +120,17 @@ export default class NodesCollector {
   };
 
   public requestFailed = ({ entryId, exitId, id }: Request) => {
-    const res = Nodes.requestFailed(this.nodes, { entryId, exitId }, id);
     log.verbose(
       "requestFailed",
       id,
       `${Nodes.prettyPrintEntry(this.nodes, entryId)}->${Nodes.prettyPrintExit(
         this.nodes,
         exitId
-      )}`,
-      "actOnCmd",
+      )}`
+    );
+    const res = Nodes.requestFailed(this.nodes, { entryId, exitId }, id);
+    log.verbose(
+      "requestFailed actOnCmd",
       res.cmd,
       Nodes.prettyPrint(this.nodes)
     );
