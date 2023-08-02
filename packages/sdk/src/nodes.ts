@@ -17,9 +17,9 @@ import { randomEl, shortPeerId } from "./utils";
 const latencyThresholdEntry = 10e3;
 const latencyThresholdExit = 5e3;
 const latencyViolationsThresholdEntry = 10;
-const latencyViolationsThresholdExit = 2;
-const failedRequestThresholdEntry = 3;
-const failedRequestThresholdExit = 1;
+const latencyViolationsThresholdExit = 1;
+const failedRequestThresholdEntry = 4;
+const failedRequestThresholdExit = 0;
 
 export type Nodes = {
   entryNodes: Map<string, EntryNode>; // peerId -> EntryNode
