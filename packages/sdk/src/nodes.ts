@@ -15,10 +15,10 @@ import { randomEl, shortPeerId } from "./utils";
  * failedRequestThresholdExit - amount of allowed failing requests before outphasing exit node
  */
 const latencyThresholdEntry = 10e3;
-const latencyThresholdExit = 10e3;
-const latencyViolationsThresholdEntry = 2;
+const latencyThresholdExit = 5e3;
+const latencyViolationsThresholdEntry = 10;
 const latencyViolationsThresholdExit = 2;
-const failedRequestThresholdEntry = 1;
+const failedRequestThresholdEntry = 3;
 const failedRequestThresholdExit = 1;
 
 export type Nodes = {
