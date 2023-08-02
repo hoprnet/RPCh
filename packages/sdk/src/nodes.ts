@@ -363,11 +363,11 @@ function readyState(rs?: number) {
     case 0:
       return "Connecting";
     case 1:
-      return "O";
+      return "o";
     case 2:
       return "Closing";
     case 3:
-      return "C";
+      return "x";
     default:
       return "_";
   }
