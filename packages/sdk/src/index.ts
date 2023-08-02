@@ -185,35 +185,12 @@ export default class SDK {
       // send request to hoprd
       log.info("sending request %i", request.id);
 
-      // Send all segments in parallel using Promise.allSettled
-      const sendMessagePromises = segments.map((segment: any) => {
-        return api.sendMessage({
-          apiEndpoint: entryNode.apiEndpoint.toString(),
-          apiToken: entryNode.accessToken,
-          body: Segment.toMessage(segment),
-          recipient: request.exitId,
-        });
-      });
-
-      // Wait for all promises to settle, then check if any were rejected
-      try {
-        const results = await Promise.allSettled(sendMessagePromises);
-        const rejectedResults = results.filter(
-          (result: any) => result.status === "rejected"
-        );
-
-        // check rejected segment sending
-        if (rejectedResults.length > 0) {
-          log.error("Failed sending segments", rejectedResults);
-          this.rejectRequest(request);
-          return reject("not all segments were delivered");
-        }
-      } catch (err) {
-        // check other errors
-        log.error("Error during sending segments", err);
-        this.rejectRequest(request);
-        return reject("Error during sending segments");
-      }
+      // send segments sequentially
+      segments.forEach((s) =>
+        setTimeout(() =>
+          this.sendSegment(s, request, entryNode, endFrame, reject)
+        )
+      );
     });
   }
 
@@ -222,6 +199,31 @@ export default class SDK {
       RequestCache.remove(this.requestCache, rId);
       SegmentCache.remove(this.segmentCache, rId);
     }
+  };
+
+  private sendSegment = (
+    segment: Segment.Segment,
+    request: Request.Request,
+    entryNode: EntryNode,
+    endFrame: number,
+    reject: (reason: string) => void
+  ) => {
+    api
+      .sendMessage({
+        apiEndpoint: entryNode.apiEndpoint.toString(),
+        apiToken: entryNode.accessToken,
+        body: Segment.toMessage(segment),
+        recipient: request.exitId,
+        timeout: 5e3,
+      })
+      .then((res) => {
+        console.log("RES", res);
+      })
+      .catch((error) => {
+        console.log("ERRROR", error);
+        this.rejectRequest(request);
+        reject("Sending segment failed");
+      });
   };
 
   private onWSmessage = (message: string) => {
