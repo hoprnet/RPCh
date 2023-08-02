@@ -1,6 +1,7 @@
 import type * as RPChCrypto from "@rpch/crypto";
-import { hoprd } from "@rpch/common";
+import { api } from "@hoprnet/hopr-sdk";
 import { utils as etherUtils } from "ethers";
+
 import { createLogger } from "./utils";
 import NodesCollector from "./nodes-collector";
 import * as Request from "./request";
@@ -183,12 +184,11 @@ export default class SDK {
 
       // Send all segments in parallel using Promise.allSettled
       const sendMessagePromises = segments.map((segment: any) => {
-        return hoprd.sendMessage({
+        return api.sendMessage({
           apiEndpoint: entryNode.apiEndpoint.toString(),
           apiToken: entryNode.accessToken,
-          message: Segment.toPayload(segment),
-          destination: request.exitId,
-          path: [],
+          body: Segment.toMessage(segment),
+          recipient: request.exitId,
         });
       });
 

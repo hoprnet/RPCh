@@ -36,7 +36,7 @@ export function fromString(
 /**
  * Convert segment to payload.
  */
-export function toPayload({ requestId, nr, totalCount, body }: Segment) {
+export function toMessage({ requestId, nr, totalCount, body }: Segment) {
   return [4, requestId, nr, totalCount, body].join("|");
 }
 
