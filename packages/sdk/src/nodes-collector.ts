@@ -4,7 +4,7 @@ import { utils } from "ethers";
 import type { Request } from "./request";
 import * as Nodes from "./nodes";
 import * as NodesAPI from "./nodes-api";
-import { createLogger, shortPeerId } from "./utils";
+import { createLogger } from "./utils";
 
 const log = createLogger(["nodes-collector"]);
 const apiWebSocket = "/api/v2/messages/websocket";
@@ -86,8 +86,10 @@ export default class NodesCollector {
     log.verbose(
       "requestStarted",
       id,
-      `${shortPeerId(entryId)}->${shortPeerId(exitId)}`,
-      Nodes.prettyPrint(this.nodes)
+      `${Nodes.prettyPrintEntry(this.nodes, entryId)}->${Nodes.prettyPrintExit(
+        this.nodes,
+        exitId
+      )}`
     );
   };
 
@@ -104,7 +106,10 @@ export default class NodesCollector {
     log.verbose(
       "requestSucceeded",
       id,
-      `${shortPeerId(entryId)}->${shortPeerId(exitId)}`,
+      `${Nodes.prettyPrintEntry(this.nodes, entryId)}->${Nodes.prettyPrintExit(
+        this.nodes,
+        exitId
+      )}`,
       "actOnCmd",
       res.cmd,
       Nodes.prettyPrint(this.nodes)
@@ -117,7 +122,10 @@ export default class NodesCollector {
     log.verbose(
       "requestFailed",
       id,
-      `${shortPeerId(entryId)}->${shortPeerId(exitId)}`,
+      `${Nodes.prettyPrintEntry(this.nodes, entryId)}->${Nodes.prettyPrintExit(
+        this.nodes,
+        exitId
+      )}`,
       "actOnCmd",
       res.cmd,
       Nodes.prettyPrint(this.nodes)
@@ -229,15 +237,22 @@ export default class NodesCollector {
     const socket = new WebSocket(wsURL);
     Nodes.addWebSocket(this.nodes, entryNode, socket);
     socket.on("open", () => {
-      log.info("WS open", shortPeerId(entryNode.peerId));
+      log.info("WS open", Nodes.prettyPrintEntry(this.nodes, entryNode.peerId));
       this.webSocketOpenings.delete(entryNode.peerId);
     });
     socket.on("error", (err) => {
-      log.error("WS error", shortPeerId(entryNode.peerId), err);
+      log.error(
+        "WS error",
+        Nodes.prettyPrintEntry(this.nodes, entryNode.peerId),
+        err
+      );
       this.webSocketOpenings.delete(entryNode.peerId);
     });
     socket.on("close", () => {
-      log.info("WS close", shortPeerId(entryNode.peerId));
+      log.info(
+        "WS close",
+        Nodes.prettyPrintEntry(this.nodes, entryNode.peerId)
+      );
       this.webSocketOpenings.delete(entryNode.peerId);
     });
     socket.onmessage = (event: MessageEvent) => {

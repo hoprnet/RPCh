@@ -323,6 +323,33 @@ export function stop(nodes: Nodes) {
   }
 }
 
+export function prettyPrintEntry(nodes: Nodes, entryId: string) {
+  const data = nodes.entryDatas.get(entryId);
+  const id = shortPeerId(entryId);
+  if (!data) {
+    return `en${id}:nodata`;
+  }
+  const og = data.ongoingRequests;
+  const tot = data.totalRequests;
+  const suc = data.totalRequests - data.failedRequests;
+  const lv = data.latencyViolations;
+  const rs = readyState(data.webSocket?.readyState);
+  return `en${id}:(${og})${suc}/${tot}r,${lv}lv,${rs}`;
+}
+
+export function prettyPrintExit(nodes: Nodes, exitId: string) {
+  const data = nodes.exitDatas.get(exitId);
+  const id = shortPeerId(exitId);
+  if (!data) {
+    return `ex${id}:nodata`;
+  }
+  const og = data.ongoingRequests;
+  const tot = data.totalRequests;
+  const suc = data.totalRequests - data.failedRequests;
+  const lv = data.latencyViolations;
+  return `ex${id}:(${og})${suc}/${tot}r,${lv}lv`;
+}
+
 export function prettyPrint(nodes: Nodes) {
   const entryNodes = `en:${
     nodes.entryNodes.size - nodes.outphasingEntries.size
@@ -330,15 +357,8 @@ export function prettyPrint(nodes: Nodes) {
   const exitNodes = `ex:${nodes.exitNodes.size - nodes.outphasingExits.size}/${
     nodes.exitNodes.size
   }`;
-  const dataEntries = Array.from(nodes.entryDatas.entries())
-    .map(
-      ([id, ed]) =>
-        `en${shortPeerId(id)}:(${ed.ongoingRequests})${
-          ed.totalRequests - ed.failedRequests
-        }/${ed.totalRequests}r,${ed.latencyViolations}l,${readyState(
-          ed.webSocket?.readyState
-        )}`
-    )
+  const dataEntries = Array.from(nodes.entryDatas.keys())
+    .map((id) => prettyPrintEntry(nodes, id))
     .join(";");
   const dataExits = Array.from(nodes.exitDatas.entries())
     // only print used exit nodes
@@ -348,12 +368,7 @@ export function prettyPrint(nodes: Nodes) {
         ed.latencyViolations > 0 ||
         ed.totalRequests > 0
     )
-    .map(
-      ([id, ed]) =>
-        `ex${shortPeerId(id)}:(${ed.ongoingRequests})${
-          ed.totalRequests - ed.failedRequests
-        }/${ed.totalRequests}r,${ed.latencyViolations}l`
-    )
+    .map(([id, _ed]) => prettyPrintExit(nodes, id))
     .join(";");
   return [entryNodes, exitNodes, dataEntries, dataExits].join("-");
 }
