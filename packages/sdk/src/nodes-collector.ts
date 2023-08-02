@@ -40,6 +40,7 @@ export default class NodesCollector {
         if (res.cmd === "") {
           return resolve(true);
         }
+        log.verbose("ready actOnCmd", res.cmd, Nodes.prettyPrint(this.nodes));
         this.actOnCmd(res);
         if (elapsed > timeout) {
           log.error("Timeout waiting for ready", elapsed);
@@ -64,6 +65,11 @@ export default class NodesCollector {
         if (res.nodePair) {
           return resolve(res.nodePair);
         }
+        log.verbose(
+          "requestNodePair actOnCmd",
+          res.cmd,
+          Nodes.prettyPrint(this.nodes)
+        );
         this.actOnCmd(res);
         if (elapsed > timeout) {
           log.error("Timeout waiting for node pair", elapsed);
@@ -77,7 +83,7 @@ export default class NodesCollector {
 
   public requestStarted = ({ entryId, exitId, id }: Request) => {
     Nodes.requestStarted(this.nodes, { entryId, exitId }, id);
-    log.verbose("requestStarted", Nodes.prettyPrint(this.nodes));
+    log.verbose("requestStarted", id, Nodes.prettyPrint(this.nodes));
   };
 
   public requestSucceeded = (
@@ -90,18 +96,29 @@ export default class NodesCollector {
       id,
       responseTime
     );
-    log.verbose("requestSucceeded", Nodes.prettyPrint(this.nodes));
+    log.verbose(
+      "requestSucceeded",
+      id,
+      "actOnCmd",
+      res,
+      Nodes.prettyPrint(this.nodes)
+    );
     this.actOnCmd(res);
   };
 
   public requestFailed = ({ entryId, exitId, id }: Request) => {
     const res = Nodes.requestFailed(this.nodes, { entryId, exitId }, id);
-    log.verbose("requestFailed", Nodes.prettyPrint(this.nodes));
+    log.verbose(
+      "requestFailed",
+      id,
+      "actOnCmd",
+      res,
+      Nodes.prettyPrint(this.nodes)
+    );
     this.actOnCmd(res);
   };
 
   private actOnCmd = (cmd: Nodes.Command) => {
-    log.verbose("actOnCmd", cmd.cmd, Nodes.prettyPrint(this.nodes));
     clearTimeout(this.actTimer);
     switch (cmd.cmd) {
       case "needEntryNode":
@@ -146,6 +163,13 @@ export default class NodesCollector {
     log.error("Error requesting entry node", err);
     this.actTimer = setTimeout(() => {
       const res = Nodes.reachReady(this.nodes);
+      log.verbose(
+        "timer after onEntryNodeError reachReady",
+        err,
+        "actOnCmd",
+        res,
+        Nodes.prettyPrint(this.nodes)
+      );
       this.actOnCmd(res);
     }, 555);
   };
@@ -174,6 +198,13 @@ export default class NodesCollector {
     log.error("Error requesting exit nodes", err);
     this.actTimer = setTimeout(() => {
       const res = Nodes.reachReady(this.nodes);
+      log.verbose(
+        "timer after onExitNodesError reachReady",
+        err,
+        "actOnCmd",
+        res,
+        Nodes.prettyPrint(this.nodes)
+      );
       this.actOnCmd(res);
     }, 555);
   };

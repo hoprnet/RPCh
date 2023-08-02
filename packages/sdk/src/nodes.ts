@@ -1,5 +1,5 @@
 import { WebSocket } from "isomorphic-ws";
-import { shortPeerId } from "./utils";
+import { randomEl, shortPeerId } from "./utils";
 
 /**
  * Performance and reliability parameters.
@@ -287,7 +287,7 @@ function postRequest(
   }
 ) {
   // close websocket if possible
-  if (entryData.ongoingRequests === 0) {
+  if (entryData.ongoingRequests <= 0) {
     entryData.webSocket?.close();
 
     // check if outphasing entry node
@@ -299,7 +299,7 @@ function postRequest(
   }
 
   // check if outphasing exit node
-  if (exitData.ongoingRequests === 0 && nodes.outphasingExits.has(exitId)) {
+  if (exitData.ongoingRequests <= 0 && nodes.outphasingExits.has(exitId)) {
     nodes.outphasingExits.delete(exitId);
     nodes.exitNodes.delete(exitId);
     nodes.exitDatas.delete(exitId);
@@ -349,8 +349,4 @@ export function prettyPrint(nodes: Nodes) {
     )
     .join(";");
   return [entryNodes, exitNodes, dataEntries, dataExits].join("-");
-}
-
-function randomEl<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
 }
