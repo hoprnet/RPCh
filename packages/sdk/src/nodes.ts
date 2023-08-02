@@ -341,6 +341,13 @@ export function prettyPrint(nodes: Nodes) {
     )
     .join(";");
   const dataExits = Array.from(nodes.exitDatas.entries())
+    // only print used exit nodes
+    .filter(
+      ([_id, ed]) =>
+        ed.ongoingRequests > 0 ||
+        ed.latencyViolations > 0 ||
+        ed.totalRequests > 0
+    )
     .map(
       ([id, ed]) =>
         `ex${shortPeerId(id)}:(${ed.ongoingRequests})${

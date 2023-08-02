@@ -116,7 +116,7 @@ function createServer(sdk: RPChSDK) {
       if (result.success) {
         log.info(
           "sending request",
-          result.req,
+          JSON.stringify(result.req),
           "with params",
           JSON.stringify(params)
         );
