@@ -335,9 +335,9 @@ export function prettyPrint(nodes: Nodes) {
       ([id, ed]) =>
         `en${shortPeerId(id)}:(${ed.ongoingRequests})${
           ed.totalRequests - ed.failedRequests
-        }/${ed.totalRequests}r,${ed.latencyViolations}l,${
+        }/${ed.totalRequests}r,${ed.latencyViolations}l,${readyState(
           ed.webSocket?.readyState
-        }`
+        )}`
     )
     .join(";");
   const dataExits = Array.from(nodes.exitDatas.entries())
@@ -349,4 +349,19 @@ export function prettyPrint(nodes: Nodes) {
     )
     .join(";");
   return [entryNodes, exitNodes, dataEntries, dataExits].join("-");
+}
+
+function readyState(rs?: number) {
+  switch (rs) {
+    case 0:
+      return "Connecting";
+    case 1:
+      return "O";
+    case 2:
+      return "Closing";
+    case 3:
+      return "C";
+    default:
+      return "_";
+  }
 }
