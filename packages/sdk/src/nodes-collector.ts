@@ -11,7 +11,6 @@ const apiWebSocket = "/api/v2/messages/websocket";
 
 export default class NodesCollector {
   private readonly nodes: Nodes.Nodes = Nodes.init();
-  private actTimer: ReturnType<typeof setTimeout> = setTimeout(function () {});
   private ongoingFetchEntry = false;
   private ongoingFetchExit = false;
   private webSocketOpenings = new Set<string>();
@@ -25,7 +24,6 @@ export default class NodesCollector {
   public stop = () => {
     log.verbose("stopping", Nodes.prettyPrint(this.nodes));
     Nodes.stop(this.nodes);
-    clearTimeout(this.actTimer);
   };
 
   /**
@@ -139,7 +137,6 @@ export default class NodesCollector {
   };
 
   private actOnCmd = (cmd: Nodes.Command) => {
-    clearTimeout(this.actTimer);
     switch (cmd.cmd) {
       case "needEntryNode":
         this.fetchEntryNode(cmd.excludeIds);
@@ -168,30 +165,13 @@ export default class NodesCollector {
       discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
       clientId: this.clientId,
     })
-      .then(this.onEntryNode)
-      .catch(this.onEntryNodeError)
+      .then((entryNode: Nodes.EntryNode) =>
+        Nodes.newEntryNode(this.nodes, entryNode)
+      )
+      .catch((err: string) => log.error("Error requesting entry node", err))
       .finally(() => {
         this.ongoingFetchEntry = false;
       });
-  };
-
-  private onEntryNode = (entryNode: Nodes.EntryNode) => {
-    Nodes.newEntryNode(this.nodes, entryNode);
-  };
-
-  private onEntryNodeError = (err: string) => {
-    log.error("Error requesting entry node", err);
-    this.actTimer = setTimeout(() => {
-      const res = Nodes.reachReady(this.nodes);
-      log.verbose(
-        "timer after onEntryNodeError reachReady",
-        err,
-        "actOnCmd",
-        res.cmd,
-        Nodes.prettyPrint(this.nodes)
-      );
-      this.actOnCmd(res);
-    }, 555);
   };
 
   private fetchExitNodes = () => {
@@ -203,30 +183,13 @@ export default class NodesCollector {
       discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
       clientId: this.clientId,
     })
-      .then(this.onExitNodes)
-      .catch(this.onExitNodesError)
+      .then((exitNodes: Nodes.ExitNode[]) =>
+        Nodes.addExitNodes(this.nodes, exitNodes)
+      )
+      .catch((err: string) => log.error("Error requesting exit nodes", err))
       .finally(() => {
         this.ongoingFetchExit = false;
       });
-  };
-
-  private onExitNodes = (exitNodes: Nodes.ExitNode[]) => {
-    Nodes.addExitNodes(this.nodes, exitNodes);
-  };
-
-  private onExitNodesError = (err: string) => {
-    log.error("Error requesting exit nodes", err);
-    this.actTimer = setTimeout(() => {
-      const res = Nodes.reachReady(this.nodes);
-      log.verbose(
-        "timer after onExitNodesError reachReady",
-        err,
-        "actOnCmd",
-        res.cmd,
-        Nodes.prettyPrint(this.nodes)
-      );
-      this.actOnCmd(res);
-    }, 555);
   };
 
   private openWebSocket = (entryNode: Nodes.EntryNode) => {

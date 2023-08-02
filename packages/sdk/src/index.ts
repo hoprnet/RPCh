@@ -4,6 +4,7 @@ import { utils as etherUtils } from "ethers";
 
 import { createLogger } from "./utils";
 import NodesCollector from "./nodes-collector";
+import type { EntryNode } from "./nodes";
 import * as Request from "./request";
 import * as RequestCache from "./request-cache";
 import * as Segment from "./segment";
@@ -98,6 +99,7 @@ export default class SDK {
       ...defaultOps,
       ...ops,
     };
+
     this.crypto = crypto;
     this.crypto.set_panic_hook();
     this.requestCache = RequestCache.init();
