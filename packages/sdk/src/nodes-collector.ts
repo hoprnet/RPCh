@@ -14,7 +14,7 @@ export default class NodesCollector {
   private actTimer: ReturnType<typeof setTimeout> = setTimeout(function () {});
   private ongoingFetchEntry = false;
   private ongoingFetchExit = false;
-  private ongoingOpeningSocket = false;
+  private webSocketOpenings = new Set<string>();
 
   constructor(
     private readonly discoveryPlatformEndpoint: string,
@@ -179,10 +179,10 @@ export default class NodesCollector {
   };
 
   private openWebSocket = (entryNode: Nodes.EntryNode) => {
-    if (this.ongoingOpeningSocket) {
+    if (this.webSocketOpenings.has(entryNode.peerId)) {
       return;
     }
-    this.ongoingOpeningSocket = true;
+    this.webSocketOpenings.add(entryNode.peerId);
     const wsURL = new URL(entryNode.apiEndpoint.toString());
     wsURL.protocol =
       entryNode.apiEndpoint.protocol === "https:" ? "wss:" : "ws:";
@@ -190,14 +190,14 @@ export default class NodesCollector {
     wsURL.search = `?apiToken=${entryNode.accessToken}`;
     const socket = new WebSocket(wsURL);
     Nodes.addWebSocket(this.nodes, entryNode, socket);
-    socket.on("open", () => (this.ongoingOpeningSocket = false));
+    socket.on("open", () => this.webSocketOpenings.delete(entryNode.peerId));
     socket.on("error", (err) => {
-      log.error("WSERR", err, entryNode.peerId);
-      this.ongoingOpeningSocket = false;
+      log.error("WS error", entryNode.peerId, err);
+      this.webSocketOpenings.delete(entryNode.peerId);
     });
     socket.on("close", () => {
-      log.info("WSCLOSE", entryNode.peerId);
-      this.ongoingOpeningSocket = false;
+      log.info("WS close", entryNode.peerId);
+      this.webSocketOpenings.delete(entryNode.peerId);
     });
     socket.onmessage = (event: MessageEvent) => {
       const body = event.data.toString();
