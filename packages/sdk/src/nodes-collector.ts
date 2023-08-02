@@ -83,7 +83,12 @@ export default class NodesCollector {
 
   public requestStarted = ({ entryId, exitId, id }: Request) => {
     Nodes.requestStarted(this.nodes, { entryId, exitId }, id);
-    log.verbose("requestStarted", id, Nodes.prettyPrint(this.nodes));
+    log.verbose(
+      "requestStarted",
+      id,
+      `${shortPeerId(entryId)}->${shortPeerId(exitId)}`,
+      Nodes.prettyPrint(this.nodes)
+    );
   };
 
   public requestSucceeded = (
@@ -99,6 +104,7 @@ export default class NodesCollector {
     log.verbose(
       "requestSucceeded",
       id,
+      `${shortPeerId(entryId)}->${shortPeerId(exitId)}`,
       "actOnCmd",
       res.cmd,
       Nodes.prettyPrint(this.nodes)
@@ -111,6 +117,7 @@ export default class NodesCollector {
     log.verbose(
       "requestFailed",
       id,
+      `${shortPeerId(entryId)}->${shortPeerId(exitId)}`,
       "actOnCmd",
       res.cmd,
       Nodes.prettyPrint(this.nodes)
