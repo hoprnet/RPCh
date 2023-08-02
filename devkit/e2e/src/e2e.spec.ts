@@ -53,7 +53,7 @@ describe("e2e tests", function () {
 function setupSDK() {
   return new RPChSDK("sandbox", RPChCrypto, {
     timeout: 5000,
-    discoveryPlatformURL: DISCOVERY_PLATFORM_API_ENDPOINT,
+    discoveryPlatformEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
     provider: PROVIDER_URL,
   });
 }
