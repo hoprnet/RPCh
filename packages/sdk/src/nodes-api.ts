@@ -80,6 +80,7 @@ export function fetchExitNodes({
     });
 }
 
+/*
 function fetchNode(
   {
     discoveryPlatformEndpoint,
@@ -104,3 +105,4 @@ function fetchNode(
       console.log("NODE", json);
     });
 }
+*/
