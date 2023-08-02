@@ -2,7 +2,7 @@ import { type EntryNode, type ExitNode } from "./nodes";
 
 const apiEntryNode = "/api/v1/request/entry-node";
 const apiExitNode = "/api/v1/node?hasExitNode=true";
-const apiNode = "/api/v1/node";
+// const apiNode = "/api/v1/node";
 
 export function fetchEntryNode({
   excludeList,
