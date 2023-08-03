@@ -13,7 +13,7 @@ describe("e2e tests", function () {
 
   beforeAll(() => {
     sdk = setupSDK();
-    // availability-monitor and discoverty-platform take ca 1min to deliver entry nodes
+    // discoverty-platform take ca 1min to deliver entry nodes
     return sdk.isReady(60e3 * 3); // 3min
   }, 60e3 * 3);
 
@@ -52,7 +52,7 @@ describe("e2e tests", function () {
 
 function setupSDK() {
   return new RPChSDK("sandbox", RPChCrypto, {
-    timeout: 5000,
+    timeout: 30e3,
     discoveryPlatformEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
     provider: PROVIDER_URL,
   });
