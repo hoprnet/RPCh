@@ -189,6 +189,7 @@ export const createQuota = async (
     clientId: quota.clientId,
   };
 
+  // make these 2 operations transactional
   await dbInstance.tx((t) => {
     const q1 = t.one(
       `INSERT INTO ${TABLES.QUOTAS} (id, client_id, paid_by, quota, action_taker)
