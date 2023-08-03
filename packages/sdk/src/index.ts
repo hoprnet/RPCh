@@ -214,6 +214,7 @@ export default class SDK {
         apiToken: entryNode.accessToken,
         body: Segment.toMessage(segment),
         recipient: request.exitId,
+        timeout: 10e3,
         path: [],
       })
       .then(() => {
@@ -227,6 +228,7 @@ export default class SDK {
             apiToken: entryNode.accessToken,
             body: Segment.toMessage(segment),
             recipient: request.exitId,
+            timeout: 5e3,
             path: [],
           })
           .then(() => {
