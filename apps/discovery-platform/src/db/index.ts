@@ -197,7 +197,7 @@ export const createQuota = async (
       quotaInsertValues
     );
     const q2 = t.one(
-      "UPDATE quota_paid, quota_used SET quotaPaid = quotaPaid + $<quotaPaid>, quotaUsed = quotaUsed + $<quotaUsed> WHERE id=$<clientId>",
+      `UPDATE ${TABLES.QUOTAS} SET quotaPaid = quotaPaid + $<quotaPaid>, quotaUsed = quotaUsed + $<quotaUsed> WHERE id=$<clientId>`,
       clientUpdateValus
     );
     return t.batch([q1, q2]);
