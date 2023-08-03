@@ -214,15 +214,33 @@ export default class SDK {
         apiToken: entryNode.accessToken,
         body: Segment.toMessage(segment),
         recipient: request.exitId,
-        timeout: 5e3,
+        path: [],
       })
-      .then((res) => {
-        console.log("RES", res);
+      .then(() => {
+        log.verbose("sent segment", Segment.prettyPrint(segment));
       })
       .catch((error) => {
-        console.log("ERRROR", error);
-        this.rejectRequest(request);
-        reject("Sending segment failed");
+        log.error("error sending segment", Segment.prettyPrint(segment), error);
+        api
+          .sendMessage({
+            apiEndpoint: entryNode.apiEndpoint.toString(),
+            apiToken: entryNode.accessToken,
+            body: Segment.toMessage(segment),
+            recipient: request.exitId,
+            path: [],
+          })
+          .then(() => {
+            log.verbose("resent segment", Segment.prettyPrint(segment));
+          })
+          .catch((error) => {
+            log.error(
+              "error resending segment",
+              Segment.prettyPrint(segment),
+              error
+            );
+            this.rejectRequest(request);
+            reject("Sending segment failed");
+          });
       });
   };
 
