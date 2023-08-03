@@ -4,6 +4,8 @@ export type Client = {
   id: string;
   labels?: string[];
   payment: "premium" | "trial";
+  quotaPaid?: bigint;
+  quotaUsed?: bigint;
 };
 
 export type ClientDB = {

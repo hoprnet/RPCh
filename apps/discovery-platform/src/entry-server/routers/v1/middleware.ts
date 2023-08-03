@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import type { Histogram } from "prom-client";
-import { getSumOfQuotasPaidByClient, type DBInstance } from "../../../db";
+import { getClientQuotas, type DBInstance } from "../../../db";
 import memoryCache from "memory-cache";
 import { createLogger } from "../../../utils";
 import { getClient } from "../../../client";
@@ -32,8 +32,8 @@ export const doesClientHaveQuota = async (
   client: string,
   baseQuota: bigint
 ) => {
-  const sumOfClientsQuota = await getSumOfQuotasPaidByClient(db, client);
-  return sumOfClientsQuota >= baseQuota;
+  const { sum } = await getClientQuotas(db, client);
+  return sum >= baseQuota;
 };
 
 export const clientExists =

@@ -167,18 +167,40 @@ export const deleteRegisteredNode = async (
 export const createQuota = async (
   dbInstance: DBInstance,
   quota: Quota
-): Promise<QuotaDB> => {
-  const text = `INSERT INTO ${TABLES.QUOTAS} (id, client_id, paid_by, quota, action_taker)
-  VALUES (default, $<clientId>, $<paidBy>, $<quota>, $<actionTaker>) RETURNING *`;
-  const values: Quota = {
+): Promise<void> => {
+  const quotaPaidIncrement = quota.quota >= BigInt(0) ? quota.quota : BigInt(0);
+  const quotaUsedIncrement =
+    quota.quota < BigInt(0) ? BigInt(quota.quota) * BigInt(-1) : BigInt(0);
+
+  const quotaInsertValues: Quota = {
     clientId: quota.clientId,
     quota: quota.quota,
     actionTaker: quota.actionTaker,
     paidBy: quota.paidBy,
   };
 
-  const dbRes: QuotaDB = await dbInstance.one(text, values);
-  return dbRes;
+  const clientUpdateValus: {
+    quotaPaid: bigint;
+    quotaUsed: bigint;
+    clientId: string;
+  } = {
+    quotaPaid: quotaPaidIncrement,
+    quotaUsed: quotaUsedIncrement,
+    clientId: quota.clientId,
+  };
+
+  await dbInstance.tx((t) => {
+    const q1 = t.one(
+      `INSERT INTO ${TABLES.QUOTAS} (id, client_id, paid_by, quota, action_taker)
+    VALUES (default, $<clientId>, $<paidBy>, $<quota>, $<actionTaker>) RETURNING *`,
+      quotaInsertValues
+    );
+    const q2 = t.one(
+      "UPDATE quota_paid, quota_used SET quotaPaid = quotaPaid + $<quotaPaid>, quotaUsed = quotaUsed + $<quotaUsed> WHERE id=$<clientId>",
+      clientUpdateValus
+    );
+    return t.batch([q1, q2]);
+  });
 };
 
 export const getQuota = async (
@@ -193,48 +215,32 @@ export const getQuota = async (
   return dbRes;
 };
 
-export const getSumOfQuotasPaidByClient = async (
+export const getClientQuotas = async (
   dbInstance: DBInstance,
   clientId: string
-): Promise<bigint> => {
-  const text = `SELECT SUM(quota) FROM ${TABLES.QUOTAS} WHERE paid_by=$<clientId>`;
+): Promise<{
+  quotaPaid: bigint;
+  quotaUsed: bigint;
+  sum: bigint;
+}> => {
+  const text = `SELECT quota_paid, quota_used FROM ${TABLES.CLIENTS} WHERE id=$<clientId>`;
   const values = {
     clientId,
   };
-  const dbRes = await dbInstance.one(text, values);
+  const dbRes: {
+    quota_paid: string;
+    quota_used: string;
+  } = await dbInstance.one(text, values);
 
-  return dbRes?.sum ? BigInt(dbRes?.sum) : BigInt(0);
-};
+  const quotaPaid = BigInt(dbRes.quota_paid || 0);
+  const quotaUsed = BigInt(dbRes.quota_used || 0);
+  const sum = quotaPaid - quotaUsed;
 
-export const getSumOfQuotasUsedByClient = async (
-  dbInstance: DBInstance,
-  clientId: string
-): Promise<bigint> => {
-  const text = `SELECT SUM(quota) FROM ${TABLES.QUOTAS} WHERE client_id=$<clientId>`;
-  const values = {
-    clientId,
+  return {
+    quotaPaid,
+    quotaUsed,
+    sum,
   };
-  const dbRes = await dbInstance.one(text, values);
-
-  return dbRes?.sum ? BigInt(dbRes?.sum) : BigInt(0);
-};
-export const updateQuota = async (
-  dbInstance: DBInstance,
-  quota: QuotaDB
-): Promise<QuotaDB> => {
-  const text = `UPDATE ${TABLES.QUOTAS}
-  SET client_id = $<client_id>, paid_by = $<paid_by>, quota = $<quota>, action_taker = $<action_taker>
-  WHERE id = $<id>
-  RETURNING *`;
-  const values: Omit<QuotaDB, "created_at" | "updated_at"> = {
-    id: quota.id,
-    client_id: quota.client_id,
-    action_taker: quota.action_taker,
-    quota: quota.quota,
-    paid_by: quota.paid_by,
-  };
-  const dbRes: QuotaDB = await dbInstance.one(text, values);
-  return dbRes;
 };
 
 export const deleteQuota = async (
@@ -283,6 +289,8 @@ export const createClient = async (
     id: client.id,
     payment: client.payment,
     labels: client.labels,
+    quotaPaid: BigInt(0),
+    quotaUsed: BigInt(0),
   };
   const dbRes: ClientDB = await dbInstance.one(text, values);
   return dbRes;
@@ -308,7 +316,10 @@ export const updateClient = async (
   SET id = $<id>, payment = $<payment>, labels = $<labels>
   WHERE id = $<id>
   RETURNING *`;
-  const values: Omit<ClientDB, "created_at" | "updated_at"> = {
+  const values: Omit<
+    ClientDB,
+    "created_at" | "updated_at" | "quota_paid" | "quota_used"
+  > = {
     id: client.id,
     payment: client.payment,
     labels: client.labels,

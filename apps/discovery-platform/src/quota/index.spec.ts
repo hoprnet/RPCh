@@ -7,7 +7,6 @@ import {
   getQuota,
   getSumOfQuotasUsedByClient,
   getSumOfQuotasPaidByClient,
-  updateQuota,
 } from "./index";
 import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";
 import path from "path";
@@ -93,18 +92,6 @@ describe("test quota functions", function () {
       sumOfQuotas
     );
   });
-  it("should update quota", async function () {
-    const mockQuota = createMockQuota({
-      clientId: "client",
-      actionTaker: "discovery",
-      paidBy: "client",
-      quota: BigInt(10),
-    });
-    const createdQuota = await createQuota(dbInstance, mockQuota);
-    await updateQuota(dbInstance, { ...createdQuota, action_taker: "eve" });
-    const updatedQuota = await db.getQuota(dbInstance, createdQuota.id ?? 0);
-    assert.equal(updatedQuota?.action_taker, "eve");
-  });
   it("should delete quota", async function () {
     const mockQuota = createMockQuota({
       clientId: "client",
@@ -163,7 +150,7 @@ describe("test quota functions", function () {
     // sponsor uses quota once
     await createQuota(dbInstance, { ...mockQuota, clientId: "sponsor" });
 
-    const allQuotasCreatedByClient = await db.getSumOfQuotasUsedByClient(
+    const { sum: allQuotasCreatedByClient } = await db.getClientQuotas(
       dbInstance,
       "client"
     );

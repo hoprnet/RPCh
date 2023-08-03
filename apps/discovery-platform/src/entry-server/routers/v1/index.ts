@@ -266,6 +266,8 @@ export const v1Router = (ops: {
             dbClient = await createClient(ops.db, {
               id: clientId,
               payment: "premium",
+              quotaPaid: BigInt(0),
+              quotaUsed: BigInt(0),
             });
           }
         }

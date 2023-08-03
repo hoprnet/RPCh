@@ -248,7 +248,7 @@ describe("test db functions", function () {
         })
       );
 
-      const sumOfQuotas = await db.getSumOfQuotasUsedByClient(
+      const { sum: sumOfQuotas } = await db.getClientQuotas(
         dbInstance,
         "client"
       );
@@ -296,7 +296,7 @@ describe("test db functions", function () {
         })
       );
 
-      const sumOfQuotas = await db.getSumOfQuotasPaidByClient(
+      const { sum: sumOfQuotas } = await db.getClientQuotas(
         dbInstance,
         "other client"
       );
@@ -305,22 +305,6 @@ describe("test db functions", function () {
         expectedQuotas.reduce((prev, next) => prev + next, BigInt(0)),
         sumOfQuotas
       );
-    });
-    it("should update quota", async function () {
-      const mockQuota = createMockQuota({
-        clientId: "client",
-        actionTaker: "discovery",
-        paidBy: "client",
-        quota: BigInt(10),
-      });
-      const createdQuota = await db.createQuota(dbInstance, mockQuota);
-
-      await db.updateQuota(dbInstance, {
-        ...createdQuota,
-        action_taker: "eve",
-      });
-      const updatedQuota = await db.getQuota(dbInstance, createdQuota.id ?? 0);
-      assert.equal(updatedQuota?.action_taker, "eve");
     });
     it("should get only fresh nodes", async function () {
       await db.saveRegisteredNode(dbInstance, createMockNode("peer1"));
