@@ -23,6 +23,7 @@ export default class NodesCollector {
   ) {}
 
   public stop = () => {
+    log.verbose("stopping", Nodes.prettyPrint(this.nodes));
     Nodes.stop(this.nodes);
     clearTimeout(this.actTimer);
   };
