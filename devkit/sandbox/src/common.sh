@@ -221,6 +221,8 @@ start() {
     )
     echo "Got node peer IDs"
 
+    set -x
+
     peerId1=$(jq '.hopr | .[0]' <<< "$hoprAddresses")
     peerId2=$(jq '.hopr | .[1]' <<< "$hoprAddresses")
     peerId3=$(jq '.hopr | .[2]' <<< "$hoprAddresses")
@@ -235,7 +237,6 @@ start() {
     scurl -b -H "Accept: application/json" -H "x-rpch-client: trial" "${DISCOVERY_PLATFORM_ENDPOINT}/api/v1/node/${peerId5}"
 
     # check for entry node
-    set -x
     echo "url:${DISCOVERY_PLATFORM_ENDPOINT}/api/v1/request/entry-node"
     curl "${DISCOVERY_PLATFORM_ENDPOINT}"'/api/v1/request/entry-node' \
         -H "Accept: application/json" \
