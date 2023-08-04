@@ -101,7 +101,7 @@ start() {
 
     # # fund funding-service wallet
     # echo "Funding funding-service wallet"
-    # scurl -X POST "http://127.0.0.1:3030/fund-via-hoprd" \
+    # scurl "http://127.0.0.1:3030/fund-via-hoprd" \
     #     -H "Content-Type: application/json" \
     #     -d '{
     #         "hoprdEndpoint": "'$HOPRD_API_ENDPOINT_1'",
@@ -127,7 +127,7 @@ start() {
     # add quota to client 'sandbox', try as long as it takes for the DP to become available
     until [[ $exit_code == 0 ]]; do
         echo "Try adding quota to 'sandbox' in 'discovery-platform'"
-        curl --silent --show-error --fail -X POST "http://127.0.0.1:3030/add-quota" \
+        curl --silent --show-error --fail "http://127.0.0.1:3030/add-quota" \
             -H "Content-Type: application/json" \
             -H "x-rpch-client: sandbox" \
             -d '{
@@ -142,7 +142,7 @@ start() {
 
     # add quota to client 'trial'
     echo "Adding quota to 'trial' in 'discovery-platform'"
-    curl -X POST "http://127.0.0.1:3030/add-quota" \
+    curl "http://127.0.0.1:3030/add-quota" \
         -H "Content-Type: application/json" \
         -H "x-rpch-client: trial" \
         -d '{
@@ -161,7 +161,7 @@ start() {
 
     # register nodes
     echo "Registering nodes to discovery-platform"
-    scurl -X POST "http://127.0.0.1:3030/register-exit-nodes" \
+    scurl "http://127.0.0.1:3030/register-exit-nodes" \
         -H "Content-Type: application/json" \
         -d '{
             "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
@@ -200,7 +200,7 @@ start() {
 
     # check nodes
     hoprAddresses=$(
-        curl -v "http://127.0.0.1:3030/get-hoprds-addresses" \
+        scurl "http://127.0.0.1:3030/get-hoprds-addresses" \
             -H "Content-Type: application/json" \
             -d '{
                 "hoprdApiEndpoints": [
@@ -219,7 +219,26 @@ start() {
                 ]
             }'
     )
-    echo "Addresses: ${hoprAddresses}"
+    echo "Got node peer IDs"
+
+    peerId1=$(jq '.hopr | .[0]' <<< "$hoprAddresses")
+    peerId2=$(jq '.hopr | .[1]' <<< "$hoprAddresses")
+    peerId3=$(jq '.hopr | .[2]' <<< "$hoprAddresses")
+    peerId4=$(jq '.hopr | .[3]' <<< "$hoprAddresses")
+    peerId5=$(jq '.hopr | .[4]' <<< "$hoprAddresses")
+
+    # check nodes available
+    scurl -b -H "Accept: application/json" -H "x-rpch-client: trial" "${DISCOVERY_PLATFORM_ENDPOINT}/api/v1/node/${peerId1}"
+    scurl -b -H "Accept: application/json" -H "x-rpch-client: trial" "${DISCOVERY_PLATFORM_ENDPOINT}/api/v1/node/${peerId2}"
+    scurl -b -H "Accept: application/json" -H "x-rpch-client: trial" "${DISCOVERY_PLATFORM_ENDPOINT}/api/v1/node/${peerId3}"
+    scurl -b -H "Accept: application/json" -H "x-rpch-client: trial" "${DISCOVERY_PLATFORM_ENDPOINT}/api/v1/node/${peerId4}"
+    scurl -b -H "Accept: application/json" -H "x-rpch-client: trial" "${DISCOVERY_PLATFORM_ENDPOINT}/api/v1/node/${peerId5}"
+
+    # check for entry node
+    scurl "https://staging.discovery.rpch.tech/api/v1/request/entry-node" \
+        -H "Accept: application/json" \
+        -H "x-rpch-client: trial" \
+        -d '{"excludeList":[],"client":"trial"}'
 
     echo "Sandbox has started!"
 }
