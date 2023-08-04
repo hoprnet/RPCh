@@ -200,7 +200,7 @@ start() {
 
     # check nodes
     hoprAddresses=$(
-        scurl "http://127.0.0.1:3030/get-hoprd-token-address" \
+        curl -v "http://127.0.0.1:3030/get-hoprds-addresses" \
             -H "Content-Type: application/json" \
             -d '{
                 "hoprdApiEndpoints": [
