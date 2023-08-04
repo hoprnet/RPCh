@@ -235,10 +235,13 @@ start() {
     scurl -b -H "Accept: application/json" -H "x-rpch-client: trial" "${DISCOVERY_PLATFORM_ENDPOINT}/api/v1/node/${peerId5}"
 
     # check for entry node
-    scurl "${DISCOVERY_PLATFORM_ENDPOINT}/api/v1/request/entry-node" \
+    set -x
+    echo "url:${DISCOVERY_PLATFORM_ENDPOINT}/api/v1/request/entry-node"
+    curl "${DISCOVERY_PLATFORM_ENDPOINT}"'/api/v1/request/entry-node' \
         -H "Accept: application/json" \
         -H "x-rpch-client: trial" \
         -d '{"excludeList":[],"client":"trial"}'
 
+    set +x
     echo "Sandbox has started!"
 }
