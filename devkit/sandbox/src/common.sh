@@ -223,11 +223,11 @@ start() {
 
     set -x
 
-    peerId1=$(jq '.hopr | .[0]' <<< "$hoprAddresses")
-    peerId2=$(jq '.hopr | .[1]' <<< "$hoprAddresses")
-    peerId3=$(jq '.hopr | .[2]' <<< "$hoprAddresses")
-    peerId4=$(jq '.hopr | .[3]' <<< "$hoprAddresses")
-    peerId5=$(jq '.hopr | .[4]' <<< "$hoprAddresses")
+    peerId1=$(jq -r '.hopr | .[0]' <<< "$hoprAddresses")
+    peerId2=$(jq -r '.hopr | .[1]' <<< "$hoprAddresses")
+    peerId3=$(jq -r '.hopr | .[2]' <<< "$hoprAddresses")
+    peerId4=$(jq -r '.hopr | .[3]' <<< "$hoprAddresses")
+    peerId5=$(jq -r '.hopr | .[4]' <<< "$hoprAddresses")
 
     # check nodes available
     scurl -b -H "Accept: application/json" -H "x-rpch-client: trial" "${DISCOVERY_PLATFORM_ENDPOINT}/api/v1/node/${peerId1}"
