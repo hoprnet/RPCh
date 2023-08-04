@@ -113,7 +113,7 @@ start() {
 
     # get HOPR Token address
     hoprTokenAddress=$(
-        scurl -sbH "Accept: application/json" "http://127.0.0.1:3030/get-hoprd-token-address?hoprdEndpoint=$HOPRD_API_ENDPOINT_1&hoprdToken=$HOPRD_API_TOKEN"
+        scurl -bH "Content-Type: application/json" "http://127.0.0.1:3030/get-hoprd-token-address?hoprdEndpoint=$HOPRD_API_ENDPOINT_1&hoprdToken=$HOPRD_API_TOKEN"
     )
     echo "Received hoprTokenAddress: $hoprTokenAddress"
 
@@ -197,6 +197,29 @@ start() {
             ]
         }'
     echo "Registered nodes to discovery-platform"
+
+    # check nodes
+    hoprAddresses=$(
+        scurl "http://127.0.0.1:3030/get-hoprd-token-address" \
+            -H "Content-Type: application/json" \
+            -d '{
+                "hoprdApiEndpoints": [
+                    "'$HOPRD_API_ENDPOINT_1'",
+                    "'$HOPRD_API_ENDPOINT_2'",
+                    "'$HOPRD_API_ENDPOINT_3'",
+                    "'$HOPRD_API_ENDPOINT_4'",
+                    "'$HOPRD_API_ENDPOINT_5'"
+                ],
+                "hoprdApiTokens": [
+                    "'$HOPRD_API_TOKEN'",
+                    "'$HOPRD_API_TOKEN'",
+                    "'$HOPRD_API_TOKEN'",
+                    "'$HOPRD_API_TOKEN'",
+                    "'$HOPRD_API_TOKEN'"
+                ]
+            }'
+    )
+    echo "Addresses: ${hoprAddresses}"
 
     echo "Sandbox has started!"
 }
