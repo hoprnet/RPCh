@@ -13,9 +13,8 @@ describe("e2e tests", function () {
 
   beforeAll(() => {
     sdk = setupSDK();
-    // discoverty-platform take ca 1min to deliver entry nodes
-    return sdk.isReady(60e3 * 3); // 3min
-  }, 60e3 * 3);
+    return sdk.isReady();
+  }, 30e3);
 
   afterAll(() => {
     sdk.stop();

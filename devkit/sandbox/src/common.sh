@@ -221,27 +221,33 @@ start() {
     )
     echo "Got node peer IDs"
 
-    set -x
-
     peerId1=$(jq -r '.hopr | .[0]' <<< "$hoprAddresses")
     peerId2=$(jq -r '.hopr | .[1]' <<< "$hoprAddresses")
     peerId3=$(jq -r '.hopr | .[2]' <<< "$hoprAddresses")
     peerId4=$(jq -r '.hopr | .[3]' <<< "$hoprAddresses")
     peerId5=$(jq -r '.hopr | .[4]' <<< "$hoprAddresses")
 
-    # check nodes available
+    # check nodes available at DP
     scurl "http://127.0.0.1:3020/api/v1/node/${peerId1}" -H "Accept: application/json" -H "x-rpch-client: trial"
     scurl "http://127.0.0.1:3020/api/v1/node/${peerId2}" -H "Accept: application/json" -H "x-rpch-client: trial"
     scurl "http://127.0.0.1:3020/api/v1/node/${peerId3}" -H "Accept: application/json" -H "x-rpch-client: trial"
     scurl "http://127.0.0.1:3020/api/v1/node/${peerId4}" -H "Accept: application/json" -H "x-rpch-client: trial"
     scurl "http://127.0.0.1:3020/api/v1/node/${peerId5}" -H "Accept: application/json" -H "x-rpch-client: trial"
 
-    # check for entry node
-    scurl "http://127.0.0.1:3020/api/v1/request/entry-node" \
-        -H "Accept: application/json" \
-        -H "x-rpch-client: trial" \
-        -d '{"excludeList":[],"client":"trial"}'
+    # wait until DP returns an entry node
+    exit_code=1
+    waittime=0
+    until [[ $exit_code == 0 ]]; do
+        echo "Try fetching entry node from discovery platform, since ${waittime}s"
+        curl --silent --show-error --fail "http://127.0.0.1:3020/api/v1/request/entry-node" \
+            -H "Accept: application/json" \
+            -H "x-rpch-client: trial" \
+            -d '{"excludeList":[],"client":"trial"}'
+        exit_code=$?
+        waittime=$((waittime + 10))
+        sleep 10
+    done
+    echo "Found potential entry node at discovery platform."
 
-    set +x
     echo "Sandbox has started!"
 }
