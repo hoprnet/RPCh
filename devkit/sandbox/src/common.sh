@@ -230,15 +230,14 @@ start() {
     peerId5=$(jq -r '.hopr | .[4]' <<< "$hoprAddresses")
 
     # check nodes available
-    scurl -b -H "Accept: application/json" -H "x-rpch-client: trial" "${DISCOVERY_PLATFORM_ENDPOINT}/api/v1/node/${peerId1}"
-    scurl -b -H "Accept: application/json" -H "x-rpch-client: trial" "${DISCOVERY_PLATFORM_ENDPOINT}/api/v1/node/${peerId2}"
-    scurl -b -H "Accept: application/json" -H "x-rpch-client: trial" "${DISCOVERY_PLATFORM_ENDPOINT}/api/v1/node/${peerId3}"
-    scurl -b -H "Accept: application/json" -H "x-rpch-client: trial" "${DISCOVERY_PLATFORM_ENDPOINT}/api/v1/node/${peerId4}"
-    scurl -b -H "Accept: application/json" -H "x-rpch-client: trial" "${DISCOVERY_PLATFORM_ENDPOINT}/api/v1/node/${peerId5}"
+    scurl -b -H "Accept: application/json" -H "x-rpch-client: trial" "http://127.0.0.1:3020/api/v1/node/${peerId1}"
+    scurl -b -H "Accept: application/json" -H "x-rpch-client: trial" "http://127.0.0.1:3020/api/v1/node/${peerId2}"
+    scurl -b -H "Accept: application/json" -H "x-rpch-client: trial" "http://127.0.0.1:3020/api/v1/node/${peerId3}"
+    scurl -b -H "Accept: application/json" -H "x-rpch-client: trial" "http://127.0.0.1:3020/api/v1/node/${peerId4}"
+    scurl -b -H "Accept: application/json" -H "x-rpch-client: trial" "http://127.0.0.1:3020/api/v1/node/${peerId5}"
 
     # check for entry node
-    echo "url:${DISCOVERY_PLATFORM_ENDPOINT}/api/v1/request/entry-node"
-    curl "${DISCOVERY_PLATFORM_ENDPOINT}"'/api/v1/request/entry-node' \
+    scurl "http://127.0.0.1:3020/api/v1/request/entry-node" \
         -H "Accept: application/json" \
         -H "x-rpch-client: trial" \
         -d '{"excludeList":[],"client":"trial"}'
