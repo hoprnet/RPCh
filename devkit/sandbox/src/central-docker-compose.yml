@@ -81,6 +81,7 @@ services:
       - DEBUG=${DEBUG}
       - PORT=3050
       - DB_CONNECTION_URL=postgresql://postgres:postgres@postgres-db:5432
+      - REVIEWER_INTERVAL_MS=10000
 
 # we create a proxy to the sandbox
 # network created in 'nodes-docker-compose'
