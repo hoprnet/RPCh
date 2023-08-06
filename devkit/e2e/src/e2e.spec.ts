@@ -19,7 +19,7 @@ describe("e2e tests", function () {
   afterAll(() => {
     sdk.stop();
     // wait for close events to happen
-    return new Promise((resolve) => setTimeout(resolve, 5e3));
+    return new Promise((resolve) => setTimeout(resolve, 50));
   });
 
   it("should get chain id", async function () {
