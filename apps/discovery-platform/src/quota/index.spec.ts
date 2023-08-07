@@ -5,7 +5,6 @@ import {
   createQuota,
   deleteQuota,
   getQuota,
-  getSumOfQuotasUsedByClient,
   getSumOfQuotasPaidByClient,
 } from "./index";
 import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";

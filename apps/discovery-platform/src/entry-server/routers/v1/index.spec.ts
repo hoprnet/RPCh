@@ -4,10 +4,7 @@ import request from "supertest";
 import { v1Router } from ".";
 import { getClient } from "../../../client";
 import { DBInstance } from "../../../db";
-import {
-  getSumOfQuotasUsedByClient,
-  getSumOfQuotasPaidByClient,
-} from "../../../quota";
+import { getSumOfQuotasPaidByClient } from "../../../quota";
 import * as registeredNode from "../../../registered-node";
 import { RegisteredNode, RegisteredNodeDB } from "../../../types";
 import memoryCache from "memory-cache";
