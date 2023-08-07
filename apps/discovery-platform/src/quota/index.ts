@@ -10,7 +10,7 @@ import { Quota, QuotaDB } from "../types";
 export const createQuota = async (
   dbInstance: db.DBInstance,
   quota: Quota
-): Promise<void> => {
+): Promise<QuotaDB> => {
   const dbQuota: Quota = {
     actionTaker: quota.actionTaker,
     clientId: quota.clientId,

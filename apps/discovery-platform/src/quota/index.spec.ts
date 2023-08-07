@@ -54,44 +54,6 @@ describe("test quota functions", function () {
     assert.equal(queryQuota?.quota, createdQuota.quota);
     assert.equal(queryQuota?.client_id, createdQuota.client_id);
   });
-  it("should get quotas created by client", async function () {
-    const expectedQuotas = [
-      BigInt("100000000"),
-      BigInt("-10000"),
-      BigInt("-1"),
-    ];
-    // create quotas that are used by 'client'
-    const mockQuotas = expectedQuotas.map((quota) =>
-      createMockQuota({
-        clientId: "client",
-        actionTaker: "discovery",
-        quota,
-        paidBy: "sponsor",
-      })
-    );
-
-    await Promise.all(
-      mockQuotas.map((mockQuota) => createQuota(dbInstance, mockQuota))
-    );
-
-    // create random quota that should not be taken into account
-    await db.createQuota(
-      dbInstance,
-      createMockQuota({
-        clientId: "sponsor",
-        actionTaker: "discovery",
-        quota: BigInt("10"),
-        paidBy: "client",
-      })
-    );
-
-    const sumOfQuotas = await getSumOfQuotasUsedByClient(dbInstance, "client");
-
-    assert.equal(
-      expectedQuotas.reduce((prev, next) => prev + next, BigInt(0)),
-      sumOfQuotas
-    );
-  });
   it("should delete quota", async function () {
     const mockQuota = createMockQuota({
       clientId: "client",
@@ -133,28 +95,5 @@ describe("test quota functions", function () {
     );
 
     assert.equal(allQuotasPaidByClient, BigInt(2) * baseQuota);
-  });
-  it("should sum all quota used by client", async function () {
-    const baseQuota = BigInt(10);
-    const mockQuota = createMockQuota({
-      clientId: "client",
-      actionTaker: "discovery",
-      quota: baseQuota,
-      paidBy: "sponsor",
-    });
-
-    // client uses quota twice
-    await createQuota(dbInstance, mockQuota);
-    await createQuota(dbInstance, mockQuota);
-
-    // sponsor uses quota once
-    await createQuota(dbInstance, { ...mockQuota, clientId: "sponsor" });
-
-    const { sum: allQuotasCreatedByClient } = await db.getClientQuotas(
-      dbInstance,
-      "client"
-    );
-
-    assert.equal(allQuotasCreatedByClient, BigInt(2) * baseQuota);
   });
 });

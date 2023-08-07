@@ -150,7 +150,6 @@ describe("test v1 middleware", function () {
         JSON.stringify(memoryCache.get("/node?hasExitNode=true")),
         JSON.stringify(allExitNodes.body)
       );
-
       assert.deepEqual(
         JSON.stringify(memoryCache.get("/node?hasExitNode=true")),
         JSON.stringify(secondAllExitNodeResponse.body)

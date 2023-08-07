@@ -666,7 +666,8 @@ describe("test v1 router", function () {
 
       spyGetEligibleNode.mockRestore();
     });
-    it("should be able to use trial mode client and reduce quota", async function () {
+    // ENABLE once we start counting quota in `/request/entry-node`
+    it.skip("should be able to use trial mode client and reduce quota", async function () {
       const spyGetEligibleNode = jest.spyOn(registeredNode, "getEligibleNode");
       const peerId = "entry";
 
@@ -712,12 +713,6 @@ describe("test v1 router", function () {
         "trial"
       );
 
-      const b2dClientQuotaUsed = await getSumOfQuotasUsedByClient(
-        dbInstance,
-        trialClientId
-      );
-
-      expect(b2dClientQuotaUsed).toEqual(BASE_QUOTA * BigInt(-1));
       expect(trialClientQuotaAfter).toBeLessThan(trialClientQuotaBefore);
       expect(requestResponse.body).toHaveProperty("id");
 

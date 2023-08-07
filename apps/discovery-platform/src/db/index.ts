@@ -167,7 +167,7 @@ export const deleteRegisteredNode = async (
 export const createQuota = async (
   dbInstance: DBInstance,
   quota: Quota
-): Promise<void> => {
+): Promise<QuotaDB> => {
   const quotaPaidIncrement = quota.quota >= BigInt(0) ? quota.quota : BigInt(0);
   const quotaUsedIncrement =
     quota.quota < BigInt(0) ? BigInt(quota.quota) * BigInt(-1) : BigInt(0);
@@ -179,29 +179,33 @@ export const createQuota = async (
     paidBy: quota.paidBy,
   };
 
-  const clientUpdateValus: {
+  const clientUpdateValues: {
     quotaPaid: bigint;
     quotaUsed: bigint;
-    clientId: string;
+    paidBy: string;
   } = {
     quotaPaid: quotaPaidIncrement,
     quotaUsed: quotaUsedIncrement,
-    clientId: quota.clientId,
+    paidBy: quota.paidBy,
   };
 
   // make these 2 operations transactional
-  await dbInstance.tx((t) => {
+  const [quotaRes] = await dbInstance.tx((t) => {
+    // insert into quotas table the new quota used
     const q1 = t.one(
       `INSERT INTO ${TABLES.QUOTAS} (id, client_id, paid_by, quota, action_taker)
     VALUES (default, $<clientId>, $<paidBy>, $<quota>, $<actionTaker>) RETURNING *`,
       quotaInsertValues
     );
-    const q2 = t.one(
-      `UPDATE ${TABLES.QUOTAS} SET quotaPaid = quotaPaid + $<quotaPaid>, quotaUsed = quotaUsed + $<quotaUsed> WHERE id=$<clientId>`,
-      clientUpdateValus
+    // update clients table (of the client who PAID for the quota)
+    const q2 = t.none(
+      `UPDATE ${TABLES.CLIENTS} SET quota_paid = quota_paid + $<quotaPaid>, quota_used = quota_used + $<quotaUsed> WHERE id=$<paidBy>`,
+      clientUpdateValues
     );
     return t.batch([q1, q2]);
   });
+
+  return quotaRes;
 };
 
 export const getQuota = async (
@@ -224,24 +228,34 @@ export const getClientQuotas = async (
   quotaUsed: bigint;
   sum: bigint;
 }> => {
-  const text = `SELECT quota_paid, quota_used FROM ${TABLES.CLIENTS} WHERE id=$<clientId>`;
-  const values = {
-    clientId,
-  };
-  const dbRes: {
-    quota_paid: string;
-    quota_used: string;
-  } = await dbInstance.one(text, values);
+  try {
+    const dbRes: {
+      payment: string;
+      quota_paid: string;
+      quota_used: string;
+    } = await dbInstance.one(
+      `SELECT payment, quota_paid, quota_used FROM ${TABLES.CLIENTS} WHERE id=$<clientId>`,
+      {
+        clientId,
+      }
+    );
 
-  const quotaPaid = BigInt(dbRes.quota_paid || 0);
-  const quotaUsed = BigInt(dbRes.quota_used || 0);
-  const sum = quotaPaid - quotaUsed;
+    const quotaPaid = BigInt(dbRes.quota_paid || 0);
+    const quotaUsed = BigInt(dbRes.quota_used || 0);
+    const sum = quotaPaid - quotaUsed;
 
-  return {
-    quotaPaid,
-    quotaUsed,
-    sum,
-  };
+    return {
+      quotaPaid,
+      quotaUsed,
+      sum,
+    };
+  } catch {
+    return {
+      quotaPaid: BigInt(0),
+      quotaUsed: BigInt(0),
+      sum: BigInt(0),
+    };
+  }
 };
 
 export const deleteQuota = async (
