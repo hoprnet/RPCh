@@ -13,14 +13,13 @@ describe("e2e tests", function () {
 
   beforeAll(() => {
     sdk = setupSDK();
-    // availability-monitor and discoverty-platform take ca 1min to deliver entry nodes
-    return sdk.isReady(60e3 * 3); // 3min
-  }, 60e3 * 3);
+    return sdk.isReady();
+  }, 30e3);
 
   afterAll(() => {
     sdk.stop();
     // wait for close events to happen
-    return new Promise((resolve) => setTimeout(resolve, 1000));
+    return new Promise((resolve) => setTimeout(resolve, 50));
   });
 
   it("should get chain id", async function () {
@@ -52,8 +51,8 @@ describe("e2e tests", function () {
 
 function setupSDK() {
   return new RPChSDK("sandbox", RPChCrypto, {
-    timeout: 5000,
-    discoveryPlatformURL: DISCOVERY_PLATFORM_API_ENDPOINT,
+    timeout: 30e3,
+    discoveryPlatformEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
     provider: PROVIDER_URL,
   });
 }

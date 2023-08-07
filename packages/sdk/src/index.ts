@@ -1,8 +1,10 @@
 import type * as RPChCrypto from "@rpch/crypto";
-import { hoprd } from "@rpch/common";
+import { api } from "@hoprnet/hopr-sdk";
 import { utils as etherUtils } from "ethers";
+
 import { createLogger } from "./utils";
 import NodesCollector from "./nodes-collector";
+import type { EntryNode } from "./nodes";
 import * as Request from "./request";
 import * as RequestCache from "./request-cache";
 import * as Segment from "./segment";
@@ -40,29 +42,29 @@ export type RPCerror = RPCresponse & {
  * See **RequestOps** for specifics.
  * See **defaultOps** for defaults.
  *
- * @param discoveryPlatformURL discovery platform API endpoint
+ * @param discoveryPlatformEndpoint discovery platform API endpoint
  * @param timeout - timeout for receiving responses
  * @param provider - target rpc provider
  */
-export type HoprSdkOps = {
-  discoveryPlatformURL?: string;
+export type Ops = {
+  discoveryPlatformEndpoint?: string;
   timeout?: number;
   provider?: string;
 };
 
 /**
  * Global defaults.
- * See **HoprSdkOps** for details.
+ * See **Ops** for details.
  **/
-const defaultOps: HoprSdkOps = {
-  discoveryPlatformURL: "https://discovery.rpch.tech",
+const defaultOps: Ops = {
+  discoveryPlatformEndpoint: "https://discovery.rpch.tech",
   timeout: 30e3,
   provider: "https://primary.gnosis-chain.rpc.hoprtech.net",
 };
 
 /**
  * Overridable parameters per request.
- * See **HoprSdkOps** for details.
+ * See **Ops** for details.
  */
 export type RequestOps = {
   timeout?: number;
@@ -76,46 +78,175 @@ const log = createLogger();
  * Send traffic through the RPCh network
  */
 export default class SDK {
-  private readonly nodesColl: NodesCollector;
   private readonly requestCache: RequestCache.Cache;
   private readonly segmentCache: SegmentCache.Cache;
   private readonly counterStore: Map<string, bigint> = new Map();
-  private readonly ops: HoprSdkOps;
+  private readonly nodesColl: NodesCollector;
+  private readonly ops: Ops;
 
   /**
    * Construct an SDK instance enabling RPCh requests.
-   * @param clientIdentifier your unique string used to identify how many requests your client/wallet pushes through the network
+   * @param cliendId your unique string used to identify how many requests your client/wallet pushes through the network
    * @param crypto crypto instantiation for RPCh, use `@rpch/crypto-for-nodejs` or `@rpch/crypto-for-web`
+   * @param ops, see **Ops**
    **/
   constructor(
-    private readonly clientIdentifier: string,
+    private readonly clientId: string,
     private readonly crypto: typeof RPChCrypto,
-    ops: HoprSdkOps = {}
+    ops: Ops = {}
   ) {
     this.ops = {
       ...defaultOps,
       ...ops,
     };
+
     this.crypto = crypto;
     this.crypto.set_panic_hook();
     this.requestCache = RequestCache.init();
     this.segmentCache = SegmentCache.init();
     this.nodesColl = new NodesCollector(
-      this.ops.discoveryPlatformURL!,
-      this.clientIdentifier,
-      (peerId, message) => this.onWSmessage(peerId, message)
+      this.ops.discoveryPlatformEndpoint!,
+      this.clientId,
+      this.onWSmessage
     );
   }
 
+  /**
+   * Resolves true when node pairs are awailable.
+   * If no timeout specified, global timeout is used.
+   */
+  public async isReady(timeout?: number): Promise<boolean> {
+    const timeout_ = timeout ? timeout : this.ops.timeout!;
+    return this.nodesColl.ready(timeout_).then((_) => true);
+  }
+
+  /**
+   * Send an **RPCrequest** via RPCh.
+   * See **RequestOps** for overridable options.
+   */
+  public async send(
+    req: RPCrequest,
+    ops?: RequestOps
+  ): Promise<RPCresult | RPCerror> {
+    const reqOps = {
+      ...this.ops,
+      ...ops,
+    };
+    const endFrame = Date.now() + reqOps.timeout!;
+    return new Promise(async (resolve, reject) => {
+      // gather entry - exit node pair
+      const res = await this.nodesColl
+        .requestNodePair(reqOps.timeout!)
+        .catch((err) => {
+          log.error("Error finding node pair", err);
+          return reject(`Could not find node pair in ${reqOps.timeout} ms`);
+        });
+      if (!res) {
+        return reject(`Unexpected code flow - should never be here`);
+      }
+
+      // create request
+      const { entryNode, exitNode } = res;
+      const id = RequestCache.generateId(this.requestCache);
+      const request = Request.create(
+        this.crypto,
+        id,
+        reqOps.provider!,
+        JSON.stringify(req),
+        entryNode.peerId,
+        exitNode.peerId,
+        this.crypto!.Identity.load_identity(
+          etherUtils.arrayify(exitNode.pubKey)
+        )
+      );
+
+      // set request expiration timer
+      const timer = setTimeout(() => {
+        log.error("request expired", request.id);
+        this.rejectRequest(request);
+        return reject("request timed out");
+      }, endFrame - Date.now());
+
+      // track request
+      RequestCache.add(this.requestCache, request, resolve, reject, timer);
+      this.nodesColl.requestStarted(request);
+
+      // split request to segments
+      const segments = Request.toSegments(request);
+      if (segments.length > MAX_REQUEST_SEGMENTS) {
+        log.error(
+          "Request exceeds maximum amount of segments with %s segments",
+          segments.length
+        );
+        this.rejectRequest(request);
+        return reject("Request exceeds maximum size of 3830b");
+      }
+
+      // send request to hoprd
+      log.info("sending request %i", request.id);
+
+      // send segments sequentially
+      segments.forEach((s) =>
+        setTimeout(() =>
+          this.sendSegment(s, request, entryNode, endFrame, reject)
+        )
+      );
+    });
+  }
+
   public stop = () => {
-    this.nodesColl.stop();
     for (const [rId] of this.requestCache) {
       RequestCache.remove(this.requestCache, rId);
       SegmentCache.remove(this.segmentCache, rId);
     }
   };
 
-  private onWSmessage(_peerId: string, message: string) {
+  private sendSegment = (
+    segment: Segment.Segment,
+    request: Request.Request,
+    entryNode: EntryNode,
+    endFrame: number,
+    reject: (reason: string) => void
+  ) => {
+    api
+      .sendMessage({
+        apiEndpoint: entryNode.apiEndpoint.toString(),
+        apiToken: entryNode.accessToken,
+        body: Segment.toMessage(segment),
+        recipient: request.exitId,
+        timeout: 10e3,
+        path: [],
+      })
+      .then(() => {
+        log.verbose("sent segment", Segment.prettyPrint(segment));
+      })
+      .catch((error) => {
+        log.error("error sending segment", Segment.prettyPrint(segment), error);
+        api
+          .sendMessage({
+            apiEndpoint: entryNode.apiEndpoint.toString(),
+            apiToken: entryNode.accessToken,
+            body: Segment.toMessage(segment),
+            recipient: request.exitId,
+            timeout: 5e3,
+            path: [],
+          })
+          .then(() => {
+            log.verbose("resent segment", Segment.prettyPrint(segment));
+          })
+          .catch((error) => {
+            log.error(
+              "error resending segment",
+              Segment.prettyPrint(segment),
+              error
+            );
+            this.rejectRequest(request);
+            reject("Sending segment failed");
+          });
+      });
+  };
+
+  private onWSmessage = (message: string) => {
     const segRes = Segment.fromString(message);
     if (!segRes.success) {
       log.info("cannot create segment", segRes.error);
@@ -145,7 +276,7 @@ export default class SDK {
         log.verbose("inserted new segment", Segment.prettyPrint(segment));
         break;
     }
-  }
+  };
 
   private async completeSegmentsEntry(entry: SegmentCache.Entry) {
     const firstSeg = entry.segments.get(0)!;
@@ -170,13 +301,7 @@ export default class SDK {
         responseTime,
         counter
       );
-
-      this.nodesColl.finishRequest({
-        entryId: request.entryId,
-        exitId: request.exitId,
-        requestId: request.id,
-        result: true,
-      });
+      this.nodesColl.requestSucceeded(request, responseTime);
 
       log.verbose("responded to %s with %s", request.body, res.body);
       try {
@@ -188,154 +313,13 @@ export default class SDK {
       }
     } else {
       log.error("Error extracting message", res.error);
-      this.nodesColl.finishRequest({
-        entryId: request.entryId,
-        exitId: request.exitId,
-        requestId: request.id,
-        result: false,
-      });
+      this.nodesColl.requestFailed(request);
       return request.reject("Unable to process response");
     }
   }
 
-  /**
-   * Resolves true when node pairs are awailable.
-   * If no timeout specified, global timeout is used.
-   */
-  public async isReady(timeout?: number): Promise<boolean> {
-    const _timeout = timeout ? timeout : this.ops.timeout!;
-    return new Promise(async (resolve, reject) => {
-      const res = await this.nodesColl
-        .findReliableNodePair(_timeout)
-        .catch((err) => {
-          // keep stacktrace intact
-          return reject(
-            `Error finding reliable entry - exit node pair during isReady: ${err}`
-          );
-        });
-
-      if (!res) {
-        return resolve(false);
-      }
-      return resolve(
-        ["entryNode", "exitNode"].reduce(
-          (acc, attr) => acc && attr in res,
-          true
-        )
-      );
-    });
-  }
-
-  /**
-   * Send an **RPCrequest** via RPCh.
-   * See **RequestOps** for overridable options.
-   */
-  public async send(
-    req: RPCrequest,
-    ops?: RequestOps
-  ): Promise<RPCresult | RPCerror> {
-    const reqOps = {
-      ...this.ops,
-      ...ops,
-    };
-    return new Promise(async (resolve, reject) => {
-      // gather entry - exit node pair
-      const res = await this.nodesColl
-        .findReliableNodePair(reqOps.timeout!)
-        .catch((_err) =>
-          reject(`Error finding reliable entry - exit node pair.`)
-        );
-      if (!res) {
-        return reject(
-          `No return when searching entry - exit node pair, should never happen`
-        );
-      }
-
-      // create request
-      const { entryNode, exitNode } = res;
-      const id = RequestCache.generateId(this.requestCache);
-      const request = Request.create(
-        this.crypto,
-        id,
-        reqOps.provider!,
-        JSON.stringify(req),
-        entryNode.peerId,
-        exitNode.peerId,
-        this.crypto!.Identity.load_identity(
-          etherUtils.arrayify(exitNode.pubKey)
-        )
-      );
-
-      // set request expiration timer
-      const timer = setTimeout(() => {
-        log.error("request expired", request.id);
-        this.rejectRequest(request);
-        return reject("request timed out");
-      }, reqOps.timeout!);
-
-      // track request
-      RequestCache.add(this.requestCache, request, resolve, reject, timer);
-
-      this.nodesColl.startRequest({
-        entryId: entryNode.peerId,
-        exitId: exitNode.peerId,
-        requestId: request.id,
-      });
-
-      // split request to segments
-      const segments = Request.toSegments(request);
-      if (segments.length > MAX_REQUEST_SEGMENTS) {
-        log.error(
-          "Request exceeds maximum amount of segments with %s segments",
-          segments.length
-        );
-        this.rejectRequest(request);
-        return reject("Request exceeds maximum size of 3830b");
-      }
-
-      // send request to hoprd
-      log.info("sending request %i", request.id);
-
-      // Send all segments in parallel using Promise.allSettled
-      const sendMessagePromises = segments.map((segment: any) => {
-        return hoprd.sendMessage({
-          apiEndpoint: entryNode.apiEndpoint.toString(),
-          apiToken: entryNode.apiToken,
-          message: Segment.toPayload(segment),
-          destination: request.exitId,
-          path: [],
-        });
-      });
-
-      // Wait for all promises to settle, then check if any were rejected
-      try {
-        const results = await Promise.allSettled(sendMessagePromises);
-        const rejectedResults = results.filter(
-          (result: any) => result.status === "rejected"
-        );
-
-        // check rejected segment sending
-        if (rejectedResults.length > 0) {
-          log.error("Failed sending segments", rejectedResults);
-          this.rejectRequest(request);
-          return reject("not all segments were delivered");
-        }
-      } catch (err) {
-        // check other errors
-        log.error("Error during sending segments", err);
-        this.rejectRequest(request);
-        return reject("Error during sending segments");
-      }
-    });
-  }
-
   private rejectRequest(request: Request.Request) {
-    this.nodesColl.finishRequest({
-      entryId: request.entryId,
-      exitId: request.exitId,
-      requestId: request.id,
-      result: false,
-    });
+    this.nodesColl.requestFailed(request);
     RequestCache.remove(this.requestCache, request.id);
     SegmentCache.remove(this.segmentCache, request.id);
   }

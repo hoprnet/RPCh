@@ -1,47 +1,42 @@
 import http from "http";
 import RPChSDK, {
-  type RequestOps,
   RPCrequest,
   RPCresult,
   RPCerror,
+  type RequestOps as RPChRequestOps,
 } from "@rpch/sdk";
 import * as RPChCrypto from "@rpch/crypto-for-nodejs";
 import { utils } from "@rpch/common";
 
 const log = utils.LoggerFactory("rpc-server")();
 
-function toURL(urlStr: string): null | URL {
-  // not all browsers support this
-  if ("canParse" in URL) {
-    // @ts-ignore
-    if (URL.canParse(urlStr)) {
-      return new URL(urlStr);
-    }
-    return null;
-  }
+function toURL(urlStr: string, host: string): null | URL {
   try {
-    return new URL(urlStr);
+    return new URL(urlStr, host);
   } catch (_err: any) /* TypeError */ {
     return null;
   }
 }
 
-function extractParams(urlStr: undefined | string): RequestOps {
-  if (!urlStr) {
+function extractParams(
+  urlStr: undefined | string,
+  host: undefined | string
+): RPChRequestOps {
+  if (!urlStr || !host) {
     return {};
   }
-  const url = toURL(urlStr);
+  const url = toURL(urlStr, `http://${host}`); // see https://nodejs.org/api/http.html#messageurl
   if (!url) {
     return {};
   }
-  const exitProvider = url.searchParams.get("exitProvider");
+  const exitProvider = url.searchParams.get("exit-provider");
   const timeout = url.searchParams.get("timeout");
-  const params: Record<string, string> = {};
+  const params: Record<string, string | number> = {};
   if (exitProvider != null) {
     params.exitProvider = exitProvider;
   }
   if (timeout != null) {
-    params.timeout = timeout;
+    params.timeout = parseInt(timeout, 10);
   }
   return params;
 }
@@ -76,27 +71,29 @@ function parseBody(
 function sendRequest(
   sdk: RPChSDK,
   req: RPCrequest,
-  params: RequestOps,
+  params: RPChRequestOps,
   res: http.ServerResponse
 ) {
   sdk
     .send(req, params)
     .then((resp: RPCresult | RPCerror) => {
       log.verbose("receiving response", resp);
-      res.write(JSON.stringify(resp));
       res.statusCode = 200;
+      res.write(JSON.stringify(resp));
     })
     .catch((err: any) => {
       log.error("Error sending request", err);
-      res.write({
-        jsonrpc: req.jsonrpc,
-        error: {
-          code: -32603,
-          message: `Internal JSON-RPC error: "${err}"`,
-        },
-        id: req.id,
-      });
       res.statusCode = 500;
+      res.write(
+        JSON.stringify({
+          jsonrpc: req.jsonrpc,
+          error: {
+            code: -32603,
+            message: `Internal JSON-RPC error: ${err}`,
+          },
+          id: req.id,
+        })
+      );
     })
     .finally(() => {
       res.end();
@@ -114,18 +111,31 @@ function createServer(sdk: RPChSDK) {
     });
 
     req.on("data", async (data) => {
-      const params = extractParams(req.url);
-      const result = parseBody(data.toString);
+      const params = extractParams(req.url, req.headers.host);
+      const result = parseBody(data.toString());
       if (result.success) {
-        log.verbose("sending request", result.req, "with params", params);
+        log.info(
+          "sending request",
+          JSON.stringify(result.req),
+          "with params",
+          JSON.stringify(params)
+        );
         sendRequest(sdk, result.req, params, res);
       } else {
-        res.write({
-          jsonrpc: "2.0",
-          error: { code: -32700, message: "Parse error" },
-          id: result.id,
-        });
+        log.info(
+          "Parse error:",
+          result.error,
+          "- during request:",
+          data.toString()
+        );
         res.statusCode = 500;
+        res.write(
+          JSON.stringify({
+            jsonrpc: "2.0",
+            error: { code: -32700, message: `Parse error: ${result.error}` },
+            id: result.id,
+          })
+        );
         res.end();
       }
     });
@@ -150,13 +160,12 @@ if (require.main === module) {
   }
 
   const clientId = process.env.CLIENT;
-
   const ops: Record<string, any> = {};
   if (process.env.DISCOVERY_PLATFORM_API_ENDPOINT) {
-    ops.discoveryPlatformURL = process.env.DISCOVERY_PLATFORM_API_ENDPOINT;
+    ops.discoveryPlatformEndpoint = process.env.DISCOVERY_PLATFORM_API_ENDPOINT;
   }
   if (process.env.RESPONSE_TIMEOUT) {
-    ops.timeout = process.env.RESPONSE_TIMEOUT;
+    ops.timeout = parseInt(process.env.RESPONSE_TIMEOUT, 10);
   }
   if (process.env.EXIT_PROVDER) {
     ops.provider = process.env.EXIT_PROVDER;
@@ -171,6 +180,8 @@ if (require.main === module) {
   const sdk = new RPChSDK(clientId, RPChCrypto, ops);
   const server = createServer(sdk);
   server.listen(port, "0.0.0.0", () => {
-    log.verbose(`rpc server started on '0.0.0.0:${port}'`);
+    log.verbose(
+      `rpc server started on '0.0.0.0:${port}' with ${JSON.stringify(ops)}`
+    );
   });
 }
