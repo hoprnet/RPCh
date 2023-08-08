@@ -1,12 +1,11 @@
 import assert from "assert";
-import { TestingDatabaseInstance } from "./db";
-
-const connectionString =
-  "postgresql://postgres:mysecretpassword@127.0.0.1:5432";
+import { getTestingConnectionString, TestingDatabaseInstance } from "./db";
 
 describe("test TestingDatabaseInstance class", function () {
   it("should create, connect, and close DB", async function () {
-    const instance = await TestingDatabaseInstance.create(connectionString);
+    const instance = await TestingDatabaseInstance.create(
+      getTestingConnectionString()
+    );
 
     const response = await instance.db.many(
       "SELECT * FROM information_schema.tables"
@@ -17,7 +16,9 @@ describe("test TestingDatabaseInstance class", function () {
   });
 
   it("should reset DB", async function () {
-    const instance = await TestingDatabaseInstance.create(connectionString);
+    const instance = await TestingDatabaseInstance.create(
+      getTestingConnectionString()
+    );
 
     // create a table
     await instance.db.query("CREATE TABLE temporary_table (ID int)");

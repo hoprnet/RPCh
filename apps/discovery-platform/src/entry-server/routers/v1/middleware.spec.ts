@@ -1,10 +1,11 @@
-import { DBInstance } from "../../../db";
 import type { Express, NextFunction, Request, Response } from "express";
 import { doesClientHaveQuota, getCache, setCache } from "./middleware";
 import path from "path";
-import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";
+import {
+  TestingDatabaseInstance,
+  getTestingConnectionString,
+} from "@rpch/common/build/internal/db";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
-import * as PgMem from "pg-mem";
 import * as Prometheus from "prom-client";
 import { v1Router } from ".";
 import memoryCache from "memory-cache";
@@ -29,26 +30,25 @@ const getAvailabilityMonitorResultsMock = () =>
   new Map<string, any>([["peerId_unstable", {}]]);
 
 describe("test v1 middleware", function () {
-  let dbInstance: DBInstance;
+  let dbInstance: TestingDatabaseInstance;
   let app: Express;
 
   beforeAll(async function () {
     const migrationsDirectory = path.join(__dirname, "../../../../migrations");
-    dbInstance = await MockPgInstanceSingleton.getDbInstance(
-      PgMem,
+    dbInstance = await TestingDatabaseInstance.create(
+      getTestingConnectionString(),
       migrationsDirectory
     );
-    MockPgInstanceSingleton.getInitialState();
   });
 
   beforeEach(async function () {
-    MockPgInstanceSingleton.getInitialState().restore();
+    await dbInstance.reset();
     const register = new Prometheus.Registry();
     const metricManager = new MetricManager(Prometheus, register, "test");
     app = express().use(
       "",
       v1Router({
-        db: dbInstance,
+        db: dbInstance.db,
         baseQuota: BASE_QUOTA,
         metricManager: metricManager,
         secret: "secret",
@@ -62,6 +62,10 @@ describe("test v1 middleware", function () {
     memoryCache.clear();
   });
 
+  afterAll(async function () {
+    await dbInstance.close();
+  });
+
   it("should not allow request client does not have enough quota", async function () {
     // create quota for client
     await request(app).post("/client/quota").send({
@@ -69,7 +73,7 @@ describe("test v1 middleware", function () {
       quota: 1,
     });
     const doesClientHaveQuotaResponse = await doesClientHaveQuota(
-      dbInstance,
+      dbInstance.db,
       "client",
       BigInt(2)
     );
@@ -87,7 +91,7 @@ describe("test v1 middleware", function () {
       .set("x-secret-key", "secret");
 
     const doesClientHaveQuotaResponse = await doesClientHaveQuota(
-      dbInstance,
+      dbInstance.db,
       "client",
       BigInt(1)
     );

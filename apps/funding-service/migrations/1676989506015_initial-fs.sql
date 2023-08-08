@@ -25,8 +25,8 @@ SET default_table_access_method = heap;
 CREATE TABLE IF NOT EXISTS public.access_tokens (
     id integer NOT NULL,
     token text NOT NULL,
-    expired_at timestamp without time zone NOT NULL,
-    created_at timestamp without time zone DEFAULT now()
+    expired_at timestamptz NOT NULL,
+    created_at timestamptz DEFAULT now()
 );
 
 
@@ -57,8 +57,8 @@ ALTER SEQUENCE public.access_tokens_id_seq OWNED BY public.access_tokens.id;
 CREATE TABLE public.requests (
     id integer NOT NULL,
     access_token_hash text NOT NULL,
-    created_at timestamp without time zone DEFAULT now(),
-    updated_at timestamp without time zone DEFAULT now(),
+    created_at timestamptz DEFAULT now(),
+    updated_at timestamptz DEFAULT now(),
     node_address text NOT NULL,
     amount numeric(78,0) NOT NULL,
     transaction_hash text,

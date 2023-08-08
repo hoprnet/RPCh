@@ -1,13 +1,15 @@
 import assert from "assert";
-import { RequestDB, DBInstance } from "../types";
+import { RequestDB } from "../types";
 import { RequestService } from ".";
 import { AccessTokenService } from "../access-token";
 import { DBTimestamp } from "../types/general";
 import { errors } from "pg-promise";
 import * as constants from "../constants";
-import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";
+import {
+  TestingDatabaseInstance,
+  getTestingConnectionString,
+} from "@rpch/common/build/internal/db";
 import path from "path";
-import * as PgMem from "pg-mem";
 
 const SECRET_KEY = "SECRET";
 const MOCK_ADDRESS = "0xA10AA7711FD1FA48ACAE6FF00FCB63B0F6AD055F";
@@ -50,23 +52,22 @@ const createAccessTokenAndRequest = async (
 };
 
 describe("test RequestService class", function () {
-  let dbInstance: DBInstance;
+  let dbInstance: TestingDatabaseInstance;
   let requestService: RequestService;
   let accessTokenService: AccessTokenService;
 
   beforeAll(async function () {
     const migrationsDirectory = path.join(__dirname, "../../migrations");
-    dbInstance = await MockPgInstanceSingleton.getDbInstance(
-      PgMem,
+    dbInstance = await TestingDatabaseInstance.create(
+      getTestingConnectionString(),
       migrationsDirectory
     );
-    MockPgInstanceSingleton.getInitialState();
   });
 
-  beforeEach(function () {
-    MockPgInstanceSingleton.getInitialState().restore();
-    accessTokenService = new AccessTokenService(dbInstance, SECRET_KEY);
-    requestService = new RequestService(dbInstance);
+  beforeEach(async function () {
+    await dbInstance.reset();
+    accessTokenService = new AccessTokenService(dbInstance.db, SECRET_KEY);
+    requestService = new RequestService(dbInstance.db);
   });
 
   it("should create and save request", async function () {

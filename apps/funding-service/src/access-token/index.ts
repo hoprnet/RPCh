@@ -31,6 +31,7 @@ export class AccessTokenService {
       const now = new Date();
       // this is calculated by adding timeout in milliseconds to the current time
       const expiredAt = new Date(now.valueOf() + ops.timeout);
+      console.log("before", expiredAt);
 
       const hash = generateAccessToken({
         amount: ops.amount,

@@ -1,11 +1,12 @@
 import assert from "assert";
 import Reviewer from "./reviewer";
 import * as Prometheus from "prom-client";
-import * as PgMem from "pg-mem";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
-import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";
+import {
+  TestingDatabaseInstance,
+  getTestingConnectionString,
+} from "@rpch/common/build/internal/db";
 import { wait } from "@rpch/common/build/fixtures";
-import { DBInstance } from "./db";
 import { NODE_A_DB, RESULT_A } from "./fixtures";
 
 // mock review function -> always resolve with RESULT_A
@@ -25,18 +26,20 @@ const register = new Prometheus.Registry();
 const metricManager = new MetricManager(Prometheus, register, "test");
 
 describe("test Reviewer", function () {
-  let dbInstance: DBInstance;
+  let dbInstance: TestingDatabaseInstance;
   let reviewer: Reviewer;
 
   beforeAll(async function () {
-    dbInstance = await MockPgInstanceSingleton.getDbInstance(PgMem);
-    MockPgInstanceSingleton.getInitialState();
-    reviewer = new Reviewer(dbInstance, metricManager, 1000, 2);
+    dbInstance = await TestingDatabaseInstance.create(
+      getTestingConnectionString()
+    );
+    reviewer = new Reviewer(dbInstance.db, metricManager, 1000, 2);
     reviewer.start();
   });
 
-  afterAll(function () {
+  afterAll(async function () {
     reviewer.stop();
+    await dbInstance.close();
   });
 
   afterEach(function () {

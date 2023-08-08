@@ -5,10 +5,11 @@ import { AccessTokenService } from "../access-token";
 import { RequestService } from "../request";
 import { entryServer } from ".";
 import Prometheus from "prom-client";
-import { DBInstance } from "../types";
-import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";
+import {
+  TestingDatabaseInstance,
+  getTestingConnectionString,
+} from "@rpch/common/build/internal/db";
 import path from "path";
-import * as PgMem from "pg-mem";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 
 const SECRET_KEY = "SECRET";
@@ -16,7 +17,7 @@ const MAX_AMOUNT_OF_TOKENS = BigInt(40);
 const TIMEOUT = 30 * 60_000;
 
 describe("test entry server", function () {
-  let dbInstance: DBInstance;
+  let dbInstance: TestingDatabaseInstance;
   let accessTokenService: AccessTokenService;
   let requestService: RequestService;
   let app: Express | undefined;
@@ -24,17 +25,17 @@ describe("test entry server", function () {
 
   beforeAll(async function () {
     const migrationsDirectory = path.join(__dirname, "../../migrations");
-    dbInstance = await MockPgInstanceSingleton.getDbInstance(
-      PgMem,
+    dbInstance = await TestingDatabaseInstance.create(
+      getTestingConnectionString(),
       migrationsDirectory
     );
-    MockPgInstanceSingleton.getInitialState();
   });
 
-  beforeEach(function () {
-    MockPgInstanceSingleton.getInitialState().restore();
-    accessTokenService = new AccessTokenService(dbInstance, SECRET_KEY);
-    requestService = new RequestService(dbInstance);
+  beforeEach(async function () {
+    console.log("BEFORE");
+    await dbInstance.reset();
+    accessTokenService = new AccessTokenService(dbInstance.db, SECRET_KEY);
+    requestService = new RequestService(dbInstance.db);
     // create prometheus registry
     const register = new Prometheus.Registry();
     const metricManager = new MetricManager(Prometheus, register, "test");
@@ -51,7 +52,11 @@ describe("test entry server", function () {
     agent = request(app);
   });
 
-  it("should return token", async function () {
+  afterAll(async function () {
+    await dbInstance.close();
+  });
+
+  it.only("should return token", async function () {
     return await agent
       .get("/api/access-token")
       .set("Accept", "application/json")
@@ -59,10 +64,11 @@ describe("test entry server", function () {
       .expect(200);
   });
 
-  it("should accept valid tokens", async function () {
+  it.only("should accept valid tokens", async function () {
     const responseToken = await agent
       .get("/api/access-token")
       .set("Accept", "application/json");
+    console.log(responseToken.body);
     return agent
       .get("/api/request/status")
       .set("Accept", "application/json")
@@ -74,10 +80,9 @@ describe("test entry server", function () {
     let spy = jest
       .spyOn(AccessTokenService.prototype, "getAccessToken")
       .mockImplementation(async (token) => ({
+        id: 1,
         token,
         expired_at: new Date("2020-10-10").toISOString(),
-        id: 1,
-        updated_at: new Date("2020-10-10").toISOString(),
         created_at: new Date("2020-10-10").toISOString(),
       }));
 

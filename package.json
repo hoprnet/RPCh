@@ -16,7 +16,7 @@
     "format:fix": "turbo run format -- --check=false --write=true",
     "lint": "turbo run lint",
     "depcheck": "check-dependency-version-consistency",
-    "test": "turbo run test --",
+    "test": "turbo run test --concurrency 1 --",
     "test:e2e": "turbo run start --filter @rpch/e2e"
   },
   "devDependencies": {
@@ -38,5 +38,4 @@
       "node_modules/(?!variables/.*)"
     ]
   }
-
 }

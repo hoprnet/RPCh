@@ -9,6 +9,13 @@ const logger = createLogger("common:internal")(["db"]);
 type IPg = pgp.IMain<{}, IClient>;
 type IDb = pgp.IDatabase<{}, IClient>;
 
+export function getTestingConnectionString(): string {
+  return (
+    process.env["TESTING_DB_CONNECTION_STRING"] ||
+    "postgresql://postgres:postgres@127.0.0.1:5432"
+  );
+}
+
 /**
  * Used by unit tests.
  * Requires a running postgres database.
@@ -137,7 +144,6 @@ export class TestingDatabaseInstance {
       this.pg,
       this.databaseName
     );
-    this.pg = newInstance.pg;
     this._db = newInstance.db;
   }
 
@@ -169,5 +175,6 @@ export const runMigrations = async (
     databaseUrl: dbUrl,
     migrationsTable: "migrations",
     dir: migrationsDirectory,
+    log: logger.verbose,
   });
 };

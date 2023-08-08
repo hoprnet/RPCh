@@ -1,15 +1,16 @@
 import { Express } from "express";
 import { entryServer } from ".";
-import { DBInstance } from "../db";
 import * as registeredNode from "../registered-node";
 import request from "supertest";
 import { RegisteredNode, RegisteredNodeDB } from "../types";
 import assert from "assert";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 import * as Prometheus from "prom-client";
-import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";
+import {
+  TestingDatabaseInstance,
+  getTestingConnectionString,
+} from "@rpch/common/build/internal/db";
 import path from "path";
-import * as PgMem from "pg-mem";
 
 const BASE_QUOTA = BigInt(1);
 const SECRET = "SECRET";
@@ -29,24 +30,22 @@ const getAvailabilityMonitorResultsMock = () =>
   new Map<string, any>([[UNSTABLE_NODE_PEERID, {}]]);
 
 describe("test entry server", function () {
-  let dbInstance: DBInstance;
+  let dbInstance: TestingDatabaseInstance;
   let app: Express;
 
   beforeAll(async function () {
     const migrationsDirectory = path.join(__dirname, "../../migrations");
-    dbInstance = await MockPgInstanceSingleton.getDbInstance(
-      PgMem,
+    dbInstance = await TestingDatabaseInstance.create(
+      getTestingConnectionString(),
       migrationsDirectory
     );
-    MockPgInstanceSingleton.getInitialState();
   });
 
   beforeEach(async function () {
-    MockPgInstanceSingleton.getInitialState().restore();
     const register = new Prometheus.Registry();
     const metricManager = new MetricManager(Prometheus, register, "test");
     app = entryServer({
-      db: dbInstance,
+      db: dbInstance.db,
       baseQuota: BASE_QUOTA,
       metricManager: metricManager,
       secret: SECRET,
@@ -56,6 +55,10 @@ describe("test entry server", function () {
 
   afterEach(() => {
     jest.resetAllMocks();
+  });
+
+  afterAll(async function () {
+    await dbInstance.close();
   });
 
   it("should retrieve an entry node", async function () {
