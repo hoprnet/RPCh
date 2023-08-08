@@ -22,7 +22,7 @@ jobs:
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
     services:
-      # required by E2E tests
+      # required by unit tests
       postgres:
         image: postgres
         env:
