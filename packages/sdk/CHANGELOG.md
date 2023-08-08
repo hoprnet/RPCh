@@ -1,5 +1,13 @@
 # @rpch/sdk
 
+## 0.4.0
+
+### Minor Changes
+
+- 6f9a67b: Changed the SDK approach to only have one websocket open to one entry node
+- ae6ca99: Refactored send API to take and return structured data.
+  Change counter store to a per session store.
+
 ## 0.3.0
 
 ### Minor Changes

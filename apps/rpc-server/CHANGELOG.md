@@ -1,5 +1,19 @@
 # @rpch/rpc-server
 
+## 0.3.0
+
+### Minor Changes
+
+- ae6ca99: RPCserver now behaves more like a JSON-RPC endpoint.
+  It also exposes newly introduced per request parameters and SDK startup parmeters via env vars and request parameters.
+
+### Patch Changes
+
+- 6f9a67b: Fixed return code issues and JSON return values
+- Updated dependencies [6f9a67b]
+- Updated dependencies [ae6ca99]
+  - @rpch/sdk@0.4.0
+
 ## 0.2.0
 
 ### Minor Changes
