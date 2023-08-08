@@ -19,12 +19,18 @@ type IDb = pgp.IDatabase<{}, IClient>;
 export class TestingDatabaseInstance {
   private constructor(
     private pg: IPg,
-    private db: IDb,
+    private _db: IDb,
     private connectionString: string,
     private databaseName: string,
     private migrationsDirectory?: string
   ) {}
 
+  /** returns the current DB instance */
+  public get db(): IDb {
+    return this._db;
+  }
+
+  /** generates a random 20 character alphabetical string */
   private static genRandomDatabaseName(): string {
     const alphabet = "abcdefghijklmnopqrstuvwxyz";
     return Array.from(Array(20))
@@ -32,6 +38,7 @@ export class TestingDatabaseInstance {
       .join("");
   }
 
+  /** create a new database */
   private static async createDatabase(
     connectionString: string,
     databaseName: string
@@ -55,6 +62,7 @@ export class TestingDatabaseInstance {
     await primaryDb.$pool.end();
   }
 
+  /** delete database */
   private static async dropDatabase(
     connectionString: string,
     databaseName: string
@@ -67,14 +75,22 @@ export class TestingDatabaseInstance {
     await primaryDb.$pool.end();
   }
 
+  /**
+   * Create a new temporary database.
+   * @param connectionString connection string of the primary database which will be used to create new databases
+   * @param migrationsDirectory optional directory that contains migrations
+   * @param customPg optional uses specific PG instance
+   * @param customDatabaseName optional uses specific database name
+   */
   public static async create(
     connectionString: string,
     migrationsDirectory?: string,
+    customPg?: IPg,
     customDatabaseName?: string
   ): Promise<TestingDatabaseInstance> {
+    const pg = customPg || pgp();
     const databaseName =
       customDatabaseName || TestingDatabaseInstance.genRandomDatabaseName();
-    const pg = pgp();
 
     // connect to primary DB and create new DB
     await TestingDatabaseInstance.createDatabase(
@@ -82,20 +98,22 @@ export class TestingDatabaseInstance {
       databaseName
     );
 
+    // connection string for our temporary database
+    const tempConnectionString = ((): string => {
+      const url = new URL(connectionString);
+      return `postgres://${url.username}:${url.password}@${url.hostname}:${url.port}/${databaseName}`;
+    })();
+
     // connect to newly created DB
     const db = pg({
-      connectionString: connectionString + "/" + databaseName,
+      connectionString: tempConnectionString,
       database: databaseName,
     });
 
     // run migrations
     if (migrationsDirectory) {
       logger.verbose("Running migrations on %s", databaseName);
-      await runMigrations(
-        connectionString + "/" + databaseName,
-        migrationsDirectory,
-        migrate
-      );
+      await runMigrations(tempConnectionString, migrationsDirectory, migrate);
     }
 
     const instance = new this(
@@ -109,20 +127,21 @@ export class TestingDatabaseInstance {
     return instance;
   }
 
-  public getDatabase(): IDb {
-    return this.db;
-  }
-
-  public async recreate(): Promise<TestingDatabaseInstance> {
+  /** drop temporary database and create a new one with the same name */
+  public async reset(): Promise<void> {
     logger.verbose("Resetting %s", this.databaseName);
     await this.close();
-    return TestingDatabaseInstance.create(
+    const newInstance = await TestingDatabaseInstance.create(
       this.connectionString,
       this.migrationsDirectory,
+      this.pg,
       this.databaseName
     );
+    this.pg = newInstance.pg;
+    this._db = newInstance.db;
   }
 
+  /** drop temporary database and close our connection to it */
   public async close(): Promise<void> {
     await this.db.$pool.end();
     await TestingDatabaseInstance.dropDatabase(
