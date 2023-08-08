@@ -168,6 +168,10 @@ export const createQuota = async (
   dbInstance: DBInstance,
   quota: Quota
 ): Promise<QuotaDB> => {
+  if (quota.quota === BigInt(0)) {
+    throw Error("Cannot create quota with value 0");
+  }
+
   const quotaPaidIncrement = quota.quota >= BigInt(0) ? quota.quota : BigInt(0);
   const quotaUsedIncrement =
     quota.quota < BigInt(0) ? BigInt(quota.quota) * BigInt(-1) : BigInt(0);
@@ -229,6 +233,7 @@ export const getClientQuotas = async (
   sum: bigint;
 }> => {
   try {
+    // dbInstance.one will throw if no row is returned
     const dbRes: {
       payment: string;
       quota_paid: string;
