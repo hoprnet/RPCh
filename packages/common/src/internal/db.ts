@@ -1,63 +1,143 @@
-import type * as PgMem from "pg-mem";
-import type * as Pgp from "pg-promise";
-import * as fixtures from "../fixtures";
 import type * as Migrate from "node-pg-migrate";
+import type { IClient } from "pg-promise/typescript/pg-subset";
+import migrate from "node-pg-migrate";
+import pgp from "pg-promise";
+import createLogger from "../utils/logger";
 
-export class MockPgInstanceSingleton {
-  private static pgInstance: PgMem.IMemoryDb;
-  private static dbInstance: Pgp.IDatabase<{}>;
-  private static initialDbState: PgMem.IBackup;
+const logger = createLogger("common:internal")(["db"]);
 
+type IPg = pgp.IMain<{}, IClient>;
+type IDb = pgp.IDatabase<{}, IClient>;
+
+/**
+ * Used by unit tests.
+ * Requires a running postgres database.
+ * It will create temporary databases in which
+ * tests are run. Additionally exposes some handy
+ * utilities.
+ */
+export class TestingDatabaseInstance {
   private constructor(
-    private pgMem: typeof PgMem,
+    private pg: IPg,
+    private db: IDb,
+    private connectionString: string,
+    private databaseName: string,
     private migrationsDirectory?: string
   ) {}
 
-  private async createInstance() {
-    let instance = this.pgMem.newDb();
-    fixtures.withQueryIntercept(instance);
-    if (this.migrationsDirectory) {
-      await instance.public.migrate({
-        migrationsPath: this.migrationsDirectory,
-      });
+  private static genRandomDatabaseName(): string {
+    const alphabet = "abcdefghijklmnopqrstuvwxyz";
+    return Array.from(Array(20))
+      .map(() => alphabet[Math.floor(Math.random() * alphabet.length)])
+      .join("");
+  }
+
+  private static async createDatabase(
+    connectionString: string,
+    databaseName: string
+  ): Promise<void> {
+    logger.verbose("Creating new database %s", databaseName);
+    const primaryDb = pgp()({
+      connectionString: connectionString,
+    });
+    await new Promise<void>(async (resolve, reject) => {
+      try {
+        await primaryDb.any(`CREATE DATABASE ${databaseName};`);
+        return resolve();
+      } catch (err) {
+        if (err && String(err).includes("already exists")) {
+          return resolve();
+        } else {
+          return reject(err);
+        }
+      }
+    });
+    await primaryDb.$pool.end();
+  }
+
+  private static async dropDatabase(
+    connectionString: string,
+    databaseName: string
+  ): Promise<void> {
+    logger.verbose("Dropping new database %s", databaseName);
+    const primaryDb = pgp()({
+      connectionString: connectionString,
+    });
+    await primaryDb.any(`DROP DATABASE IF EXISTS ${databaseName}`);
+    await primaryDb.$pool.end();
+  }
+
+  public static async create(
+    connectionString: string,
+    migrationsDirectory?: string,
+    customDatabaseName?: string
+  ): Promise<TestingDatabaseInstance> {
+    const databaseName =
+      customDatabaseName || TestingDatabaseInstance.genRandomDatabaseName();
+    const pg = pgp();
+
+    // connect to primary DB and create new DB
+    await TestingDatabaseInstance.createDatabase(
+      connectionString,
+      databaseName
+    );
+
+    // connect to newly created DB
+    const db = pg({
+      connectionString: connectionString + "/" + databaseName,
+      database: databaseName,
+    });
+
+    // run migrations
+    if (migrationsDirectory) {
+      logger.verbose("Running migrations on %s", databaseName);
+      await runMigrations(
+        connectionString + "/" + databaseName,
+        migrationsDirectory,
+        migrate
+      );
     }
-    MockPgInstanceSingleton.pgInstance = instance;
-    MockPgInstanceSingleton.initialDbState =
-      MockPgInstanceSingleton.pgInstance.backup();
-    return MockPgInstanceSingleton.pgInstance;
+
+    const instance = new this(
+      pg,
+      db,
+      connectionString,
+      databaseName,
+      migrationsDirectory
+    );
+
+    return instance;
   }
 
-  public static async getInstance(
-    pgMem: typeof PgMem,
-    migrationsDirectory?: string
-  ): Promise<PgMem.IMemoryDb> {
-    if (!MockPgInstanceSingleton.pgInstance) {
-      await new this(pgMem, migrationsDirectory).createInstance();
-    }
-    return MockPgInstanceSingleton.pgInstance;
+  public getDatabase(): IDb {
+    return this.db;
   }
 
-  public static async getDbInstance(
-    pgMem: typeof PgMem,
-    migrationsDirectory?: string
-  ): Promise<Pgp.IDatabase<{}>> {
-    if (!MockPgInstanceSingleton.dbInstance) {
-      const instance = await this.getInstance(pgMem, migrationsDirectory);
-      MockPgInstanceSingleton.dbInstance = instance.adapters.createPgPromise();
-    }
-    return MockPgInstanceSingleton.dbInstance;
+  public async recreate(): Promise<TestingDatabaseInstance> {
+    logger.verbose("Resetting %s", this.databaseName);
+    await this.close();
+    return TestingDatabaseInstance.create(
+      this.connectionString,
+      this.migrationsDirectory,
+      this.databaseName
+    );
   }
 
-  public static backup(): void {
-    MockPgInstanceSingleton.initialDbState =
-      MockPgInstanceSingleton.pgInstance.backup();
-  }
-
-  public static getInitialState(): PgMem.IBackup {
-    return MockPgInstanceSingleton.initialDbState;
+  public async close(): Promise<void> {
+    await this.db.$pool.end();
+    await TestingDatabaseInstance.dropDatabase(
+      this.connectionString,
+      this.databaseName
+    );
   }
 }
 
+/**
+ * Run migrations against a given connection string.
+ * @param dbUrl
+ * @param migrationsDirectory
+ * @param migrate
+ */
 export const runMigrations = async (
   dbUrl: string,
   migrationsDirectory: string,

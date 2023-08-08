@@ -30,7 +30,6 @@
     "hardhat": "^2.12.3",
     "lodash": "^4.17.21",
     "node-pg-migrate": "^6.2.2",
-    "pg-mem": "^2.6.4",
     "pg-promise": "^11.0.0",
     "prom-client": "^14.2.0"
   },
