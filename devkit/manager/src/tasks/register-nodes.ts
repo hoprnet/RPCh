@@ -57,7 +57,7 @@ export default async function main(
   exitNodePubKeys: string[],
   hasExitNodes: boolean[]
 ): Promise<void> {
-  log.normal("Registering exit nodes", {
+  log.normal("Registering nodes", {
     discoveryPlatformEndpoint,
     chainId,
     hoprdApiEndpoints,
@@ -114,7 +114,9 @@ export default async function main(
   );
 
   for (const nodes of groups) {
-    const exitNodeAddress = ethersUtils.computeAddress(nodes.exitNodePubKey);
+    const exitNodeAddress = !!nodes.exitNodePubKey
+      ? ethersUtils.computeAddress(nodes.exitNodePubKey)
+      : "";
     await registerNode(
       discoveryPlatformEndpoint,
       client,
