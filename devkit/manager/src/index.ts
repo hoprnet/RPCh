@@ -293,6 +293,12 @@ app.post(
       (value) =>
         Array.isArray(value) && value.every((val) => typeof val === "string")
     ),
+  body("hasExitNodes")
+    .exists()
+    .custom(
+      (value) =>
+        Array.isArray(value) && value.every((val) => typeof val === "boolean")
+    ),
   async (req, res) => {
     try {
       const {
@@ -303,6 +309,7 @@ app.post(
         hoprdApiTokens,
         exitNodePubKeys,
         client,
+        hasExitNodes,
       } = req.body as {
         discoveryPlatformEndpoint: string;
         client: string;
@@ -311,6 +318,7 @@ app.post(
         hoprdApiEndpointsExt: string[];
         hoprdApiTokens: string[];
         exitNodePubKeys: string[];
+        hasExitNodes: boolean[];
       };
 
       await registerExitNodes(
@@ -320,7 +328,8 @@ app.post(
         hoprdApiEndpoints,
         hoprdApiEndpointsExt,
         hoprdApiTokens,
-        exitNodePubKeys
+        exitNodePubKeys,
+        hasExitNodes
       );
       return res.sendStatus(200);
     } catch (error) {

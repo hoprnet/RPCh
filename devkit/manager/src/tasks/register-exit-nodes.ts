@@ -13,7 +13,8 @@ async function registerNode(
   hoprdApiEndpoint: string,
   hoprdApiToken: string,
   exitNodePubKey: string,
-  nativeAddress: string
+  nativeAddress: string,
+  hasExitNode: boolean
 ): Promise<void> {
   log.verbose("Registering node", {
     discoveryPlatformEndpoint,
@@ -23,6 +24,7 @@ async function registerNode(
     hoprdApiToken,
     exitNodePubKey,
     nativeAddress,
+    hasExitNode,
   });
 
   const [url, headers] = utils.createApiUrl(
@@ -34,7 +36,7 @@ async function registerNode(
     method: "POST",
     headers: { ...headers, client },
     body: JSON.stringify({
-      hasExitNode: true,
+      hasExitNode,
       peerId: hoprdPeerId,
       chainId,
       hoprdApiEndpoint,
@@ -52,7 +54,8 @@ export default async function main(
   hoprdApiEndpoints: string[],
   hoprdApiEndpointsExt: string[],
   hoprdApiTokens: string[],
-  exitNodePubKeys: string[]
+  exitNodePubKeys: string[],
+  hasExitNodes: boolean[]
 ): Promise<void> {
   log.normal("Registering exit nodes", {
     discoveryPlatformEndpoint,
@@ -61,6 +64,7 @@ export default async function main(
     hoprdApiEndpointsExt,
     hoprdApiTokens,
     exitNodePubKeys,
+    hasExitNodes,
   });
 
   if (
@@ -68,10 +72,11 @@ export default async function main(
       hoprdApiEndpointsExt.length,
       hoprdApiTokens.length,
       exitNodePubKeys.length,
+      hasExitNodes.length,
     ].some((length) => length !== hoprdApiEndpoints.length)
   ) {
     throw Error(
-      `Lengths of 'hoprdApiEndpoints', 'hoprdApiEndpointsExt', 'hoprdApiTokens', 'exitNodePubKeys' do no match`
+      `Lengths of 'hoprdApiEndpoints', 'hoprdApiEndpointsExt', 'hoprdApiTokens', 'exitNodePubKeys', 'hasExitNodes' do no match`
     );
   }
 
@@ -82,6 +87,7 @@ export default async function main(
     exitNodePubKey: string;
     hoprdPeerId: string;
     chainId: string;
+    hasExitNode: boolean;
   }[] = [];
 
   // get PeerIds in parallel and fill in groups object
@@ -94,6 +100,7 @@ export default async function main(
         hoprdApiEndpoint,
         hoprdApiToken
       ).then((res) => res.hopr);
+      const hasExitNode = hasExitNodes[index];
       groups.push({
         hoprdApiEndpoint,
         hoprdApiEndpointExt,
@@ -101,6 +108,7 @@ export default async function main(
         exitNodePubKey,
         hoprdPeerId,
         chainId,
+        hasExitNode,
       });
     })
   );
@@ -115,7 +123,8 @@ export default async function main(
       nodes.hoprdApiEndpointExt,
       nodes.hoprdApiToken,
       nodes.exitNodePubKey,
-      exitNodeAddress
+      exitNodeAddress,
+      nodes.hasExitNode
     );
   }
 }
