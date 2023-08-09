@@ -5,7 +5,7 @@ import fundHoprdNodes from "./tasks/fund-hoprd-nodes";
 import fundViaHOPRd from "./tasks/fund-via-hoprd";
 import fundViaWallet from "./tasks/fund-via-wallet";
 import openChannels from "./tasks/open-channels";
-import registerExitNodes from "./tasks/register-exit-nodes";
+import registerNodes from "./tasks/register-nodes";
 import registerHoprdNodes from "./tasks/register-hoprd-nodes";
 import { createLogger } from "./utils";
 import { body, query } from "express-validator";
@@ -321,7 +321,7 @@ app.post(
         hasExitNodes: boolean[];
       };
 
-      await registerExitNodes(
+      await registerNodes(
         discoveryPlatformEndpoint,
         client,
         chainId,

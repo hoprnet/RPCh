@@ -3,7 +3,7 @@ import { utils } from "@rpch/common";
 import { getAddresses } from "../hoprd";
 import { createLogger } from "../utils";
 
-const log = createLogger(["register-exit-nodes"]);
+const log = createLogger(["register-nodes"]);
 
 async function registerNode(
   discoveryPlatformEndpoint: string,
