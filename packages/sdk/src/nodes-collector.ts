@@ -202,6 +202,12 @@ export default class NodesCollector {
       entryNode.apiEndpoint.protocol === "https:" ? "wss:" : "ws:";
     wsURL.pathname = apiWebSocket;
     wsURL.search = `?apiToken=${entryNode.accessToken}`;
+    log.verbose(
+      "opening WS on",
+      Nodes.prettyPrintEntry(this.nodes, entryNode.peerId),
+      "with",
+      wsURL.toString()
+    );
     const socket = new WebSocket(wsURL);
     Nodes.addWebSocket(this.nodes, entryNode, socket);
     socket.on("open", () => {
