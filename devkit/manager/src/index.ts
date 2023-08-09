@@ -265,7 +265,7 @@ app.post(
 );
 
 app.post(
-  "/register-exit-nodes",
+  "/register-nodes",
   body("discoveryPlatformEndpoint").exists(),
   body("client").exists(),
   body("chainId").exists(),
@@ -333,7 +333,7 @@ app.post(
       );
       return res.sendStatus(200);
     } catch (error) {
-      log.error("Could not 'register-exit-nodes'", error);
+      log.error("Could not 'register-nodes'", error);
       return res.sendStatus(500);
     }
   }
