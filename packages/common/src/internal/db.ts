@@ -9,6 +9,7 @@ const logger = createLogger("common:internal")(["db"]);
 type IPg = pgp.IMain<{}, IClient>;
 type IDb = pgp.IDatabase<{}, IClient>;
 
+/** checks ENV for variable 'TESTING_DB_CONNECTION_STRING' or give it the default value */
 export function getTestingConnectionString(): string {
   return (
     process.env["TESTING_DB_CONNECTION_STRING"] ||
@@ -34,7 +35,15 @@ export class TestingDatabaseInstance {
 
   /** returns the current DB instance */
   public get db(): IDb {
-    return this._db;
+    // ensures that when this property is called
+    // the newest instance of the DB connection
+    // is returned
+    const instance = this;
+    return new Proxy(this._db, {
+      get(_target: IDb, key: keyof IDb) {
+        return instance._db[key];
+      },
+    });
   }
 
   /** generates a random 20 character alphabetical string */

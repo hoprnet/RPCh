@@ -35,7 +35,6 @@ export const getAccessToken = async (
     token: accessTokenHash,
   };
   const dbRes: AccessTokenDB = await db.one(text, values);
-  console.log("after", dbRes);
 
   return dbRes;
 };

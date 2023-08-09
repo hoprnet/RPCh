@@ -32,7 +32,6 @@ describe("test entry server", function () {
   });
 
   beforeEach(async function () {
-    console.log("BEFORE");
     await dbInstance.reset();
     accessTokenService = new AccessTokenService(dbInstance.db, SECRET_KEY);
     requestService = new RequestService(dbInstance.db);
@@ -56,7 +55,7 @@ describe("test entry server", function () {
     await dbInstance.close();
   });
 
-  it.only("should return token", async function () {
+  it("should return token", async function () {
     return await agent
       .get("/api/access-token")
       .set("Accept", "application/json")
@@ -64,11 +63,10 @@ describe("test entry server", function () {
       .expect(200);
   });
 
-  it.only("should accept valid tokens", async function () {
+  it("should accept valid tokens", async function () {
     const responseToken = await agent
       .get("/api/access-token")
       .set("Accept", "application/json");
-    console.log(responseToken.body);
     return agent
       .get("/api/request/status")
       .set("Accept", "application/json")
