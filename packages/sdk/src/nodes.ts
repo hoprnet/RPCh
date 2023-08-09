@@ -88,8 +88,9 @@ export function reachReady(nodes: Nodes): Command {
     ({ peerId }) => !nodes.outphasingEntries.has(peerId)
   );
   if (entryNodes.length === 0) {
-    const excludeIds = Array.from(nodes.entryNodes.keys());
-    return { cmd: "needEntryNode", excludeIds };
+    // TODO for now remove excludeIds from call for now
+    // const excludeIds = Array.from(nodes.entryNodes.keys());
+    return { cmd: "needEntryNode", excludeIds: [] };
   }
 
   // check if we have valid exit nodes
@@ -112,8 +113,8 @@ export function reachNodePair(nodes: Nodes): Command & { nodePair?: Pair } {
     ({ peerId }) => !nodes.outphasingEntries.has(peerId)
   );
   if (entryNodes.length === 0) {
-    const excludeIds = Array.from(nodes.entryNodes.keys());
-    return { cmd: "needEntryNode", excludeIds };
+    // const excludeIds = Array.from(nodes.entryNodes.keys());
+    return { cmd: "needEntryNode", excludeIds: [] };
   }
 
   // check if we have valid exit nodes
