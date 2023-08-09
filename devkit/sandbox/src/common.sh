@@ -161,7 +161,7 @@ start() {
 
     # register nodes
     echo "Registering nodes to discovery-platform"
-    scurl "http://127.0.0.1:3030/register-exit-nodes" \
+    scurl "http://127.0.0.1:3030/register-nodes" \
         -H "Content-Type: application/json" \
         -d '{
             "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
@@ -194,6 +194,13 @@ start() {
                 "'$EXIT_NODE_PUB_KEY_3'",
                 "'$EXIT_NODE_PUB_KEY_4'",
                 "'$EXIT_NODE_PUB_KEY_5'"
+            ],
+            "hasExitNodes": [
+                true,
+                true,
+                true,
+                true,
+                true
             ]
         }'
     echo "Registered nodes to discovery-platform"

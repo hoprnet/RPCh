@@ -5,7 +5,7 @@ import fundHoprdNodes from "./tasks/fund-hoprd-nodes";
 import fundViaHOPRd from "./tasks/fund-via-hoprd";
 import fundViaWallet from "./tasks/fund-via-wallet";
 import openChannels from "./tasks/open-channels";
-import registerExitNodes from "./tasks/register-exit-nodes";
+import registerNodes from "./tasks/register-nodes";
 import registerHoprdNodes from "./tasks/register-hoprd-nodes";
 import { createLogger } from "./utils";
 import { body, query } from "express-validator";
@@ -265,7 +265,7 @@ app.post(
 );
 
 app.post(
-  "/register-exit-nodes",
+  "/register-nodes",
   body("discoveryPlatformEndpoint").exists(),
   body("client").exists(),
   body("chainId").exists(),
@@ -293,6 +293,12 @@ app.post(
       (value) =>
         Array.isArray(value) && value.every((val) => typeof val === "string")
     ),
+  body("hasExitNodes")
+    .exists()
+    .custom(
+      (value) =>
+        Array.isArray(value) && value.every((val) => typeof val === "boolean")
+    ),
   async (req, res) => {
     try {
       const {
@@ -303,6 +309,7 @@ app.post(
         hoprdApiTokens,
         exitNodePubKeys,
         client,
+        hasExitNodes,
       } = req.body as {
         discoveryPlatformEndpoint: string;
         client: string;
@@ -311,20 +318,22 @@ app.post(
         hoprdApiEndpointsExt: string[];
         hoprdApiTokens: string[];
         exitNodePubKeys: string[];
+        hasExitNodes: boolean[];
       };
 
-      await registerExitNodes(
+      await registerNodes(
         discoveryPlatformEndpoint,
         client,
         chainId,
         hoprdApiEndpoints,
         hoprdApiEndpointsExt,
         hoprdApiTokens,
-        exitNodePubKeys
+        exitNodePubKeys,
+        hasExitNodes
       );
       return res.sendStatus(200);
     } catch (error) {
-      log.error("Could not 'register-exit-nodes'", error);
+      log.error("Could not 'register-nodes'", error);
       return res.sendStatus(500);
     }
   }
