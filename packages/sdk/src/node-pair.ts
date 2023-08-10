@@ -9,6 +9,13 @@ type InternalState =
   | { s: "connect"; t: number }
   | { s: "open" };
 
+type ExitData = {
+  failedRequests: number;
+  latencies: number[];
+  ongoingRequests: number;
+  successfulRequests: number;
+};
+
 export default class NodePair {
   public static TargetAmount = 10;
   private static KeepLastLatencies = 5;
@@ -19,8 +26,7 @@ export default class NodePair {
   private internalState: InternalState = { s: "init" };
   private readonly log;
   private readonly exitNodes: Map<string, ExitNode> = new Map();
-  private readonly latencies: Map<string, number[]> = new Map(); // exitId -> latencies
-  private readonly ongoingReqs: Map<string, number> = new Map(); // exitId -> ongoing requests
+  private readonly exitDatas: Map<string, ExitData> = new Map(); // exitId -> latencies
 
   constructor(public readonly entryNode: EntryNode) {
     const id = shortPeerId(entryNode.peerId);
@@ -34,8 +40,45 @@ export default class NodePair {
   public addExitNodes = (exitNodes: Iterable<ExitNode>) => {
     for (const n of exitNodes) {
       this.exitNodes.set(n.peerId, n);
-      this.latencies.set(n.peerId, []);
-      this.ongoingReqs.set(n.peerId, 0);
+      this.exitDatas.set(n.peerId, {
+        failedRequests: 0,
+        latencies: [],
+        ongoingRequests: 0,
+        successfulRequests: 0,
+      });
+    }
+  };
+
+  public requestStarted = (exitId: string): number | undefined => {
+    const data = this.exitDatas.get(exitId);
+    if (data) {
+      data.ongoingRequests += 1;
+      return data.ongoingRequests;
+    }
+  };
+
+  public requestSucceeded = (
+    exitId: string,
+    responseTime: number
+  ): number | undefined => {
+    const data = this.exitDatas.get(exitId);
+    if (data) {
+      data.ongoingRequests -= 1;
+      data.successfulRequests += 1;
+      data.latencies.push(responseTime);
+      if (data.latencies.length > NodePair.KeepLastLatencies) {
+        data.latencies.shift();
+      }
+      return data.successfulRequests;
+    }
+  };
+
+  public requestFailed = (exitId: string): number | undefined => {
+    const data = this.exitDatas.get(exitId);
+    if (data) {
+      data.ongoingRequests -= 1;
+      data.failedRequests += 1;
+      return data.failedRequests;
     }
   };
 
@@ -69,11 +112,13 @@ export default class NodePair {
     }
 
     // calculate averages over stored latencies
-    const avgs = Array.from(this.latencies)
-      .map(([id, lats]) => ({
+    const avgs = Array.from(this.exitDatas)
+      // discard failed request nodes
+      .filter(([, { failedRequests }]) => failedRequests === 0)
+      .map(([id, data]) => ({
         id,
-        avg: average(lats),
-        req: this.ongoingReqs.get(id)!,
+        avg: average(data.latencies),
+        req: data.ongoingRequests,
       }))
       // discard latency violations
       .filter(({ avg }) => avg < NodePair.LatencyThreshold);
@@ -95,7 +140,7 @@ export default class NodePair {
       const exitNode = this.exitNodes.get(id)!;
       return { res: "ok", exitNode };
     }
-    const { id } = realLats[0];
+    const { id } = randomEl(minReqNodes);
     const exitNode = this.exitNodes.get(id)!;
     return { res: "ok", exitNode };
   };
