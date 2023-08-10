@@ -1,7 +1,6 @@
 import { WebSocket } from "isomorphic-ws";
-
 import * as NodesAPI from "./nodes-api";
-import { createLogger, shortPeerId } from "./utils";
+import { average, createLogger, randomEl, shortPeerId } from "./utils";
 
 import type { EntryNode, ExitNode } from "./nodes";
 
@@ -12,12 +11,16 @@ type InternalState =
 
 export default class NodePair {
   public static TargetAmount = 10;
+  private static KeepLastLatencies = 5;
+  private static LatencyThreshold = 5e3;
 
   private socket?: WebSocket;
   private connectTime?: number;
   private internalState: InternalState = { s: "init" };
   private readonly log;
   private readonly exitNodes: Map<string, ExitNode> = new Map();
+  private readonly latencies: Map<string, number[]> = new Map(); // exitId -> latencies
+  private readonly ongoingReqs: Map<string, number> = new Map(); // exitId -> ongoing requests
 
   constructor(public readonly entryNode: EntryNode) {
     const id = shortPeerId(entryNode.peerId);
@@ -31,6 +34,8 @@ export default class NodePair {
   public addExitNodes = (exitNodes: Iterable<ExitNode>) => {
     for (const n of exitNodes) {
       this.exitNodes.set(n.peerId, n);
+      this.latencies.set(n.peerId, []);
+      this.ongoingReqs.set(n.peerId, 0);
     }
   };
 
@@ -44,6 +49,55 @@ export default class NodePair {
 
   public close = () => {
     this.socket?.close();
+  };
+
+  public readyExitNode = ():
+    | { res: "ok"; exitNode: ExitNode }
+    | { res: "error"; reason: string } => {
+    if (this.exitNodes.size === 0) {
+      return { res: "error", reason: "no exit nodes" };
+    }
+    if (!this.socket) {
+      return { res: "error", reason: "no websocket" };
+    }
+    const readyState = this.socket.readyState;
+    if (!(readyState === WebSocket.OPEN)) {
+      return {
+        res: "error",
+        reason: `websocket readyState is ${printReadyState(readyState)}`,
+      };
+    }
+
+    // calculate averages over stored latencies
+    const avgs = Array.from(this.latencies)
+      .map(([id, lats]) => ({
+        id,
+        avg: average(lats),
+        req: this.ongoingReqs.get(id)!,
+      }))
+      // discard latency violations
+      .filter(({ avg }) => avg < NodePair.LatencyThreshold);
+    // sort by ongoing requests
+    avgs.sort(({ req: lReq }, { req: rReq }) => lReq - rReq);
+    if (avgs.length === 0) {
+      return { res: "error", reason: "no good nodes" };
+    }
+
+    // find minimal request count nodes
+    const minReq = avgs[0].req;
+    const reqInc = avgs.findIndex(({ req }) => req > minReq);
+    const minReqNodes = avgs.slice(0, reqInc);
+    // prefer real latency nodes over fresh ones
+    const realLats = minReqNodes.filter(({ avg }) => avg > 0);
+    if (realLats.length > 0) {
+      realLats.sort(({ avg: lAvg }, { avg: rAvg }) => lAvg - rAvg);
+      const { id } = realLats[0];
+      const exitNode = this.exitNodes.get(id)!;
+      return { res: "ok", exitNode };
+    }
+    const { id } = realLats[0];
+    const exitNode = this.exitNodes.get(id)!;
+    return { res: "ok", exitNode };
   };
 
   private onWSopen = () => {
@@ -61,4 +115,19 @@ export default class NodePair {
   private onWSclose = (evt: any) => {
     this.log.info("onWSclose", evt, JSON.stringify(this.internalState));
   };
+}
+
+function printReadyState(readyState: number): string {
+  switch (readyState) {
+    case WebSocket.CONNECTING:
+      return "CONNECTING";
+    case WebSocket.OPEN:
+      return "OPEN";
+    case WebSocket.CLOSING:
+      return "CLOSING";
+    case WebSocket.CLOSED:
+      return "CLOSED";
+    default:
+      return "unexpected";
+  }
 }
