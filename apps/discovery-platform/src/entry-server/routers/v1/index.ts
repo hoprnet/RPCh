@@ -667,7 +667,6 @@ export const v1Router = (ops: {
         return res.json({
           selectedRoutes: routes,
           nodes: allPeerIdsData,
-          results: Array.from(amResults.entries()),
         });
       } catch (e) {
         log.error("Can not retrieve entry node", e);
