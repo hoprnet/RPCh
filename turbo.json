@@ -76,7 +76,8 @@
         "DB_CONNECTION_URL",
         "SKIP_CHECK_COMMITMENT",
         "SECRET",
-        "AVAILABILITY_MONITOR_URL"
+        "AVAILABILITY_MONITOR_URL",
+        "RUNNING_IN_SANDBOX"
       ]
     },
     "@rpch/rpc-server#build": {

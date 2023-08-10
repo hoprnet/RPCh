@@ -52,7 +52,6 @@ export default async function main(
   client: string,
   chainId: string,
   hoprdApiEndpoints: string[],
-  hoprdApiEndpointsExt: string[],
   hoprdApiTokens: string[],
   exitNodePubKeys: string[],
   hasExitNodes: boolean[]
@@ -61,7 +60,6 @@ export default async function main(
     discoveryPlatformEndpoint,
     chainId,
     hoprdApiEndpoints,
-    hoprdApiEndpointsExt,
     hoprdApiTokens,
     exitNodePubKeys,
     hasExitNodes,
@@ -69,20 +67,18 @@ export default async function main(
 
   if (
     [
-      hoprdApiEndpointsExt.length,
       hoprdApiTokens.length,
       exitNodePubKeys.length,
       hasExitNodes.length,
     ].some((length) => length !== hoprdApiEndpoints.length)
   ) {
     throw Error(
-      `Lengths of 'hoprdApiEndpoints', 'hoprdApiEndpointsExt', 'hoprdApiTokens', 'exitNodePubKeys', 'hasExitNodes' do no match`
+      `Lengths of 'hoprdApiEndpoints', 'hoprdApiTokens', 'exitNodePubKeys', 'hasExitNodes' do no match`
     );
   }
 
   const groups: {
     hoprdApiEndpoint: string;
-    hoprdApiEndpointExt: string;
     hoprdApiToken: string;
     exitNodePubKey: string;
     hoprdPeerId: string;
@@ -93,7 +89,6 @@ export default async function main(
   // get PeerIds in parallel and fill in groups object
   await Promise.all(
     hoprdApiEndpoints.map(async (hoprdApiEndpoint, index) => {
-      const hoprdApiEndpointExt = hoprdApiEndpointsExt[index];
       const hoprdApiToken = hoprdApiTokens[index];
       const exitNodePubKey = exitNodePubKeys[index];
       const hoprdPeerId = await getAddresses(
@@ -103,7 +98,6 @@ export default async function main(
       const hasExitNode = hasExitNodes[index];
       groups.push({
         hoprdApiEndpoint,
-        hoprdApiEndpointExt,
         hoprdApiToken,
         exitNodePubKey,
         hoprdPeerId,
@@ -121,8 +115,8 @@ export default async function main(
       discoveryPlatformEndpoint,
       client,
       chainId,
+      nodes.hoprdApiEndpoint,
       nodes.hoprdPeerId,
-      nodes.hoprdApiEndpointExt,
       nodes.hoprdApiToken,
       nodes.exitNodePubKey,
       exitNodeAddress,

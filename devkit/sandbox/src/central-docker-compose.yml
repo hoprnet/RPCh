@@ -5,6 +5,7 @@
 #   - 1 funding service
 #   - 1 discovery platform
 #   - 1 postgres DB
+#   - 1 availability monitor
 version: "3"
 
 volumes:

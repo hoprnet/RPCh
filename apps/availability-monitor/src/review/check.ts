@@ -44,7 +44,7 @@ export function createCheck<T, A extends unknown[]>(
       };
 
       try {
-        log.verbose("running check %s for %s", check.id);
+        log.verbose("running check %s", check.id);
         const [passed, value] = await retry(
           () => withTimeout(() => run(...args), timeout),
           {
