@@ -66,11 +66,9 @@ export default async function main(
   });
 
   if (
-    [
-      hoprdApiTokens.length,
-      exitNodePubKeys.length,
-      hasExitNodes.length,
-    ].some((length) => length !== hoprdApiEndpoints.length)
+    [hoprdApiTokens.length, exitNodePubKeys.length, hasExitNodes.length].some(
+      (length) => length !== hoprdApiEndpoints.length
+    )
   ) {
     throw Error(
       `Lengths of 'hoprdApiEndpoints', 'hoprdApiTokens', 'exitNodePubKeys', 'hasExitNodes' do no match`
