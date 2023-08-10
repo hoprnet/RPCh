@@ -1,8 +1,5 @@
+import retry from "async-retry";
 import { type EntryNode, type ExitNode } from "./nodes";
-
-const apiEntryNode = "/api/v1/request/entry-node";
-const apiExitNode = "/api/v1/node?hasExitNode=true";
-// const apiNode = "/api/v1/node";
 
 export function fetchEntryNode({
   excludeList,
@@ -13,7 +10,7 @@ export function fetchEntryNode({
   discoveryPlatformEndpoint: string;
   clientId: string;
 }): Promise<EntryNode> {
-  const url = new URL(apiEntryNode, discoveryPlatformEndpoint);
+  const url = new URL("/api/v1/request/entry-node", discoveryPlatformEndpoint);
   const headers = {
     Accept: "application/json",
     "Content-Type": "application/json",
@@ -24,25 +21,32 @@ export function fetchEntryNode({
     client: clientId,
   });
 
-  return fetch(url, { method: "POST", headers, body })
-    .then((resp) => {
-      if (resp.status === 200) {
-        return resp.json() as unknown as {
-          hoprd_api_endpoint: string;
-          accessToken: string;
-          id: string;
-        };
+  return retry(
+    async function (bail) {
+      const res = await fetch(url, { method: "POST", headers, body });
+      if (res.status >= 500) {
+        bail(new Error(`Internal server error: ${JSON.stringify(res)}`));
       }
-      throw new Error(`wrong status ${resp.status} ${resp.statusText}`);
-    })
-    .then((json) => {
+      const json: {
+        hoprd_api_endpoint: string;
+        accessToken: string;
+        id: string;
+      } = await res.json();
       return {
         apiEndpoint: new URL(json.hoprd_api_endpoint),
         accessToken: json.accessToken,
         peerId: json.id,
-        recommendedExits: new Set(),
+        recommendedExits: new Set<string>(),
       };
-    });
+    },
+    {
+      retries: 3,
+      factor: 3,
+      minTimeout: 3e3,
+      maxTimeout: 120e3,
+      randomize: true,
+    }
+  );
 }
 
 export function fetchExitNodes({
@@ -52,32 +56,52 @@ export function fetchExitNodes({
   discoveryPlatformEndpoint: string;
   clientId: string;
 }): Promise<ExitNode[]> {
-  const url = new URL(apiExitNode, discoveryPlatformEndpoint);
+  const url = new URL(
+    "/api/v1/node?hasExitNode=true",
+    discoveryPlatformEndpoint
+  );
   const headers = {
     Accept: "application/json",
     "x-rpch-client": clientId,
   };
 
-  return fetch(url, { headers })
-    .then((resp) => {
-      if (resp.status === 200) {
-        return resp.json() as unknown as {
-          exit_node_pub_key: string;
-          id: string;
-        }[];
+  return retry(
+    async function (bail) {
+      const res = await fetch(url, { headers });
+      if (res.status >= 500) {
+        bail(new Error(`Internal server error: ${JSON.stringify(res)}`));
       }
-      throw new Error(`wrong status ${resp}`);
-    })
-    .then((json) => {
-      //      if (json[0]) {
-      //        fetchNode({ discoveryPlatformEndpoint, clientId }, json[0].id);
-      //      }
-      //      return [{ pubKey: json[0].exit_node_pub_key, peerId: json[0].id }];
+      const json: {
+        exit_node_pub_key: string;
+        id: string;
+      }[] = await res.json();
       return json.map(({ exit_node_pub_key, id }) => ({
         pubKey: exit_node_pub_key,
         peerId: id,
       }));
-    });
+    },
+    {
+      retries: 3,
+      factor: 3,
+      minTimeout: 3e3,
+      maxTimeout: 120e3,
+      randomize: true,
+    }
+  );
+}
+
+export function connectWS({
+  apiEndpoint,
+  accessToken,
+}: {
+  apiEndpoint: URL;
+  accessToken: string;
+}) {
+  const wsURL = new URL(apiEndpoint.toString());
+  wsURL.protocol = apiEndpoint.protocol === "https:" ? "wss:" : "ws:";
+  wsURL.pathname = "/api/v2/messages/websocket";
+  wsURL.search = `?apiToken=${accessToken}`;
+  return new WebSocket(wsURL);
 }
 
 /*
@@ -88,7 +112,7 @@ function fetchNode(
   }: { discoveryPlatformEndpoint: string; clientId: string },
   peerId: string
 ) {
-  const url = new URL(`${apiNode}/${peerId}`, discoveryPlatformEndpoint);
+  const url = new URL(`/api/v1/node/${peerId}`, discoveryPlatformEndpoint);
   const headers = {
     Accept: "application/json",
     "x-rpch-client": clientId,
