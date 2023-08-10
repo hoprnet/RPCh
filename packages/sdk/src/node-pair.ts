@@ -24,7 +24,11 @@ export default class NodePair {
     this.log = createLogger([`nodepair-${id}`]);
   }
 
-  public addExitNodes = (exitNodes: Set<ExitNode>) => {
+  public get id() {
+    return this.entryNode.peerId;
+  }
+
+  public addExitNodes = (exitNodes: Iterable<ExitNode>) => {
     for (const n of exitNodes) {
       this.exitNodes.set(n.peerId, n);
     }
@@ -36,6 +40,10 @@ export default class NodePair {
     this.socket.on("open", this.onWSopen);
     this.socket.on("error", this.onWSerror);
     this.socket.on("close", this.onWSclose);
+  };
+
+  public close = () => {
+    this.socket?.close();
   };
 
   private onWSopen = () => {
