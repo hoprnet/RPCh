@@ -1,4 +1,6 @@
+import { WebSocket } from "isomorphic-ws";
 import retry from "async-retry";
+
 import { type EntryNode, type ExitNode } from "./nodes";
 
 export function fetchEntryNode({
@@ -96,7 +98,7 @@ export function connectWS({
 }: {
   apiEndpoint: URL;
   accessToken: string;
-}) {
+}): WebSocket {
   const wsURL = new URL(apiEndpoint.toString());
   wsURL.protocol = apiEndpoint.protocol === "https:" ? "wss:" : "ws:";
   wsURL.pathname = "/api/v2/messages/websocket";

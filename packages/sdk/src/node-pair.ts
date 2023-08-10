@@ -1,8 +1,23 @@
-import { WebSocket } from "isomorphic-ws";
+import { WebSocket, MessageEvent } from "isomorphic-ws";
 import * as NodesAPI from "./nodes-api";
 import { average, createLogger, randomEl, shortPeerId } from "./utils";
 
-import type { EntryNode, ExitNode } from "./nodes";
+export type EntryNode = {
+  apiEndpoint: URL;
+  accessToken: string;
+  peerId: string;
+  recommendedExits: Set<string>;
+};
+
+export type ExitNode = {
+  peerId: string;
+  pubKey: string;
+};
+
+export type Pair = {
+  entryNode: EntryNode;
+  exitNode: ExitNode;
+};
 
 type InternalState =
   | { s: "init" }
@@ -23,6 +38,7 @@ export default class NodePair {
 
   private socket?: WebSocket;
   private connectTime?: number;
+  private messageListenerAttached = false;
   private internalState: InternalState = { s: "init" };
   private readonly log;
   private readonly exitNodes: Map<string, ExitNode> = new Map();
@@ -91,6 +107,11 @@ export default class NodePair {
   };
 
   public close = () => {
+    // detach message liteners
+    if (this.messageListenerAttached) {
+      this.socket!.onmessage = () => {};
+    }
+    // close socket
     this.socket?.close();
   };
 
@@ -144,6 +165,16 @@ export default class NodePair {
     const exitNode = this.exitNodes.get(id)!;
     return { res: "ok", exitNode };
   };
+
+  public set messageListener(wsListen: (evt: MessageEvent) => void) {
+    if (!this.socket) {
+      return;
+    }
+    if (!this.messageListenerAttached) {
+      this.socket.onmessage = wsListen;
+      this.messageListenerAttached = true;
+    }
+  }
 
   private onWSopen = () => {
     this.log.verbose("onWSopen", JSON.stringify(this.internalState));

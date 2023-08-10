@@ -1,29 +1,31 @@
-import { WebSocket, MessageEvent } from "isomorphic-ws";
+import { MessageEvent } from "isomorphic-ws";
 import { utils } from "ethers";
 
 import type { Request } from "./request";
-import * as Nodes from "./nodes";
+import NodePair, { type EntryNode, ExitNode, Pair } from "./node-pair";
 import * as NodesAPI from "./nodes-api";
-import { createLogger } from "./utils";
+import { createLogger, shortPeerId } from "./utils";
 
 const log = createLogger(["nodes-collector"]);
-const apiWebSocket = "/api/v2/messages/websocket";
 
 export default class NodesCollector {
-  private readonly nodes: Nodes.Nodes = Nodes.init();
-  private ongoingFetchEntry = false;
-  private ongoingFetchExit = false;
-  private webSocketOpenings = new Set<string>();
+  private readonly nodePairs: Map<string, NodePair> = new Map();
+  private timerFetchPairs = setTimeout(function () {});
+  private ongoingFetchPairs = false;
 
   constructor(
     private readonly discoveryPlatformEndpoint: string,
     private readonly clientId: string,
     private readonly onWSmessage: (message: string) => void
-  ) {}
+  ) {
+    this.fetchNodePairs();
+  }
 
   public stop = () => {
-    log.verbose("stopping", Nodes.prettyPrint(this.nodes));
-    Nodes.stop(this.nodes);
+    log.verbose("stopping");
+    for (const [, np] of this.nodePairs) {
+      np.close();
+    }
   };
 
   /**
@@ -35,12 +37,12 @@ export default class NodesCollector {
       const check = () => {
         const now = Date.now();
         const elapsed = now - start;
-        const res = Nodes.reachReady(this.nodes);
-        if (res.cmd === "") {
-          return resolve(true);
+        for (const [, np] of this.nodePairs) {
+          const res = np.readyExitNode();
+          if (res.res === "ok") {
+            return resolve(true);
+          }
         }
-        log.verbose("ready actOnCmd", res.cmd, Nodes.prettyPrint(this.nodes));
-        this.actOnCmd(res);
         if (elapsed > timeout) {
           log.error("Timeout waiting for ready", elapsed);
           return reject(`timeout after ${elapsed} ms`);
@@ -54,22 +56,19 @@ export default class NodesCollector {
   /**
    * Requested node pair, needs websocket.
    */
-  public requestNodePair = async (timeout: number): Promise<Nodes.Pair> => {
+  public requestNodePair = async (timeout: number): Promise<Pair> => {
     return new Promise((resolve, reject) => {
       const start = Date.now();
       const check = () => {
         const now = Date.now();
         const elapsed = now - start;
-        const res = Nodes.reachNodePair(this.nodes);
-        if (res.nodePair) {
-          return resolve(res.nodePair);
+        for (const [, np] of this.nodePairs) {
+          const res = np.readyExitNode();
+          if (res.res === "ok") {
+            np.messageListener = this.messageListener;
+            return resolve({ entryNode: np.entryNode, exitNode: res.exitNode });
+          }
         }
-        log.verbose(
-          "requestNodePair actOnCmd",
-          res.cmd,
-          Nodes.prettyPrint(this.nodes)
-        );
-        this.actOnCmd(res);
         if (elapsed > timeout) {
           log.error("Timeout waiting for node pair", elapsed);
           return reject(`timeout after ${elapsed} ms`);
@@ -80,173 +79,130 @@ export default class NodesCollector {
     });
   };
 
+  /**
+   * Requested node pair, needs websocket.
+   */
+  public requestFallbackNodePair = (pair: Pair): Pair | undefined => {
+    for (const [id, np] of this.nodePairs) {
+      if (id === pair.entryNode.peerId) {
+        continue;
+      }
+      const res = np.readyExitNode();
+      if (res.res === "ok") {
+        np.messageListener = this.messageListener;
+        return { entryNode: np.entryNode, exitNode: res.exitNode };
+      }
+    }
+  };
+
   public requestStarted = ({ entryId, exitId, id }: Request) => {
+    const np = this.nodePairs.get(entryId);
+    const req = `${id}:${shortPeerId(entryId)}>${shortPeerId(exitId)}`;
+    if (!np) {
+      log.error("requestStarted", req, "on non exiting node pair");
+      return;
+    }
+    const res = np.requestStarted(exitId);
     log.verbose(
       "requestStarted",
-      id,
-      `${Nodes.prettyPrintEntry(this.nodes, entryId)}->${Nodes.prettyPrintExit(
-        this.nodes,
-        exitId
-      )}`
+      req,
+      "-",
+      res,
+      "ongoing requests on that route"
     );
-    Nodes.requestStarted(this.nodes, { entryId, exitId }, id);
   };
 
   public requestSucceeded = (
     { entryId, exitId, id }: Request,
     responseTime: number
   ) => {
+    const np = this.nodePairs.get(entryId);
+    const req = `${id}:${shortPeerId(entryId)}>${shortPeerId(exitId)}`;
+    if (!np) {
+      log.error("requestSucceeded", req, "on non exiting node pair");
+      return;
+    }
+    const res = np.requestSucceeded(exitId, responseTime);
     log.verbose(
       "requestSucceeded",
-      id,
-      `${Nodes.prettyPrintEntry(this.nodes, entryId)}->${Nodes.prettyPrintExit(
-        this.nodes,
-        exitId
-      )}`
+      req,
+      "-",
+      res,
+      "total successes on that route"
     );
-    const res = Nodes.requestSucceeded(
-      this.nodes,
-      { entryId, exitId },
-      id,
-      responseTime
-    );
-    log.verbose(
-      "requestSucceeded actOnCmd",
-      res.cmd,
-      Nodes.prettyPrint(this.nodes)
-    );
-    this.actOnCmd(res);
   };
 
   public requestFailed = ({ entryId, exitId, id }: Request) => {
-    log.verbose(
-      "requestFailed",
-      id,
-      `${Nodes.prettyPrintEntry(this.nodes, entryId)}->${Nodes.prettyPrintExit(
-        this.nodes,
-        exitId
-      )}`
-    );
-    const res = Nodes.requestFailed(this.nodes, { entryId, exitId }, id);
-    log.verbose(
-      "requestFailed actOnCmd",
-      res.cmd,
-      Nodes.prettyPrint(this.nodes)
-    );
-    this.actOnCmd(res);
-  };
-
-  private actOnCmd = (cmd: Nodes.Command) => {
-    switch (cmd.cmd) {
-      case "needEntryNode":
-        this.fetchEntryNode(cmd.excludeIds);
-        break;
-      case "needExitNode":
-        this.fetchExitNodes();
-        break;
-      case "openWebSocket":
-        this.openWebSocket(cmd.entryNode);
-        break;
-      case "stateError":
-        log.error("Internal state error", cmd.info);
-        break;
-      default:
-        break;
-    }
-  };
-
-  private fetchEntryNode = (excludeIds: string[]) => {
-    if (this.ongoingFetchEntry) {
+    const np = this.nodePairs.get(entryId);
+    const req = `${id}:${shortPeerId(entryId)}>${shortPeerId(exitId)}`;
+    if (!np) {
+      log.error("requestSucceeded", req, "on non exiting node pair");
       return;
     }
-    this.ongoingFetchEntry = true;
+    const res = np.requestFailed(exitId);
+    log.verbose("requestFailed", req, "-", res, "failed on that route");
+  };
+
+  private fetchNodePairs = () => {
+    clearTimeout(this.timerFetchPairs);
+    if (this.ongoingFetchPairs) {
+      return;
+    }
+    if (this.nodePairs.size >= NodePair.TargetAmount) {
+      this.timerFetchPairs = setTimeout(this.fetchNodePairs, 30e3);
+      return;
+    }
+    this.ongoingFetchPairs = true;
+    const excludeList = Array.from(this.nodePairs.keys());
     NodesAPI.fetchEntryNode({
-      excludeList: excludeIds,
+      excludeList,
       discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
       clientId: this.clientId,
     })
-      .then((entryNode: Nodes.EntryNode) =>
-        Nodes.newEntryNode(this.nodes, entryNode)
-      )
-      .catch((err: string) => log.error("Error requesting entry node", err))
+      .then((entryNode: EntryNode) => {
+        const np = new NodePair(entryNode);
+        this.nodePairs.set(np.id, np);
+        np.connect();
+        NodesAPI.fetchExitNodes({
+          discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
+          clientId: this.clientId,
+        })
+          .then((exitNodes: ExitNode[]) => {
+            np.addExitNodes(exitNodes);
+            setTimeout(this.fetchNodePairs);
+          })
+          .catch((err: any) => {
+            log.error("Error fetching exit nodes", err);
+            // for now restart the whole process to keep it consistent with one hop behaviour
+            np.close();
+            this.nodePairs.delete(np.id);
+          });
+      })
+      .catch((err: any) => {
+        log.error("Error fetching entry node", err);
+      })
       .finally(() => {
-        this.ongoingFetchEntry = false;
+        this.timerFetchPairs = setTimeout(this.fetchNodePairs);
       });
   };
 
-  private fetchExitNodes = () => {
-    if (this.ongoingFetchExit) {
+  private messageListener = (event: MessageEvent) => {
+    const body = event.data.toString();
+    // message received is an acknowledgement of a
+    // message we have send, we can safely ignore this
+    if (body.startsWith("ack:")) {
       return;
     }
-    this.ongoingFetchExit = true;
-    NodesAPI.fetchExitNodes({
-      discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
-      clientId: this.clientId,
-    })
-      .then((exitNodes: Nodes.ExitNode[]) =>
-        Nodes.addExitNodes(this.nodes, exitNodes)
-      )
-      .catch((err: string) => log.error("Error requesting exit nodes", err))
-      .finally(() => {
-        this.ongoingFetchExit = false;
-      });
-  };
 
-  private openWebSocket = (entryNode: Nodes.EntryNode) => {
-    if (this.webSocketOpenings.has(entryNode.peerId)) {
+    let msg: string | undefined;
+    try {
+      msg = utils.toUtf8String(
+        utils.RLP.decode(new Uint8Array(JSON.parse(`[${body}]`)))[0]
+      );
+    } catch (error) {
+      log.error("Error decoding message:", error);
       return;
     }
-    this.webSocketOpenings.add(entryNode.peerId);
-    const wsURL = new URL(entryNode.apiEndpoint.toString());
-    wsURL.protocol =
-      entryNode.apiEndpoint.protocol === "https:" ? "wss:" : "ws:";
-    wsURL.pathname = apiWebSocket;
-    wsURL.search = `?apiToken=${entryNode.accessToken}`;
-    log.verbose(
-      "opening WS on",
-      Nodes.prettyPrintEntry(this.nodes, entryNode.peerId),
-      "with",
-      wsURL.toString()
-    );
-    const socket = new WebSocket(wsURL);
-    Nodes.addWebSocket(this.nodes, entryNode, socket);
-    socket.on("open", () => {
-      log.info("WS open", Nodes.prettyPrintEntry(this.nodes, entryNode.peerId));
-      this.webSocketOpenings.delete(entryNode.peerId);
-    });
-    socket.on("error", (err) => {
-      log.error(
-        "WS error",
-        Nodes.prettyPrintEntry(this.nodes, entryNode.peerId),
-        err
-      );
-      this.webSocketOpenings.delete(entryNode.peerId);
-    });
-    socket.on("close", () => {
-      log.info(
-        "WS close",
-        Nodes.prettyPrintEntry(this.nodes, entryNode.peerId)
-      );
-      this.webSocketOpenings.delete(entryNode.peerId);
-    });
-    socket.onmessage = (event: MessageEvent) => {
-      const body = event.data.toString();
-      // message received is an acknowledgement of a
-      // message we have send, we can safely ignore this
-      if (body.startsWith("ack:")) {
-        return;
-      }
-
-      let msg: string | undefined;
-      try {
-        msg = utils.toUtf8String(
-          utils.RLP.decode(new Uint8Array(JSON.parse(`[${body}]`)))[0]
-        );
-      } catch (error) {
-        log.error("Error decoding message:", error);
-        return;
-      }
-      this.onWSmessage(msg);
-    };
+    this.onWSmessage(msg);
   };
 }
