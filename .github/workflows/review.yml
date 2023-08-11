@@ -81,16 +81,16 @@ jobs:
         include:
           - project: exit-node
             directory: apps
-          - project: funding-service
-            directory: apps
-          - project: discovery-platform
-            directory: apps
-          - project: availability-monitor
-            directory: apps
-          - project: rpc-server
-            directory: apps
-          - project: manager
-            directory: devkit
+#          - project: funding-service
+#            directory: apps
+#          - project: discovery-platform
+#            directory: apps
+#          - project: availability-monitor
+#            directory: apps
+#          - project: rpc-server
+#            directory: apps
+#          - project: manager
+#            directory: devkit
 
     steps:
       - name: Check out code
@@ -103,6 +103,8 @@ jobs:
       - run: |
           echo "Tag name from GITHUB_REF_NAME: $GITHUB_REF_NAME"
           echo "Tag name from github.ref_name: ${{  github.ref_name }}"
+          echo "TAG=`echo ${{ github.ref_name }} | sed -E 's/[^0-9.]//g')`" >> $GITHUB_ENV
+          cat $GITHUB_ENV
 
       - name: Login to GCP
         id: gcloud
