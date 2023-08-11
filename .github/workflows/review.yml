@@ -103,7 +103,7 @@ jobs:
           echo "SHORT_SHA=$short_sha" >> $GITHUB_ENV
           export tag=$(echo ${{ github.ref_name }} | sed -E 's/[^0-9.]//g')
           echo "TAG=$tag" >> $GITHUB_ENV
-          export tags=$(echo $short_sha, $tag | sed 's/^[ \t,]*//; s/[ \t,]*$//')
+          export tags=$(echo $short_sha,$tag | sed 's/^[ \t,]*//; s/[ \t,]*$//')
           echo $short_sha
           echo $tag
           echo $tags
@@ -125,7 +125,7 @@ jobs:
           registry: ${{ secrets.GOOGLE_REGION }}-docker.pkg.dev
           username: ${{ steps.gcloud.outputs.username }}
           password: ${{ steps.gcloud.outputs.password }}
-          tags: "${{ env.TAG }}"
+          tags: "${{ env.TAGS }}"
 #          tags: "${{ env.SHORT_SHA }},${{ env.TAG }}"
 
 #  review-configuration:
