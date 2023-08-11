@@ -19,10 +19,11 @@ export type Pair = {
   exitNode: ExitNode;
 };
 
-type InternalState =
-  | { s: "init" }
-  | { s: "connect"; t: number }
-  | { s: "open" };
+export type WebSocketCallback = {
+  onOpen: (connTime: number) => void;
+  onClose: () => void;
+  onError: () => void;
+};
 
 type ExitData = {
   failedRequests: number;
@@ -37,9 +38,10 @@ export default class NodePair {
   private static LatencyThreshold = 5e3;
 
   private socket?: WebSocket;
+  private socketCb?: WebSocketCallback;
   private connectTime?: number;
+  private startConnectTime?: number;
   private messageListenerAttached = false;
-  private internalState: InternalState = { s: "init" };
   private readonly log;
   private readonly exitNodes: Map<string, ExitNode> = new Map();
   private readonly exitDatas: Map<string, ExitData> = new Map(); // exitId -> latencies
@@ -98,12 +100,13 @@ export default class NodePair {
     }
   };
 
-  public connect = () => {
+  public connect = (wsCb: WebSocketCallback) => {
     this.socket = NodesAPI.connectWS(this.entryNode);
-    this.internalState = { s: "connect", t: Date.now() };
+    this.socketCb = wsCb;
+    this.startConnectTime = Date.now();
     this.socket.on("open", this.onWSopen);
-    this.socket.on("error", this.onWSerror);
     this.socket.on("close", this.onWSclose);
+    this.socket.on("error", this.onWSerror);
   };
 
   public close = () => {
@@ -111,6 +114,9 @@ export default class NodePair {
     if (this.messageListenerAttached) {
       this.socket!.onmessage = () => {};
     }
+    this.socket?.off("open", this.onWSopen);
+    this.socket?.off("close", this.onWSclose);
+    this.socket?.off("error", this.onWSerror);
     // close socket
     this.socket?.close();
   };
@@ -177,19 +183,19 @@ export default class NodePair {
   }
 
   private onWSopen = () => {
-    this.log.verbose("onWSopen", JSON.stringify(this.internalState));
-    if (this.internalState.s === "connect") {
-      this.connectTime = Date.now() - this.internalState.t;
-      this.internalState = { s: "open" };
-    }
-  };
-
-  private onWSerror = (err: any) => {
-    this.log.error("onWSerror", err, JSON.stringify(this.internalState));
+    const diff = Date.now() - this.startConnectTime!;
+    this.log.verbose("onWSopen after", diff, "ms");
+    this.socketCb?.onOpen(diff);
   };
 
   private onWSclose = (evt: any) => {
-    this.log.info("onWSclose", evt, JSON.stringify(this.internalState));
+    this.log.info("onWSclose", evt);
+    this.socketCb?.onClose();
+  };
+
+  private onWSerror = (err: any) => {
+    this.log.error("onWSerror", err);
+    this.socketCb?.onError();
   };
 }
 
