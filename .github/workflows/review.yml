@@ -100,7 +100,7 @@ jobs:
         shell: sh
         run: |
           echo "SHORT_SHA=`echo ${{ github.event.pull_request.head.sha }} | cut -c1-7`" >> $GITHUB_ENV
-          echo "TAG=`echo 1.${{ github.ref_name }} | sed -E 's/[^0-9.]//g')`" >> $GITHUB_ENV
+          echo "TAG=`echo ${{ github.ref_name }} | sed -E 's/[^0-9.]//g')`" >> $GITHUB_ENV
 
       - run: echo $GITHUB_ENV
 
