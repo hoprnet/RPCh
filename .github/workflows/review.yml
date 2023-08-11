@@ -118,7 +118,7 @@ jobs:
           registry: ${{ secrets.GOOGLE_REGION }}-docker.pkg.dev
           username: ${{ steps.gcloud.outputs.username }}
           password: ${{ steps.gcloud.outputs.password }}
-          tags: "${{ env.SHORT_SHA }}"
+          tags: "${{ env.SHORT_SHA }},${{ env.TAG }}"
 
 #  review-configuration:
 #    name: Review configuration
