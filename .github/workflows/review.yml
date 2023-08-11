@@ -3,6 +3,8 @@ name: Review
 on:
   push:
     branches: [main]
+    tags:
+      - '**'
   pull_request:
     types: [opened, synchronize]
 
@@ -96,7 +98,13 @@ jobs:
 
       - name: Calculate environment variables
         shell: sh
-        run: echo "SHORT_SHA=`echo ${{ github.event.pull_request.head.sha }} | cut -c1-7`" >> $GITHUB_ENV
+        run: |
+          export short_sha=$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-7)
+          echo "SHORT_SHA=$short_sha" >> $GITHUB_ENV
+          export tag=$(echo ${{ github.ref_name }} | sed -E 's/[^0-9.]//g')
+          echo "TAG=$tag" >> $GITHUB_ENV
+          export tags=$(echo $short_sha,$tag | sed 's/^[ \t,]*//; s/[ \t,]*$//') #remove leading and trailing whitespaces and commas
+          echo "TAGS=$tags" >> $GITHUB_ENV
 
       - name: Login to GCP
         id: gcloud
@@ -112,7 +120,7 @@ jobs:
           registry: ${{ secrets.GOOGLE_REGION }}-docker.pkg.dev
           username: ${{ steps.gcloud.outputs.username }}
           password: ${{ steps.gcloud.outputs.password }}
-          tags: "${{ env.SHORT_SHA }}"
+          tags: "${{ env.TAGS }}"
 
   review-configuration:
     name: Review configuration
