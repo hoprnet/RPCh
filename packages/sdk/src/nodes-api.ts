@@ -1,8 +1,6 @@
 import { WebSocket } from "isomorphic-ws";
 import retry from "async-retry";
 
-import { type EntryNode, type ExitNode } from "./nodes";
-
 export function fetchEntryNode({
   excludeList,
   discoveryPlatformEndpoint,
@@ -11,7 +9,11 @@ export function fetchEntryNode({
   excludeList: string[];
   discoveryPlatformEndpoint: string;
   clientId: string;
-}): Promise<EntryNode> {
+}): Promise<{
+  hoprd_api_endpoint: string;
+  accessToken: string;
+  id: string;
+}> {
   const url = new URL("/api/v1/request/entry-node", discoveryPlatformEndpoint);
   const headers = {
     Accept: "application/json",
@@ -29,17 +31,10 @@ export function fetchEntryNode({
       if (res.status >= 500) {
         bail(new Error(`Internal server error: ${JSON.stringify(res)}`));
       }
-      const json: {
-        hoprd_api_endpoint: string;
-        accessToken: string;
-        id: string;
-      } = await res.json();
-      return {
-        apiEndpoint: new URL(json.hoprd_api_endpoint),
-        accessToken: json.accessToken,
-        peerId: json.id,
-        recommendedExits: new Set<string>(),
-      };
+      if (res.status === 404) {
+        bail(new Error("no more nodes"));
+      }
+      return await res.json();
     },
     {
       retries: 3,
@@ -57,7 +52,12 @@ export function fetchExitNodes({
 }: {
   discoveryPlatformEndpoint: string;
   clientId: string;
-}): Promise<ExitNode[]> {
+}): Promise<
+  {
+    exit_node_pub_key: string;
+    id: string;
+  }[]
+> {
   const url = new URL(
     "/api/v1/node?hasExitNode=true",
     discoveryPlatformEndpoint
@@ -73,14 +73,10 @@ export function fetchExitNodes({
       if (res.status >= 500) {
         bail(new Error(`Internal server error: ${JSON.stringify(res)}`));
       }
-      const json: {
-        exit_node_pub_key: string;
-        id: string;
-      }[] = await res.json();
-      return json.map(({ exit_node_pub_key, id }) => ({
-        pubKey: exit_node_pub_key,
-        peerId: id,
-      }));
+      if (res.status === 404) {
+        bail(new Error("no more nodes"));
+      }
+      return await res.json();
     },
     {
       retries: 3,
