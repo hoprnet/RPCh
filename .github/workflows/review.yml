@@ -99,7 +99,7 @@ jobs:
       - name: Calculate environment variables
         shell: sh
         run: |
-          export short_sha=$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-7`)
+          export short_sha=$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-7)
           echo "SHORT_SHA=$short_sha" >> $GITHUB_ENV
           export tag=$(echo ${{ github.ref_name }} | sed -E 's/[^0-9.]//g')
           echo "TAG=$tag" >> $GITHUB_ENV
