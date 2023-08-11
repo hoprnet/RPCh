@@ -275,12 +275,6 @@ app.post(
       (value) =>
         Array.isArray(value) && value.every((val) => typeof val === "string")
     ),
-  body("hoprdApiEndpointsExt")
-    .exists()
-    .custom(
-      (value) =>
-        Array.isArray(value) && value.every((val) => typeof val === "string")
-    ),
   body("hoprdApiTokens")
     .exists()
     .custom(
@@ -305,7 +299,6 @@ app.post(
         discoveryPlatformEndpoint,
         chainId,
         hoprdApiEndpoints,
-        hoprdApiEndpointsExt,
         hoprdApiTokens,
         exitNodePubKeys,
         client,
@@ -315,7 +308,6 @@ app.post(
         client: string;
         chainId: string;
         hoprdApiEndpoints: string[];
-        hoprdApiEndpointsExt: string[];
         hoprdApiTokens: string[];
         exitNodePubKeys: string[];
         hasExitNodes: boolean[];
@@ -326,7 +318,6 @@ app.post(
         client,
         chainId,
         hoprdApiEndpoints,
-        hoprdApiEndpointsExt,
         hoprdApiTokens,
         exitNodePubKeys,
         hasExitNodes

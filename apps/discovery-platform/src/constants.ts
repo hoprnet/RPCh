@@ -12,6 +12,8 @@ const {
 // Skips commitment check making all fresh nodes go to ready
 const SKIP_CHECK_COMMITMENT = process.env.SKIP_CHECK_COMMITMENT === "true";
 
+const RUNNING_IN_SANDBOX = process.env.RUNNING_IN_SANDBOX === "true";
+
 // Unit amount of quotas a request costs
 const BASE_QUOTA = process.env.BASE_QUOTA
   ? BigInt(process.env.BASE_QUOTA)
@@ -70,4 +72,5 @@ export {
   QUEUE_CONCURRENCY_LIMIT,
   SECRET,
   AVAILABILITY_MONITOR_URL,
+  RUNNING_IN_SANDBOX,
 };

@@ -27,7 +27,7 @@ import type {
   RegisteredNodeDB,
   AvailabilityMonitorResult,
 } from "../../../types";
-import { createLogger, isListSafe } from "../../../utils";
+import { createLogger, isListSafe, toLocalhostEndpoint } from "../../../utils";
 import { errors } from "pg-promise";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 import * as constants from "../../../constants";
@@ -190,6 +190,12 @@ export const v1Router = (ops: {
           excludeList,
           hasExitNode: hasExitNode ? hasExitNode === "true" : undefined,
           status,
+        }).then((nodes) => {
+          // if we are running in sandbox, convert endpoint to localhost
+          if (constants.RUNNING_IN_SANDBOX) {
+            nodes = nodes.map(toLocalhostEndpoint);
+          }
+          return nodes;
         });
 
         // cache response for 1 min
@@ -223,7 +229,15 @@ export const v1Router = (ops: {
           return res.status(400).json({ errors: errors.array() });
         }
         const { peerId }: { peerId: string } = req.params;
-        const node = await getRegisteredNode(ops.db, peerId);
+
+        const node = await getRegisteredNode(ops.db, peerId).then((node) => {
+          // if we are running in sandbox, convert endpoint to localhost
+          if (node && constants.RUNNING_IN_SANDBOX) {
+            node = toLocalhostEndpoint(node);
+          }
+          return node;
+        });
+
         counterSuccessfulRequests
           .labels({ method: req.method, path: req.path, status: 200 })
           .inc();
@@ -442,7 +456,16 @@ export const v1Router = (ops: {
         }
 
         // choose selected entry node
-        const selectedNode = await getEligibleNode(ops.db, { excludeList });
+        const selectedNode = await getEligibleNode(ops.db, {
+          excludeList,
+        }).then((node) => {
+          // if we are running in sandbox, convert endpoint to localhost
+          if (node && constants.RUNNING_IN_SANDBOX) {
+            node = toLocalhostEndpoint(node);
+          }
+          return node;
+        });
+
         log.verbose("selected entry node", selectedNode);
         if (!selectedNode) {
           counterFailedRequests
@@ -621,6 +644,12 @@ export const v1Router = (ops: {
         // get node data for all peerids
         const allPeerIdsData = await getRegisteredNodes(ops.db, {
           includeList: Array.from(allPeerIdsSet.values()),
+        }).then((nodes) => {
+          // if we are running in sandbox, convert endpoint to localhost
+          if (constants.RUNNING_IN_SANDBOX) {
+            nodes = nodes.map(toLocalhostEndpoint);
+          }
+          return nodes;
         });
 
         // TODO: handle funding

@@ -5,6 +5,7 @@
 #   - 1 funding service
 #   - 1 discovery platform
 #   - 1 postgres DB
+#   - 1 availability monitor
 version: "3"
 
 volumes:
@@ -65,6 +66,7 @@ services:
       - AVAILABILITY_MONITOR_URL=http://availability-monitor:3050
       - SKIP_CHECK_COMMITMENT=${SKIP_CHECK_COMMITMENT}
       - SECRET=${DP_SECRET}
+      - RUNNING_IN_SANDBOX=${RUNNING_IN_SANDBOX}
 
   availability-monitor:
     build:
