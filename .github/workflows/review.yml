@@ -73,11 +73,11 @@ jobs:
         # TODO: dynamically get this list
         project:
           - exit-node
-          - funding-service
-          - discovery-platform
-          - rpc-server
-          - manager
-          - availability-monitor
+#          - funding-service
+#          - discovery-platform
+#          - rpc-server
+#          - manager
+#          - availability-monitor
         include:
           - project: exit-node
             directory: apps
