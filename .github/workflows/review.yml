@@ -99,8 +99,15 @@ jobs:
       - name: Calculate environment variables
         shell: sh
         run: |
-          echo "SHORT_SHA=`echo ${{ github.event.pull_request.head.sha }} | cut -c1-7`" >> $GITHUB_ENV
-          echo "TAG=`echo ${{ github.ref_name }} | sed -E 's/[^0-9.]//g')`" >> $GITHUB_ENV
+          export short_sha=$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-7`)
+          echo "SHORT_SHA=$short_sha" >> $GITHUB_ENV
+          export tag=$(echo ${{ github.ref_name }} | sed -E 's/[^0-9.]//g')
+          echo "TAG=$tag" >> $GITHUB_ENV
+          export tags=$(echo $short_sha, $tag | sed 's/^[ \t,]*//; s/[ \t,]*$//')
+          echo $short_sha
+          echo $tag
+          echo $tags
+          echo "TAGS=$tags" >> $GITHUB_ENV
 
       - run: echo $GITHUB_ENV
 
