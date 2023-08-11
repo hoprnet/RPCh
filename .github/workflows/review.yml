@@ -98,13 +98,11 @@ jobs:
 
       - name: Calculate environment variables
         shell: sh
-        run: echo "SHORT_SHA=`echo ${{ github.event.pull_request.head.sha }} | cut -c1-7`" >> $GITHUB_ENV
-
-      - run: |
-          echo "Tag name from GITHUB_REF_NAME: $GITHUB_REF_NAME"
-          echo "Tag name from github.ref_name: ${{  github.ref_name }}"
+        run: |
+          echo "SHORT_SHA=`echo ${{ github.event.pull_request.head.sha }} | cut -c1-7`" >> $GITHUB_ENV
           echo "TAG=`echo ${{ github.ref_name }} | sed -E 's/[^0-9.]//g')`" >> $GITHUB_ENV
-          cat $GITHUB_ENV
+
+      - run: echo $GITHUB_ENV
 
       - name: Login to GCP
         id: gcloud
