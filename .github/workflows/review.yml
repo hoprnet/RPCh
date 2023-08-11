@@ -72,17 +72,17 @@ jobs:
       matrix:
         # TODO: dynamically get this list
         project:
-          - exit-node
-#          - funding-service
+#          - exit-node
+          - funding-service
 #          - discovery-platform
 #          - rpc-server
 #          - manager
 #          - availability-monitor
         include:
-          - project: exit-node
-            directory: apps
-#          - project: funding-service
+#          - project: exit-node
 #            directory: apps
+          - project: funding-service
+            directory: apps
 #          - project: discovery-platform
 #            directory: apps
 #          - project: availability-monitor
@@ -118,7 +118,8 @@ jobs:
           registry: ${{ secrets.GOOGLE_REGION }}-docker.pkg.dev
           username: ${{ steps.gcloud.outputs.username }}
           password: ${{ steps.gcloud.outputs.password }}
-          tags: "${{ env.SHORT_SHA }},${{ env.TAG }}"
+          tags: "${{ env.TAG }}"
+#          tags: "${{ env.SHORT_SHA }},${{ env.TAG }}"
 
 #  review-configuration:
 #    name: Review configuration
