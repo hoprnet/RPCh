@@ -1,11 +1,12 @@
 import assert from "assert";
-import * as db from "../db";
 import { Client } from "../types";
 import { createClient, deleteClient, getClient, updateClient } from "./index";
 import { errors } from "pg-promise";
-import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";
+import {
+  TestingDatabaseInstance,
+  getTestingConnectionString,
+} from "@rpch/common/build/internal/db";
 import path from "path";
-import * as PgMem from "pg-mem";
 
 const createMockClient = (params?: Client): Client => {
   return {
@@ -16,32 +17,35 @@ const createMockClient = (params?: Client): Client => {
 };
 
 describe("test quota functions", function () {
-  let dbInstance: db.DBInstance;
+  let dbInstance: TestingDatabaseInstance;
 
   beforeAll(async function () {
     const migrationsDirectory = path.join(__dirname, "../../migrations");
-    dbInstance = await MockPgInstanceSingleton.getDbInstance(
-      PgMem,
+    dbInstance = await TestingDatabaseInstance.create(
+      getTestingConnectionString(),
       migrationsDirectory
     );
-    MockPgInstanceSingleton.getInitialState();
   });
 
   beforeEach(async function () {
-    MockPgInstanceSingleton.getInitialState().restore();
+    await dbInstance.reset();
+  });
+
+  afterAll(async function () {
+    await dbInstance.close();
   });
 
   it("should create client", async function () {
     const mockClient = createMockClient();
-    const client = await createClient(dbInstance, mockClient);
+    const client = await createClient(dbInstance.db, mockClient);
     assert.equal(client.id, mockClient.id);
   });
   it("should get client by id", async function () {
     const mockClient = createMockClient();
-    const createdClient = await createClient(dbInstance, mockClient);
+    const createdClient = await createClient(dbInstance.db, mockClient);
 
     await createClient(
-      dbInstance,
+      dbInstance.db,
       createMockClient({
         id: "other client",
         payment: "premium",
@@ -49,21 +53,21 @@ describe("test quota functions", function () {
       })
     );
 
-    const queryClient = await getClient(dbInstance, createdClient.id);
+    const queryClient = await getClient(dbInstance.db, createdClient.id);
 
     assert.equal(queryClient?.id, createdClient.id);
     assert.equal(queryClient?.payment, createdClient.payment);
   });
   it("should update client", async function () {
     const mockClient = createMockClient();
-    const createdClient = await createClient(dbInstance, mockClient);
+    const createdClient = await createClient(dbInstance.db, mockClient);
 
-    await updateClient(dbInstance, {
+    await updateClient(dbInstance.db, {
       ...createdClient,
       labels: ["eth"],
     });
 
-    const queryClient = await getClient(dbInstance, createdClient.id);
+    const queryClient = await getClient(dbInstance.db, createdClient.id);
 
     assert.equal(queryClient?.id, mockClient.id);
     assert.deepEqual(queryClient?.labels, ["eth"]);
@@ -75,12 +79,12 @@ describe("test quota functions", function () {
       labels: [],
     });
 
-    const createdClient = await createClient(dbInstance, mockClient);
+    const createdClient = await createClient(dbInstance.db, mockClient);
 
-    await deleteClient(dbInstance, createdClient.id);
+    await deleteClient(dbInstance.db, createdClient.id);
 
     try {
-      await getClient(dbInstance, createdClient.id);
+      await getClient(dbInstance.db, createdClient.id);
     } catch (e) {
       if (e instanceof errors.QueryResultError) {
         assert.equal(e.message, "No data returned from the query.");

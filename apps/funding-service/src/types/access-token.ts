@@ -8,4 +8,4 @@ export type AccessToken = {
 
 export type AccessTokenDB = {
   [K in keyof AccessToken as CamelToSnakeCase<string & K>]: AccessToken[K];
-} & DBTimestamp & { id: number };
+} & Omit<DBTimestamp, "updated_at"> & { id: number };

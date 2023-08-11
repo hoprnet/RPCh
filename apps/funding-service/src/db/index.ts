@@ -16,10 +16,11 @@ export const saveAccessToken = async (
   accessToken: AccessToken
 ): Promise<AccessTokenDB> => {
   const text =
-    "INSERT INTO access_tokens(id, token, expired_at) values(default, $<token>, $<expiredAt>) RETURNING *";
+    "INSERT INTO access_tokens(id, token, expired_at, created_at) values(default, $<token>, $<expiredAt>, $<createdAt>) RETURNING *";
   const values = {
     token: accessToken.token,
     expiredAt: accessToken.expiredAt,
+    createdAt: accessToken.createdAt,
   };
   const dbRes: AccessTokenDB = await db.one(text, values);
   return dbRes;

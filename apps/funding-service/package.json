@@ -27,7 +27,6 @@
     "@types/supertest": "^2.0.12",
     "chai": "^4.3.7",
     "hardhat": "^2.12.3",
-    "pg-mem": "^2.6.4",
     "supertest": "^6.3.3",
     "ts-node": "^10.9.1"
   },

@@ -17,6 +17,8 @@ export const createClient = async (
     id: client.id,
     payment: client.payment,
     labels: client.labels ?? [],
+    quotaPaid: client.quotaPaid ?? BigInt(0),
+    quotaUsed: client.quotaUsed ?? BigInt(0),
   };
   return await db.createClient(dbInstance, dbQuota);
 };
@@ -33,6 +35,8 @@ export const createTrialClient = async (
     id: randomWordsId,
     payment: "trial",
     labels: labels ?? [],
+    quotaPaid: BigInt(0),
+    quotaUsed: BigInt(0),
   };
   return await db.createClient(dbInstance, dbQuota);
 };

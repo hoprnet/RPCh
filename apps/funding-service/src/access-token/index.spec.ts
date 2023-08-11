@@ -1,10 +1,11 @@
 import { AccessTokenService } from ".";
 import assert from "assert";
-import { DBInstance } from "../types";
 import { errors } from "pg-promise";
-import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";
+import {
+  TestingDatabaseInstance,
+  getTestingConnectionString,
+} from "@rpch/common/build/internal/db";
 import path from "path";
-import * as PgMem from "pg-mem";
 
 const THIRTY_MINUTES_IN_MS = 30 * 60_000;
 const MAX_HOPR = BigInt(40);
@@ -15,20 +16,23 @@ const accessTokenParams = {
 };
 describe("test AccessTokenService class", function () {
   let accessTokenService: AccessTokenService;
-  let dbInstance: DBInstance;
+  let dbInstance: TestingDatabaseInstance;
 
   beforeAll(async function () {
     const migrationsDirectory = path.join(__dirname, "../../migrations");
-    dbInstance = await MockPgInstanceSingleton.getDbInstance(
-      PgMem,
+    dbInstance = await TestingDatabaseInstance.create(
+      getTestingConnectionString(),
       migrationsDirectory
     );
-    MockPgInstanceSingleton.getInitialState();
   });
 
-  beforeEach(function () {
-    MockPgInstanceSingleton.getInitialState().restore();
-    accessTokenService = new AccessTokenService(dbInstance, SECRET_KEY);
+  beforeEach(async function () {
+    await dbInstance.reset();
+    accessTokenService = new AccessTokenService(dbInstance.db, SECRET_KEY);
+  });
+
+  afterAll(async function () {
+    await dbInstance.close();
   });
 
   it("should create and save token", async function () {

@@ -17,7 +17,7 @@ export const createQuota = async (
     quota: quota.quota,
     paidBy: quota.paidBy,
   };
-  return await db.createQuota(dbInstance, dbQuota);
+  return db.createQuota(dbInstance, dbQuota);
 };
 
 /**
@@ -43,7 +43,7 @@ export const getSumOfQuotasPaidByClient = async (
   dbInstance: db.DBInstance,
   client: string
 ): Promise<bigint> => {
-  return await db.getSumOfQuotasPaidByClient(dbInstance, client);
+  return await db.getClientQuotas(dbInstance, client).then((r) => r.quotaPaid);
 };
 
 /**
@@ -56,20 +56,7 @@ export const getSumOfQuotasUsedByClient = async (
   dbInstance: db.DBInstance,
   client: string
 ): Promise<bigint> => {
-  return await db.getSumOfQuotasUsedByClient(dbInstance, client);
-};
-
-/**
- * Update quota in DB with matching id
- * @param dbInstance DBInstance
- * @param quota QuotaDB
- * @returns QuotaDB
- */
-export const updateQuota = async (
-  dbInstance: db.DBInstance,
-  quota: QuotaDB
-): Promise<QuotaDB> => {
-  return await db.updateQuota(dbInstance, quota);
+  return await db.getClientQuotas(dbInstance, client).then((r) => r.quotaUsed);
 };
 
 /**

@@ -25,6 +25,8 @@ Checkout [Sandbox](https://github.com/Rpc-h/RPCh/tree/main/devkit/sandbox#sandbo
 
 ### For developers
 
+- unit-tests: you are required to run a postgres instance locally in order to run the unit tests
+  the connection string must look like `postgresql://postgres:postgres@127.0.0.1:5432`
 - coverage: currently we can generate coverage reports for each project,
   but we do not have a threshold set in which we would fail our CI
 - dependency check: we currently use `check-dependency-version-consistency` to ensure consistency between the dependency version,

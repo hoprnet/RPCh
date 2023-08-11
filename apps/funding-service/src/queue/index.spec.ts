@@ -4,12 +4,13 @@ import assert from "assert";
 import { ethers } from "hardhat";
 import { checkFreshRequests } from ".";
 import { AccessTokenService } from "../access-token";
-import { DBInstance } from "../types";
 import { RequestService } from "../request";
 import Prometheus from "prom-client";
-import { MockPgInstanceSingleton } from "@rpch/common/build/internal/db";
+import {
+  TestingDatabaseInstance,
+  getTestingConnectionString,
+} from "@rpch/common/build/internal/db";
 import path from "path";
-import * as PgMem from "pg-mem";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 
 const MOCK_ADDRESS = "0xA10AA7711FD1FA48ACAE6FF00FCB63B0F6AD055F";
@@ -60,7 +61,7 @@ const createAccessTokenAndRequest = async (
 describe("test index.ts", function () {
   let accounts: SignerWithAddress[];
   let provider: JsonRpcProvider;
-  let dbInstance: DBInstance;
+  let dbInstance: TestingDatabaseInstance;
   let requestService: RequestService;
   let accessTokenService: AccessTokenService;
   const register = new Prometheus.Registry();
@@ -76,22 +77,26 @@ describe("test index.ts", function () {
 
   beforeAll(async function () {
     const migrationsDirectory = path.join(__dirname, "../../migrations");
-    dbInstance = await MockPgInstanceSingleton.getDbInstance(
-      PgMem,
+    dbInstance = await TestingDatabaseInstance.create(
+      getTestingConnectionString(),
       migrationsDirectory
     );
-    MockPgInstanceSingleton.getInitialState();
   });
 
   beforeEach(async function () {
-    MockPgInstanceSingleton.getInitialState().restore();
-    accessTokenService = new AccessTokenService(dbInstance, "SECRET");
-    requestService = new RequestService(dbInstance);
+    await dbInstance.reset();
+    accessTokenService = new AccessTokenService(dbInstance.db, "SECRET");
+    requestService = new RequestService(dbInstance.db);
     accounts = await ethers.getSigners();
     provider = ethers.provider;
     await provider.getNetwork();
-    requestService = new RequestService(dbInstance);
+    requestService = new RequestService(dbInstance.db);
   });
+
+  afterAll(async function () {
+    await dbInstance.close();
+  });
+
   it("should handle fresh requests", async function () {
     const [owner] = accounts;
     const createRequest = await createAccessTokenAndRequest(

@@ -266,6 +266,8 @@ export const v1Router = (ops: {
             dbClient = await createClient(ops.db, {
               id: clientId,
               payment: "premium",
+              quotaPaid: BigInt(0),
+              quotaUsed: BigInt(0),
             });
           }
         }
@@ -279,7 +281,7 @@ export const v1Router = (ops: {
 
         const createdQuota = await createQuota(ops.db, {
           clientId: dbClient.id,
-          quota,
+          quota: BigInt(quota),
           actionTaker: "discovery-platform",
           paidBy: dbClient.id,
         });
