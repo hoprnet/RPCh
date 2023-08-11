@@ -37,35 +37,27 @@ export default class NodePair {
   private static KeepLastLatencies = 5;
   private static LatencyThreshold = 5e3;
 
+  public connectTime?: number;
   private socket?: WebSocket;
   private socketCb?: WebSocketCallback;
-  private connectTime?: number;
   private startConnectTime?: number;
   private messageListenerAttached = false;
   private readonly log;
-  private readonly exitNodes: Map<string, ExitNode> = new Map();
+  private readonly exitNodes: Map<string, ExitNode>;
   private readonly exitDatas: Map<string, ExitData> = new Map(); // exitId -> latencies
 
-  constructor(public readonly entryNode: EntryNode) {
+  constructor(
+    private readonly entryNode: EntryNode,
+    exitNodes: Iterable<ExitNode>
+  ) {
     const id = shortPeerId(entryNode.peerId);
     this.log = createLogger([`nodepair-${id}`]);
+    this.exitNodes = new Map(Array.from(exitNodes).map((n) => [n.peerId, n]));
   }
 
   public get id() {
     return this.entryNode.peerId;
   }
-
-  public addExitNodes = (exitNodes: Iterable<ExitNode>) => {
-    for (const n of exitNodes) {
-      this.exitNodes.set(n.peerId, n);
-      this.exitDatas.set(n.peerId, {
-        failedRequests: 0,
-        latencies: [],
-        ongoingRequests: 0,
-        successfulRequests: 0,
-      });
-    }
-  };
 
   public requestStarted = (exitId: string): number | undefined => {
     const data = this.exitDatas.get(exitId);
@@ -183,9 +175,9 @@ export default class NodePair {
   }
 
   private onWSopen = () => {
-    const diff = Date.now() - this.startConnectTime!;
-    this.log.verbose("onWSopen after", diff, "ms");
-    this.socketCb?.onOpen(diff);
+    this.connectTime = Date.now() - this.startConnectTime!;
+    this.log.verbose("onWSopen after", this.connectTime, "ms");
+    this.socketCb?.onOpen(this.connectTime);
   };
 
   private onWSclose = (evt: any) => {
