@@ -105,7 +105,6 @@ jobs:
           echo "Tag name from github.ref_name: ${{  github.ref_name }}"
           echo "TAG=`echo ${{ github.ref_name }} | sed -E 's/[^0-9.]//g')`" >> $GITHUB_ENV
           cat $GITHUB_ENV
-          
 
       - name: Login to GCP
         id: gcloud
