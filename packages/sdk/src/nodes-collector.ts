@@ -158,9 +158,9 @@ export default class NodesCollector {
     this.ongoingFetchPairs = true;
 
     const rawEntryNodes: NodesAPI.RawEntryNode[] = [];
+    const excludeList: string[] = [];
     let noError = true;
     while (rawEntryNodes.length < NodePair.TargetAmount && noError) {
-      const excludeList = rawEntryNodes.map((e) => e.id);
       const rawNode: NodesAPI.RawEntryNode | void =
         await NodesAPI.fetchEntryNode({
           excludeList,
@@ -173,6 +173,7 @@ export default class NodesCollector {
           noError = false;
         });
       if (rawNode) {
+        excludeList.push(rawNode.id);
         const nodeInfo = await NodesAPI.fetchNode(
           {
             discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
@@ -212,13 +213,14 @@ export default class NodesCollector {
     const newNodePairs = Array.from(entryNodes)
       .filter((en) => !this.nodePairs.has(en.peerId))
       .map((en) => new NodePair(en, exitNodes));
-    newNodePairs.forEach((np) =>
+    newNodePairs.forEach((np) => {
       np.connect({
         onOpen: this.onOpenWS,
         onClose: this.onCloseWS,
         onError: this.onErrorWS,
-      })
-    );
+      });
+      this.nodePairs.set(np.id, np);
+    });
   };
 
   private onOpenWS = (_id: string, _connTime: number) => {
