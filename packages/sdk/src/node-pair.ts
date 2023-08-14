@@ -148,7 +148,7 @@ export default class NodePair {
     // find minimal request count nodes
     const minReq = avgs[0].req;
     const reqInc = avgs.findIndex(({ req }) => req > minReq);
-    const minReqNodes = avgs.slice(0, reqInc);
+    const minReqNodes = reqInc < 0 ? avgs : avgs.slice(0, reqInc);
     // prefer real latency nodes over fresh ones
     const realLats = minReqNodes.filter(({ avg }) => avg > 0);
     if (realLats.length > 0) {
