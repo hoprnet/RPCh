@@ -131,6 +131,7 @@ export default class NodesCollector {
       res,
       "total successes on that route"
     );
+    this.closeOthers();
   };
 
   public requestFailed = ({ entryId, exitId, id }: Request) => {
@@ -142,6 +143,7 @@ export default class NodesCollector {
     }
     const res = np.requestFailed(exitId);
     log.verbose("requestFailed", req, "-", res, "failed on that route");
+    this.updatePairIds();
   };
 
   private fetchNodePairs = () => {
@@ -150,7 +152,7 @@ export default class NodesCollector {
       return;
     }
     if (this.nodePairs.size >= NodePair.TargetAmount) {
-      this.timerFetchPairs = setTimeout(this.fetchNodePairs, 30e3);
+      this.timerFetchPairs = setTimeout(this.fetchNodePairs, 60e3);
       return;
     }
     this.ongoingFetchPairs = true;
@@ -194,7 +196,8 @@ export default class NodesCollector {
         log.error("Error fetching exit nodes", err);
       })
       .finally(() => {
-        this.timerFetchPairs = setTimeout(this.fetchNodePairs);
+        this.ongoingFetchPairs = false;
+        this.timerFetchPairs = setTimeout(this.fetchNodePairs, 60e3);
       });
   };
 
@@ -243,6 +246,11 @@ export default class NodesCollector {
         if (!np.connectTime) {
           return acc;
         }
+        // does not have a valid exit node
+        const res = np.readyExitNode();
+        if (res.res !== "ok") {
+          return acc;
+        }
         if (!acc.prim) {
           return { prim: np };
         }
@@ -268,6 +276,22 @@ export default class NodesCollector {
     if (sec) {
       this.secondaryNodePairId = sec.id;
     }
+  };
+
+  private closeOthers = () => {
+    const closable = Array.from(this.nodePairs.values()).filter(
+      (np) =>
+        !(
+          np.id === this.primaryNodePairId ||
+          np.id === this.secondaryNodePairId ||
+          np.hasOngoing()
+        )
+    );
+    log.verbose(`closing ${closable.length} node pairs`);
+    closable.forEach((c) => {
+      c.close();
+      this.nodePairs.delete(c.id);
+    });
   };
 
   private messageListener = (event: MessageEvent) => {

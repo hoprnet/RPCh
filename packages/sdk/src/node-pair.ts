@@ -161,16 +161,22 @@ export default class NodePair {
     }
   }
 
-  public prettyPrint(): string {
+  public hasOngoing = () => {
+    return !!Array.from(this.exitDatas.values()).find(
+      (d) => d.ongoingRequests > 0
+    );
+  };
+
+  public prettyPrint = (): string => {
     const exCount = this.exitNodes.size;
-    const exStrs = Array.from(this.exitDatas).map(([, d]) => {
+    const exStrs = Array.from(this.exitDatas.values()).map((d) => {
       const tot = d.failedRequests + d.successfulRequests;
       const s = d.successfulRequests;
       const o = d.ongoingRequests;
       return `${s}/${tot}+${o}`;
     });
     return `${this.id}_${exCount}x:${exStrs.join("-")}`;
-  }
+  };
 
   private onWSopen = () => {
     this.connectTime = Date.now() - this.startConnectTime!;
