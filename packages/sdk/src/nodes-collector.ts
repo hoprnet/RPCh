@@ -146,7 +146,7 @@ export default class NodesCollector {
     this.updatePairIds();
   };
 
-  private fetchNodePairs = () => {
+  private fetchNodePairs = async () => {
     clearTimeout(this.timerFetchPairs);
     if (this.ongoingFetchPairs) {
       return;
@@ -161,26 +161,20 @@ export default class NodesCollector {
     let noError = true;
     while (rawEntryNodes.length < NodePair.TargetAmount && noError) {
       const excludeList = rawEntryNodes.map((e) => e.id);
-      NodesAPI.fetchEntryNode({
-        excludeList,
-        discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
-        clientId: this.clientId,
-      })
-        .then(
-          (rawNode: {
-            hoprd_api_endpoint: string;
-            accessToken: string;
-            id: string;
-          }) => {
-            rawEntryNodes.push(rawNode);
-          }
-        )
-        .catch((err) => {
+      const rawNode: NodesAPI.RawEntryNode | void =
+        await NodesAPI.fetchEntryNode({
+          excludeList,
+          discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
+          clientId: this.clientId,
+        }).catch((err) => {
           if (err.message !== NodesAPI.NoMoreNodes) {
             log.error("Error fetching entry nodes", err);
           }
           noError = false;
         });
+      if (rawNode) {
+        rawEntryNodes.push(rawNode);
+      }
     }
 
     NodesAPI.fetchExitNodes({
