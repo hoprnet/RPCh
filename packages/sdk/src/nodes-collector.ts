@@ -131,19 +131,20 @@ export default class NodesCollector {
       res,
       "total successes on that route"
     );
-    this.closeOthers();
+    this.closeRedundant();
   };
 
   public requestFailed = ({ entryId, exitId, id }: Request) => {
     const np = this.nodePairs.get(entryId);
     const req = `${id}:${shortPeerId(entryId)}>${shortPeerId(exitId)}`;
     if (!np) {
-      log.error("requestSucceeded", req, "on non exiting node pair");
+      log.error("requestFailed", req, "on non exiting node pair");
       return;
     }
     const res = np.requestFailed(exitId);
     log.verbose("requestFailed", req, "-", res, "failed on that route");
     this.updatePairIds();
+    this.closeRedundant();
   };
 
   private fetchNodePairs = async () => {
@@ -272,14 +273,14 @@ export default class NodesCollector {
     }, {});
     this.primaryNodePairId = prim?.id;
     this.secondaryNodePairId = sec?.id;
-    console.log(
-      "updatePairIds",
+    log.verbose(
+      "update to pairIds",
       this.primaryNodePairId,
       this.secondaryNodePairId
     );
   };
 
-  private closeOthers = () => {
+  private closeRedundant = () => {
     const closable = Array.from(this.nodePairs.values()).filter(
       (np) =>
         !(
