@@ -222,9 +222,10 @@ export default class SDK {
       )
       .catch((error) => {
         log.error("error sending segment", Segment.prettyPrint(segment), error);
-        // try fallback
+
+        // try fallback if request still valid
         const fallback = this.nodesColl.fallbackNodePair;
-        if (fallback) {
+        if (this.requestCache.has(segment.requestId) && fallback) {
           NodesAPI.send(
             {
               apiEndpoint: entryNode.apiEndpoint,
