@@ -173,7 +173,17 @@ export default class NodesCollector {
           noError = false;
         });
       if (rawNode) {
-        rawEntryNodes.push(rawNode);
+        const nodeInfo = await NodesAPI.fetchNode(
+          {
+            discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
+            clientId: this.clientId,
+          },
+          rawNode.id
+        );
+        if (nodeInfo && !nodeInfo.node.has_exit_node) {
+          // only use entry only nodes here
+          rawEntryNodes.push(rawNode);
+        }
       }
     }
 

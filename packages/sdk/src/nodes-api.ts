@@ -1,5 +1,4 @@
 import { WebSocket } from "isomorphic-ws";
-import retry from "async-retry";
 
 export const NoMoreNodes = "no more nodes";
 
@@ -12,6 +11,24 @@ export type RawEntryNode = {
 export type RawExitNode = {
   exit_node_pub_key: string;
   id: string;
+};
+
+export type RawNode = {
+  node: {
+    id: string;
+    has_exit_node: boolean;
+    chain_id: number;
+    hoprd_api_endpoint: string;
+    hoprd_api_token: string;
+    exit_node_pub_key: string;
+    native_address: string;
+    total_amount_funded: string;
+    honesty_score: string;
+    reason?: string;
+    status: string;
+    created_at: Date;
+    updated_at: Date;
+  };
 };
 
 export function fetchEntryNode({
@@ -34,25 +51,15 @@ export function fetchEntryNode({
     client: clientId,
   });
 
-  return retry(
-    async function (bail) {
-      const res = await fetch(url, { method: "POST", headers, body });
-      if (res.status >= 500) {
-        bail(new Error(`Internal server error: ${JSON.stringify(res)}`));
-      }
-      if (res.status === 404) {
-        bail(new Error(NoMoreNodes));
-      }
-      return await res.json();
-    },
-    {
-      retries: 3,
-      factor: 3,
-      minTimeout: 3e3,
-      maxTimeout: 120e3,
-      randomize: true,
+  return fetch(url, { method: "POST", headers, body }).then((res) => {
+    if (res.status >= 500) {
+      throw new Error(`Internal server error: ${JSON.stringify(res)}`);
     }
-  );
+    if (res.status === 404) {
+      throw new Error(NoMoreNodes);
+    }
+    return res.json();
+  });
 }
 
 export function fetchExitNodes({
@@ -71,25 +78,15 @@ export function fetchExitNodes({
     "x-rpch-client": clientId,
   };
 
-  return retry(
-    async function (bail) {
-      const res = await fetch(url, { headers });
-      if (res.status >= 500) {
-        bail(new Error(`Internal server error: ${JSON.stringify(res)}`));
-      }
-      if (res.status === 404) {
-        bail(new Error(NoMoreNodes));
-      }
-      return await res.json();
-    },
-    {
-      retries: 3,
-      factor: 3,
-      minTimeout: 3e3,
-      maxTimeout: 120e3,
-      randomize: true,
+  return fetch(url, { headers }).then((res) => {
+    if (res.status >= 500) {
+      throw new Error(`Internal server error: ${JSON.stringify(res)}`);
     }
-  );
+    if (res.status === 404) {
+      throw new Error(NoMoreNodes);
+    }
+    return res.json();
+  });
 }
 
 export function connectWS({
@@ -106,29 +103,23 @@ export function connectWS({
   return new WebSocket(wsURL);
 }
 
-/*
-function fetchNode(
+export function fetchNode(
   {
     discoveryPlatformEndpoint,
     clientId,
   }: { discoveryPlatformEndpoint: string; clientId: string },
   peerId: string
-) {
+): Promise<RawNode> {
   const url = new URL(`/api/v1/node/${peerId}`, discoveryPlatformEndpoint);
   const headers = {
     Accept: "application/json",
     "x-rpch-client": clientId,
   };
 
-  return fetch(url, { headers })
-    .then((resp) => {
-      if (resp.status === 200) {
-        return resp.json();
-      }
-      throw new Error(`wrong status ${resp}`);
-    })
-    .then((json) => {
-      console.log("NODE", json);
-    });
+  return fetch(url, { headers }).then((resp) => {
+    if (resp.status === 200) {
+      return resp.json();
+    }
+    throw new Error(`wrong status ${resp}`);
+  });
 }
-*/
