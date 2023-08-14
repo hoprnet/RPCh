@@ -1,10 +1,14 @@
 import { MessageEvent } from "isomorphic-ws";
 import { utils } from "ethers";
 
-import type { Request } from "./request";
-import NodePair, { type EntryNode, ExitNode, Pair } from "./node-pair";
+import * as EntryNode from "./entry-node";
+import * as ExitNode from "./exit-node";
 import * as NodesAPI from "./nodes-api";
+import NodePair from "./node-pair";
+import type { Request } from "./request";
 import { createLogger, shortPeerId } from "./utils";
+
+import type { NodeMatch } from "./node-match";
 
 const log = createLogger(["nodes-collector"]);
 
@@ -12,6 +16,8 @@ export default class NodesCollector {
   private readonly nodePairs: Map<string, NodePair> = new Map();
   private timerFetchPairs = setTimeout(function () {});
   private ongoingFetchPairs = false;
+  private primaryNodePairId?: string;
+  private secondaryNodePairId?: string;
 
   constructor(
     private readonly discoveryPlatformEndpoint: string,
@@ -29,7 +35,7 @@ export default class NodesCollector {
   };
 
   /**
-   * Ready for request receival, no websocket yet.
+   * Ready for request receival.
    */
   public ready = async (timeout: number): Promise<boolean> => {
     return new Promise((resolve, reject) => {
@@ -37,11 +43,8 @@ export default class NodesCollector {
       const check = () => {
         const now = Date.now();
         const elapsed = now - start;
-        for (const [, np] of this.nodePairs) {
-          const res = np.readyExitNode();
-          if (res.res === "ok") {
-            return resolve(true);
-          }
+        if (this.primaryNodePairId) {
+          return resolve(true);
         }
         if (elapsed > timeout) {
           log.error("Timeout waiting for ready", elapsed);
@@ -54,18 +57,18 @@ export default class NodesCollector {
   };
 
   /**
-   * Requested node pair, needs websocket.
+   * Request primary node pair.
    */
-  public requestNodePair = async (timeout: number): Promise<Pair> => {
+  public requestNodePair = async (timeout: number): Promise<NodeMatch> => {
     return new Promise((resolve, reject) => {
       const start = Date.now();
       const check = () => {
         const now = Date.now();
         const elapsed = now - start;
-        for (const [, np] of this.nodePairs) {
+        if (this.primaryNodePairId) {
+          const np = this.nodePairs.get(this.primaryNodePairId)!;
           const res = np.readyExitNode();
           if (res.res === "ok") {
-            np.messageListener = this.messageListener;
             return resolve({ entryNode: np.entryNode, exitNode: res.exitNode });
           }
         }
@@ -80,20 +83,17 @@ export default class NodesCollector {
   };
 
   /**
-   * Requested node pair, needs websocket.
+   * Request secondary node pair.
    */
-  public requestFallbackNodePair = (pair: Pair): Pair | undefined => {
-    for (const [id, np] of this.nodePairs) {
-      if (id === pair.entryNode.peerId) {
-        continue;
-      }
+  public get fallbackNodePair(): NodeMatch | undefined {
+    if (this.secondaryNodePairId) {
+      const np = this.nodePairs.get(this.secondaryNodePairId)!;
       const res = np.readyExitNode();
       if (res.res === "ok") {
-        np.messageListener = this.messageListener;
         return { entryNode: np.entryNode, exitNode: res.exitNode };
       }
     }
-  };
+  }
 
   public requestStarted = ({ entryId, exitId, id }: Request) => {
     const np = this.nodePairs.get(entryId);
@@ -102,6 +102,7 @@ export default class NodesCollector {
       log.error("requestStarted", req, "on non exiting node pair");
       return;
     }
+    np.messageListener = this.messageListener;
     const res = np.requestStarted(exitId);
     log.verbose(
       "requestStarted",
@@ -153,37 +154,120 @@ export default class NodesCollector {
       return;
     }
     this.ongoingFetchPairs = true;
-    const excludeList = Array.from(this.nodePairs.keys());
-    NodesAPI.fetchEntryNode({
-      excludeList,
+
+    const rawEntryNodes: NodesAPI.RawEntryNode[] = [];
+    let noError = true;
+    while (rawEntryNodes.length < NodePair.TargetAmount && noError) {
+      const excludeList = rawEntryNodes.map((e) => e.id);
+      NodesAPI.fetchEntryNode({
+        excludeList,
+        discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
+        clientId: this.clientId,
+      })
+        .then(
+          (rawNode: {
+            hoprd_api_endpoint: string;
+            accessToken: string;
+            id: string;
+          }) => {
+            rawEntryNodes.push(rawNode);
+          }
+        )
+        .catch((err) => {
+          if (err.message !== NodesAPI.NoMoreNodes) {
+            log.error("Error fetching entry nodes", err);
+          }
+          noError = false;
+        });
+    }
+
+    NodesAPI.fetchExitNodes({
       discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
       clientId: this.clientId,
     })
-      .then((entryNode: EntryNode) => {
-        const np = new NodePair(entryNode);
-        this.nodePairs.set(np.id, np);
-        np.connect();
-        NodesAPI.fetchExitNodes({
-          discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
-          clientId: this.clientId,
-        })
-          .then((exitNodes: ExitNode[]) => {
-            np.addExitNodes(exitNodes);
-            setTimeout(this.fetchNodePairs);
-          })
-          .catch((err: any) => {
-            log.error("Error fetching exit nodes", err);
-            // for now restart the whole process to keep it consistent with one hop behaviour
-            np.close();
-            this.nodePairs.delete(np.id);
-          });
+      .then((rawExitNodes: NodesAPI.RawExitNode[]) => {
+        const exitNodes = rawExitNodes.map(ExitNode.fromRaw);
+        const entryNodes = rawEntryNodes.map(EntryNode.fromRaw);
+        this.initNodes(entryNodes, exitNodes);
       })
       .catch((err: any) => {
-        log.error("Error fetching entry node", err);
+        log.error("Error fetching exit nodes", err);
       })
       .finally(() => {
         this.timerFetchPairs = setTimeout(this.fetchNodePairs);
       });
+  };
+
+  private initNodes = (
+    entryNodes: Iterable<EntryNode.EntryNode>,
+    exitNodes: Iterable<ExitNode.ExitNode>
+  ) => {
+    const newNodePairs = Array.from(entryNodes)
+      .filter((en) => !this.nodePairs.has(en.peerId))
+      .map((en) => new NodePair(en, exitNodes));
+    newNodePairs.forEach((np) =>
+      np.connect({
+        onOpen: this.onOpenWS,
+        onClose: this.onCloseWS,
+        onError: this.onErrorWS,
+      })
+    );
+  };
+
+  private onOpenWS = (_id: string, _connTime: number) => {
+    this.updatePairIds();
+  };
+
+  private onCloseWS = (id: string, _evt: CloseEvent) => {
+    const np = this.nodePairs.get(id)!;
+    log.info("server close event removing node pair", np.prettyPrint());
+    np.close();
+    this.nodePairs.delete(id);
+    this.updatePairIds();
+  };
+
+  private onErrorWS = (id: string, _evt: Error) => {
+    const np = this.nodePairs.get(id)!;
+    log.info("server error event removing node pair", np.prettyPrint());
+    np.close();
+    this.nodePairs.delete(id);
+    this.updatePairIds();
+  };
+
+  private updatePairIds = () => {
+    const { prim, sec } = Array.from(this.nodePairs.values()).reduce<{
+      prim?: NodePair;
+      sec?: NodePair;
+    }>(
+      (acc, np) => {
+        if (!np.connectTime) {
+          return acc;
+        }
+        if (!acc.prim) {
+          return { prim: np };
+        }
+        if (np.connectTime < acc.prim.connectTime!) {
+          return { prim: np, sec: acc.prim };
+        }
+        if (!acc.sec) {
+          return { prim: acc.prim, sec: np };
+        }
+        if (np.connectTime < acc.sec.connectTime!) {
+          return { prim: acc.prim, sec: np };
+        }
+        return acc;
+      },
+      {
+        prim: this.nodePairs.get(this.primaryNodePairId || ""),
+        sec: this.nodePairs.get(this.secondaryNodePairId || ""),
+      }
+    );
+    if (prim) {
+      this.primaryNodePairId = prim.id;
+    }
+    if (sec) {
+      this.secondaryNodePairId = sec.id;
+    }
   };
 
   private messageListener = (event: MessageEvent) => {

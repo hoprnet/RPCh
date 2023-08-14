@@ -1,6 +1,19 @@
 import { WebSocket } from "isomorphic-ws";
 import retry from "async-retry";
 
+export const NoMoreNodes = "no more nodes";
+
+export type RawEntryNode = {
+  hoprd_api_endpoint: string;
+  accessToken: string;
+  id: string;
+};
+
+export type RawExitNode = {
+  exit_node_pub_key: string;
+  id: string;
+};
+
 export function fetchEntryNode({
   excludeList,
   discoveryPlatformEndpoint,
@@ -9,11 +22,7 @@ export function fetchEntryNode({
   excludeList: string[];
   discoveryPlatformEndpoint: string;
   clientId: string;
-}): Promise<{
-  hoprd_api_endpoint: string;
-  accessToken: string;
-  id: string;
-}> {
+}): Promise<RawEntryNode> {
   const url = new URL("/api/v1/request/entry-node", discoveryPlatformEndpoint);
   const headers = {
     Accept: "application/json",
@@ -32,7 +41,7 @@ export function fetchEntryNode({
         bail(new Error(`Internal server error: ${JSON.stringify(res)}`));
       }
       if (res.status === 404) {
-        bail(new Error("no more nodes"));
+        bail(new Error(NoMoreNodes));
       }
       return await res.json();
     },
@@ -52,12 +61,7 @@ export function fetchExitNodes({
 }: {
   discoveryPlatformEndpoint: string;
   clientId: string;
-}): Promise<
-  {
-    exit_node_pub_key: string;
-    id: string;
-  }[]
-> {
+}): Promise<RawExitNode[]> {
   const url = new URL(
     "/api/v1/node?hasExitNode=true",
     discoveryPlatformEndpoint
@@ -74,7 +78,7 @@ export function fetchExitNodes({
         bail(new Error(`Internal server error: ${JSON.stringify(res)}`));
       }
       if (res.status === 404) {
-        bail(new Error("no more nodes"));
+        bail(new Error(NoMoreNodes));
       }
       return await res.json();
     },

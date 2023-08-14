@@ -1,28 +1,15 @@
 import { WebSocket, MessageEvent } from "isomorphic-ws";
+
 import * as NodesAPI from "./nodes-api";
 import { average, createLogger, randomEl, shortPeerId } from "./utils";
 
-export type EntryNode = {
-  apiEndpoint: URL;
-  accessToken: string;
-  peerId: string;
-  recommendedExits: Set<string>;
-};
-
-export type ExitNode = {
-  peerId: string;
-  pubKey: string;
-};
-
-export type Pair = {
-  entryNode: EntryNode;
-  exitNode: ExitNode;
-};
+import type { EntryNode } from "./entry-node";
+import type { ExitNode } from "./exit-node";
 
 export type WebSocketCallback = {
-  onOpen: (connTime: number) => void;
-  onClose: () => void;
-  onError: () => void;
+  onOpen: (id: string, connTime: number) => void;
+  onClose: (id: string, evt: CloseEvent) => void;
+  onError: (id: string, err: Error) => void;
 };
 
 type ExitData = {
@@ -47,7 +34,7 @@ export default class NodePair {
   private readonly exitDatas: Map<string, ExitData> = new Map(); // exitId -> latencies
 
   constructor(
-    private readonly entryNode: EntryNode,
+    public readonly entryNode: EntryNode,
     exitNodes: Iterable<ExitNode>
   ) {
     const id = shortPeerId(entryNode.peerId);
@@ -174,20 +161,31 @@ export default class NodePair {
     }
   }
 
+  public prettyPrint(): string {
+    const exCount = this.exitNodes.size;
+    const exStrs = Array.from(this.exitDatas).map(([, d]) => {
+      const tot = d.failedRequests + d.successfulRequests;
+      const s = d.successfulRequests;
+      const o = d.ongoingRequests;
+      return `${s}/${tot}+${o}`;
+    });
+    return `${this.id}_${exCount}x:${exStrs.join("-")}`;
+  }
+
   private onWSopen = () => {
     this.connectTime = Date.now() - this.startConnectTime!;
     this.log.verbose("onWSopen after", this.connectTime, "ms");
-    this.socketCb?.onOpen(this.connectTime);
+    this.socketCb?.onOpen(this.id, this.connectTime);
   };
 
-  private onWSclose = (evt: any) => {
+  private onWSclose = (evt: CloseEvent) => {
     this.log.info("onWSclose", evt);
-    this.socketCb?.onClose();
+    this.socketCb?.onClose(this.id, evt);
   };
 
-  private onWSerror = (err: any) => {
+  private onWSerror = (err: Error) => {
     this.log.error("onWSerror", err);
-    this.socketCb?.onError();
+    this.socketCb?.onError(this.id, err);
   };
 }
 
