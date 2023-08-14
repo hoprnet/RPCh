@@ -222,8 +222,34 @@ export default class SDK {
       )
       .catch((error) => {
         log.error("error sending segment", Segment.prettyPrint(segment), error);
-        this.rejectRequest(request);
-        reject("Sending segment failed");
+        // try fallback
+        const fallback = this.nodesColl.fallbackNodePair;
+        if (fallback) {
+          NodesAPI.send(
+            {
+              apiEndpoint: entryNode.apiEndpoint,
+              accessToken: entryNode.accessToken,
+              recipient: request.exitId,
+            },
+            Segment.toMessage(segment)
+          )
+            .then((json) =>
+              log.verbose(
+                "sent segment through fallback",
+                Segment.prettyPrint(segment),
+                json
+              )
+            )
+            .catch((error) => {
+              log.error(
+                "error sending fallbacks egment",
+                Segment.prettyPrint(segment),
+                error
+              );
+              this.rejectRequest(request);
+              reject("Sending segment failed");
+            });
+        }
       });
   };
 

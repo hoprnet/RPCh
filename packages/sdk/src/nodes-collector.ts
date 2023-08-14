@@ -175,17 +175,17 @@ export default class NodesCollector {
         });
       if (rawNode) {
         excludeList.push(rawNode.id);
-        const nodeInfo = await NodesAPI.fetchNode(
-          {
-            discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
-            clientId: this.clientId,
-          },
-          rawNode.id
-        );
-        if (nodeInfo && !nodeInfo.node.has_exit_node) {
-          // only use entry only nodes here
-          rawEntryNodes.push(rawNode);
-        }
+        // const nodeInfo = await NodesAPI.fetchNode(
+        //   {
+        //     discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
+        //     clientId: this.clientId,
+        //   },
+        //   rawNode.id
+        // );
+        // if (nodeInfo && !nodeInfo.node.has_exit_node) {
+        // only use entry only nodes here
+        rawEntryNodes.push(rawNode);
+        // }
       }
     }
 
