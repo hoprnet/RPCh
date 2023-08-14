@@ -39,9 +39,11 @@ export default class NodePair {
   ) {
     const id = shortPeerId(entryNode.peerId);
     this.log = createLogger([`nodepair-${id}`]);
-    this.exitNodes = new Map(Array.from(exitNodes).map((n) => [n.peerId, n]));
+    // ensure entry node not included in exits
+    const exits = Array.from(exitNodes).filter((n) => id !== n.peerId);
+    this.exitNodes = new Map(exits.map((n) => [n.peerId, n]));
     this.exitDatas = new Map(
-      Array.from(exitNodes).map((n) => [
+      exits.map((n) => [
         n.peerId,
         {
           failedRequests: 0,
