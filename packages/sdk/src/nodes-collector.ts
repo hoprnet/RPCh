@@ -247,41 +247,36 @@ export default class NodesCollector {
     const { prim, sec } = Array.from(this.nodePairs.values()).reduce<{
       prim?: NodePair;
       sec?: NodePair;
-    }>(
-      (acc, np) => {
-        if (!np.connectTime) {
-          return acc;
-        }
-        // does not have a valid exit node
-        const res = np.readyExitNode();
-        if (res.res !== "ok") {
-          return acc;
-        }
-        if (!acc.prim) {
-          return { prim: np };
-        }
-        if (np.connectTime < acc.prim.connectTime!) {
-          return { prim: np, sec: acc.prim };
-        }
-        if (!acc.sec) {
-          return { prim: acc.prim, sec: np };
-        }
-        if (np.connectTime < acc.sec.connectTime!) {
-          return { prim: acc.prim, sec: np };
-        }
+    }>((acc, np) => {
+      if (!np.connectTime) {
         return acc;
-      },
-      {
-        prim: this.nodePairs.get(this.primaryNodePairId || ""),
-        sec: this.nodePairs.get(this.secondaryNodePairId || ""),
       }
+      // does not have a valid exit node
+      const res = np.readyExitNode();
+      if (res.res !== "ok") {
+        return acc;
+      }
+      if (!acc.prim) {
+        return { prim: np };
+      }
+      if (np.connectTime < acc.prim.connectTime!) {
+        return { prim: np, sec: acc.prim };
+      }
+      if (!acc.sec) {
+        return { prim: acc.prim, sec: np };
+      }
+      if (np.connectTime < acc.sec.connectTime!) {
+        return { prim: acc.prim, sec: np };
+      }
+      return acc;
+    }, {});
+    this.primaryNodePairId = prim?.id;
+    this.secondaryNodePairId = sec?.id;
+    console.log(
+      "updatePairIds",
+      this.primaryNodePairId,
+      this.secondaryNodePairId
     );
-    if (prim) {
-      this.primaryNodePairId = prim.id;
-    }
-    if (sec) {
-      this.secondaryNodePairId = sec.id;
-    }
   };
 
   private closeOthers = () => {
