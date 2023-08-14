@@ -103,6 +103,31 @@ export function connectWS({
   return new WebSocket(wsURL);
 }
 
+export function send(
+  {
+    apiEndpoint,
+    accessToken,
+    recipient,
+  }: { apiEndpoint: URL; accessToken: string; recipient: string },
+  message: string
+): Promise<string> {
+  const url = new URL(apiEndpoint.toString());
+  url.pathname = "/api/v2/messages";
+  const headers = {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+    "x-auth-token": accessToken,
+  };
+  const body = JSON.stringify({
+    body: message,
+    path: [],
+    recipient,
+  });
+  return fetch(url, { method: "POST", headers, body }).then((res) =>
+    res.json()
+  );
+}
+
 export function fetchNode(
   {
     discoveryPlatformEndpoint,

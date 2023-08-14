@@ -1,8 +1,9 @@
 import type * as RPChCrypto from "@rpch/crypto";
-import { api } from "@hoprnet/hopr-sdk";
+import "@hoprnet/hopr-sdk";
 import { utils as etherUtils } from "ethers";
 
 import { createLogger } from "./utils";
+import * as NodesAPI from "./nodes-api";
 import NodesCollector from "./nodes-collector";
 import type { EntryNode } from "./entry-node";
 import * as Request from "./request";
@@ -208,41 +209,21 @@ export default class SDK {
     endFrame: number,
     reject: (reason: string) => void
   ) => {
-    api
-      .sendMessage({
-        apiEndpoint: entryNode.apiEndpoint.toString(),
-        apiToken: entryNode.accessToken,
-        body: Segment.toMessage(segment),
+    NodesAPI.send(
+      {
+        apiEndpoint: entryNode.apiEndpoint,
+        accessToken: entryNode.accessToken,
         recipient: request.exitId,
-        timeout: 30e3,
-        path: [],
-      })
-      .then(() => {
-        log.verbose("sent segment", Segment.prettyPrint(segment));
-      })
+      },
+      Segment.toMessage(segment)
+    )
+      .then((json) =>
+        log.verbose("sent segment", Segment.prettyPrint(segment), json)
+      )
       .catch((error) => {
         log.error("error sending segment", Segment.prettyPrint(segment), error);
-        api
-          .sendMessage({
-            apiEndpoint: entryNode.apiEndpoint.toString(),
-            apiToken: entryNode.accessToken,
-            body: Segment.toMessage(segment),
-            recipient: request.exitId,
-            timeout: 5e3,
-            path: [],
-          })
-          .then(() => {
-            log.verbose("resent segment", Segment.prettyPrint(segment));
-          })
-          .catch((error) => {
-            log.error(
-              "error resending segment",
-              Segment.prettyPrint(segment),
-              error
-            );
-            this.rejectRequest(request);
-            reject("Sending segment failed");
-          });
+        this.rejectRequest(request);
+        reject("Sending segment failed");
       });
   };
 

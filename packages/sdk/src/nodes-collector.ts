@@ -1,4 +1,4 @@
-import { MessageEvent } from "isomorphic-ws";
+import { CloseEvent, MessageEvent } from "isomorphic-ws";
 import { utils } from "ethers";
 
 import * as EntryNode from "./entry-node";
