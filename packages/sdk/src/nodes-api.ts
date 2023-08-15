@@ -1,94 +1,5 @@
 import { WebSocket } from "isomorphic-ws";
 
-export const NoMoreNodes = "no more nodes";
-
-export type RawEntryNode = {
-  hoprd_api_endpoint: string;
-  accessToken: string;
-  id: string;
-};
-
-export type RawExitNode = {
-  exit_node_pub_key: string;
-  id: string;
-};
-
-export type RawNode = {
-  node: {
-    id: string;
-    has_exit_node: boolean;
-    chain_id: number;
-    hoprd_api_endpoint: string;
-    hoprd_api_token: string;
-    exit_node_pub_key: string;
-    native_address: string;
-    total_amount_funded: string;
-    honesty_score: string;
-    reason?: string;
-    status: string;
-    created_at: Date;
-    updated_at: Date;
-  };
-};
-
-export function fetchEntryNode({
-  excludeList,
-  discoveryPlatformEndpoint,
-  clientId,
-}: {
-  excludeList: string[];
-  discoveryPlatformEndpoint: string;
-  clientId: string;
-}): Promise<RawEntryNode> {
-  const url = new URL("/api/v1/request/entry-node", discoveryPlatformEndpoint);
-  const headers = {
-    Accept: "application/json",
-    "Content-Type": "application/json",
-    "x-rpch-client": clientId,
-  };
-  const body = JSON.stringify({
-    excludeList,
-    client: clientId,
-  });
-
-  return fetch(url, { method: "POST", headers, body }).then((res) => {
-    if (res.status >= 500) {
-      throw new Error(`Internal server error: ${JSON.stringify(res)}`);
-    }
-    if (res.status === 404) {
-      throw new Error(NoMoreNodes);
-    }
-    return res.json();
-  });
-}
-
-export function fetchExitNodes({
-  discoveryPlatformEndpoint,
-  clientId,
-}: {
-  discoveryPlatformEndpoint: string;
-  clientId: string;
-}): Promise<RawExitNode[]> {
-  const url = new URL(
-    "/api/v1/node?hasExitNode=true",
-    discoveryPlatformEndpoint
-  );
-  const headers = {
-    Accept: "application/json",
-    "x-rpch-client": clientId,
-  };
-
-  return fetch(url, { headers }).then((res) => {
-    if (res.status >= 500) {
-      throw new Error(`Internal server error: ${JSON.stringify(res)}`);
-    }
-    if (res.status === 404) {
-      throw new Error(NoMoreNodes);
-    }
-    return res.json();
-  });
-}
-
 export function connectWS({
   apiEndpoint,
   accessToken,
@@ -103,7 +14,7 @@ export function connectWS({
   return new WebSocket(wsURL);
 }
 
-export function send(
+export function sendMessage(
   {
     apiEndpoint,
     accessToken,
@@ -126,25 +37,4 @@ export function send(
   return fetch(url, { method: "POST", headers, body }).then((res) =>
     res.json()
   );
-}
-
-export function fetchNode(
-  {
-    discoveryPlatformEndpoint,
-    clientId,
-  }: { discoveryPlatformEndpoint: string; clientId: string },
-  peerId: string
-): Promise<RawNode> {
-  const url = new URL(`/api/v1/node/${peerId}`, discoveryPlatformEndpoint);
-  const headers = {
-    Accept: "application/json",
-    "x-rpch-client": clientId,
-  };
-
-  return fetch(url, { headers }).then((resp) => {
-    if (resp.status === 200) {
-      return resp.json();
-    }
-    throw new Error(`wrong status ${resp}`);
-  });
 }
