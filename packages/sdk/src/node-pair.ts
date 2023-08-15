@@ -20,6 +20,9 @@ type ExitData = {
 };
 
 export default class NodePair {
+  /**
+   * Behavioral parameters of the node selection.
+   */
   public static TargetAmount = 10;
   private static KeepLastLatencies = 5;
   private static LatencyThreshold = 5e3;

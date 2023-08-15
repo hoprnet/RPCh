@@ -3,7 +3,7 @@ import { utils } from "ethers";
 
 import * as EntryNode from "./entry-node";
 import * as ExitNode from "./exit-node";
-import * as NodesAPI from "./nodes-api";
+import * as DPapi from "./dp-api";
 import NodePair from "./node-pair";
 import type { Request } from "./request";
 import { createLogger, shortPeerId } from "./utils";
@@ -12,9 +12,11 @@ import type { NodeMatch } from "./node-match";
 
 const log = createLogger(["nodes-collector"]);
 
+const NodePairFetchTimeout: number = 60e3; // 1 minute downtime to avoid repeatedly querying DP
+
 export default class NodesCollector {
   private readonly nodePairs: Map<string, NodePair> = new Map();
-  private timerFetchPairs = setTimeout(function () {});
+  private lastFetchNodePairs = 0;
   private ongoingFetchPairs = false;
   private primaryNodePairId?: string;
   private secondaryNodePairId?: string;
@@ -32,6 +34,7 @@ export default class NodesCollector {
     for (const [, np] of this.nodePairs) {
       np.close();
     }
+    this.nodePairs.clear();
   };
 
   /**
@@ -71,6 +74,8 @@ export default class NodesCollector {
           if (res.res === "ok") {
             return resolve({ entryNode: np.entryNode, exitNode: res.exitNode });
           }
+          log.verbose("no exit node ready in primary node pair id");
+          this.updatePairIds();
         }
         if (elapsed > timeout) {
           log.error("Timeout waiting for node pair", elapsed);
@@ -99,7 +104,7 @@ export default class NodesCollector {
     const np = this.nodePairs.get(entryId);
     const req = `${id}:${shortPeerId(entryId)}>${shortPeerId(exitId)}`;
     if (!np) {
-      log.error("requestStarted", req, "on non exiting node pair");
+      log.error("requestStarted", req, "on non existing node pair");
       return;
     }
     np.messageListener = this.messageListener;
@@ -120,7 +125,7 @@ export default class NodesCollector {
     const np = this.nodePairs.get(entryId);
     const req = `${id}:${shortPeerId(entryId)}>${shortPeerId(exitId)}`;
     if (!np) {
-      log.error("requestSucceeded", req, "on non exiting node pair");
+      log.error("requestSucceeded", req, "on non existing node pair");
       return;
     }
     const res = np.requestSucceeded(exitId, responseTime);
@@ -132,6 +137,16 @@ export default class NodesCollector {
       "total successes on that route"
     );
     this.closeRedundant();
+    // check closure
+    if (np.readyExitNode().res === "error" && !np.hasOngoing()) {
+      log.info(
+        "no more eligible exit nodes after successful request",
+        np.prettyPrint()
+      );
+      np.close();
+      this.nodePairs.delete(np.id);
+      this.updatePairIds();
+    }
   };
 
   public requestFailed = ({ entryId, exitId, id }: Request) => {
@@ -143,67 +158,88 @@ export default class NodesCollector {
     }
     const res = np.requestFailed(exitId);
     log.verbose("requestFailed", req, "-", res, "failed on that route");
-    this.updatePairIds();
-    this.closeRedundant();
+    // check closure
+    if (np.readyExitNode().res === "error" && !np.hasOngoing()) {
+      log.info(
+        "no more eligible exit nodes after failed request",
+        np.prettyPrint()
+      );
+      np.close();
+      this.nodePairs.delete(np.id);
+      this.updatePairIds();
+    }
   };
 
   private fetchNodePairs = async () => {
-    clearTimeout(this.timerFetchPairs);
     if (this.ongoingFetchPairs) {
       return;
     }
-    if (this.nodePairs.size >= NodePair.TargetAmount) {
-      this.timerFetchPairs = setTimeout(this.fetchNodePairs, 60e3);
+    if (Date.now() - this.lastFetchNodePairs < NodePairFetchTimeout) {
       return;
     }
     this.ongoingFetchPairs = true;
 
-    const rawEntryNodes: NodesAPI.RawEntryNode[] = [];
+    const rawEntryNodes: DPapi.RawEntryNode[] = [];
     const excludeList: string[] = [];
     let noError = true;
     while (rawEntryNodes.length < NodePair.TargetAmount && noError) {
-      const rawNode: NodesAPI.RawEntryNode | void =
-        await NodesAPI.fetchEntryNode({
-          excludeList,
-          discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
-          clientId: this.clientId,
-        }).catch((err) => {
-          if (err.message !== NodesAPI.NoMoreNodes) {
-            log.error("Error fetching entry nodes", err);
-          }
-          noError = false;
-        });
+      const rawNode: DPapi.RawEntryNode | void = await DPapi.fetchEntryNode({
+        excludeList,
+        discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
+        clientId: this.clientId,
+      }).catch((err) => {
+        if (err.message !== DPapi.NoMoreNodes) {
+          log.error("Error fetching entry nodes", err);
+        }
+        noError = false;
+      });
       if (rawNode) {
         excludeList.push(rawNode.id);
-        const nodeInfo = await NodesAPI.fetchNode(
-          {
-            discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
-            clientId: this.clientId,
-          },
-          rawNode.id
-        );
-        if (nodeInfo && !nodeInfo.node.has_exit_node) {
-          //   only use entry only nodes here
-          rawEntryNodes.push(rawNode);
-        }
+        rawEntryNodes.push(rawNode);
       }
     }
 
-    NodesAPI.fetchExitNodes({
+    // if we have distinct entry nodes, use those
+    const prNodeResults = rawEntryNodes.map((re) =>
+      DPapi.fetchNode(
+        {
+          discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
+          clientId: this.clientId,
+        },
+        re.id
+      )
+    );
+    const nodeResults = await Promise.allSettled(prNodeResults);
+    const rawEntriesNoExits = rawEntryNodes.filter((re) => {
+      return !!nodeResults.find((r) => {
+        if ("value" in r) {
+          const node = r.value.node;
+          if (node.id === re.id) {
+            return !node.has_exit_node;
+          }
+        }
+        return false;
+      });
+    });
+    const prefRawEntries =
+      rawEntriesNoExits.length > 0 ? rawEntriesNoExits : rawEntryNodes;
+
+    // fetch exit nodes
+    DPapi.fetchExitNodes({
       discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
       clientId: this.clientId,
     })
-      .then((rawExitNodes: NodesAPI.RawExitNode[]) => {
+      .then((rawExitNodes: DPapi.RawExitNode[]) => {
         const exitNodes = rawExitNodes.map(ExitNode.fromRaw);
-        const entryNodes = rawEntryNodes.map(EntryNode.fromRaw);
+        const entryNodes = prefRawEntries.map(EntryNode.fromRaw);
         this.initNodes(entryNodes, exitNodes);
       })
       .catch((err: any) => {
         log.error("Error fetching exit nodes", err);
       })
       .finally(() => {
+        this.lastFetchNodePairs = Date.now();
         this.ongoingFetchPairs = false;
-        this.timerFetchPairs = setTimeout(this.fetchNodePairs, 60e3);
       });
   };
 
@@ -274,10 +310,14 @@ export default class NodesCollector {
     this.primaryNodePairId = prim?.id;
     this.secondaryNodePairId = sec?.id;
     log.verbose(
-      "update to pairIds",
-      this.primaryNodePairId,
-      this.secondaryNodePairId
+      "update to pairIds ",
+      this.primaryNodePairId ? shortPeerId(this.primaryNodePairId) : "noprim",
+      this.secondaryNodePairId ? shortPeerId(this.secondaryNodePairId) : "nosec"
     );
+    if (!this.primaryNodePairId || !this.secondaryNodePairId) {
+      // fetch new nodes
+      this.fetchNodePairs();
+    }
   };
 
   private closeRedundant = () => {
