@@ -209,7 +209,7 @@ export default class SDK {
     endFrame: number,
     reject: (reason: string) => void
   ) => {
-    NodesAPI.send(
+    NodesAPI.sendMessage(
       {
         apiEndpoint: entryNode.apiEndpoint,
         accessToken: entryNode.accessToken,
@@ -226,7 +226,7 @@ export default class SDK {
         // try fallback if request still valid
         const fallback = this.nodesColl.fallbackNodePair;
         if (this.requestCache.has(segment.requestId) && fallback) {
-          NodesAPI.send(
+          NodesAPI.sendMessage(
             {
               apiEndpoint: entryNode.apiEndpoint,
               accessToken: entryNode.accessToken,

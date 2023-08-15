@@ -1,4 +1,4 @@
-import type { RawExitNode } from "./nodes-api";
+import type { RawExitNode } from "./dp-api";
 
 export type ExitNode = {
   peerId: string;

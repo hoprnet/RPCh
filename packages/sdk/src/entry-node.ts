@@ -1,4 +1,4 @@
-import type { RawEntryNode } from "./nodes-api";
+import type { RawEntryNode } from "./dp-api";
 
 export type EntryNode = {
   apiEndpoint: URL;
