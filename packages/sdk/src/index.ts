@@ -196,6 +196,7 @@ export default class SDK {
   }
 
   public stop = () => {
+    this.nodesColl.stop();
     for (const [rId] of this.requestCache) {
       RequestCache.remove(this.requestCache, rId);
       SegmentCache.remove(this.segmentCache, rId);

@@ -30,7 +30,6 @@ export default class NodesCollector {
   }
 
   public stop = () => {
-    log.verbose("stopping");
     for (const [, np] of this.nodePairs) {
       np.close();
     }
