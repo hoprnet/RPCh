@@ -17,7 +17,7 @@ describe("e2e tests", function () {
   }, 30e3);
 
   afterAll(() => {
-    sdk.stop();
+    sdk.destruct();
     // wait for close events to happen
     return new Promise((resolve) => setTimeout(resolve, 50));
   });
