@@ -10,6 +10,7 @@ import type { Segment } from "./segment";
 
 export type Request = {
   id: number;
+  originalId?: number;
   provider: string;
   body: string;
   createdAt: number;
@@ -25,8 +26,7 @@ const MAX_BYTES = 400;
 const MAX_SEGMENT_BODY = MAX_BYTES - 17;
 
 /**
- * Creates a request without the id.
- * It holds all request data but will need to get an id from requestCache.
+ * Creates a request and compresses its payload.
  */
 export function create(
   crypto: {
@@ -52,6 +52,41 @@ export function create(
     id,
     provider,
     body,
+    createdAt: Date.now(),
+    entryId,
+    exitId,
+    exitNodeReadIdentity,
+    session,
+  };
+}
+
+/**
+ * Creates a request from original request message and provider and compresses its payload.
+ */
+export function fromOriginal(
+  crypto: {
+    Envelope: typeof Envelope;
+    box_request: typeof box_request;
+  },
+  id: number,
+  original: Request,
+  entryId: string,
+  exitId: string,
+  exitNodeReadIdentity: Identity
+) {
+  const compressedBody = compression.compressRpcRequest(original.body);
+  const payload = [3, "request", original.provider, compressedBody].join("|");
+  const envelope = new crypto.Envelope(
+    utils.toUtf8Bytes(payload),
+    entryId,
+    exitId
+  );
+  const session = crypto.box_request(envelope, exitNodeReadIdentity);
+  return {
+    id,
+    originalId: original.id,
+    provider: original.provider,
+    body: original.body,
     createdAt: Date.now(),
     entryId,
     exitId,

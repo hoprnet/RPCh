@@ -29,7 +29,7 @@ export default class NodesCollector {
     this.fetchNodePairs();
   }
 
-  public stop = () => {
+  public destruct = () => {
     for (const [, np] of this.nodePairs) {
       np.close();
     }
