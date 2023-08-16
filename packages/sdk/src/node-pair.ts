@@ -113,7 +113,11 @@ export default class NodePair {
     this.socket?.off("close", this.onWSclose);
     this.socket?.off("error", this.onWSerror);
     // close socket
-    this.socket?.close();
+    try {
+      this.socket?.close();
+    } catch (err: any) {
+      this.log.info("error closing websocket", err);
+    }
   };
 
   public readyExitNode = ():
