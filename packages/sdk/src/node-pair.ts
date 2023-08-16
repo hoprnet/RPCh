@@ -193,9 +193,15 @@ export default class NodePair {
       const tot = d.failedRequests + d.successfulRequests;
       const s = d.successfulRequests;
       const o = d.ongoingRequests;
+      if (tot === 0) {
+        if (o === 0) {
+          return "0";
+        }
+        return `0+${o}`;
+      }
       return `${s}/${tot}+${o}`;
     });
-    return `${this.id}_${exCount}x:${exStrs.join("-")}`;
+    return `${shortPeerId(this.id)}_${exCount}x:${exStrs.join("-")}`;
   };
 
   private onWSopen = () => {
