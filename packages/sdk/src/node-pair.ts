@@ -40,10 +40,12 @@ export default class NodePair {
     public readonly entryNode: EntryNode,
     exitNodes: Iterable<ExitNode>
   ) {
-    const id = shortPeerId(entryNode.peerId);
-    this.log = createLogger([`nodepair-${id}`]);
+    const shortId = shortPeerId(entryNode.peerId);
+    this.log = createLogger([`nodepair${shortId}`]);
     // ensure entry node not included in exits
-    const exits = Array.from(exitNodes).filter((n) => id !== n.peerId);
+    const exits = Array.from(exitNodes).filter(
+      (n) => entryNode.peerId !== n.peerId
+    );
     this.exitNodes = new Map(exits.map((n) => [n.peerId, n]));
     this.exitDatas = new Map(
       exits.map((n) => [
