@@ -18,14 +18,17 @@ export const options = {
 };
 
 const eth_getCode_parsed = parseHarReq(eth_getCode);
+const URL =
+  __ENV.RPC_SERVER_URL ||
+  "http://localhost:8080/?exit-provider=https://primary.gnosis-chain.rpc.hoprtech.net";
 
 // Simulated user behavior
 export default function () {
-  const URL =
-    __ENV.RPC_SERVER_URL ||
-    "http://localhost:8080/?exit-provider=https://primary.gnosis-chain.rpc.hoprtech.net";
-
-  let res = http.post(URL, eth_getCode_parsed.body, eth_getCode_parsed.params);
+  const res = http.post(
+    URL,
+    eth_getCode_parsed.body,
+    eth_getCode_parsed.params
+  );
 
   // Validate response status
   check(res, {
