@@ -1,5 +1,11 @@
 # @rpch/common
 
+## 0.4.0
+
+### Minor Changes
+
+- 23f842a: Add quota_paid, quota_used columns
+
 ## 0.3.0
 
 ### Minor Changes

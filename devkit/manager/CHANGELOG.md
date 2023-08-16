@@ -1,5 +1,18 @@
 # @rpch/manager
 
+## 0.2.0
+
+### Minor Changes
+
+- f4e4229: Renamed exit node registration to register nodes.
+  Changed API of the call to allow for entry node only registration.
+
+### Patch Changes
+
+- a8f068f: Fixes issue where availability monitor could not reach HOPRd nodes in sandbox
+- Updated dependencies [23f842a]
+  - @rpch/common@0.4.0
+
 ## 0.1.0
 
 ### Minor Changes

@@ -1,5 +1,12 @@
 # @rpch/exit-node
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [23f842a]
+  - @rpch/common@0.4.0
+
 ## 0.2.0
 
 ### Minor Changes

@@ -1,6 +1,6 @@
 {
   "name": "@rpch/ethers",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "license": "LGPL-3.0",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
@@ -21,8 +21,8 @@
   "dependencies": {
     "@ethersproject/properties": "^5.7.0",
     "@ethersproject/providers": "^5.7.2",
-    "@rpch/common": "0.3.0",
-    "@rpch/sdk": "0.4.0"
+    "@rpch/common": "0.4.0",
+    "@rpch/sdk": "0.5.0"
   },
   "peerDependencies": {
     "ethers": "^5.7.2"

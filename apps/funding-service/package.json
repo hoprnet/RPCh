@@ -1,6 +1,6 @@
 {
   "name": "@rpch/funding-service",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "license": "LGPL-3.0",
   "private": true,
   "scripts": {
@@ -31,7 +31,7 @@
     "ts-node": "^10.9.1"
   },
   "dependencies": {
-    "@rpch/common": "0.3.0",
+    "@rpch/common": "0.4.0",
     "ethers": "^5.7.2",
     "express": "^4.18.2",
     "express-validator": "^6.15.0",

@@ -1,5 +1,19 @@
 # @rpch/availability-monitor
 
+## 0.2.0
+
+### Minor Changes
+
+- 23f842a: Add quota_paid, quota_used columns
+
+### Patch Changes
+
+- a8f068f: Fixes issue where availability monitor could not reach HOPRd nodes in sandbox
+- Updated dependencies [a8f068f]
+- Updated dependencies [23f842a]
+  - @rpch/discovery-platform@0.3.0
+  - @rpch/common@0.4.0
+
 ## 0.1.0
 
 ### Minor Changes

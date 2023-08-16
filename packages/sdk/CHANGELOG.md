@@ -1,5 +1,27 @@
 # @rpch/sdk
 
+## 0.5.0
+
+### Minor Changes
+
+- ed54216: Rework node selection algorithm:
+
+  - query initial fixed amount of entry nodes (e.g. 10)
+  - open websockets to all, determine best connection
+  - close other connections
+  - use determined routes as long as feasible
+  - repeat
+
+  Resending requests on fallback route if possible:
+
+  - if request on preferred entry-exit combination does not work,
+    we try resending it on the second best one
+
+### Patch Changes
+
+- Updated dependencies [23f842a]
+  - @rpch/common@0.4.0
+
 ## 0.4.0
 
 ### Minor Changes

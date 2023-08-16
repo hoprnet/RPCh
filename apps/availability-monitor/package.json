@@ -1,6 +1,6 @@
 {
   "name": "@rpch/availability-monitor",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "license": "LGPL-3.0",
   "private": true,
   "scripts": {
@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "@hoprnet/hopr-sdk": "^0.0.1-alpha.12",
-    "@rpch/common": "0.3.0",
+    "@rpch/common": "0.4.0",
     "@rpch/discovery-platform": "*",
     "async": "^3.2.4",
     "async-retry": "^1.3.3",
