@@ -69,9 +69,9 @@ Sending a requests consists of 2 steps:
 1. creating the request `const req = await sdk.createRequest("provider", "body");` The first argument is the provider name and the second argument is the request body.
 2. sending the previously created request `const res = await sdk.sendRequest(req);` This will send the request through the HOPR network and return the response. If there is an error, it will be thrown.
 
-When you are finished using the SDK, be sure to call the stop method:
+When you are finished using the SDK, be sure to release it's acquired resources.
 ```TypeScript
-await sdk.stop();
+sdk.destruct();
 ```
 This will stop any necessary intervals and clear up any remaining processes.
 
@@ -84,7 +84,3 @@ We use the library [debug](https://github.com/debug-js/debug) for our logging.
 - on web platforms:
   - localStorage: update `localStorage` with keyval `debug:rpch*`
   - programmatic: access the SDK object and enable logging with `sdk.debug.enable("rpch*")`
-
-
-
-
