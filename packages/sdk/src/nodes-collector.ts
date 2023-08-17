@@ -74,8 +74,8 @@ export default class NodesCollector {
             return resolve({ entryNode: np.entryNode, exitNode: res.exitNode });
           }
           log.verbose("no exit node ready in primary node pair id");
-          this.updatePairIds();
         }
+        this.updatePairIds();
         if (elapsed > timeout) {
           log.error("Timeout waiting for node pair", elapsed);
           return reject(`timeout after ${elapsed} ms`);
