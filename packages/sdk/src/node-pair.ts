@@ -85,9 +85,9 @@ export default class NodePair {
         data.latencies.shift();
       }
       // detach message liteners
-      // if (data.ongoingRequests === 0) {
-      //   this.socket!.onmessage = () => {};
-      // }
+      if (data.ongoingRequests === 0) {
+        this.socket!.onmessage = () => {};
+      }
       return data.successfulRequests;
     }
   };
@@ -98,9 +98,9 @@ export default class NodePair {
       data.ongoingRequests -= 1;
       data.failedRequests += 1;
       // detach message liteners
-      // if (data.ongoingRequests === 0) {
-      //   this.socket!.onmessage = () => {};
-      // }
+      if (data.ongoingRequests === 0) {
+        this.socket!.onmessage = () => {};
+      }
       return data.failedRequests;
     }
   };
