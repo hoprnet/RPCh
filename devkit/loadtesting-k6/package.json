@@ -15,6 +15,7 @@
     "start:stress-large": "k6 run src/rpc-server/stress-large.js --out json=results/results-stress-large.json",
     "start:soak-small": "k6 run src/rpc-server/soak-small.js --out json=results/results-soak-small.json",
     "start:soak-large": "k6 run src/rpc-server/soak-large.js --out json=results/results-soak-large.json",
+    "start:realtraffic-small": "k6 run src/rpc-server/realtraffic-small.js --out json=results/results-realtraffic-small.json",
     "start:blockwallet": "k6 run src/rpc-server/usage-blockwallet.js --out json=results/results-usage-blockwallet.json",
     "start:trustwallet": "k6 run src/rpc-server/usage-trustwallet.js --out json=results/results-usage-trustwallet.json",
     "start:burst": "k6 run src/rpc-server/burst.js --out json=results/results-burst.json",
