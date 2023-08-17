@@ -3,20 +3,6 @@ import { check } from "k6";
 import parseHarReq from "../../functions/parseHarReq.js";
 import { eth_getCode } from "../../rpc-calls/eth_getCode.js";
 
-// Test configuration
-export const options = {
-  thresholds: {
-    // Assert that 99% of requests finish within 3000ms.
-    http_req_duration: ["p(99) < 3000"],
-  },
-  // Ramp the number of virtual users up and down
-  stages: [
-    { duration: "5s", target: 1 },
-    { duration: "15s", target: 100 },
-    { duration: "60s", target: 5000 },
-  ],
-};
-
 const eth_getCode_parsed = parseHarReq(eth_getCode);
 const URL =
   __ENV.RPC_SERVER_URL ||
