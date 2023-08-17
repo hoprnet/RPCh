@@ -171,9 +171,16 @@ export default class NodesCollector {
 
   private fetchNodePairs = async () => {
     if (this.ongoingFetchPairs) {
+      log.verbose("fetchNodePairs ongoing");
       return;
     }
-    if (Date.now() - this.lastFetchNodePairs < NodePairFetchTimeout) {
+    const diff = Date.now() - this.lastFetchNodePairs;
+    if (diff < NodePairFetchTimeout) {
+      log.verbose(
+        "fetchNodePairs too early - need to wait",
+        NodePairFetchTimeout - diff,
+        "ms"
+      );
       return;
     }
     this.ongoingFetchPairs = true;
