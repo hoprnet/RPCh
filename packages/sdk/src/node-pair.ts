@@ -122,11 +122,19 @@ export default class NodePair {
     this.socket?.off("open", this.onWSopen);
     this.socket?.off("close", this.onWSclose);
     this.socket?.off("error", this.onWSerror);
-    // close socket
-    try {
+    // close socket shenanigan, because cannot close a connecting websocket
+    if (this.socket?.readyState === WebSocket.CONNECTING) {
+      const cb = () => {
+        this.socket?.off("open", cb);
+        this.socket?.off("close", cb);
+        this.socket?.off("error", cb);
+        this.socket?.close();
+      };
+      this.socket.on("open", cb);
+      this.socket.on("close", cb);
+      this.socket.on("error", cb);
+    } else {
       this.socket?.close();
-    } catch (err: any) {
-      this.log.info("error closing websocket", err);
     }
   };
 

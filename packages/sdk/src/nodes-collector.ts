@@ -12,7 +12,7 @@ import type { NodeMatch } from "./node-match";
 
 const log = createLogger(["nodes-collector"]);
 
-const NodePairFetchTimeout: number = 60e3; // 1 minute downtime to avoid repeatedly querying DP
+const NodePairFetchTimeout: number = 10e3; // 10 seconds downtime to avoid repeatedly querying DP
 
 export default class NodesCollector {
   private readonly nodePairs: Map<string, NodePair> = new Map();
