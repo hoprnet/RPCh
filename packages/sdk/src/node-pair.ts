@@ -41,7 +41,7 @@ export default class NodePair {
     exitNodes: Iterable<ExitNode>
   ) {
     const shortId = shortPeerId(entryNode.peerId);
-    this.log = createLogger([`nodepair${shortId}`]);
+    this.log = createLogger([`nodepair${shortId}(${entryNode.apiEndpoint})`]);
     // ensure entry node not included in exits
     const exits = Array.from(exitNodes).filter(
       (n) => entryNode.peerId !== n.peerId
