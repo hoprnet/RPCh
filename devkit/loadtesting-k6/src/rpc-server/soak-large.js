@@ -14,4 +14,3 @@ export const options = {
 };
 
 export default large;
-
