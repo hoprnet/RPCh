@@ -1,6 +1,6 @@
 {
   "name": "@rpch/loadtesting-6",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "license": "LGPL-3.0",
   "scripts": {
@@ -25,7 +25,7 @@
   },
   "devDependencies": {
     "@rpch/configs-eslint": "*",
-    "@rpch/ethers": "0.3.2",
+    "@rpch/ethers": "0.3.3",
     "@rpch/crypto-for-nodejs": "0.3.4"
   }
 }

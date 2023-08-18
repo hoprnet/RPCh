@@ -1,5 +1,12 @@
 # @rpch/sdk
 
+## 0.5.1
+
+### Patch Changes
+
+- b9e964b: Minor bug fixes in the SDK
+  Update load tests with smaller values and different distributions
+
 ## 0.5.0
 
 ### Minor Changes
