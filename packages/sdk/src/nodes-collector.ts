@@ -12,7 +12,7 @@ import type { NodeMatch } from "./node-match";
 
 const log = createLogger(["nodes-collector"]);
 
-const NodePairFetchTimeout: number = 60e3; // 1 minute downtime to avoid repeatedly querying DP
+const NodePairFetchTimeout: number = 10e3; // 10 seconds downtime to avoid repeatedly querying DP
 
 export default class NodesCollector {
   private readonly nodePairs: Map<string, NodePair> = new Map();
@@ -74,8 +74,8 @@ export default class NodesCollector {
             return resolve({ entryNode: np.entryNode, exitNode: res.exitNode });
           }
           log.verbose("no exit node ready in primary node pair id");
-          this.updatePairIds();
         }
+        this.updatePairIds();
         if (elapsed > timeout) {
           log.error("Timeout waiting for node pair", elapsed);
           return reject(`timeout after ${elapsed} ms`);
@@ -171,9 +171,16 @@ export default class NodesCollector {
 
   private fetchNodePairs = async () => {
     if (this.ongoingFetchPairs) {
+      log.verbose("fetchNodePairs ongoing");
       return;
     }
-    if (Date.now() - this.lastFetchNodePairs < NodePairFetchTimeout) {
+    const diff = Date.now() - this.lastFetchNodePairs;
+    if (diff < NodePairFetchTimeout) {
+      log.verbose(
+        "fetchNodePairs too early - need to wait",
+        NodePairFetchTimeout - diff,
+        "ms"
+      );
       return;
     }
     this.ongoingFetchPairs = true;

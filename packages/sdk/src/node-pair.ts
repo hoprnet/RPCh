@@ -40,10 +40,12 @@ export default class NodePair {
     public readonly entryNode: EntryNode,
     exitNodes: Iterable<ExitNode>
   ) {
-    const id = shortPeerId(entryNode.peerId);
-    this.log = createLogger([`nodepair-${id}`]);
+    const shortId = shortPeerId(entryNode.peerId);
+    this.log = createLogger([`nodepair${shortId}(${entryNode.apiEndpoint})`]);
     // ensure entry node not included in exits
-    const exits = Array.from(exitNodes).filter((n) => id !== n.peerId);
+    const exits = Array.from(exitNodes).filter(
+      (n) => entryNode.peerId !== n.peerId
+    );
     this.exitNodes = new Map(exits.map((n) => [n.peerId, n]));
     this.exitDatas = new Map(
       exits.map((n) => [
@@ -82,6 +84,10 @@ export default class NodePair {
       if (data.latencies.length > NodePair.KeepLastLatencies) {
         data.latencies.shift();
       }
+      // detach message liteners if no ongoing requests
+      if (!this.hasOngoing) {
+        this.socket!.onmessage = () => {};
+      }
       return data.successfulRequests;
     }
   };
@@ -91,6 +97,10 @@ export default class NodePair {
     if (data) {
       data.ongoingRequests -= 1;
       data.failedRequests += 1;
+      // detach message liteners if no ongoing requests
+      if (!this.hasOngoing) {
+        this.socket!.onmessage = () => {};
+      }
       return data.failedRequests;
     }
   };
@@ -112,8 +122,20 @@ export default class NodePair {
     this.socket?.off("open", this.onWSopen);
     this.socket?.off("close", this.onWSclose);
     this.socket?.off("error", this.onWSerror);
-    // close socket
-    this.socket?.close();
+    // close socket shenanigan, because cannot close a connecting websocket
+    if (this.socket?.readyState === WebSocket.CONNECTING) {
+      const cb = () => {
+        this.socket?.off("open", cb);
+        this.socket?.off("close", cb);
+        this.socket?.off("error", cb);
+        this.socket?.close();
+      };
+      this.socket.on("open", cb);
+      this.socket.on("close", cb);
+      this.socket.on("error", cb);
+    } else {
+      this.socket?.close();
+    }
   };
 
   public readyExitNode = ():
@@ -189,9 +211,15 @@ export default class NodePair {
       const tot = d.failedRequests + d.successfulRequests;
       const s = d.successfulRequests;
       const o = d.ongoingRequests;
+      if (tot === 0) {
+        if (o === 0) {
+          return "0";
+        }
+        return `0+${o}`;
+      }
       return `${s}/${tot}+${o}`;
     });
-    return `${this.id}_${exCount}x:${exStrs.join("-")}`;
+    return `${shortPeerId(this.id)}_${exCount}x:${exStrs.join("-")}`;
   };
 
   private onWSopen = () => {
