@@ -287,10 +287,6 @@ export default class NodesCollector {
   };
 
   private updatePairIds = () => {
-    // avoid computation when fetching new pairs
-    if (this.ongoingFetchPairs) {
-      return;
-    }
     const { prim, sec } = Array.from(this.nodePairs.values()).reduce<{
       prim?: NodePair;
       sec?: NodePair;
