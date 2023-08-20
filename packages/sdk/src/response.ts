@@ -1,7 +1,8 @@
-import type { Request } from "./request";
-import { compression } from "@rpch/common";
 import { utils } from "ethers";
 import { unbox_response, Envelope } from "@rpch/crypto-for-nodejs";
+
+import type { Request } from "./request";
+import * as compression from "./compression";
 
 export function messageToBody(
   msg: string,

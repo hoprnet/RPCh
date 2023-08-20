@@ -1,12 +1,13 @@
 import { utils } from "ethers";
-import { compression } from "@rpch/common";
 import type {
   Envelope,
   box_request,
   Session,
   Identity,
 } from "@rpch/crypto-for-nodejs";
+
 import type { Segment } from "./segment";
+import * as compression from "./compression";
 
 export type Request = {
   id: number;
