@@ -72,16 +72,6 @@ export function compressRpcRequest(requestBody: any): CompressedPayload {
 
     //Compress 'params'{} keys
     result = compressRPCSomeObjectKeys(jsonTmp, "params");
-    result = compressRPCMethodValue(jsonTmp);
-    if (result.compressed) {
-      compressionDiagram = compressionDiagramUpdate(
-        compressionDiagram,
-        6,
-        true
-      );
-      jsonTmp = result.json;
-    }
-
     if (result.compressed) {
       compressionDiagram = compressionDiagramUpdate(
         compressionDiagram,
