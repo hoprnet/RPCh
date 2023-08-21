@@ -1,4 +1,3 @@
-import assert from "assert";
 import _ from "lodash";
 import * as Compression from ".";
 import {
@@ -15,91 +14,135 @@ import {
 
 describe("test compression.ts / compress and decompress RpcRequest Async", function () {
   it("should return true", function () {
-    const compressed: string = Compression.compressRpcRequest(res_normal);
-    const decompressed: any = Compression.decompressRpcRequest(compressed);
-    const test = _.isEqual(res_normal, decompressed);
-    assert(test);
+    const compressed = Compression.compressRpcRequest(res_normal);
+    const res = Compression.decompressRpcRequest(compressed);
+    expect(res.success).toBe(true);
+    expect(res).toHaveProperty("json");
+    if ("json" in res) {
+      const test = _.isEqual(res_normal, res.json);
+      expect(test).toBe(true);
+    }
   });
 
   it("should return true", function () {
-    const compressed: string = Compression.compressRpcRequest(
+    const compressed = Compression.compressRpcRequest(
       res_compress_key_problem0
     );
-    const decompressed: any = Compression.decompressRpcRequest(compressed);
-    const test = _.isEqual(res_compress_key_problem0, decompressed);
-    assert(test);
+    const res = Compression.decompressRpcRequest(compressed);
+    expect(res.success).toBe(true);
+    expect(res).toHaveProperty("json");
+    if ("json" in res) {
+      const test = _.isEqual(res_compress_key_problem0, res.json);
+      expect(test).toBe(true);
+    }
   });
 
   it("should return true", function () {
-    const compressed: string = Compression.compressRpcRequest(
+    const compressed = Compression.compressRpcRequest(
       res_compress_key_problem1
     );
-    const decompressed: any = Compression.decompressRpcRequest(compressed);
-    const test = _.isEqual(res_compress_key_problem1, decompressed);
-    assert(test);
+    const res = Compression.decompressRpcRequest(compressed);
+    expect(res.success).toBe(true);
+    expect(res).toHaveProperty("json");
+    if ("json" in res) {
+      const test = _.isEqual(res_compress_key_problem1, res.json);
+      expect(test).toBe(true);
+    }
   });
 
   it("should return true", function () {
-    const compressed: string = Compression.compressRpcRequest(
+    const compressed = Compression.compressRpcRequest(
       req_small_different_params
     );
-    const decompressed: any = Compression.decompressRpcRequest(compressed);
-    const test = _.isEqual(req_small_different_params, decompressed);
-    assert(test);
+    const res = Compression.decompressRpcRequest(compressed);
+    expect(res.success).toBe(true);
+    expect(res).toHaveProperty("json");
+    if ("json" in res) {
+      const test = _.isEqual(req_small_different_params, res.json);
+      expect(test).toBe(true);
+    }
   });
 
   it("should return true", function () {
-    const compressed: string = Compression.compressRpcRequest(
+    const compressed = Compression.compressRpcRequest(
       req_small_different_params_and_cant_do_params
     );
-    const decompressed: any = Compression.decompressRpcRequest(compressed);
-    const test = _.isEqual(
-      req_small_different_params_and_cant_do_params,
-      decompressed
-    );
-    assert(test);
+    const res = Compression.decompressRpcRequest(compressed);
+    expect(res.success).toBe(true);
+    expect(res).toHaveProperty("json");
+    if ("json" in res) {
+      const test = _.isEqual(
+        req_small_different_params_and_cant_do_params,
+        res.json
+      );
+      expect(test).toBe(true);
+    }
   });
 
   it("should return true", function () {
-    const compressed: string = Compression.compressRpcRequest(
+    const compressed = Compression.compressRpcRequest(
       req_small_cant_do_main_keys
     );
-    const decompressed: any = Compression.decompressRpcRequest(compressed);
-    const test = _.isEqual(req_small_cant_do_main_keys, decompressed);
-    assert(test);
+    const res = Compression.decompressRpcRequest(compressed);
+    expect(res.success).toBe(true);
+    expect(res).toHaveProperty("json");
+    if ("json" in res) {
+      const test = _.isEqual(req_small_cant_do_main_keys, res.json);
+      expect(test).toBe(true);
+    }
   });
 
   it("should return true", function () {
-    const compressed: string = Compression.compressRpcRequest(res_80kb);
-    const decompressed: any = Compression.decompressRpcRequest(compressed);
-    const test = _.isEqual(res_80kb, decompressed);
-    assert(test);
+    const compressed = Compression.compressRpcRequest(res_80kb);
+    const res = Compression.decompressRpcRequest(compressed);
+    expect(res.success).toBe(true);
+    expect(res).toHaveProperty("json");
+    if ("json" in res) {
+      const test = _.isEqual(res_80kb, res.json);
+      expect(test).toBe(true);
+    }
   });
 
   it("should return true", function () {
-    const compressed: string = Compression.compressRpcRequest(res_error);
-    const decompressed: any = Compression.decompressRpcRequest(compressed);
-    const test = _.isEqual(res_error, decompressed);
-    assert(test);
+    const compressed = Compression.compressRpcRequest(res_error);
+    const res = Compression.decompressRpcRequest(compressed);
+    expect(res.success).toBe(true);
+    expect(res).toHaveProperty("json");
+    if ("json" in res) {
+      const test = _.isEqual(res_error, res.json);
+      expect(test).toBe(true);
+    }
   });
 
   it("should return true", function () {
-    const compressed: string = Compression.compressRpcRequest(req_80kb);
-    const decompressed: any = Compression.decompressRpcRequest(compressed);
-    const test = _.isEqual(req_80kb, decompressed);
-    assert(test);
+    const compressed = Compression.compressRpcRequest(req_80kb);
+    const res = Compression.decompressRpcRequest(compressed);
+    expect(res.success).toBe(true);
+    expect(res).toHaveProperty("json");
+    if ("json" in res) {
+      const test = _.isEqual(req_80kb, res.json);
+      expect(test).toBe(true);
+    }
   });
 
   it("should return true", function () {
-    const compressed: string = Compression.compressRpcRequest(res_80kb);
-    const decompressed: any = Compression.decompressRpcRequest(compressed);
-    const test = _.isEqual(res_80kb, decompressed);
-    assert(test);
+    const compressed = Compression.compressRpcRequest(res_80kb);
+    const res = Compression.decompressRpcRequest(compressed);
+    expect(res.success).toBe(true);
+    expect(res).toHaveProperty("json");
+    if ("json" in res) {
+      const test = _.isEqual(res_80kb, res.json);
+      expect(test).toBe(true);
+    }
   });
 
   it("handles weird input correctly without crashing", function () {
-    const decompressed = Compression.decompressRpcRequest("0110000000Þ¡0");
-    console.log("dec", decompressed);
-    assert(false);
+    const res = Compression.decompressRpcRequest("0110000000Þ¡0");
+    expect(res.success).toBe(true);
+    expect(res).toHaveProperty("json");
+    if ("json" in res) {
+      console.log("dec", res.json);
+      expect(test).toBe(true);
+    }
   });
 });
