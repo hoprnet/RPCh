@@ -144,7 +144,7 @@ export function decompressRpcRequest(
     try {
       jsonTmp = unpack(msgpackrBuffer);
     } catch (err: any) {
-      return { success: false, error: err };
+      return { success: false, error: err.message };
     }
   }
 

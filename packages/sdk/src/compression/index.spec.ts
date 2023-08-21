@@ -138,11 +138,10 @@ describe("test compression.ts / compress and decompress RpcRequest Async", funct
 
   it("handles weird input correctly without crashing", function () {
     const res = Compression.decompressRpcRequest("0110000000Þ¡0");
-    expect(res.success).toBe(true);
-    expect(res).toHaveProperty("json");
-    if ("json" in res) {
-      console.log("dec", res.json);
-      expect(test).toBe(true);
+    expect(res.success).toBe(false);
+    expect(res).toHaveProperty("error");
+    if ("error" in res) {
+      expect(res.error).toBe("Unexpected end of MessagePack data");
     }
   });
 });
