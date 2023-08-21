@@ -127,12 +127,13 @@ export function compressRpcRequest(requestBody: JSONObject): CompressedPayload {
   // @ts-ignore-end
 }
 
-export function decompressRpcRequest(
-  compressedBody: string
-): { success: true; json: JSONObject } | { success: false; error: string } {
-  const compressionDiagram = compressedBody.substring(0, 10);
+export function decompressRpcRequest(compressedBody: string): JSONObject {
+  // @ts-ignore-start
+  let compressionDiagram: CompressedPayload = compressedBody.substring(0, 10);
+  // @ts-ignore-end
+
   if (!/^[01]+$/.test(compressionDiagram)) {
-    return { success: true, json: compressedBody };
+    return compressedBody;
   }
 
   let jsonTmp: JSONObject = compressedBody.substring(10);
@@ -143,11 +144,7 @@ export function decompressRpcRequest(
 
   if (compressionDiagram[1] === "1") {
     const msgpackrBuffer = Buffer.from(jsonTmp, "binary");
-    try {
-      jsonTmp = unpack(msgpackrBuffer);
-    } catch (err: any) {
-      return { success: false, error: err };
-    }
+    jsonTmp = unpack(msgpackrBuffer);
   }
 
   if (compressionDiagram[2] === "1") {
@@ -174,7 +171,7 @@ export function decompressRpcRequest(
     jsonTmp = JSON.stringify(jsonTmp);
   }
 
-  return { success: true, json: jsonTmp };
+  return jsonTmp;
 }
 
 function getCompressedKeyId(

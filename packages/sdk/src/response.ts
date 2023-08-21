@@ -41,12 +41,14 @@ export function messageToBody(
     return { success: false, error: `wrong response type ${type}` };
   }
   const compressedDecrypted = parts[2];
-  const decompressedDecrypted =
-    compression.decompressRpcRequest(compressedDecrypted);
-  const newCount = request.session.updated_counter();
-  return {
-    success: true,
-    body: decompressedDecrypted,
-    counter: newCount,
-  };
+  const res = compression.decompressRpcRequest(compressedDecrypted);
+  if (res.success && "json" in res) {
+    const newCount = request.session.updated_counter();
+    return {
+      success: true,
+      body: res.json,
+      counter: newCount,
+    };
+  }
+  return res;
 }
