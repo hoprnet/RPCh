@@ -5,8 +5,8 @@ on:
     branches: [main]
     tags:
       - '**'
-  pull_request:
-    types: [opened, synchronize]
+#  pull_request:
+#    types: [opened, synchronize]
 
 concurrency:
   # find the branch name for 'pull_request' or on 'push' events
