@@ -85,8 +85,8 @@ export default class NodePair {
         data.latencies.shift();
       }
       // detach message liteners if no ongoing requests
-      if (!this.hasOngoing) {
-        this.socket!.onmessage = () => {};
+      if (!this.hasOngoing()) {
+        this.socket!.onmessage = null;
       }
       return data.successfulRequests;
     }
@@ -98,8 +98,8 @@ export default class NodePair {
       data.ongoingRequests -= 1;
       data.failedRequests += 1;
       // detach message liteners if no ongoing requests
-      if (!this.hasOngoing) {
-        this.socket!.onmessage = () => {};
+      if (!this.hasOngoing()) {
+        this.socket!.onmessage = null;
       }
       return data.failedRequests;
     }
@@ -117,7 +117,7 @@ export default class NodePair {
   public close = () => {
     // detach message liteners
     if (this.messageListenerAttached) {
-      this.socket!.onmessage = () => {};
+      this.socket!.onmessage = null;
     }
     this.socket?.off("open", this.onWSopen);
     this.socket?.off("close", this.onWSclose);
