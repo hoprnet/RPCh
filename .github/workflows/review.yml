@@ -110,7 +110,7 @@ jobs:
           export tags=$(echo $short_sha,$tag | sed 's/^[ \t,]*//; s/[ \t,]*$//') #remove leading and trailing whitespaces and commas
           echo "TAGS=$tags" >> $GITHUB_ENV
           
-          echo $TAGS
+          echo $tags
 
 #      - name: Login to GCP
 #        id: gcloud
