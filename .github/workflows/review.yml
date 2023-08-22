@@ -101,8 +101,12 @@ jobs:
         run: |
           export short_sha=$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-7)
           echo "SHORT_SHA=$short_sha" >> $GITHUB_ENV
-          export tag=$(echo ${{ github.ref_name }} | sed -E 's/[^0-9.]//g')
-          echo "TAG=$tag" >> $GITHUB_ENV
+          
+          if echo "${{ github.ref_name }}" | grep -q "${{ matrix.project }}"; then
+            export tag=$(echo ${{ github.ref_name }} | sed -E 's/[^0-9.]//g')
+            echo "TAG=$tag" >> $GITHUB_ENV
+          else
+          
           export tags=$(echo $short_sha,$tag | sed 's/^[ \t,]*//; s/[ \t,]*$//') #remove leading and trailing whitespaces and commas
           echo "TAGS=$tags" >> $GITHUB_ENV
 
