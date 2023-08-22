@@ -72,12 +72,12 @@ jobs:
       matrix:
         # TODO: dynamically get this list
         project:
-          - exit-node
-          - funding-service
-          - discovery-platform
+#          - exit-node
+#          - funding-service
+#          - discovery-platform
           - rpc-server
           - manager
-          - availability-monitor
+#          - availability-monitor
         include:
 #          - project: exit-node
 #            directory: apps
