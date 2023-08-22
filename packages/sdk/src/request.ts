@@ -42,7 +42,8 @@ export function create(
   exitId: string,
   exitNodeReadIdentity: Identity
 ): Request {
-  const compressedBody = compression.compressRpcRequest(req);
+  // TODO use json instead of string here
+  const compressedBody = compression.compressRpcRequest(JSON.stringify(req));
   const payload = [3, "request", provider, compressedBody].join("|");
   const envelope = new crypto.Envelope(
     utils.toUtf8Bytes(payload),
@@ -76,7 +77,10 @@ export function fromOriginal(
   exitId: string,
   exitNodeReadIdentity: Identity
 ) {
-  const compressedBody = compression.compressRpcRequest(original.req);
+  // TODO use json instead of string here
+  const compressedBody = compression.compressRpcRequest(
+    JSON.stringify(original.req)
+  );
   const payload = [3, "request", original.provider, compressedBody].join("|");
   const envelope = new crypto.Envelope(
     utils.toUtf8Bytes(payload),
