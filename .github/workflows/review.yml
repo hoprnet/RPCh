@@ -111,6 +111,7 @@ jobs:
           echo "TAGS=$tags" >> $GITHUB_ENV
           
           echo $TAGS
+          
 
 #      - name: Login to GCP
 #        id: gcloud
