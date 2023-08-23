@@ -1,7 +1,8 @@
-import type { Request } from "./request";
-import { compression } from "@rpch/common";
 import { utils } from "ethers";
 import { unbox_response, Envelope } from "@rpch/crypto-for-nodejs";
+
+import type { Request } from "./request";
+import * as compression from "./compression";
 
 export function messageToBody(
   msg: string,
@@ -40,12 +41,14 @@ export function messageToBody(
     return { success: false, error: `wrong response type ${type}` };
   }
   const compressedDecrypted = parts[2];
-  const decompressedDecrypted =
-    compression.decompressRpcRequest(compressedDecrypted);
-  const newCount = request.session.updated_counter();
-  return {
-    success: true,
-    body: decompressedDecrypted,
-    counter: newCount,
-  };
+  const res = compression.decompressRpcRequest(compressedDecrypted);
+  if (res.success && "json" in res) {
+    const newCount = request.session.updated_counter();
+    return {
+      success: true,
+      body: res.json,
+      counter: newCount,
+    };
+  }
+  return res;
 }

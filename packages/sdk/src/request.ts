@@ -1,18 +1,20 @@
 import { utils } from "ethers";
-import { compression } from "@rpch/common";
 import type {
   Envelope,
   box_request,
   Session,
   Identity,
 } from "@rpch/crypto-for-nodejs";
+
 import type { Segment } from "./segment";
+import * as compression from "./compression";
+import type { RPCrequest } from ".";
 
 export type Request = {
   id: number;
   originalId?: number;
   provider: string;
-  body: string;
+  req: RPCrequest;
   createdAt: number;
   entryId: string; // peerID
   exitId: string; // peerID
@@ -21,9 +23,9 @@ export type Request = {
 };
 
 // Maximum bytes we should be sending within the HOPR network.
-const MAX_BYTES = 400;
+export const MaxBytes = 400;
 // Maximum segment overhead is 17 bytes, could be as little as 13 though (e.g. `4|999999|999|999|` vs `4|999999|9|9|`)
-const MAX_SEGMENT_BODY = MAX_BYTES - 17;
+const MaxSegmentBody = MaxBytes - 17;
 
 /**
  * Creates a request and compresses its payload.
@@ -35,12 +37,13 @@ export function create(
   },
   id: number,
   provider: string,
-  body: string,
+  req: RPCrequest,
   entryId: string,
   exitId: string,
   exitNodeReadIdentity: Identity
 ): Request {
-  const compressedBody = compression.compressRpcRequest(body);
+  // TODO use json instead of string here
+  const compressedBody = compression.compressRpcRequest(JSON.stringify(req));
   const payload = [3, "request", provider, compressedBody].join("|");
   const envelope = new crypto.Envelope(
     utils.toUtf8Bytes(payload),
@@ -51,7 +54,7 @@ export function create(
   return {
     id,
     provider,
-    body,
+    req,
     createdAt: Date.now(),
     entryId,
     exitId,
@@ -74,7 +77,10 @@ export function fromOriginal(
   exitId: string,
   exitNodeReadIdentity: Identity
 ) {
-  const compressedBody = compression.compressRpcRequest(original.body);
+  // TODO use json instead of string here
+  const compressedBody = compression.compressRpcRequest(
+    JSON.stringify(original.req)
+  );
   const payload = [3, "request", original.provider, compressedBody].join("|");
   const envelope = new crypto.Envelope(
     utils.toUtf8Bytes(payload),
@@ -86,7 +92,7 @@ export function fromOriginal(
     id,
     originalId: original.id,
     provider: original.provider,
-    body: original.body,
+    req: original.req,
     createdAt: Date.now(),
     entryId,
     exitId,
@@ -103,8 +109,8 @@ export function toSegments(req: Request): Segment[] {
   const body = [2, req.entryId, hexData].join("|");
 
   const chunks: string[] = [];
-  for (let i = 0; i < body.length; i += MAX_SEGMENT_BODY) {
-    chunks.push(body.slice(i, i + MAX_SEGMENT_BODY));
+  for (let i = 0; i < body.length; i += MaxSegmentBody) {
+    chunks.push(body.slice(i, i + MaxSegmentBody));
   }
 
   return chunks.map((c, nr) => ({

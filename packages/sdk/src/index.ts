@@ -165,7 +165,7 @@ export default class SDK {
         this.crypto,
         id,
         reqOps.provider!,
-        JSON.stringify(req),
+        req,
         entryNode.peerId,
         exitNode.peerId,
         this.crypto!.Identity.load_identity(
@@ -408,7 +408,11 @@ export default class SDK {
       );
       this.nodesColl.requestSucceeded(request, responseTime);
 
-      log.verbose("responded to %s with %s", request.body, res.body);
+      log.verbose(
+        "responded to %s with %s",
+        JSON.stringify(request.req),
+        res.body
+      );
       try {
         const json = JSON.parse(res.body);
         return request.resolve(json);

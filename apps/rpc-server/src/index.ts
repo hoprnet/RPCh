@@ -77,7 +77,7 @@ function sendRequest(
   sdk
     .send(req, params)
     .then((resp: RPCresult | RPCerror) => {
-      log.verbose("receiving response", resp);
+      log.verbose("receiving response", JSON.stringify(resp));
       res.statusCode = 200;
       res.write(JSON.stringify(resp));
     })
