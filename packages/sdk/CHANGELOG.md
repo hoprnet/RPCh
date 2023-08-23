@@ -1,5 +1,11 @@
 # @rpch/sdk
 
+## 0.5.2
+
+### Patch Changes
+
+- 7633232: correctly handling msgpack unpack errors
+
 ## 0.5.1
 
 ### Patch Changes
