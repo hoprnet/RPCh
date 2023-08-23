@@ -10,7 +10,10 @@ import {
   res_error,
   req_80kb,
   res_80kb,
+  req_small,
+  res_small,
 } from "./compression-samples";
+import { compression } from "@rpch/common";
 
 describe("test compression.ts / compress and decompress RpcRequest Async", function () {
   it("should return true", function () {
@@ -143,5 +146,17 @@ describe("test compression.ts / compress and decompress RpcRequest Async", funct
     if ("error" in res) {
       expect(res.error).toBe("Unexpected end of MessagePack data");
     }
+  });
+
+  it("handles cross module compression correctly req", function () {
+    const compressed = Compression.compressRpcRequest(req_small);
+    const res = compression.decompressRpcRequest(compressed);
+    expect(res).toMatchObject(req_small);
+  });
+
+  it("handles cross module compression correctly res", function () {
+    const compressed = Compression.compressRpcRequest(res_small);
+    const res = compression.decompressRpcRequest(compressed);
+    expect(res).toMatchObject(res_small);
   });
 });

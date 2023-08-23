@@ -35,8 +35,6 @@ describe("test performance of incoming messages", function () {
     const later2 = performance.now();
     const diff2 = later2 - ts2;
     expect(later2).toBeGreaterThan(ts2);
-
-    console.log("old segment cache first", diff, "vs new", diff2);
     expect(diff2).toBeLessThan(diff);
   });
 
@@ -68,8 +66,6 @@ describe("test performance of incoming messages", function () {
     const later = performance.now();
     const diff = later - ts;
     expect(later).toBeGreaterThan(ts);
-
-    console.log("new segment cache first", diff2, "vs old", diff);
     expect(diff2).toBeLessThan(diff);
   });
 });

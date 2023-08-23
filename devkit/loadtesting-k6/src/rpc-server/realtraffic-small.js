@@ -8,8 +8,8 @@ export const options = {
     http_req_duration: ["p(99) < 10000"],
   },
   stages: [
-    { duration: "20s", target: 100 }, // traffic ramp-up to low
-    { duration: "30m", target: 100 }, // stay at low for long
+    { duration: "20s", target: 50 }, // traffic ramp-up to low
+    { duration: "30m", target: 50 }, // stay at low for long
     { duration: "20s", target: 0 }, // ramp-down to 0 users
   ],
 };
