@@ -12,6 +12,8 @@ export async function run(client: Client) {
   const pExitNodes = q.exitNodes(client);
   const entryNodes = await pEntryNodes;
   const exitNodes = await pExitNodes;
+  console.log("entryNodes", entryNodes);
+  console.log("exitNodes", exitNodes);
   runZeroHopChecks(entryNodes, exitNodes);
   runOneHopChecks(entryNodes, exitNodes);
 }

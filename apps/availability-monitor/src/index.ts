@@ -1,15 +1,18 @@
+import pgp from "pg-promise";
 import { Client } from "pg";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 import * as Prometheus from "prom-client";
 import * as constants from "./constants";
 import API from "./api";
 import Reviewer from "./reviewer";
+import * as availability from "./availability";
 import { createLogger } from "./utils";
 
 const log = createLogger();
 
 async function start(ops: {
   db: Client;
+  dbInst: pgp.IDatabase<{}>;
   port: number;
   metricPrefix: string;
   reviewerIntervalMs: number;
@@ -29,12 +32,12 @@ async function start(ops: {
 
   // initializes reviewer
   const reviewer = new Reviewer(
-    ops.db,
+    ops.dbInst,
     metricManager,
     ops.reviewerIntervalMs,
     ops.reviewerConcurrency
   );
-  reviewer.start();
+  // reviewer.start();
 
   // start restful server
   const app = API({
@@ -50,6 +53,8 @@ async function start(ops: {
   // set server timeout to 30s
   server.setTimeout(30e3);
 
+  availability.run(ops.db);
+
   return () => {
     reviewer.stop();
   };
@@ -64,10 +69,12 @@ function main() {
   const connectionString: string = constants.DB_CONNECTION_URL!;
   // create table if the table does not exist
   const pgC = new Client({ connectionString });
+  const dbInst = pgp()({ connectionString });
 
   start({
     port: constants.PORT,
     db: pgC,
+    dbInst,
     metricPrefix: constants.METRIC_PREFIX,
     reviewerIntervalMs: constants.REVIEWER_INTERVAL_MS,
     reviewerConcurrency: constants.REVIEWER_CONCURRENCY,
