@@ -1,5 +1,4 @@
-import type { DBInstance } from "./db";
-import pgp from "pg-promise";
+import { Client } from "pg";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 import * as Prometheus from "prom-client";
 import * as constants from "./constants";
@@ -10,7 +9,7 @@ import { createLogger } from "./utils";
 const log = createLogger();
 
 async function start(ops: {
-  db: DBInstance;
+  db: Client;
   port: number;
   metricPrefix: string;
   reviewerIntervalMs: number;
@@ -57,28 +56,18 @@ async function start(ops: {
 }
 
 function main() {
-  if (!constants.DB_CONNECTION_URL) {
-    throw new Error('Missing "DB_CONNECTION_URL" env variable');
-  }
-  if (!constants.REVIEWER_INTERVAL_MS) {
-    throw new Error('Missing "REVIEWER_INTERVAL_MS" env variable');
-  } else if (isNaN(constants.REVIEWER_INTERVAL_MS)) {
-    throw new Error(
-      `Invalid "REVIEWER_INTERVAL_MS" env variable "${constants.REVIEWER_INTERVAL_MS}"`
-    );
+  if (!process.env.DB_CONNECTION_URL) {
+    throw new Error("Missing 'DB_CONNECTION_URL' env var.");
   }
 
   // init db
-  const pgInstance = pgp();
   const connectionString: string = constants.DB_CONNECTION_URL!;
   // create table if the table does not exist
-  const dbInstance = pgInstance({
-    connectionString,
-  });
+  const pgC = new Client({ connectionString });
 
   start({
     port: constants.PORT,
-    db: dbInstance,
+    db: pgC,
     metricPrefix: constants.METRIC_PREFIX,
     reviewerIntervalMs: constants.REVIEWER_INTERVAL_MS,
     reviewerConcurrency: constants.REVIEWER_CONCURRENCY,
