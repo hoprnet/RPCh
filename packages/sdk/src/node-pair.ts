@@ -1,6 +1,6 @@
 import { WebSocket, MessageEvent, CloseEvent } from "isomorphic-ws";
 
-import * as NodesAPI from "./nodes-api";
+import * as NodesAPI from "./node-api";
 import { average, createLogger, randomEl, shortPeerId } from "./utils";
 
 import type { EntryNode } from "./entry-node";

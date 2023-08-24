@@ -3,7 +3,7 @@ import "@hoprnet/hopr-sdk";
 import { utils as etherUtils } from "ethers";
 
 import { createLogger } from "./utils";
-import * as NodesAPI from "./nodes-api";
+import * as NodesAPI from "./node-api";
 import NodesCollector from "./nodes-collector";
 import type { EntryNode } from "./entry-node";
 import * as Request from "./request";
