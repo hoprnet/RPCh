@@ -41,8 +41,17 @@ function runZeroHopChecks(
       );
     });
   });
-  const res = Promise.allSettled(pPairs);
-  console.log(res);
+  pPairs.map((p) => {
+    p.then((pExits) => {
+      Promise.allSettled(pExits).then((res) => {
+        const pairs = res
+          .filter((r) => r.status === "fulfilled" && !!r.value)
+          // @ts-ignore
+          .map((r) => r.value);
+        console.log("pairs", pairs);
+      });
+    });
+  });
 }
 
 function runOneHopChecks(_entryNodes: any, _exitNodes: any) {}
