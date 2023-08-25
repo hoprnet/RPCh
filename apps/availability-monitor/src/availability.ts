@@ -27,7 +27,10 @@ async function run(dbPool: Pool) {
   const exitNodes = (await pExitNodes).rows;
   runZeroHops(dbPool, entryNodes, exitNodes).then(() => {
     // schedule new run every max 10 min
-    setTimeout(() => run(dbPool), Math.floor(Math.random() * 10 * 60e3));
+    const next = Math.floor(Math.random() * 10 * 60e3);
+    const logN = Math.round(next / 1000);
+    log.verbose("scheduling next run in", logN, "s");
+    setTimeout(() => run(dbPool), next);
   });
   //runOneHops(entryNodes, exitNodes);
 }
