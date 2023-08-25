@@ -41,17 +41,32 @@ function runZeroHopChecks(
       );
     });
   });
-  pPairs.map((p) => {
-    p.then((pExits) => {
-      Promise.allSettled(pExits).then((res) => {
-        const pairs = res
-          .filter((r) => r.status === "fulfilled" && !!r.value)
-          // @ts-ignore
-          .map((r) => r.value);
-        console.log("pairs", pairs);
-      });
-    });
-  });
+
+  // collect results
+  const allSettled = pPairs.map((p) =>
+    p.then((pExits) => Promise.allSettled(pExits))
+  );
+  Promise.allSettled(allSettled)
+    .then((res) => {
+      const pairings = res.reduce<
+        { entry: RegisteredNode; exit: RegisteredNode }[]
+      >((outerAcc, outerPrm) => {
+        if ("value" in outerPrm) {
+          const outerPairs = outerPrm.value.reduce<
+            { entry: RegisteredNode; exit: RegisteredNode }[]
+          >((innerAcc, innerPrm) => {
+            if (innerPrm && "value" in innerPrm && !!innerPrm.value) {
+              innerAcc.push(innerPrm.value);
+            }
+            return innerAcc;
+          }, []);
+          return outerPairs;
+        }
+        return outerAcc;
+      }, []);
+      console.log("pairings", pairings);
+    })
+    .catch((err) => log.error("Error during zero hop check", err));
 }
 
 function runOneHopChecks(_entryNodes: any, _exitNodes: any) {}
