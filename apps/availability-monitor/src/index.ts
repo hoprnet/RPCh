@@ -61,12 +61,12 @@ async function start(ops: {
 }
 
 function main() {
-  if (!process.env.DATABASE_URL) {
-    throw new Error("Missing 'DATABASE_URL' env var.");
+  if (!process.env.DB_CONNECTION_URL) {
+    throw new Error("Missing 'DB_CONNECTION_URL' env var.");
   }
 
   // init db
-  const connectionString = process.env.DATABASE_URL;
+  const connectionString = process.env.DB_CONNECTION_URL;
   const dbPool = new Pool({ connectionString });
   const dbInst = pgp()({ connectionString });
 
