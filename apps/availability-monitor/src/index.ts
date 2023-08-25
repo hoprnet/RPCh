@@ -1,17 +1,17 @@
 import pgp from "pg-promise";
-import { Client } from "pg";
-import { MetricManager } from "@rpch/common/build/internal/metric-manager";
+import { Pool } from "pg";
+// import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 import * as Prometheus from "prom-client";
 import * as constants from "./constants";
-import API from "./api";
-import Reviewer from "./reviewer";
+// import API from "./api";
+// import Reviewer from "./reviewer";
 import * as availability from "./availability";
-import { createLogger } from "./utils";
+// import { createLogger } from "./utils";
 
-const log = createLogger();
+// const log = createLogger();
 
 async function start(ops: {
-  db: Client;
+  dbPool: Pool;
   dbInst: pgp.IDatabase<{}>;
   port: number;
   metricPrefix: string;
@@ -24,40 +24,40 @@ async function start(ops: {
   // add default metrics to registry
   Prometheus.collectDefaultMetrics({ register });
 
-  const metricManager = new MetricManager(
-    Prometheus,
-    register,
-    ops.metricPrefix
-  );
+  //  const metricManager = new MetricManager(
+  //    Prometheus,
+  //    register,
+  //    ops.metricPrefix
+  //  );
 
   // initializes reviewer
-  const reviewer = new Reviewer(
-    ops.dbInst,
-    metricManager,
-    ops.reviewerIntervalMs,
-    ops.reviewerConcurrency
-  );
+  // const reviewer = new Reviewer(
+  //   ops.dbInst,
+  //   metricManager,
+  //   ops.reviewerIntervalMs,
+  //   ops.reviewerConcurrency
+  // );
   // reviewer.start();
 
   // start restful server
-  const app = API({
-    metricManager,
-    reviewer,
-  });
+  // const app = API({
+  // metricManager,
+  // reviewer,
+  // });
 
   // start listening at PORT for requests
-  const server = app.listen(ops.port, "0.0.0.0", () => {
-    log.normal("API server is up on port %i", ops.port);
-  });
+  // const server = app.listen(ops.port, "0.0.0.0", () => {
+  // log.normal("API server is up on port %i", ops.port);
+  // });
 
   // set server timeout to 30s
-  server.setTimeout(30e3);
+  // server.setTimeout(30e3);
 
-  availability.run(ops.db);
+  availability.start(ops.dbPool);
 
-  return () => {
-    reviewer.stop();
-  };
+  // return () => {
+  // reviewer.stop();
+  // };
 }
 
 function main() {
@@ -67,13 +67,12 @@ function main() {
 
   // init db
   const connectionString = process.env.DATABASE_URL;
-  // create table if the table does not exist
-  const pgC = new Client({ connectionString });
+  const dbPool = new Pool({ connectionString });
   const dbInst = pgp()({ connectionString });
 
   start({
     port: constants.PORT,
-    db: pgC,
+    dbPool,
     dbInst,
     metricPrefix: constants.METRIC_PREFIX,
     reviewerIntervalMs: constants.REVIEWER_INTERVAL_MS,
