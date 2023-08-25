@@ -9,6 +9,7 @@ import type { Peer } from "./node-api";
 const log = createLogger(["availability"]);
 
 type PeersCache = Map<string, Map<string, Peer>>; // node id -> peer id -> Peer
+type Pair = { entry: RegisteredNode; exit: RegisteredNode };
 
 export async function run(client: Client) {
   client.on("error", (err) => log.error("pg client error", err));
@@ -48,18 +49,17 @@ function runZeroHopChecks(
   );
   Promise.allSettled(allSettled)
     .then((res) => {
-      const pairings = res.reduce<
-        { entry: RegisteredNode; exit: RegisteredNode }[]
-      >((outerAcc, outerPrm) => {
+      const pairings = res.reduce<Pair[]>((outerAcc, outerPrm) => {
         if ("value" in outerPrm) {
-          const outerPairs = outerPrm.value.reduce<
-            { entry: RegisteredNode; exit: RegisteredNode }[]
-          >((innerAcc, innerPrm) => {
-            if (innerPrm && "value" in innerPrm && !!innerPrm.value) {
-              innerAcc.push(innerPrm.value);
-            }
-            return innerAcc;
-          }, []);
+          const outerPairs = outerPrm.value.reduce<Pair[]>(
+            (innerAcc, innerPrm) => {
+              if (innerPrm && "value" in innerPrm && !!innerPrm.value) {
+                innerAcc.push(innerPrm.value);
+              }
+              return innerAcc;
+            },
+            []
+          );
           return outerPairs;
         }
         return outerAcc;
