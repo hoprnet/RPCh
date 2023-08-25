@@ -1,11 +1,14 @@
-import type { Client } from "pg";
-import type { RegisteredNode } from "./query";
-
-import * as api from "./node-api";
 import * as q from "./query";
+import * as PeersCache from "./peers-cache";
 import { createLogger } from "./utils";
 
+import type { Client } from "pg";
+import type { RegisteredNode } from "./query";
+import type { Peer } from "./node-api";
+
 const log = createLogger(["availability"]);
+
+type PeersCache = Map<string, Map<string, Peer>>; // node id -> peer id -> Peer
 
 export async function run(client: Client) {
   client.on("error", (err) => log.error("pg client error", err));
@@ -18,29 +21,28 @@ export async function run(client: Client) {
   runOneHopChecks(entryNodes, exitNodes);
 }
 
-function runZeroHopChecks(entryNodes: any, exitNodes: any) {
-  // const now = Date.now();
-  entryNodes.forEach(async (e: RegisteredNode) => {
-    const entryPeers = await api.getPeers(e);
-    const entryPeersMap = new Map(
-      entryPeers.connected.map((p) => [p.peerId, p])
-    );
-    exitNodes.forEach(async (x: RegisteredNode) => {
-      const entryPeer = entryPeersMap.get(x.id);
-      if (entryPeer) {
-        // exit node is listed as quality peer of entry node
-        const exitPeers = await api.getPeers(x);
-        const exitPeersMap = new Map(
-          exitPeers.connected.map((p) => [p.peerId, p])
-        );
-        const exitPeer = exitPeersMap.get(e.id);
-        if (exitPeer) {
-          // entry node is listed as quality peer exit node
-          console.log("quality peering", e, x, entryPeer, exitPeer);
-        }
-      }
+function runZeroHopChecks(
+  entryNodes: RegisteredNode[],
+  exitNodes: RegisteredNode[]
+) {
+  const peersCache: PeersCache.PeersCache = new Map();
+  // run everything non blocking
+  const pPairs = entryNodes.map((entry) => {
+    return PeersCache.fetchPeers(peersCache, entry).then((entryPeers) => {
+      const viableExits = exitNodes.filter((x) => entryPeers.has(x.id));
+      return viableExits.map((exit) =>
+        PeersCache.fetchPeers(peersCache, exit).then((exitPeers) => {
+          // check entry node is in quality peers of exit node
+          if (exitPeers.has(entry.id)) {
+            return { entry, exit };
+          }
+          return null;
+        })
+      );
     });
   });
+  const res = Promise.allSettled(pPairs);
+  console.log(res);
 }
 
 function runOneHopChecks(_entryNodes: any, _exitNodes: any) {}

@@ -18,7 +18,7 @@ export type RegisteredNode = {
 
 export function entryNodes(
   client: Client
-): Promise<QueryResult<RegisteredNode[]>> {
+): Promise<QueryResult<RegisteredNode>> {
   return client.query(
     "select * from registered_nodes where has_exit_node = false"
   );
@@ -26,7 +26,7 @@ export function entryNodes(
 
 export async function exitNodes(
   client: Client
-): Promise<QueryResult<RegisteredNode[]>> {
+): Promise<QueryResult<RegisteredNode>> {
   return client.query(
     "select * from registered_nodes where has_exit_node = true"
   );
