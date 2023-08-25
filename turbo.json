@@ -104,7 +104,7 @@
       ],
       "env": [
         "PORT",
-        "DB_CONNECTION_URL",
+        "DATABASE_URL",
         "REVIEWER_INTERVAL_MS",
         "REVIEWER_CONCURRENCY",
         "MIN_AMOUNT_PEERS",

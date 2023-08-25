@@ -9,7 +9,7 @@
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "eslint \"src/**/*.ts*\"",
     "test": "jest --coverage",
-    "start": "node build/index.js",
+    "start": "yarn migrate up; node build/index.js",
     "migrate": "node-pg-migrate --migrations-table migrations"
   },
   "devDependencies": {
