@@ -10,9 +10,13 @@ exports.shorthands = {
   },
 };
 
-exports.up = (pgm) =>
+exports.up = (pgm) => {
   pgm.createTable("zero_hop_pairings", {
-    entryNode: { type: "varchar", notNull: true },
-    exitNode: { type: "varchar", notNull: true },
-    createdAt: "createdAt",
+    entry_id: { type: "varchar", notNull: true },
+    exit_id: { type: "varchar", notNull: true },
+    created_at: "createdAt",
   });
+  pgm.createIndex("zero_hop_pairings", ["entry_id", "exit_id"], {
+    unique: true,
+  });
+};
