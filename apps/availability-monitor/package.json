@@ -10,7 +10,7 @@
     "lint": "eslint \"src/**/*.ts*\"",
     "test": "jest --coverage",
     "start": "node build/index.js",
-    "migrate": "node-pg-migrate"
+    "migrate": "node-pg-migrate --migrations-table migrations"
   },
   "devDependencies": {
     "@rpch/configs-eslint": "*",

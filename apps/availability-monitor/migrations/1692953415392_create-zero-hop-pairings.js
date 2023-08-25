@@ -1,3 +1,5 @@
+const { PgLiteral } = require("node-pg-migrate");
+
 /* eslint-disable camelcase */
 
 exports.shorthands = {
@@ -9,8 +11,8 @@ exports.shorthands = {
 };
 
 exports.up = (pgm) =>
-  pgm.createTable("test", {
-    entryNode: "string",
-    exitNode: "string",
+  pgm.createTable("zero_hop_pairings", {
+    entryNode: { type: "varchar", notNull: true },
+    exitNode: { type: "varchar", notNull: true },
     createdAt: "createdAt",
   });
