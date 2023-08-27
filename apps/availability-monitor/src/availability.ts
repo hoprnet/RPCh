@@ -44,8 +44,8 @@ function reschedule(dbPool: Pool) {
 
 function runZeroHops(
   dbPool: Pool,
-  entryNodes: q.RegisteredNode[],
-  exitNodes: q.RegisteredNode[]
+  entryNodes: RegisteredNode[],
+  exitNodes: RegisteredNode[]
 ) {
   const peersCache: PeersCache.PeersCache = new Map();
 
