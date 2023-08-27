@@ -30,8 +30,8 @@ services:
       - "9091:9091/udp"
       - "8080:8080"
     env_file:
-        - .env-default
-        - .env
+        - .env-hoprd-default
+        - .env-hoprd
     volumes:
       - '/opt/hoprd:/app/hoprd-db'
       - '/var/run/docker.sock:/var/run/docker.sock'
@@ -41,23 +41,21 @@ services:
         max-size: "1000m"
         max-file: "7"
   exit-node:
+    restart: on-failure
+    mem_reservation: 1g
+    mem_limit: 1g
+    container_name: exit-node
+    hostname: exit-node
     build:
       dockerfile: apps/exit-node/Dockerfile
       context: ../../
     depends_on:
       - hoprd
-    restart: unless-stopped
     volumes:
       - exit-node-data:${RPCH_DATA_DIR}
-    environment:
-      - HOPRD_API_ENDPOINT=http://hoprd:3001
-      - DEBUG=${RPCH_DEBUG}
-      - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-      - RPCH_PASSWORD=${RPCH_PASSWORD}
-      - RPCH_IDENTITY_FILE=${RPCH_IDENTITY_FILE}
-      - RPCH_PRIVATE_KEY=${RPCH_PRIVATE_KEY}
-      - RPCH_DATA_DIR=${RPCH_DATA_DIR}
-      - OPT_IN_METRICS=${OPT_IN_METRICS}
+    env_file:
+        - .env-rpch-default
+        - .env-rpch
     networks:
       - hopr-net
     logging:
