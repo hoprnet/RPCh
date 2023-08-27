@@ -1,3 +1,4 @@
+import { Pool } from "pg";
 import { DBInstance, updateRegisteredNode } from "./db";
 import { entryServer } from "./entry-server";
 import { createLogger } from "./utils";
@@ -17,6 +18,7 @@ const log = createLogger();
 
 const start = async (ops: {
   db: DBInstance;
+  dbPool: Pool;
   baseQuota: bigint;
   fundingServiceUrl: string;
   secret: string;
@@ -46,6 +48,7 @@ const start = async (ops: {
 
   const app = entryServer({
     db: ops.db,
+    dbPool: ops.dbPool,
     baseQuota: ops.baseQuota,
     metricManager: metricManager,
     secret: ops.secret,
@@ -127,28 +130,26 @@ const start = async (ops: {
 };
 
 const main = () => {
-  if (!constants.FUNDING_SERVICE_URL)
-    throw new Error('Missing "FUNDING_SERVICE_URL" env variable');
-
-  if (!constants.DB_CONNECTION_URL) {
-    throw new Error('Missing "DB_CONNECTION_URL" env variable');
+  if (!process.env.DB_CONNECTION_URL) {
+    throw new Error("Missing 'DB_CONNECTION_URL' env var.");
   }
   if (!constants.SECRET) {
     throw new Error('Missing "SECRET" env variable');
   }
+  if (!constants.FUNDING_SERVICE_URL) {
+    throw new Error('Missing "FUNDING_SERVICE_URL" env variable');
+  }
 
   // init db
-  const pgInstance = pgp();
-  const connectionString: string = constants.DB_CONNECTION_URL!;
-  // create table if the table does not exist
-  const dbInstance = pgInstance({
-    connectionString,
-  });
+  const connectionString = process.env.DB_CONNECTION_URL;
+  const dbPool = new Pool({ connectionString });
+  const dbInst = pgp()({ connectionString });
 
   start({
     baseQuota: constants.BASE_QUOTA,
-    db: dbInstance,
     fundingServiceUrl: constants.FUNDING_SERVICE_URL!,
+    db: dbInst,
+    dbPool,
     secret: constants.SECRET!,
     availabilityMonitorUrl: constants.AVAILABILITY_MONITOR_URL,
   });

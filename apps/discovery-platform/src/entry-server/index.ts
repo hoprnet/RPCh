@@ -1,3 +1,4 @@
+import { Pool } from "pg";
 import express from "express";
 import { DBInstance } from "../db";
 import { v1Router } from "./routers/v1";
@@ -9,6 +10,7 @@ const app = express();
 
 export const entryServer = (ops: {
   db: DBInstance;
+  dbPool: Pool;
   baseQuota: bigint;
   metricManager: MetricManager;
   secret: string;
@@ -21,6 +23,7 @@ export const entryServer = (ops: {
     v1Router({
       baseQuota: ops.baseQuota,
       db: ops.db,
+      dbPool: ops.dbPool,
       metricManager: ops.metricManager,
       secret: ops.secret,
       getAvailabilityMonitorResults: ops.getAvailabilityMonitorResults,

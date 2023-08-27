@@ -705,6 +705,12 @@ function getNodesZeroHopPairings(ops: { dbPool: Pool }) {
     const data = matchedData(req);
     q.readZeroHopPairings(ops.dbPool, data.amount, data.since)
       .then((qPairings) => {
+        if (qPairings.rowCount === 0) {
+          // table is empty
+          return res.status(204);
+        }
+
+        // collect pairings by entry node
         const pairings = qPairings.rows.reduce<Map<string, Set<string>>>(
           (acc, { entry_id, exit_id }) => {
             const v = acc.get(entry_id);
@@ -717,6 +723,8 @@ function getNodesZeroHopPairings(ops: { dbPool: Pool }) {
           },
           new Map()
         );
+
+        // query entry and exit nodes
         const qEntryNodes = q.readEntryNodes(ops.dbPool, pairings.keys());
         const exitIds = Array.from(pairings.values()).reduce((acc, xIds) => {
           for (const xId of xIds) {
@@ -725,6 +733,8 @@ function getNodesZeroHopPairings(ops: { dbPool: Pool }) {
           return acc;
         }, new Set());
         const qExitNodes = q.readExitNodes(ops.dbPool, exitIds);
+
+        // wait for entry and exit nodes query results
         Promise.all([qEntryNodes, qExitNodes])
           .then(([qEntries, qExits]) => {
             const matchedAt = qPairings.rows[0].created_at;
