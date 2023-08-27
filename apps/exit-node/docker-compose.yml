@@ -56,6 +56,7 @@ services:
     env_file:
         - .env-rpch-default
         - .env-rpch
+        - .env
     networks:
       - hopr-net
     logging:
