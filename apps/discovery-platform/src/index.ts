@@ -20,7 +20,6 @@ const start = async (ops: {
   db: DBInstance;
   dbPool: Pool;
   baseQuota: bigint;
-  fundingServiceUrl: string;
   secret: string;
   availabilityMonitorUrl?: string;
 }) => {
@@ -136,9 +135,6 @@ const main = () => {
   if (!constants.SECRET) {
     throw new Error('Missing "SECRET" env variable');
   }
-  if (!constants.FUNDING_SERVICE_URL) {
-    throw new Error('Missing "FUNDING_SERVICE_URL" env variable');
-  }
 
   // init db
   const connectionString = process.env.DB_CONNECTION_URL;
@@ -147,7 +143,6 @@ const main = () => {
 
   start({
     baseQuota: constants.BASE_QUOTA,
-    fundingServiceUrl: constants.FUNDING_SERVICE_URL!,
     db: dbInst,
     dbPool,
     secret: constants.SECRET!,
