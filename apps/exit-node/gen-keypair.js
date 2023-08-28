@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 const { Wallet, utils } = require("ethers");
 
-console.log("generating random wallet");
+//console.log("generating random wallet");
 const wallet = Wallet.createRandom();
 const compressedPubkey = utils.computePublicKey(wallet.publicKey, true);
 const output = {
@@ -9,4 +9,4 @@ const output = {
   public_key: wallet.publicKey,
   compressed_pubkey: compressedPubkey,
 };
-console.log("generated:", output);
+console.log("rpch_keys:", output);
