@@ -21,8 +21,10 @@ export function readEntryNodes(
   dbPool: Pool,
   node_ids: Iterable<string>
 ): Promise<QueryResult<EntryNode>> {
-  const qIds = Array.from(node_ids).join(",");
-  const q = `select id, hoprd_api_endpoint, hoprd_api_token from registered_node where id in (${qIds})`;
+  const qIds = Array.from(node_ids)
+    .map((i) => `'${i}'`)
+    .join(",");
+  const q = `select id, hoprd_api_endpoint, hoprd_api_token from registered_nodes where id in (${qIds})`;
   return dbPool.query(q);
 }
 
@@ -30,17 +32,29 @@ export function readExitNodes(
   dbPool: Pool,
   node_ids: Iterable<string>
 ): Promise<QueryResult<ExitNode>> {
-  const qIds = Array.from(node_ids).join(",");
-  const q = `select id, exit_node_pub_key where id in (${qIds})`;
+  const qIds = Array.from(node_ids)
+    .map((i) => `'${i}'`)
+    .join(",");
+  const q = `select id, exit_node_pub_key from registered_nodes where id in (${qIds})`;
   return dbPool.query(q);
 }
 
 export function readZeroHopPairings(
   dbPool: Pool,
   amount: number,
-  since?: Date
+  since?: string
 ): Promise<QueryResult<Pairing>> {
-  const qSince = since ? `where created_at > ${since}` : "";
-  const q = `select * from zero_hop_pairings ${qSince} order by random() limit ${amount}`;
+  const qSelect = "select * from zero_hop_pairings";
+  const qOrder = `order by random() limit ${amount}`;
+  if (since) {
+    const q = [qSelect, "where created_at > $1", qOrder].join(" ");
+    // postgres time resolution is higher than js
+    // need to add 1 to timestamp to avoid rounding errors confusion when comparing timestamps
+    // this can cause other confusion but will be fine for our use case
+    const dSince = new Date(since);
+    const date = new Date(dSince.getTime() + 1);
+    return dbPool.query(q, [date]);
+  }
+  const q = [qSelect, qOrder].join(" ");
   return dbPool.query(q);
 }

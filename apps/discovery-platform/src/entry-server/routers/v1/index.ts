@@ -103,7 +103,7 @@ export const v1Router = (ops: {
   router.get(
     "/nodes/zero_hop_pairings",
     metricMiddleware(requestDurationHistogram),
-    query("amount").default(10).isInt({ min: 0, max: 20 }),
+    query("amount").default(10).isInt({ min: 1, max: 20 }),
     query("since").optional().isISO8601(),
     getNodesZeroHopPairings(ops)
   );
@@ -707,7 +707,7 @@ function getNodesZeroHopPairings(ops: { dbPool: Pool }) {
       .then((qPairings) => {
         if (qPairings.rowCount === 0) {
           // table is empty
-          return res.status(204);
+          return res.status(204).end();
         }
 
         // collect pairings by entry node
