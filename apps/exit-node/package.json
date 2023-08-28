@@ -9,7 +9,8 @@
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "eslint \"src/**/*.ts*\"",
     "test": "jest --coverage",
-    "start": "node build/index.js"
+    "start": "node build/index.js",
+    "generate-exit-node-keypair": "node gen-keypair.js"
   },
   "devDependencies": {
     "@rpch/configs-eslint": "*",
