@@ -9,4 +9,4 @@ const output = {
   public_key: wallet.publicKey,
   compressed_pubkey: compressedPubkey,
 };
-console.log("rpch_keys:", output);
+console.log(JSON.stringify(output));
