@@ -6,7 +6,6 @@ const wallet = Wallet.createRandom();
 const compressedPubkey = utils.computePublicKey(wallet.publicKey, true);
 const output = {
   private_key: wallet.privateKey,
-  public_key: wallet.publicKey,
-  compressed_pubkey: compressedPubkey,
+  public_key: compressedPubkey,
 };
 console.log("generated:", output);
