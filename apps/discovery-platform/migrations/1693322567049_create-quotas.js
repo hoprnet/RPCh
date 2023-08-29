@@ -5,5 +5,5 @@ exports.up = (pgm) =>
     client_id: { type: "uuid", references: "clients", notNull: true },
     count: { type: "smallint", notNull: true },
     tag: "varchar(20)",
-    created_at: "created_at",
+    created_at: "createdAt",
   });

@@ -8,6 +8,6 @@ exports.up = (pgm) =>
     www_address: "varchar(1000)",
     telegram: "varchar(255)",
     last_logged_in_at: "timestamp",
-    created_at: "created_at",
+    created_at: "createdAt",
     updated_at: "timestamp",
   });

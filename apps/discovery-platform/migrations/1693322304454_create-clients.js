@@ -6,6 +6,6 @@ exports.up = (pgm) =>
     user_id: { type: "uuid", references: "users", notNull: "true" },
     external_token: { type: "varchar(255)", unique: true, notNull: "true" },
     invalidated_at: "timestamp",
-    created_at: "created_at",
+    created_at: "createdAt",
     updated_at: "timestamp",
   });
