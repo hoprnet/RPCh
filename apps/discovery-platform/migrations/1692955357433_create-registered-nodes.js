@@ -10,6 +10,7 @@ exports.shorthands = {
     default: new PgLiteral("current_timestamp"),
   },
 };
+
 exports.up = (pgm) => {
   pgm.createTable("registered_nodes", {
     id: { type: "varchar(255)", primaryKey: true },
