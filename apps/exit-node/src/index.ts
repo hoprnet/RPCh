@@ -197,8 +197,7 @@ export const start = async (ops: {
     log.error("failed opening websocket on", wsURL);
     throw new Error("no ws connection");
   }
-  // @ts-ignore
-  socket.onmessage((evt: MessageEvent) => {
+  socket.onmessage = (evt: MessageEvent) => {
     const body = evt.data.toString();
     // message received is an acknowledgement of a
     // message we have send, we can safely ignore this
@@ -224,7 +223,7 @@ export const start = async (ops: {
         msg
       );
     }
-  });
+  };
 
   socket.on("error", (err) => {
     log.error("ws error", err);
