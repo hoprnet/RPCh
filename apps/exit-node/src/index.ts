@@ -226,13 +226,13 @@ export const start = async (ops: {
     }
   });
 
-  connection.on("error", (err) => {
+  socket.on("error", (err) => {
     log.error("ws error", err);
     // force restart
     throw err;
   });
 
-  connection.on("close", (err) => {
+  socket.on("close", (err) => {
     log.error("ws close", err);
     // force restart
     throw err;
@@ -242,7 +242,7 @@ export const start = async (ops: {
     for (const interval of intervals) {
       clearInterval(interval);
     }
-    connection.close();
+    socket.close();
   };
 };
 
