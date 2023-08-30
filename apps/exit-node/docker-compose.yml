@@ -41,7 +41,7 @@ services:
         max-size: "1000m"
         max-file: "7"
   exit-node:
-    restart: on-failure
+    restart: always
     mem_reservation: 1g
     mem_limit: 1g
     container_name: exit-node

@@ -1,3 +1,4 @@
+import { WebSocket, MessageEvent } from "isomorphic-ws";
 import levelup from "levelup";
 import leveldown from "leveldown";
 import { utils as ethersUtils } from "ethers";
@@ -7,7 +8,6 @@ import {
   type Message,
   Cache,
   Segment,
-  hoprd,
   utils,
 } from "@rpch/common";
 import * as crypto from "@rpch/crypto-for-nodejs";
@@ -38,11 +38,6 @@ const log = createLogger();
 export const start = async (ops: {
   exit: {
     sendRpcRequest: typeof exit.sendRpcRequest;
-  };
-  hoprd: {
-    sendMessage: typeof hoprd.sendMessage;
-    createMessageListener: typeof hoprd.createMessageListener;
-    fetchPeerId: typeof hoprd.fetchPeerId;
   };
   privateKey?: Uint8Array;
   identityFile: string;
@@ -76,6 +71,8 @@ export const start = async (ops: {
     { labelNames: ["status"] }
   );
 
+  const headers = { "x-auth-token": ops.apiToken! };
+  const sendUrl = new URL("/api/v3/messages", ops.apiEndpoint);
   const onMessage = async (message: Message) => {
     try {
       log.verbose("Received message", message.id, message.body);
@@ -130,17 +127,16 @@ export const start = async (ops: {
       );
 
       for (const segment of rpchResponse.toMessage().toSegments()) {
-        ops.hoprd
-          .sendMessage({
-            apiEndpoint: ops.apiEndpoint,
-            apiToken: ops.apiToken,
-            message: segment.toString(),
-            destination: rpchRequest.entryNodeDestination,
-            path: [],
-          })
-          .catch((error) => {
-            log.error("Failed to send segment", error);
-          });
+        const body = {
+          // tag:
+          body: segment.toString(),
+          peerAddress: rpchRequest.entryNodeDestination,
+          path: [],
+        };
+        // @ts-ignore
+        fetch(sendUrl, { headers, method: "POST", body }).catch((error) => {
+          log.error("Failed to send segment", error);
+        });
       }
     } catch (error) {
       log.error("Failed to respond with data", error);
@@ -152,11 +148,10 @@ export const start = async (ops: {
   const db = levelup(leveldown(ops.dataDir));
 
   log.verbose("Fetching peer id", ops.dataDir);
-  const myPeerId = await ops.hoprd
-    .fetchPeerId({
-      apiEndpoint: ops.apiEndpoint,
-      apiToken: ops.apiToken,
-    })
+  const addressUrl = new URL("/api/v3/account/addresses", ops.apiEndpoint);
+  // @ts-ignore
+  const { hopr: myPeerId } = await fetch(addressUrl, { headers })
+    .then((r) => r.json())
     .catch((error) => log.error(error));
   if (!myPeerId) throw Error("Could not find HOPRd's peer id");
   log.verbose("Fetched peer id", myPeerId);
@@ -193,28 +188,55 @@ export const start = async (ops: {
     intervals.push(pushMetrics);
   }
 
-  const connection = await ops.hoprd.createMessageListener(
-    ops.apiEndpoint,
-    ops.apiToken || "",
-    (evt) => {
-      switch (evt.action) {
-        case "message":
-          try {
-            const segment = Segment.fromString(evt.message);
-            cache.onSegment(segment);
-          } catch (error) {
-            log.verbose(
-              "rejected received data from HOPRd: not a valid segment",
-              evt.message
-            );
-          }
-          break;
-      }
-    },
-    {
-      maxReconnectAttempts: Infinity,
+  const wsURL = new URL(ops.apiEndpoint.toString());
+  wsURL.protocol = ops.apiEndpoint.startsWith("https:") ? "wss:" : "ws:";
+  wsURL.pathname = "/api/v3/messages/websocket";
+  wsURL.search = `?apiToken=${ops.apiToken!}`;
+  const socket = new WebSocket(wsURL);
+  if (!socket) {
+    log.error("failed opening websocket on", wsURL);
+    throw new Error("no ws connection");
+  }
+  // @ts-ignore
+  socket.onmessage((evt: MessageEvent) => {
+    const body = evt.data.toString();
+    // message received is an acknowledgement of a
+    // message we have send, we can safely ignore this
+    if (body.startsWith("ack:")) {
+      return;
     }
-  );
+
+    let msg: string | undefined;
+    try {
+      msg = ethersUtils.toUtf8String(
+        ethersUtils.RLP.decode(new Uint8Array(JSON.parse(`[${body}]`)))[0]
+      );
+    } catch (error) {
+      log.error("Error decoding message:", error);
+      return;
+    }
+    try {
+      const segment = Segment.fromString(msg);
+      cache.onSegment(segment);
+    } catch (error) {
+      log.verbose(
+        "rejected received data from HOPRd: not a valid segment",
+        msg
+      );
+    }
+  });
+
+  connection.on("error", (err) => {
+    log.error("ws error", err);
+    // force restart
+    throw err;
+  });
+
+  connection.on("close", (err) => {
+    log.error("ws close", err);
+    // force restart
+    throw err;
+  });
 
   return () => {
     for (const interval of intervals) {
@@ -247,7 +269,6 @@ if (require.main === module) {
 
   start({
     exit,
-    hoprd,
     privateKey: RPCH_PRIVATE_KEY_STR
       ? ethersUtils.arrayify(RPCH_PRIVATE_KEY_STR)
       : undefined,
