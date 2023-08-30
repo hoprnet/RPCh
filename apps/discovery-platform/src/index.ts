@@ -132,14 +132,17 @@ const start = async (ops: {
 };
 
 const main = () => {
+  // postgres url
   if (!process.env.DB_CONNECTION_URL) {
     throw new Error("Missing 'DB_CONNECTION_URL' env var.");
   }
+  // server port
   if (!process.env.PORT) {
     throw new Error("Missing 'PORT' env var.");
   }
-  if (!constants.SECRET) {
-    throw new Error('Missing "SECRET" env variable');
+  // admin secret
+  if (!process.env.SECRET) {
+    throw new Error("Missing 'SECRET' env var.");
   }
 
   // init db
@@ -152,7 +155,7 @@ const main = () => {
     db: dbInst,
     dbPool,
     port: parseInt(process.env.PORT, 10),
-    secret: constants.SECRET!,
+    secret: process.env.SECRET,
     availabilityMonitorUrl: constants.AVAILABILITY_MONITOR_URL,
   });
 };
