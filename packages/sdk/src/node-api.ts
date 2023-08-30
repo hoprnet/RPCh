@@ -9,7 +9,7 @@ export function connectWS({
 }): WebSocket {
   const wsURL = new URL(apiEndpoint.toString());
   wsURL.protocol = apiEndpoint.protocol === "https:" ? "wss:" : "ws:";
-  wsURL.pathname = "/api/v2/messages/websocket";
+  wsURL.pathname = "/api/v3/messages/websocket";
   wsURL.search = `?apiToken=${accessToken}`;
   return new WebSocket(wsURL);
 }
@@ -23,7 +23,7 @@ export function sendMessage(
   message: string
 ): Promise<string> {
   const url = new URL(apiEndpoint.toString());
-  url.pathname = "/api/v2/messages";
+  url.pathname = "/api/v3/messages";
   const headers = {
     Accept: "application/json",
     "Content-Type": "application/json",
