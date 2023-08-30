@@ -66,10 +66,21 @@ export function clientAuthorized(dbPool: Pool) {
   };
 }
 
+export function adminAuthorized(adminSecret: string) {
+  return function (req: Request, res: Response, next: NextFunction) {
+    const headerSecret = req.headers["x-secret-key"] as string;
+    if (adminSecret === headerSecret) {
+      next();
+    } else {
+      const reason = "Not authorized";
+      res.status(403).json({ reason });
+    }
+  };
+}
+
 // middleware that will track duration of request
-export const metricMiddleware =
-  (histogramMetric: Histogram<string>) =>
-  (req: Request, res: Response, next: NextFunction) => {
+export function metric(histogramMetric: Histogram<string>) {
+  return function (req: Request, res: Response, next: NextFunction) {
     const start = process.hrtime();
     res.on("finish", () => {
       const end = process.hrtime(start);
@@ -88,3 +99,4 @@ export const metricMiddleware =
     });
     next();
   };
+}

@@ -18,14 +18,14 @@ import {
 import { DBInstance, deleteRegisteredNode } from "../../../db";
 import { createQuota } from "../../../quota";
 import {
-  createRegisteredNode,
+  // createRegisteredNode,
   getEligibleNode,
   getRegisteredNode,
   getRegisteredNodes,
 } from "../../../registered-node";
 import type {
   ClientDB,
-  RegisteredNode,
+  // RegisteredNode,
   RegisteredNodeDB,
   AvailabilityMonitorResult,
 } from "../../../types";
@@ -38,7 +38,6 @@ import {
   clientExists,
   // doesClientHaveQuota,
   getCache,
-  metricMiddleware,
   setCache,
 } from "./middleware";
 import * as middleware from "./middleware";
@@ -79,10 +78,10 @@ export const v1Router = (ops: {
   );
 
   const requestDurationHistogram = ops.metricManager.createHistogram(
-    "request_duration_seconds",
-    "duration of requests in seconds",
+    "request_duration_ms",
+    "duration of requests in milliseconds",
     {
-      buckets: [0.1, 0.5, 1, 5, 10, 30],
+      buckets: [10, 50, 100, 200, 500, 1000],
       labelNames: ["method", "path", "status", "client"],
     }
   );
@@ -103,45 +102,24 @@ export const v1Router = (ops: {
 
   router.get(
     "/nodes/zero_hop_pairings",
-    metricMiddleware(requestDurationHistogram),
+    middleware.metric(requestDurationHistogram),
     middleware.clientAuthorized(ops.dbPool),
-    query("amount").default(10).isInt({ min: 1, max: 20 }),
+    query("amount").default(10).isInt({ min: 1, max: 100 }),
     query("since").optional().isISO8601(),
-    getNodesZeroHopPairings(ops)
+    getNodesZeroHopPairings(ops.dbPool)
   );
 
   router.post(
     "/node/register",
-    metricMiddleware(requestDurationHistogram),
-    checkSchema(registerNodeSchema),
-    async (req: Request, res: Response) => {
-      try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-          counterFailedRequests
-            .labels({ method: req.method, path: req.path, status: 400 })
-            .inc();
-          return res.status(400).json({ errors: errors.array() });
-        }
-        const node: RegisteredNode = req.body;
-        const registered = await createRegisteredNode(ops.db, node);
-        counterSuccessfulRequests
-          .labels({ method: req.method, path: req.path, status: 200 })
-          .inc();
-        return res.json({ body: registered });
-      } catch (e) {
-        log.error("Can not register node", e);
-        counterFailedRequests
-          .labels({ method: req.method, path: req.path, status: 500 })
-          .inc();
-        return res.status(500).json({ errors: "Unexpected error" });
-      }
-    }
+    middleware.metric(requestDurationHistogram),
+    middleware.adminAuthorized(ops.secret),
+    // checkSchema(registerNodeSchema),
+    postNodeRegister(ops.dbPool)
   );
 
   router.get(
     "/node",
-    metricMiddleware(requestDurationHistogram),
+    middleware.metric(requestDurationHistogram),
     checkSchema(getNodeSchema),
     getCache<RegisteredNodeDB[]>(
       (req) => req.originalUrl || req.url,
@@ -230,7 +208,7 @@ export const v1Router = (ops: {
 
   router.get(
     "/node/:peerId",
-    metricMiddleware(requestDurationHistogram),
+    middleware.metric(requestDurationHistogram),
     param("peerId").isAlphanumeric(),
     clientExists(ops.db),
     async (req: Request<{ peerId: string }>, res: Response) => {
@@ -268,7 +246,7 @@ export const v1Router = (ops: {
 
   router.post(
     "/client/quota",
-    metricMiddleware(requestDurationHistogram),
+    middleware.metric(requestDurationHistogram),
     header("x-secret-key")
       .exists()
       .custom((val) => val === ops.secret),
@@ -331,7 +309,7 @@ export const v1Router = (ops: {
 
   router.delete(
     "/request/entry-node/:id",
-    metricMiddleware(requestDurationHistogram),
+    middleware.metric(requestDurationHistogram),
     header("x-secret-key")
       .exists()
       .custom((val) => val === ops.secret),
@@ -363,7 +341,7 @@ export const v1Router = (ops: {
 
   router.get(
     "/request/trial",
-    metricMiddleware(requestDurationHistogram),
+    middleware.metric(requestDurationHistogram),
     query("label")
       .optional()
       .custom((value) => isListSafe(value)),
@@ -401,7 +379,7 @@ export const v1Router = (ops: {
 
   router.post(
     "/request/entry-node",
-    metricMiddleware(requestDurationHistogram),
+    middleware.metric(requestDurationHistogram),
     body("excludeList")
       .optional()
       .isArray()
@@ -532,7 +510,7 @@ export const v1Router = (ops: {
 
   router.post(
     "/request/one-hop-delivery-routes",
-    metricMiddleware(requestDurationHistogram),
+    middleware.metric(requestDurationHistogram),
     body("excludeList")
       .optional()
       .isArray()
@@ -697,7 +675,7 @@ export const v1Router = (ops: {
   return router;
 };
 
-function getNodesZeroHopPairings(ops: { dbPool: Pool }) {
+function getNodesZeroHopPairings(dbPool: Pool) {
   return async function (req: Request, res: Response) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -705,7 +683,7 @@ function getNodesZeroHopPairings(ops: { dbPool: Pool }) {
     }
 
     const data = matchedData(req);
-    q.readZeroHopPairings(ops.dbPool, data.amount, data.since)
+    q.readZeroHopPairings(dbPool, data.amount, data.since)
       .then((qPairings) => {
         if (qPairings.rowCount === 0) {
           // table is empty
@@ -727,14 +705,14 @@ function getNodesZeroHopPairings(ops: { dbPool: Pool }) {
         );
 
         // query entry and exit nodes
-        const qEntryNodes = q.readEntryNodes(ops.dbPool, pairings.keys());
+        const qEntryNodes = q.readEntryNodes(dbPool, pairings.keys());
         const exitIds = Array.from(pairings.values()).reduce((acc, xIds) => {
           for (const xId of xIds) {
             acc.add(xId);
           }
           return acc;
         }, new Set());
-        const qExitNodes = q.readExitNodes(ops.dbPool, exitIds);
+        const qExitNodes = q.readExitNodes(dbPool, exitIds);
 
         // wait for entry and exit nodes query results
         Promise.all([qEntryNodes, qExitNodes])
@@ -766,4 +744,32 @@ function getNodesZeroHopPairings(ops: { dbPool: Pool }) {
         return res.status(500).json({ reason });
       });
   };
+}
+
+function postNodeRegister(dbPool: Pool) {
+  return async function (req: Request, res: Response) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json(errors.mapped());
+    }
+    const node: q.RegisteredNode = req.body;
+    q.writeRegisteredNode(dbPool, node);
+  };
+
+  //     async (req: Request, res: Response) => {
+  //       try {
+  //         const node: RegisteredNode = req.body;
+  //         const registered = await createRegisteredNode(ops.db, node);
+  //         counterSuccessfulRequests
+  //           .labels({ method: req.method, path: req.path, status: 200 })
+  //           .inc();
+  //         return res.json({ body: registered });
+  //       } catch (e) {
+  //         log.error("Can not register node", e);
+  //         counterFailedRequests
+  //           .labels({ method: req.method, path: req.path, status: 500 })
+  //           .inc();
+  //         return res.status(500).json({ errors: "Unexpected error" });
+  //       }
+  //     }
 }
