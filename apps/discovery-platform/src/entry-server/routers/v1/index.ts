@@ -41,6 +41,7 @@ import {
   metricMiddleware,
   setCache,
 } from "./middleware";
+import * as middleware from "./middleware";
 import * as q from "./../../../query";
 
 const log = createLogger(["entry-server", "router", "v1"]);
@@ -103,6 +104,7 @@ export const v1Router = (ops: {
   router.get(
     "/nodes/zero_hop_pairings",
     metricMiddleware(requestDurationHistogram),
+    middleware.clientAuthorized(ops.dbPool),
     query("amount").default(10).isInt({ min: 1, max: 20 }),
     query("since").optional().isISO8601(),
     getNodesZeroHopPairings(ops)
@@ -696,7 +698,7 @@ export const v1Router = (ops: {
 };
 
 function getNodesZeroHopPairings(ops: { dbPool: Pool }) {
-  return function (req: Request, res: Response) {
+  return async function (req: Request, res: Response) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json(errors.mapped());

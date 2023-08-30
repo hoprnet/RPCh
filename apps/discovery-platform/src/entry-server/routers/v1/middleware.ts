@@ -1,9 +1,12 @@
-import type { NextFunction, Request, Response } from "express";
-import type { Histogram } from "prom-client";
+import * as q from "./../../../query";
 import { getClientQuotas, type DBInstance } from "../../../db";
 import memoryCache from "memory-cache";
 import { createLogger } from "../../../utils";
 import { getClient } from "../../../client";
+
+import type { Pool } from "pg";
+import type { NextFunction, Request, Response } from "express";
+import type { Histogram } from "prom-client";
 
 const log = createLogger(["entry-server", "router", "v1", "middleware"]);
 
@@ -46,6 +49,22 @@ export const clientExists =
     }
     next();
   };
+
+export function clientAuthorized(dbPool: Pool) {
+  return async function (req: Request, res: Response, next: NextFunction) {
+    const clientId = req.headers["x-rpch-client"] as string;
+    const result = await q
+      .readClientIds(dbPool, clientId)
+      .catch((ex) => log.error("Error reading clientIds", ex));
+    const count = result?.rowCount || 0;
+    if (count > 0) {
+      next();
+    } else {
+      const reason = "Client not authorized";
+      res.status(403).json({ reason });
+    }
+  };
+}
 
 // middleware that will track duration of request
 export const metricMiddleware =

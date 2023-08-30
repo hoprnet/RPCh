@@ -58,3 +58,15 @@ export function readZeroHopPairings(
   const q = [qSelect, qOrder].join(" ");
   return dbPool.query(q);
 }
+
+export function readClientIds(
+  dbPool: Pool,
+  clientId: string
+): Promise<QueryResult<{ id: string }>> {
+  const q = [
+    "select id from clients",
+    `where external_token = '${clientId}' and`,
+    "(invalidated_at is null or invalidated_at > now())",
+  ].join(" ");
+  return dbPool.query(q);
+}
