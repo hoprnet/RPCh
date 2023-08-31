@@ -27,7 +27,7 @@ export function getPeers({
   hoprd_api_token: string;
 }): Promise<Peers> {
   const url = new URL(hoprd_api_endpoint);
-  url.pathname = "/api/v2/node/peers";
+  url.pathname = "/api/v3/node/peers";
   url.searchParams.set("quality", "1");
   const headers = {
     Accept: "application/json",
