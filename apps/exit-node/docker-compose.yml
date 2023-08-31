@@ -13,41 +13,13 @@ networks:
       config:
         - subnet: 172.22.0.0/16
           gateway: 172.22.0.1
-
 services:
-  # hoprd_fluentbit:
-  #   image: 'gcr.io/hoprassociation/hopr-fluentbit'
-  #   pull_policy: always
-  #   mem_reservation: 50m
-  #   mem_limit: 100m
-  #   container_name: hoprd_fluentbit
-  #   hostname: hoprd_fluentbit
-  #   user: root:root
-  #   restart: on-failure
-  #   networks:
-  #     - hopr-net
-  #   environment:
-  #     - HOPRD_VERSION=${HOPRD_VERSION}
-  #     - HOPRD_ENVIRONMENT_ID=${HOPRD_ENVIRONMENT}
-  #     - HOPRD_PEER_ID=${HOPRD_PEER_ID}
-  #     - HOPRD_NAT=${HOPRD_NAT}
-  #     - HOPRD_WALLET_ADDR=${HOPRD_WALLET_ADDR}
-  #     - HOST_HOSTNAME=${HOST_HOSTNAME}
-  #     - HOST_PUBLIC_IP=${HOST_PUBLIC_IP}
-  #     - HOST_PRIVATE_IP=${HOST_PRIVATE_IP}
-  #   ports:
-  #     - 24224:24224
-  #     - 2020:2020
-  #   command:
-  #     - "/fluent-bit/bin/fluent-bit"
-  #     - "-c"
-  #     - "/fluent-bit/etc/fluent-bit.conf"
   hoprd:
-    image: gcr.io/hoprassociation/hoprd:${HOPRD_VERSION}
+    image: ${HOPRD_DOCKER_IMAGE}
     restart: on-failure
     pull_policy: always
-    mem_reservation: 300m
-    mem_limit: 2g
+    mem_reservation: 1g
+    mem_limit: 4g
     container_name: hoprd
     hostname: hoprd
     networks:
@@ -57,55 +29,34 @@ services:
       - "9091:9091/tcp"
       - "9091:9091/udp"
       - "8080:8080"
+    env_file:
+        - .env-hoprd-default
+        - .env-hoprd
     volumes:
-      - hoprd-data:/app/hoprd-db
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - DEBUG=${HOPRD_DEBUG}
-      - HOPRD_DATA=/app/hoprd-db
-      - HOPRD_IDENTITY=/app/hoprd-db/.hopr-id
-      - HOPRD_HEALTH_CHECK=true
-      - HOPRD_HEALTH_CHECK_HOST=0.0.0.0
-      - HOPRD_HOST=0.0.0.0:9091
-      - HOPRD_API_HOST=0.0.0.0
-      - HOPRD_API=true
-      - HOPRD_INIT=true
-      - HOPRD_ENVIRONMENT=${HOPRD_ENVIRONMENT}
-      - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-      - HOPRD_PASSWORD=${HOPRD_PASSWORD}
-      - HOPRD_ANNOUNCE=false
-      # change heartbeat schedule to run every 20sec and ping peers every 1min
-      - HOPRD_HEARTBEAT_INTERVAL=20000
-      - HOPRD_HEARTBEAT_THRESHOLD=60000
-      # let node handle more connections than the default
-      - HOPRD_MAX_PARALLEL_CONNECTIONS=50000
-    # depends_on:
-    #   - hoprd_fluentbit
-    # logging:
-    #   driver: "fluentd"
+      - '/opt/hoprd:/app/hoprd-db'
+      - '/var/run/docker.sock:/var/run/docker.sock'
     logging:
       driver: "json-file"
       options:
         max-size: "1000m"
         max-file: "7"
   exit-node:
+    restart: on-failure
+    mem_reservation: 1g
+    mem_limit: 1g
+    container_name: exit-node
+    hostname: exit-node
     build:
       dockerfile: apps/exit-node/Dockerfile
       context: ../../
     depends_on:
       - hoprd
-    restart: unless-stopped
     volumes:
       - exit-node-data:${RPCH_DATA_DIR}
-    environment:
-      - HOPRD_API_ENDPOINT=http://hoprd:3001
-      - DEBUG=${RPCH_DEBUG}
-      - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
-      - RPCH_PASSWORD=${RPCH_PASSWORD}
-      - RPCH_IDENTITY_FILE=${RPCH_IDENTITY_FILE}
-      - RPCH_PRIVATE_KEY=${RPCH_PRIVATE_KEY}
-      - RPCH_DATA_DIR=${RPCH_DATA_DIR}
-      - OPT_IN_METRICS=${OPT_IN_METRICS}
+    env_file:
+        - .env-rpch-default
+        - .env-rpch
+        - .env
     networks:
       - hopr-net
     logging:
