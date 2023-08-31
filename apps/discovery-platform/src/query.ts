@@ -84,7 +84,6 @@ export function readClientIds(
 }
 
 export function writeRegisteredNode(dbPool: Pool, node: RegisteredNode) {
-  console.log("node", node);
   const cols = [
     "id",
     "is_exit_node",
@@ -100,7 +99,7 @@ export function writeRegisteredNode(dbPool: Pool, node: RegisteredNode) {
     node.id,
     node.is_exit_node,
     node.chain_id,
-    node.hoprd_api_token,
+    node.hoprd_api_endpoint,
     node.hoprd_api_token,
     node.native_address,
   ];
