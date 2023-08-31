@@ -84,6 +84,34 @@ export function readClientIds(
 }
 
 export function writeRegisteredNode(dbPool: Pool, node: RegisteredNode) {
-  const columns = Reflect.ownKeys(node);
-  console.log("columns", columns);
+  console.log("node", node);
+  const cols = [
+    "id",
+    "is_exit_node",
+    "chain_id",
+    "hoprd_api_endpoint",
+    "hoprd_api_token",
+    "native_address",
+  ];
+  if (node.exit_node_pub_key) {
+    cols.push("exit_node_pub_key");
+  }
+  const vals = [
+    node.id,
+    node.is_exit_node,
+    node.chain_id,
+    node.hoprd_api_token,
+    node.hoprd_api_token,
+    node.native_address,
+  ];
+  if (node.exit_node_pub_key) {
+    vals.push(node.exit_node_pub_key);
+  }
+  const valIdxs = vals.map((_e, idx) => `$${idx + 1}`);
+  const q = [
+    "insert into registered_nodes",
+    `(${cols.join(",")})`,
+    `values (${valIdxs.join(",")})`,
+  ].join(" ");
+  return dbPool.query(q, vals);
 }

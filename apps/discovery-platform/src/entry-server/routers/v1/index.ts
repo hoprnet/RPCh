@@ -733,13 +733,13 @@ function getNodesZeroHopPairings(dbPool: Pool) {
             return res.status(200).json({ entryNodes, exitNodes, matchedAt });
           })
           .catch((ex) => {
-            log.error("Error during registered_node queries", ex);
+            log.error("Error during read registered_nodes queries", ex);
             const reason = "Error querying database";
             return res.status(500).json({ reason });
           });
       })
       .catch((ex) => {
-        log.error("Error during zero_hop_pairings query", ex);
+        log.error("Error during read zero_hop_pairings query", ex);
         const reason = "Error querying database";
         return res.status(500).json({ reason });
       });
@@ -753,23 +753,18 @@ function postNodeRegister(dbPool: Pool) {
       return res.status(400).json(errors.mapped());
     }
     const node: q.RegisteredNode = req.body;
-    q.writeRegisteredNode(dbPool, node);
+    q.writeRegisteredNode(dbPool, node)
+      .then((qRes) => {
+        if (qRes.rowCount === 1) {
+          return res.status(201).end();
+        }
+        log.error("Unexpected response during insert", JSON.stringify(qRes));
+        const reason = "Internal server error";
+        return res.status(500).json({ reason });
+      })
+      .catch((ex) => {
+        log.error("Error during write registered_node query", ex);
+        return res.status(422).json({ reason: ex.message });
+      });
   };
-
-  //     async (req: Request, res: Response) => {
-  //       try {
-  //         const node: RegisteredNode = req.body;
-  //         const registered = await createRegisteredNode(ops.db, node);
-  //         counterSuccessfulRequests
-  //           .labels({ method: req.method, path: req.path, status: 200 })
-  //           .inc();
-  //         return res.json({ body: registered });
-  //       } catch (e) {
-  //         log.error("Can not register node", e);
-  //         counterFailedRequests
-  //           .labels({ method: req.method, path: req.path, status: 500 })
-  //           .inc();
-  //         return res.status(500).json({ errors: "Unexpected error" });
-  //       }
-  //     }
 }
