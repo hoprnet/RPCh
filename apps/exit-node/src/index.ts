@@ -74,7 +74,10 @@ export const start = async (ops: {
     { labelNames: ["status"] }
   );
 
-  const headers = { "x-auth-token": ops.apiToken! };
+  const headers = {
+    "x-auth-token": ops.apiToken!,
+    "Content-Type": "application/json",
+  };
   const sendUrl = new URL("/api/v3/messages", ops.apiEndpoint);
   const onMessage = async (message: Message) => {
     try {
@@ -130,17 +133,18 @@ export const start = async (ops: {
       );
 
       for (const segment of rpchResponse.toMessage().toSegments()) {
-        const body = {
+        const body = JSON.stringify({
           // TODO replace with message tag from incoming message
           tag: ApplicationTag,
           body: segment.toString(),
           peerId: rpchRequest.entryNodeDestination,
           path: [],
-        };
-        // @ts-ignore
-        fetch(sendUrl, { headers, method: "POST", body }).catch((error) => {
-          log.error("Failed to send segment", error);
         });
+
+        fetch(sendUrl, { headers, method: "POST", body })
+          .then((res) => res.json())
+          .then((json) => log.verbose("sendMessage", JSON.stringify(json)))
+          .catch((error) => log.error("Failed to send segment", error));
       }
     } catch (error) {
       log.error("Failed to respond with data", error);
@@ -209,17 +213,16 @@ export const start = async (ops: {
       return;
     }
 
-    let msg: string | undefined;
+    let msg: { tag: number; body: string };
     try {
-      msg = ethersUtils.toUtf8String(
-        ethersUtils.RLP.decode(new Uint8Array(JSON.parse(`[${body}]`)))[0]
-      );
+      msg = JSON.parse(body);
     } catch (error) {
       log.error("Error decoding message:", error);
       return;
     }
+
     try {
-      const segment = Segment.fromString(msg);
+      const segment = Segment.fromString(msg.body);
       cache.onSegment(segment);
     } catch (error) {
       log.verbose(
