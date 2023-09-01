@@ -311,15 +311,13 @@ export default class NodesCollector {
       return;
     }
 
-    let msg: string | undefined;
+    let msg: { tag: number; body: string };
     try {
-      msg = utils.toUtf8String(
-        utils.RLP.decode(new Uint8Array(JSON.parse(`[${body}]`)))[0]
-      );
+      msg = JSON.parse(body);
     } catch (error) {
       log.error("Error decoding message:", error);
       return;
     }
-    this.onWSmessage(msg);
+    this.onWSmessage(msg.body);
   };
 }
