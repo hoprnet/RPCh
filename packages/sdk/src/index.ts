@@ -46,11 +46,15 @@ export type RPCerror = RPCresponse & {
  * @param discoveryPlatformEndpoint discovery platform API endpoint
  * @param timeout - timeout for receiving responses
  * @param provider - target rpc provider
+ * @param mevProtectionProvider - target MEV Protection provider RPC
+ * @param enableMEV - whether to enable MEV protection. This will send the transactions to the MEV protection RPC
  */
 export type Ops = {
   discoveryPlatformEndpoint?: string;
   timeout?: number;
   provider?: string;
+  mevProtectionProvider?: string;
+  enableMEV?: boolean;
 };
 
 /**
@@ -61,6 +65,8 @@ const defaultOps: Ops = {
   discoveryPlatformEndpoint: "https://discovery.rpch.tech",
   timeout: 30e3,
   provider: "https://primary.gnosis-chain.rpc.hoprtech.net",
+  mevProtectionProvider: "https://rpc.propellerheads.xyz/eth",
+  enableMEV: true
 };
 
 /**
@@ -70,6 +76,8 @@ const defaultOps: Ops = {
 export type RequestOps = {
   timeout?: number;
   provider?: string;
+  mevProtectionProvider?: string;
+  enableMEV?: boolean;
 };
 
 const MAX_REQUEST_SEGMENTS = 10;
@@ -158,13 +166,16 @@ export default class SDK {
         return reject(`Unexpected code flow - should never be here`);
       }
 
+      // decide which provider to use
+      const provider = (reqOps.enableMEV && req.method === 'eth_sendRawTransaction') ? reqOps.mevProtectionProvider : reqOps.provider;
+
       // create request
       const { entryNode, exitNode } = res;
       const id = RequestCache.generateId(this.requestCache);
       const request = Request.create(
         this.crypto,
         id,
-        reqOps.provider!,
+        provider,
         req,
         entryNode.peerId,
         exitNode.peerId,
