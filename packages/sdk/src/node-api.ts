@@ -19,7 +19,13 @@ export function sendMessage(
     apiEndpoint,
     accessToken,
     recipient,
-  }: { apiEndpoint: URL; accessToken: string; recipient: string },
+    tag,
+  }: {
+    apiEndpoint: URL;
+    accessToken: string;
+    recipient: string;
+    tag: number;
+  },
   message: string
 ): Promise<string> {
   const url = new URL(apiEndpoint.toString());
@@ -32,7 +38,8 @@ export function sendMessage(
   const body = JSON.stringify({
     body: message,
     path: [],
-    recipient,
+    peerId: recipient,
+    tag,
   });
   return fetch(url, { method: "POST", headers, body }).then((res) =>
     res.json()

@@ -83,6 +83,9 @@ export type RequestOps = {
 const MAX_REQUEST_SEGMENTS = 10;
 const log = createLogger();
 
+// message tag - more like port since we tag all our messages the same
+const ApplicationTag = Math.floor(Math.random() * 0xffff);
+
 /**
  * Send traffic through the RPCh network
  */
@@ -231,6 +234,7 @@ export default class SDK {
         apiEndpoint: entryNode.apiEndpoint,
         accessToken: entryNode.accessToken,
         recipient: request.exitId,
+        tag: ApplicationTag,
       },
       Segment.toMessage(segment)
     )
@@ -337,6 +341,7 @@ export default class SDK {
         apiEndpoint: entryNode.apiEndpoint,
         accessToken: entryNode.accessToken,
         recipient: request.exitId,
+        tag: ApplicationTag,
       },
       Segment.toMessage(segment)
     )
