@@ -52,6 +52,7 @@ export type Ops = {
   timeout?: number;
   provider?: string;
   mevProtectionProvider?: string;
+  enableMEV?: boolean;
 };
 
 /**
@@ -63,6 +64,7 @@ const defaultOps: Ops = {
   timeout: 30e3,
   provider: "https://primary.gnosis-chain.rpc.hoprtech.net",
   mevProtectionProvider: "https://rpc.propellerheads.xyz/eth",
+  enableMEV: true
 };
 
 /**
@@ -72,8 +74,8 @@ const defaultOps: Ops = {
 export type RequestOps = {
   timeout?: number;
   provider?: string;
+  mevProtectionProvider?: string;
   enableMEV?: boolean;
-  overrideMEVprotectionEndpoint?: string
 };
 
 const MAX_REQUEST_SEGMENTS = 10;
@@ -163,14 +165,7 @@ export default class SDK {
       }
 
       // decide which provider to use
-      let provider = reqOps.provider;
-      if (req.method !== 'eth_sendRawTransaction' || ops?.enableMEV) {
-        provider = reqOps.provider;
-      } else if (reqOps.overrideMEVprotectionEndpoint !== null) {
-        provider = reqOps.overrideMEVprotectionEndpoint;
-      } else {
-        provider = this.ops.mevProtectionProvider;
-      }
+      const provider = (reqOps.enableMEV && req.method === 'eth_sendRawTransaction') ? reqOps.mevProtectionProvider : reqOps.provider;
 
       // create request
       const { entryNode, exitNode } = res;
