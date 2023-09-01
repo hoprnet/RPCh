@@ -1,21 +1,6 @@
-import type { RawEntryNode } from "./dp-api";
-
 export type EntryNode = {
   apiEndpoint: URL;
   accessToken: string;
-  peerId: string;
-  recommendedExits: Set<string>;
+  id: string;
+  recommendedExits: string[];
 };
-
-export function fromRaw({
-  hoprd_api_endpoint,
-  accessToken,
-  id,
-}: RawEntryNode): EntryNode {
-  return {
-    apiEndpoint: new URL(hoprd_api_endpoint),
-    accessToken,
-    peerId: id,
-    recommendedExits: new Set(),
-  };
-}

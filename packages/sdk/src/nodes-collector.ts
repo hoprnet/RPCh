@@ -1,8 +1,6 @@
 import { CloseEvent, MessageEvent } from "isomorphic-ws";
 import { utils } from "ethers";
 
-import * as EntryNode from "./entry-node";
-import * as ExitNode from "./exit-node";
 import * as DPapi from "./dp-api";
 import NodePair from "./node-pair";
 import type { Request } from "./request";
@@ -13,10 +11,12 @@ import type { NodeMatch } from "./node-match";
 const log = createLogger(["nodes-collector"]);
 
 const NodePairFetchTimeout: number = 10e3; // 10 seconds downtime to avoid repeatedly querying DP
+const NodePairAmount: number = 10; // how many routes do we fetch
 
 export default class NodesCollector {
   private readonly nodePairs: Map<string, NodePair> = new Map();
   private lastFetchNodePairs = 0;
+  private lastMatchedAt = new Date(0);
   private ongoingFetchPairs = false;
   private primaryNodePairId?: string;
   private secondaryNodePairId?: string;
@@ -169,7 +169,7 @@ export default class NodesCollector {
     }
   };
 
-  private fetchNodePairs = async () => {
+  private fetchNodePairs = () => {
     if (this.ongoingFetchPairs) {
       log.verbose("fetchNodePairs ongoing");
       return;
@@ -185,63 +185,21 @@ export default class NodesCollector {
     }
     this.ongoingFetchPairs = true;
 
-    const rawEntryNodes: DPapi.RawEntryNode[] = [];
-    const excludeList: string[] = [];
-    let noError = true;
-    while (rawEntryNodes.length < NodePair.TargetAmount && noError) {
-      const rawNode: DPapi.RawEntryNode | void = await DPapi.fetchEntryNode({
-        excludeList,
+    DPapi.fetchNodes(
+      {
         discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
         clientId: this.clientId,
-      }).catch((err) => {
-        if (err.message !== DPapi.NoMoreNodes) {
-          log.error("Error fetching entry nodes", err);
+      },
+      NodePairAmount,
+      this.lastMatchedAt
+    )
+      .then(this.initNodes)
+      .catch((err) => {
+        if (err.message === DPapi.NoMoreNodes) {
+          log.info("No node pairs available");
+        } else {
+          log.error("Error fetching nodes", err);
         }
-        noError = false;
-      });
-      if (rawNode) {
-        excludeList.push(rawNode.id);
-        rawEntryNodes.push(rawNode);
-      }
-    }
-
-    // if we have distinct entry nodes, use those
-    const prNodeResults = rawEntryNodes.map((re) =>
-      DPapi.fetchNode(
-        {
-          discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
-          clientId: this.clientId,
-        },
-        re.id
-      )
-    );
-    const nodeResults = await Promise.allSettled(prNodeResults);
-    const rawEntriesNoExits = rawEntryNodes.filter((re) => {
-      return !!nodeResults.find((r) => {
-        if ("value" in r) {
-          const node = r.value.node;
-          if (node.id === re.id) {
-            return !node.has_exit_node;
-          }
-        }
-        return false;
-      });
-    });
-    const prefRawEntries =
-      rawEntriesNoExits.length > 0 ? rawEntriesNoExits : rawEntryNodes;
-
-    // fetch exit nodes
-    DPapi.fetchExitNodes({
-      discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
-      clientId: this.clientId,
-    })
-      .then((rawExitNodes: DPapi.RawExitNode[]) => {
-        const exitNodes = rawExitNodes.map(ExitNode.fromRaw);
-        const entryNodes = prefRawEntries.map(EntryNode.fromRaw);
-        this.initNodes(entryNodes, exitNodes);
-      })
-      .catch((err: any) => {
-        log.error("Error fetching exit nodes", err);
       })
       .finally(() => {
         this.lastFetchNodePairs = Date.now();
@@ -249,13 +207,14 @@ export default class NodesCollector {
       });
   };
 
-  private initNodes = (
-    entryNodes: Iterable<EntryNode.EntryNode>,
-    exitNodes: Iterable<ExitNode.ExitNode>
-  ) => {
-    const newNodePairs = Array.from(entryNodes)
-      .filter((en) => !this.nodePairs.has(en.peerId))
-      .map((en) => new NodePair(en, exitNodes));
+  private initNodes = (nodes: DPapi.Nodes) => {
+    const lookupExitNodes = new Map(nodes.exitNodes.map((x) => [x.id, x]));
+    const newNodePairs = nodes.entryNodes
+      .filter((en) => !this.nodePairs.has(en.id))
+      .map((en) => {
+        const exitNodes = en.recommendedExits.map(lookupExitNodes.get);
+        return new NodePair(en, exitNodes);
+      });
     newNodePairs.forEach((np) => {
       np.connect({
         onOpen: this.onOpenWS,

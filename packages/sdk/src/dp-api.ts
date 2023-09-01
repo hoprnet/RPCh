@@ -1,6 +1,8 @@
 import retry from "async-retry";
 export const NoMoreNodes = "no more nodes";
-export const Unauthorized = "unauthorized";
+
+import type { EntryNode } from "./entry-node";
+import type { ExitNode } from "./exit-node";
 
 /**
  * This module contains all communication with the discovery platform.
@@ -31,13 +33,8 @@ export type RawNode = {
 };
 
 export type Nodes = {
-  entryNodes: {
-    id: string;
-    apiEndpoint: string;
-    accessToken: string;
-    recommendedExits: string[];
-  }[];
-  exitNodes: { id: string; pubKey: string }[];
+  entryNodes: EntryNode[];
+  exitNodes: ExitNode[];
   matchedAt: string;
 };
 
