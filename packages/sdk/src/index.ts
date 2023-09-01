@@ -46,6 +46,8 @@ export type RPCerror = RPCresponse & {
  * @param discoveryPlatformEndpoint discovery platform API endpoint
  * @param timeout - timeout for receiving responses
  * @param provider - target rpc provider
+ * @param mevProtectionProvider - target MEV Protection provider RPC
+ * @param enableMEV - whether to enable MEV protection. This will send the transactions to the MEV protection RPC
  */
 export type Ops = {
   discoveryPlatformEndpoint?: string;
