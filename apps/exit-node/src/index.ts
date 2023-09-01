@@ -35,6 +35,9 @@ import {
 
 const log = createLogger();
 
+// message tag - more like port since we tag all our messages the same
+const ApplicationTag = Math.floor(Math.random() * 0xffff);
+
 export const start = async (ops: {
   exit: {
     sendRpcRequest: typeof exit.sendRpcRequest;
@@ -128,9 +131,10 @@ export const start = async (ops: {
 
       for (const segment of rpchResponse.toMessage().toSegments()) {
         const body = {
-          // tag:
+          // TODO replace with message tag from incoming message
+          tag: ApplicationTag,
           body: segment.toString(),
-          peerAddress: rpchRequest.entryNodeDestination,
+          peerId: rpchRequest.entryNodeDestination,
           path: [],
         };
         // @ts-ignore
