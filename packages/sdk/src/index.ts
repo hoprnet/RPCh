@@ -3,7 +3,7 @@ import "@hoprnet/hopr-sdk";
 import { utils as etherUtils } from "ethers";
 
 import { createLogger } from "./utils";
-import * as NodesAPI from "./node-api";
+import * as NodeAPI from "./node-api";
 import NodesCollector from "./nodes-collector";
 import type { EntryNode } from "./entry-node";
 import * as Request from "./request";
@@ -229,7 +229,7 @@ export default class SDK {
     resolve: (res: RPCresult | RPCerror) => void,
     reject: (reason: string) => void
   ) => {
-    NodesAPI.sendMessage(
+    NodeAPI.sendMessage(
       {
         apiEndpoint: entryNode.apiEndpoint,
         accessToken: entryNode.accessToken,
@@ -336,7 +336,7 @@ export default class SDK {
     entryNode: EntryNode,
     reject: (reason: string) => void
   ) => {
-    NodesAPI.sendMessage(
+    NodeAPI.sendMessage(
       {
         apiEndpoint: entryNode.apiEndpoint,
         accessToken: entryNode.accessToken,

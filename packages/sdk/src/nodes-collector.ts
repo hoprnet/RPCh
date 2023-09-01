@@ -1,5 +1,4 @@
 import { CloseEvent, MessageEvent } from "isomorphic-ws";
-import { utils } from "ethers";
 
 import * as DPapi from "./dp-api";
 import NodePair from "./node-pair";
@@ -303,19 +302,10 @@ export default class NodesCollector {
     });
   };
 
-  private messageListener = (event: MessageEvent) => {
-    const body = event.data.toString();
-    // message received is an acknowledgement of a
-    // message we have send, we can safely ignore this
-    if (body.startsWith("ack:")) {
-      return;
-    }
-
-    let msg: { tag: number; body: string };
-    try {
-      msg = JSON.parse(body);
-    } catch (error) {
-      log.error("Error decoding message:", error);
+  private messageListener = (evt: MessageEvent) => {
+    const msg = JSON.parse(evt.data.toString());
+    // ignore msg-ack for now
+    if (msg.type === "message-ack") {
       return;
     }
     this.onWSmessage(msg.body);
