@@ -66,7 +66,7 @@ const defaultOps: Ops = {
   timeout: 30e3,
   provider: "https://primary.gnosis-chain.rpc.hoprtech.net",
   mevProtectionProvider: "https://rpc.propellerheads.xyz/eth",
-  enableMEV: true
+  enableMEV: true,
 };
 
 /**
@@ -170,7 +170,10 @@ export default class SDK {
       }
 
       // decide which provider to use
-      const provider = (reqOps.enableMEV && req.method === 'eth_sendRawTransaction') ? reqOps.mevProtectionProvider : reqOps.provider;
+      const provider =
+        reqOps.enableMEV! && req.method === "eth_sendRawTransaction"
+          ? reqOps.mevProtectionProvider!
+          : reqOps.provider!;
 
       // create request
       const { entryNode, exitNode } = res;
