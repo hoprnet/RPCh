@@ -40,16 +40,14 @@ export default class NodePair {
     public readonly entryNode: EntryNode,
     exitNodes: Iterable<ExitNode>
   ) {
-    const shortId = shortPeerId(entryNode.peerId);
+    const shortId = shortPeerId(entryNode.id);
     this.log = createLogger([`nodepair${shortId}(${entryNode.apiEndpoint})`]);
     // ensure entry node not included in exits
-    const exits = Array.from(exitNodes).filter(
-      (n) => entryNode.peerId !== n.peerId
-    );
-    this.exitNodes = new Map(exits.map((n) => [n.peerId, n]));
+    const exits = Array.from(exitNodes).filter((n) => entryNode.id !== n.id);
+    this.exitNodes = new Map(exits.map((n) => [n.id, n]));
     this.exitDatas = new Map(
       exits.map((n) => [
-        n.peerId,
+        n.id,
         {
           failedRequests: 0,
           latencies: [],
@@ -61,7 +59,7 @@ export default class NodePair {
   }
 
   public get id() {
-    return this.entryNode.peerId;
+    return this.entryNode.id;
   }
 
   public requestStarted = (exitId: string): number | undefined => {

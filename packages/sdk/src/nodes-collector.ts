@@ -212,7 +212,9 @@ export default class NodesCollector {
     const newNodePairs = nodes.entryNodes
       .filter((en) => !this.nodePairs.has(en.id))
       .map((en) => {
-        const exitNodes = en.recommendedExits.map(lookupExitNodes.get);
+        const exitNodes = en.recommendedExits.map(
+          (id) => lookupExitNodes.get(id)!
+        );
         return new NodePair(en, exitNodes);
       });
     newNodePairs.forEach((np) => {

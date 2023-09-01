@@ -177,8 +177,8 @@ export default class SDK {
         id,
         provider,
         req,
-        entryNode.peerId,
-        exitNode.peerId,
+        entryNode.id,
+        exitNode.id,
         this.crypto!.Identity.load_identity(
           etherUtils.arrayify(exitNode.pubKey)
         )
@@ -262,12 +262,12 @@ export default class SDK {
     }
 
     this.redoRequests.add(origReq.id);
-    if (fallback.entryNode.peerId === origReq.entryId) {
+    if (fallback.entryNode.id === origReq.entryId) {
       log.info(
         "fallback entry node same as original entry node - still trying"
       );
     }
-    if (fallback.exitNode.peerId === origReq.exitId) {
+    if (fallback.exitNode.id === origReq.exitId) {
       log.info("fallback exit node same as original exit node - still trying");
     }
 
@@ -277,8 +277,8 @@ export default class SDK {
       this.crypto,
       id,
       origReq,
-      fallback.entryNode.peerId,
-      fallback.exitNode.peerId,
+      fallback.entryNode.id,
+      fallback.exitNode.id,
       this.crypto!.Identity.load_identity(
         etherUtils.arrayify(fallback.exitNode.pubKey)
       )
