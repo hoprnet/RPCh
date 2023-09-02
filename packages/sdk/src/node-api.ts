@@ -1,39 +1,27 @@
 import { WebSocket } from "isomorphic-ws";
 
-export function connectWS({
-  apiEndpoint,
-  accessToken,
-}: {
-  apiEndpoint: URL;
-  accessToken: string;
-}): WebSocket {
-  const wsURL = new URL(apiEndpoint.toString());
-  wsURL.protocol = apiEndpoint.protocol === "https:" ? "wss:" : "ws:";
-  wsURL.pathname = "/api/v3/messages/websocket";
-  wsURL.search = `?apiToken=${accessToken}`;
+export type ConnInfo = { apiEndpoint: URL; accessToken: string };
+
+export function connectWS(conn: ConnInfo): WebSocket {
+  const wsURL = new URL("/api/v3/messages/websocket", conn.apiEndpoint);
+  wsURL.protocol = conn.apiEndpoint.protocol === "https:" ? "wss:" : "ws:";
+  wsURL.search = `?apiToken=${conn.accessToken}`;
   return new WebSocket(wsURL);
 }
 
 export function sendMessage(
+  conn: ConnInfo,
   {
-    apiEndpoint,
-    accessToken,
     recipient,
     tag,
-  }: {
-    apiEndpoint: URL;
-    accessToken: string;
-    recipient: string;
-    tag: number;
-  },
-  message: string
+    message,
+  }: { recipient: string; tag: number; message: string }
 ): Promise<string> {
-  const url = new URL(apiEndpoint.toString());
-  url.pathname = "/api/v3/messages";
+  const url = new URL("/api/v3/messages", conn.apiEndpoint);
   const headers = {
     Accept: "application/json",
     "Content-Type": "application/json",
-    "x-auth-token": accessToken,
+    "x-auth-token": conn.accessToken,
   };
   const body = JSON.stringify({
     body: message,
@@ -44,4 +32,14 @@ export function sendMessage(
   return fetch(url, { method: "POST", headers, body }).then((res) =>
     res.json()
   );
+}
+
+export function version(conn: ConnInfo) {
+  const url = new URL("/api/v3/node/version", conn.apiEndpoint);
+  const headers = {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+    "x-auth-token": conn.accessToken,
+  };
+  return fetch(url, { headers }).then((res) => res.json());
 }
