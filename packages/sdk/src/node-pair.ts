@@ -1,6 +1,6 @@
 import { WebSocket, MessageEvent, CloseEvent } from "isomorphic-ws";
 
-import * as NodesAPI from "./node-api";
+import * as NodeAPI from "./node-api";
 import { average, createLogger, randomEl, shortPeerId } from "./utils";
 
 import type { EntryNode } from "./entry-node";
@@ -27,10 +27,8 @@ export default class NodePair {
   private static KeepLastLatencies = 5;
   private static LatencyThreshold = 5e3;
 
-  public connectTime?: number;
   private socket?: WebSocket;
   private socketCb?: WebSocketCallback;
-  private startConnectTime?: number;
   private messageListenerAttached = false;
   private readonly log;
   private readonly exitNodes: Map<string, ExitNode>;
@@ -103,13 +101,13 @@ export default class NodePair {
     }
   };
 
-  public connect = (wsCb: WebSocketCallback) => {
-    this.socket = NodesAPI.connectWS(this.entryNode);
-    this.socketCb = wsCb;
-    this.startConnectTime = Date.now();
-    this.socket.on("open", this.onWSopen);
-    this.socket.on("close", this.onWSclose);
-    this.socket.on("error", this.onWSerror);
+  public ping = (): Promise<number> => {
+    return new Promise((res) => {
+      const startPingTime = Date.now();
+      NodeAPI.version(this.entryNode).then((_) => {
+        return res(Date.now() - startPingTime);
+      });
+    });
   };
 
   public close = () => {
@@ -218,12 +216,6 @@ export default class NodePair {
       return `${s}/${tot}+${o}`;
     });
     return `${shortPeerId(this.id)}_${exCount}x:${exStrs.join("-")}`;
-  };
-
-  private onWSopen = () => {
-    this.connectTime = Date.now() - this.startConnectTime!;
-    this.log.verbose("onWSopen after", this.connectTime, "ms");
-    this.socketCb?.onOpen(this.id, this.connectTime);
   };
 
   private onWSclose = (evt: CloseEvent) => {
