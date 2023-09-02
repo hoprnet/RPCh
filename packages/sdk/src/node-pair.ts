@@ -27,6 +27,7 @@ export default class NodePair {
   private static KeepLastLatencies = 5;
   private static LatencyThreshold = 5e3;
 
+  public pingDuration?: number;
   private socket?: WebSocket;
   private socketCb?: WebSocketCallback;
   private messageListenerAttached = false;
@@ -105,7 +106,8 @@ export default class NodePair {
     return new Promise((res) => {
       const startPingTime = Date.now();
       NodeAPI.version(this.entryNode).then((_) => {
-        return res(Date.now() - startPingTime);
+        this.pingDuration = Date.now() - startPingTime;
+        return res(this.pingDuration);
       });
     });
   };
@@ -115,7 +117,6 @@ export default class NodePair {
     if (this.messageListenerAttached) {
       this.socket!.onmessage = null;
     }
-    this.socket?.off("open", this.onWSopen);
     this.socket?.off("close", this.onWSclose);
     this.socket?.off("error", this.onWSerror);
     // close socket shenanigan, because cannot close a connecting websocket

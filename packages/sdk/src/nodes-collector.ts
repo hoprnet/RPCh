@@ -17,8 +17,6 @@ export default class NodesCollector {
   private lastFetchNodePairs = 0;
   private lastMatchedAt = new Date(0);
   private ongoingFetchPairs = false;
-  private primaryNodePairId?: string;
-  private secondaryNodePairId?: string;
 
   constructor(
     private readonly discoveryPlatformEndpoint: string,
@@ -208,22 +206,16 @@ export default class NodesCollector {
 
   private initNodes = (nodes: DPapi.Nodes) => {
     const lookupExitNodes = new Map(nodes.exitNodes.map((x) => [x.id, x]));
-    const newNodePairs = nodes.entryNodes
+    nodes.entryNodes
       .filter((en) => !this.nodePairs.has(en.id))
-      .map((en) => {
+      .forEach((en) => {
         const exitNodes = en.recommendedExits.map(
           (id) => lookupExitNodes.get(id)!
         );
-        return new NodePair(en, exitNodes);
+        const np = new NodePair(en, exitNodes);
+        np.ping();
+        this.nodePairs.set(np.id, np);
       });
-    newNodePairs.forEach((np) => {
-      np.connect({
-        onOpen: this.onOpenWS,
-        onClose: this.onCloseWS,
-        onError: this.onErrorWS,
-      });
-      this.nodePairs.set(np.id, np);
-    });
   };
 
   private onOpenWS = (_id: string, _connTime: number) => {
