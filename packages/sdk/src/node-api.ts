@@ -6,6 +6,8 @@ import { WebSocket } from "isomorphic-ws";
 
 export type ConnInfo = { apiEndpoint: URL; accessToken: string };
 
+export type Message = { tag: number; body: string; receivedAt: number };
+
 export function connectWS(conn: ConnInfo): WebSocket {
   const wsURL = new URL("/api/v3/messages/websocket", conn.apiEndpoint);
   wsURL.protocol = conn.apiEndpoint.protocol === "https:" ? "wss:" : "ws:";
@@ -51,7 +53,7 @@ export function version(conn: ConnInfo) {
 export function retrieveMessages(
   conn: ConnInfo,
   tag: number
-): Promise<{ messages: { tag: number; body: string; receivedAt: number } }> {
+): Promise<{ messages: Message[] }> {
   const url = new URL("/api/v3/messages/pop-all", conn.apiEndpoint);
   const headers = {
     Accept: "application/json",

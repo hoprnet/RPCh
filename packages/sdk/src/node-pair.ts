@@ -25,6 +25,11 @@ type EntryData = {
   segments: Map<string, PerfData>; // segment data
 };
 
+type MessageListener = {
+  onMsgs: (messages: NodeAPI.Message[]) => void;
+  onError: (err: Error) => void;
+};
+
 // requests measure quality of exit nodes
 type ExitData = {
   requestsOngoing: number[]; // sorted ongoing request ids
@@ -36,6 +41,7 @@ export default class NodePair {
   private static PerfHistory = 20;
 
   public pingDuration?: number;
+  private fetchInterval?: ReturnType<typeof setInterval>;
   private readonly log;
   private readonly exitNodes: Map<string, ExitNode>;
   private readonly entryData: EntryData = {
@@ -43,11 +49,13 @@ export default class NodePair {
     segmentsHistory: [],
     segments: new Map(),
   };
-  private readonly exitDatas: Map<string, ExitData> = new Map(); // exitId -> latencies
+  private readonly exitDatas: Map<string, ExitData> = new Map();
 
   constructor(
     public readonly entryNode: EntryNode,
-    exitNodes: Iterable<ExitNode>
+    exitNodes: Iterable<ExitNode>,
+    private applicationTag: number,
+    private messageListener: MessageListener
   ) {
     const shortId = shortPeerId(entryNode.id);
     this.log = createLogger([`nodepair${shortId}(${entryNode.apiEndpoint})`]);
@@ -66,6 +74,10 @@ export default class NodePair {
     );
   }
 
+  public destruct() {
+    clearInterval(this.fetchInterval);
+  }
+
   public get id() {
     return this.entryNode.id;
   }
@@ -77,31 +89,40 @@ export default class NodePair {
       startedAt: req.createdAt,
       state: State.Ongoing,
     });
+    if (!this.fetchInterval) {
+      this.fetchInterval = setInterval(this.fetchMessages, 250);
+    }
   };
 
   public requestSucceeded = (req: Request.Request, responseTime: number) => {
-    const data = this.exitDatas.get(req.exitId)!;
-    data.requestsOngoing = data.requestsOngoing.filter((rId) => rId !== req.id);
-    data.requestsHistory.push(req.id);
-    if (data.requestsHistory.length > NodePair.PerfHistory) {
-      const rId = data.requestsHistory.shift()!;
-      data.requests.delete(rId);
-    }
-    const perf = data.requests.get(req.id)!;
+    const perf = this.requestDone(req);
     perf.state = State.Success;
     perf.latency = responseTime;
   };
 
   public requestFailed = (req: Request.Request) => {
+    const perf = this.requestDone(req);
+    perf.state = State.Failure;
+  };
+
+  private requestDone = (req: Request.Request) => {
     const data = this.exitDatas.get(req.exitId)!;
     data.requestsOngoing = data.requestsOngoing.filter((rId) => rId !== req.id);
+
+    // stop interval if applicable
+    if (data.requestsOngoing.length === 0) {
+      clearInterval(this.fetchInterval);
+      this.fetchInterval = undefined;
+    }
+
+    // update req history
     data.requestsHistory.push(req.id);
     if (data.requestsHistory.length > NodePair.PerfHistory) {
       const rId = data.requestsHistory.shift()!;
       data.requests.delete(rId);
     }
-    const perf = data.requests.get(req.id)!;
-    perf.state = State.Failure;
+    // return perf data for updating
+    return data.requests.get(req.id)!;
   };
 
   public segmentStarted = (seg: Segment.Segment) => {
@@ -114,34 +135,36 @@ export default class NodePair {
   };
 
   public segmentSucceeded = (seg: Segment.Segment, responseTime: number) => {
-    const id = Segment.id(seg);
-    this.entryData.segmentsOngoing = this.entryData.segmentsOngoing.filter(
-      (sId) => sId !== id
-    );
-    this.entryData.segmentsHistory.push(id);
-    if (this.entryData.segmentsHistory.length > NodePair.PerfHistory) {
-      const sId = this.entryData.segmentsHistory.shift()!;
-      this.entryData.segments.delete(sId);
-    }
-    const perf = this.entryData.segments.get(id)!;
+    const perf = this.segmentDone(seg);
     perf.state = State.Success;
     perf.latency = responseTime;
   };
 
   public segmentFailed = (seg: Segment.Segment) => {
+    const perf = this.segmentDone(seg);
+    perf.state = State.Failure;
+  };
+
+  private segmentDone = (seg: Segment.Segment) => {
     const id = Segment.id(seg);
     this.entryData.segmentsOngoing = this.entryData.segmentsOngoing.filter(
       (sId) => sId !== id
     );
+
+    // update seg history
     this.entryData.segmentsHistory.push(id);
     if (this.entryData.segmentsHistory.length > NodePair.PerfHistory) {
       const sId = this.entryData.segmentsHistory.shift()!;
       this.entryData.segments.delete(sId);
     }
-    const perf = this.entryData.segments.get(id)!;
-    perf.state = State.Failure;
+
+    // return perf data for updating
+    return this.entryData.segments.get(id)!;
   };
 
+  /**
+   * Ping entry node version.
+   */
   public ping = (): Promise<number> => {
     return new Promise((res) => {
       const startPingTime = Date.now();
@@ -206,6 +229,12 @@ export default class NodePair {
     }
     return `${sDone}+${ongoing}`;
   }
+
+  private fetchMessages = () => {
+    NodeAPI.retrieveMessages(this.entryNode, this.applicationTag)
+      .then(({ messages }) => this.messageListener.onMsgs(messages))
+      .catch((err) => this.messageListener.onError(err));
+  };
 }
 
 function isSuccess(
