@@ -1,41 +1,58 @@
-// import { average, createLogger, randomEl, shortPeerId } from "./utils";
+import { randomEl } from "./utils";
 import NodePair from "./node-pair";
+import type { EntryNode } from "./entry-node";
+import type { ExitNode } from "./exit-node";
 
-export function routePair(nodePairs: Map<string, NodePair>) {
-  // TODO
+type ResultOk = {
+  success: true;
+  entryNode: EntryNode;
+  exitNode: ExitNode;
+  via: string;
+};
 
-  for (const np of nodePairs.values()) {
-    const ex = np.getExit();
-    if (ex) {
-      return { res: "ok", entryNode: np.entryNode, exitNode: ex };
-    }
+type ResultErr = { success: false; error: string };
+
+export type Result = ResultOk | ResultErr;
+
+export function routePair(nodePairs: Map<string, NodePair>): Result {
+  // finding best currently available node pair
+  const np = quickestPing(nodePairs);
+  if (np) {
+    const exit = randomEl(Array.from(np.exitNodes.values()));
+    return {
+      success: true,
+      entryNode: np.entryNode,
+      exitNode: exit,
+      via: "quickest ping",
+    };
   }
-  return { res: "error", reason: "none" };
+  return { success: false, error: "none" };
 }
 
-//
-//   public close = () => {
-//     // detach message liteners
-//     if (this.messageListenerAttached) {
-//       this.socket!.onmessage = null;
-//     }
-//     this.socket?.off("close", this.onWSclose);
-//     this.socket?.off("error", this.onWSerror);
-//     // close socket shenanigan, because cannot close a connecting websocket
-//     if (this.socket?.readyState === WebSocket.CONNECTING) {
-//       const cb = () => {
-//         this.socket?.off("open", cb);
-//         this.socket?.off("close", cb);
-//         this.socket?.off("error", cb);
-//         this.socket?.close();
-//       };
-//       this.socket.on("open", cb);
-//       this.socket.on("close", cb);
-//       this.socket.on("error", cb);
-//     } else {
-//       this.socket?.close();
-//     }
-//   };
+export function isOk(res: Result): res is ResultOk {
+  return res.success;
+}
+
+/**
+ * Sort by ping durations. Nodes with no ping value will be sorted last.
+ */
+function quickestPing(nodePairs: Map<string, NodePair>) {
+  const arr = Array.from(nodePairs.values());
+  arr.sort((l, r) => {
+    if (l.pingDuration) {
+      if (r.pingDuration) {
+        return l.pingDuration - r.pingDuration;
+      }
+      return -1;
+    }
+    if (r.pingDuration) {
+      return 1;
+    }
+    return 0;
+  });
+  return arr[0];
+}
+
 //
 //   public readyExitNode = ():
 //     | { res: "ok"; exitNode: ExitNode }

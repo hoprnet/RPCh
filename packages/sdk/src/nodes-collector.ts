@@ -45,7 +45,8 @@ export default class NodesCollector {
         const now = Date.now();
         const elapsed = now - start;
         const res = NodeSel.routePair(this.nodePairs);
-        if (res.res === "ok") {
+        if (NodeSel.isOk(res)) {
+          log.verbose("found route pair via", res.via);
           return resolve(true);
         }
         if (elapsed > timeout) {
@@ -68,10 +69,11 @@ export default class NodesCollector {
         const now = Date.now();
         const elapsed = now - start;
         const res = NodeSel.routePair(this.nodePairs);
-        if (res.res === "ok") {
+        if (NodeSel.isOk(res)) {
+          log.verbose("found route pair via", res.via);
           return resolve({
-            entryNode: res.entryNode!,
-            exitNode: res.exitNode!,
+            entryNode: res.entryNode,
+            exitNode: res.exitNode,
           });
         }
         log.verbose("no exit node ready in primary node pair id");

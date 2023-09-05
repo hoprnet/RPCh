@@ -46,11 +46,8 @@ type ExitData = {
 
 export default class NodePair {
   public pingDuration?: number;
-  private fetchInterval?: ReturnType<typeof setInterval>;
-  private fetchMessagesOngoing: boolean = false;
-  private readonly log;
-  private readonly exitNodes: Map<string, ExitNode>;
-  private readonly entryData: EntryData = {
+  public readonly exitNodes: Map<string, ExitNode>;
+  public readonly entryData: EntryData = {
     segmentsOngoing: [],
     segmentsHistory: [],
     segments: new Map(),
@@ -59,7 +56,11 @@ export default class NodePair {
     fetchMessagesErrors: 0,
     requestsOngoing: 0,
   };
-  private readonly exitDatas: Map<string, ExitData> = new Map();
+  public readonly exitDatas: Map<string, ExitData> = new Map();
+
+  private fetchInterval?: ReturnType<typeof setInterval>;
+  private fetchMessagesOngoing: boolean = false;
+  private readonly log;
 
   constructor(
     public readonly entryNode: EntryNode,
