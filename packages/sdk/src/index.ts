@@ -374,37 +374,39 @@ export default class SDK {
   //     });
   // };
 
+  // handle incoming messages
   private onMessages = (messages: NodeAPI.Message[]) => {
-    console.log("messages", messages);
-    //     const segRes = Segment.fromString(message);
-    //     if (!segRes.success) {
-    //       log.info("cannot create segment", segRes.error);
-    //       return;
-    //     }
-    //     const segment = segRes.segment;
-    //     if (!this.requestCache.has(segment.requestId)) {
-    //       log.info(
-    //         "dropping unrelated request segment",
-    //         Segment.prettyPrint(segment)
-    //       );
-    //       return;
-    //     }
-    //
-    //     const cacheRes = SegmentCache.incoming(this.segmentCache, segment);
-    //     switch (cacheRes.res) {
-    //       case "complete":
-    //         this.completeSegmentsEntry(cacheRes.entry!);
-    //         break;
-    //       case "error":
-    //         log.error("error caching segment", cacheRes.reason);
-    //         break;
-    //       case "already-cached":
-    //         log.info("already cached", Segment.prettyPrint(segment));
-    //         break;
-    //       case "inserted":
-    //         log.verbose("inserted new segment", Segment.prettyPrint(segment));
-    //         break;
-    //     }
+    messages.forEach(({ body }) => {
+      const segRes = Segment.fromString(body);
+      if (!segRes.success) {
+        log.info("cannot create segment", segRes.error);
+        return;
+      }
+      const segment = segRes.segment;
+      if (!this.requestCache.has(segment.requestId)) {
+        log.info(
+          "dropping unrelated request segment",
+          Segment.prettyPrint(segment)
+        );
+        return;
+      }
+
+      const cacheRes = SegmentCache.incoming(this.segmentCache, segment);
+      switch (cacheRes.res) {
+        case "complete":
+          this.completeSegmentsEntry(cacheRes.entry!);
+          break;
+        case "error":
+          log.error("error caching segment", cacheRes.reason);
+          break;
+        case "already-cached":
+          log.info("already cached", Segment.prettyPrint(segment));
+          break;
+        case "inserted":
+          log.verbose("inserted new segment", Segment.prettyPrint(segment));
+          break;
+      }
+    });
   };
 
   private async completeSegmentsEntry(entry: SegmentCache.Entry) {

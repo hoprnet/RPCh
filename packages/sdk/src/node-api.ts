@@ -6,7 +6,7 @@ import { WebSocket } from "isomorphic-ws";
 
 export type ConnInfo = { apiEndpoint: URL; accessToken: string };
 
-export type Message = { tag: number; body: string; receivedAt: number };
+export type Message = { tag: number; body: string };
 
 export function connectWS(conn: ConnInfo): WebSocket {
   const wsURL = new URL("/api/v3/messages/websocket", conn.apiEndpoint);
@@ -61,7 +61,7 @@ export function retrieveMessages(
     "x-auth-token": conn.accessToken,
   };
   const body = JSON.stringify({ tag });
-  return fetch(url, { method: "POST", headers, body }).then((res) =>
-    res.json()
-  );
+  return fetch(url, { method: "POST", headers, body }).then((res) => {
+    return res.json();
+  });
 }
