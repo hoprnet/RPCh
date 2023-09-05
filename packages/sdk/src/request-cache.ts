@@ -4,7 +4,6 @@ import type { RPCresult, RPCerror } from "./index";
 export type Cache = Map<number, Entry>; // id -> Request
 
 export type Entry = Request & {
-  started: number;
   resolve: (res: RPCresult | RPCerror) => void;
   reject: (error: string) => void;
   timer: ReturnType<typeof setTimeout>;
@@ -26,7 +25,6 @@ export function add(
 ): Entry {
   const entry = {
     ...request,
-    started: Date.now(),
     resolve,
     reject,
     timer,

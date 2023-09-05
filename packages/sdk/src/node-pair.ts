@@ -78,6 +78,13 @@ export default class NodePair {
     );
   }
 
+  // TODO
+  public getExit = () => {
+    for (const ex of this.exitNodes.values()) {
+      return ex;
+    }
+  };
+
   public destruct() {
     clearInterval(this.fetchInterval);
   }

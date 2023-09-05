@@ -1,11 +1,9 @@
-import { CloseEvent, MessageEvent } from "isomorphic-ws";
-
 import * as DPapi from "./dp-api";
 import * as Request from "./request";
 import * as Segment from "./segment";
 import * as NodeSel from "./node-selector";
 import NodePair from "./node-pair";
-import { createLogger, shortPeerId } from "./utils";
+import { createLogger } from "./utils";
 
 import type { MessageListener } from "./node-pair";
 import type { NodeMatch } from "./node-match";
@@ -71,7 +69,10 @@ export default class NodesCollector {
         const elapsed = now - start;
         const res = NodeSel.routePair(this.nodePairs);
         if (res.res === "ok") {
-          return resolve({ entryNode: res.entryNode, exitNode: res.exitNode });
+          return resolve({
+            entryNode: res.entryNode!,
+            exitNode: res.exitNode!,
+          });
         }
         log.verbose("no exit node ready in primary node pair id");
         if (elapsed > timeout) {
@@ -87,15 +88,15 @@ export default class NodesCollector {
   /**
    * Request secondary node pair.
    */
-  public get fallbackNodePair(): NodeMatch | undefined {
-    if (this.secondaryNodePairId) {
-      const np = this.nodePairs.get(this.secondaryNodePairId)!;
-      const res = np.readyExitNode();
-      if (res.res === "ok") {
-        return { entryNode: np.entryNode, exitNode: res.exitNode };
-      }
-    }
-  }
+  // public get fallbackNodePair(): NodeMatch | undefined {
+  //   if (this.secondaryNodePairId) {
+  //     const np = this.nodePairs.get(this.secondaryNodePairId)!;
+  //     const res = np.readyExitNode();
+  //     if (res.res === "ok") {
+  //       return { entryNode: np.entryNode, exitNode: res.exitNode };
+  //     }
+  //   }
+  // }
 
   public requestStarted = (req: Request.Request) => {
     const np = this.nodePairs.get(req.entryId);
