@@ -10,6 +10,7 @@ export type MessageListener = (messages: NodeAPI.Message[]) => void;
 
 // amound of history to keep
 const MaxPerfHistory = 20;
+const MessagesFetchInterval = 333; // ms
 
 enum State {
   Ongoing,
@@ -44,10 +45,26 @@ type ExitData = {
   requests: Map<number, PerfData>; // request data
 };
 
-export default class NodePair {
-  public pingDuration?: number;
-  public readonly exitNodes: Map<string, ExitNode>;
-  public readonly entryData: EntryData = {
+export type NodePair = {
+  pingDuration?: number;
+  entryNode: EntryNode;
+  entryData: EntryData;
+  exitNodes: Map<string, ExitNode>;
+  exitDatas: Map<string, ExitData>;
+  applicationTag: number;
+  messageListener: MessageListener;
+  fetchInterval?: ReturnType<typeof setInterval>;
+  fetchMessagesOngoing: boolean = false;
+  logger: typeof createLogger;
+};
+
+export function create(
+  entryNode: EntryNode,
+  exitNodesIt: Iterable<ExitNode>,
+  applicationTag: number,
+  messageListener: MessageListener
+): NodePair {
+  const entryData = {
     segmentsOngoing: [],
     segmentsHistory: [],
     segments: new Map(),
@@ -56,271 +73,270 @@ export default class NodePair {
     fetchMessagesErrors: 0,
     requestsOngoing: 0,
   };
-  public readonly exitDatas: Map<string, ExitData> = new Map();
+  const shortId = shortPeerId(entryNode.id);
+  const logger = createLogger([`nodepair${shortId}(${entryNode.apiEndpoint})`]);
+  // ensure entry node not included in exits
+  const exits = Array.from(exitNodesIt).filter((n) => entryNode.id !== n.id);
+  const exitNodes = new Map(exits.map((n) => [n.id, n]));
+  const exitDatas = new Map(
+    exits.map((n) => [
+      n.id,
+      {
+        requestsOngoing: [],
+        requestsHistory: [],
+        requests: new Map(),
+      },
+    ])
+  );
+  return {
+    entryNode,
+    entryData,
+    exitNodes,
+    exitDatas,
+    applicationTag,
+    messageListener,
+    fetchMessagesOngoing: false,
+    logger,
+  };
+}
 
-  private fetchInterval?: ReturnType<typeof setInterval>;
-  private fetchMessagesOngoing: boolean = false;
-  private readonly log;
+export function destruct(np: NodePair) {
+  clearInterval(np.fetchInterval);
+}
 
-  constructor(
-    public readonly entryNode: EntryNode,
-    exitNodes: Iterable<ExitNode>,
-    private readonly applicationTag: number,
-    private readonly messageListener: MessageListener
-  ) {
-    const shortId = shortPeerId(entryNode.id);
-    this.log = createLogger([`nodepair${shortId}(${entryNode.apiEndpoint})`]);
-    // ensure entry node not included in exits
-    const exits = Array.from(exitNodes).filter((n) => entryNode.id !== n.id);
-    this.exitNodes = new Map(exits.map((n) => [n.id, n]));
-    this.exitDatas = new Map(
-      exits.map((n) => [
-        n.id,
-        {
-          requestsOngoing: [],
-          requestsHistory: [],
-          requests: new Map(),
-        },
-      ])
+export function id(np: NodePair) {
+  return np.entryNode.id;
+}
+
+export function requestStarted(np: NodePair, req: Request.Request) {
+  const data = np.exitDatas.get(req.exitId);
+  if (!data) {
+    np.logger.error(
+      "requestStarted",
+      Request.prettyPrint(req),
+      "cannot track on missing exitId",
+      prettyPrint(np)
+    );
+    return;
+  }
+  np.entryData.requestsOngoing++;
+  data.requestsOngoing.push(req.id);
+  data.requests.set(req.id, {
+    startedAt: req.createdAt,
+    state: State.Ongoing,
+  });
+  if (!np.fetchInterval) {
+    np.fetchInterval = setInterval(
+      () => fetchMessages(np),
+      MessagesFetchInterval
     );
   }
-
-  // TODO
-  public getExit = () => {
-    for (const ex of this.exitNodes.values()) {
-      return ex;
-    }
-  };
-
-  public destruct() {
-    clearInterval(this.fetchInterval);
-  }
-
-  public get id() {
-    return this.entryNode.id;
-  }
-
-  public requestStarted = (req: Request.Request) => {
-    const data = this.exitDatas.get(req.exitId);
-    if (!data) {
-      this.log.error(
-        "requestStarted",
-        Request.prettyPrint(req),
-        "cannot track on missing exitId",
-        this.prettyPrint()
-      );
-      return;
-    }
-    this.entryData.requestsOngoing++;
-    data.requestsOngoing.push(req.id);
-    data.requests.set(req.id, {
-      startedAt: req.createdAt,
-      state: State.Ongoing,
-    });
-    if (!this.fetchInterval) {
-      this.fetchInterval = setInterval(this.fetchMessages, 250);
-    }
-  };
-
-  /**
-   * Record request success, return success count
-   */
-  public requestSucceeded = (req: Request.Request, responseTime: number) => {
-    const data = this.exitDatas.get(req.exitId);
-    if (!data) {
-      this.log.error(
-        "requestSucceeded",
-        Request.prettyPrint(req),
-        "cannot track on missing exitId",
-        this.prettyPrint()
-      );
-      return;
-    }
-
-    this.updateReqHistory(data, req.id);
-    this.checkStopInterval();
-
-    const perf = data.requests.get(req.id);
-    if (perf) {
-      perf.state = State.Success;
-      perf.latency = responseTime;
-    }
-  };
-
-  public requestFailed = (req: Request.Request) => {
-    const data = this.exitDatas.get(req.exitId);
-    if (!data) {
-      this.log.error(
-        "requestFailed",
-        Request.prettyPrint(req),
-        "cannot track on missing exitId",
-        this.prettyPrint()
-      );
-      return;
-    }
-
-    this.updateReqHistory(data, req.id);
-    this.checkStopInterval();
-
-    const perf = data.requests.get(req.id);
-    if (perf) {
-      perf.state = State.Failure;
-    }
-  };
-
-  private updateReqHistory(data: ExitData, id: number) {
-    this.entryData.requestsOngoing--;
-    data.requestsOngoing = data.requestsOngoing.filter((rId) => rId !== id);
-    data.requestsHistory.push(id);
-    if (data.requestsHistory.length > MaxPerfHistory) {
-      const rId = data.requestsHistory.shift() as number;
-      data.requests.delete(rId);
-    }
-  }
-  private checkStopInterval() {
-    // stop interval if applicable
-    if (this.entryData.requestsOngoing === 0) {
-      clearInterval(this.fetchInterval);
-      this.fetchInterval = undefined;
-    }
-  }
-
-  public segmentStarted = (seg: Segment.Segment) => {
-    const id = Segment.id(seg);
-    this.entryData.segmentsOngoing.push(id);
-    this.entryData.segments.set(id, {
-      startedAt: Date.now(),
-      state: State.Ongoing,
-    });
-  };
-
-  public segmentSucceeded = (seg: Segment.Segment, responseTime: number) => {
-    const id = Segment.id(seg);
-    this.updateSegHistory(id);
-
-    const perf = this.entryData.segments.get(id);
-    if (perf) {
-      perf.state = State.Success;
-      perf.latency = responseTime;
-    }
-  };
-
-  public segmentFailed = (seg: Segment.Segment) => {
-    const id = Segment.id(seg);
-    this.updateSegHistory(id);
-
-    const perf = this.entryData.segments.get(id);
-    if (perf) {
-      perf.state = State.Failure;
-    }
-  };
-
-  private updateSegHistory(id: string) {
-    this.entryData.segmentsOngoing = this.entryData.segmentsOngoing.filter(
-      (sId) => sId !== id
+}
+export function requestSucceeded(
+  np: NodePair,
+  req: Request.Request,
+  responseTime: number
+) {
+  const data = np.exitDatas.get(req.exitId);
+  if (!data) {
+    np.logger.error(
+      "requestSucceeded",
+      Request.prettyPrint(req),
+      "cannot track on missing exitId",
+      prettyPrint(np)
     );
-    this.entryData.segmentsHistory.push(id);
-    if (this.entryData.segmentsHistory.length > MaxPerfHistory) {
-      const sId = this.entryData.segmentsHistory.shift() as string;
-      this.entryData.segments.delete(sId);
-    }
+    return;
   }
 
-  /**
-   * Ping entry node version.
-   */
-  public ping = (): Promise<number> => {
-    return new Promise((res) => {
-      const startPingTime = Date.now();
-      NodeAPI.version(this.entryNode).then((_) => {
-        this.pingDuration = Date.now() - startPingTime;
-        return res(this.pingDuration);
-      });
-    });
-  };
+  updateReqHistory(np, data, req.id);
+  checkStopInterval(np);
 
-  public prettyPrint = (): string => {
-    const segOngoing = this.entryData.segmentsOngoing.length;
-    const segTotal = this.entryData.segmentsHistory.length;
-    const segLats = Array.from(this.entryData.segments.values()).reduce<
-      number[]
-    >((acc, sd) => {
+  const perf = data.requests.get(req.id);
+  if (perf) {
+    perf.state = State.Success;
+    perf.latency = responseTime;
+  }
+}
+
+export function requestFailed(np: NodePair, req: Request.Request) {
+  const data = np.exitDatas.get(req.exitId);
+  if (!data) {
+    np.logger.error(
+      "requestFailed",
+      Request.prettyPrint(req),
+      "cannot track on missing exitId",
+      prettyPrint(np)
+    );
+    return;
+  }
+
+  updateReqHistory(np, data, req.id);
+  checkStopInterval(np);
+
+  const perf = data.requests.get(req.id);
+  if (perf) {
+    perf.state = State.Failure;
+  }
+}
+
+function updateReqHistory(np: NodePair, data: ExitData, id: number) {
+  np.entryData.requestsOngoing--;
+  data.requestsOngoing = data.requestsOngoing.filter((rId) => rId !== id);
+  data.requestsHistory.push(id);
+  if (data.requestsHistory.length > MaxPerfHistory) {
+    const rId = data.requestsHistory.shift() as number;
+    data.requests.delete(rId);
+  }
+}
+function checkStopInterval(np: NodePair) {
+  // stop interval if applicable
+  if (np.entryData.requestsOngoing === 0) {
+    clearInterval(np.fetchInterval);
+    np.fetchInterval = undefined;
+  }
+}
+
+export function segmentStarted(np: NodePair, seg: Segment.Segment) {
+  const id = Segment.id(seg);
+  np.entryData.segmentsOngoing.push(id);
+  np.entryData.segments.set(id, {
+    startedAt: Date.now(),
+    state: State.Ongoing,
+  });
+}
+
+export function segmentSucceeded(
+  np: NodePair,
+  seg: Segment.Segment,
+  responseTime: number
+) {
+  const id = Segment.id(seg);
+  updateSegHistory(np, id);
+
+  const perf = np.entryData.segments.get(id);
+  if (perf) {
+    perf.state = State.Success;
+    perf.latency = responseTime;
+  }
+}
+
+export function segmentFailed(np: NodePair, seg: Segment.Segment) {
+  const id = Segment.id(seg);
+  updateSegHistory(np, id);
+
+  const perf = np.entryData.segments.get(id);
+  if (perf) {
+    perf.state = State.Failure;
+  }
+}
+
+function updateSegHistory(np: NodePair, id: string) {
+  np.entryData.segmentsOngoing = np.entryData.segmentsOngoing.filter(
+    (sId) => sId !== id
+  );
+  np.entryData.segmentsHistory.push(id);
+  if (np.entryData.segmentsHistory.length > MaxPerfHistory) {
+    const sId = np.entryData.segmentsHistory.shift() as string;
+    np.entryData.segments.delete(sId);
+  }
+}
+
+/**
+ * Ping entry node version.
+ */
+export function ping(np: NodePair): Promise<number> {
+  return new Promise((res) => {
+    const startPingTime = Date.now();
+    NodeAPI.version(np.entryNode).then((_) => {
+      np.pingDuration = Date.now() - startPingTime;
+      return res(np.pingDuration);
+    });
+  });
+}
+
+export function prettyPrint(np: NodePair): string {
+  const segOngoing = np.entryData.segmentsOngoing.length;
+  const segTotal = np.entryData.segmentsHistory.length;
+  const segLats = Array.from(np.entryData.segments.values()).reduce<number[]>(
+    (acc, sd) => {
       if (isSuccess(sd)) {
         acc.push(sd.latency);
       }
       return acc;
-    }, []);
+    },
+    []
+  );
 
-    const exCount = this.exitNodes.size;
-    const exStrs = Array.from(this.exitDatas.values()).map((d) => {
-      const o = d.requestsOngoing.length;
-      const tot = d.requestsHistory.length;
-      const lats = Array.from(d.requests.values()).reduce<number[]>(
-        (acc, rd) => {
-          if (isSuccess(rd)) {
-            acc.push(rd.latency);
-          }
-          return acc;
-        },
-        []
-      );
-      return this.prettyOngoingNumbers(o, lats.length, tot, average(lats));
-    });
-    const segStr = this.prettyOngoingNumbers(
-      segOngoing,
-      segLats.length,
-      segTotal,
-      average(segLats)
-    );
-    const mesLat = average(this.entryData.fetchMessagesLatencies);
-    const mesSuc = this.entryData.fetchMessagesSuccesses;
-    const mesTot = mesSuc + this.entryData.fetchMessagesErrors;
-    const mesStr = this.prettyOngoingNumbers(0, mesSuc, mesTot, mesLat);
-    return `${shortPeerId(
-      this.id
-    )}_seg:${segStr}_msgs:${mesStr}_${exCount}x:${exStrs.join("-")}`;
-  };
-
-  private prettyOngoingNumbers(
-    ongoing: number,
-    successes: number,
-    total: number,
-    average: number
-  ) {
-    if (total === 0) {
-      if (ongoing === 0) {
-        return "0";
+  const exCount = np.exitNodes.size;
+  const exStrs = Array.from(np.exitDatas.values()).map((d) => {
+    const o = d.requestsOngoing.length;
+    const tot = d.requestsHistory.length;
+    const lats = Array.from(d.requests.values()).reduce<number[]>((acc, rd) => {
+      if (isSuccess(rd)) {
+        acc.push(rd.latency);
       }
-      return `0+${ongoing}`;
-    }
-    const sDone = `${successes}(${average}ms)/${total}`;
-    if (ongoing === 0) {
-      return sDone;
-    }
-    return `${sDone}+${ongoing}`;
-  }
-
-  private fetchMessages = () => {
-    const bef = Date.now();
-    NodeAPI.retrieveMessages(this.entryNode, this.applicationTag)
-      .then(({ messages }) => {
-        const lat = Date.now() - bef;
-        this.entryData.fetchMessagesSuccesses++;
-        this.entryData.fetchMessagesLatencies.push(lat);
-        if (this.entryData.fetchMessagesLatencies.length > MaxPerfHistory) {
-          this.entryData.fetchMessagesLatencies.shift();
-        }
-        this.messageListener(messages);
-      })
-      .catch((err) => {
-        this.log.error("Error fetching node messages", err);
-        this.entryData.fetchMessagesErrors++;
-      });
-  };
+      return acc;
+    }, []);
+    return prettyOngoingNumbers(np, o, lats.length, tot, average(lats));
+  });
+  const segStr = prettyOngoingNumbers(
+    np,
+    segOngoing,
+    segLats.length,
+    segTotal,
+    average(segLats)
+  );
+  const mesLat = average(np.entryData.fetchMessagesLatencies);
+  const mesSuc = np.entryData.fetchMessagesSuccesses;
+  const mesTot = mesSuc + np.entryData.fetchMessagesErrors;
+  const mesStr = prettyOngoingNumbers(np, 0, mesSuc, mesTot, mesLat);
+  return `${shortPeerId(
+    id(np)
+  )}_seg:${segStr}_msgs:${mesStr}_${exCount}x:${exStrs.join("-")}`;
 }
 
-function isSuccess(
-  p: PerfData
-): p is { state: State.Success; latency: number; startedAt: number } {
+function prettyOngoingNumbers(
+  np: NodePair,
+  ongoing: number,
+  successes: number,
+  total: number,
+  average: number
+) {
+  if (total === 0) {
+    if (ongoing === 0) {
+      return "0";
+    }
+    return `0+${ongoing}`;
+  }
+  const sDone = `${successes}(${average}ms)/${total}`;
+  if (ongoing === 0) {
+    return sDone;
+  }
+  return `${sDone}+${ongoing}`;
+}
+
+function fetchMessages(np: NodePair) {
+  const bef = Date.now();
+  NodeAPI.retrieveMessages(np.entryNode, np.applicationTag)
+    .then(({ messages }) => {
+      const lat = Date.now() - bef;
+      np.entryData.fetchMessagesSuccesses++;
+      np.entryData.fetchMessagesLatencies.push(lat);
+      if (np.entryData.fetchMessagesLatencies.length > MaxPerfHistory) {
+        np.entryData.fetchMessagesLatencies.shift();
+      }
+      np.messageListener(messages);
+    })
+    .catch((err) => {
+      np.logger.error("Error fetching node messages", err);
+      np.entryData.fetchMessagesErrors++;
+    });
+}
+
+function isSuccess(p: PerfData): p is {
+  state: State.Success;
+  latency: number;
+  startedAt: number;
+} {
   return p.state === State.Success;
 }

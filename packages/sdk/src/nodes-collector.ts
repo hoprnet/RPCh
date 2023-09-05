@@ -2,7 +2,7 @@ import * as DPapi from "./dp-api";
 import * as Request from "./request";
 import * as Segment from "./segment";
 import * as NodeSel from "./node-selector";
-import NodePair from "./node-pair";
+import * as NodePair from "./node-pair";
 import { createLogger } from "./utils";
 
 import type { MessageListener } from "./node-pair";
@@ -14,7 +14,7 @@ const NodePairFetchTimeout: number = 10e3; // 10 seconds downtime to avoid repea
 const NodePairAmount: number = 10; // how many routes do we fetch
 
 export default class NodesCollector {
-  private readonly nodePairs: Map<string, NodePair> = new Map();
+  private readonly nodePairs: Map<string, NodePair.NodePair> = new Map();
   private lastFetchNodePairs = 0;
   private lastMatchedAt = new Date(0);
   private ongoingFetchPairs = false;
@@ -29,8 +29,8 @@ export default class NodesCollector {
   }
 
   public destruct = () => {
-    for (const [, np] of this.nodePairs) {
-      np.destruct();
+    for (const np of this.nodePairs.values()) {
+      NodePair.destruct(np);
     }
     this.nodePairs.clear();
   };
@@ -110,7 +110,7 @@ export default class NodesCollector {
       );
       return;
     }
-    np.requestStarted(req);
+    NodePair.requestStarted(np, req);
     log.verbose("requestStarted", Request.prettyPrint(req));
   };
 
@@ -124,7 +124,7 @@ export default class NodesCollector {
       );
       return;
     }
-    np.requestSucceeded(req, responseTime);
+    NodePair.requestSucceeded(np, req, responseTime);
     log.verbose("requestSucceeded", Request.prettyPrint(req));
   };
 
@@ -138,7 +138,7 @@ export default class NodesCollector {
       );
       return;
     }
-    np.requestFailed(req);
+    NodePair.requestFailed(np, req);
     log.verbose("requestFailed", Request.prettyPrint(req));
   };
 
@@ -152,7 +152,7 @@ export default class NodesCollector {
       );
       return;
     }
-    np.segmentStarted(seg);
+    NodePair.segmentStarted(np, seg);
     log.verbose("segmentStarted", Segment.prettyPrint(seg));
   };
 
@@ -170,7 +170,7 @@ export default class NodesCollector {
       );
       return;
     }
-    np.segmentSucceeded(seg, responseTime);
+    NodePair.segmentSucceeded(np, seg, responseTime);
     log.verbose("segmentSucceeded", Segment.prettyPrint(seg));
   };
 
@@ -184,7 +184,7 @@ export default class NodesCollector {
       );
       return;
     }
-    np.segmentFailed(seg);
+    NodePair.segmentFailed(np, seg);
     log.verbose("segmentFailed", Segment.prettyPrint(seg));
   };
 
@@ -234,16 +234,16 @@ export default class NodesCollector {
         const exitNodes = en.recommendedExits.map(
           (id) => lookupExitNodes.get(id)!
         );
-        const np = new NodePair(
+        const np = NodePair.create(
           en,
           exitNodes,
           this.applicationTag,
           this.messageListener
         );
-        this.nodePairs.set(np.id, np);
+        this.nodePairs.set(NodePair.id(np), np);
       });
 
     // reping all nodes
-    this.nodePairs.forEach((np) => np.ping());
+    this.nodePairs.forEach((np) => NodePair.ping(np));
   };
 }
