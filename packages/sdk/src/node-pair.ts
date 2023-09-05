@@ -54,8 +54,8 @@ export type NodePair = {
   applicationTag: number;
   messageListener: MessageListener;
   fetchInterval?: ReturnType<typeof setInterval>;
-  fetchMessagesOngoing: boolean = false;
-  logger: typeof createLogger;
+  fetchMessagesOngoing: boolean;
+  logger: ReturnType<typeof createLogger>;
 };
 
 export function create(

@@ -1,5 +1,5 @@
 import { randomEl } from "./utils";
-import NodePair from "./node-pair";
+import * as NodePair from "./node-pair";
 import type { EntryNode } from "./entry-node";
 import type { ExitNode } from "./exit-node";
 
@@ -14,7 +14,7 @@ type ResultErr = { success: false; error: string };
 
 export type Result = ResultOk | ResultErr;
 
-export function routePair(nodePairs: Map<string, NodePair>): Result {
+export function routePair(nodePairs: Map<string, NodePair.NodePair>): Result {
   // finding best currently available node pair
   const np = quickestPing(nodePairs);
   if (np) {
@@ -26,7 +26,7 @@ export function routePair(nodePairs: Map<string, NodePair>): Result {
       via: "quickest ping",
     };
   }
-  return { success: false, error: "none" };
+  return { success: false, error: "none available" };
 }
 
 export function isOk(res: Result): res is ResultOk {
@@ -36,19 +36,12 @@ export function isOk(res: Result): res is ResultOk {
 /**
  * Sort by ping durations. Nodes with no ping value will be sorted last.
  */
-function quickestPing(nodePairs: Map<string, NodePair>) {
-  const arr = Array.from(nodePairs.values());
+function quickestPing(nodePairs: Map<string, NodePair.NodePair>) {
+  const arr = Array.from(nodePairs.values()).filter(
+    (np) => !!np.pingDuration
+  ) as (NodePair.NodePair & { pingDuration: number })[];
   arr.sort((l, r) => {
-    if (l.pingDuration) {
-      if (r.pingDuration) {
-        return l.pingDuration - r.pingDuration;
-      }
-      return -1;
-    }
-    if (r.pingDuration) {
-      return 1;
-    }
-    return 0;
+    return l.pingDuration - r.pingDuration;
   });
   return arr[0];
 }
