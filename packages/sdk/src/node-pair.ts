@@ -1,6 +1,8 @@
 import { WebSocket, MessageEvent, CloseEvent } from "isomorphic-ws";
 
 import * as NodeAPI from "./node-api";
+import * as Request from "./request";
+import * as Segment from "./segment";
 import { average, createLogger, randomEl, shortPeerId } from "./utils";
 
 import type { EntryNode } from "./entry-node";
@@ -12,11 +14,30 @@ export type WebSocketCallback = {
   onError: (id: string, err: Error) => void;
 };
 
+enum State {
+  Ongoing,
+  Success,
+  Failure,
+}
+
+type PerfData = {
+  startedAt: number;
+  latency?: number;
+  state: State;
+};
+
+// segments measures quality of entry node
+type EntryData = {
+  segmentsOngoing: string[]; // sorted ongoing segment ids
+  segmentsHistory: string[]; // sorted resolved segment ids
+  segments: Map<string, PerfData>; // segment data
+};
+
+// requests measure quality of exit nodes
 type ExitData = {
-  failedRequests: number;
-  latencies: number[];
-  ongoingRequests: number;
-  successfulRequests: number;
+  requestsOngoing: number[]; // sorted ongoing request ids
+  requestsHistory: number[]; // sorted resolved request ids
+  requests: Map<number, PerfData>; // request data
 };
 
 export default class NodePair {
@@ -24,7 +45,7 @@ export default class NodePair {
    * Behavioral parameters of the node selection.
    */
   public static TargetAmount = 10;
-  private static KeepLastLatencies = 5;
+  private static PerfHistory = 20;
   private static LatencyThreshold = 5e3;
 
   public pingDuration?: number;
@@ -33,6 +54,11 @@ export default class NodePair {
   private messageListenerAttached = false;
   private readonly log;
   private readonly exitNodes: Map<string, ExitNode>;
+  private readonly entryData: EntryData = {
+    segmentsOngoing: [],
+    segmentsHistory: [],
+    segments: new Map(),
+  };
   private readonly exitDatas: Map<string, ExitData> = new Map(); // exitId -> latencies
 
   constructor(
@@ -48,10 +74,9 @@ export default class NodePair {
       exits.map((n) => [
         n.id,
         {
-          failedRequests: 0,
-          latencies: [],
-          ongoingRequests: 0,
-          successfulRequests: 0,
+          requestsOngoing: [],
+          requestsHistory: [],
+          requests: new Map(),
         },
       ])
     );
@@ -61,45 +86,76 @@ export default class NodePair {
     return this.entryNode.id;
   }
 
-  public requestStarted = (exitId: string): number | undefined => {
-    const data = this.exitDatas.get(exitId);
-    if (data) {
-      data.ongoingRequests += 1;
-      return data.ongoingRequests;
-    }
+  public requestStarted = (req: Request.Request) => {
+    const data = this.exitDatas.get(req.exitId)!;
+    data.requestsOngoing.push(req.id);
+    data.requests.set(req.id, {
+      startedAt: req.createdAt,
+      state: State.Ongoing,
+    });
   };
 
-  public requestSucceeded = (
-    exitId: string,
-    responseTime: number
-  ): number | undefined => {
-    const data = this.exitDatas.get(exitId);
-    if (data) {
-      data.ongoingRequests -= 1;
-      data.successfulRequests += 1;
-      data.latencies.push(responseTime);
-      if (data.latencies.length > NodePair.KeepLastLatencies) {
-        data.latencies.shift();
-      }
-      // detach message liteners if no ongoing requests
-      if (!this.hasOngoing()) {
-        this.socket!.onmessage = null;
-      }
-      return data.successfulRequests;
+  public requestSucceeded = (req: Request.Request, responseTime: number) => {
+    const data = this.exitDatas.get(req.exitId)!;
+    data.requestsOngoing = data.requestsOngoing.filter((rId) => rId !== req.id);
+    data.requestsHistory.push(req.id);
+    if (data.requestsHistory.length > NodePair.PerfHistory) {
+      const rId = data.requestsHistory.shift()!;
+      data.requests.delete(rId);
     }
+    const perf = data.requests.get(req.id)!;
+    perf.state = State.Success;
+    perf.latency = responseTime;
   };
 
-  public requestFailed = (exitId: string): number | undefined => {
-    const data = this.exitDatas.get(exitId);
-    if (data) {
-      data.ongoingRequests -= 1;
-      data.failedRequests += 1;
-      // detach message liteners if no ongoing requests
-      if (!this.hasOngoing()) {
-        this.socket!.onmessage = null;
-      }
-      return data.failedRequests;
+  public requestFailed = (req: Request.Request) => {
+    const data = this.exitDatas.get(req.exitId)!;
+    data.requestsOngoing = data.requestsOngoing.filter((rId) => rId !== req.id);
+    data.requestsHistory.push(req.id);
+    if (data.requestsHistory.length > NodePair.PerfHistory) {
+      const rId = data.requestsHistory.shift()!;
+      data.requests.delete(rId);
     }
+    const perf = data.requests.get(req.id)!;
+    perf.state = State.Failure;
+  };
+
+  public segmentStarted = (seg: Segment.Segment) => {
+    const id = Segment.id(seg);
+    this.entryData.segmentsOngoing.push(id);
+    this.entryData.segments.set(id, {
+      startedAt: Date.now(),
+      state: State.Ongoing,
+    });
+  };
+
+  public segmentSucceeded = (seg: Segment.Segment, responseTime: number) => {
+    const id = Segment.id(seg);
+    this.entryData.segmentsOngoing = this.entryData.segmentsOngoing.filter(
+      (sId) => sId !== id
+    );
+    this.entryData.segmentsHistory.push(id);
+    if (this.entryData.segmentsHistory.length > NodePair.PerfHistory) {
+      const sId = this.entryData.segmentsHistory.shift()!;
+      this.entryData.segments.delete(sId);
+    }
+    const perf = this.entryData.segments.get(id)!;
+    perf.state = State.Success;
+    perf.latency = responseTime;
+  };
+
+  public segmentFailed = (seg: Segment.Segment) => {
+    const id = Segment.id(seg);
+    this.entryData.segmentsOngoing = this.entryData.segmentsOngoing.filter(
+      (sId) => sId !== id
+    );
+    this.entryData.segmentsHistory.push(id);
+    if (this.entryData.segmentsHistory.length > NodePair.PerfHistory) {
+      const sId = this.entryData.segmentsHistory.shift()!;
+      this.entryData.segments.delete(sId);
+    }
+    const perf = this.entryData.segments.get(id)!;
+    perf.state = State.Failure;
   };
 
   public ping = (): Promise<number> => {

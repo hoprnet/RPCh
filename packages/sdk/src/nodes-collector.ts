@@ -1,8 +1,9 @@
 import { CloseEvent, MessageEvent } from "isomorphic-ws";
 
 import * as DPapi from "./dp-api";
+import * as Request from "./request";
+import * as Segment from "./segment";
 import NodePair from "./node-pair";
-import type { Request } from "./request";
 import { createLogger, shortPeerId } from "./utils";
 
 import type { NodeMatch } from "./node-match";
@@ -42,6 +43,7 @@ export default class NodesCollector {
       const check = () => {
         const now = Date.now();
         const elapsed = now - start;
+
         if (this.primaryNodePairId) {
           return resolve(true);
         }
@@ -96,38 +98,41 @@ export default class NodesCollector {
     }
   }
 
-  public requestStarted = ({ entryId, exitId, id }: Request) => {
-    const np = this.nodePairs.get(entryId);
-    const req = `${id}:${shortPeerId(entryId)}>${shortPeerId(exitId)}`;
+  public requestStarted = (req: Request.Request) => {
+    const np = this.nodePairs.get(req.entryId);
     if (!np) {
-      log.error("requestStarted", req, "on non existing node pair");
+      log.error(
+        "requestStarted",
+        Request.prettyPrint(req),
+        "on non existing node pair"
+      );
       return;
     }
     np.messageListener = this.messageListener;
-    const res = np.requestStarted(exitId);
+    const res = np.requestStarted(req.exitId);
     log.verbose(
       "requestStarted",
-      req,
+      Request.prettyPrint(req),
       "-",
       res,
       "ongoing requests on that route"
     );
   };
 
-  public requestSucceeded = (
-    { entryId, exitId, id }: Request,
-    responseTime: number
-  ) => {
-    const np = this.nodePairs.get(entryId);
-    const req = `${id}:${shortPeerId(entryId)}>${shortPeerId(exitId)}`;
+  public requestSucceeded = (req: Request.Request, responseTime: number) => {
+    const np = this.nodePairs.get(req.entryId);
     if (!np) {
-      log.error("requestSucceeded", req, "on non existing node pair");
+      log.error(
+        "requestSucceeded",
+        Request.prettyPrint(req),
+        "on non existing node pair"
+      );
       return;
     }
-    const res = np.requestSucceeded(exitId, responseTime);
+    const res = np.requestSucceeded(req.exitId, responseTime);
     log.verbose(
       "requestSucceeded",
-      req,
+      Request.prettyPrint(req),
       "-",
       res,
       "total successes on that route"
@@ -145,15 +150,24 @@ export default class NodesCollector {
     }
   };
 
-  public requestFailed = ({ entryId, exitId, id }: Request) => {
-    const np = this.nodePairs.get(entryId);
-    const req = `${id}:${shortPeerId(entryId)}>${shortPeerId(exitId)}`;
+  public requestFailed = (req: Request.Request) => {
+    const np = this.nodePairs.get(req.entryId);
     if (!np) {
-      log.error("requestFailed", req, "on non exiting node pair");
+      log.error(
+        "requestFailed",
+        Request.prettyPrint(req),
+        "on non exiting node pair"
+      );
       return;
     }
-    const res = np.requestFailed(exitId);
-    log.verbose("requestFailed", req, "-", res, "failed on that route");
+    const res = np.requestFailed(req.exitId);
+    log.verbose(
+      "requestFailed",
+      Request.prettyPrint(req),
+      "-",
+      res,
+      "failed on that route"
+    );
     // check closure
     if (np.readyExitNode().res === "error" && !np.hasOngoing()) {
       log.info(
@@ -164,6 +178,26 @@ export default class NodesCollector {
       this.nodePairs.delete(np.id);
       this.updatePairIds();
     }
+  };
+
+  public segmentStarted = (req: Request.Request, seg: Segment.Segment) => {
+    const np = this.nodePairs.get(req.entryId);
+    if (!np) {
+      log.error(
+        "segment",
+        Segment.prettyPrint(seg),
+        "on non existing node pair"
+      );
+      return;
+    }
+    const res = np.segmentStarted(req.exitId, seg);
+    log.verbose(
+      "requestStarted",
+      Request.prettyPrint(req),
+      "-",
+      res,
+      "ongoing requests on that route"
+    );
   };
 
   private fetchNodePairs = () => {
@@ -213,9 +247,11 @@ export default class NodesCollector {
           (id) => lookupExitNodes.get(id)!
         );
         const np = new NodePair(en, exitNodes);
-        np.ping();
         this.nodePairs.set(np.id, np);
       });
+
+    // reping all nodes
+    this.nodePairs.forEach((np) => np.ping());
   };
 
   private onOpenWS = (_id: string, _connTime: number) => {

@@ -156,7 +156,6 @@ export default class SDK {
       ...this.ops,
       ...ops,
     };
-    const endFrame = Date.now() + reqOps.timeout!;
     return new Promise(async (resolve, reject) => {
       // gather entry - exit node pair
       const res = await this.nodesColl
@@ -190,17 +189,6 @@ export default class SDK {
         )
       );
 
-      // set request expiration timer
-      const timer = setTimeout(() => {
-        log.error("request expired", request.id);
-        this.removeRequest(request);
-        return reject("request timed out");
-      }, endFrame - Date.now());
-
-      // track request
-      RequestCache.add(this.requestCache, request, resolve, reject, timer);
-      this.nodesColl.requestStarted(request);
-
       // split request to segments
       const segments = Request.toSegments(request);
       if (segments.length > MAX_REQUEST_SEGMENTS) {
@@ -208,18 +196,35 @@ export default class SDK {
           "Request exceeds maximum amount of segments with %s segments",
           segments.length
         );
-        this.removeRequest(request);
         return reject("Request exceeds maximum size of 3830b");
       }
+
+      // set request expiration timer
+      const timer = setTimeout(() => {
+        log.error("request expired", request.id);
+        this.removeRequest(request);
+        return reject("request timed out");
+      }, reqOps.timeout);
+
+      // track request
+      const cEntry = RequestCache.add(
+        this.requestCache,
+        request,
+        resolve,
+        reject,
+        timer
+      );
+      this.nodesColl.requestStarted(request);
 
       // send request to hoprd
       log.info("sending request %i", request.id);
 
-      // send segments sequentially
+      // queue segment sending for all of them
       segments.forEach((s) =>
-        setTimeout(() =>
-          this.sendSegment(s, request, entryNode, endFrame, resolve, reject)
-        )
+        setTimeout(() => {
+          this.nodesColl.segmentStarted(s);
+          this.sendSegment(s, entryNode, cEntry);
+        })
       );
     });
   }

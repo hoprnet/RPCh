@@ -6,9 +6,10 @@ import type {
   Identity,
 } from "@rpch/crypto-for-nodejs";
 
-import type { Segment } from "./segment";
 import * as compression from "./compression";
 import type { RPCrequest } from ".";
+import type { Segment } from "./segment";
+import { shortPeerId } from "./utils";
 
 export type Request = {
   id: number;
@@ -119,4 +120,13 @@ export function toSegments(req: Request): Segment[] {
     totalCount: chunks.length,
     body: c,
   }));
+}
+
+/**
+ * Pretty print request in human readable form.
+ */
+export function prettyPrint({ id, entryId, exitId }: Request) {
+  const eId = shortPeerId(entryId);
+  const xId = shortPeerId(exitId);
+  return `request[id: ${id}, entryId: ${eId}, exitId: ${xId}`;
 }
