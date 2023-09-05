@@ -131,7 +131,6 @@ export const start = async (ops: {
 
       for (const segment of rpchResponse.toMessage().toSegments()) {
         const body = JSON.stringify({
-          // TODO replace with message tag from incoming message
           tag,
           body: segment.toString(),
           peerId: rpchRequest.entryNodeDestination,
@@ -221,7 +220,7 @@ export const start = async (ops: {
 
     try {
       const segment = Segment.fromString(msg.body);
-      cache.onSegment(segment);
+      cache.onSegment(segment, msg.tag);
     } catch (error) {
       log.verbose(
         "rejected received data from HOPRd: not a valid segment",
