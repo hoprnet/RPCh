@@ -6,6 +6,8 @@ import { average, createLogger, shortPeerId } from "./utils";
 import type { EntryNode } from "./entry-node";
 import type { ExitNode } from "./exit-node";
 
+export type MessageListener = (messages: NodeAPI.Message[]) => void;
+
 enum State {
   Ongoing,
   Success,
@@ -27,8 +29,6 @@ type EntryData = {
   fetchMessagesSuccesses: number;
   fetchMessagesErrors: number;
 };
-
-type MessageListener = (messages: NodeAPI.Message[]) => void;
 
 // requests measure quality of exit nodes
 type ExitData = {
@@ -58,8 +58,8 @@ export default class NodePair {
   constructor(
     public readonly entryNode: EntryNode,
     exitNodes: Iterable<ExitNode>,
-    private applicationTag: number,
-    private messageListener: MessageListener
+    private readonly applicationTag: number,
+    private readonly messageListener: MessageListener
   ) {
     const shortId = shortPeerId(entryNode.id);
     this.log = createLogger([`nodepair${shortId}(${entryNode.apiEndpoint})`]);
@@ -98,6 +98,9 @@ export default class NodePair {
     }
   };
 
+  /**
+   * Record request success, return success count
+   */
   public requestSucceeded = (req: Request.Request, responseTime: number) => {
     const perf = this.requestDone(req);
     perf.state = State.Success;

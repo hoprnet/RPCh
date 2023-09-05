@@ -3,9 +3,11 @@ import { CloseEvent, MessageEvent } from "isomorphic-ws";
 import * as DPapi from "./dp-api";
 import * as Request from "./request";
 import * as Segment from "./segment";
+import * as NodeSel from "./node-selector";
 import NodePair from "./node-pair";
 import { createLogger, shortPeerId } from "./utils";
 
+import type { MessageListener } from "./node-pair";
 import type { NodeMatch } from "./node-match";
 
 const log = createLogger(["nodes-collector"]);
@@ -22,14 +24,15 @@ export default class NodesCollector {
   constructor(
     private readonly discoveryPlatformEndpoint: string,
     private readonly clientId: string,
-    private readonly onWSmessage: (message: string) => void
+    private readonly applicationTag: number,
+    private readonly messageListener: MessageListener
   ) {
     this.fetchNodePairs();
   }
 
   public destruct = () => {
     for (const [, np] of this.nodePairs) {
-      np.close();
+      np.destruct();
     }
     this.nodePairs.clear();
   };
@@ -43,8 +46,8 @@ export default class NodesCollector {
       const check = () => {
         const now = Date.now();
         const elapsed = now - start;
-
-        if (this.primaryNodePairId) {
+        const res = NodeSel.routePair(this.nodePairs);
+        if (res.res === "ok") {
           return resolve(true);
         }
         if (elapsed > timeout) {
@@ -66,15 +69,11 @@ export default class NodesCollector {
       const check = () => {
         const now = Date.now();
         const elapsed = now - start;
-        if (this.primaryNodePairId) {
-          const np = this.nodePairs.get(this.primaryNodePairId)!;
-          const res = np.readyExitNode();
-          if (res.res === "ok") {
-            return resolve({ entryNode: np.entryNode, exitNode: res.exitNode });
-          }
-          log.verbose("no exit node ready in primary node pair id");
+        const res = NodeSel.routePair(this.nodePairs);
+        if (res.res === "ok") {
+          return resolve({ entryNode: res.entryNode, exitNode: res.exitNode });
         }
-        this.updatePairIds();
+        log.verbose("no exit node ready in primary node pair id");
         if (elapsed > timeout) {
           log.error("Timeout waiting for node pair", elapsed);
           return reject(`timeout after ${elapsed} ms`);
@@ -108,15 +107,8 @@ export default class NodesCollector {
       );
       return;
     }
-    np.messageListener = this.messageListener;
-    const res = np.requestStarted(req.exitId);
-    log.verbose(
-      "requestStarted",
-      Request.prettyPrint(req),
-      "-",
-      res,
-      "ongoing requests on that route"
-    );
+    np.requestStarted(req);
+    log.verbose("requestStarted", Request.prettyPrint(req));
   };
 
   public requestSucceeded = (req: Request.Request, responseTime: number) => {
@@ -129,25 +121,8 @@ export default class NodesCollector {
       );
       return;
     }
-    const res = np.requestSucceeded(req.exitId, responseTime);
-    log.verbose(
-      "requestSucceeded",
-      Request.prettyPrint(req),
-      "-",
-      res,
-      "total successes on that route"
-    );
-    this.closeRedundant();
-    // check closure
-    if (np.readyExitNode().res === "error" && !np.hasOngoing()) {
-      log.info(
-        "no more eligible exit nodes after successful request",
-        np.prettyPrint()
-      );
-      np.close();
-      this.nodePairs.delete(np.id);
-      this.updatePairIds();
-    }
+    np.requestSucceeded(req, responseTime);
+    log.verbose("requestSucceeded", Request.prettyPrint(req));
   };
 
   public requestFailed = (req: Request.Request) => {
@@ -160,44 +135,54 @@ export default class NodesCollector {
       );
       return;
     }
-    const res = np.requestFailed(req.exitId);
-    log.verbose(
-      "requestFailed",
-      Request.prettyPrint(req),
-      "-",
-      res,
-      "failed on that route"
-    );
-    // check closure
-    if (np.readyExitNode().res === "error" && !np.hasOngoing()) {
-      log.info(
-        "no more eligible exit nodes after failed request",
-        np.prettyPrint()
-      );
-      np.close();
-      this.nodePairs.delete(np.id);
-      this.updatePairIds();
-    }
+    np.requestFailed(req);
+    log.verbose("requestFailed", Request.prettyPrint(req));
   };
 
   public segmentStarted = (req: Request.Request, seg: Segment.Segment) => {
     const np = this.nodePairs.get(req.entryId);
     if (!np) {
       log.error(
-        "segment",
+        "segmentStarted",
         Segment.prettyPrint(seg),
         "on non existing node pair"
       );
       return;
     }
-    const res = np.segmentStarted(req.exitId, seg);
-    log.verbose(
-      "requestStarted",
-      Request.prettyPrint(req),
-      "-",
-      res,
-      "ongoing requests on that route"
-    );
+    np.segmentStarted(seg);
+    log.verbose("segmentStarted", Segment.prettyPrint(seg));
+  };
+
+  public segmentSucceeded = (
+    req: Request.Request,
+    seg: Segment.Segment,
+    responseTime: number
+  ) => {
+    const np = this.nodePairs.get(req.entryId);
+    if (!np) {
+      log.error(
+        "segmentSucceeded",
+        Segment.prettyPrint(seg),
+        "on non existing node pair"
+      );
+      return;
+    }
+    np.segmentSucceeded(seg, responseTime);
+    log.verbose("segmentSucceeded", Segment.prettyPrint(seg));
+  };
+
+  public segmentFailed = (req: Request.Request, seg: Segment.Segment) => {
+    const np = this.nodePairs.get(req.entryId);
+    if (!np) {
+      log.error(
+        "segmentFailed",
+        Segment.prettyPrint(seg),
+        "on non existing node pair"
+      );
+      return;
+    }
+    np.segmentFailed(seg);
+    log.verbose("segmentFailed", Segment.prettyPrint(seg));
   };
 
   private fetchNodePairs = () => {
@@ -246,96 +231,16 @@ export default class NodesCollector {
         const exitNodes = en.recommendedExits.map(
           (id) => lookupExitNodes.get(id)!
         );
-        const np = new NodePair(en, exitNodes);
+        const np = new NodePair(
+          en,
+          exitNodes,
+          this.applicationTag,
+          this.messageListener
+        );
         this.nodePairs.set(np.id, np);
       });
 
     // reping all nodes
     this.nodePairs.forEach((np) => np.ping());
-  };
-
-  private onOpenWS = (_id: string, _connTime: number) => {
-    this.updatePairIds();
-  };
-
-  private onCloseWS = (id: string, _evt: CloseEvent) => {
-    const np = this.nodePairs.get(id)!;
-    log.info("server close event removing node pair", np.prettyPrint());
-    np.close();
-    this.nodePairs.delete(id);
-    this.updatePairIds();
-  };
-
-  private onErrorWS = (id: string, _evt: Error) => {
-    const np = this.nodePairs.get(id)!;
-    log.info("server error event removing node pair", np.prettyPrint());
-    np.close();
-    this.nodePairs.delete(id);
-    this.updatePairIds();
-  };
-
-  private updatePairIds = () => {
-    const { prim, sec } = Array.from(this.nodePairs.values()).reduce<{
-      prim?: NodePair;
-      sec?: NodePair;
-    }>((acc, np) => {
-      if (!np.connectTime) {
-        return acc;
-      }
-      // does not have a valid exit node
-      const res = np.readyExitNode();
-      if (res.res !== "ok") {
-        return acc;
-      }
-      if (!acc.prim) {
-        return { prim: np };
-      }
-      if (np.connectTime < acc.prim.connectTime!) {
-        return { prim: np, sec: acc.prim };
-      }
-      if (!acc.sec) {
-        return { prim: acc.prim, sec: np };
-      }
-      if (np.connectTime < acc.sec.connectTime!) {
-        return { prim: acc.prim, sec: np };
-      }
-      return acc;
-    }, {});
-    this.primaryNodePairId = prim?.id;
-    this.secondaryNodePairId = sec?.id;
-    log.verbose(
-      "update to pairIds ",
-      this.primaryNodePairId ? shortPeerId(this.primaryNodePairId) : "noprim",
-      this.secondaryNodePairId ? shortPeerId(this.secondaryNodePairId) : "nosec"
-    );
-    if (!this.primaryNodePairId || !this.secondaryNodePairId) {
-      // fetch new nodes
-      this.fetchNodePairs();
-    }
-  };
-
-  private closeRedundant = () => {
-    const closable = Array.from(this.nodePairs.values()).filter(
-      (np) =>
-        !(
-          np.id === this.primaryNodePairId ||
-          np.id === this.secondaryNodePairId ||
-          np.hasOngoing()
-        )
-    );
-    log.verbose(`closing ${closable.length} node pairs`);
-    closable.forEach((c) => {
-      c.close();
-      this.nodePairs.delete(c.id);
-    });
-  };
-
-  private messageListener = (evt: MessageEvent) => {
-    const msg = JSON.parse(evt.data.toString());
-    // ignore msg-ack for now
-    if (msg.type === "message-ack") {
-      return;
-    }
-    this.onWSmessage(msg.body);
   };
 }
