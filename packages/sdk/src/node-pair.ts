@@ -23,12 +23,12 @@ type EntryData = {
   segmentsOngoing: string[]; // sorted ongoing segment ids
   segmentsHistory: string[]; // sorted resolved segment ids
   segments: Map<string, PerfData>; // segment data
+  fetchMessagesLatencies: number[]; // last fetch messages latencies
+  fetchMessagesSuccesses: number;
+  fetchMessagesErrors: number;
 };
 
-type MessageListener = {
-  onMsgs: (messages: NodeAPI.Message[]) => void;
-  onError: (err: Error) => void;
-};
+type MessageListener = (messages: NodeAPI.Message[]) => void;
 
 // requests measure quality of exit nodes
 type ExitData = {
@@ -42,12 +42,16 @@ export default class NodePair {
 
   public pingDuration?: number;
   private fetchInterval?: ReturnType<typeof setInterval>;
+  private fetchMessagesOngoing: boolean = false;
   private readonly log;
   private readonly exitNodes: Map<string, ExitNode>;
   private readonly entryData: EntryData = {
     segmentsOngoing: [],
     segmentsHistory: [],
     segments: new Map(),
+    fetchMessagesLatencies: [],
+    fetchMessagesSuccesses: 0,
+    fetchMessagesErrors: 0,
   };
   private readonly exitDatas: Map<string, ExitData> = new Map();
 
@@ -202,13 +206,19 @@ export default class NodePair {
       );
       return this.prettyOngoingNumbers(o, lats.length, tot, average(lats));
     });
-    const eStr = this.prettyOngoingNumbers(
+    const segStr = this.prettyOngoingNumbers(
       segOngoing,
       segLats.length,
       segTotal,
       average(segLats)
     );
-    return `${shortPeerId(this.id)}(${eStr})_${exCount}x:${exStrs.join("-")}`;
+    const mesLat = average(this.entryData.fetchMessagesLatencies);
+    const mesSuc = this.entryData.fetchMessagesSuccesses;
+    const mesTot = mesSuc + this.entryData.fetchMessagesErrors;
+    const mesStr = this.prettyOngoingNumbers(0, mesSuc, mesTot, mesLat);
+    return `${shortPeerId(
+      this.id
+    )}_seg:${segStr}_msgs:${mesStr}_${exCount}x:${exStrs.join("-")}`;
   };
 
   private prettyOngoingNumbers(
@@ -231,9 +241,23 @@ export default class NodePair {
   }
 
   private fetchMessages = () => {
+    const bef = Date.now();
     NodeAPI.retrieveMessages(this.entryNode, this.applicationTag)
-      .then(({ messages }) => this.messageListener.onMsgs(messages))
-      .catch((err) => this.messageListener.onError(err));
+      .then(({ messages }) => {
+        const lat = Date.now() - bef;
+        this.entryData.fetchMessagesSuccesses++;
+        this.entryData.fetchMessagesLatencies.push(lat);
+        if (
+          this.entryData.fetchMessagesLatencies.length > NodePair.PerfHistory
+        ) {
+          this.entryData.fetchMessagesLatencies.shift();
+        }
+        this.messageListener(messages);
+      })
+      .catch((err) => {
+        this.log.error("Error fetching node messages", err);
+        this.entryData.fetchMessagesErrors++;
+      });
   };
 }
 
