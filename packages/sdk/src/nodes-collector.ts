@@ -51,7 +51,7 @@ export default class NodesCollector {
           return resolve(true);
         }
         if (elapsed > timeout) {
-          log.error("Timeout waiting for ready", elapsed);
+          log.error("Timeout waiting for ready", elapsed, res.error);
           return reject(`timeout after ${elapsed} ms`);
         }
         setTimeout(check, 100);
@@ -74,9 +74,8 @@ export default class NodesCollector {
           log.verbose("found route pair", NodeSel.prettyPrint(res));
           return resolve(res.match);
         }
-        log.verbose("no route pair found", res.error);
         if (elapsed > timeout) {
-          log.error("Timeout waiting for node pair", elapsed);
+          log.error("Timeout waiting for node pair", elapsed, res.error);
           return reject(`timeout after ${elapsed} ms`);
         }
         setTimeout(check, 100);
