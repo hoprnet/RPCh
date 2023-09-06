@@ -42,43 +42,35 @@ export function routePair(nodePairs: Map<string, NodePair.NodePair>): Result {
   ////
   // 1. compare exit node performances
   const xLeastErrs = leastReqErrors(routePerfs);
-  console.log("bar1", xLeastErrs.length);
   if (xLeastErrs.length === 1) {
     return success(xLeastErrs[0], "least request errors");
   }
   const xBestLats = bestReqLatencies(xLeastErrs);
-  console.log("bar2", xBestLats.length);
   if (xBestLats.length > 0) {
     return success(xBestLats[0], "best request latency");
   }
   const xLeastOngoing = leastReqOngoing(xLeastErrs);
-  console.log("bar3", xLeastOngoing.length);
   if (xLeastOngoing.length === 1) {
     return success(xLeastOngoing[0], "least ongoing requests");
   }
 
   const entryPerfs = createEntryPerfs(nodePairs, xLeastOngoing);
-  console.log("bar4", entryPerfs.length);
 
   ////
   // 2. compare entry node performances
   const eLeastErrs = leastSegErrors(entryPerfs);
-  console.log("bar5", eLeastErrs.length);
   if (eLeastErrs.length === 1) {
     return eSuccess(eLeastErrs[0], xLeastOngoing, "least segment errors");
   }
   const eBestLats = bestSegLatencies(eLeastErrs);
-  console.log("bar6", eBestLats.length);
   if (eBestLats.length > 0) {
     return eSuccess(eBestLats[0], xLeastOngoing, "best segment latency");
   }
   const eLeastOngoing = leastSegOngoing(eLeastErrs);
-  console.log("bar7", eLeastOngoing.length);
   if (eLeastOngoing.length === 1) {
     return eSuccess(eLeastOngoing[0], xLeastOngoing, "least ongoing segments");
   }
   const eLeastMsgsErrs = leastMsgsErrors(eLeastOngoing);
-  console.log("bar8", eLeastMsgsErrs.length);
   if (eLeastMsgsErrs.length === 1) {
     return eSuccess(
       eLeastMsgsErrs[0],
@@ -87,7 +79,6 @@ export function routePair(nodePairs: Map<string, NodePair.NodePair>): Result {
     );
   }
   const eBestMsgsLats = bestMsgsLatencies(eLeastMsgsErrs);
-  console.log("bar9", eBestMsgsLats.length);
   if (eBestMsgsLats.length > 0) {
     return eSuccess(
       eBestMsgsLats[0],
@@ -239,10 +230,7 @@ function bestMsgsLatencies(entryPerfs: EntryPerf[]): EntryPerf[] {
 }
 
 function quickestPing(entryPerfs: EntryPerf[]): EntryPerf[] {
-  console.log("FOO1", entryPerfs);
   const havePing = entryPerfs.filter(({ pingDuration }) => pingDuration > 0);
-  console.log("FOO2", havePing);
   havePing.sort((l, r) => l.pingDuration - r.pingDuration);
-  console.log("FOO3", havePing);
   return havePing;
 }
