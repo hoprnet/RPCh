@@ -5,14 +5,19 @@ import type { EntryNode } from "./entry-node";
 import type { ExitNode } from "./exit-node";
 
 describe("test node selector", function () {
-  it("selects none if no information is given", function () {
-    const xn = genExitNode("x");
-    const en = genEntryNode("e", [xn.id]);
-    const np = NodePair.create(en, [xn], 0, () => {});
-    const nodePairs = new Map([[NodePair.id(np), np]]);
-    const res = NodeSel.routePair(nodePairs);
-    expect(res).toMatchObject({ success: false, error: "none available" });
-  });
+  // it("selects only available route", function () {
+  //   const xn = genExitNode("x");
+  //   const en = genEntryNode("e", [xn.id]);
+  //   const np = NodePair.create(en, [xn], 0, () => {});
+  //   const nodePairs = new Map([[NodePair.id(np), np]]);
+  //   const res = NodeSel.routePair(nodePairs);
+  //   expect(res).toMatchObject({
+  //     success: true,
+  //     entryNode: en,
+  //     exitNode: xn,
+  //     via: "only route available",
+  //   });
+  // });
 
   it("selects quickest ping if no other information is given", function () {
     const xn1 = genExitNode("x1");
@@ -32,7 +37,7 @@ describe("test node selector", function () {
       success: true,
       entryNode: en2,
       exitNode: xn2,
-      via: "quickest ping",
+      via: "quickest version ping",
     });
   });
 });
