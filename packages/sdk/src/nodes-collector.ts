@@ -3,9 +3,10 @@ import * as Request from "./request";
 import * as Segment from "./segment";
 import * as NodeSel from "./node-selector";
 import * as NodePair from "./node-pair";
-import { createLogger, shortPeerId } from "./utils";
+import { createLogger } from "./utils";
 
 import type { MessageListener } from "./node-pair";
+import type { EntryNode } from "./entry-node";
 import type { NodeMatch } from "./node-match";
 
 const log = createLogger(["nodes-collector"]);
@@ -71,10 +72,7 @@ export default class NodesCollector {
         const res = NodeSel.routePair(this.nodePairs);
         if (NodeSel.isOk(res)) {
           log.verbose("found route pair", NodeSel.prettyPrint(res));
-          return resolve({
-            entryNode: res.entryNode,
-            exitNode: res.exitNode,
-          });
+          return resolve(res.match);
         }
         log.verbose("no exit node ready in primary node pair id");
         if (elapsed > timeout) {
@@ -90,15 +88,13 @@ export default class NodesCollector {
   /**
    * Request secondary node pair.
    */
-  // public get fallbackNodePair(): NodeMatch | undefined {
-  //   if (this.secondaryNodePairId) {
-  //     const np = this.nodePairs.get(this.secondaryNodePairId)!;
-  //     const res = np.readyExitNode();
-  //     if (res.res === "ok") {
-  //       return { entryNode: np.entryNode, exitNode: res.exitNode };
-  //     }
-  //   }
-  // }
+  public fallbackNodePair = (exclude: EntryNode): NodeMatch | undefined => {
+    const res = NodeSel.fallbackRoutePair(this.nodePairs, exclude);
+    if (NodeSel.isOk(res)) {
+      log.verbose("found fallback route pair", NodeSel.prettyPrint(res));
+      return res.match;
+    }
+  };
 
   public requestStarted = (req: Request.Request) => {
     const np = this.nodePairs.get(req.entryId);

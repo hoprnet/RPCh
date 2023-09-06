@@ -208,7 +208,13 @@ export default class SDK {
       }, reqOps.timeout);
 
       // track request
-      RequestCache.add(this.requestCache, request, resolve, reject, timer);
+      const entry = RequestCache.add(
+        this.requestCache,
+        request,
+        resolve,
+        reject,
+        timer
+      );
       this.nodesColl.requestStarted(request);
 
       // send request to hoprd
@@ -218,7 +224,7 @@ export default class SDK {
       segments.forEach((s) =>
         setTimeout(() => {
           this.nodesColl.segmentStarted(request, s);
-          this.sendSegment(request, s, entryNode, reject);
+          this.sendSegment(request, s, entryNode, entry);
         })
       );
     });
@@ -228,7 +234,7 @@ export default class SDK {
     request: Request.Request,
     segment: Segment.Segment,
     entryNode: EntryNode,
-    reject: (reason: string) => void
+    cacheEntry: RequestCache.Entry
   ) => {
     const bef = Date.now();
     NodeAPI.sendMessage(
@@ -249,130 +255,120 @@ export default class SDK {
       .catch((error) => {
         log.error("error sending segment", Segment.prettyPrint(segment), error);
         this.nodesColl.segmentFailed(request, segment);
-        return reject("Sending message failed");
-        // this.resendRequest(request, endFrame, resolve, reject);
+        this.resendRequest(request, entryNode, cacheEntry);
       });
   };
 
-  // private resendRequest(
-  //   origReq: Request.Request,
-  //   endFrame: number,
-  //   resolve: (res: RPCresult | RPCerror) => void,
-  //   reject: (reason: string) => void
-  // ) {
-  //   if (this.redoRequests.has(origReq.id)) {
-  //     log.verbose("ignoring already triggered resend", origReq.id);
-  //     return;
-  //   }
+  private resendRequest(
+    origReq: Request.Request,
+    entryNode: EntryNode,
+    cacheEntry: RequestCache.Entry
+  ) {
+    if (this.redoRequests.has(origReq.id)) {
+      log.verbose("ignoring already triggered resend", origReq.id);
+      return;
+    }
 
-  //   this.removeRequest(origReq);
-  //   const fallback = this.nodesColl.fallbackNodePair;
-  //   if (!fallback) {
-  //     log.info("no fallback for resending request available");
-  //     return reject("no fallback node pair to retry sending request");
-  //   }
+    // TODO track request after segments have been sent
+    this.removeRequest(origReq);
 
-  //   this.redoRequests.add(origReq.id);
-  //   if (fallback.entryNode.id === origReq.entryId) {
-  //     log.info(
-  //       "fallback entry node same as original entry node - still trying"
-  //     );
-  //   }
-  //   if (fallback.exitNode.id === origReq.exitId) {
-  //     log.info("fallback exit node same as original exit node - still trying");
-  //   }
+    const fallback = this.nodesColl.fallbackNodePair(entryNode);
+    if (!fallback) {
+      log.info("no fallback for resending request available");
+      return cacheEntry.reject(
+        "no fallback node pair to retry sending request"
+      );
+    }
 
-  //   // generate new request
-  //   const id = RequestCache.generateId(this.requestCache);
-  //   const request = Request.fromOriginal(
-  //     this.crypto,
-  //     id,
-  //     origReq,
-  //     fallback.entryNode.id,
-  //     fallback.exitNode.id,
-  //     this.crypto!.Identity.load_identity(
-  //       etherUtils.arrayify(fallback.exitNode.pubKey)
-  //     )
-  //   );
+    this.redoRequests.add(origReq.id);
+    if (fallback.entryNode.id === origReq.entryId) {
+      log.info(
+        "fallback entry node same as original entry node - still trying"
+      );
+    }
+    if (fallback.exitNode.id === origReq.exitId) {
+      log.info("fallback exit node same as original exit node - still trying");
+    }
 
-  //   // set request expiration timer
-  //   const timer = setTimeout(() => {
-  //     log.error(
-  //       "resend request expired",
-  //       request.id,
-  //       "for original",
-  //       origReq.id
-  //     );
-  //     this.removeRequest(request);
-  //     return reject("request timed out");
-  //   }, endFrame - Date.now());
+    // generate new request
+    const id = RequestCache.generateId(this.requestCache);
+    const request = Request.fromOriginal(
+      this.crypto,
+      id,
+      origReq,
+      fallback.entryNode.id,
+      fallback.exitNode.id,
+      this.crypto!.Identity.load_identity(
+        etherUtils.arrayify(fallback.exitNode.pubKey)
+      )
+    );
+    // split request to segments
+    const segments = Request.toSegments(request);
+    if (segments.length > MAX_REQUEST_SEGMENTS) {
+      log.error(
+        "Resend request exceeds maximum amount of segments with %s segments - should never happen",
+        segments.length,
+        "new:",
+        request.id,
+        "original:",
+        request.id
+      );
+      this.removeRequest(request);
+      return cacheEntry.reject("Request exceeds maximum size of 3830b");
+    }
 
-  //   // track request
-  //   RequestCache.add(this.requestCache, request, resolve, reject, timer);
-  //   this.nodesColl.requestStarted(request);
+    // track request
+    const newCacheEntry = RequestCache.add(
+      this.requestCache,
+      request,
+      cacheEntry.resolve,
+      cacheEntry.reject,
+      cacheEntry.timer
+    );
+    this.nodesColl.requestStarted(request);
 
-  //   // split request to segments
-  //   const segments = Request.toSegments(request);
-  //   if (segments.length > MAX_REQUEST_SEGMENTS) {
-  //     log.error(
-  //       "Resend request exceeds maximum amount of segments with %s segments - should never happen",
-  //       segments.length,
-  //       "new:",
-  //       request.id,
-  //       "original:",
-  //       request.id
-  //     );
-  //     this.removeRequest(request);
-  //     return reject("Request exceeds maximum size of 3830b");
-  //   }
+    // send request to hoprd
+    log.info("resending request %i", request.id, "for original", origReq.id);
 
-  //   // send request to hoprd
-  //   log.info("resending request %i", request.id, "for original", origReq.id);
+    // send segments sequentially
+    segments.forEach((s) =>
+      setTimeout(() => this.resendSegment(s, request, entryNode, newCacheEntry))
+    );
+  }
 
-  //   // send segments sequentially
-  //   segments.forEach((s) =>
-  //     setTimeout(() =>
-  //       this.resendSegment(s, request, fallback.entryNode, reject)
-  //     )
-  //   );
-  // }
-
-  // private resendSegment = (
-  //   segment: Segment.Segment,
-  //   request: Request.Request,
-  //   entryNode: EntryNode,
-  //   reject: (reason: string) => void
-  // ) => {
-  //   NodeAPI.sendMessage(
-  //     {
-  //       apiEndpoint: entryNode.apiEndpoint,
-  //       accessToken: entryNode.accessToken,
-  //       recipient: request.exitId,
-  //       tag: ApplicationTag,
-  //     },
-  //     Segment.toMessage(segment)
-  //   )
-  //     .then((json) => {
-  //       log.verbose(
-  //         "resent segment",
-  //         Segment.prettyPrint(segment),
-  //         json,
-  //         "original:",
-  //         request.originalId
-  //       );
-  //     })
-  //     .catch((error) => {
-  //       log.error(
-  //         "error resending segment",
-  //         Segment.prettyPrint(segment),
-  //         error,
-  //         "original:",
-  //         request.originalId
-  //       );
-  //       this.removeRequest(request);
-  //       reject("Sending message failed");
-  //     });
-  // };
+  private resendSegment = (
+    segment: Segment.Segment,
+    request: Request.Request,
+    entryNode: EntryNode,
+    cacheEntry: RequestCache.Entry
+  ) => {
+    const bef = Date.now();
+    NodeAPI.sendMessage(
+      {
+        apiEndpoint: entryNode.apiEndpoint,
+        accessToken: entryNode.accessToken,
+      },
+      {
+        recipient: request.exitId,
+        tag: ApplicationTag,
+        message: Segment.toMessage(segment),
+      }
+    )
+      .then((_json) => {
+        const dur = Date.now() - bef;
+        this.nodesColl.segmentSucceeded(request, segment, dur);
+      })
+      .catch((error) => {
+        log.error(
+          "error resending segment",
+          Segment.prettyPrint(segment),
+          error
+        );
+        this.nodesColl.segmentFailed(request, segment);
+        this.removeRequest(request);
+        return cacheEntry.reject("Sending message failed");
+      });
+  };
 
   // handle incoming messages
   private onMessages = (messages: NodeAPI.Message[]) => {

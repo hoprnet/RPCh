@@ -2,13 +2,12 @@ import { shortPeerId, randomEl } from "./utils";
 import * as NodePair from "./node-pair";
 import * as EntryData from "./entry-data";
 import * as ExitData from "./exit-data";
+import * as NodeMatch from "./node-match";
 import type { EntryNode } from "./entry-node";
-import type { ExitNode } from "./exit-node";
 
 export type ResultOk = {
   success: true;
-  entryNode: EntryNode;
-  exitNode: ExitNode;
+  match: NodeMatch.NodeMatch;
   via: string;
 };
 
@@ -16,13 +15,8 @@ export type ResultErr = { success: false; error: string };
 
 export type Result = ResultOk | ResultErr;
 
-type Pairing = {
-  entryNode: EntryNode;
-  exitNode: ExitNode;
-};
-
 type EntryPerf = EntryData.Perf & { entryNode: EntryNode };
-type ExitPerf = ExitData.Perf & Pairing;
+type ExitPerf = ExitData.Perf & NodeMatch.NodeMatch;
 
 /**
  * Try to distribute evenly with best route pairs preferred.
@@ -30,6 +24,42 @@ type ExitPerf = ExitData.Perf & Pairing;
  */
 export function routePair(nodePairs: Map<string, NodePair.NodePair>): Result {
   const routePerfs = createRoutePerfs(nodePairs);
+  return match(nodePairs, routePerfs);
+}
+
+/**
+ * Try to distribute evenly with best route pairs preferred.
+ * Exclude node match entry node from search.
+ *
+ */
+export function fallbackRoutePair(
+  nodePairs: Map<string, NodePair.NodePair>,
+  exclude: EntryNode
+): Result {
+  const routePerfs = createRoutePerfs(nodePairs);
+  const filtered = routePerfs.filter(
+    ({ entryNode }) => entryNode.id !== exclude.id
+  );
+  return match(nodePairs, filtered);
+}
+
+export function isOk(res: Result): res is ResultOk {
+  return res.success;
+}
+
+export function prettyPrint(res: Result) {
+  if (isOk(res)) {
+    const eId = shortPeerId(res.match.entryNode.id);
+    const xId = shortPeerId(res.match.exitNode.id);
+    return `${eId} > ${xId} (via ${res.via})`;
+  }
+  return `${res.error}`;
+}
+
+function match(
+  nodePairs: Map<string, NodePair.NodePair>,
+  routePerfs: ExitPerf[]
+): Result {
   // special case no nodes
   if (routePerfs.length === 0) {
     return { success: false, error: "no nodes" };
@@ -96,25 +126,16 @@ export function routePair(nodePairs: Map<string, NodePair.NodePair>): Result {
 
   return { success: false, error: "insufficient data" };
 }
-
-export function isOk(res: Result): res is ResultOk {
-  return res.success;
-}
-
-export function prettyPrint(res: Result) {
-  if (isOk(res)) {
-    const eId = shortPeerId(res.entryNode.id);
-    const xId = shortPeerId(res.exitNode.id);
-    return `${eId} > ${xId} (via ${res.via})`;
-  }
-  return `${res.error}`;
-}
-
-function success({ entryNode, exitNode }: Pairing, via: string): ResultOk {
+function success(
+  { entryNode, exitNode }: NodeMatch.NodeMatch,
+  via: string
+): ResultOk {
   return {
     success: true,
-    entryNode,
-    exitNode,
+    match: {
+      entryNode,
+      exitNode,
+    },
     via,
   };
 }
@@ -167,8 +188,7 @@ function eSuccess(
   const el = randomEl(xPerfs);
   return {
     success: true,
-    entryNode,
-    exitNode: el.exitNode,
+    match: { entryNode, exitNode: el.exitNode },
     via,
   };
 }
