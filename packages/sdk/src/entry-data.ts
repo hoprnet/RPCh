@@ -1,11 +1,21 @@
+import { average } from "./utils";
 import * as PerfData from "./perf-data";
 import * as Segment from "./segment";
 
-// Segments measures quality of entry node.
-// Segment nr and request id are used in combination as keys for performance data.
-// Since those cannot be ensured to be unique we need to check when retrieving PerfData.
-// However this should not be an issue since it is transient data anyway.
+export type Perf = {
+  pingDuration: number;
+  segOngoing: number;
+  segFailures: number;
+  segSuccesses: number;
+  segTotal: number;
+  segAvgLats: number;
+  reqOngoing: number;
+  msgsAvgLats: number;
+  msgsFails: number;
+};
+
 export type EntryData = {
+  pingDuration: number;
   segmentsOngoing: string[]; // sorted ongoing segment ids
   segmentsHistory: string[]; // sorted resolved segment ids
   segments: Map<string, PerfData.PerfData>; // segment data
@@ -17,6 +27,7 @@ export type EntryData = {
 
 export function create(): EntryData {
   return {
+    pingDuration: 0,
     segmentsOngoing: [],
     segmentsHistory: [],
     segments: new Map(),
@@ -76,4 +87,27 @@ export function recFailureSeq(
   if (perf) {
     PerfData.failure(perf);
   }
+}
+
+export function perf(ed: EntryData): Perf {
+  const segOngoing = ed.segmentsOngoing.length;
+  const segTotal = ed.segmentsHistory.length;
+  const latsRaw = ed.segmentsHistory.map(
+    (sId) => ed.segments.get(sId)?.latency
+  );
+  const lats = latsRaw.filter((l) => !!l) as number[];
+  const segSuccesses = lats.length;
+  const segFailures = segTotal - segSuccesses;
+  const segAvgLats = average(lats);
+  return {
+    pingDuration: ed.pingDuration,
+    segOngoing,
+    segFailures,
+    segSuccesses,
+    segTotal,
+    segAvgLats,
+    reqOngoing: ed.requestsOngoing,
+    msgsAvgLats: average(ed.fetchMessagesLatencies),
+    msgsFails: ed.fetchMessagesErrors,
+  };
 }

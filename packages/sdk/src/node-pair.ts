@@ -16,7 +16,6 @@ const MaxPerfHistory = 20;
 const MessagesFetchInterval = 333; // ms
 
 export type NodePair = {
-  pingDuration?: number;
   entryNode: EntryNode;
   entryData: EntryData.EntryData;
   exitNodes: Map<string, ExitNode>;
@@ -150,8 +149,8 @@ export function ping(np: NodePair): Promise<number> {
   return new Promise((res) => {
     const startPingTime = Date.now();
     NodeAPI.version(np.entryNode).then((_) => {
-      np.pingDuration = Date.now() - startPingTime;
-      return res(np.pingDuration);
+      np.entryData.pingDuration = Date.now() - startPingTime;
+      return res(np.entryData.pingDuration);
     });
   });
 }
@@ -194,7 +193,9 @@ export function prettyPrint(np: NodePair): string {
   const mesSuc = np.entryData.fetchMessagesSuccesses;
   const mesTot = mesSuc + np.entryData.fetchMessagesErrors;
   const mesStr = prettyOngoingNumbers(np, 0, mesSuc, mesTot, mesLat);
-  const ping = np.pingDuration ? `${np.pingDuration}ms` : "..";
+  const ping = np.entryData.pingDuration
+    ? `${np.entryData.pingDuration}ms`
+    : "..";
   return `${shortPeerId(
     id(np)
   )}[ping: ${ping}, seg: ${segStr}, msgs: ${mesStr}, ${exCount}x: ${exStrs.join(

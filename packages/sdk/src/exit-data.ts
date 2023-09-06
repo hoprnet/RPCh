@@ -1,7 +1,15 @@
+import { average } from "./utils";
 import * as PerfData from "./perf-data";
 import * as Request from "./request";
 
-// requests measure quality of exit nodes
+export type Perf = {
+  ongoing: number;
+  failures: number;
+  successes: number;
+  total: number;
+  avgLats: number;
+};
+
 export type ExitData = {
   requestsOngoing: number[]; // sorted ongoing request ids
   requestsHistory: number[]; // sorted resolved request ids
@@ -54,4 +62,23 @@ export function recFailed(
   if (perf) {
     PerfData.failure(perf);
   }
+}
+
+export function perf(xd: ExitData): Perf {
+  const ongoing = xd.requestsOngoing.length;
+  const total = xd.requestsHistory.length;
+  const latsRaw = xd.requestsHistory.map(
+    (rId) => xd.requests.get(rId)?.latency
+  );
+  const lats = latsRaw.filter((l) => !!l) as number[];
+  const successes = lats.length;
+  const failures = total - successes;
+  const avgLats = average(lats);
+  return {
+    ongoing,
+    failures,
+    successes,
+    total,
+    avgLats,
+  };
 }
