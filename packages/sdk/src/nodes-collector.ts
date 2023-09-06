@@ -3,7 +3,7 @@ import * as Request from "./request";
 import * as Segment from "./segment";
 import * as NodeSel from "./node-selector";
 import * as NodePair from "./node-pair";
-import { createLogger } from "./utils";
+import { createLogger, shortPeerId } from "./utils";
 
 import type { MessageListener } from "./node-pair";
 import type { NodeMatch } from "./node-match";
@@ -46,7 +46,7 @@ export default class NodesCollector {
         const elapsed = now - start;
         const res = NodeSel.routePair(this.nodePairs);
         if (NodeSel.isOk(res)) {
-          log.verbose("found route pair via", res.via);
+          log.verbose("ready with route pair", NodeSel.prettyPrint(res));
           return resolve(true);
         }
         if (elapsed > timeout) {
@@ -70,7 +70,7 @@ export default class NodesCollector {
         const elapsed = now - start;
         const res = NodeSel.routePair(this.nodePairs);
         if (NodeSel.isOk(res)) {
-          log.verbose("found route pair via", res.via);
+          log.verbose("found route pair", NodeSel.prettyPrint(res));
           return resolve({
             entryNode: res.entryNode,
             exitNode: res.exitNode,
@@ -111,7 +111,11 @@ export default class NodesCollector {
       return;
     }
     NodePair.requestStarted(np, req);
-    log.verbose("requestStarted", Request.prettyPrint(req));
+    log.verbose(
+      "requestStarted",
+      Request.prettyPrint(req),
+      NodePair.prettyPrint(np)
+    );
   };
 
   public requestSucceeded = (req: Request.Request, responseTime: number) => {
@@ -125,7 +129,11 @@ export default class NodesCollector {
       return;
     }
     NodePair.requestSucceeded(np, req, responseTime);
-    log.verbose("requestSucceeded", Request.prettyPrint(req));
+    log.verbose(
+      "requestSucceeded",
+      Request.prettyPrint(req),
+      NodePair.prettyPrint(np)
+    );
   };
 
   public requestFailed = (req: Request.Request) => {
@@ -139,7 +147,11 @@ export default class NodesCollector {
       return;
     }
     NodePair.requestFailed(np, req);
-    log.verbose("requestFailed", Request.prettyPrint(req));
+    log.verbose(
+      "requestFailed",
+      Request.prettyPrint(req),
+      NodePair.prettyPrint(np)
+    );
   };
 
   public segmentStarted = (req: Request.Request, seg: Segment.Segment) => {
@@ -153,7 +165,11 @@ export default class NodesCollector {
       return;
     }
     NodePair.segmentStarted(np, seg);
-    log.verbose("segmentStarted", Segment.prettyPrint(seg));
+    log.verbose(
+      "segmentStarted",
+      Segment.prettyPrint(seg),
+      NodePair.prettyPrint(np)
+    );
   };
 
   public segmentSucceeded = (
@@ -171,7 +187,11 @@ export default class NodesCollector {
       return;
     }
     NodePair.segmentSucceeded(np, seg, responseTime);
-    log.verbose("segmentSucceeded", Segment.prettyPrint(seg));
+    log.verbose(
+      "segmentSucceeded",
+      Segment.prettyPrint(seg),
+      NodePair.prettyPrint(np)
+    );
   };
 
   public segmentFailed = (req: Request.Request, seg: Segment.Segment) => {
@@ -185,7 +205,11 @@ export default class NodesCollector {
       return;
     }
     NodePair.segmentFailed(np, seg);
-    log.verbose("segmentFailed", Segment.prettyPrint(seg));
+    log.verbose(
+      "segmentFailed",
+      Segment.prettyPrint(seg),
+      NodePair.prettyPrint(np)
+    );
   };
 
   private fetchNodePairs = () => {

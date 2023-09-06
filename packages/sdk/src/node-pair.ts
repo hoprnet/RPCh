@@ -1,6 +1,9 @@
 import * as NodeAPI from "./node-api";
 import * as Request from "./request";
 import * as Segment from "./segment";
+import * as EntryData from "./entry-data";
+import * as ExitData from "./exit-data";
+import * as PerfData from "./perf-data";
 import { average, createLogger, shortPeerId } from "./utils";
 
 import type { EntryNode } from "./entry-node";
@@ -12,45 +15,12 @@ export type MessageListener = (messages: NodeAPI.Message[]) => void;
 const MaxPerfHistory = 20;
 const MessagesFetchInterval = 333; // ms
 
-enum State {
-  Ongoing,
-  Success,
-  Failure,
-}
-
-type PerfData = {
-  startedAt: number;
-  latency?: number;
-  state: State;
-};
-
-// Segments measures quality of entry node.
-// Segment nr and request id are used in combination as keys for performance data.
-// Since those cannot be ensured to be unique we need to check when retrieving PerfData.
-// However this should not be an issue since it is transient data anyway.
-type EntryData = {
-  segmentsOngoing: string[]; // sorted ongoing segment ids
-  segmentsHistory: string[]; // sorted resolved segment ids
-  segments: Map<string, PerfData>; // segment data
-  fetchMessagesLatencies: number[]; // last fetch messages latencies
-  fetchMessagesSuccesses: number; // count of successful message fetches
-  fetchMessagesErrors: number; // count of error message fetches
-  requestsOngoing: number; // count of ongoing requests
-};
-
-// requests measure quality of exit nodes
-type ExitData = {
-  requestsOngoing: number[]; // sorted ongoing request ids
-  requestsHistory: number[]; // sorted resolved request ids
-  requests: Map<number, PerfData>; // request data
-};
-
 export type NodePair = {
   pingDuration?: number;
   entryNode: EntryNode;
-  entryData: EntryData;
+  entryData: EntryData.EntryData;
   exitNodes: Map<string, ExitNode>;
-  exitDatas: Map<string, ExitData>;
+  exitDatas: Map<string, ExitData.ExitData>;
   applicationTag: number;
   messageListener: MessageListener;
   fetchInterval?: ReturnType<typeof setInterval>;
@@ -64,30 +34,13 @@ export function create(
   applicationTag: number,
   messageListener: MessageListener
 ): NodePair {
-  const entryData = {
-    segmentsOngoing: [],
-    segmentsHistory: [],
-    segments: new Map(),
-    fetchMessagesLatencies: [],
-    fetchMessagesSuccesses: 0,
-    fetchMessagesErrors: 0,
-    requestsOngoing: 0,
-  };
+  const entryData = EntryData.create();
   const shortId = shortPeerId(entryNode.id);
   const logger = createLogger([`nodepair${shortId}(${entryNode.apiEndpoint})`]);
   // ensure entry node not included in exits
   const exits = Array.from(exitNodesIt).filter((n) => entryNode.id !== n.id);
   const exitNodes = new Map(exits.map((n) => [n.id, n]));
-  const exitDatas = new Map(
-    exits.map((n) => [
-      n.id,
-      {
-        requestsOngoing: [],
-        requestsHistory: [],
-        requests: new Map(),
-      },
-    ])
-  );
+  const exitDatas = new Map(exits.map((n) => [n.id, ExitData.create()]));
   return {
     entryNode,
     entryData,
@@ -119,12 +72,8 @@ export function requestStarted(np: NodePair, req: Request.Request) {
     );
     return;
   }
-  np.entryData.requestsOngoing++;
-  data.requestsOngoing.push(req.id);
-  data.requests.set(req.id, {
-    startedAt: req.createdAt,
-    state: State.Ongoing,
-  });
+  EntryData.addOngoingReq(np.entryData);
+  ExitData.addOngoing(data, req);
   if (!np.fetchInterval) {
     np.fetchInterval = setInterval(
       () => fetchMessages(np),
@@ -148,14 +97,9 @@ export function requestSucceeded(
     return;
   }
 
-  updateReqHistory(np, data, req.id);
+  EntryData.removeOngoingReq(np.entryData);
+  ExitData.recSuccess(data, req, MaxPerfHistory, responseTime);
   checkStopInterval(np);
-
-  const perf = data.requests.get(req.id);
-  if (perf) {
-    perf.state = State.Success;
-    perf.latency = responseTime;
-  }
 }
 
 export function requestFailed(np: NodePair, req: Request.Request) {
@@ -170,24 +114,11 @@ export function requestFailed(np: NodePair, req: Request.Request) {
     return;
   }
 
-  updateReqHistory(np, data, req.id);
+  EntryData.removeOngoingReq(np.entryData);
+  ExitData.recFailed(data, req, MaxPerfHistory);
   checkStopInterval(np);
-
-  const perf = data.requests.get(req.id);
-  if (perf) {
-    perf.state = State.Failure;
-  }
 }
 
-function updateReqHistory(np: NodePair, data: ExitData, id: number) {
-  np.entryData.requestsOngoing--;
-  data.requestsOngoing = data.requestsOngoing.filter((rId) => rId !== id);
-  data.requestsHistory.push(id);
-  if (data.requestsHistory.length > MaxPerfHistory) {
-    const rId = data.requestsHistory.shift() as number;
-    data.requests.delete(rId);
-  }
-}
 function checkStopInterval(np: NodePair) {
   // stop interval if applicable
   if (np.entryData.requestsOngoing === 0) {
@@ -197,12 +128,7 @@ function checkStopInterval(np: NodePair) {
 }
 
 export function segmentStarted(np: NodePair, seg: Segment.Segment) {
-  const id = Segment.id(seg);
-  np.entryData.segmentsOngoing.push(id);
-  np.entryData.segments.set(id, {
-    startedAt: Date.now(),
-    state: State.Ongoing,
-  });
+  EntryData.addOngoingSeg(np.entryData, seg);
 }
 
 export function segmentSucceeded(
@@ -210,35 +136,11 @@ export function segmentSucceeded(
   seg: Segment.Segment,
   responseTime: number
 ) {
-  const id = Segment.id(seg);
-  updateSegHistory(np, id);
-
-  const perf = np.entryData.segments.get(id);
-  if (perf) {
-    perf.state = State.Success;
-    perf.latency = responseTime;
-  }
+  EntryData.recSuccessSeq(np.entryData, seg, MaxPerfHistory, responseTime);
 }
 
 export function segmentFailed(np: NodePair, seg: Segment.Segment) {
-  const id = Segment.id(seg);
-  updateSegHistory(np, id);
-
-  const perf = np.entryData.segments.get(id);
-  if (perf) {
-    perf.state = State.Failure;
-  }
-}
-
-function updateSegHistory(np: NodePair, id: string) {
-  np.entryData.segmentsOngoing = np.entryData.segmentsOngoing.filter(
-    (sId) => sId !== id
-  );
-  np.entryData.segmentsHistory.push(id);
-  if (np.entryData.segmentsHistory.length > MaxPerfHistory) {
-    const sId = np.entryData.segmentsHistory.shift() as string;
-    np.entryData.segments.delete(sId);
-  }
+  EntryData.recFailureSeq(np.entryData, seg, MaxPerfHistory);
 }
 
 /**
@@ -259,7 +161,7 @@ export function prettyPrint(np: NodePair): string {
   const segTotal = np.entryData.segmentsHistory.length;
   const segLats = Array.from(np.entryData.segments.values()).reduce<number[]>(
     (acc, sd) => {
-      if (isSuccess(sd)) {
+      if (PerfData.isSuccess(sd)) {
         acc.push(sd.latency);
       }
       return acc;
@@ -268,16 +170,18 @@ export function prettyPrint(np: NodePair): string {
   );
 
   const exCount = np.exitNodes.size;
-  const exStrs = Array.from(np.exitDatas.values()).map((d) => {
+  const exStrs = Array.from(np.exitDatas).map(([id, d]) => {
     const o = d.requestsOngoing.length;
     const tot = d.requestsHistory.length;
     const lats = Array.from(d.requests.values()).reduce<number[]>((acc, rd) => {
-      if (isSuccess(rd)) {
+      if (PerfData.isSuccess(rd)) {
         acc.push(rd.latency);
       }
       return acc;
     }, []);
-    return prettyOngoingNumbers(np, o, lats.length, tot, average(lats));
+    const str = prettyOngoingNumbers(np, o, lats.length, tot, average(lats));
+    const nId = shortPeerId(id);
+    return `${nId}[${str}]`;
   });
   const segStr = prettyOngoingNumbers(
     np,
@@ -290,9 +194,12 @@ export function prettyPrint(np: NodePair): string {
   const mesSuc = np.entryData.fetchMessagesSuccesses;
   const mesTot = mesSuc + np.entryData.fetchMessagesErrors;
   const mesStr = prettyOngoingNumbers(np, 0, mesSuc, mesTot, mesLat);
+  const ping = np.pingDuration ? `${np.pingDuration}ms` : "..";
   return `${shortPeerId(
     id(np)
-  )}_seg:${segStr}_msgs:${mesStr}_${exCount}x:${exStrs.join("-")}`;
+  )}[ping: ${ping}, seg: ${segStr}, msgs: ${mesStr}, ${exCount}x: ${exStrs.join(
+    ", "
+  )}]`;
 }
 
 function prettyOngoingNumbers(
@@ -308,7 +215,7 @@ function prettyOngoingNumbers(
     }
     return `0+${ongoing}`;
   }
-  const sDone = `${successes}(${average}ms)/${total}`;
+  const sDone = `${successes}(${average.toFixed(0)}ms)/${total}`;
   if (ongoing === 0) {
     return sDone;
   }
@@ -331,12 +238,4 @@ function fetchMessages(np: NodePair) {
       np.logger.error("Error fetching node messages", err);
       np.entryData.fetchMessagesErrors++;
     });
-}
-
-function isSuccess(p: PerfData): p is {
-  state: State.Success;
-  latency: number;
-  startedAt: number;
-} {
-  return p.state === State.Success;
 }

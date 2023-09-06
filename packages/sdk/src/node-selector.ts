@@ -1,4 +1,4 @@
-import { randomEl } from "./utils";
+import { shortPeerId, randomEl } from "./utils";
 import * as NodePair from "./node-pair";
 import type { EntryNode } from "./entry-node";
 import type { ExitNode } from "./exit-node";
@@ -31,6 +31,15 @@ export function routePair(nodePairs: Map<string, NodePair.NodePair>): Result {
 
 export function isOk(res: Result): res is ResultOk {
   return res.success;
+}
+
+export function prettyPrint(res: Result) {
+  if (isOk(res)) {
+    const eId = shortPeerId(res.entryNode.id);
+    const xId = shortPeerId(res.exitNode.id);
+    return `${eId} > ${xId} (via ${res.via})`;
+  }
+  return `${res.error}`;
 }
 
 /**

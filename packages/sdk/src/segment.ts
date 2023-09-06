@@ -51,5 +51,5 @@ export function toMessage({ requestId, nr, totalCount, body }: Segment) {
  * Pretty print segment in human readable form.
  */
 export function prettyPrint({ requestId, nr, totalCount }: Segment) {
-  return `segment[rId: ${requestId}, nr: ${nr}, total: ${totalCount}`;
+  return `segment[rId: ${requestId}, nr: ${nr}, total: ${totalCount}]`;
 }

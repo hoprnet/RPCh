@@ -128,5 +128,5 @@ export function toSegments(req: Request): Segment[] {
 export function prettyPrint({ id, entryId, exitId }: Request) {
   const eId = shortPeerId(entryId);
   const xId = shortPeerId(exitId);
-  return `request[id: ${id}, entryId: ${eId}, exitId: ${xId}`;
+  return `request[id: ${id}, entryId: ${eId}, exitId: ${xId}]`;
 }
