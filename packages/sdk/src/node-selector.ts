@@ -128,7 +128,10 @@ function leastReqErrors(routePerfs: ExitPerf[]): ExitPerf[] {
   routePerfs.sort((l, r) => l.failures - r.failures);
   const min = routePerfs[0].failures;
   const idx = routePerfs.findIndex(({ failures }) => min < failures);
-  return routePerfs.slice(0, idx);
+  if (idx > 0) {
+    return routePerfs.slice(0, idx);
+  }
+  return routePerfs;
 }
 
 function bestReqLatencies(routePerfs: ExitPerf[]): ExitPerf[] {
@@ -141,7 +144,10 @@ function leastReqOngoing(routePerfs: ExitPerf[]): ExitPerf[] {
   routePerfs.sort((l, r) => l.ongoing - r.ongoing);
   const min = routePerfs[0].ongoing;
   const idx = routePerfs.findIndex(({ ongoing }) => min < ongoing);
-  return routePerfs.slice(0, idx);
+  if (idx > 0) {
+    return routePerfs.slice(0, idx);
+  }
+  return routePerfs;
 }
 
 function eSuccess(
@@ -179,7 +185,10 @@ function leastSegErrors(entryPerfs: EntryPerf[]): EntryPerf[] {
   entryPerfs.sort((l, r) => l.segFailures - r.segFailures);
   const min = entryPerfs[0].segFailures;
   const idx = entryPerfs.findIndex(({ segFailures }) => min < segFailures);
-  return entryPerfs.slice(0, idx);
+  if (idx > 0) {
+    return entryPerfs.slice(0, idx);
+  }
+  return entryPerfs;
 }
 
 function bestSegLatencies(entryPerfs: EntryPerf[]): EntryPerf[] {
@@ -192,14 +201,20 @@ function leastSegOngoing(entryPerfs: EntryPerf[]): EntryPerf[] {
   entryPerfs.sort((l, r) => l.segOngoing - r.segOngoing);
   const min = entryPerfs[0].segOngoing;
   const idx = entryPerfs.findIndex(({ segOngoing }) => min < segOngoing);
-  return entryPerfs.slice(0, idx);
+  if (idx > 0) {
+    return entryPerfs.slice(0, idx);
+  }
+  return entryPerfs;
 }
 
 function leastMsgsErrors(entryPerfs: EntryPerf[]): EntryPerf[] {
   entryPerfs.sort((l, r) => l.msgsFails - r.msgsFails);
   const min = entryPerfs[0].msgsFails;
   const idx = entryPerfs.findIndex(({ msgsFails }) => min < msgsFails);
-  return entryPerfs.slice(0, idx);
+  if (idx > 0) {
+    return entryPerfs.slice(0, idx);
+  }
+  return entryPerfs;
 }
 
 function bestMsgsLatencies(entryPerfs: EntryPerf[]): EntryPerf[] {
