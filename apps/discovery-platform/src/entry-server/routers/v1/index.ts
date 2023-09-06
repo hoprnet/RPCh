@@ -33,7 +33,7 @@ import { createLogger, isListSafe, toLocalhostEndpoint } from "../../../utils";
 import { errors } from "pg-promise";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 import * as constants from "../../../constants";
-import { getNodeSchema, registerNodeSchema } from "./schema";
+import { getNodeSchema /* registerNodeSchema */ } from "./schema";
 import {
   clientExists,
   // doesClientHaveQuota,
