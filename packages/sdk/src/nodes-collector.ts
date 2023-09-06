@@ -74,7 +74,7 @@ export default class NodesCollector {
           log.verbose("found route pair", NodeSel.prettyPrint(res));
           return resolve(res.match);
         }
-        log.verbose("no exit node ready in primary node pair id");
+        log.verbose("no route pair found", res.error);
         if (elapsed > timeout) {
           log.error("Timeout waiting for node pair", elapsed);
           return reject(`timeout after ${elapsed} ms`);
