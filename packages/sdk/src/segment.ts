@@ -34,6 +34,13 @@ export function fromString(
 }
 
 /**
+ * Return request dependent segment id making it distinguishable to other segments from other requests.
+ */
+export function id({ nr, requestId }: Segment) {
+  return `${requestId}-${nr}`;
+}
+
+/**
  * Convert segment to payload.
  */
 export function toMessage({ requestId, nr, totalCount, body }: Segment) {
@@ -44,5 +51,5 @@ export function toMessage({ requestId, nr, totalCount, body }: Segment) {
  * Pretty print segment in human readable form.
  */
 export function prettyPrint({ requestId, nr, totalCount }: Segment) {
-  return `segment[rId: ${requestId}, nr: ${nr}, total: ${totalCount}`;
+  return `segment[rId: ${requestId}, nr: ${nr}, total: ${totalCount}]`;
 }

@@ -35,9 +35,6 @@ import {
 
 const log = createLogger();
 
-// message tag - more like port since we tag all our messages the same
-const ApplicationTag = Math.floor(Math.random() * 0xffff);
-
 export const start = async (ops: {
   exit: {
     sendRpcRequest: typeof exit.sendRpcRequest;
@@ -79,7 +76,7 @@ export const start = async (ops: {
     "Content-Type": "application/json",
   };
   const sendUrl = new URL("/api/v3/messages", ops.apiEndpoint);
-  const onMessage = async (message: Message) => {
+  const onMessage = async (message: Message, tag?: number) => {
     try {
       log.verbose("Received message", message.id, message.body);
       counterRequests.labels({ status: "complete" }).inc();
@@ -134,8 +131,7 @@ export const start = async (ops: {
 
       for (const segment of rpchResponse.toMessage().toSegments()) {
         const body = JSON.stringify({
-          // TODO replace with message tag from incoming message
-          tag: ApplicationTag,
+          tag,
           body: segment.toString(),
           peerId: rpchRequest.entryNodeDestination,
           path: [],
@@ -207,13 +203,8 @@ export const start = async (ops: {
   }
   socket.onmessage = (evt: MessageEvent) => {
     const body = evt.data.toString();
-    // message received is an acknowledgement of a
-    // message we have send, we can safely ignore this
-    if (body.startsWith("ack:")) {
-      return;
-    }
 
-    let msg: { tag: number; body: string };
+    let msg: { type: string; tag: number; body: string };
     try {
       msg = JSON.parse(body);
     } catch (error) {
@@ -221,9 +212,15 @@ export const start = async (ops: {
       return;
     }
 
+    // message received is an acknowledgement of a
+    // message we have send, we can safely ignore this
+    if (msg.type.startsWith("ack:")) {
+      return;
+    }
+
     try {
       const segment = Segment.fromString(msg.body);
-      cache.onSegment(segment);
+      cache.onSegment(segment, msg.tag);
     } catch (error) {
       log.verbose(
         "rejected received data from HOPRd: not a valid segment",

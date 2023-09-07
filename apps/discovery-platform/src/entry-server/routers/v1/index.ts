@@ -1,9 +1,11 @@
+import { Pool } from "pg";
 import express, { Request, Response } from "express";
 import {
   body,
   checkSchema,
   header,
   param,
+  matchedData,
   query,
   validationResult,
 } from "express-validator";
@@ -16,14 +18,14 @@ import {
 import { DBInstance, deleteRegisteredNode } from "../../../db";
 import { createQuota } from "../../../quota";
 import {
-  createRegisteredNode,
+  // createRegisteredNode,
   getEligibleNode,
   getRegisteredNode,
   getRegisteredNodes,
 } from "../../../registered-node";
 import type {
   ClientDB,
-  RegisteredNode,
+  // RegisteredNode,
   RegisteredNodeDB,
   AvailabilityMonitorResult,
 } from "../../../types";
@@ -31,20 +33,22 @@ import { createLogger, isListSafe, toLocalhostEndpoint } from "../../../utils";
 import { errors } from "pg-promise";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 import * as constants from "../../../constants";
-import { getNodeSchema, registerNodeSchema } from "./schema";
+import { getNodeSchema /* registerNodeSchema */ } from "./schema";
 import {
   clientExists,
   // doesClientHaveQuota,
   getCache,
-  metricMiddleware,
   setCache,
 } from "./middleware";
+import * as middleware from "./middleware";
+import * as q from "./../../../query";
 
 const log = createLogger(["entry-server", "router", "v1"]);
 
 // Express Router
 export const v1Router = (ops: {
   db: DBInstance;
+  dbPool: Pool;
   baseQuota: bigint;
   metricManager: MetricManager;
   secret: string;
@@ -74,10 +78,10 @@ export const v1Router = (ops: {
   );
 
   const requestDurationHistogram = ops.metricManager.createHistogram(
-    "request_duration_seconds",
-    "duration of requests in seconds",
+    "request_duration_ms",
+    "duration of requests in milliseconds",
     {
-      buckets: [0.1, 0.5, 1, 5, 10, 30],
+      buckets: [10, 50, 100, 200, 500, 1000],
       labelNames: ["method", "path", "status", "client"],
     }
   );
@@ -96,38 +100,26 @@ export const v1Router = (ops: {
     next();
   });
 
+  router.get(
+    "/nodes/zero_hop_pairings",
+    middleware.metric(requestDurationHistogram),
+    middleware.clientAuthorized(ops.dbPool),
+    query("amount").default(10).isInt({ min: 1, max: 100 }),
+    query("since").optional().isISO8601(),
+    getNodesZeroHopPairings(ops.dbPool)
+  );
+
   router.post(
     "/node/register",
-    metricMiddleware(requestDurationHistogram),
-    checkSchema(registerNodeSchema),
-    async (req: Request, res: Response) => {
-      try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-          counterFailedRequests
-            .labels({ method: req.method, path: req.path, status: 400 })
-            .inc();
-          return res.status(400).json({ errors: errors.array() });
-        }
-        const node: RegisteredNode = req.body;
-        const registered = await createRegisteredNode(ops.db, node);
-        counterSuccessfulRequests
-          .labels({ method: req.method, path: req.path, status: 200 })
-          .inc();
-        return res.json({ body: registered });
-      } catch (e) {
-        log.error("Can not register node", e);
-        counterFailedRequests
-          .labels({ method: req.method, path: req.path, status: 500 })
-          .inc();
-        return res.status(500).json({ errors: "Unexpected error" });
-      }
-    }
+    middleware.metric(requestDurationHistogram),
+    middleware.adminAuthorized(ops.secret),
+    // checkSchema(registerNodeSchema),
+    postNodeRegister(ops.dbPool)
   );
 
   router.get(
     "/node",
-    metricMiddleware(requestDurationHistogram),
+    middleware.metric(requestDurationHistogram),
     checkSchema(getNodeSchema),
     getCache<RegisteredNodeDB[]>(
       (req) => req.originalUrl || req.url,
@@ -216,7 +208,7 @@ export const v1Router = (ops: {
 
   router.get(
     "/node/:peerId",
-    metricMiddleware(requestDurationHistogram),
+    middleware.metric(requestDurationHistogram),
     param("peerId").isAlphanumeric(),
     clientExists(ops.db),
     async (req: Request<{ peerId: string }>, res: Response) => {
@@ -254,7 +246,7 @@ export const v1Router = (ops: {
 
   router.post(
     "/client/quota",
-    metricMiddleware(requestDurationHistogram),
+    middleware.metric(requestDurationHistogram),
     header("x-secret-key")
       .exists()
       .custom((val) => val === ops.secret),
@@ -317,7 +309,7 @@ export const v1Router = (ops: {
 
   router.delete(
     "/request/entry-node/:id",
-    metricMiddleware(requestDurationHistogram),
+    middleware.metric(requestDurationHistogram),
     header("x-secret-key")
       .exists()
       .custom((val) => val === ops.secret),
@@ -349,7 +341,7 @@ export const v1Router = (ops: {
 
   router.get(
     "/request/trial",
-    metricMiddleware(requestDurationHistogram),
+    middleware.metric(requestDurationHistogram),
     query("label")
       .optional()
       .custom((value) => isListSafe(value)),
@@ -387,7 +379,7 @@ export const v1Router = (ops: {
 
   router.post(
     "/request/entry-node",
-    metricMiddleware(requestDurationHistogram),
+    middleware.metric(requestDurationHistogram),
     body("excludeList")
       .optional()
       .isArray()
@@ -518,7 +510,7 @@ export const v1Router = (ops: {
 
   router.post(
     "/request/one-hop-delivery-routes",
-    metricMiddleware(requestDurationHistogram),
+    middleware.metric(requestDurationHistogram),
     body("excludeList")
       .optional()
       .isArray()
@@ -682,3 +674,97 @@ export const v1Router = (ops: {
 
   return router;
 };
+
+function getNodesZeroHopPairings(dbPool: Pool) {
+  return async function (req: Request, res: Response) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json(errors.mapped());
+    }
+
+    const data = matchedData(req);
+    q.readZeroHopPairings(dbPool, data.amount, data.since)
+      .then((qPairings) => {
+        if (qPairings.rowCount === 0) {
+          // table is empty
+          return res.status(204).end();
+        }
+
+        // collect pairings by entry node
+        const pairings = qPairings.rows.reduce<Map<string, Set<string>>>(
+          (acc, { entry_id, exit_id }) => {
+            const v = acc.get(entry_id);
+            if (v) {
+              v.add(exit_id);
+              return acc;
+            }
+            acc.set(entry_id, new Set([exit_id]));
+            return acc;
+          },
+          new Map()
+        );
+
+        // query entry and exit nodes
+        const qEntryNodes = q.readEntryNodes(dbPool, pairings.keys());
+        const exitIds = Array.from(pairings.values()).reduce((acc, xIds) => {
+          for (const xId of xIds) {
+            acc.add(xId);
+          }
+          return acc;
+        }, new Set());
+        const qExitNodes = q.readExitNodes(dbPool, exitIds);
+
+        // wait for entry and exit nodes query results
+        Promise.all([qEntryNodes, qExitNodes])
+          .then(([qEntries, qExits]) => {
+            const matchedAt = qPairings.rows[0].created_at;
+            const rEntryNodes = qEntries.rows;
+            const rExitNodes = qExits.rows;
+            const entryNodes = rEntryNodes.map((e) => ({
+              id: e.id,
+              apiEndpoint: e.hoprd_api_endpoint,
+              accessToken: e.hoprd_api_token,
+              recommendedExits: Array.from(pairings.get(e.id)!),
+            }));
+            const exitNodes = rExitNodes.map((x) => ({
+              id: x.id,
+              pubKey: x.exit_node_pub_key,
+            }));
+            return res.status(200).json({ entryNodes, exitNodes, matchedAt });
+          })
+          .catch((ex) => {
+            log.error("Error during read registered_nodes queries", ex);
+            const reason = "Error querying database";
+            return res.status(500).json({ reason });
+          });
+      })
+      .catch((ex) => {
+        log.error("Error during read zero_hop_pairings query", ex);
+        const reason = "Error querying database";
+        return res.status(500).json({ reason });
+      });
+  };
+}
+
+function postNodeRegister(dbPool: Pool) {
+  return async function (req: Request, res: Response) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json(errors.mapped());
+    }
+    const node: q.RegisteredNode = req.body;
+    q.writeRegisteredNode(dbPool, node)
+      .then((qRes) => {
+        if (qRes.rowCount === 1) {
+          return res.status(201).end();
+        }
+        log.error("Unexpected response during insert", JSON.stringify(qRes));
+        const reason = "Internal server error";
+        return res.status(500).json({ reason });
+      })
+      .catch((ex) => {
+        log.error("Error during write registered_node query", ex);
+        return res.status(422).json({ reason: ex.message });
+      });
+  };
+}

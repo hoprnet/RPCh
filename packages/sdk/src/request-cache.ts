@@ -23,7 +23,12 @@ export function add(
   reject: (error: string) => void,
   timer: ReturnType<typeof setTimeout>
 ): Entry {
-  const entry = { ...request, resolve, reject, timer };
+  const entry = {
+    ...request,
+    resolve,
+    reject,
+    timer,
+  };
   cache.set(request.id, entry);
   return entry;
 }

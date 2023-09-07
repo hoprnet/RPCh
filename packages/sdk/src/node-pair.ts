@@ -1,255 +1,242 @@
-import { WebSocket, MessageEvent, CloseEvent } from "isomorphic-ws";
-
-import * as NodesAPI from "./nodes-api";
-import { average, createLogger, randomEl, shortPeerId } from "./utils";
+import * as NodeAPI from "./node-api";
+import * as Request from "./request";
+import * as Segment from "./segment";
+import * as EntryData from "./entry-data";
+import * as ExitData from "./exit-data";
+import * as PerfData from "./perf-data";
+import { average, createLogger, shortPeerId } from "./utils";
 
 import type { EntryNode } from "./entry-node";
 import type { ExitNode } from "./exit-node";
 
-export type WebSocketCallback = {
-  onOpen: (id: string, connTime: number) => void;
-  onClose: (id: string, evt: CloseEvent) => void;
-  onError: (id: string, err: Error) => void;
+export type MessageListener = (messages: NodeAPI.Message[]) => void;
+
+// amound of history to keep
+const MaxPerfHistory = 20;
+const MessagesFetchInterval = 333; // ms
+
+export type NodePair = {
+  entryNode: EntryNode;
+  entryData: EntryData.EntryData;
+  exitNodes: Map<string, ExitNode>;
+  exitDatas: Map<string, ExitData.ExitData>;
+  applicationTag: number;
+  messageListener: MessageListener;
+  fetchInterval?: ReturnType<typeof setInterval>;
+  fetchMessagesOngoing: boolean;
+  logger: ReturnType<typeof createLogger>;
 };
 
-type ExitData = {
-  failedRequests: number;
-  latencies: number[];
-  ongoingRequests: number;
-  successfulRequests: number;
-};
-
-export default class NodePair {
-  /**
-   * Behavioral parameters of the node selection.
-   */
-  public static TargetAmount = 10;
-  private static KeepLastLatencies = 5;
-  private static LatencyThreshold = 5e3;
-
-  public connectTime?: number;
-  private socket?: WebSocket;
-  private socketCb?: WebSocketCallback;
-  private startConnectTime?: number;
-  private messageListenerAttached = false;
-  private readonly log;
-  private readonly exitNodes: Map<string, ExitNode>;
-  private readonly exitDatas: Map<string, ExitData> = new Map(); // exitId -> latencies
-
-  constructor(
-    public readonly entryNode: EntryNode,
-    exitNodes: Iterable<ExitNode>
-  ) {
-    const shortId = shortPeerId(entryNode.peerId);
-    this.log = createLogger([`nodepair${shortId}(${entryNode.apiEndpoint})`]);
-    // ensure entry node not included in exits
-    const exits = Array.from(exitNodes).filter(
-      (n) => entryNode.peerId !== n.peerId
-    );
-    this.exitNodes = new Map(exits.map((n) => [n.peerId, n]));
-    this.exitDatas = new Map(
-      exits.map((n) => [
-        n.peerId,
-        {
-          failedRequests: 0,
-          latencies: [],
-          ongoingRequests: 0,
-          successfulRequests: 0,
-        },
-      ])
-    );
-  }
-
-  public get id() {
-    return this.entryNode.peerId;
-  }
-
-  public requestStarted = (exitId: string): number | undefined => {
-    const data = this.exitDatas.get(exitId);
-    if (data) {
-      data.ongoingRequests += 1;
-      return data.ongoingRequests;
-    }
-  };
-
-  public requestSucceeded = (
-    exitId: string,
-    responseTime: number
-  ): number | undefined => {
-    const data = this.exitDatas.get(exitId);
-    if (data) {
-      data.ongoingRequests -= 1;
-      data.successfulRequests += 1;
-      data.latencies.push(responseTime);
-      if (data.latencies.length > NodePair.KeepLastLatencies) {
-        data.latencies.shift();
-      }
-      // detach message liteners if no ongoing requests
-      if (!this.hasOngoing()) {
-        this.socket!.onmessage = null;
-      }
-      return data.successfulRequests;
-    }
-  };
-
-  public requestFailed = (exitId: string): number | undefined => {
-    const data = this.exitDatas.get(exitId);
-    if (data) {
-      data.ongoingRequests -= 1;
-      data.failedRequests += 1;
-      // detach message liteners if no ongoing requests
-      if (!this.hasOngoing()) {
-        this.socket!.onmessage = null;
-      }
-      return data.failedRequests;
-    }
-  };
-
-  public connect = (wsCb: WebSocketCallback) => {
-    this.socket = NodesAPI.connectWS(this.entryNode);
-    this.socketCb = wsCb;
-    this.startConnectTime = Date.now();
-    this.socket.on("open", this.onWSopen);
-    this.socket.on("close", this.onWSclose);
-    this.socket.on("error", this.onWSerror);
-  };
-
-  public close = () => {
-    // detach message liteners
-    if (this.messageListenerAttached) {
-      this.socket!.onmessage = null;
-    }
-    this.socket?.off("open", this.onWSopen);
-    this.socket?.off("close", this.onWSclose);
-    this.socket?.off("error", this.onWSerror);
-    // close socket shenanigan, because cannot close a connecting websocket
-    if (this.socket?.readyState === WebSocket.CONNECTING) {
-      const cb = () => {
-        this.socket?.off("open", cb);
-        this.socket?.off("close", cb);
-        this.socket?.off("error", cb);
-        this.socket?.close();
-      };
-      this.socket.on("open", cb);
-      this.socket.on("close", cb);
-      this.socket.on("error", cb);
-    } else {
-      this.socket?.close();
-    }
-  };
-
-  public readyExitNode = ():
-    | { res: "ok"; exitNode: ExitNode }
-    | { res: "error"; reason: string } => {
-    if (this.exitNodes.size === 0) {
-      return { res: "error", reason: "no exit nodes" };
-    }
-    if (!this.socket) {
-      return { res: "error", reason: "no websocket" };
-    }
-    const readyState = this.socket.readyState;
-    if (!(readyState === WebSocket.OPEN)) {
-      return {
-        res: "error",
-        reason: `websocket readyState is ${printReadyState(readyState)}`,
-      };
-    }
-
-    // calculate averages over stored latencies
-    const avgs = Array.from(this.exitDatas)
-      // discard failed request nodes
-      .filter(([, { failedRequests }]) => failedRequests === 0)
-      .map(([id, data]) => ({
-        id,
-        avg: average(data.latencies),
-        req: data.ongoingRequests,
-      }))
-      // discard latency violations
-      .filter(({ avg }) => avg < NodePair.LatencyThreshold);
-    // sort by ongoing requests
-    avgs.sort(({ req: lReq }, { req: rReq }) => lReq - rReq);
-    if (avgs.length === 0) {
-      return { res: "error", reason: "no good nodes" };
-    }
-
-    // find minimal request count nodes
-    const minReq = avgs[0].req;
-    const reqInc = avgs.findIndex(({ req }) => req > minReq);
-    const minReqNodes = reqInc < 0 ? avgs : avgs.slice(0, reqInc);
-    // prefer real latency nodes over fresh ones
-    const realLats = minReqNodes.filter(({ avg }) => avg > 0);
-    if (realLats.length > 0) {
-      realLats.sort(({ avg: lAvg }, { avg: rAvg }) => lAvg - rAvg);
-      const { id } = realLats[0];
-      const exitNode = this.exitNodes.get(id)!;
-      return { res: "ok", exitNode };
-    }
-    const { id } = randomEl(minReqNodes);
-    const exitNode = this.exitNodes.get(id)!;
-    return { res: "ok", exitNode };
-  };
-
-  public set messageListener(wsListen: (evt: MessageEvent) => void) {
-    if (!this.socket) {
-      return;
-    }
-    if (!this.messageListenerAttached) {
-      this.socket.onmessage = wsListen;
-      this.messageListenerAttached = true;
-    }
-  }
-
-  public hasOngoing = () => {
-    return !!Array.from(this.exitDatas.values()).find(
-      (d) => d.ongoingRequests > 0
-    );
-  };
-
-  public prettyPrint = (): string => {
-    const exCount = this.exitNodes.size;
-    const exStrs = Array.from(this.exitDatas.values()).map((d) => {
-      const tot = d.failedRequests + d.successfulRequests;
-      const s = d.successfulRequests;
-      const o = d.ongoingRequests;
-      if (tot === 0) {
-        if (o === 0) {
-          return "0";
-        }
-        return `0+${o}`;
-      }
-      return `${s}/${tot}+${o}`;
-    });
-    return `${shortPeerId(this.id)}_${exCount}x:${exStrs.join("-")}`;
-  };
-
-  private onWSopen = () => {
-    this.connectTime = Date.now() - this.startConnectTime!;
-    this.log.verbose("onWSopen after", this.connectTime, "ms");
-    this.socketCb?.onOpen(this.id, this.connectTime);
-  };
-
-  private onWSclose = (evt: CloseEvent) => {
-    this.log.info("onWSclose", evt);
-    this.socketCb?.onClose(this.id, evt);
-  };
-
-  private onWSerror = (err: Error) => {
-    this.log.error("onWSerror", err);
-    this.socketCb?.onError(this.id, err);
+export function create(
+  entryNode: EntryNode,
+  exitNodesIt: Iterable<ExitNode>,
+  applicationTag: number,
+  messageListener: MessageListener
+): NodePair {
+  const entryData = EntryData.create();
+  const shortId = shortPeerId(entryNode.id);
+  const logger = createLogger([`nodepair${shortId}(${entryNode.apiEndpoint})`]);
+  // ensure entry node not included in exits
+  const exits = Array.from(exitNodesIt).filter((n) => entryNode.id !== n.id);
+  const exitNodes = new Map(exits.map((n) => [n.id, n]));
+  const exitDatas = new Map(exits.map((n) => [n.id, ExitData.create()]));
+  return {
+    entryNode,
+    entryData,
+    exitNodes,
+    exitDatas,
+    applicationTag,
+    messageListener,
+    fetchMessagesOngoing: false,
+    logger,
   };
 }
 
-function printReadyState(readyState: number): string {
-  switch (readyState) {
-    case WebSocket.CONNECTING:
-      return "CONNECTING";
-    case WebSocket.OPEN:
-      return "OPEN";
-    case WebSocket.CLOSING:
-      return "CLOSING";
-    case WebSocket.CLOSED:
-      return "CLOSED";
-    default:
-      return "unexpected";
+export function destruct(np: NodePair) {
+  clearInterval(np.fetchInterval);
+}
+
+export function id(np: NodePair) {
+  return np.entryNode.id;
+}
+
+export function requestStarted(np: NodePair, req: Request.Request) {
+  const data = np.exitDatas.get(req.exitId);
+  if (!data) {
+    np.logger.error(
+      "requestStarted",
+      Request.prettyPrint(req),
+      "cannot track on missing exitId",
+      prettyPrint(np)
+    );
+    return;
   }
+  EntryData.addOngoingReq(np.entryData);
+  ExitData.addOngoing(data, req);
+  if (!np.fetchInterval) {
+    np.fetchInterval = setInterval(
+      () => fetchMessages(np),
+      MessagesFetchInterval
+    );
+  }
+}
+export function requestSucceeded(
+  np: NodePair,
+  req: Request.Request,
+  responseTime: number
+) {
+  const data = np.exitDatas.get(req.exitId);
+  if (!data) {
+    np.logger.error(
+      "requestSucceeded",
+      Request.prettyPrint(req),
+      "cannot track on missing exitId",
+      prettyPrint(np)
+    );
+    return;
+  }
+
+  EntryData.removeOngoingReq(np.entryData);
+  ExitData.recSuccess(data, req, MaxPerfHistory, responseTime);
+  checkStopInterval(np);
+}
+
+export function requestFailed(np: NodePair, req: Request.Request) {
+  const data = np.exitDatas.get(req.exitId);
+  if (!data) {
+    np.logger.error(
+      "requestFailed",
+      Request.prettyPrint(req),
+      "cannot track on missing exitId",
+      prettyPrint(np)
+    );
+    return;
+  }
+
+  EntryData.removeOngoingReq(np.entryData);
+  ExitData.recFailed(data, req, MaxPerfHistory);
+  checkStopInterval(np);
+}
+
+function checkStopInterval(np: NodePair) {
+  // stop interval if applicable
+  if (np.entryData.requestsOngoing === 0) {
+    clearInterval(np.fetchInterval);
+    np.fetchInterval = undefined;
+  }
+}
+
+export function segmentStarted(np: NodePair, seg: Segment.Segment) {
+  EntryData.addOngoingSeg(np.entryData, seg);
+}
+
+export function segmentSucceeded(
+  np: NodePair,
+  seg: Segment.Segment,
+  responseTime: number
+) {
+  EntryData.recSuccessSeq(np.entryData, seg, MaxPerfHistory, responseTime);
+}
+
+export function segmentFailed(np: NodePair, seg: Segment.Segment) {
+  EntryData.recFailureSeq(np.entryData, seg, MaxPerfHistory);
+}
+
+/**
+ * Ping entry node version.
+ */
+export function ping(np: NodePair): Promise<number> {
+  return new Promise((res) => {
+    const startPingTime = Date.now();
+    NodeAPI.version(np.entryNode).then((_) => {
+      np.entryData.pingDuration = Date.now() - startPingTime;
+      return res(np.entryData.pingDuration);
+    });
+  });
+}
+
+export function prettyPrint(np: NodePair): string {
+  const segOngoing = np.entryData.segmentsOngoing.length;
+  const segTotal = np.entryData.segmentsHistory.length;
+  const segLats = Array.from(np.entryData.segments.values()).reduce<number[]>(
+    (acc, sd) => {
+      if (PerfData.isSuccess(sd)) {
+        acc.push(sd.latency);
+      }
+      return acc;
+    },
+    []
+  );
+
+  const exCount = np.exitNodes.size;
+  const exStrs = Array.from(np.exitDatas).map(([id, d]) => {
+    const o = d.requestsOngoing.length;
+    const tot = d.requestsHistory.length;
+    const lats = Array.from(d.requests.values()).reduce<number[]>((acc, rd) => {
+      if (PerfData.isSuccess(rd)) {
+        acc.push(rd.latency);
+      }
+      return acc;
+    }, []);
+    const str = prettyOngoingNumbers(np, o, lats.length, tot, average(lats));
+    const nId = shortPeerId(id);
+    return `${nId}[${str}]`;
+  });
+  const segStr = prettyOngoingNumbers(
+    np,
+    segOngoing,
+    segLats.length,
+    segTotal,
+    average(segLats)
+  );
+  const mesLat = average(np.entryData.fetchMessagesLatencies);
+  const mesSuc = np.entryData.fetchMessagesSuccesses;
+  const mesTot = mesSuc + np.entryData.fetchMessagesErrors;
+  const mesStr = prettyOngoingNumbers(np, 0, mesSuc, mesTot, mesLat);
+  const ping = np.entryData.pingDuration
+    ? `${np.entryData.pingDuration}ms`
+    : "..";
+  return `${shortPeerId(
+    id(np)
+  )}[ping: ${ping}, seg: ${segStr}, msgs: ${mesStr}, ${exCount}x: ${exStrs.join(
+    ", "
+  )}]`;
+}
+
+function prettyOngoingNumbers(
+  np: NodePair,
+  ongoing: number,
+  successes: number,
+  total: number,
+  average: number
+) {
+  if (total === 0) {
+    if (ongoing === 0) {
+      return "0";
+    }
+    return `0+${ongoing}`;
+  }
+  const sDone = `${successes}(${average.toFixed(0)}ms)/${total}`;
+  if (ongoing === 0) {
+    return sDone;
+  }
+  return `${sDone}+${ongoing}`;
+}
+
+function fetchMessages(np: NodePair) {
+  const bef = Date.now();
+  NodeAPI.retrieveMessages(np.entryNode, np.applicationTag)
+    .then(({ messages }) => {
+      const lat = Date.now() - bef;
+      np.entryData.fetchMessagesSuccesses++;
+      np.entryData.fetchMessagesLatencies.push(lat);
+      if (np.entryData.fetchMessagesLatencies.length > MaxPerfHistory) {
+        np.entryData.fetchMessagesLatencies.shift();
+      }
+      np.messageListener(messages);
+    })
+    .catch((err) => {
+      np.logger.error("Error fetching node messages", err);
+      np.entryData.fetchMessagesErrors++;
+    });
 }

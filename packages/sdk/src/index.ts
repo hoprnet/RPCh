@@ -3,7 +3,7 @@ import "@hoprnet/hopr-sdk";
 import { utils as etherUtils } from "ethers";
 
 import { createLogger } from "./utils";
-import * as NodesAPI from "./nodes-api";
+import * as NodeAPI from "./node-api";
 import NodesCollector from "./nodes-collector";
 import type { EntryNode } from "./entry-node";
 import * as Request from "./request";
@@ -66,7 +66,7 @@ const defaultOps: Ops = {
   timeout: 30e3,
   provider: "https://primary.gnosis-chain.rpc.hoprtech.net",
   mevProtectionProvider: "https://rpc.propellerheads.xyz/eth",
-  enableMEV: true
+  enableMEV: true,
 };
 
 /**
@@ -82,6 +82,9 @@ export type RequestOps = {
 
 const MAX_REQUEST_SEGMENTS = 10;
 const log = createLogger();
+
+// message tag - more like port since we tag all our messages the same
+const ApplicationTag = Math.floor(Math.random() * 0xffff);
 
 /**
  * Send traffic through the RPCh network
@@ -117,7 +120,8 @@ export default class SDK {
     this.nodesColl = new NodesCollector(
       this.ops.discoveryPlatformEndpoint!,
       this.clientId,
-      this.onWSmessage
+      ApplicationTag,
+      this.onMessages
     );
   }
 
@@ -153,7 +157,6 @@ export default class SDK {
       ...this.ops,
       ...ops,
     };
-    const endFrame = Date.now() + reqOps.timeout!;
     return new Promise(async (resolve, reject) => {
       // gather entry - exit node pair
       const res = await this.nodesColl
@@ -167,7 +170,10 @@ export default class SDK {
       }
 
       // decide which provider to use
-      const provider = (reqOps.enableMEV && req.method === 'eth_sendRawTransaction') ? reqOps.mevProtectionProvider : reqOps.provider;
+      const provider =
+        reqOps.enableMEV! && req.method === "eth_sendRawTransaction"
+          ? reqOps.mevProtectionProvider!
+          : reqOps.provider!;
 
       // create request
       const { entryNode, exitNode } = res;
@@ -177,23 +183,12 @@ export default class SDK {
         id,
         provider,
         req,
-        entryNode.peerId,
-        exitNode.peerId,
+        entryNode.id,
+        exitNode.id,
         this.crypto!.Identity.load_identity(
           etherUtils.arrayify(exitNode.pubKey)
         )
       );
-
-      // set request expiration timer
-      const timer = setTimeout(() => {
-        log.error("request expired", request.id);
-        this.removeRequest(request);
-        return reject("request timed out");
-      }, endFrame - Date.now());
-
-      // track request
-      RequestCache.add(this.requestCache, request, resolve, reject, timer);
-      this.nodesColl.requestStarted(request);
 
       // split request to segments
       const segments = Request.toSegments(request);
@@ -202,72 +197,96 @@ export default class SDK {
           "Request exceeds maximum amount of segments with %s segments",
           segments.length
         );
-        this.removeRequest(request);
         return reject("Request exceeds maximum size of 3830b");
       }
+
+      // set request expiration timer
+      const timer = setTimeout(() => {
+        log.error("request expired", request.id);
+        this.removeRequest(request);
+        return reject("request timed out");
+      }, reqOps.timeout);
+
+      // track request
+      const entry = RequestCache.add(
+        this.requestCache,
+        request,
+        resolve,
+        reject,
+        timer
+      );
+      this.nodesColl.requestStarted(request);
 
       // send request to hoprd
       log.info("sending request %i", request.id);
 
-      // send segments sequentially
+      // queue segment sending for all of them
       segments.forEach((s) =>
-        setTimeout(() =>
-          this.sendSegment(s, request, entryNode, endFrame, resolve, reject)
-        )
+        setTimeout(() => {
+          this.nodesColl.segmentStarted(request, s);
+          this.sendSegment(request, s, entryNode, entry);
+        })
       );
     });
   }
 
   private sendSegment = (
-    segment: Segment.Segment,
     request: Request.Request,
+    segment: Segment.Segment,
     entryNode: EntryNode,
-    endFrame: number,
-    resolve: (res: RPCresult | RPCerror) => void,
-    reject: (reason: string) => void
+    cacheEntry: RequestCache.Entry
   ) => {
-    NodesAPI.sendMessage(
+    const bef = Date.now();
+    NodeAPI.sendMessage(
       {
         apiEndpoint: entryNode.apiEndpoint,
         accessToken: entryNode.accessToken,
-        recipient: request.exitId,
       },
-      Segment.toMessage(segment)
+      {
+        recipient: request.exitId,
+        tag: ApplicationTag,
+        message: Segment.toMessage(segment),
+      }
     )
-      .then((json) =>
-        log.verbose("sent segment", Segment.prettyPrint(segment), json)
-      )
+      .then((_json) => {
+        const dur = Date.now() - bef;
+        this.nodesColl.segmentSucceeded(request, segment, dur);
+      })
       .catch((error) => {
         log.error("error sending segment", Segment.prettyPrint(segment), error);
-        this.resendRequest(request, endFrame, resolve, reject);
+        this.nodesColl.segmentFailed(request, segment);
+        this.resendRequest(request, entryNode, cacheEntry);
       });
   };
 
   private resendRequest(
     origReq: Request.Request,
-    endFrame: number,
-    resolve: (res: RPCresult | RPCerror) => void,
-    reject: (reason: string) => void
+    entryNode: EntryNode,
+    cacheEntry: RequestCache.Entry
   ) {
     if (this.redoRequests.has(origReq.id)) {
       log.verbose("ignoring already triggered resend", origReq.id);
       return;
     }
 
+    // TODO track request after segments have been sent
     this.removeRequest(origReq);
-    const fallback = this.nodesColl.fallbackNodePair;
+
+    const fallback = this.nodesColl.fallbackNodePair(entryNode);
     if (!fallback) {
       log.info("no fallback for resending request available");
-      return reject("no fallback node pair to retry sending request");
+      return cacheEntry.reject(
+        "no fallback node pair to retry sending request"
+      );
     }
 
     this.redoRequests.add(origReq.id);
-    if (fallback.entryNode.peerId === origReq.entryId) {
+    if (fallback.entryNode.id === origReq.entryId) {
       log.info(
         "fallback entry node same as original entry node - still trying"
       );
     }
-    if (fallback.exitNode.peerId === origReq.exitId) {
+    if (fallback.exitNode.id === origReq.exitId) {
       log.info("fallback exit node same as original exit node - still trying");
     }
 
@@ -277,29 +296,12 @@ export default class SDK {
       this.crypto,
       id,
       origReq,
-      fallback.entryNode.peerId,
-      fallback.exitNode.peerId,
+      fallback.entryNode.id,
+      fallback.exitNode.id,
       this.crypto!.Identity.load_identity(
         etherUtils.arrayify(fallback.exitNode.pubKey)
       )
     );
-
-    // set request expiration timer
-    const timer = setTimeout(() => {
-      log.error(
-        "resend request expired",
-        request.id,
-        "for original",
-        origReq.id
-      );
-      this.removeRequest(request);
-      return reject("request timed out");
-    }, endFrame - Date.now());
-
-    // track request
-    RequestCache.add(this.requestCache, request, resolve, reject, timer);
-    this.nodesColl.requestStarted(request);
-
     // split request to segments
     const segments = Request.toSegments(request);
     if (segments.length > MAX_REQUEST_SEGMENTS) {
@@ -312,17 +314,25 @@ export default class SDK {
         request.id
       );
       this.removeRequest(request);
-      return reject("Request exceeds maximum size of 3830b");
+      return cacheEntry.reject("Request exceeds maximum size of 3830b");
     }
+
+    // track request
+    const newCacheEntry = RequestCache.add(
+      this.requestCache,
+      request,
+      cacheEntry.resolve,
+      cacheEntry.reject,
+      cacheEntry.timer
+    );
+    this.nodesColl.requestStarted(request);
 
     // send request to hoprd
     log.info("resending request %i", request.id, "for original", origReq.id);
 
     // send segments sequentially
     segments.forEach((s) =>
-      setTimeout(() =>
-        this.resendSegment(s, request, fallback.entryNode, reject)
-      )
+      setTimeout(() => this.resendSegment(s, request, entryNode, newCacheEntry))
     );
   }
 
@@ -330,68 +340,69 @@ export default class SDK {
     segment: Segment.Segment,
     request: Request.Request,
     entryNode: EntryNode,
-    reject: (reason: string) => void
+    cacheEntry: RequestCache.Entry
   ) => {
-    NodesAPI.sendMessage(
+    const bef = Date.now();
+    NodeAPI.sendMessage(
       {
         apiEndpoint: entryNode.apiEndpoint,
         accessToken: entryNode.accessToken,
-        recipient: request.exitId,
       },
-      Segment.toMessage(segment)
+      {
+        recipient: request.exitId,
+        tag: ApplicationTag,
+        message: Segment.toMessage(segment),
+      }
     )
-      .then((json) => {
-        log.verbose(
-          "resent segment",
-          Segment.prettyPrint(segment),
-          json,
-          "original:",
-          request.originalId
-        );
+      .then((_json) => {
+        const dur = Date.now() - bef;
+        this.nodesColl.segmentSucceeded(request, segment, dur);
       })
       .catch((error) => {
         log.error(
           "error resending segment",
           Segment.prettyPrint(segment),
-          error,
-          "original:",
-          request.originalId
+          error
         );
+        this.nodesColl.segmentFailed(request, segment);
         this.removeRequest(request);
-        reject("Sending message failed");
+        return cacheEntry.reject("Sending message failed");
       });
   };
 
-  private onWSmessage = (message: string) => {
-    const segRes = Segment.fromString(message);
-    if (!segRes.success) {
-      log.info("cannot create segment", segRes.error);
-      return;
-    }
-    const segment = segRes.segment;
-    if (!this.requestCache.has(segment.requestId)) {
-      log.info(
-        "dropping unrelated request segment",
-        Segment.prettyPrint(segment)
-      );
-      return;
-    }
+  // handle incoming messages
+  private onMessages = (messages: NodeAPI.Message[]) => {
+    messages.forEach(({ body }) => {
+      const segRes = Segment.fromString(body);
+      if (!segRes.success) {
+        log.info("cannot create segment", segRes.error);
+        return;
+      }
+      const segment = segRes.segment;
+      if (!this.requestCache.has(segment.requestId)) {
+        log.info(
+          "dropping unrelated request segment",
+          Segment.prettyPrint(segment)
+        );
+        return;
+      }
 
-    const cacheRes = SegmentCache.incoming(this.segmentCache, segment);
-    switch (cacheRes.res) {
-      case "complete":
-        this.completeSegmentsEntry(cacheRes.entry!);
-        break;
-      case "error":
-        log.error("error caching segment", cacheRes.reason);
-        break;
-      case "already-cached":
-        log.info("already cached", Segment.prettyPrint(segment));
-        break;
-      case "inserted":
-        log.verbose("inserted new segment", Segment.prettyPrint(segment));
-        break;
-    }
+      const cacheRes = SegmentCache.incoming(this.segmentCache, segment);
+      switch (cacheRes.res) {
+        case "complete":
+          this.completeSegmentsEntry(cacheRes.entry!);
+          break;
+        case "error":
+          log.error("error caching segment", cacheRes.reason);
+          break;
+        case "already-cached":
+          log.info("already cached", Segment.prettyPrint(segment));
+          break;
+        case "inserted":
+          log.verbose("inserted new segment", Segment.prettyPrint(segment));
+          break;
+      }
+    });
   };
 
   private async completeSegmentsEntry(entry: SegmentCache.Entry) {

@@ -58,3 +58,7 @@ export async function withTimeout<T>(
     .then((res) => res as T)
     .finally(() => clearTimeout(timer));
 }
+
+export function shortPeerId(peerId: string): string {
+  return `.${peerId.substring(peerId.length - 4)}`;
+}

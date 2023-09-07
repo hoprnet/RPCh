@@ -1,8 +1,9 @@
+import pgp from "pg-promise";
 import type { Gauge } from "prom-client";
 import { queue as AsyncQueue, QueueObject } from "async";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 import review, { type Result } from "./review";
-import { type DBInstance, type RegisteredNode, getRegisteredNodes } from "./db";
+import { type RegisteredNode, getRegisteredNodes } from "./db";
 import { createLogger, fromDbNode } from "./utils";
 import { callbackify } from "util";
 
@@ -49,7 +50,7 @@ export default class Reviewer {
    * @param concurrency how many nodes to review in parallel
    */
   constructor(
-    private db: DBInstance,
+    private db: pgp.IDatabase<{}>,
     metricManager: MetricManager,
     private intervalMs: number,
     concurrency: number

@@ -24,7 +24,7 @@ export default class Cache {
    * @param onMessage Triggered once a Message has expired
    */
   constructor(
-    private onMessage: (message: Message) => void,
+    private onMessage: (message: Message, tag?: number) => void,
     private onExpire?: () => void
   ) {}
 
@@ -34,7 +34,7 @@ export default class Cache {
    * it will trigger `onMessage` function.
    * @param segment
    */
-  public onSegment(segment: Segment): void {
+  public onSegment(segment: Segment, tag?: number): void {
     // get segment entry with matching msgId, or create a new one
     const segmentEntry = this.segments.get(segment.msgId) || {
       segments: [],
@@ -62,7 +62,7 @@ export default class Cache {
 
       // trigger onMessage
       log.verbose("found new Message", message.id);
-      this.onMessage(message);
+      this.onMessage(message, tag);
     }
   }
 

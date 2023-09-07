@@ -8,7 +8,7 @@
     "dev": "yarn build --watch",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "eslint \"src/**/*.ts*\"",
-    "migrate": "node-pg-migrate --migration-file-language sql",
+    "migrate": "node-pg-migrate --migrations-table migrations",
     "test": "jest --coverage",
     "start": "node build/index.js"
   },
@@ -37,7 +37,7 @@
     "graphql-request": "^5.0.0",
     "memory-cache": "^0.2.0",
     "node-pg-migrate": "^6.2.2",
-    "pg": "^8.9.0",
+    "pg": "^8.11.3",
     "pg-promise": "^11.0.0",
     "prom-client": "^14.2.0"
   }
