@@ -15,8 +15,10 @@ describe("test node selector", function () {
     const res = NodeSel.routePair(nodePairs);
     expect(res).toMatchObject({
       success: true,
-      entryNode: en,
-      exitNode: xn,
+      match: {
+        entryNode: en,
+        exitNode: xn,
+      },
       via: "only route available",
     });
   });
@@ -37,8 +39,10 @@ describe("test node selector", function () {
     const res = NodeSel.routePair(nodePairs);
     expect(res).toMatchObject({
       success: true,
-      entryNode: en2,
-      exitNode: xn2,
+      match: {
+        entryNode: en2,
+        exitNode: xn2,
+      },
       via: "quickest version ping",
     });
   });
@@ -62,8 +66,10 @@ describe("test node selector", function () {
     const res = NodeSel.routePair(nodePairs);
     expect(res).toMatchObject({
       success: true,
-      entryNode: en2,
-      exitNode: xn3,
+      match: {
+        entryNode: en2,
+        exitNode: xn3,
+      },
       via: "best message retrieval latency",
     });
   });
@@ -85,8 +91,10 @@ describe("test node selector", function () {
     const res = NodeSel.routePair(nodePairs);
     expect(res).toMatchObject({
       success: true,
-      entryNode: en2,
-      exitNode: xn3,
+      match: {
+        entryNode: en2,
+        exitNode: xn3,
+      },
       via: "least message retrieval errors",
     });
   });
@@ -108,8 +116,10 @@ describe("test node selector", function () {
     const res = NodeSel.routePair(nodePairs);
     expect(res).toMatchObject({
       success: true,
-      entryNode: en2,
-      exitNode: xn3,
+      match: {
+        entryNode: en2,
+        exitNode: xn3,
+      },
       via: "least ongoing segments",
     });
   });
@@ -140,8 +150,10 @@ describe("test node selector", function () {
     const res = NodeSel.routePair(nodePairs);
     expect(res).toMatchObject({
       success: true,
-      entryNode: en2,
-      exitNode: xn3,
+      match: {
+        entryNode: en2,
+        exitNode: xn3,
+      },
       via: "best segment latency",
     });
   });
@@ -172,8 +184,10 @@ describe("test node selector", function () {
     const res = NodeSel.routePair(nodePairs);
     expect(res).toMatchObject({
       success: true,
-      entryNode: en2,
-      exitNode: xn3,
+      match: {
+        entryNode: en2,
+        exitNode: xn3,
+      },
       via: "least segment errors",
     });
   });
@@ -200,8 +214,10 @@ describe("test node selector", function () {
     const res = NodeSel.routePair(nodePairs);
     expect(res).toMatchObject({
       success: true,
-      entryNode: en1,
-      exitNode: xn2,
+      match: {
+        entryNode: en1,
+        exitNode: xn2,
+      },
       via: "least ongoing requests",
     });
   });
@@ -253,8 +269,10 @@ describe("test node selector", function () {
     const res = NodeSel.routePair(nodePairs);
     expect(res).toMatchObject({
       success: true,
-      entryNode: en1,
-      exitNode: xn2,
+      match: {
+        entryNode: en1,
+        exitNode: xn2,
+      },
       via: "best request latency",
     });
   });
@@ -306,8 +324,10 @@ describe("test node selector", function () {
     const res = NodeSel.routePair(nodePairs);
     expect(res).toMatchObject({
       success: true,
-      entryNode: en1,
-      exitNode: xn2,
+      match: {
+        entryNode: en1,
+        exitNode: xn2,
+      },
       via: "least request errors",
     });
   });

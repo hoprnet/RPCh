@@ -1,6 +1,7 @@
-import { average } from "./utils";
+import * as NodeMatch from "./node-match";
 import * as PerfData from "./perf-data";
 import * as Segment from "./segment";
+import { average } from "./utils";
 
 export type Perf = {
   pingDuration: number;
@@ -55,13 +56,12 @@ export function addOngoingSeg(ed: EntryData, seg: Segment.Segment) {
 export function recSuccessSeq(
   ed: EntryData,
   seg: Segment.Segment,
-  maxHistory: number,
   dur: number
 ) {
   const id = Segment.id(seg);
   ed.segmentsOngoing = ed.segmentsOngoing.filter((sId) => sId !== id);
   ed.segmentsHistory.push(id);
-  if (ed.segmentsHistory.length > maxHistory) {
+  if (ed.segmentsHistory.length > NodeMatch.MaxSegmentsHistory) {
     const sId = ed.segmentsHistory.shift() as string;
     ed.segments.delete(sId);
   }
@@ -71,15 +71,11 @@ export function recSuccessSeq(
   }
 }
 
-export function recFailureSeq(
-  ed: EntryData,
-  seg: Segment.Segment,
-  maxHistory: number
-) {
+export function recFailureSeq(ed: EntryData, seg: Segment.Segment) {
   const id = Segment.id(seg);
   ed.segmentsOngoing = ed.segmentsOngoing.filter((sId) => sId !== id);
   ed.segmentsHistory.push(id);
-  if (ed.segmentsHistory.length > maxHistory) {
+  if (ed.segmentsHistory.length > NodeMatch.MaxSegmentsHistory) {
     const sId = ed.segmentsHistory.shift() as string;
     ed.segments.delete(sId);
   }

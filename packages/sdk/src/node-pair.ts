@@ -1,9 +1,10 @@
-import * as NodeAPI from "./node-api";
-import * as Request from "./request";
-import * as Segment from "./segment";
 import * as EntryData from "./entry-data";
 import * as ExitData from "./exit-data";
+import * as NodeAPI from "./node-api";
+import * as NodeMatch from "./node-match";
 import * as PerfData from "./perf-data";
+import * as Request from "./request";
+import * as Segment from "./segment";
 import { average, createLogger, shortPeerId } from "./utils";
 
 import type { EntryNode } from "./entry-node";
@@ -11,8 +12,6 @@ import type { ExitNode } from "./exit-node";
 
 export type MessageListener = (messages: NodeAPI.Message[]) => void;
 
-// amound of history to keep
-const MaxPerfHistory = 20;
 const MessagesFetchInterval = 333; // ms
 
 export type NodePair = {
@@ -97,7 +96,7 @@ export function requestSucceeded(
   }
 
   EntryData.removeOngoingReq(np.entryData);
-  ExitData.recSuccess(data, req, MaxPerfHistory, responseTime);
+  ExitData.recSuccess(data, req, responseTime);
   checkStopInterval(np);
 }
 
@@ -114,7 +113,7 @@ export function requestFailed(np: NodePair, req: Request.Request) {
   }
 
   EntryData.removeOngoingReq(np.entryData);
-  ExitData.recFailed(data, req, MaxPerfHistory);
+  ExitData.recFailed(data, req);
   checkStopInterval(np);
 }
 
@@ -135,11 +134,11 @@ export function segmentSucceeded(
   seg: Segment.Segment,
   responseTime: number
 ) {
-  EntryData.recSuccessSeq(np.entryData, seg, MaxPerfHistory, responseTime);
+  EntryData.recSuccessSeq(np.entryData, seg, responseTime);
 }
 
 export function segmentFailed(np: NodePair, seg: Segment.Segment) {
-  EntryData.recFailureSeq(np.entryData, seg, MaxPerfHistory);
+  EntryData.recFailureSeq(np.entryData, seg);
 }
 
 /**
@@ -230,7 +229,10 @@ function fetchMessages(np: NodePair) {
       const lat = Date.now() - bef;
       np.entryData.fetchMessagesSuccesses++;
       np.entryData.fetchMessagesLatencies.push(lat);
-      if (np.entryData.fetchMessagesLatencies.length > MaxPerfHistory) {
+      if (
+        np.entryData.fetchMessagesLatencies.length >
+        NodeMatch.MaxMessagesHistory
+      ) {
         np.entryData.fetchMessagesLatencies.shift();
       }
       np.messageListener(messages);

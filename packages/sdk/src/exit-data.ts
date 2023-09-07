@@ -1,6 +1,7 @@
-import { average } from "./utils";
+import * as NodeMatch from "./node-match";
 import * as PerfData from "./perf-data";
 import * as Request from "./request";
+import { average } from "./utils";
 
 export type Perf = {
   ongoing: number;
@@ -29,15 +30,10 @@ export function addOngoing(xd: ExitData, req: Request.Request) {
   xd.requests.set(req.id, PerfData.ongoing());
 }
 
-export function recSuccess(
-  xd: ExitData,
-  req: Request.Request,
-  maxHistory: number,
-  dur: number
-) {
+export function recSuccess(xd: ExitData, req: Request.Request, dur: number) {
   xd.requestsOngoing = xd.requestsOngoing.filter((rId) => rId !== req.id);
   xd.requestsHistory.push(req.id);
-  if (xd.requestsHistory.length > maxHistory) {
+  if (xd.requestsHistory.length > NodeMatch.MaxRequestsHistory) {
     const rId = xd.requestsHistory.shift() as number;
     xd.requests.delete(rId);
   }
@@ -47,14 +43,10 @@ export function recSuccess(
   }
 }
 
-export function recFailed(
-  xd: ExitData,
-  req: Request.Request,
-  maxHistory: number
-) {
+export function recFailed(xd: ExitData, req: Request.Request) {
   xd.requestsOngoing = xd.requestsOngoing.filter((rId) => rId !== req.id);
   xd.requestsHistory.push(req.id);
-  if (xd.requestsHistory.length > maxHistory) {
+  if (xd.requestsHistory.length > NodeMatch.MaxRequestsHistory) {
     const rId = xd.requestsHistory.shift() as number;
     xd.requests.delete(rId);
   }
