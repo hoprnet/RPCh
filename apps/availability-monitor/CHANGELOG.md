@@ -1,5 +1,11 @@
 # @rpch/availability-monitor
 
+## 0.3.1
+
+### Patch Changes
+
+- Fixed route aggregation bug
+
 ## 0.3.0
 
 ### Minor Changes
