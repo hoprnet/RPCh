@@ -1,5 +1,11 @@
 # @rpch/exit-node
 
+## 0.3.0
+
+### Minor Changes
+
+- 333a830: Exit node now handles api v3 hoprd node
+
 ## 0.2.1
 
 ### Patch Changes

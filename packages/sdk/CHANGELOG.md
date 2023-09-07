@@ -1,5 +1,14 @@
 # @rpch/sdk
 
+## 0.6.0
+
+### Minor Changes
+
+- 333a830: Implemented new algorithm enabled by api v3.
+  The SDK no longer needs a websocket connection.
+  It will ping entry nodes that are received from the DP
+  for best initial route and keep tracking those entry exit pairs for perfomance.
+
 ## 0.5.2
 
 ### Patch Changes

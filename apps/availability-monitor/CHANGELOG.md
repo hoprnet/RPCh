@@ -1,5 +1,18 @@
 # @rpch/availability-monitor
 
+## 0.3.0
+
+### Minor Changes
+
+- 333a830: stripped AM to only determine zero hop quality and report results to db
+- 333a830: Determines zero hop routes by references entry and exit nodes' peers.
+  No longer runs any other checks for now.
+
+### Patch Changes
+
+- Updated dependencies [333a830]
+  - @rpch/discovery-platform@0.4.0
+
 ## 0.2.0
 
 ### Minor Changes

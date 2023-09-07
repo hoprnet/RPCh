@@ -1,5 +1,13 @@
 # @rpch/discovery-platform
 
+## 0.4.0
+
+### Minor Changes
+
+- 333a830: Reset and fix database migration and setup.
+  Need admin authorization to register new nodes.
+  Delivers zero hop pairings to SDK.
+
 ## 0.3.0
 
 ### Minor Changes
