@@ -73,7 +73,7 @@ function runZeroHops(
     .then((res) => {
       const pairings = res.reduce<Pair[]>((outerAcc, outerPrm) => {
         if ("value" in outerPrm) {
-          const outerPairs = outerPrm.value.reduce<Pair[]>(
+          const innerPairs = outerPrm.value.reduce<Pair[]>(
             (innerAcc, innerPrm) => {
               if ("value" in innerPrm && !!innerPrm.value) {
                 innerAcc.push(innerPrm.value);
@@ -88,7 +88,7 @@ function runZeroHops(
             },
             []
           );
-          return outerPairs;
+          return outerAcc.concat(innerPairs);
         } else {
           if ("reason" in outerPrm) {
             log.info("Encountered rejection", JSON.stringify(outerPrm.reason));
