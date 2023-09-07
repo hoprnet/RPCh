@@ -1,5 +1,11 @@
 # @rpch/sdk
 
+## 0.6.1
+
+### Patch Changes
+
+- distribute load evenly among available routes
+
 ## 0.6.0
 
 ### Minor Changes

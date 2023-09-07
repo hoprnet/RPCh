@@ -75,13 +75,13 @@ function match(
   if (xLeastErrs.length === 1) {
     return success(xLeastErrs[0], "least request errors");
   }
-  const xBestLats = bestReqLatencies(xLeastErrs);
-  if (xBestLats.length > 0) {
-    return success(xBestLats[0], "best request latency");
-  }
   const xLeastOngoing = leastReqOngoing(xLeastErrs);
   if (xLeastOngoing.length === 1) {
     return success(xLeastOngoing[0], "least ongoing requests");
+  }
+  const xBestLats = bestReqLatencies(xLeastOngoing);
+  if (xBestLats.length > 0) {
+    return success(xBestLats[0], "best request latency");
   }
 
   const entryPerfs = createEntryPerfs(nodePairs, xLeastOngoing);
@@ -92,13 +92,13 @@ function match(
   if (eLeastErrs.length === 1) {
     return eSuccess(eLeastErrs[0], xLeastOngoing, "least segment errors");
   }
-  const eBestLats = bestSegLatencies(eLeastErrs);
-  if (eBestLats.length > 0) {
-    return eSuccess(eBestLats[0], xLeastOngoing, "best segment latency");
-  }
   const eLeastOngoing = leastSegOngoing(eLeastErrs);
   if (eLeastOngoing.length === 1) {
     return eSuccess(eLeastOngoing[0], xLeastOngoing, "least ongoing segments");
+  }
+  const eBestLats = bestSegLatencies(eLeastOngoing);
+  if (eBestLats.length > 0) {
+    return eSuccess(eBestLats[0], xLeastOngoing, "best segment latency");
   }
   const eLeastMsgsErrs = leastMsgsErrors(eLeastOngoing);
   if (eLeastMsgsErrs.length === 1) {
