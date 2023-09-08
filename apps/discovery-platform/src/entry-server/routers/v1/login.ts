@@ -6,6 +6,11 @@ import * as q from "../../../query";
 import { createLogger } from "../../../utils";
 
 import type { Pool, QueryResult } from "pg";
+import type { Request, Response } from "express";
+
+export type Login = {
+  store: SessionNonceStore;
+};
 
 const log = createLogger(["router", "login"]);
 
@@ -13,11 +18,12 @@ const chainId = "eip155:1";
 
 type VerifyCb = (err?: Error, userId?: string) => {};
 
-export function setup(dbPool: Pool) {
+export function create(dbPool: Pool): Login {
   const store = new SessionNonceStore();
+  const lState = { store };
 
   passport.use(
-    new EthereumStrategy({ store: store }, function verify(
+    new EthereumStrategy(lState, function verify(
       address: string,
       cb: VerifyCb
     ) {
@@ -29,6 +35,21 @@ export function setup(dbPool: Pool) {
         });
     })
   );
+
+  return lState;
+}
+
+export function challenge({ store }: Login) {
+  return function (req: Request, res: Response) {
+    store.challenge(req, function (err: Error, nonce: string) {
+      if (err) {
+        log.error("Challenge error", err);
+        const reason = "Internal server error";
+        return res.status(500).json({ reason });
+      }
+      return res.status(201).json({ nonce });
+    });
+  };
 }
 
 async function login(
@@ -73,48 +94,3 @@ function createLogin(dbPool: Pool, address: string, cb: VerifyCb) {
       return cb(err);
     });
 }
-
-//
-//
-//     ], function(err, row) {
-//       if (err) { return cb(err); }
-//       if (!row) {
-//         db.run('INSERT INTO users (username) VALUES (?)', [
-//           address
-//         ], function(err) {
-//           if (err) { return cb(err); }
-//           var id = this.lastID;
-//           db.run('INSERT INTO blockchain_credentials (user_id, chain, address) VALUES (?, ?, ?)', [
-//             id,
-//             'eip155:1',
-//             address
-//           ], function(err) {
-//             if (err) { return cb(err); }
-//             var user = {
-//               id: id,
-//               username: address
-//             };
-//             return cb(null, user);
-//           });
-//         });
-//       } else {
-//         db.get('SELECT rowid AS id, * FROM users WHERE rowid = ?', [ row.user_id ], function(err, row) {
-//           if (err) { return cb(err); }
-//           if (!row) { return cb(null, false); }
-//           return cb(null, row);
-//         });
-//       }
-//     });
-//   }
-// ));
-//
-// var store = new SessionChallengeStore();
-//
-//
-// export function challenge(req, res) {
-//
-//   store.challenge(req, function(err, nonce) {
-//     if (err) { return next(err); }
-//     res.json({ nonce: nonce });
-//   });
-// });

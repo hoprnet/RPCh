@@ -1,8 +1,10 @@
-import { Pool } from "pg";
 import express, { Request, Response } from "express";
+import passport from "passport";
+import { Pool } from "pg";
+
 // import * as user from "./user";
 // import * as client from "./client";
-// import * as login from "./login";
+import * as login from "./login";
 import {
   body,
   checkSchema,
@@ -57,6 +59,7 @@ export const v1Router = (ops: {
   secret: string;
   getAvailabilityMonitorResults: () => Map<string, AvailabilityMonitorResult>;
 }) => {
+  const loginState = login.create(ops.dbPool);
   /** @return an array of unstable peer ids */
   function getUnstableNodes() {
     return Array.from(ops.getAvailabilityMonitorResults().entries()).reduce<
@@ -92,6 +95,8 @@ export const v1Router = (ops: {
   const router = express.Router();
 
   router.use(express.json());
+  router.use(passport.initialize());
+  router.use(passport.session());
 
   // log entry calls
   router.use((req, _res, next) => {
@@ -102,10 +107,6 @@ export const v1Router = (ops: {
     });
     next();
   });
-
-  q.createUser(ops.dbPool, {})
-    .then((res) => console.log("res", res))
-    .catch((err) => console.log("err", err));
 
   router.get(
     "/nodes/zero_hop_pairings",
@@ -126,18 +127,23 @@ export const v1Router = (ops: {
 
   ////
   // authentication
-  //   router.post('/login/ethereum/challenge', function(req, res, next) {
-  //   store.challenge(req, function(err, nonce) {
-  //     if (err) { return next(err); }
-  //     res.json({ nonce: nonce });
-  //   });
-  // });
-  //   router.post(
-  //     "users/login",
-  //     middleware.metric(requestDurationHistogram),
-  //     user.login
-  //   );
-  //
+  router.post(
+    "/login/ethereum/challenge",
+    middleware.metric(requestDurationHistogram),
+    login.challenge(loginState)
+  );
+
+  router.post(
+    "/login/ethereum",
+    middleware.metric(requestDurationHistogram),
+    passport.authenticate("ethereum"),
+    (foo1: any, foo2: any, foo3: any) => {
+      console.log("passport authenticate foo1", foo1);
+      console.log("passport authenticate foo2", foo2);
+      console.log("passport authenticate foo3", foo3);
+    }
+  );
+
   //   ////
   //   // users
   //   router.get("users", middleware.metric(requestDurationHistogram), user.index);

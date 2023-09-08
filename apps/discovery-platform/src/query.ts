@@ -36,6 +36,12 @@ export type UserAttrs = {
   telegram?: string;
 };
 
+export type ChainCredential = {
+  user_id: string;
+  address: string;
+  chain: string;
+};
+
 export function readLogin(
   dbPool: Pool,
   address: string,
@@ -45,17 +51,31 @@ export function readLogin(
   return dbPool.query(q);
 }
 
-export function createUser(dbPool: Pool, attrs: UserAttrs) {
+export function createUser(
+  dbPool: Pool,
+  attrs: UserAttrs
+): Promise<QueryResult<{ id: string }>> {
   const cols = ["name", "email", "www_address", "telegram"];
-
   const vals = [attrs.name, attrs.email, attrs.www_address, attrs.telegram];
-
   const valIdxs = vals.map((_e, idx) => `$${idx + 1}`);
   // handle id separate
   const q = [
     "insert into users",
     `(id, ${cols.join(",")})`,
     `values (gen_random_uuid(), ${valIdxs.join(",")})`,
+    "returning id",
+  ].join(" ");
+  return dbPool.query(q, vals);
+}
+
+export function createChainCredential(dbPool: Pool, attrs: ChainCredential) {
+  const cols = ["user_id", "address", "chain"];
+  const vals = [attrs.user_id, attrs.address, attrs.chain];
+  const valIdxs = vals.map((_e, idx) => `$${idx + 1}`);
+  const q = [
+    "insert into chain_credentials",
+    `(${cols.join(",")})`,
+    `values (${valIdxs.join(",")})`,
   ].join(" ");
   return dbPool.query(q, vals);
 }
