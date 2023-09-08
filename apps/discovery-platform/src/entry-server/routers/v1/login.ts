@@ -16,7 +16,7 @@ const log = createLogger(["router", "login"]);
 
 const chainId = "eip155:1";
 
-type VerifyCb = (err?: Error, userId?: string) => {};
+type VerifyCb = (err?: Error, user?: q.User | false) => {};
 
 export function create(dbPool: Pool): Login {
   const store = new SessionNonceStore();
@@ -98,14 +98,14 @@ export function signin() {
 async function login(
   dbPool: Pool,
   address: string,
-  res: QueryResult<{ user_id: string }>,
-  cb: (err?: Error, userId?: string) => {}
+  res: QueryResult<q.User>,
+  cb: VerifyCb
 ) {
   if (res.rowCount === 0) {
     return createLogin(dbPool, address, cb);
   }
   if (res.rowCount === 1) {
-    return cb(undefined, res.rows[0].user_id);
+    return cb(undefined, res.rows[0]);
   }
   const reason = "Wrong rowCount from readLogin query";
   log.error(reason, res);
@@ -120,13 +120,13 @@ function createLogin(dbPool: Pool, address: string, cb: VerifyCb) {
         log.error(reason, res);
         return cb(new Error(reason));
       }
-      const userId = res.rows[0].id;
+      const user = res.rows[0];
       q.createChainCredential(dbPool, {
-        user_id: userId,
+        user_id: user.id,
         address,
         chain: chainId,
       })
-        .then(() => cb(undefined, userId))
+        .then(() => cb(undefined, user))
         .catch((err) => {
           log.error("Error during createChainCredential query", err);
           return cb(err);

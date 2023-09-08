@@ -37,7 +37,7 @@ export type UserAttrs = {
 };
 
 export type User = UserAttrs & {
-  id: String;
+  id: string;
   name?: string;
   email?: string;
   www_address?: string;
@@ -57,15 +57,19 @@ export function readLogin(
   dbPool: Pool,
   address: string,
   chain: string
-): Promise<QueryResult<{ user_id: string }>> {
-  const q = `select user_id from chain_credentials where chain_id = ${chain} and address = ${address}`;
-  return dbPool.query(q);
+): Promise<QueryResult<User>> {
+  const q = [
+    "select * from users",
+    "where id = (select user_id from chain_credentials",
+    `where chain_id = $1 and address = $2)`,
+  ].join(" ");
+  return dbPool.query(q, [chain, address]);
 }
 
 export function createUser(
   dbPool: Pool,
   attrs: UserAttrs
-): Promise<QueryResult<{ id: string }>> {
+): Promise<QueryResult<User>> {
   const cols = ["name", "email", "www_address", "telegram"];
   const vals = [attrs.name, attrs.email, attrs.www_address, attrs.telegram];
   const valIdxs = vals.map((_e, idx) => `$${idx + 1}`);
@@ -74,7 +78,7 @@ export function createUser(
     "insert into users",
     `(id, ${cols.join(",")})`,
     `values (gen_random_uuid(), ${valIdxs.join(",")})`,
-    "returning id",
+    "returning *",
   ].join(" ");
   return dbPool.query(q, vals);
 }

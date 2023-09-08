@@ -1,5 +1,5 @@
 const cors = require("cors");
-import express, { NextFunction, Request, Response } from "express";
+import express, { Request, Response } from "express";
 import passport from "passport";
 import session from "express-session";
 import { Pool } from "pg";
@@ -99,7 +99,14 @@ export const v1Router = (ops: {
 
   router.use(express.json());
   router.use(cors());
-  router.use(session({ secret: ops.sessionSecret, cookie: { maxAge: 60000 } }));
+  router.use(
+    session({
+      secret: ops.sessionSecret,
+      resave: false,
+      saveUninitialized: false,
+      cookie: { secure: true, maxAge: 60000 },
+    })
+  );
   router.use(passport.initialize());
   router.use(passport.session());
 
