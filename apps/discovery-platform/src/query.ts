@@ -29,6 +29,37 @@ export type RegisteredNode = {
   updated_at?: Date;
 };
 
+export type UserAttrs = {
+  name?: string;
+  email?: string;
+  www_address?: string;
+  telegram?: string;
+};
+
+export function readLogin(
+  dbPool: Pool,
+  address: string,
+  chain: string
+): Promise<QueryResult<{ user_id: string }>> {
+  const q = `select user_id from chain_credentials where chain_id = ${chain} and address = ${address}`;
+  return dbPool.query(q);
+}
+
+export function createUser(dbPool: Pool, attrs: UserAttrs) {
+  const cols = ["name", "email", "www_address", "telegram"];
+
+  const vals = [attrs.name, attrs.email, attrs.www_address, attrs.telegram];
+
+  const valIdxs = vals.map((_e, idx) => `$${idx + 1}`);
+  // handle id separate
+  const q = [
+    "insert into users",
+    `(id, ${cols.join(",")})`,
+    `values (gen_random_uuid(), ${valIdxs.join(",")})`,
+  ].join(" ");
+  return dbPool.query(q, vals);
+}
+
 export function readEntryNodes(
   dbPool: Pool,
   node_ids: Iterable<string>

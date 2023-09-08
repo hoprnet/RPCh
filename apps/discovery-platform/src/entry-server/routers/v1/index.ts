@@ -1,5 +1,8 @@
 import { Pool } from "pg";
 import express, { Request, Response } from "express";
+// import * as user from "./user";
+// import * as client from "./client";
+// import * as login from "./login";
 import {
   body,
   checkSchema,
@@ -100,6 +103,10 @@ export const v1Router = (ops: {
     next();
   });
 
+  q.createUser(ops.dbPool, {})
+    .then((res) => console.log("res", res))
+    .catch((err) => console.log("err", err));
+
   router.get(
     "/nodes/zero_hop_pairings",
     middleware.metric(requestDurationHistogram),
@@ -116,6 +123,82 @@ export const v1Router = (ops: {
     // checkSchema(registerNodeSchema),
     postNodeRegister(ops.dbPool)
   );
+
+  ////
+  // authentication
+  //   router.post('/login/ethereum/challenge', function(req, res, next) {
+  //   store.challenge(req, function(err, nonce) {
+  //     if (err) { return next(err); }
+  //     res.json({ nonce: nonce });
+  //   });
+  // });
+  //   router.post(
+  //     "users/login",
+  //     middleware.metric(requestDurationHistogram),
+  //     user.login
+  //   );
+  //
+  //   ////
+  //   // users
+  //   router.get("users", middleware.metric(requestDurationHistogram), user.index);
+  //   router.post(
+  //     "users",
+  //     middleware.metric(requestDurationHistogram),
+  //     user.create
+  //   );
+  //   router.get(
+  //     "users/:id",
+  //     middleware.metric(requestDurationHistogram),
+  //     user.get
+  //   );
+  //   router.patch(
+  //     "users/:id",
+  //     middleware.metric(requestDurationHistogram),
+  //     user.update
+  //   );
+  //   router.put(
+  //     "users/:id",
+  //     middleware.metric(requestDurationHistogram),
+  //     user.update
+  //   );
+  //   router.delete(
+  //     "users/:id",
+  //     middleware.metric(requestDurationHistogram),
+  //     user.delete
+  //   );
+  //
+  //   ////
+  //   // clients
+  //   router.get(
+  //     "clients",
+  //     middleware.metric(requestDurationHistogram),
+  //     client.index
+  //   );
+  //   router.post(
+  //     "clients",
+  //     middleware.metric(requestDurationHistogram),
+  //     client.create
+  //   );
+  //   router.get(
+  //     "clients/:id",
+  //     middleware.metric(requestDurationHistogram),
+  //     client.get
+  //   );
+  //   router.patch(
+  //     "clients/:id",
+  //     middleware.metric(requestDurationHistogram),
+  //     client.update
+  //   );
+  //   router.put(
+  //     "clients/:id",
+  //     middleware.metric(requestDurationHistogram),
+  //     client.update
+  //   );
+  //   router.delete(
+  //     "clients/:id",
+  //     middleware.metric(requestDurationHistogram),
+  //     client.delete
+  //   );
 
   router.get(
     "/node",
