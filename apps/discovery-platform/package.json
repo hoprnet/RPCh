@@ -35,8 +35,11 @@
     "express-validator": "^6.15.0",
     "graphql": "^16.6.0",
     "graphql-request": "^5.0.0",
+    "jsonwebtoken": "^9.0.2",
     "memory-cache": "^0.2.0",
     "node-pg-migrate": "^6.2.2",
+    "passport": "^0.6.0",
+    "passport-ethereum-siwe": "^0.1.0",
     "pg": "^8.11.3",
     "pg-promise": "^11.0.0",
     "prom-client": "^14.2.0"
