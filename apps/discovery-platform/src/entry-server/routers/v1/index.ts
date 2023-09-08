@@ -1,5 +1,6 @@
 import express, { Request, Response } from "express";
 import passport from "passport";
+import session from "express-session";
 import { Pool } from "pg";
 
 // import * as user from "./user";
@@ -57,6 +58,7 @@ export const v1Router = (ops: {
   baseQuota: bigint;
   metricManager: MetricManager;
   secret: string;
+  sessionSecret: string;
   getAvailabilityMonitorResults: () => Map<string, AvailabilityMonitorResult>;
 }) => {
   const loginState = login.create(ops.dbPool);
@@ -95,6 +97,7 @@ export const v1Router = (ops: {
   const router = express.Router();
 
   router.use(express.json());
+  router.use(session({ secret: ops.sessionSecret, cookie: { maxAge: 60000 } }));
   router.use(passport.initialize());
   router.use(passport.session());
 

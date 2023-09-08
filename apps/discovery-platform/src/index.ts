@@ -22,6 +22,7 @@ const start = async (ops: {
   baseQuota: bigint;
   port: number;
   secret: string;
+  sessionSecret: string;
   availabilityMonitorUrl?: string;
 }) => {
   // let availabilityMonitorResults = new Map<string, AvailabilityMonitorResult>();
@@ -53,6 +54,7 @@ const start = async (ops: {
     baseQuota: ops.baseQuota,
     metricManager: metricManager,
     secret: ops.secret,
+    sessionSecret: ops.sessionSecret,
     getAvailabilityMonitorResults: () => availabilityMonitorResults,
   });
 
@@ -144,6 +146,10 @@ const main = () => {
   if (!process.env.SECRET) {
     throw new Error("Missing 'SECRET' env var.");
   }
+  // cookie secret
+  if (!process.env.SESSION_SECRET) {
+    throw new Error("Missing 'SESSION_SECRET' env var.");
+  }
 
   // init db
   const connectionString = process.env.DB_CONNECTION_URL;
@@ -156,6 +162,7 @@ const main = () => {
     dbPool,
     port: parseInt(process.env.PORT, 10),
     secret: process.env.SECRET,
+    sessionSecret: process.env.SESSION_SECRET,
     availabilityMonitorUrl: constants.AVAILABILITY_MONITOR_URL,
   });
 };

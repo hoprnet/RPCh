@@ -14,21 +14,12 @@ export const entryServer = (ops: {
   baseQuota: bigint;
   metricManager: MetricManager;
   secret: string;
+  sessionSecret: string;
   getAvailabilityMonitorResults: () => Map<string, AvailabilityMonitorResult>;
 }) => {
   app.use(compression());
 
-  app.use(
-    "/api/v1",
-    v1Router({
-      baseQuota: ops.baseQuota,
-      db: ops.db,
-      dbPool: ops.dbPool,
-      metricManager: ops.metricManager,
-      secret: ops.secret,
-      getAvailabilityMonitorResults: ops.getAvailabilityMonitorResults,
-    })
-  );
+  app.use("/api/v1", v1Router(ops));
 
   // Prometheus metrics
   app.get("/api/metrics", async (req, res) => {
