@@ -36,6 +36,36 @@ export function create(dbPool: Pool): Login {
     })
   );
 
+  passport.serializeUser(function (user, done) {
+    if ("id" in user) {
+      done(null, user.id);
+    } else {
+      const reason = "Encountered unexpected user object during serialization";
+      log.error(reason);
+      done(reason);
+    }
+  });
+
+  passport.deserializeUser(function (id, done) {
+    if (typeof id === "string") {
+      q.readUserById(dbPool, id)
+        .then((res) => {
+          if (res.rowCount === 0) {
+            return done(new Error("no user"));
+          }
+          done(null, res.rows[0]);
+        })
+        .catch((err) => {
+          log.error("Error during readUserById query", err);
+          done(err);
+        });
+    } else {
+      const reason = "Encountered unexpted id during deserialization";
+      log.error(reason);
+      done(reason);
+    }
+  });
+
   return lState;
 }
 

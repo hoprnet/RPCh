@@ -36,6 +36,17 @@ export type UserAttrs = {
   telegram?: string;
 };
 
+export type User = UserAttrs & {
+  id: String;
+  name?: string;
+  email?: string;
+  www_address?: string;
+  telegram?: string;
+  last_logged_in_at?: Date;
+  created_at: Date;
+  updated_at?: Date;
+};
+
 export type ChainCredential = {
   user_id: string;
   address: string;
@@ -66,6 +77,14 @@ export function createUser(
     "returning id",
   ].join(" ");
   return dbPool.query(q, vals);
+}
+
+export function readUserById(
+  dbPool: Pool,
+  id: string
+): Promise<QueryResult<User>> {
+  const q = "select * from users where id = $1";
+  return dbPool.query(q, [id]);
 }
 
 export function createChainCredential(dbPool: Pool, attrs: ChainCredential) {

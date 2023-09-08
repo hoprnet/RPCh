@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
 import passport from "passport";
 import session from "express-session";
 import { Pool } from "pg";
@@ -140,10 +140,12 @@ export const v1Router = (ops: {
     "/login/ethereum",
     middleware.metric(requestDurationHistogram),
     passport.authenticate("ethereum"),
-    (foo1: any, foo2: any, foo3: any) => {
-      console.log("passport authenticate foo1", foo1);
-      console.log("passport authenticate foo2", foo2);
-      console.log("passport authenticate foo3", foo3);
+    (req: Request, res: Response, next: NextFunction) => {
+      req.session.save((err) => {
+        log.error("Error saving session", err);
+        next(err);
+      });
+      res.status(200).end();
     }
   );
 
@@ -175,39 +177,35 @@ export const v1Router = (ops: {
   //     middleware.metric(requestDurationHistogram),
   //     user.delete
   //   );
-  //
-  //   ////
-  //   // clients
-  //   router.get(
-  //     "clients",
-  //     middleware.metric(requestDurationHistogram),
-  //     client.index
-  //   );
-  //   router.post(
-  //     "clients",
-  //     middleware.metric(requestDurationHistogram),
-  //     client.create
-  //   );
-  //   router.get(
-  //     "clients/:id",
-  //     middleware.metric(requestDurationHistogram),
-  //     client.get
-  //   );
-  //   router.patch(
-  //     "clients/:id",
-  //     middleware.metric(requestDurationHistogram),
-  //     client.update
-  //   );
-  //   router.put(
-  //     "clients/:id",
-  //     middleware.metric(requestDurationHistogram),
-  //     client.update
-  //   );
-  //   router.delete(
-  //     "clients/:id",
-  //     middleware.metric(requestDurationHistogram),
-  //     client.delete
-  //   );
+
+  ////
+  // clients
+  // router.get("clients", middleware.metric(requestDurationHistogram), client.index);
+  // router.post(
+  //   "clients",
+  //   middleware.metric(requestDurationHistogram),
+  //   client.create
+  // );
+  // router.get(
+  //   "clients/:id",
+  //   middleware.metric(requestDurationHistogram),
+  //   client.get
+  // );
+  // router.patch(
+  //   "clients/:id",
+  //   middleware.metric(requestDurationHistogram),
+  //   client.update
+  // );
+  // router.put(
+  //   "clients/:id",
+  //   middleware.metric(requestDurationHistogram),
+  //   client.update
+  // );
+  // router.delete(
+  //   "clients/:id",
+  //   middleware.metric(requestDurationHistogram),
+  //   client.delete
+  // );
 
   router.get(
     "/node",
