@@ -1,4 +1,4 @@
-import cors from "cors";
+const cors = require("cors");
 import express, { NextFunction, Request, Response } from "express";
 import passport from "passport";
 import session from "express-session";
