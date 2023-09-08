@@ -82,6 +82,19 @@ export function challenge({ store }: Login) {
   };
 }
 
+export function signin() {
+  return function (req: Request, res: Response) {
+    req.session.save((err) => {
+      if (err) {
+        log.error("Error saving session", err);
+        res.status(403).json({ ok: false });
+      } else {
+        res.status(200).json({ ok: true });
+      }
+    });
+  };
+}
+
 async function login(
   dbPool: Pool,
   address: string,

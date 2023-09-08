@@ -142,13 +142,7 @@ export const v1Router = (ops: {
     "/login/ethereum",
     middleware.metric(requestDurationHistogram),
     passport.authenticate("ethereum"),
-    (req: Request, res: Response, next: NextFunction) => {
-      req.session.save((err) => {
-        log.error("Error saving session", err);
-        next(err);
-      });
-      res.status(200).end();
-    }
+    login.signin()
   );
 
   //   ////
