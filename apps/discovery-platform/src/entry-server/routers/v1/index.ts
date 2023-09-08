@@ -97,18 +97,20 @@ export const v1Router = (ops: {
 
   const router = express.Router();
 
-  router.use(express.json());
-  router.use(cors());
   router.use(
     session({
       secret: ops.sessionSecret,
-      resave: false,
-      saveUninitialized: false,
-      cookie: { secure: true, maxAge: 60000 },
+      // @ts-ignore
+      cookie: { path: "/", secure: false, maxAge: null },
+      resave: true,
+      saveUninitialized: true,
+      // cookie: { secure: false, maxAge: 60000 },
     })
   );
   router.use(passport.initialize());
   router.use(passport.session());
+  router.use(cors());
+  router.use(express.json());
 
   // log entry calls
   router.use((req, _res, next) => {

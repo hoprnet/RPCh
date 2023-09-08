@@ -77,7 +77,14 @@ export function challenge({ store }: Login) {
         const reason = "Internal server error";
         return res.status(500).json({ reason });
       }
-      return res.status(201).json({ nonce });
+      req.session.save((err) => {
+        if (err) {
+          log.error("Error saving session", err);
+          return res.status(403).json({});
+        } else {
+          return res.status(201).json({ nonce });
+        }
+      });
     });
   };
 }
