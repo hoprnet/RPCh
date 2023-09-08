@@ -1,3 +1,4 @@
+import cors from "cors";
 import express, { NextFunction, Request, Response } from "express";
 import passport from "passport";
 import session from "express-session";
@@ -97,6 +98,7 @@ export const v1Router = (ops: {
   const router = express.Router();
 
   router.use(express.json());
+  router.use(cors());
   router.use(session({ secret: ops.sessionSecret, cookie: { maxAge: 60000 } }));
   router.use(passport.initialize());
   router.use(passport.session());
