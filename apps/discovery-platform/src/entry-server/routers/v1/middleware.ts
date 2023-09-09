@@ -61,7 +61,18 @@ export function clientAuthorized(dbPool: Pool) {
       next();
     } else {
       const reason = "Client not authorized";
-      res.status(403).json({ reason });
+      res.status(403).json({ reason }).end();
+    }
+  };
+}
+
+export function userAuthorized() {
+  return function (req: Request, res: Response, next: NextFunction) {
+    if (req.user) {
+      next();
+    } else {
+      const reason = "User not authorized";
+      res.status(403).json({ reason }).end();
     }
   };
 }
@@ -73,7 +84,7 @@ export function adminAuthorized(adminSecret: string) {
       next();
     } else {
       const reason = "Not authorized";
-      res.status(403).json({ reason });
+      res.status(403).json({ reason }).end();
     }
   };
 }

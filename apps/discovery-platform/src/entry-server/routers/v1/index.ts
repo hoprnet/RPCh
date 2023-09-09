@@ -5,7 +5,7 @@ import session from "express-session";
 import { Pool } from "pg";
 
 // import * as user from "./user";
-// import * as client from "./client";
+import * as client from "./client";
 import * as login from "./login";
 import {
   //  body,
@@ -164,7 +164,13 @@ export const v1Router = (ops: {
 
   ////
   // clients
-  // router.get("clients", middleware.metric(requestDurationHistogram), client.index);
+
+  router.get(
+    "clients",
+    middleware.metric(requestDurationHistogram),
+    middleware.userAuthorized(),
+    client.index
+  );
   // router.post("clients", middleware.metric(requestDurationHistogram), client.create
   // );
   // router.get(
