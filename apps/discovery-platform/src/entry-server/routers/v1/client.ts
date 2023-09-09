@@ -32,7 +32,10 @@ export function index(dbPool: Pool) {
     client
       .listByUserId(dbPool, userId)
       .then((qRes) =>
-        res.send(200).json({ entries: qRes.rows, count: qRes.rowCount })
+        res.send(200).json({
+          entries: qRes.rows.map(client.mapFromDB),
+          count: qRes.rowCount,
+        })
       )
       .catch((err) => {
         log.error("Error during client listByUserId query", err);

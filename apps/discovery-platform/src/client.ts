@@ -87,7 +87,7 @@ export function update(
 export function listByUserId(
   dbPool: Pool,
   userId: string
-): Promise<QueryResult<DB[]>> {
+): Promise<QueryResult<DB>> {
   const q = "select * from clients where user_id = $1";
   return dbPool.query(q, [userId]);
 }
