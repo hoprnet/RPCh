@@ -6631,6 +6631,11 @@ npm-run-path@^4.0.1:
   dependencies:
     path-key "^3.0.0"
 
+oauth@0.9.x:
+  version "0.9.15"
+  resolved "https://registry.yarnpkg.com/oauth/-/oauth-0.9.15.tgz#bd1fefaf686c96b75475aed5196412ff60cfb9c1"
+  integrity sha512-a5ERWK1kh38ExDEfoO6qUHJb32rd7aYmPHuyCu3Fta/cnICvYmgd2uhuKXvPD+PXB+gCEYYEaQdIRAjCOwAKNA==
+
 object-assign@^4, object-assign@^4.0.1, object-assign@^4.1.1:
   version "4.1.1"
   resolved "https://registry.yarnpkg.com/object-assign/-/object-assign-4.1.1.tgz#2109adc7965887cfc05cbbd442cac8bfbb360863"
@@ -6872,6 +6877,21 @@ passport-ethereum-siwe@^0.1.0:
     passport-strategy "1.x.x"
     rand-token "^1.0.1"
     siwe "^1.1.6"
+
+passport-google-oidc@^0.1.0:
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/passport-google-oidc/-/passport-google-oidc-0.1.0.tgz#585790ba03864c0238cb89912d7e2a958086b5b0"
+  integrity sha512-/TtFXaWvmubm5kXNoJMyzBfxhnZ0lnBPA6w6rmQMP9klmHZf0ArE8IrIEt3yAHoiDzGx4eTO7YasKQFbPsNtVA==
+  dependencies:
+    passport-openidconnect "0.1.x"
+
+passport-openidconnect@0.1.x:
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/passport-openidconnect/-/passport-openidconnect-0.1.1.tgz#83921ff5f87f634079f65262dada834af1972244"
+  integrity sha512-r0QJiWEzwCg2MeCIXVP5G6YxVRqnEsZ2HpgKRthZ9AiQHJrgGUytXpsdcGF9BRwd3yMrEesb/uG/Yxb86rrY0g==
+  dependencies:
+    oauth "0.9.x"
+    passport-strategy "1.x.x"
 
 passport-strategy@1.x.x:
   version "1.0.0"
