@@ -1,5 +1,11 @@
 # @rpch/availability-monitor
 
+## 0.4.0
+
+### Minor Changes
+
+- Consolidated env vars
+
 ## 0.3.1
 
 ### Patch Changes

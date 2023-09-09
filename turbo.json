@@ -101,13 +101,7 @@
       ],
       "env": [
         "PORT",
-        "DB_CONNECTION_URL",
-        "REVIEWER_INTERVAL_MS",
-        "REVIEWER_CONCURRENCY",
-        "MIN_AMOUNT_PEERS",
-        "MIN_AMOUNT_CHANNELS",
-        "HOPRD_REQS_TIMEOUT",
-        "CHECK_TIMEOUT"
+        "DATABASE_URL"
       ]
     },
     "dev": {
