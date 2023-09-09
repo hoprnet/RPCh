@@ -43,10 +43,13 @@
     "memory-cache": "^0.2.0",
     "node-pg-migrate": "^6.2.2",
     "passport": "^0.6.0",
-    "passport-ethereum-siwe": "git+https://github.com/hoprnet/passport-ethereum-siwe.git#main",
+    "passport-ethereum-siwe": "^0.1.0",
     "passport-google-oidc": "^0.1.0",
     "pg": "^8.11.3",
     "pg-promise": "^11.0.0",
     "prom-client": "^14.2.0"
+  },
+  "resolutions": {
+    "passport-ethereum-siwe": "passport-ethereum-siwe-2@0.1.0"
   }
 }
