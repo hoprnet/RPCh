@@ -117,7 +117,7 @@ export const v1Router = (ops: {
     login.signin()
   );
 
-  router.post(
+  router.get(
     "/login/google",
     middleware.metric(requestDurationHistogram),
     passport.authenticate("google")
