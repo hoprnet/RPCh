@@ -72,7 +72,12 @@ export const v1Router = (ops: {
   );
   router.use(passport.initialize());
   router.use(passport.session());
-  router.use(cors());
+  router.use(
+    cors({
+      origin: true,
+      credentials: true,
+    })
+  );
   router.use(express.json());
 
   // log entry calls

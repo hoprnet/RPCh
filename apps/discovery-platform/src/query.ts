@@ -92,7 +92,7 @@ export function readUserByChainCred(
   const q = [
     "select * from users",
     "where id = (select user_id from chain_credentials",
-    `where chain_id = $1 and address = $2)`,
+    `where chain = $1 and address = $2)`,
   ].join(" ");
   return dbPool.query(q, [chain, address]);
 }
