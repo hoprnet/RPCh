@@ -32,14 +32,14 @@ export function index(dbPool: Pool) {
     client
       .listByUserId(dbPool, userId)
       .then((qRes) =>
-        res.send(200).json({
+        res.status(200).json({
           entries: qRes.rows.map(client.mapFromDB),
           count: qRes.rowCount,
         })
       )
       .catch((err) => {
         log.error("Error during client listByUserId query", err);
-        res.send(500);
+        res.status(500).end();
       });
   };
 }
@@ -50,11 +50,11 @@ export function create(dbPool: Pool) {
     client
       .create(dbPool, userId, req.body)
       .then((qRes) => {
-        res.send(201).json(client.mapFromDB(qRes.rows[0]));
+        res.status(201).json(client.mapFromDB(qRes.rows[0]));
       })
       .catch((err) => {
         log.error("Error during client create query", err);
-        res.send(500);
+        res.status(500).end();
       });
   };
 }
@@ -65,11 +65,11 @@ export function del(dbPool: Pool) {
     client
       .del(dbPool, userId, req.params[0])
       .then((_qRes) => {
-        res.send(204).end();
+        res.status(204).end();
       })
       .catch((err) => {
         log.error("Error during client delete query", err);
-        res.send(500);
+        res.status(500).end();
       });
   };
 }
@@ -80,11 +80,11 @@ export function read(dbPool: Pool) {
     client
       .read(dbPool, userId, req.params[0])
       .then((qRes) => {
-        res.send(200).json(client.mapFromDB(qRes.rows[0]));
+        res.status(200).json(client.mapFromDB(qRes.rows[0]));
       })
       .catch((err) => {
         log.error("Error during client read query", err);
-        res.send(500);
+        res.status(500).end();
       });
   };
 }
@@ -95,11 +95,11 @@ export function update(dbPool: Pool) {
     client
       .update(dbPool, userId, req.params[0], req.body)
       .then((qRes) => {
-        res.send(200).json(client.mapFromDB(qRes.rows[0]));
+        res.status(200).json(client.mapFromDB(qRes.rows[0]));
       })
       .catch((err) => {
         log.error("Error during client update query", err);
-        res.send(500);
+        res.status(500).end();
       });
   };
 }
