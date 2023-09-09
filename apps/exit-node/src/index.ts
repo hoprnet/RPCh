@@ -173,7 +173,7 @@ export const start = async (ops: {
     counterRequests.labels({ status: "error" }).inc();
   });
 
-  const intervals: NodeJS.Timer[] = [];
+  const intervals: ReturnType<typeof setInterval>[] = [];
   intervals.push(
     setInterval(() => {
       cache.removeExpired(ops.timeout);
