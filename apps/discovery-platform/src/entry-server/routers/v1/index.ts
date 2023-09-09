@@ -154,6 +154,22 @@ export const v1Router = (ops: {
     login.signin()
   );
 
+  router.post(
+    "/login/google",
+    middleware.metric(requestDurationHistogram),
+    passport.authenticate("google")
+  );
+  router.get(
+    "/oauth2/redirect/google",
+    passport.authenticate("google", {
+      failureRedirect: "/login",
+      failureMessage: true,
+    }),
+    function (req, res) {
+      res.redirect("/");
+    }
+  );
+
   //   ////
   //   // users
   //   router.get("users", middleware.metric(requestDurationHistogram), user.index);
