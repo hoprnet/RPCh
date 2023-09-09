@@ -15,7 +15,7 @@ export const entryServer = (ops: {
 }) => {
   app.use(compression());
 
-  // app.set("trust proxy", 1);
+  app.set("trust proxy", 1);
   app.use("/api/v1", v1Router(ops));
 
   // Prometheus metrics

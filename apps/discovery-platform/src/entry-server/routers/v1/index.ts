@@ -64,9 +64,10 @@ export const v1Router = (ops: {
   router.use(
     session({
       secret: ops.secrets.sessionSecret,
-      cookie: { secure: true, maxAge: undefined, sameSite: "none" },
-      resave: true,
-      saveUninitialized: true,
+      cookie: { path: "/", secure: true, maxAge: undefined, sameSite: "none" },
+      resave: false,
+      saveUninitialized: false,
+      // cookie: { secure: false, maxAge: 60000 },
     })
   );
   router.use(passport.initialize());
