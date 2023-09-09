@@ -9,7 +9,7 @@ import * as client from "./client";
 import * as login from "./login";
 import {
   //  body,
-  //  checkSchema,
+  checkSchema,
   //  header,
   //  param,
   matchedData,
@@ -178,26 +178,33 @@ export const v1Router = (ops: {
     "clients",
     middleware.metric(requestDurationHistogram),
     middleware.userAuthorized(),
+    checkSchema(client.createSchema),
     client.create(ops.dbPool)
   );
   router.get(
     "clients/:id",
     middleware.metric(requestDurationHistogram),
+    middleware.userAuthorized(),
     client.read(ops.dbPool)
   );
   router.patch(
     "clients/:id",
     middleware.metric(requestDurationHistogram),
+    middleware.userAuthorized(),
+    checkSchema(client.updateSchema),
     client.update(ops.dbPool)
   );
   router.put(
     "clients/:id",
     middleware.metric(requestDurationHistogram),
+    middleware.userAuthorized(),
+    checkSchema(client.updateSchema),
     client.update(ops.dbPool)
   );
   router.delete(
     "clients/:id",
     middleware.metric(requestDurationHistogram),
+    middleware.userAuthorized(),
     client.del(ops.dbPool)
   );
 
@@ -771,7 +778,7 @@ function getNodesZeroHopPairings(dbPool: Pool) {
     }
 
     const data = matchedData(req);
-    q.readZeroHopPairings(dbPool, data.amount, data.since)
+    q.listZeroHopPairings(dbPool, data.amount, data.since)
       .then((qPairings) => {
         if (qPairings.rowCount === 0) {
           // table is empty
@@ -793,14 +800,14 @@ function getNodesZeroHopPairings(dbPool: Pool) {
         );
 
         // query entry and exit nodes
-        const qEntryNodes = q.readEntryNodes(dbPool, pairings.keys());
+        const qEntryNodes = q.listEntryNodes(dbPool, pairings.keys());
         const exitIds = Array.from(pairings.values()).reduce((acc, xIds) => {
           for (const xId of xIds) {
             acc.add(xId);
           }
           return acc;
         }, new Set());
-        const qExitNodes = q.readExitNodes(dbPool, exitIds);
+        const qExitNodes = q.listExitNodes(dbPool, exitIds);
 
         // wait for entry and exit nodes query results
         Promise.all([qEntryNodes, qExitNodes])

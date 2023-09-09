@@ -1,5 +1,4 @@
 import type { Pool, QueryResult } from "pg";
-
 export type DB = {
   id: string;
   user_id: string;
