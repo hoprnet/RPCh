@@ -1,5 +1,14 @@
 # @rpch/discovery-platform
 
+## 0.5.0
+
+### Minor Changes
+
+- 00f6de6: Add DP as backend for user onboarding
+
+  - includes adding signup with google and ethereum
+  - backend routes for creating RPCh ready clients
+
 ## 0.4.0
 
 ### Minor Changes
