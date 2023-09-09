@@ -4,8 +4,8 @@ import { DBInstance } from "../db";
 import { v1Router } from "./routers/v1";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 import compression from "compression";
+
 import type { AvailabilityMonitorResult } from "../types";
-import type { Secrets } from "./secrets";
 
 const app = express();
 
@@ -14,7 +14,9 @@ export const entryServer = (ops: {
   dbPool: Pool;
   baseQuota: bigint;
   metricManager: MetricManager;
+  // @ts-ignore
   secrets: Secrets;
+  url: string;
   getAvailabilityMonitorResults: () => Map<string, AvailabilityMonitorResult>;
 }) => {
   app.use(compression());

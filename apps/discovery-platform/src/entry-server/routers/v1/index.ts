@@ -61,9 +61,10 @@ export const v1Router = (ops: {
   baseQuota: bigint;
   metricManager: MetricManager;
   secrets: Secrets;
+  url: string;
   getAvailabilityMonitorResults: () => Map<string, AvailabilityMonitorResult>;
 }) => {
-  const loginState = login.create(ops.dbPool);
+  const loginState = login.create(ops.dbPool, ops.secrets, ops.url);
   /** @return an array of unstable peer ids */
   function getUnstableNodes() {
     return Array.from(ops.getAvailabilityMonitorResults().entries()).reduce<

@@ -79,6 +79,7 @@
         "SESSION_SECRET",
         "GOOGLE_CLIENT_ID",
         "GOOGLE_CLIENT_SECRET",
+        "URL",
         "AVAILABILITY_MONITOR_URL",
         "RUNNING_IN_SANDBOX"
       ]

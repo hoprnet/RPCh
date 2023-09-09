@@ -24,6 +24,7 @@ const start = async (ops: {
   baseQuota: bigint;
   port: number;
   secrets: Secrets;
+  url: string;
   availabilityMonitorUrl?: string;
 }) => {
   // let availabilityMonitorResults = new Map<string, AvailabilityMonitorResult>();
@@ -55,6 +56,7 @@ const start = async (ops: {
     baseQuota: ops.baseQuota,
     metricManager: metricManager,
     secrets: ops.secrets,
+    url: ops.url,
     getAvailabilityMonitorResults: () => availabilityMonitorResults,
   });
 
@@ -157,6 +159,9 @@ const main = () => {
   if (!process.env.GOOGLE_CLIENT_SECRET) {
     throw new Error("Missing 'GOOGLE_CLIENT_SECRET' env var.");
   }
+  if (!process.env.URL) {
+    throw new Error("Missing 'URL' env var.");
+  }
 
   // init db
   const connectionString = process.env.DB_CONNECTION_URL;
@@ -176,6 +181,7 @@ const main = () => {
     dbPool,
     port: parseInt(process.env.PORT, 10),
     secrets,
+    url: process.env.URL,
     availabilityMonitorUrl: constants.AVAILABILITY_MONITOR_URL,
   });
 };

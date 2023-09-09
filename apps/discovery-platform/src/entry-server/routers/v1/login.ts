@@ -22,7 +22,7 @@ const chainId = "eip155:1";
 
 type VerifyCb = (err?: Error, user?: q.User | false) => {};
 
-export function create(dbPool: Pool, secrets: Secrets, url: URL): Login {
+export function create(dbPool: Pool, secrets: Secrets, url: string): Login {
   const store = new SessionNonceStore();
   const lState = { store };
 
