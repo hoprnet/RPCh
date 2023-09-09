@@ -172,30 +172,34 @@ export const v1Router = (ops: {
     "clients",
     middleware.metric(requestDurationHistogram),
     middleware.userAuthorized(),
-    client.index
+    client.index(ops.dbPool)
   );
-  // router.post("clients", middleware.metric(requestDurationHistogram), client.create
-  // );
-  // router.get(
-  //   "clients/:id",
-  //   middleware.metric(requestDurationHistogram),
-  //   client.get
-  // );
-  // router.patch(
-  //   "clients/:id",
-  //   middleware.metric(requestDurationHistogram),
-  //   client.update
-  // );
-  // router.put(
-  //   "clients/:id",
-  //   middleware.metric(requestDurationHistogram),
-  //   client.update
-  // );
-  // router.delete(
-  //   "clients/:id",
-  //   middleware.metric(requestDurationHistogram),
-  //   client.delete
-  // );
+  router.post(
+    "clients",
+    middleware.metric(requestDurationHistogram),
+    middleware.userAuthorized(),
+    client.create(ops.dbPool)
+  );
+  router.get(
+    "clients/:id",
+    middleware.metric(requestDurationHistogram),
+    client.read(ops.dbPool)
+  );
+  router.patch(
+    "clients/:id",
+    middleware.metric(requestDurationHistogram),
+    client.update(ops.dbPool)
+  );
+  router.put(
+    "clients/:id",
+    middleware.metric(requestDurationHistogram),
+    client.update(ops.dbPool)
+  );
+  router.delete(
+    "clients/:id",
+    middleware.metric(requestDurationHistogram),
+    client.del(ops.dbPool)
+  );
 
   /*
   router.get(

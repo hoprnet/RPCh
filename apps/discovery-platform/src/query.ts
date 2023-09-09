@@ -137,29 +137,29 @@ export function createFederatedCredential(
   return dbPool.query(q, vals);
 }
 
-export function readEntryNodes(
+export function listEntryNodes(
   dbPool: Pool,
-  node_ids: Iterable<string>
+  nodeIds: Iterable<string>
 ): Promise<QueryResult<EntryNode>> {
-  const qIds = Array.from(node_ids)
+  const qIds = Array.from(nodeIds)
     .map((i) => `'${i}'`)
     .join(",");
   const q = `select id, hoprd_api_endpoint, hoprd_api_token from registered_nodes where id in (${qIds})`;
   return dbPool.query(q);
 }
 
-export function readExitNodes(
+export function listExitNodes(
   dbPool: Pool,
-  node_ids: Iterable<string>
+  nodeIds: Iterable<string>
 ): Promise<QueryResult<ExitNode>> {
-  const qIds = Array.from(node_ids)
+  const qIds = Array.from(nodeIds)
     .map((i) => `'${i}'`)
     .join(",");
   const q = `select id, exit_node_pub_key from registered_nodes where id in (${qIds})`;
   return dbPool.query(q);
 }
 
-export function readZeroHopPairings(
+export function listZeroHopPairings(
   dbPool: Pool,
   amount: number,
   since?: string
@@ -176,18 +176,6 @@ export function readZeroHopPairings(
     return dbPool.query(q, [date]);
   }
   const q = [qSelect, qOrder].join(" ");
-  return dbPool.query(q);
-}
-
-export function readClientIds(
-  dbPool: Pool,
-  clientId: string
-): Promise<QueryResult<{ id: string }>> {
-  const q = [
-    "select id from clients",
-    `where external_token = '${clientId}' and`,
-    "(invalidated_at is null or invalidated_at > now())",
-  ].join(" ");
   return dbPool.query(q);
 }
 
