@@ -1,5 +1,11 @@
 # @rpch/discovery-platform
 
+## 0.5.3
+
+### Patch Changes
+
+- fix cors cookie setting
+
 ## 0.5.2
 
 ### Patch Changes
