@@ -1,34 +1,21 @@
 import { Pool } from "pg";
 import express from "express";
-import { DBInstance } from "../db";
 import { v1Router } from "./routers/v1";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 import compression from "compression";
-import type { AvailabilityMonitorResult } from "../types";
 
 const app = express();
 
 export const entryServer = (ops: {
-  db: DBInstance;
   dbPool: Pool;
-  baseQuota: bigint;
   metricManager: MetricManager;
-  secret: string;
-  getAvailabilityMonitorResults: () => Map<string, AvailabilityMonitorResult>;
+  // @ts-ignore
+  secrets: Secrets;
+  url: string;
 }) => {
   app.use(compression());
 
-  app.use(
-    "/api/v1",
-    v1Router({
-      baseQuota: ops.baseQuota,
-      db: ops.db,
-      dbPool: ops.dbPool,
-      metricManager: ops.metricManager,
-      secret: ops.secret,
-      getAvailabilityMonitorResults: ops.getAvailabilityMonitorResults,
-    })
-  );
+  app.use("/api/v1", v1Router(ops));
 
   // Prometheus metrics
   app.get("/api/metrics", async (req, res) => {

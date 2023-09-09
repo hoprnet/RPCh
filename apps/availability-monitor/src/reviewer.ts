@@ -38,7 +38,7 @@ export class ReviewQueue {
  * Additionally, updates prometheus with the results.
  */
 export default class Reviewer {
-  private interval: NodeJS.Timer | undefined;
+  private interval: ReturnType<typeof setInterval> | undefined;
   private stabilityGuage: Gauge;
   private reviewQueue: ReviewQueue;
   public readonly results: Map<string, Result> = new Map();

@@ -1,8 +1,8 @@
-import * as q from "./../../../query";
 import { getClientQuotas, type DBInstance } from "../../../db";
 import memoryCache from "memory-cache";
+
 import { createLogger } from "../../../utils";
-import { getClient } from "../../../client";
+import * as dbClient from "../../../client";
 
 import type { Pool } from "pg";
 import type { NextFunction, Request, Response } from "express";
@@ -39,29 +39,29 @@ export const doesClientHaveQuota = async (
   return sum >= baseQuota;
 };
 
-export const clientExists =
-  (db: DBInstance) =>
-  async (req: Request, res: Response<any, any>, next: NextFunction) => {
-    const clientId = req.headers["x-rpch-client"] as string;
-    const client = await getClient(db, clientId);
-    if (!client) {
-      res.status(404).json("Client does not exist");
-    }
-    next();
-  };
-
 export function clientAuthorized(dbPool: Pool) {
   return async function (req: Request, res: Response, next: NextFunction) {
     const clientId = req.headers["x-rpch-client"] as string;
-    const result = await q
-      .readClientIds(dbPool, clientId)
+    const result = await dbClient
+      .listIdsByExternalToken(dbPool, clientId)
       .catch((ex) => log.error("Error reading clientIds", ex));
     const count = result?.rowCount || 0;
     if (count > 0) {
       next();
     } else {
       const reason = "Client not authorized";
-      res.status(403).json({ reason });
+      res.status(403).json({ reason }).end();
+    }
+  };
+}
+
+export function userAuthorized() {
+  return function (req: Request, res: Response, next: NextFunction) {
+    if (req.user) {
+      next();
+    } else {
+      const reason = "User not authorized";
+      res.status(403).json({ reason }).end();
     }
   };
 }
@@ -73,7 +73,7 @@ export function adminAuthorized(adminSecret: string) {
       next();
     } else {
       const reason = "Not authorized";
-      res.status(403).json({ reason });
+      res.status(403).json({ reason }).end();
     }
   };
 }

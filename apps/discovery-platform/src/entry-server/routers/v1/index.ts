@@ -1,69 +1,41 @@
-import { Pool } from "pg";
+const cors = require("cors");
 import express, { Request, Response } from "express";
+import passport from "passport";
+import session from "express-session";
+import { Pool } from "pg";
+
+// import * as user from "./user";
+import * as client from "./client";
+import * as login from "./login";
 import {
-  body,
+  //  body,
   checkSchema,
-  header,
-  param,
+  //  header,
+  //  param,
   matchedData,
   query,
   validationResult,
 } from "express-validator";
-import {
-  createClient,
-  createTrialClient,
-  getClient,
-  updateClient,
-} from "../../../client";
-import { DBInstance, deleteRegisteredNode } from "../../../db";
-import { createQuota } from "../../../quota";
-import {
-  // createRegisteredNode,
-  getEligibleNode,
-  getRegisteredNode,
-  getRegisteredNodes,
-} from "../../../registered-node";
-import type {
-  ClientDB,
-  // RegisteredNode,
-  RegisteredNodeDB,
-  AvailabilityMonitorResult,
-} from "../../../types";
-import { createLogger, isListSafe, toLocalhostEndpoint } from "../../../utils";
-import { errors } from "pg-promise";
+import { createLogger } from "../../../utils";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
-import * as constants from "../../../constants";
-import { getNodeSchema /* registerNodeSchema */ } from "./schema";
-import {
-  clientExists,
-  // doesClientHaveQuota,
-  getCache,
-  setCache,
-} from "./middleware";
 import * as middleware from "./middleware";
 import * as q from "./../../../query";
 
-const log = createLogger(["entry-server", "router", "v1"]);
+import type { Secrets } from "./../../../secrets";
+
+const log = createLogger(["entry-server", "router"]);
 
 // Express Router
 export const v1Router = (ops: {
-  db: DBInstance;
   dbPool: Pool;
-  baseQuota: bigint;
   metricManager: MetricManager;
-  secret: string;
-  getAvailabilityMonitorResults: () => Map<string, AvailabilityMonitorResult>;
+  secrets: Secrets;
+  url: string;
 }) => {
+  const loginState = login.create(ops.dbPool, ops.secrets, ops.url);
   /** @return an array of unstable peer ids */
-  function getUnstableNodes() {
-    return Array.from(ops.getAvailabilityMonitorResults().entries()).reduce<
-      string[]
-    >((result, [peerId, { isStable }]) => {
-      if (!isStable) result.push(peerId);
-      return result;
-    }, []);
-  }
 
+  /*
   // Metrics
   const counterSuccessfulRequests = ops.metricManager.createCounter(
     "counter_successful_request",
@@ -76,6 +48,7 @@ export const v1Router = (ops: {
     "amount of failed requests discovery platform has processed",
     { labelNames: ["method", "path", "status"] }
   );
+ */
 
   const requestDurationHistogram = ops.metricManager.createHistogram(
     "request_duration_ms",
@@ -88,6 +61,23 @@ export const v1Router = (ops: {
 
   const router = express.Router();
 
+  router.use(
+    session({
+      secret: ops.secrets.sessionSecret,
+      cookie: { path: "/", secure: false, maxAge: undefined },
+      resave: false,
+      saveUninitialized: false,
+      // cookie: { secure: false, maxAge: 60000 },
+    })
+  );
+  router.use(passport.initialize());
+  router.use(passport.session());
+  router.use(
+    cors({
+      origin: true,
+      credentials: true,
+    })
+  );
   router.use(express.json());
 
   // log entry calls
@@ -112,11 +102,115 @@ export const v1Router = (ops: {
   router.post(
     "/node/register",
     middleware.metric(requestDurationHistogram),
-    middleware.adminAuthorized(ops.secret),
+    middleware.adminAuthorized(ops.secrets.adminSecret),
     // checkSchema(registerNodeSchema),
     postNodeRegister(ops.dbPool)
   );
 
+  ////
+  // authentication
+  router.post(
+    "/login/ethereum/challenge",
+    middleware.metric(requestDurationHistogram),
+    login.challenge(loginState)
+  );
+
+  router.post(
+    "/login/ethereum",
+    middleware.metric(requestDurationHistogram),
+    passport.authenticate("ethereum", { failureMessage: true }),
+    login.signin()
+  );
+
+  router.get(
+    "/login/google",
+    middleware.metric(requestDurationHistogram),
+    passport.authenticate("google")
+  );
+  router.get(
+    "/oauth2/redirect/google",
+    passport.authenticate("google", {
+      failureRedirect: "/login/google",
+      failureMessage: true,
+    }),
+    function (req, res) {
+      res.redirect("/login/google");
+    }
+  );
+
+  //   ////
+  //   // users
+  //   router.get("users", middleware.metric(requestDurationHistogram), user.index);
+  //   router.post(
+  //     "users",
+  //     middleware.metric(requestDurationHistogram),
+  //     user.create
+  //   );
+  //   router.get(
+  //     "users/:id",
+  //     middleware.metric(requestDurationHistogram),
+  //     user.get
+  //   );
+  //   router.patch(
+  //     "users/:id",
+  //     middleware.metric(requestDurationHistogram),
+  //     user.update
+  //   );
+  //   router.put(
+  //     "users/:id",
+  //     middleware.metric(requestDurationHistogram),
+  //     user.update
+  //   );
+  //   router.delete(
+  //     "users/:id",
+  //     middleware.metric(requestDurationHistogram),
+  //     user.delete
+  //   );
+
+  ////
+  // clients
+
+  router.get(
+    "/clients",
+    middleware.metric(requestDurationHistogram),
+    middleware.userAuthorized(),
+    client.index(ops.dbPool)
+  );
+  router.post(
+    "/clients",
+    middleware.metric(requestDurationHistogram),
+    middleware.userAuthorized(),
+    checkSchema(client.createSchema),
+    client.create(ops.dbPool)
+  );
+  router.get(
+    "/clients/:id",
+    middleware.metric(requestDurationHistogram),
+    middleware.userAuthorized(),
+    client.read(ops.dbPool)
+  );
+  router.patch(
+    "/clients/:id",
+    middleware.metric(requestDurationHistogram),
+    middleware.userAuthorized(),
+    checkSchema(client.updateSchema),
+    client.update(ops.dbPool)
+  );
+  router.put(
+    "/clients/:id",
+    middleware.metric(requestDurationHistogram),
+    middleware.userAuthorized(),
+    checkSchema(client.updateSchema),
+    client.update(ops.dbPool)
+  );
+  router.delete(
+    "/clients/:id",
+    middleware.metric(requestDurationHistogram),
+    middleware.userAuthorized(),
+    client.del(ops.dbPool)
+  );
+
+  /*
   router.get(
     "/node",
     middleware.metric(requestDurationHistogram),
@@ -249,7 +343,7 @@ export const v1Router = (ops: {
     middleware.metric(requestDurationHistogram),
     header("x-secret-key")
       .exists()
-      .custom((val) => val === ops.secret),
+      .custom((val) => val === ops.secrets.adminSecret),
     body("client").exists(),
     body("quota").exists().bail().isNumeric(),
     async (req, res) => {
@@ -312,7 +406,7 @@ export const v1Router = (ops: {
     middleware.metric(requestDurationHistogram),
     header("x-secret-key")
       .exists()
-      .custom((val) => val === ops.secret),
+      .custom((val) => val === ops.secrets.adminSecret),
     param("id").isAlphanumeric(),
     async (req: Request<{ id: string }>, res: Response) => {
       try {
@@ -507,7 +601,9 @@ export const v1Router = (ops: {
       }
     }
   );
+ */
 
+  /*
   router.post(
     "/request/one-hop-delivery-routes",
     middleware.metric(requestDurationHistogram),
@@ -671,6 +767,7 @@ export const v1Router = (ops: {
       }
     }
   );
+  */
 
   return router;
 };
@@ -683,7 +780,7 @@ function getNodesZeroHopPairings(dbPool: Pool) {
     }
 
     const data = matchedData(req);
-    q.readZeroHopPairings(dbPool, data.amount, data.since)
+    q.listZeroHopPairings(dbPool, data.amount, data.since)
       .then((qPairings) => {
         if (qPairings.rowCount === 0) {
           // table is empty
@@ -705,14 +802,14 @@ function getNodesZeroHopPairings(dbPool: Pool) {
         );
 
         // query entry and exit nodes
-        const qEntryNodes = q.readEntryNodes(dbPool, pairings.keys());
+        const qEntryNodes = q.listEntryNodes(dbPool, pairings.keys());
         const exitIds = Array.from(pairings.values()).reduce((acc, xIds) => {
           for (const xId of xIds) {
             acc.add(xId);
           }
           return acc;
         }, new Set());
-        const qExitNodes = q.readExitNodes(dbPool, exitIds);
+        const qExitNodes = q.listExitNodes(dbPool, exitIds);
 
         // wait for entry and exit nodes query results
         Promise.all([qEntryNodes, qExitNodes])
