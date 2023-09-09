@@ -1,5 +1,5 @@
 // @ts-ignore
-import EthereumStrategy, { SessionNonceStore } from "passport-ethereum-siwe";
+import EthereumStrategy, { SessionNonceStore } from "passport-ethereum-siwe-2";
 // @ts-ignore
 import GoogleStrategy from "passport-google-oidc";
 import passport from "passport";

@@ -6939,10 +6939,10 @@ parseurl@~1.3.3:
   resolved "https://registry.yarnpkg.com/parseurl/-/parseurl-1.3.3.tgz#9da19e7bee8d12dff0513ed5b76957793bc2e8d4"
   integrity sha512-CiyeOxFT/JZyN5m0z9PfXw4SCBJ6Sygz1Dpl0wqjlhDEGGBP1GnsUVEL0p63hoG1fcj3fHynXi9NYO4nWOL+qQ==
 
-passport-ethereum-siwe@^0.1.0:
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/passport-ethereum-siwe/-/passport-ethereum-siwe-0.1.0.tgz#f60b3c9c92cc5cb8c38494f328e343e232055888"
-  integrity sha512-5A1h2ji+OH/SMvq7JxtY5EaM8jR3IU/mx5zA6wJrfzxpnlTE6Jn1h0z0Kv84hd1dzrwnsQKfqwaZECH/6PVFEg==
+passport-ethereum-siwe-2@^0.1.1:
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/passport-ethereum-siwe-2/-/passport-ethereum-siwe-2-0.1.1.tgz#19648cfcdf40a4d1a5f6e41b7f5ea071bd321016"
+  integrity sha512-9V0T6/1i8sTlIqHZEe0YjYlN7hjTk9GD5UV7Pmm7zzvZi5Bg4AcmepXwltFOr9Mzfs5sZB/8BO7Tf2D9H2qFJA==
   dependencies:
     passport-strategy "1.x.x"
     rand-token "^1.0.1"

@@ -1,5 +1,11 @@
 # @rpch/discovery-platform
 
+## 0.5.1
+
+### Patch Changes
+
+- updated SIWE dep
+
 ## 0.5.0
 
 ### Minor Changes
