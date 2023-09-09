@@ -46,7 +46,7 @@ export function create(dbPool: Pool, secrets: Secrets, url: string): Login {
       {
         clientID: secrets.googleClientID,
         clientSecret: secrets.googleClientSecret,
-        callbackURL: cbURL,
+        callbackURL: cbURL.toString(),
       },
       function (
         issuer: string,
