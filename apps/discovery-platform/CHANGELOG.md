@@ -1,5 +1,11 @@
 # @rpch/discovery-platform
 
+## 0.5.4
+
+### Patch Changes
+
+- fix cookie issues
+
 ## 0.5.3
 
 ### Patch Changes
