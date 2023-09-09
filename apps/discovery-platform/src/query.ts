@@ -53,18 +53,11 @@ export type ChainCredential = {
   chain: string;
 };
 
-export function readLogin(
-  dbPool: Pool,
-  address: string,
-  chain: string
-): Promise<QueryResult<User>> {
-  const q = [
-    "select * from users",
-    "where id = (select user_id from chain_credentials",
-    `where chain_id = $1 and address = $2)`,
-  ].join(" ");
-  return dbPool.query(q, [chain, address]);
-}
+export type FederatedCredential = {
+  user_id: string;
+  provider: string;
+  subject: string;
+};
 
 export function createUser(
   dbPool: Pool,
@@ -91,12 +84,53 @@ export function readUserById(
   return dbPool.query(q, [id]);
 }
 
+export function readUserByChainCred(
+  dbPool: Pool,
+  address: string,
+  chain: string
+): Promise<QueryResult<User>> {
+  const q = [
+    "select * from users",
+    "where id = (select user_id from chain_credentials",
+    `where chain_id = $1 and address = $2)`,
+  ].join(" ");
+  return dbPool.query(q, [chain, address]);
+}
+
+export function readUserByFederatedCred(
+  dbPool: Pool,
+  provider: string,
+  subject: string
+): Promise<QueryResult<User>> {
+  const q = [
+    "select * from users",
+    "where id = (select user_id from federated_credentials",
+    `where provider = $1 and subject = $2)`,
+  ].join(" ");
+  return dbPool.query(q, [provider, subject]);
+}
+
 export function createChainCredential(dbPool: Pool, attrs: ChainCredential) {
   const cols = ["user_id", "address", "chain"];
   const vals = [attrs.user_id, attrs.address, attrs.chain];
   const valIdxs = vals.map((_e, idx) => `$${idx + 1}`);
   const q = [
     "insert into chain_credentials",
+    `(${cols.join(",")})`,
+    `values (${valIdxs.join(",")})`,
+  ].join(" ");
+  return dbPool.query(q, vals);
+}
+
+export function createFederatedCredential(
+  dbPool: Pool,
+  attrs: FederatedCredential
+) {
+  const cols = ["user_id", "provider", "subject"];
+  const vals = [attrs.user_id, attrs.provider, attrs.subject];
+  const valIdxs = vals.map((_e, idx) => `$${idx + 1}`);
+  const q = [
+    "insert into federated_credentials",
     `(${cols.join(",")})`,
     `values (${valIdxs.join(",")})`,
   ].join(" ");

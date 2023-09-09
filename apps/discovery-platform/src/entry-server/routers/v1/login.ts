@@ -1,5 +1,7 @@
 // @ts-ignore
 import EthereumStrategy, { SessionNonceStore } from "passport-ethereum-siwe";
+// @ts-ignore
+import GoogleStrategy from "passport-google-oidc";
 import passport from "passport";
 
 import * as q from "../../../query";
@@ -7,6 +9,8 @@ import { createLogger } from "../../../utils";
 
 import type { Pool, QueryResult } from "pg";
 import type { Request, Response } from "express";
+
+import type { Secrets } from "./../../../secrets";
 
 export type Login = {
   store: SessionNonceStore;
@@ -18,7 +22,7 @@ const chainId = "eip155:1";
 
 type VerifyCb = (err?: Error, user?: q.User | false) => {};
 
-export function create(dbPool: Pool): Login {
+export function create(dbPool: Pool, secrets: Secrets, url: URL): Login {
   const store = new SessionNonceStore();
   const lState = { store };
 
@@ -27,13 +31,36 @@ export function create(dbPool: Pool): Login {
       address: string,
       cb: VerifyCb
     ) {
-      q.readLogin(dbPool, address, chainId)
-        .then((res) => login(dbPool, address, res, cb))
+      q.readUserByChainCred(dbPool, address, chainId)
+        .then((res) => loginChain(dbPool, address, res, cb))
         .catch((err) => {
-          log.error("Error during readLogin query", err);
+          log.error("Error during readUserByChainCred query", err);
           cb(err);
         });
     })
+  );
+
+  const cbURL = new URL("oauth2/redirect/google", url);
+  passport.use(
+    new GoogleStrategy(
+      {
+        clientID: secrets.googleClientID,
+        clientSecret: secrets.googleClientSecret,
+        callbackURL: cbURL,
+      },
+      function (
+        issuer: string,
+        profile: { id: string; displayName: string },
+        cb: VerifyCb
+      ) {
+        q.readUserByFederatedCred(dbPool, issuer, profile.id)
+          .then((res) => loginFederated(dbPool, issuer, profile, res, cb))
+          .catch((err) => {
+            log.error("Error during readUserByFederatedCred query", err);
+            cb(err);
+          });
+      }
+    )
   );
 
   passport.serializeUser(function (user, done) {
@@ -107,24 +134,24 @@ export function signin() {
   };
 }
 
-async function login(
+function loginChain(
   dbPool: Pool,
   address: string,
   res: QueryResult<q.User>,
   cb: VerifyCb
 ) {
   if (res.rowCount === 0) {
-    return createLogin(dbPool, address, cb);
+    return createChainLogin(dbPool, address, cb);
   }
   if (res.rowCount === 1) {
     return cb(undefined, res.rows[0]);
   }
-  const reason = "Wrong rowCount from readLogin query";
+  const reason = "Wrong rowCount from readUserByChainCred query";
   log.error(reason, res);
   return cb(new Error(reason));
 }
 
-function createLogin(dbPool: Pool, address: string, cb: VerifyCb) {
+function createChainLogin(dbPool: Pool, address: string, cb: VerifyCb) {
   q.createUser(dbPool, {})
     .then((res) => {
       if (res.rowCount !== 1) {
@@ -141,6 +168,55 @@ function createLogin(dbPool: Pool, address: string, cb: VerifyCb) {
         .then(() => cb(undefined, user))
         .catch((err) => {
           log.error("Error during createChainCredential query", err);
+          return cb(err);
+        });
+    })
+    .catch((err) => {
+      log.error("Error during createUser query", err);
+      return cb(err);
+    });
+}
+
+function loginFederated(
+  dbPool: Pool,
+  issuer: string,
+  profile: { id: string; displayName: string },
+  res: QueryResult<q.User>,
+  cb: VerifyCb
+) {
+  if (res.rowCount === 0) {
+    return createFederatedLogin(dbPool, issuer, profile, cb);
+  }
+  if (res.rowCount === 1) {
+    return cb(undefined, res.rows[0]);
+  }
+  const reason = "Wrong rowCount from readUserByFederatedCred query";
+  log.error(reason, res);
+  return cb(new Error(reason));
+}
+
+function createFederatedLogin(
+  dbPool: Pool,
+  issuer: string,
+  profile: { id: string; displayName: string },
+  cb: VerifyCb
+) {
+  q.createUser(dbPool, { name: profile.displayName })
+    .then((res) => {
+      if (res.rowCount !== 1) {
+        const reason = "Wrong rowCount from createUser query";
+        log.error(reason, res);
+        return cb(new Error(reason));
+      }
+      const user = res.rows[0];
+      q.createFederatedCredential(dbPool, {
+        user_id: user.id,
+        provider: issuer,
+        subject: profile.id,
+      })
+        .then(() => cb(undefined, user))
+        .catch((err) => {
+          log.error("Error during createFederatedCredential query", err);
           return cb(err);
         });
     })
