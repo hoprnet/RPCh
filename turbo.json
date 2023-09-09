@@ -77,6 +77,8 @@
         "SKIP_CHECK_COMMITMENT",
         "SECRET",
         "SESSION_SECRET",
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
         "AVAILABILITY_MONITOR_URL",
         "RUNNING_IN_SANDBOX"
       ]

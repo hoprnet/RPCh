@@ -12,6 +12,8 @@ import { runMigrations } from "@rpch/common/build/internal/db";
 // import * as async from "async";
 import path from "path";
 import migrate from "node-pg-migrate";
+
+import type { Secrets } from "./secrets";
 // import type { RegisteredNodeDB, AvailabilityMonitorResult } from "./types";
 
 const log = createLogger();
@@ -21,8 +23,7 @@ const start = async (ops: {
   dbPool: Pool;
   baseQuota: bigint;
   port: number;
-  secret: string;
-  sessionSecret: string;
+  secrets: Secrets;
   availabilityMonitorUrl?: string;
 }) => {
   // let availabilityMonitorResults = new Map<string, AvailabilityMonitorResult>();
@@ -53,8 +54,7 @@ const start = async (ops: {
     dbPool: ops.dbPool,
     baseQuota: ops.baseQuota,
     metricManager: metricManager,
-    secret: ops.secret,
-    sessionSecret: ops.sessionSecret,
+    secrets: ops.secrets,
     getAvailabilityMonitorResults: () => availabilityMonitorResults,
   });
 
@@ -150,19 +150,32 @@ const main = () => {
   if (!process.env.SESSION_SECRET) {
     throw new Error("Missing 'SESSION_SECRET' env var.");
   }
+  // google oauth
+  if (!process.env.GOOGLE_CLIENT_ID) {
+    throw new Error("Missing 'GOOGLE_CLIENT_ID' env var.");
+  }
+  if (!process.env.GOOGLE_CLIENT_SECRET) {
+    throw new Error("Missing 'GOOGLE_CLIENT_SECRET' env var.");
+  }
 
   // init db
   const connectionString = process.env.DB_CONNECTION_URL;
   const dbPool = new Pool({ connectionString });
   const dbInst = pgp()({ connectionString });
 
+  const secrets = {
+    adminSecret: process.env.SECRET,
+    sessionSecret: process.env.SESSION_SECRET,
+    googleClientID: process.env.GOOGLE_CLIENT_ID,
+    googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  };
+
   start({
     baseQuota: constants.BASE_QUOTA,
     db: dbInst,
     dbPool,
     port: parseInt(process.env.PORT, 10),
-    secret: process.env.SECRET,
-    sessionSecret: process.env.SESSION_SECRET,
+    secrets,
     availabilityMonitorUrl: constants.AVAILABILITY_MONITOR_URL,
   });
 };

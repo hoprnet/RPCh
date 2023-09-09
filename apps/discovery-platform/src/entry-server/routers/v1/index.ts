@@ -50,7 +50,9 @@ import {
 import * as middleware from "./middleware";
 import * as q from "./../../../query";
 
-const log = createLogger(["entry-server", "router", "v1"]);
+import type { Secrets } from "./../../../secrets";
+
+const log = createLogger(["entry-server", "router"]);
 
 // Express Router
 export const v1Router = (ops: {
@@ -58,8 +60,7 @@ export const v1Router = (ops: {
   dbPool: Pool;
   baseQuota: bigint;
   metricManager: MetricManager;
-  secret: string;
-  sessionSecret: string;
+  secrets: Secrets;
   getAvailabilityMonitorResults: () => Map<string, AvailabilityMonitorResult>;
 }) => {
   const loginState = login.create(ops.dbPool);
@@ -99,11 +100,10 @@ export const v1Router = (ops: {
 
   router.use(
     session({
-      secret: ops.sessionSecret,
-      // @ts-ignore
-      cookie: { path: "/", secure: false, maxAge: null },
-      resave: true,
-      saveUninitialized: true,
+      secret: ops.secrets.sessionSecret,
+      cookie: { path: "/", secure: false, maxAge: undefined },
+      resave: false,
+      saveUninitialized: false,
       // cookie: { secure: false, maxAge: 60000 },
     })
   );
@@ -134,7 +134,7 @@ export const v1Router = (ops: {
   router.post(
     "/node/register",
     middleware.metric(requestDurationHistogram),
-    middleware.adminAuthorized(ops.secret),
+    middleware.adminAuthorized(ops.secrets.adminSecret),
     // checkSchema(registerNodeSchema),
     postNodeRegister(ops.dbPool)
   );
@@ -150,7 +150,7 @@ export const v1Router = (ops: {
   router.post(
     "/login/ethereum",
     middleware.metric(requestDurationHistogram),
-    passport.authenticate("ethereum"),
+    passport.authenticate("ethereum", { failureMessage: true }),
     login.signin()
   );
 
@@ -186,10 +186,7 @@ export const v1Router = (ops: {
   ////
   // clients
   // router.get("clients", middleware.metric(requestDurationHistogram), client.index);
-  // router.post(
-  //   "clients",
-  //   middleware.metric(requestDurationHistogram),
-  //   client.create
+  // router.post("clients", middleware.metric(requestDurationHistogram), client.create
   // );
   // router.get(
   //   "clients/:id",
@@ -344,7 +341,7 @@ export const v1Router = (ops: {
     middleware.metric(requestDurationHistogram),
     header("x-secret-key")
       .exists()
-      .custom((val) => val === ops.secret),
+      .custom((val) => val === ops.secrets.adminSecret),
     body("client").exists(),
     body("quota").exists().bail().isNumeric(),
     async (req, res) => {
@@ -407,7 +404,7 @@ export const v1Router = (ops: {
     middleware.metric(requestDurationHistogram),
     header("x-secret-key")
       .exists()
-      .custom((val) => val === ops.secret),
+      .custom((val) => val === ops.secrets.adminSecret),
     param("id").isAlphanumeric(),
     async (req: Request<{ id: string }>, res: Response) => {
       try {
