@@ -68,20 +68,13 @@
         "build/**"
       ],
       "env": [
-        "PORT",
-        "FUNDING_SERVICE_URL",
-        "BALANCE_THRESHOLD",
-        "CHANNELS_THRESHOLD",
-        "BASE_QUOTA",
-        "DB_CONNECTION_URL",
-        "SKIP_CHECK_COMMITMENT",
-        "SECRET",
-        "SESSION_SECRET",
+        "ADMIN_SECRET",
+        "DATABASE_URL",
         "GOOGLE_CLIENT_ID",
         "GOOGLE_CLIENT_SECRET",
-        "URL",
-        "AVAILABILITY_MONITOR_URL",
-        "RUNNING_IN_SANDBOX"
+        "PORT",
+        "SESSION_SECRET",
+        "URL"
       ]
     },
     "@rpch/rpc-server#build": {

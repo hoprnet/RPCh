@@ -8,45 +8,16 @@ import { Pool } from "pg";
 // import * as client from "./client";
 import * as login from "./login";
 import {
-  body,
-  checkSchema,
-  header,
-  param,
+  //  body,
+  //  checkSchema,
+  //  header,
+  //  param,
   matchedData,
   query,
   validationResult,
 } from "express-validator";
-import {
-  createClient,
-  createTrialClient,
-  getClient,
-  updateClient,
-} from "../../../client";
-import { DBInstance, deleteRegisteredNode } from "../../../db";
-import { createQuota } from "../../../quota";
-import {
-  // createRegisteredNode,
-  getEligibleNode,
-  getRegisteredNode,
-  getRegisteredNodes,
-} from "../../../registered-node";
-import type {
-  ClientDB,
-  // RegisteredNode,
-  RegisteredNodeDB,
-  AvailabilityMonitorResult,
-} from "../../../types";
-import { createLogger, isListSafe, toLocalhostEndpoint } from "../../../utils";
-import { errors } from "pg-promise";
+import { createLogger } from "../../../utils";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
-import * as constants from "../../../constants";
-import { getNodeSchema /* registerNodeSchema */ } from "./schema";
-import {
-  clientExists,
-  // doesClientHaveQuota,
-  getCache,
-  setCache,
-} from "./middleware";
 import * as middleware from "./middleware";
 import * as q from "./../../../query";
 
@@ -56,25 +27,15 @@ const log = createLogger(["entry-server", "router"]);
 
 // Express Router
 export const v1Router = (ops: {
-  db: DBInstance;
   dbPool: Pool;
-  baseQuota: bigint;
   metricManager: MetricManager;
   secrets: Secrets;
   url: string;
-  getAvailabilityMonitorResults: () => Map<string, AvailabilityMonitorResult>;
 }) => {
   const loginState = login.create(ops.dbPool, ops.secrets, ops.url);
   /** @return an array of unstable peer ids */
-  function getUnstableNodes() {
-    return Array.from(ops.getAvailabilityMonitorResults().entries()).reduce<
-      string[]
-    >((result, [peerId, { isStable }]) => {
-      if (!isStable) result.push(peerId);
-      return result;
-    }, []);
-  }
 
+  /*
   // Metrics
   const counterSuccessfulRequests = ops.metricManager.createCounter(
     "counter_successful_request",
@@ -87,6 +48,7 @@ export const v1Router = (ops: {
     "amount of failed requests discovery platform has processed",
     { labelNames: ["method", "path", "status"] }
   );
+ */
 
   const requestDurationHistogram = ops.metricManager.createHistogram(
     "request_duration_ms",
@@ -226,6 +188,7 @@ export const v1Router = (ops: {
   //   client.delete
   // );
 
+  /*
   router.get(
     "/node",
     middleware.metric(requestDurationHistogram),
@@ -616,7 +579,9 @@ export const v1Router = (ops: {
       }
     }
   );
+ */
 
+  /*
   router.post(
     "/request/one-hop-delivery-routes",
     middleware.metric(requestDurationHistogram),
@@ -780,6 +745,7 @@ export const v1Router = (ops: {
       }
     }
   );
+  */
 
   return router;
 };

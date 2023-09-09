@@ -1,8 +1,6 @@
 import { Pool } from "pg";
-import { DBInstance /* updateRegisteredNode */ } from "./db";
 import { entryServer } from "./entry-server";
 import { createLogger } from "./utils";
-import pgp from "pg-promise";
 // import { checkCommitmentForFreshNodes } from "./registered-node";
 // import { checkCommitment, getChannelsFromGraph } from "./graph-api";
 import * as constants from "./constants";
@@ -19,24 +17,15 @@ import type { Secrets } from "./secrets";
 const log = createLogger();
 
 const start = async (ops: {
-  db: DBInstance;
+  connectionString: string;
   dbPool: Pool;
-  baseQuota: bigint;
   port: number;
   secrets: Secrets;
   url: string;
-  availabilityMonitorUrl?: string;
 }) => {
-  // let availabilityMonitorResults = new Map<string, AvailabilityMonitorResult>();
-  const availabilityMonitorResults = new Map();
-
   // run db migrations
   const migrationsDirectory = path.join(__dirname, "../migrations");
-  await runMigrations(
-    constants.DB_CONNECTION_URL!,
-    migrationsDirectory,
-    migrate
-  );
+  await runMigrations(ops.connectionString, migrationsDirectory, migrate);
 
   // create prometheus registry
   const register = new Prometheus.Registry();
@@ -51,13 +40,10 @@ const start = async (ops: {
   );
 
   const app = entryServer({
-    db: ops.db,
     dbPool: ops.dbPool,
-    baseQuota: ops.baseQuota,
     metricManager: metricManager,
     secrets: ops.secrets,
     url: ops.url,
-    getAvailabilityMonitorResults: () => availabilityMonitorResults,
   });
 
   // start listening at PORT for requests
@@ -136,16 +122,20 @@ const start = async (ops: {
 };
 
 const main = () => {
-  // postgres url
-  if (!process.env.DB_CONNECTION_URL) {
-    throw new Error("Missing 'DB_CONNECTION_URL' env var.");
-  }
   // server port
   if (!process.env.PORT) {
     throw new Error("Missing 'PORT' env var.");
   }
+  // public url
+  if (!process.env.URL) {
+    throw new Error("Missing 'URL' env var.");
+  }
+  // postgres url
+  if (!process.env.DATABASE_URL) {
+    throw new Error("Missing 'DATABASE_URL' env var.");
+  }
   // admin secret
-  if (!process.env.SECRET) {
+  if (!process.env.ADMIN_SECRET) {
     throw new Error("Missing 'SECRET' env var.");
   }
   // cookie secret
@@ -159,30 +149,24 @@ const main = () => {
   if (!process.env.GOOGLE_CLIENT_SECRET) {
     throw new Error("Missing 'GOOGLE_CLIENT_SECRET' env var.");
   }
-  if (!process.env.URL) {
-    throw new Error("Missing 'URL' env var.");
-  }
 
   // init db
-  const connectionString = process.env.DB_CONNECTION_URL;
+  const connectionString = process.env.DATABASE_URL;
   const dbPool = new Pool({ connectionString });
-  const dbInst = pgp()({ connectionString });
 
   const secrets = {
-    adminSecret: process.env.SECRET,
+    adminSecret: process.env.ADMIN_SECRET,
     sessionSecret: process.env.SESSION_SECRET,
     googleClientID: process.env.GOOGLE_CLIENT_ID,
     googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
   };
 
   start({
-    baseQuota: constants.BASE_QUOTA,
-    db: dbInst,
+    connectionString,
     dbPool,
     port: parseInt(process.env.PORT, 10),
     secrets,
     url: process.env.URL,
-    availabilityMonitorUrl: constants.AVAILABILITY_MONITOR_URL,
   });
 };
 
