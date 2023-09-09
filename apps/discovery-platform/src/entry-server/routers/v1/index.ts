@@ -72,10 +72,12 @@ export const v1Router = (ops: {
   );
   router.use(passport.initialize());
   router.use(passport.session());
-  router.use(cors({
-    origin: true,
-    credentials: true,
-  }));
+  router.use(
+    cors({
+      origin: true,
+      credentials: true,
+    })
+  );
   router.use(express.json());
 
   // log entry calls
@@ -128,11 +130,11 @@ export const v1Router = (ops: {
   router.get(
     "/oauth2/redirect/google",
     passport.authenticate("google", {
-      failureRedirect: "/login",
+      failureRedirect: "/login/google",
       failureMessage: true,
     }),
     function (req, res) {
-      res.redirect("/");
+      res.redirect("/login/google");
     }
   );
 
@@ -169,40 +171,40 @@ export const v1Router = (ops: {
   // clients
 
   router.get(
-    "clients",
+    "/clients",
     middleware.metric(requestDurationHistogram),
     middleware.userAuthorized(),
     client.index(ops.dbPool)
   );
   router.post(
-    "clients",
+    "/clients",
     middleware.metric(requestDurationHistogram),
     middleware.userAuthorized(),
     checkSchema(client.createSchema),
     client.create(ops.dbPool)
   );
   router.get(
-    "clients/:id",
+    "/clients/:id",
     middleware.metric(requestDurationHistogram),
     middleware.userAuthorized(),
     client.read(ops.dbPool)
   );
   router.patch(
-    "clients/:id",
+    "/clients/:id",
     middleware.metric(requestDurationHistogram),
     middleware.userAuthorized(),
     checkSchema(client.updateSchema),
     client.update(ops.dbPool)
   );
   router.put(
-    "clients/:id",
+    "/clients/:id",
     middleware.metric(requestDurationHistogram),
     middleware.userAuthorized(),
     checkSchema(client.updateSchema),
     client.update(ops.dbPool)
   );
   router.delete(
-    "clients/:id",
+    "/clients/:id",
     middleware.metric(requestDurationHistogram),
     middleware.userAuthorized(),
     client.del(ops.dbPool)
