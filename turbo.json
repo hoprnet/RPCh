@@ -89,7 +89,8 @@
         "RESPONSE_TIMEOUT",
         "DISCOVERY_PLATFORM_API_ENDPOINT",
         "CLIENT",
-        "EXIT_PROVDER"
+        "PROVIDER",
+        "MEV_PROTECTION_PROVIDER"
       ]
     },
     "@rpch/availability-monitor#build": {

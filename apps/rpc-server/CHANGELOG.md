@@ -1,5 +1,13 @@
 # @rpch/rpc-server
 
+## 0.3.6
+
+### Patch Changes
+
+- Change MEV_PROTECTION_PROVIDER logic and expose it to RPC_SERVER
+- Updated dependencies
+  - @rpch/sdk@0.6.2
+
 ## 0.3.5
 
 ### Patch Changes

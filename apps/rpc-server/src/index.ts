@@ -167,8 +167,11 @@ if (require.main === module) {
   if (process.env.RESPONSE_TIMEOUT) {
     ops.timeout = parseInt(process.env.RESPONSE_TIMEOUT, 10);
   }
-  if (process.env.EXIT_PROVDER) {
-    ops.provider = process.env.EXIT_PROVDER;
+  if (process.env.PROVIDER) {
+    ops.provider = process.env.PROVIDER;
+  }
+  if (process.env.MEV_PROTECTION_PROVIDER) {
+    ops.mevProtectionProvider = process.env.MEV_PROTECTION_PROVIDER;
   }
 
   const portStr = process.env.PORT || "8080";

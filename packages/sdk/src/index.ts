@@ -2,7 +2,7 @@ import type * as RPChCrypto from "@rpch/crypto";
 import "@hoprnet/hopr-sdk";
 import { utils as etherUtils } from "ethers";
 
-import { createLogger } from "./utils";
+import * as utils from "./utils";
 import * as NodeAPI from "./node-api";
 import NodesCollector from "./nodes-collector";
 import type { EntryNode } from "./entry-node";
@@ -46,15 +46,15 @@ export type RPCerror = RPCresponse & {
  * @param discoveryPlatformEndpoint discovery platform API endpoint
  * @param timeout - timeout for receiving responses
  * @param provider - target rpc provider
- * @param mevProtectionProvider - target MEV Protection provider RPC
- * @param enableMEV - whether to enable MEV protection. This will send the transactions to the MEV protection RPC
+ * @param mevProtectionProvider - target MEV Protection provider RPC,
+ *                                will send transactions through this provider,
+ *                                set empty to disable
  */
 export type Ops = {
   discoveryPlatformEndpoint?: string;
   timeout?: number;
   provider?: string;
   mevProtectionProvider?: string;
-  enableMEV?: boolean;
 };
 
 /**
@@ -66,7 +66,6 @@ const defaultOps: Ops = {
   timeout: 30e3,
   provider: "https://primary.gnosis-chain.rpc.hoprtech.net",
   mevProtectionProvider: "https://rpc.propellerheads.xyz/eth",
-  enableMEV: true,
 };
 
 /**
@@ -77,11 +76,10 @@ export type RequestOps = {
   timeout?: number;
   provider?: string;
   mevProtectionProvider?: string;
-  enableMEV?: boolean;
 };
 
 const MAX_REQUEST_SEGMENTS = 10;
-const log = createLogger();
+const log = utils.createLogger();
 
 // message tag - more like port since we tag all our messages the same
 const ApplicationTag = Math.floor(Math.random() * 0xffff);
@@ -158,6 +156,17 @@ export default class SDK {
       ...ops,
     };
     return new Promise(async (resolve, reject) => {
+      // sanity check provider url
+      if (!utils.isValidURL(reqOps.provider!)) {
+        return reject("Cannot parse provider URL");
+      }
+      // sanity check mev protection provider url, if it is set
+      if (!!reqOps.mevProtectionProvider) {
+        if (!utils.isValidURL(reqOps.mevProtectionProvider)) {
+          return reject("Cannot parse mevProtectionProvider URL");
+        }
+      }
+
       // gather entry - exit node pair
       const res = await this.nodesColl
         .requestNodePair(reqOps.timeout!)
@@ -171,7 +180,8 @@ export default class SDK {
 
       // decide which provider to use
       const provider =
-        reqOps.enableMEV! && req.method === "eth_sendRawTransaction"
+        !!reqOps.mevProtectionProvider &&
+        req.method === "eth_sendRawTransaction"
           ? reqOps.mevProtectionProvider!
           : reqOps.provider!;
 
