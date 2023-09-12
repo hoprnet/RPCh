@@ -125,8 +125,9 @@ export function toSegments(req: Request): Segment[] {
 /**
  * Pretty print request in human readable form.
  */
-export function prettyPrint({ id, entryId, exitId }: Request) {
-  const eId = shortPeerId(entryId);
-  const xId = shortPeerId(exitId);
-  return `request[id: ${id}, entryId: ${eId}, exitId: ${xId}]`;
+export function prettyPrint(req: Request) {
+  const eId = shortPeerId(req.entryId);
+  const xId = shortPeerId(req.exitId);
+  const prov = req.provider.substring(0, 14);
+  return `request[id: ${req.id}, entryId: ${eId}, exitId: ${xId}, prov: ${prov}.. ]`;
 }
