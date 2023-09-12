@@ -17,10 +17,10 @@ export function average(arr: number[]): number {
 
 export function isValidURL(url: string) {
   if ("canParse" in URL) {
-    // @ts-ignore
     return URL.canParse(url);
   }
   try {
+    // @ts-ignore
     new URL(url);
     return true;
   } catch (_ex) {

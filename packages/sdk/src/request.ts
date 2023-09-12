@@ -6,8 +6,8 @@ import type {
   Identity,
 } from "@rpch/crypto-for-nodejs";
 
+import * as JRPC from "./jrpc";
 import * as compression from "./compression";
-import type { RPCrequest } from ".";
 import type { Segment } from "./segment";
 import { shortPeerId } from "./utils";
 
@@ -15,7 +15,7 @@ export type Request = {
   id: number;
   originalId?: number;
   provider: string;
-  req: RPCrequest;
+  req: JRPC.Request;
   createdAt: number;
   entryId: string; // peerID
   exitId: string; // peerID
@@ -38,7 +38,7 @@ export function create(
   },
   id: number,
   provider: string,
-  req: RPCrequest,
+  req: JRPC.Request,
   entryId: string,
   exitId: string,
   exitNodeReadIdentity: Identity

@@ -136,7 +136,7 @@ const main = () => {
   }
   // admin secret
   if (!process.env.ADMIN_SECRET) {
-    throw new Error("Missing 'SECRET' env var.");
+    throw new Error("Missing 'ADMIN_SECRET' env var.");
   }
   // cookie secret
   if (!process.env.SESSION_SECRET) {

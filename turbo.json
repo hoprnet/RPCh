@@ -90,6 +90,8 @@
         "DISCOVERY_PLATFORM_API_ENDPOINT",
         "CLIENT",
         "PROVIDER",
+        "RESTRICT_CORS",
+        "DISABLE_MEV_PROTECTION",
         "MEV_PROTECTION_PROVIDER"
       ]
     },
