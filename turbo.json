@@ -70,7 +70,6 @@
       "env": [
         "ADMIN_SECRET",
         "DATABASE_URL",
-        "RESTRICT_CORS",
         "GOOGLE_CLIENT_ID",
         "GOOGLE_CLIENT_SECRET",
         "PORT",
@@ -91,6 +90,8 @@
         "DISCOVERY_PLATFORM_API_ENDPOINT",
         "CLIENT",
         "PROVIDER",
+        "RESTRICT_CORS",
+        "DISABLE_MEV_PROTECTION",
         "MEV_PROTECTION_PROVIDER"
       ]
     },

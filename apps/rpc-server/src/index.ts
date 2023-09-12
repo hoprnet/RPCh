@@ -197,6 +197,9 @@ if (require.main === module) {
       ? parseInt(process.env.RESPONSE_TIMEOUT, 10)
       : undefined,
     provider: process.env.PROVIDER,
+    disableMevProtection: new Boolean(
+      process.env.DISABLE_MEV_PROTECTION
+    ).valueOf(),
     mevProtectionProvider: process.env.MEV_PROTECTION_PROVIDER,
   };
 
