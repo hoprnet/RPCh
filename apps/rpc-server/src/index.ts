@@ -40,16 +40,12 @@ function extractParams(
   if (!url) {
     return {};
   }
-  const exitProvider = url.searchParams.get("exit-provider");
+  const provider = url.searchParams.get("provider");
   const timeout = url.searchParams.get("timeout");
-  const params: Record<string, string | number> = {};
-  if (exitProvider != null) {
-    params.exitProvider = exitProvider;
-  }
-  if (timeout != null) {
-    params.timeout = parseInt(timeout, 10);
-  }
-  return params;
+  return {
+    provider: provider ? provider : undefined,
+    timeout: timeout ? parseInt(timeout, 10) : undefined,
+  };
 }
 
 function parseBody(

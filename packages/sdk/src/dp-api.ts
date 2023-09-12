@@ -78,7 +78,13 @@ export function fetchNodes(
 
   return retry(async (bail, num) => {
     if (num > 1) {
-      log.verbose("Retrying", url.toString(), "after", num - 1, "failure(s)");
+      log.verbose(
+        "Retrying",
+        url.host.toString(),
+        "after",
+        num - 1,
+        "failure(s)"
+      );
     }
     const res = await fetch(url, { headers });
     if (res.status !== 200) {

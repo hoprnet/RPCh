@@ -106,9 +106,7 @@ export default class SDK {
     private readonly crypto: typeof RPChCrypto,
     ops: Ops = {}
   ) {
-    console.log("construct ops", ops);
     this.ops = this.sdkOps(ops);
-    console.log("after construct ops", this.ops);
     this.crypto = crypto;
     this.crypto.set_panic_hook();
     this.requestCache = RequestCache.init();
@@ -149,10 +147,7 @@ export default class SDK {
     req: RPCrequest,
     ops?: RequestOps
   ): Promise<RPCresult | RPCerror> {
-    console.log("this.ops", this.ops);
-    console.log("ops", ops);
     const reqOps = this.requestOps(ops);
-    console.log("reqops", reqOps);
     return new Promise(async (resolve, reject) => {
       // sanity check provider url
       if (!utils.isValidURL(reqOps.provider!)) {
