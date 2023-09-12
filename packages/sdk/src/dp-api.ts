@@ -1,8 +1,10 @@
 import retry from "async-retry";
-export const NoMoreNodes = "no more nodes";
+import { createLogger } from "./utils";
 
 import type { EntryNode } from "./entry-node";
 import type { ExitNode } from "./exit-node";
+
+export const NoMoreNodes = "no more nodes";
 
 /**
  * This module contains all communication with the discovery platform.
@@ -46,6 +48,8 @@ const DefaultBackoff = {
   randomize: true,
 };
 
+const log = createLogger(["sdk", "dp-api"]);
+
 export function fetchNode(ops: Ops, peerId: string): Promise<RawNode> {
   const url = new URL(`/api/v1/node/${peerId}`, ops.discoveryPlatformEndpoint);
   const headers = {
@@ -72,8 +76,14 @@ export function fetchNodes(
   url.searchParams.set("since", since.toISOString());
   const headers = { Accept: "application/json", "x-rpch-client": ops.clientId };
 
-  return retry(async (bail) => {
+  return retry(async (bail, num) => {
+    if (num > 1) {
+      log.verbose("Retrying", url.toString(), "after", num - 1, "failure(s)");
+    }
     const res = await fetch(url, { headers });
+    if (res.status !== 200) {
+      log.info("Fetching nodes returned", res.status);
+    }
     switch (res.status) {
       case 204: // none found
         return bail(new Error(NoMoreNodes));
