@@ -23,8 +23,9 @@
     "supertest": "^6.3.3"
   },
   "dependencies": {
-    "@rpch/sdk": "0.6.2",
     "@rpch/crypto-for-nodejs": "0.3.4",
+    "@rpch/sdk": "0.6.2",
+    "cors": "^2.8.5",
     "leveldown": "^6.1.1",
     "levelup": "^5.1.1"
   }

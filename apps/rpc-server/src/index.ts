@@ -3,12 +3,23 @@ import RPChSDK, {
   RPCrequest,
   RPCresult,
   RPCerror,
-  type RequestOps as RPChRequestOps,
+  type RequestOps,
+  type Ops as SDKops,
 } from "@rpch/sdk";
 import * as RPChCrypto from "@rpch/crypto-for-nodejs";
 import { utils } from "@rpch/common";
 
+type ServerOPS = { restrictCors: boolean };
+
 const log = utils.LoggerFactory("rpc-server")();
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "OPTIONS, POST, GET",
+  "Access-Control-Max-Age": 2592000,
+};
+
+const defaultPort = 45750;
 
 function toURL(urlStr: string, host: string): null | URL {
   try {
@@ -21,7 +32,7 @@ function toURL(urlStr: string, host: string): null | URL {
 function extractParams(
   urlStr: undefined | string,
   host: undefined | string
-): RPChRequestOps {
+): RequestOps {
   if (!urlStr || !host) {
     return {};
   }
@@ -100,7 +111,7 @@ function sendRequest(
     });
 }
 
-function createServer(sdk: RPChSDK) {
+function createServer(sdk: RPChSDK, ops: ServerOPS) {
   return http.createServer((req, res) => {
     req.on("error", (err) => {
       log.error("Unexpected error occured on http.Request", err);
@@ -109,6 +120,22 @@ function createServer(sdk: RPChSDK) {
     res.on("error", (err) => {
       log.error("Unexpected error occured on http.Response", err);
     });
+
+    if (!!ops.restrictCors) {
+      // handle preflight cors
+      if (req.method === "OPTIONS") {
+        res.writeHead(204, corsHeaders);
+        res.end();
+        return;
+      }
+
+      // handle cors
+      if (req.method === "POST" || req.method === "GET") {
+        Object.entries(corsHeaders).map(([k, v]) => {
+          res.setHeader(k, v);
+        });
+      }
+    }
 
     req.on("data", async (data) => {
       const params = extractParams(req.url, req.headers.host);
@@ -142,15 +169,28 @@ function createServer(sdk: RPChSDK) {
   });
 }
 
+function determinePort(portEnv?: string) {
+  if (portEnv) {
+    const p = parseInt(portEnv, 10);
+    if (p) {
+      return p;
+    }
+  }
+  return defaultPort;
+}
+
 /**
  * RPC server - uses RPChSDK to perform JSON-RPC requests.
  *
  * Reads ENV vars:
  *
+ * PORT - default port to run on, optional
+ * RESTRICT_CORS - do not allow requests from everywhere
+ *
  * CLIENT - client id, identifier of your wallet/application, required
  * RESPONSE_TIMEOUT - default request-response timeout, optional, can be overridden per request
- * EXIT_PROVDER - default rpc provider endpoint, optional, can be overridden per request
- * PORT - default port to run on, optional
+ * PROVIDER - default rpc provider endpoint, optional, can be overridden per request
+ * MEV_PROTECTION_PROVIDER - transaction rpc provider endpoint, optional, can be overridden per request
  *
  * See **RPChSDK.RequestOps** for overridable per request parameters.
  */
@@ -160,28 +200,20 @@ if (require.main === module) {
   }
 
   const clientId = process.env.CLIENT;
-  const ops: Record<string, any> = {};
-  if (process.env.DISCOVERY_PLATFORM_API_ENDPOINT) {
-    ops.discoveryPlatformEndpoint = process.env.DISCOVERY_PLATFORM_API_ENDPOINT;
-  }
-  if (process.env.RESPONSE_TIMEOUT) {
-    ops.timeout = parseInt(process.env.RESPONSE_TIMEOUT, 10);
-  }
-  if (process.env.PROVIDER) {
-    ops.provider = process.env.PROVIDER;
-  }
-  if (process.env.MEV_PROTECTION_PROVIDER) {
-    ops.mevProtectionProvider = process.env.MEV_PROTECTION_PROVIDER;
-  }
+  const ops: SDKops = {
+    discoveryPlatformEndpoint: process.env.DISCOVERY_PLATFORM_API_ENDPOINT,
+    timeout: process.env.RESPONSE_TIMEOUT
+      ? parseInt(process.env.RESPONSE_TIMEOUT, 10)
+      : undefined,
+    provider: process.env.PROVIDER,
+    mevProtectionProvider: process.env.MEV_PROTECTION_PROVIDER,
+  };
 
-  const portStr = process.env.PORT || "8080";
-  const port = parseInt(portStr, 10);
-  if (isNaN(port)) {
-    throw new Error("Invalid 'PORT specified");
-  }
+  const serverOps = { restrictCors: process.env.RESTRICT_CORS };
+  const port = determinePort(process.env.PORT);
 
   const sdk = new RPChSDK(clientId, RPChCrypto, ops);
-  const server = createServer(sdk);
+  const server = createServer(sdk, serverOps);
   server.listen(port, "0.0.0.0", () => {
     log.verbose(
       `rpc server started on '0.0.0.0:${port}' with ${JSON.stringify(ops)}`
