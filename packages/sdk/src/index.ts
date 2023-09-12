@@ -1,4 +1,5 @@
 import type * as RPChCrypto from "@rpch/crypto";
+import "@hoprnet/hopr-sdk";
 import { utils as etherUtils } from "ethers";
 
 import * as Utils from "./utils";
