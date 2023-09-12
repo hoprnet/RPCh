@@ -11,7 +11,8 @@ import * as RequestCache from "./request-cache";
 import * as Response from "./response";
 import * as Segment from "./segment";
 import * as SegmentCache from "./segment-cache";
-import * as Jrpc from "./jrpc";
+import * as JRPC from "./jrpc";
+export * as JRPC from "./jrpc";
 
 /**
  * HOPR SDK options provide global defaults.
@@ -124,9 +125,9 @@ export default class SDK {
    * See **RequestOps** for overridable options.
    */
   public async send(
-    req: Jrpc.Request,
+    req: JRPC.Request,
     ops?: RequestOps
-  ): Promise<Jrpc.Response> {
+  ): Promise<JRPC.Response> {
     const reqOps = this.requestOps(ops);
     this.populateChainIds(ops?.provider);
     return new Promise(async (resolve, reject) => {
@@ -470,7 +471,7 @@ export default class SDK {
     if (!res) {
       return;
     }
-    if (Jrpc.isError(res)) {
+    if (JRPC.isError(res)) {
       log.info(
         "Unable to resolve chainId for",
         provider,
@@ -484,7 +485,7 @@ export default class SDK {
 
   private determineProvider = (
     { provider }: { provider: string },
-    { method }: Jrpc.Request
+    { method }: JRPC.Request
   ): string => {
     if (this.ops.disableMevProtection) {
       return provider;

@@ -1,11 +1,5 @@
 import http from "http";
-import RPChSDK, {
-  RPCrequest,
-  RPCresult,
-  RPCerror,
-  type RequestOps,
-  type Ops as SDKops,
-} from "@rpch/sdk";
+import RPChSDK, { JRPC, type RequestOps, type Ops as SDKops } from "@rpch/sdk";
 import * as RPChCrypto from "@rpch/crypto-for-nodejs";
 import { utils } from "@rpch/common";
 
@@ -52,7 +46,7 @@ function parseBody(
   str: string
 ):
   | { success: false; error: string; id?: string }
-  | { success: true; req: RPCrequest } {
+  | { success: true; req: JRPC.Request } {
   try {
     const json = JSON.parse(str);
     if (!("jsonrpc" in json)) {
@@ -77,13 +71,13 @@ function parseBody(
 
 function sendRequest(
   sdk: RPChSDK,
-  req: RPCrequest,
+  req: JRPC.Request,
   params: RequestOps,
   res: http.ServerResponse
 ) {
   sdk
     .send(req, params)
-    .then((resp: RPCresult | RPCerror) => {
+    .then((resp: JRPC.Response) => {
       log.verbose("receiving response", JSON.stringify(resp));
       res.statusCode = 200;
       res.write(JSON.stringify(resp));
