@@ -35,8 +35,8 @@ export function sendMessage(
     peerId: recipient,
     tag,
   });
-  return fetch(url, { method: "POST", headers, body }).then((res) =>
-    res.json()
+  return fetch(url, { method: "POST", headers, body }).then(
+    (res) => res.json() as unknown as string
   );
 }
 
@@ -62,6 +62,6 @@ export function retrieveMessages(
   };
   const body = JSON.stringify({ tag });
   return fetch(url, { method: "POST", headers, body }).then((res) => {
-    return res.json();
+    return res.json() as unknown as { messages: Message[] };
   });
 }

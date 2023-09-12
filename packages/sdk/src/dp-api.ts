@@ -59,7 +59,7 @@ export function fetchNode(ops: Ops, peerId: string): Promise<RawNode> {
 
   return retry(async (_bail) => {
     const res = await fetch(url, { headers });
-    return res.json();
+    return res.json() as unknown as RawNode;
   }, DefaultBackoff);
 }
 
@@ -95,8 +95,8 @@ export function fetchNodes(
         return bail(new Error(NoMoreNodes));
       case 400: // validation errors
       case 403: // unauthorized
-        return bail(new Error(await res.json()));
+        return bail(new Error((await res.json()) as unknown as string));
     }
-    return res.json();
-  }, DefaultBackoff);
+    return res.json() as unknown as Nodes;
+  }, DefaultBackoff) as Promise<Nodes>;
 }
