@@ -1,40 +1,17 @@
 import type * as RPChCrypto from "@rpch/crypto";
-import "@hoprnet/hopr-sdk";
 import { utils as etherUtils } from "ethers";
 
-import * as utils from "./utils";
+import * as Utils from "./utils";
 import * as NodeAPI from "./node-api";
 import NodesCollector from "./nodes-collector";
 import type { EntryNode } from "./entry-node";
+import * as ProviderAPI from "./provider-api";
 import * as Request from "./request";
 import * as RequestCache from "./request-cache";
+import * as Response from "./response";
 import * as Segment from "./segment";
 import * as SegmentCache from "./segment-cache";
-import * as Response from "./response";
-
-export type RPCrequest = {
-  readonly jsonrpc: "2.0";
-  id?: string | number | null;
-  method: string;
-  params?: any[] | object;
-};
-
-export type RPCresponse = {
-  readonly jsonrpc: "2.0";
-  id?: string | number | null;
-};
-
-export type RPCresult = RPCresponse & {
-  result: any;
-};
-
-export type RPCerror = RPCresponse & {
-  error: {
-    code: number;
-    message: string;
-    data?: any;
-  };
-};
+import * as Jrpc from "./jrpc";
 
 /**
  * HOPR SDK options provide global defaults.
@@ -54,6 +31,7 @@ export type Ops = {
   readonly discoveryPlatformEndpoint?: string;
   readonly timeout?: number;
   readonly provider?: string;
+  readonly disableMevProtection?: boolean;
   readonly mevProtectionProvider?: string;
 };
 
@@ -64,7 +42,6 @@ export type Ops = {
 export type RequestOps = {
   readonly timeout?: number;
   readonly provider?: string;
-  readonly mevProtectionProvider?: string;
 };
 
 /**
@@ -75,11 +52,12 @@ const defaultOps: Ops = {
   discoveryPlatformEndpoint: "https://discovery.rpch.tech",
   timeout: 10e3,
   provider: "https://primary.gnosis-chain.rpc.hoprtech.net",
+  disableMevProtection: false,
   mevProtectionProvider: "https://rpc.propellerheads.xyz/eth",
 };
 
 const MAX_REQUEST_SEGMENTS = 10;
-const log = utils.createLogger();
+const log = Utils.createLogger();
 
 // message tag - more like port since we tag all our messages the same
 const ApplicationTag = Math.floor(Math.random() * 0xffff);
@@ -94,6 +72,7 @@ export default class SDK {
   private readonly counterStore: Map<string, bigint> = new Map();
   private readonly nodesColl: NodesCollector;
   private readonly ops: Ops;
+  private readonly chainIds: Map<string, number> = new Map();
 
   /**
    * Construct an SDK instance enabling RPCh requests.
@@ -112,11 +91,12 @@ export default class SDK {
     this.requestCache = RequestCache.init();
     this.segmentCache = SegmentCache.init();
     this.nodesColl = new NodesCollector(
-      this.ops.discoveryPlatformEndpoint!,
+      this.ops.discoveryPlatformEndpoint as string,
       this.clientId,
       ApplicationTag,
       this.onMessages
     );
+    this.fetchChainId(this.ops.provider as string);
   }
 
   /**
@@ -135,8 +115,8 @@ export default class SDK {
    * If no timeout specified, global timeout is used.
    */
   public async isReady(timeout?: number): Promise<boolean> {
-    const timeout_ = timeout ? timeout : this.ops.timeout!;
-    return this.nodesColl.ready(timeout_).then((_) => true);
+    const t = timeout || (this.ops.timeout as number);
+    return this.nodesColl.ready(t).then((_) => true);
   }
 
   /**
@@ -144,25 +124,26 @@ export default class SDK {
    * See **RequestOps** for overridable options.
    */
   public async send(
-    req: RPCrequest,
+    req: Jrpc.Request,
     ops?: RequestOps
-  ): Promise<RPCresult | RPCerror> {
+  ): Promise<Jrpc.Response> {
     const reqOps = this.requestOps(ops);
+    this.populateChainIds(ops?.provider);
     return new Promise(async (resolve, reject) => {
       // sanity check provider url
-      if (!utils.isValidURL(reqOps.provider!)) {
+      if (!Utils.isValidURL(reqOps.provider as string)) {
         return reject("Cannot parse provider URL");
       }
       // sanity check mev protection provider url, if it is set
       if (!!reqOps.mevProtectionProvider) {
-        if (!utils.isValidURL(reqOps.mevProtectionProvider)) {
+        if (!Utils.isValidURL(reqOps.mevProtectionProvider)) {
           return reject("Cannot parse mevProtectionProvider URL");
         }
       }
 
       // gather entry - exit node pair
       const res = await this.nodesColl
-        .requestNodePair(reqOps.timeout!)
+        .requestNodePair(reqOps.timeout as number)
         .catch((err) => {
           log.error("Error finding node pair", err);
           return reject(`Could not find node pair in ${reqOps.timeout} ms`);
@@ -171,12 +152,10 @@ export default class SDK {
         return reject(`Unexpected code flow - should never be here`);
       }
 
-      // decide which provider to use
-      const provider =
-        !!reqOps.mevProtectionProvider &&
-        req.method === "eth_sendRawTransaction"
-          ? reqOps.mevProtectionProvider!
-          : reqOps.provider!;
+      const provider = this.determineProvider(
+        reqOps as { provider: string },
+        req
+      );
 
       // create request
       const { entryNode, exitNode } = res;
@@ -463,27 +442,71 @@ export default class SDK {
 
   private sdkOps = (ops: Ops): Ops => {
     return {
-      discoveryPlatformEndpoint: ops.discoveryPlatformEndpoint
-        ? ops.discoveryPlatformEndpoint
-        : defaultOps.discoveryPlatformEndpoint,
-      timeout: ops.timeout ? ops.timeout : defaultOps.timeout,
-      provider: ops.provider ? ops.provider : defaultOps.provider,
-      mevProtectionProvider: ops.mevProtectionProvider
-        ? ops.mevProtectionProvider
-        : defaultOps.mevProtectionProvider,
+      discoveryPlatformEndpoint:
+        ops.discoveryPlatformEndpoint || defaultOps.discoveryPlatformEndpoint,
+      timeout: ops.timeout || defaultOps.timeout,
+      provider: ops.provider || defaultOps.provider,
+      disableMevProtection:
+        ops.disableMevProtection ?? defaultOps.disableMevProtection,
+      mevProtectionProvider:
+        ops.mevProtectionProvider || defaultOps.mevProtectionProvider,
     };
   };
 
   private requestOps = (ops?: RequestOps) => {
     if (ops) {
       return {
-        timeout: ops.timeout ? ops.timeout : this.ops.timeout,
-        provider: ops.provider ? ops.provider : this.ops.provider,
-        mevProtectionProvider: ops.mevProtectionProvider
-          ? ops.mevProtectionProvider
-          : this.ops.mevProtectionProvider,
+        timeout: ops.timeout || this.ops.timeout,
+        provider: ops.provider || this.ops.provider,
       };
     }
     return this.ops;
   };
+
+  private fetchChainId = async (provider: string) => {
+    const res = await ProviderAPI.fetchChainId(provider).catch((err) =>
+      log.error("Error fetching chainId for", provider, err)
+    );
+    if (!res) {
+      return;
+    }
+    if (Jrpc.isError(res)) {
+      log.info(
+        "Unable to resolve chainId for",
+        provider,
+        JSON.stringify(res.error)
+      );
+      return;
+    }
+    const id = parseInt(res.result, 16);
+    this.chainIds.set(provider, id);
+  };
+
+  private determineProvider = (
+    { provider }: { provider: string },
+    { method }: Jrpc.Request
+  ): string => {
+    if (this.ops.disableMevProtection) {
+      return provider;
+    }
+    if (method !== "eth_sendRawTransaction") {
+      return provider;
+    }
+    // sanity check for chain id if we got it
+    const cId = this.chainIds.get(provider);
+    if (cId !== 1) {
+      return provider;
+    }
+    return this.ops.mevProtectionProvider as string;
+  };
+
+  private populateChainIds(provider?: string) {
+    if (!provider) {
+      return;
+    }
+    if (this.chainIds.has(provider)) {
+      return;
+    }
+    this.fetchChainId(provider);
+  }
 }
