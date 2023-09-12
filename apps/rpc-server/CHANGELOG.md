@@ -1,5 +1,17 @@
 # @rpch/rpc-server
 
+## 0.4.0
+
+### Minor Changes
+
+- e691140: - changed default port to 45750
+  - added cors headers to allow using it locally, can be disabled with `RESTRICT_CORS`
+
+### Patch Changes
+
+- Updated dependencies [e691140]
+  - @rpch/sdk@0.7.0
+
 ## 0.3.6
 
 ### Patch Changes

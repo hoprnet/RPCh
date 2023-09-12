@@ -1,5 +1,11 @@
 # @rpch/discovery-platform
 
+## 0.5.5
+
+### Patch Changes
+
+- e691140: fixed error text'
+
 ## 0.5.4
 
 ### Patch Changes

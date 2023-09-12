@@ -1,5 +1,13 @@
 # @rpch/sdk
 
+## 0.7.0
+
+### Minor Changes
+
+- e691140: - be more verbose about failing Discovery Platform requests
+  - handle MEV PROTECTION better by checking for correct chainId
+  - allow explicit MEV PROTECTION disable in SDK
+
 ## 0.6.2
 
 ### Patch Changes
