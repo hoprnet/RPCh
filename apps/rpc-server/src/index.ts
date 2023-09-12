@@ -11,6 +11,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "OPTIONS, POST, GET",
   "Access-Control-Max-Age": 2592000,
+  "Access-Control-Allow-Headers": "*",
 };
 
 const defaultPort = 45750;
@@ -111,7 +112,7 @@ function createServer(sdk: RPChSDK, ops: ServerOPS) {
       log.error("Unexpected error occured on http.Response", err);
     });
 
-    if (!!ops.restrictCors) {
+    if (!ops.restrictCors) {
       // handle preflight cors
       if (req.method === "OPTIONS") {
         res.writeHead(204, corsHeaders);
