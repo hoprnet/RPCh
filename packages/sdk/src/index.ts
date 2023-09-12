@@ -51,10 +51,20 @@ export type RPCerror = RPCresponse & {
  *                                set empty to disable
  */
 export type Ops = {
-  discoveryPlatformEndpoint?: string;
-  timeout?: number;
-  provider?: string;
-  mevProtectionProvider?: string;
+  readonly discoveryPlatformEndpoint?: string;
+  readonly timeout?: number;
+  readonly provider?: string;
+  readonly mevProtectionProvider?: string;
+};
+
+/**
+ * Overridable parameters per request.
+ * See **Ops** for details.
+ */
+export type RequestOps = {
+  readonly timeout?: number;
+  readonly provider?: string;
+  readonly mevProtectionProvider?: string;
 };
 
 /**
@@ -63,19 +73,9 @@ export type Ops = {
  **/
 const defaultOps: Ops = {
   discoveryPlatformEndpoint: "https://discovery.rpch.tech",
-  timeout: 30e3,
+  timeout: 10e3,
   provider: "https://primary.gnosis-chain.rpc.hoprtech.net",
   mevProtectionProvider: "https://rpc.propellerheads.xyz/eth",
-};
-
-/**
- * Overridable parameters per request.
- * See **Ops** for details.
- */
-export type RequestOps = {
-  timeout?: number;
-  provider?: string;
-  mevProtectionProvider?: string;
 };
 
 const MAX_REQUEST_SEGMENTS = 10;
@@ -106,11 +106,9 @@ export default class SDK {
     private readonly crypto: typeof RPChCrypto,
     ops: Ops = {}
   ) {
-    this.ops = {
-      ...defaultOps,
-      ...ops,
-    };
-
+    console.log("construct ops", ops);
+    this.ops = this.sdkOps(ops);
+    console.log("after construct ops", this.ops);
     this.crypto = crypto;
     this.crypto.set_panic_hook();
     this.requestCache = RequestCache.init();
@@ -151,10 +149,10 @@ export default class SDK {
     req: RPCrequest,
     ops?: RequestOps
   ): Promise<RPCresult | RPCerror> {
-    const reqOps = {
-      ...this.ops,
-      ...ops,
-    };
+    console.log("this.ops", this.ops);
+    console.log("ops", ops);
+    const reqOps = this.requestOps(ops);
+    console.log("reqops", reqOps);
     return new Promise(async (resolve, reject) => {
       // sanity check provider url
       if (!utils.isValidURL(reqOps.provider!)) {
@@ -415,7 +413,7 @@ export default class SDK {
     });
   };
 
-  private async completeSegmentsEntry(entry: SegmentCache.Entry) {
+  private completeSegmentsEntry = (entry: SegmentCache.Entry) => {
     const firstSeg = entry.segments.get(0)!;
     if (!firstSeg.body.startsWith("0x")) {
       log.info("message is not a response", firstSeg.requestId);
@@ -457,14 +455,40 @@ export default class SDK {
       this.nodesColl.requestFailed(request);
       return request.reject("Unable to process response");
     }
-  }
+  };
 
-  private removeRequest(request: Request.Request) {
+  private removeRequest = (request: Request.Request) => {
     this.nodesColl.requestFailed(request);
     RequestCache.remove(this.requestCache, request.id);
     SegmentCache.remove(this.segmentCache, request.id);
     if (request.originalId) {
       this.redoRequests.delete(request.originalId);
     }
-  }
+  };
+
+  private sdkOps = (ops: Ops): Ops => {
+    return {
+      discoveryPlatformEndpoint: ops.discoveryPlatformEndpoint
+        ? ops.discoveryPlatformEndpoint
+        : defaultOps.discoveryPlatformEndpoint,
+      timeout: ops.timeout ? ops.timeout : defaultOps.timeout,
+      provider: ops.provider ? ops.provider : defaultOps.provider,
+      mevProtectionProvider: ops.mevProtectionProvider
+        ? ops.mevProtectionProvider
+        : defaultOps.mevProtectionProvider,
+    };
+  };
+
+  private requestOps = (ops?: RequestOps) => {
+    if (ops) {
+      return {
+        timeout: ops.timeout ? ops.timeout : this.ops.timeout,
+        provider: ops.provider ? ops.provider : this.ops.provider,
+        mevProtectionProvider: ops.mevProtectionProvider
+          ? ops.mevProtectionProvider
+          : this.ops.mevProtectionProvider,
+      };
+    }
+    return this.ops;
+  };
 }
