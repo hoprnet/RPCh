@@ -82,7 +82,7 @@ function parseBody(
 function sendRequest(
   sdk: RPChSDK,
   req: RPCrequest,
-  params: RPChRequestOps,
+  params: RequestOps,
   res: http.ServerResponse
 ) {
   sdk
@@ -209,7 +209,7 @@ if (require.main === module) {
     mevProtectionProvider: process.env.MEV_PROTECTION_PROVIDER,
   };
 
-  const serverOps = { restrictCors: process.env.RESTRICT_CORS };
+  const serverOps = { restrictCors: !!process.env.RESTRICT_CORS };
   const port = determinePort(process.env.PORT);
 
   const sdk = new RPChSDK(clientId, RPChCrypto, ops);
