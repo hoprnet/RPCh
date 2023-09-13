@@ -2,32 +2,33 @@ import type * as RPChCrypto from "@rpch/crypto";
 import "@hoprnet/hopr-sdk";
 import { utils as etherUtils } from "ethers";
 
-import * as Utils from "./utils";
+import * as JRPC from "./jrpc";
 import * as NodeAPI from "./node-api";
-import NodesCollector from "./nodes-collector";
-import type { EntryNode } from "./entry-node";
 import * as ProviderAPI from "./provider-api";
 import * as Request from "./request";
 import * as RequestCache from "./request-cache";
 import * as Response from "./response";
 import * as Segment from "./segment";
 import * as SegmentCache from "./segment-cache";
-import * as JRPC from "./jrpc";
+import * as Utils from "./utils";
+import NodesCollector from "./nodes-collector";
+import type { EntryNode } from "./entry-node";
+
 export * as JRPC from "./jrpc";
 
 /**
- * HOPR SDK options provide global defaults.
- * There are sane defaults for all of them.
- * Most of those values can be overridden per request.
+ * HOPR SDK options provides global parameter values.
+ * Two of them can be overridden on a per request base.
+ * None of the parameters need to be set as the SDK provides defaults for all of them.
  * See **RequestOps** for specifics.
  * See **defaultOps** for defaults.
  *
  * @param discoveryPlatformEndpoint discovery platform API endpoint
  * @param timeout - timeout for receiving responses
  * @param provider - target rpc provider
+ * @param disableMevProtection - disable provider replacement on transaction requests
  * @param mevProtectionProvider - target MEV Protection provider RPC,
- *                                will send transactions through this provider,
- *                                set empty to disable
+ *                                will send transactions through this provider
  */
 export type Ops = {
   readonly discoveryPlatformEndpoint?: string;

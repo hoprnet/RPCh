@@ -33,8 +33,6 @@ export const v1Router = (ops: {
   url: string;
 }) => {
   const loginState = login.create(ops.dbPool, ops.secrets, ops.url);
-  /** @return an array of unstable peer ids */
-
   /*
   // Metrics
   const counterSuccessfulRequests = ops.metricManager.createCounter(
