@@ -2,14 +2,6 @@ import { WebSocket, MessageEvent } from "isomorphic-ws";
 import levelup from "levelup";
 import leveldown from "leveldown";
 import { utils as ethersUtils } from "ethers";
-import {
-  Request,
-  Response,
-  type Message,
-  Cache,
-  Segment,
-  utils,
-} from "@rpch/common";
 import * as crypto from "@rpch/crypto-for-nodejs";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 import * as exit from "./exit";
@@ -17,6 +9,7 @@ import * as identity from "./identity";
 import { createLogger } from "./utils";
 import PeerId from "peer-id";
 import * as Prometheus from "prom-client";
+import { NodeAPI, Payload, Segment, SegmentCache } from "@rpch/sdk";
 import {
   DEFAULT_DATA_DIR,
   DEFAULT_IDENTITY_FILE,
@@ -34,6 +27,11 @@ import {
 } from "./constants";
 
 const log = createLogger();
+
+const requestExpirationCache: Map<
+  string,
+  ReturnType<typeof setTimeout>
+> = new Map();
 
 export const start = async (ops: {
   exit: {
@@ -168,15 +166,10 @@ export const start = async (ops: {
   });
   log.verbose("Got identity");
   log.normal("Running exit node with public key", publicKey);
-
-  const cache = new Cache(onMessage, () => {
-    counterRequests.labels({ status: "error" }).inc();
-  });
-
   const intervals: ReturnType<typeof setInterval>[] = [];
   intervals.push(
     setInterval(() => {
-      cache.removeExpired(ops.timeout);
+      // cache.removeExpired(ops.timeout);
     }, 1000)
   );
 
@@ -192,15 +185,16 @@ export const start = async (ops: {
     intervals.push(pushMetrics);
   }
 
-  const wsURL = new URL(ops.apiEndpoint.toString());
-  wsURL.protocol = ops.apiEndpoint.startsWith("https:") ? "wss:" : "ws:";
-  wsURL.pathname = "/api/v3/messages/websocket";
-  wsURL.search = `?apiToken=${ops.apiToken!}`;
-  const socket = new WebSocket(wsURL);
+  const cache = SegmentCache.init();
+  const socket = NodeAPI.connectWS({
+    apiEndpoint: new URL(ops.apiEndpoint),
+    apiToken: ops.apiToken,
+  });
   if (!socket) {
-    log.error("failed opening websocket on", wsURL);
-    throw new Error("no ws connection");
+    log.error("Failed opening websocket");
+    process.exit(1);
   }
+
   socket.onmessage = (evt: MessageEvent) => {
     const body = evt.data.toString();
 
@@ -216,6 +210,28 @@ export const start = async (ops: {
     // message we have send, we can safely ignore this
     if (msg.type.startsWith("ack:")) {
       return;
+    }
+
+    const segRes = Segment.fromString(msg.body);
+    if (!segRes.success) {
+      log.info("cannot create segment", segRes.error);
+      return;
+    }
+    const segment = segRes.segment;
+    const cacheRes = SegmentCache.incoming(cache, segment);
+    switch (cacheRes.res) {
+      case "complete":
+        this.completeSegmentsEntry(cacheRes.entry!);
+        break;
+      case "error":
+        log.error("error caching segment", cacheRes.reason);
+        break;
+      case "already-cached":
+        log.info("already cached", Segment.prettyPrint(segment));
+        break;
+      case "inserted":
+        log.verbose("inserted new segment", Segment.prettyPrint(segment));
+        break;
     }
 
     try {
@@ -284,5 +300,5 @@ if (require.main === module) {
     optInMetrics: OPT_IN_METRICS,
     pushgatewayEndpoint: PUSHGATEWAY_ENDPOINT,
     sendMetricsInterval: SEND_METRICS_INTERVAL,
-  }).catch((error) => log.error(error));
+  });
 }

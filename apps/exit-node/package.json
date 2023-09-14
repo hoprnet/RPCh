@@ -24,6 +24,7 @@
     "memdown": "^6.1.1"
   },
   "dependencies": {
+    "@rpch/sdk": "*",
     "@rpch/common": "0.4.0",
     "@rpch/crypto-for-nodejs": "0.3.4",
     "ethers": "^5.7.2",
