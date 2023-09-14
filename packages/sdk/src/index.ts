@@ -163,17 +163,18 @@ export default class SDK {
       // create request
       const { entryNode, exitNode } = res;
       const id = RequestCache.generateId(this.requestCache);
-      const request = Request.create(
-        this.crypto,
+      const request = Request.create({
+        crypto: this.crypto,
         id,
         provider,
         req,
-        entryNode.id,
-        exitNode.id,
-        this.crypto!.Identity.load_identity(
+        clientId: this.clientId,
+        entryId: entryNode.id,
+        exitId: exitNode.id,
+        exitNodeReadIdentity: this.crypto!.Identity.load_identity(
           etherUtils.arrayify(exitNode.pubKey)
-        )
-      );
+        ),
+      });
 
       // split request to segments
       const segments = Request.toSegments(request);
@@ -277,16 +278,18 @@ export default class SDK {
 
     // generate new request
     const id = RequestCache.generateId(this.requestCache);
-    const request = Request.fromOriginal(
-      this.crypto,
+    const request = Request.create({
+      crypto: this.crypto,
       id,
-      origReq,
-      fallback.entryNode.id,
-      fallback.exitNode.id,
-      this.crypto!.Identity.load_identity(
+      provider: origReq.provider,
+      req: origReq.req,
+      clientId: this.clientId,
+      entryId: fallback.entryNode.id,
+      exitId: fallback.exitNode.id,
+      exitNodeReadIdentity: this.crypto!.Identity.load_identity(
         etherUtils.arrayify(fallback.exitNode.pubKey)
-      )
-    );
+      ),
+    });
     // split request to segments
     const segments = Request.toSegments(request);
     if (segments.length > MAX_REQUEST_SEGMENTS) {
@@ -403,7 +406,12 @@ export default class SDK {
     const message = SegmentCache.toMessage(entry);
     const counter = this.counterStore.get(request.exitId) || BigInt(0);
 
-    const res = Response.messageToBody(message, request, counter, this.crypto);
+    const res = Response.messageToResp({
+      msg: message,
+      request,
+      counter,
+      crypto: this.crypto,
+    });
     if (res.success) {
       this.counterStore.set(request.exitId, res.counter);
       const responseTime = Date.now() - request.createdAt;
@@ -418,15 +426,9 @@ export default class SDK {
       log.verbose(
         "responded to %s with %s",
         JSON.stringify(request.req),
-        res.body
+        JSON.stringify(res.resp)
       );
-      try {
-        const json = JSON.parse(res.body);
-        return request.resolve(json);
-      } catch (err) {
-        log.error("Parsing response JSON failed with:", err);
-        return request.reject("Unable to parse response");
-      }
+      return request.resolve(res.resp);
     } else {
       log.error("Error extracting message", res.error);
       this.nodesColl.requestFailed(request);

@@ -7,7 +7,7 @@ import type {
 } from "@rpch/crypto-for-nodejs";
 
 import * as JRPC from "./jrpc";
-import * as compression from "./compression";
+import * as Payload from "./payload";
 import type { Segment } from "./segment";
 import { shortPeerId } from "./utils";
 
@@ -31,69 +31,40 @@ const MaxSegmentBody = MaxBytes - 17;
 /**
  * Creates a request and compresses its payload.
  */
-export function create(
+export function create({
+  crypto,
+  id,
+  provider,
+  req,
+  clientId,
+  entryId,
+  exitId,
+  exitNodeReadIdentity,
+}: {
   crypto: {
     Envelope: typeof Envelope;
     box_request: typeof box_request;
-  },
-  id: number,
-  provider: string,
-  req: JRPC.Request,
-  entryId: string,
-  exitId: string,
-  exitNodeReadIdentity: Identity
-): Request {
-  // TODO use json instead of string here
-  const compressedBody = compression.compressRpcRequest(JSON.stringify(req));
-  const payload = [3, "request", provider, compressedBody].join("|");
-  const envelope = new crypto.Envelope(
-    utils.toUtf8Bytes(payload),
-    entryId,
-    exitId
-  );
+  };
+  id: number;
+  provider: string;
+  req: JRPC.Request;
+  clientId: string;
+  entryId: string;
+  exitId: string;
+  exitNodeReadIdentity: Identity;
+}): Request {
+  const payload = Payload.encodeReq({
+    provider,
+    clientId,
+    req,
+  });
+
+  const envelope = new crypto.Envelope(payload, entryId, exitId);
   const session = crypto.box_request(envelope, exitNodeReadIdentity);
   return {
     id,
     provider,
     req,
-    createdAt: Date.now(),
-    entryId,
-    exitId,
-    exitNodeReadIdentity,
-    session,
-  };
-}
-
-/**
- * Creates a request from original request message and provider and compresses its payload.
- */
-export function fromOriginal(
-  crypto: {
-    Envelope: typeof Envelope;
-    box_request: typeof box_request;
-  },
-  id: number,
-  original: Request,
-  entryId: string,
-  exitId: string,
-  exitNodeReadIdentity: Identity
-) {
-  // TODO use json instead of string here
-  const compressedBody = compression.compressRpcRequest(
-    JSON.stringify(original.req)
-  );
-  const payload = [3, "request", original.provider, compressedBody].join("|");
-  const envelope = new crypto.Envelope(
-    utils.toUtf8Bytes(payload),
-    entryId,
-    exitId
-  );
-  const session = crypto.box_request(envelope, exitNodeReadIdentity);
-  return {
-    id,
-    originalId: original.id,
-    provider: original.provider,
-    req: original.req,
     createdAt: Date.now(),
     entryId,
     exitId,

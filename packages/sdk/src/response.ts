@@ -1,19 +1,25 @@
 import { utils } from "ethers";
 import { unbox_response, Envelope } from "@rpch/crypto-for-nodejs";
 
+import * as JRPC from "./jrpc";
+import * as Payload from "./payload";
 import type { Request } from "./request";
-import * as compression from "./compression";
 
-export function messageToBody(
-  msg: string,
-  request: Request,
-  counter: bigint,
+export function messageToResp({
+  msg,
+  request,
+  counter,
+  crypto,
+}: {
+  msg: string;
+  request: Request;
+  counter: bigint;
   crypto: {
     unbox_response: typeof unbox_response;
     Envelope: typeof Envelope;
-  }
-):
-  | { success: true; body: string; counter: bigint }
+  };
+}):
+  | { success: true; resp: JRPC.Response; counter: bigint }
   | { success: false; error: string } {
   try {
     crypto.unbox_response(
@@ -25,30 +31,11 @@ export function messageToBody(
     return { success: false, error: `unboxing response failed: ${err}` };
   }
 
-  const decrypted = utils.toUtf8String(request.session.get_response_data());
-  const parts = decrypted.split("|");
-  if (parts.length === 0) {
-    return { success: false, error: "empty response body" };
-  }
-
-  const count = parseInt(parts[0], 10);
-  if (count !== 2) {
-    return { success: false, error: `invalid response parts: ${count}` };
-  }
-
-  const type = parts[1];
-  if (type !== "response") {
-    return { success: false, error: `wrong response type ${type}` };
-  }
-  const compressedDecrypted = parts[2];
-  const res = compression.decompressRpcRequest(compressedDecrypted);
-  if (res.success && "json" in res) {
-    const newCount = request.session.updated_counter();
-    return {
-      success: true,
-      body: res.json,
-      counter: newCount,
-    };
-  }
-  return res;
+  const resp = Payload.decodeResp(request.session.get_response_data());
+  const newCount = request.session.updated_counter();
+  return {
+    success: true,
+    resp,
+    counter: newCount,
+  };
 }
