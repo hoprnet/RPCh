@@ -18,6 +18,8 @@ export * as JRPC from "./jrpc";
 export * as NodeAPI from "./node-api";
 export * as Payload from "./payload";
 export * as ProviderAPI from "./provider-api";
+export * as Request from "./request";
+export * as Response from "./response";
 export * as Segment from "./segment";
 export * as SegmentCache from "./segment-cache";
 
@@ -366,7 +368,7 @@ export default class SDK {
   // handle incoming messages
   private onMessages = (messages: NodeAPI.Message[]) => {
     messages.forEach(({ body }) => {
-      const segRes = Segment.fromString(body);
+      const segRes = Segment.fromMessage(body);
       if (!segRes.success) {
         log.info("cannot create segment", segRes.error);
         return;
@@ -412,12 +414,12 @@ export default class SDK {
     const counter = this.counterStore.get(request.exitId) || BigInt(0);
 
     const res = Response.messageToResp({
-      msg: message,
+      hexData: message,
       request,
       counter,
       crypto: this.crypto,
     });
-    if (res.success) {
+    if (Response.respSuccess(res)) {
       this.counterStore.set(request.exitId, res.counter);
       const responseTime = Date.now() - request.createdAt;
       log.verbose(
@@ -433,7 +435,7 @@ export default class SDK {
         JSON.stringify(request.req),
         JSON.stringify(res.resp)
       );
-      return request.resolve(res.resp);
+      return request.resolve(res.resp.resp);
     } else {
       log.error("Error extracting message", res.error);
       this.nodesColl.requestFailed(request);

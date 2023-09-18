@@ -38,8 +38,8 @@ type Ops = {
   privateKey?: Uint8Array;
   identityFile: string;
   password?: string;
-  apiEndpoint: string;
-  apiToken: string;
+  apiEndpoint: URL;
+  accessToken: string;
 };
 
 async function start(ops: Ops) {
@@ -90,10 +90,7 @@ async function setup(ops: Ops): Promise<State> {
 }
 
 function setupSocket(state: State, ops: Ops) {
-  const socket = NodeAPI.connectWS({
-    apiEndpoint: new URL(ops.apiEndpoint),
-    apiToken: ops.apiToken,
-  });
+  const socket = NodeAPI.connectWS(ops);
   if (!socket) {
     log.error("Failed opening websocket");
     process.exit(3);
@@ -134,7 +131,7 @@ function onMessage(state: State, ops: Ops) {
       return;
     }
 
-    const segRes = Segment.fromString(msg.body);
+    const segRes = Segment.fromMessage(msg.body);
     if (!segRes.success) {
       log.info("cannot create segment", segRes.error);
       return;
@@ -181,7 +178,7 @@ const completeSegmentsEntry = async (
     crypto,
   });
 
-  if (!Request.isSuccess(resReq)) {
+  if (!Request.reqSuccess(resReq)) {
     log.error("Error unboxing request:", resReq.error);
     return;
   }
@@ -206,7 +203,7 @@ const completeSegmentsEntry = async (
     unboxSession: resReq.session,
   });
 
-  if (!Response.isSuccess(resResp)) {
+  if (!Response.msgSuccess(resResp)) {
     log.error("Error boxing response", resResp.error);
     return;
   }
@@ -219,17 +216,11 @@ const completeSegmentsEntry = async (
   // queue segment sending for all of them
   segments.forEach((seg: Segment.Segment) => {
     setTimeout(() => {
-      NodeAPI.sendMessage(
-        {
-          apiEndpoint: ops.apiEndpoint,
-          accessToken: ops.apiToken,
-        },
-        {
-          recipient: entryId,
-          tag,
-          message: Segment.toMessage(seg),
-        }
-      ).catch((err: Error) => {
+      NodeAPI.sendMessage(ops, {
+        recipient: entryId,
+        tag,
+        message: Segment.toMessage(seg),
+      }).catch((err: Error) => {
         log.error("error sending segment", Segment.prettyPrint(seg), err);
       });
     });
@@ -263,7 +254,7 @@ if (require.main === module) {
       : undefined,
     identityFile: RPCH_IDENTITY_FILE || DEFAULT_IDENTITY_FILE,
     password: RPCH_PASSWORD,
-    apiEndpoint: HOPRD_API_ENDPOINT,
-    apiToken: HOPRD_API_TOKEN,
+    apiEndpoint: new URL(HOPRD_API_ENDPOINT),
+    accessToken: HOPRD_API_TOKEN,
   });
 }
