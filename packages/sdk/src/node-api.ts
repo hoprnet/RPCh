@@ -65,3 +65,15 @@ export function retrieveMessages(
     return res.json() as unknown as { messages: Message[] };
   });
 }
+
+export function accountAddresses(conn: ConnInfo) {
+  const url = new URL("/api/v3/account/addresses", conn.apiEndpoint);
+  const headers = {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+    "x-auth-token": conn.accessToken,
+  };
+  return fetch(url, { headers }).then((res) => {
+    return res.json() as unknown as { native: string; hopr: string };
+  });
+}

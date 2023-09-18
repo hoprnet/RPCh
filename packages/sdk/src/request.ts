@@ -9,7 +9,7 @@ import type {
 
 import * as JRPC from "./jrpc";
 import * as Payload from "./payload";
-import type { Segment } from "./segment";
+import * as Segment from "./segment";
 import { shortPeerId } from "./utils";
 
 export type Request = {
@@ -32,11 +32,6 @@ export type ReqSuccess = {
 };
 export type ReqError = { success: false; error: string };
 export type Req = ReqSuccess | ReqError;
-
-// Maximum bytes we should be sending within the HOPR network.
-export const MaxBytes = 400;
-// Maximum segment overhead is 17 bytes, could be as little as 13 though (e.g. `4|999999|999|999|` vs `4|999999|9|9|`)
-const MaxSegmentBody = MaxBytes - 17;
 
 /**
  * Creates a request and compresses its payload.
@@ -122,22 +117,11 @@ export function messageToReq({
 /**
  * Convert request to segments.
  */
-export function toSegments(req: Request): Segment[] {
+export function toSegments(req: Request): Segment.Segment[] {
   // we need the entry id ouside of of the actual encrypted payload
   const hexData = utils.hexlify(req.session.get_request_data());
   const body = `${req.entryId}|${hexData}`;
-
-  const chunks: string[] = [];
-  for (let i = 0; i < body.length; i += MaxSegmentBody) {
-    chunks.push(body.slice(i, i + MaxSegmentBody));
-  }
-
-  return chunks.map((c, nr) => ({
-    requestId: req.id,
-    nr,
-    totalCount: chunks.length,
-    body: c,
-  }));
+  return Segment.toSegments(req.id, body);
 }
 
 /**

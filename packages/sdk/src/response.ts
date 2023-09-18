@@ -20,7 +20,7 @@ export type Resp = RespSuccess | RespError;
 
 export type MsgSuccess = {
   success: true;
-  hexResp: string;
+  hexData: string;
   newCount: bigint;
 };
 export type MsgError = { success: false; error: string };
@@ -55,18 +55,18 @@ export function respToMessage({
     return { success: false, error: `boxing response failed: ${err}` };
   }
 
-  const hexResp = utils.hexlify(unboxSession.get_response_data());
+  const hexData = utils.hexlify(unboxSession.get_response_data());
   const newCount = unboxSession.updated_counter();
-  return { success: true, hexResp, newCount };
+  return { success: true, hexData, newCount };
 }
 
 export function messageToResp({
-  msg,
+  hexData,
   request,
   counter,
   crypto,
 }: {
-  msg: string;
+  hexData: string;
   request: Request;
   counter: bigint;
   crypto: {
@@ -77,7 +77,11 @@ export function messageToResp({
   try {
     crypto.unbox_response(
       request.session,
-      new crypto.Envelope(utils.arrayify(msg), request.entryId, request.exitId),
+      new crypto.Envelope(
+        utils.arrayify(hexData),
+        request.entryId,
+        request.exitId
+      ),
       counter
     );
   } catch (err) {
