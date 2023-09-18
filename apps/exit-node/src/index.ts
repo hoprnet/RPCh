@@ -1,4 +1,4 @@
-import { WebSocket, MessageEvent } from "isomorphic-ws";
+import { WebSocket, MessageEvent, CloseEvent } from "isomorphic-ws";
 import levelup from "levelup";
 import leveldown from "leveldown";
 import { utils as ethersUtils } from "ethers";
@@ -9,7 +9,7 @@ import * as identity from "./identity";
 import { createLogger } from "./utils";
 import PeerId from "peer-id";
 import * as Prometheus from "prom-client";
-import { NodeAPI, Payload, Segment, SegmentCache } from "@rpch/sdk";
+import { NodeAPI, Payload, ProviderAPI, Request, Response, Segment, SegmentCache } from "@rpch/sdk";
 import {
   DEFAULT_DATA_DIR,
   DEFAULT_IDENTITY_FILE,
@@ -32,6 +32,8 @@ const requestExpirationCache: Map<
   string,
   ReturnType<typeof setTimeout>
 > = new Map();
+
+const counterStore: Map<string, bigint> = new Map();
 
 export const start = async (ops: {
   exit: {
@@ -221,7 +223,7 @@ export const start = async (ops: {
     const cacheRes = SegmentCache.incoming(cache, segment);
     switch (cacheRes.res) {
       case "complete":
-        this.completeSegmentsEntry(cacheRes.entry!);
+        completeSegmentsEntry(cacheRes.entry!);
         break;
       case "error":
         log.error("error caching segment", cacheRes.reason);
@@ -233,29 +235,90 @@ export const start = async (ops: {
         log.verbose("inserted new segment", Segment.prettyPrint(segment));
         break;
     }
-
-    try {
-      const segment = Segment.fromString(msg.body);
-      cache.onSegment(segment, msg.tag);
-    } catch (error) {
-      log.verbose(
-        "rejected received data from HOPRd: not a valid segment",
-        msg
-      );
-    }
   };
 
-  socket.on("error", (err) => {
+  socket.on("error", (err: Error) => {
     log.error("ws error", err);
     // force restart
-    throw err;
+    process.exit(1);
   });
 
-  socket.on("close", (err) => {
-    log.error("ws close", err);
-    // force restart
-    throw err;
+  socket.on("close", (evt: CloseEvent) => {
+    log.error("ws close", evt);
+    process.exit(1);
   });
+
+  const completeSegmentsEntry = (entry: SegmentCache.Entry) => {
+    const firstSeg = entry.segments.get(0)!;
+    if (!firstSeg.body.startsWith("0x")) {
+      log.info("message is not a response", firstSeg.requestId);
+      return;
+    }
+
+    const msg = SegmentCache.toMessage(entry);
+    const [entryId, hexData] = msg;
+    const counter = counterStore.get(entryId) || BigInt(0);
+    const res = Request.messageToReq({
+      hexData,
+      myPeerId,
+      myIdentity,
+      counter,
+      crypto,
+    });
+
+    if (!Request.isSuccess(res)) {
+      log.error("Error unboxing request:", res.error);
+      return;
+    }
+    counterStore.set(entryId, res.counter);
+    // TODO
+    // inform dp of segments, use entry.count and res.req.clientId
+
+    const { provider, req } = res.req;
+    const resp = await ProviderAPI.fetchRPC(provider, req).catch((err: Error) => {
+        log.error("Error doing rpc request", err, provider, req);
+    });
+    if (!resp) {
+        return;
+    }
+
+    Response.respToMessage({
+  crypto,
+  entryId,
+  requestId: firstSeg.requestId,
+  resp,
+  unboxSession: res.session});
+
+      // counterRequestsToProvider.labels({ status: "complete" }).inc();
+      const rpchResponse = await Response.createResponse(
+        crypto,
+        rpchRequest,
+        response
+      );
+      log.verbose(
+        "Created response",
+        rpchResponse.id,
+        rpchResponse.toMessage().body
+      );
+
+      for (const segment of rpchResponse.toMessage().toSegments()) {
+        const body = JSON.stringify({
+          tag,
+          body: segment.toString(),
+          peerId: rpchRequest.entryNodeDestination,
+          path: [],
+        });
+
+        fetch(sendUrl, { headers, method: "POST", body })
+          .then((res) => res.json())
+          .then((json) => log.verbose("sendMessage", JSON.stringify(json)))
+          .catch((error) => log.error("Failed to send segment", error));
+      }
+    } catch (error) {
+      log.error("Failed to respond with data", error);
+      counterRequestsToProvider.labels({ status: "error" }).inc();
+    }
+  };
 
   return () => {
     for (const interval of intervals) {

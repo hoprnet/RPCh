@@ -2,6 +2,7 @@ import { utils } from "ethers";
 import type {
   Envelope,
   box_request,
+  unbox_request,
   Session,
   Identity,
 } from "@rpch/crypto-for-nodejs";
@@ -22,6 +23,15 @@ export type Request = {
   exitNodeReadIdentity: Identity;
   session: Session;
 };
+
+export type ResSuccess = {
+  success: true;
+  req: Payload.ReqPayload;
+  session: Session;
+  counter: bigint;
+};
+export type ResError = { success: false; error: string };
+export type ResReq = ResSuccess | ResError;
 
 // Maximum bytes we should be sending within the HOPR network.
 export const MaxBytes = 400;
@@ -56,10 +66,12 @@ export function create({
   const payload = Payload.encodeReq({
     provider,
     clientId,
+    requestId: id,
     req,
   });
 
-  const envelope = new crypto.Envelope(payload, entryId, exitId);
+  // Envelop only needs the target node id - see usages
+  const envelope = new crypto.Envelope(payload, exitId, exitId);
   const session = crypto.box_request(envelope, exitNodeReadIdentity);
   return {
     id,
@@ -73,12 +85,47 @@ export function create({
   };
 }
 
+export function messageToReq({
+  crypto,
+  counter,
+  hexData,
+  exitId,
+  exitNodeWriteIdentity,
+}: {
+  hexData: string;
+  exitId: string;
+  exitNodeWriteIdentity: Identity;
+  counter: bigint;
+  crypto: { Envelope: typeof Envelope; unbox_request: typeof unbox_request };
+}): ResReq {
+  // Envelop only needs the target node id - see usages
+  const envelope = new crypto.Envelope(utils.arrayify(hexData), exitId, exitId);
+
+  let session;
+  try {
+    session = crypto.unbox_request(envelope, exitNodeWriteIdentity, counter);
+  } catch (err) {
+    return { success: false, error: `unboxing request failed: ${err}` };
+  }
+
+  const data = session.get_request_data();
+  const req = Payload.decodeReq(data);
+  const newCount = session.updated_counter();
+  return {
+    success: true,
+    req,
+    session: session,
+    counter: newCount,
+  };
+}
+
 /**
  * Convert request to segments.
  */
 export function toSegments(req: Request): Segment[] {
+  // we need the entry id ouside of of the actual encrypted payload
   const hexData = utils.hexlify(req.session.get_request_data());
-  const body = [2, req.entryId, hexData].join("|");
+  const body = `${req.entryId}|${hexData}`;
 
   const chunks: string[] = [];
   for (let i = 0; i < body.length; i += MaxSegmentBody) {
@@ -101,4 +148,8 @@ export function prettyPrint(req: Request) {
   const xId = shortPeerId(req.exitId);
   const prov = req.provider.substring(0, 14);
   return `request[id: ${req.id}, entryId: ${eId}, exitId: ${xId}, prov: ${prov}.. ]`;
+}
+
+export function isSuccess(res: ResReq): res is ResSuccess {
+  return res.success;
 }

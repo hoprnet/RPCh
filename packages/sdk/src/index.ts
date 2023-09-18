@@ -17,6 +17,7 @@ import type { EntryNode } from "./entry-node";
 export * as JRPC from "./jrpc";
 export * as NodeAPI from "./node-api";
 export * as Payload from "./payload";
+export * as ProviderAPI from "./provider-api";
 export * as Segment from "./segment";
 export * as SegmentCache from "./segment-cache";
 
