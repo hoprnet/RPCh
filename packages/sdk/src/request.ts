@@ -24,14 +24,14 @@ export type Request = {
   session: Session;
 };
 
-export type ResSuccess = {
+export type ReqSuccess = {
   success: true;
   req: Payload.ReqPayload;
   session: Session;
   counter: bigint;
 };
-export type ResError = { success: false; error: string };
-export type ResReq = ResSuccess | ResError;
+export type ReqError = { success: false; error: string };
+export type Req = ReqSuccess | ReqError;
 
 // Maximum bytes we should be sending within the HOPR network.
 export const MaxBytes = 400;
@@ -97,7 +97,7 @@ export function messageToReq({
   exitNodeWriteIdentity: Identity;
   counter: bigint;
   crypto: { Envelope: typeof Envelope; unbox_request: typeof unbox_request };
-}): ResReq {
+}): Req {
   // Envelop only needs the target node id - see usages
   const envelope = new crypto.Envelope(utils.arrayify(hexData), exitId, exitId);
 
@@ -150,6 +150,6 @@ export function prettyPrint(req: Request) {
   return `request[id: ${req.id}, entryId: ${eId}, exitId: ${xId}, prov: ${prov}.. ]`;
 }
 
-export function isSuccess(res: ResReq): res is ResSuccess {
+export function reqSuccess(res: Req): res is ReqSuccess {
   return res.success;
 }

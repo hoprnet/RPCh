@@ -10,6 +10,22 @@ import * as JRPC from "./jrpc";
 import * as Payload from "./payload";
 import type { Request } from "./request";
 
+export type RespSuccess = {
+  success: true;
+  resp: Payload.RespPayload;
+  counter: bigint;
+};
+export type RespError = { success: false; error: string };
+export type Resp = RespSuccess | RespError;
+
+export type MsgSuccess = {
+  success: true;
+  hexResp: string;
+  newCount: bigint;
+};
+export type MsgError = { success: false; error: string };
+export type Msg = MsgSuccess | MsgError;
+
 export function respToMessage({
   crypto,
   entryId,
@@ -25,7 +41,7 @@ export function respToMessage({
   requestId: number;
   resp: JRPC.Response;
   unboxSession: Session;
-}) {
+}): Msg {
   const payload = Payload.encodeResp({
     requestId,
     resp,
@@ -57,9 +73,7 @@ export function messageToResp({
     unbox_response: typeof unbox_response;
     Envelope: typeof Envelope;
   };
-}):
-  | { success: true; resp: Payload.RespPayload; counter: bigint }
-  | { success: false; error: string } {
+}): Resp {
   try {
     crypto.unbox_response(
       request.session,
@@ -77,4 +91,12 @@ export function messageToResp({
     resp,
     counter: newCount,
   };
+}
+
+export function msgSuccess(res: Msg): res is MsgSuccess {
+  return res.success;
+}
+
+export function respSuccess(res: Resp): res is RespSuccess {
+  return res.success;
 }
