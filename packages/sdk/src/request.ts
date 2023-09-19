@@ -120,7 +120,7 @@ export function messageToReq({
 export function toSegments(req: Request): Segment.Segment[] {
   // we need the entry id ouside of of the actual encrypted payload
   const hexData = utils.hexlify(req.session.get_request_data());
-  const body = `${req.entryId}|${hexData}`;
+  const body = `${req.entryId},${hexData}`;
   return Segment.toSegments(req.id, body);
 }
 

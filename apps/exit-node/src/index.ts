@@ -17,6 +17,7 @@ import {
 const log = createLogger();
 
 const SocketReconnectTimeout = 1e3; // 1sek
+const RequestPurgeTimeout = 10e3; // 10sek
 
 type State = {
   socket?: WebSocket;
@@ -24,6 +25,7 @@ type State = {
   identity: crypto.Identity;
   peerId: string;
   cache: SegmentCache.Cache;
+  deleteTimer: Map<string, ReturnType<typeof setTimeout>>; // deletion timer of requests in segment cache
   counterStore: Map<string, bigint>;
 };
 
@@ -69,11 +71,13 @@ async function setup(ops: Ops): Promise<State> {
   log.verbose("Fetched peer id", peerId);
 
   const cache = SegmentCache.init();
+  const deleteTimer = new Map();
   const counterStore = new Map();
 
   return {
     cache,
     counterStore,
+    deleteTimer,
     identity: resId.identity,
     peerId,
     publicKey: resId.publicKey,
@@ -106,19 +110,17 @@ function setupSocket(state: State, ops: Ops) {
 
 function onMessage(state: State, ops: Ops) {
   return function (evt: MessageEvent) {
-    const body = evt.data.toString();
+    const raw = evt.data.toString();
 
     let msg: { type: string; tag: number; body: string };
     try {
-      msg = JSON.parse(body);
+      msg = JSON.parse(raw);
     } catch (error) {
       log.error("Error decoding message:", error);
       return;
     }
 
-    // message received is an acknowledgement of a
-    // message we have send, we can safely ignore this
-    if (msg.type.startsWith("ack:")) {
+    if (msg.type !== "message") {
       return;
     }
 
@@ -127,10 +129,12 @@ function onMessage(state: State, ops: Ops) {
       log.info("cannot create segment", segRes.error);
       return;
     }
+
     const segment = segRes.segment;
     const cacheRes = SegmentCache.incoming(state.cache, segment);
     switch (cacheRes.res) {
       case "complete":
+        clearTimeout(state.deleteTimer.get(segment.requestId));
         completeSegmentsEntry(state, ops, cacheRes.entry!, msg.tag);
         break;
       case "error":
@@ -139,27 +143,34 @@ function onMessage(state: State, ops: Ops) {
       case "already-cached":
         log.info("already cached", Segment.prettyPrint(segment));
         break;
-      case "inserted":
-        log.verbose("inserted new segment", Segment.prettyPrint(segment));
+      case "added-to-request":
+        log.verbose(
+          "inserted new segment to existing request",
+          Segment.prettyPrint(segment)
+        );
+        break;
+      case "inserted-new":
+        log.verbose("inserted new first segment", Segment.prettyPrint(segment));
+        state.deleteTimer.set(
+          segment.requestId,
+          setTimeout(() => {
+            log.info("purging incomplete request", segment.requestId);
+            SegmentCache.remove(state.cache, segment.requestId);
+          }, RequestPurgeTimeout)
+        );
         break;
     }
   };
 }
 
-const completeSegmentsEntry = async (
+async function completeSegmentsEntry(
   state: State,
   ops: Ops,
   entry: SegmentCache.Entry,
   tag: number
-) => {
-  const firstSeg = entry.segments.get(0)!;
-  if (!firstSeg.body.startsWith("0x")) {
-    log.info("message is not a response", firstSeg.requestId);
-    return;
-  }
-
+) {
   const msg = SegmentCache.toMessage(entry);
-  const [entryId, hexData] = msg;
+  const [entryId, hexData] = msg.split(",");
   const counter = state.counterStore.get(entryId) || BigInt(0);
   const resReq = Request.messageToReq({
     hexData,
@@ -168,17 +179,17 @@ const completeSegmentsEntry = async (
     counter,
     crypto,
   });
-
   if (!Request.reqSuccess(resReq)) {
     log.error("Error unboxing request:", resReq.error);
     return;
   }
+
   state.counterStore.set(entryId, resReq.counter);
 
   // TODO
   // inform DP of segments, use entry.count and res.req.clientId
 
-  const { provider, req } = resReq.req;
+  const { provider, req, requestId } = resReq.req;
   const resp = await ProviderAPI.fetchRPC(provider, req).catch((err: Error) => {
     log.error("Error doing rpc request", err, provider, req);
   });
@@ -189,7 +200,7 @@ const completeSegmentsEntry = async (
   const resResp = Response.respToMessage({
     crypto,
     entryId,
-    requestId: firstSeg.requestId,
+    requestId,
     resp,
     unboxSession: resReq.session,
   });
@@ -199,7 +210,7 @@ const completeSegmentsEntry = async (
     return;
   }
 
-  const segments = Segment.toSegments(firstSeg.requestId, resResp.hexData);
+  const segments = Segment.toSegments(requestId, resResp.hexData);
 
   // TODO
   // inform DP of segments, count and client id
@@ -216,7 +227,7 @@ const completeSegmentsEntry = async (
       });
     });
   });
-};
+}
 
 // if this file is the entrypoint of the nodejs process
 if (require.main === module) {
