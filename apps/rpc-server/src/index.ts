@@ -75,18 +75,26 @@ function parseBody(
   }
 }
 
-function sendSkipRPCh(provider: string | undefined, req: JRPC.Request) {
+function sendSkipRPCh(
+  provider: string | undefined,
+  req: JRPC.Request,
+  res: http.ServerResponse
+) {
   if (!provider) {
     log.error("Need provider query param");
     return;
   }
   ProviderAPI.fetchRPC(provider, req)
-    .then((res) => {
-      log.verbose("receiving response", JSON.stringify(res));
+    .then((resp: JRPC.Response) => {
+      log.verbose("receiving response", JSON.stringify(resp));
+      res.statusCode = 200;
+      res.write(JSON.stringify(resp));
     })
     .catch((err) => {
       log.error("Error sending request", err);
-    });
+      res.statusCode = 500;
+    })
+    .finally(() => res.end());
 }
 
 function sendRequest(
@@ -158,7 +166,7 @@ function createServer(sdk: RPChSDK, ops: ServerOPS) {
           JSON.stringify(params)
         );
         if (ops.skipRPCh) {
-          sendSkipRPCh(params.provider, result.req);
+          sendSkipRPCh(params.provider, result.req, res);
         } else {
           sendRequest(sdk, result.req, params, res);
         }
