@@ -25,7 +25,7 @@ type State = {
   identity: crypto.Identity;
   peerId: string;
   cache: SegmentCache.Cache;
-  deleteTimer: Map<string, ReturnType<typeof setTimeout>>; // deletion timer of requests in segment cache
+  deleteTimer: Map<number, ReturnType<typeof setTimeout>>; // deletion timer of requests in segment cache
   counterStore: Map<string, bigint>;
 };
 
