@@ -10,7 +10,7 @@ import * as RequestCache from "./request-cache";
 import * as Response from "./response";
 import * as Segment from "./segment";
 import * as SegmentCache from "./segment-cache";
-import * as Utils from "./utils";
+import * as utils from "./utils";
 import NodesCollector from "./nodes-collector";
 import type { EntryNode } from "./entry-node";
 
@@ -67,7 +67,7 @@ const defaultOps: Ops = {
 };
 
 const MAX_REQUEST_SEGMENTS = 10;
-const log = Utils.createLogger();
+const log = utils.createLogger();
 
 // message tag - more like port since we tag all our messages the same
 const ApplicationTag = Math.floor(Math.random() * 0xffff);
@@ -141,12 +141,12 @@ export default class SDK {
     this.populateChainIds(ops?.provider);
     return new Promise(async (resolve, reject) => {
       // sanity check provider url
-      if (!Utils.isValidURL(reqOps.provider as string)) {
+      if (!utils.isValidURL(reqOps.provider as string)) {
         return reject("Cannot parse provider URL");
       }
       // sanity check mev protection provider url, if it is set
       if (!!reqOps.mevProtectionProvider) {
-        if (!Utils.isValidURL(reqOps.mevProtectionProvider)) {
+        if (!utils.isValidURL(reqOps.mevProtectionProvider)) {
           return reject("Cannot parse mevProtectionProvider URL");
         }
       }
@@ -419,11 +419,12 @@ export default class SDK {
     const request = this.requestCache.get(firstSeg.requestId)!;
     RequestCache.remove(this.requestCache, request.id);
 
-    const message = SegmentCache.toMessage(entry);
+    const hexResp = SegmentCache.toMessage(entry);
+    const respData = etherUtils.arrayify(hexResp);
     const counter = this.counterStore.get(request.exitId) || BigInt(0);
 
     const res = Response.messageToResp({
-      hexData: message,
+      respData,
       request,
       counter,
       crypto: this.crypto,

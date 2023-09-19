@@ -23,7 +23,6 @@ export function sendMessage(
     message,
   }: { recipient: string; tag: number; message: string }
 ): Promise<string> {
-  console.log("sending message", recipient, tag, message);
   const url = new URL("/api/v3/messages", conn.apiEndpoint);
   const headers = {
     Accept: "application/json",

@@ -61,7 +61,6 @@ export function create({
   const payload = Payload.encodeReq({
     provider,
     clientId,
-    requestId: id,
     req,
   });
 
@@ -83,18 +82,18 @@ export function create({
 export function messageToReq({
   crypto,
   counter,
-  hexData,
+  body,
   exitId,
   exitNodeWriteIdentity,
 }: {
-  hexData: string;
+  body: Uint8Array;
   exitId: string;
   exitNodeWriteIdentity: Identity;
   counter: bigint;
   crypto: { Envelope: typeof Envelope; unbox_request: typeof unbox_request };
 }): Req {
   // Envelop only needs the target node id - see usages
-  const envelope = new crypto.Envelope(utils.arrayify(hexData), exitId, exitId);
+  const envelope = new crypto.Envelope(body, exitId, exitId);
 
   let session;
   try {
@@ -119,8 +118,11 @@ export function messageToReq({
  */
 export function toSegments(req: Request): Segment.Segment[] {
   // we need the entry id ouside of of the actual encrypted payload
-  const hexData = utils.hexlify(req.session.get_request_data());
-  const body = `${req.entryId},${hexData}`;
+  const entryIdData = utils.toUtf8Bytes(req.entryId);
+  const reqData = req.session.get_request_data();
+  const hexEntryId = utils.hexlify(entryIdData);
+  const hexData = utils.hexlify(reqData);
+  const body = `${hexEntryId},${hexData}`;
   return Segment.toSegments(req.id, body);
 }
 

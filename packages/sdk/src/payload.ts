@@ -4,12 +4,10 @@ import * as JRPC from "./jrpc";
 export type ReqPayload = {
   provider: string;
   clientId: string;
-  requestId: number;
   req: JRPC.Request;
 };
 
 export type RespPayload = {
-  requestId: number;
   resp: JRPC.Response;
 };
 

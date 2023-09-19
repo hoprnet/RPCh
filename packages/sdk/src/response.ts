@@ -29,7 +29,6 @@ export type Msg = MsgSuccess | MsgError;
 export function respToMessage({
   crypto,
   entryId,
-  requestId,
   resp,
   unboxSession,
 }: {
@@ -38,14 +37,10 @@ export function respToMessage({
     box_response: typeof box_response;
   };
   entryId: string;
-  requestId: number;
   resp: JRPC.Response;
   unboxSession: Session;
 }): Msg {
-  const payload = Payload.encodeResp({
-    requestId,
-    resp,
-  });
+  const payload = Payload.encodeResp({ resp });
 
   // Envelop only needs the target node id - see usages
   const envelope = new crypto.Envelope(payload, entryId, entryId);
@@ -61,12 +56,12 @@ export function respToMessage({
 }
 
 export function messageToResp({
-  hexData,
+  respData,
   request,
   counter,
   crypto,
 }: {
-  hexData: string;
+  respData: Uint8Array;
   request: Request;
   counter: bigint;
   crypto: {
@@ -77,11 +72,7 @@ export function messageToResp({
   try {
     crypto.unbox_response(
       request.session,
-      new crypto.Envelope(
-        utils.arrayify(hexData),
-        request.entryId,
-        request.exitId
-      ),
+      new crypto.Envelope(respData, request.entryId, request.exitId),
       counter
     );
   } catch (err) {

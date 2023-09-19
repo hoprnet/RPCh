@@ -1,7 +1,7 @@
 import * as crypto from "@rpch/crypto-for-nodejs";
 import * as path from "path";
 import { WebSocket, MessageEvent, CloseEvent } from "isomorphic-ws";
-import { utils as EthersUtils } from "ethers";
+import { utils } from "ethers";
 
 import * as Identity from "./identity";
 import { createLogger } from "./utils";
@@ -111,14 +111,7 @@ function setupSocket(state: State, ops: Ops) {
 function onMessage(state: State, ops: Ops) {
   return function (evt: MessageEvent) {
     const raw = evt.data.toString();
-
-    let msg: { type: string; tag: number; body: string };
-    try {
-      msg = JSON.parse(raw);
-    } catch (error) {
-      log.error("Error decoding message:", error);
-      return;
-    }
+    const msg: { type: string; tag: number; body: string } = JSON.parse(raw);
 
     if (msg.type !== "message") {
       return;
@@ -134,6 +127,7 @@ function onMessage(state: State, ops: Ops) {
     const cacheRes = SegmentCache.incoming(state.cache, segment);
     switch (cacheRes.res) {
       case "complete":
+        log.verbose("completion segment", Segment.prettyPrint(segment));
         clearTimeout(state.deleteTimer.get(segment.requestId));
         completeSegmentsEntry(state, ops, cacheRes.entry!, msg.tag);
         break;
@@ -169,11 +163,25 @@ async function completeSegmentsEntry(
   entry: SegmentCache.Entry,
   tag: number
 ) {
+  const firstSeg = entry.segments.get(0)!;
+  if (!firstSeg.body.startsWith("0x")) {
+    log.info("message is not a request", firstSeg.requestId);
+    return;
+  }
   const msg = SegmentCache.toMessage(entry);
-  const [entryId, hexData] = msg.split(",");
+  const msgParts = msg.split(",");
+  if (msgParts.length !== 2) {
+    log.info("Invalid message parts", msgParts);
+    return;
+  }
+
+  const [hexEntryId, hexData] = msgParts;
+  const entryIdData = utils.arrayify(hexEntryId);
+  const entryId = utils.toUtf8String(entryIdData);
+  const reqData = utils.arrayify(hexData);
   const counter = state.counterStore.get(entryId) || BigInt(0);
   const resReq = Request.messageToReq({
-    hexData,
+    body: reqData,
     exitId: state.peerId,
     exitNodeWriteIdentity: state.identity,
     counter,
@@ -189,7 +197,7 @@ async function completeSegmentsEntry(
   // TODO
   // inform DP of segments, use entry.count and res.req.clientId
 
-  const { provider, req, requestId } = resReq.req;
+  const { provider, req } = resReq.req;
   const resp = await ProviderAPI.fetchRPC(provider, req).catch((err: Error) => {
     log.error("Error doing rpc request", err, provider, req);
   });
@@ -200,7 +208,6 @@ async function completeSegmentsEntry(
   const resResp = Response.respToMessage({
     crypto,
     entryId,
-    requestId,
     resp,
     unboxSession: resReq.session,
   });
@@ -210,7 +217,7 @@ async function completeSegmentsEntry(
     return;
   }
 
-  const segments = Segment.toSegments(requestId, resResp.hexData);
+  const segments = Segment.toSegments(firstSeg.requestId, resResp.hexData);
 
   // TODO
   // inform DP of segments, count and client id
@@ -244,7 +251,7 @@ if (require.main === module) {
   const identityFile =
     process.env.RPCH_IDENTITY_FILE || path.join(process.cwd(), ".identity");
   const privateKey = process.env.RPCH_PRIVATE_KEY
-    ? EthersUtils.arrayify(process.env.RPCH_PRIVATE_KEY)
+    ? utils.arrayify(process.env.RPCH_PRIVATE_KEY)
     : undefined;
 
   start({
