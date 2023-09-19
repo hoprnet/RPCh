@@ -1,7 +1,9 @@
-import { WebSocket, MessageEvent, CloseEvent } from "isomorphic-ws";
-import { utils as ethersUtils } from "ethers";
 import * as crypto from "@rpch/crypto-for-nodejs";
-import * as identity from "./identity";
+import * as path from "path";
+import { WebSocket, MessageEvent, CloseEvent } from "isomorphic-ws";
+import { utils as EthersUtils } from "ethers";
+
+import * as Identity from "./identity";
 import { createLogger } from "./utils";
 import {
   NodeAPI,
@@ -11,15 +13,6 @@ import {
   Segment,
   SegmentCache,
 } from "@rpch/sdk";
-import {
-  DEFAULT_IDENTITY_FILE,
-  HOPRD_API_ENDPOINT,
-  HOPRD_API_TOKEN,
-  RESPONSE_TIMEOUT,
-  RPCH_IDENTITY_FILE,
-  RPCH_PASSWORD,
-  RPCH_PRIVATE_KEY_STR,
-} from "./constants";
 
 const log = createLogger();
 
@@ -52,15 +45,13 @@ async function start(ops: Ops) {
 }
 
 async function setup(ops: Ops): Promise<State> {
-  const resId = await identity
-    .getIdentity({
-      identityFile: ops.identityFile,
-      password: ops.password,
-      privateKey: ops.privateKey,
-    })
-    .catch((err: Error) => {
-      log.error("Error accessing identity", err);
-    });
+  const resId = await Identity.getIdentity({
+    identityFile: ops.identityFile,
+    password: ops.password,
+    privateKey: ops.privateKey,
+  }).catch((err: Error) => {
+    log.error("Error accessing identity", err);
+  });
   if (!resId) {
     return Promise.reject();
   }
@@ -229,32 +220,27 @@ const completeSegmentsEntry = async (
 
 // if this file is the entrypoint of the nodejs process
 if (require.main === module) {
-  // Validate enviroment variables
-  if (!RPCH_PRIVATE_KEY_STR && !RPCH_PASSWORD) {
-    throw Error(
-      "env variable 'RPCH_PRIVATE_KEY' and 'RPCH_PASSWORD' not found"
-    );
-  }
-  if (!HOPRD_API_ENDPOINT) {
-    throw Error("env variable 'HOPRD_API_ENDPOINT' not found");
-  }
-  if (!HOPRD_API_TOKEN) {
-    throw Error("env variable 'HOPRD_API_TOKEN' not found");
+  if (!process.env.RPCH_PRIVATE_KEY && !process.env.RPCH_PASSWORD) {
+    throw new Error("Missing 'RPCH_PRIVATE_KEY' or 'RPCH_PASSWORD' env var.");
   }
 
-  if (isNaN(RESPONSE_TIMEOUT)) {
-    throw Error("env variable 'RESPONSE_TIMEOUT' not a number");
+  if (!process.env.HOPRD_API_ENDPOINT) {
+    throw new Error("Missing 'HOPRD_API_ENDPOINT' env var.");
   }
-
-  log.normal("Starting exit-node");
+  if (!process.env.HOPRD_API_TOKEN) {
+    throw new Error("Missing 'HOPRD_API_TOKEN' env var.");
+  }
+  const identityFile =
+    process.env.RPCH_IDENTITY_FILE || path.join(process.cwd(), ".identity");
+  const privateKey = process.env.RPCH_PRIVATE_KEY
+    ? EthersUtils.arrayify(process.env.RPCH_PRIVATE_KEY)
+    : undefined;
 
   start({
-    privateKey: RPCH_PRIVATE_KEY_STR
-      ? ethersUtils.arrayify(RPCH_PRIVATE_KEY_STR)
-      : undefined,
-    identityFile: RPCH_IDENTITY_FILE || DEFAULT_IDENTITY_FILE,
-    password: RPCH_PASSWORD,
-    apiEndpoint: new URL(HOPRD_API_ENDPOINT),
-    accessToken: HOPRD_API_TOKEN,
+    privateKey,
+    identityFile,
+    password: process.env.RPCH_PASSWORD,
+    apiEndpoint: new URL(process.env.HOPRD_API_ENDPOINT),
+    accessToken: process.env.HOPRD_API_TOKEN,
   });
 }
