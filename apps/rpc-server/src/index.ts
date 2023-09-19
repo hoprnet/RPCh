@@ -1,9 +1,14 @@
 import http from "http";
-import RPChSDK, { JRPC, type RequestOps, type Ops as SDKops } from "@rpch/sdk";
+import RPChSDK, {
+  JRPC,
+  ProviderAPI,
+  type RequestOps,
+  type Ops as SDKops,
+} from "@rpch/sdk";
 import * as RPChCrypto from "@rpch/crypto-for-nodejs";
 import { utils } from "@rpch/common";
 
-type ServerOPS = { restrictCors: boolean };
+type ServerOPS = { restrictCors: boolean; skipRPCh: boolean };
 
 const log = utils.LoggerFactory("rpc-server")();
 
@@ -68,6 +73,20 @@ function parseBody(
   } catch (err: any) /* SyntaxError */ {
     return { success: false, error: "invalid JSON" };
   }
+}
+
+function sendSkipRPCh(provider: string | undefined, req: JRPC.Request) {
+  if (!provider) {
+    log.error("Need provider query param");
+    return;
+  }
+  ProviderAPI.fetchRPC(provider, req)
+    .then((res) => {
+      log.verbose("receiving response", JSON.stringify(res));
+    })
+    .catch((err) => {
+      log.error("Error sending request", err);
+    });
 }
 
 function sendRequest(
@@ -138,7 +157,11 @@ function createServer(sdk: RPChSDK, ops: ServerOPS) {
           "with params",
           JSON.stringify(params)
         );
-        sendRequest(sdk, result.req, params, res);
+        if (ops.skipRPCh) {
+          sendSkipRPCh(params.provider, result.req);
+        } else {
+          sendRequest(sdk, result.req, params, res);
+        }
       } else {
         log.info(
           "Parse error:",
@@ -203,7 +226,10 @@ if (require.main === module) {
     mevProtectionProvider: process.env.MEV_PROTECTION_PROVIDER,
   };
 
-  const serverOps = { restrictCors: !!process.env.RESTRICT_CORS };
+  const serverOps = {
+    restrictCors: !!process.env.RESTRICT_CORS,
+    skipRPCh: !!process.env.SKIP_RPCH,
+  };
   const port = determinePort(process.env.PORT);
 
   const sdk = new RPChSDK(clientId, RPChCrypto, ops);
