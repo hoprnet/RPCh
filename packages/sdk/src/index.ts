@@ -393,8 +393,17 @@ export default class SDK {
         case "already-cached":
           log.info("already cached", Segment.prettyPrint(segment));
           break;
-        case "inserted":
-          log.verbose("inserted new segment", Segment.prettyPrint(segment));
+        case "inserted-new":
+          log.verbose(
+            "inserted new first segment",
+            Segment.prettyPrint(segment)
+          );
+          break;
+        case "added-to-request":
+          log.verbose(
+            "inserted new segment to existing request",
+            Segment.prettyPrint(segment)
+          );
           break;
       }
     });
