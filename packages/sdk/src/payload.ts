@@ -1,4 +1,4 @@
-import { Encoder, Decoder } from "@msgpack/msgpack";
+import LZString from "lz-string";
 import * as JRPC from "./jrpc";
 
 export type ReqPayload = {
@@ -11,22 +11,18 @@ export type RespPayload = {
   resp: JRPC.Response;
 };
 
-// see https://github.com/msgpack/msgpack-javascript#reusing-encoder-and-decoder-instances
-const encoder = new Encoder();
-const decoder = new Decoder();
-
-export function encodeReq(payload: ReqPayload): Uint8Array {
-  return encoder.encode(payload);
+export function encodeReq(payload: ReqPayload): string {
+  return LZString.compressToUTF16(JSON.stringify(payload));
 }
 
-export function decodeReq(payload: Uint8Array): ReqPayload {
-  return decoder.decode(payload) as ReqPayload;
+export function decodeReq(payload: string): ReqPayload {
+  return JSON.parse(LZString.decompressFromUTF16(payload));
 }
 
-export function encodeResp(payload: RespPayload): Uint8Array {
-  return encoder.encode(payload);
+export function encodeResp(payload: RespPayload): string {
+  return LZString.compressToUTF16(JSON.stringify(payload));
 }
 
-export function decodeResp(payload: Uint8Array): RespPayload {
-  return decoder.decode(payload) as RespPayload;
+export function decodeResp(payload: string): RespPayload {
+  return JSON.parse(LZString.decompressFromUTF16(payload));
 }

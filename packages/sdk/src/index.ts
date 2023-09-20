@@ -66,7 +66,7 @@ const defaultOps: Ops = {
   mevProtectionProvider: "https://rpc.propellerheads.xyz/eth",
 };
 
-const MAX_REQUEST_SEGMENTS = 50;
+const MAX_REQUEST_SEGMENTS = 20;
 const log = utils.createLogger();
 
 // message tag - more like port since we tag all our messages the same
@@ -190,7 +190,7 @@ export default class SDK {
           "Request exceeds maximum amount of segments with %s segments",
           segments.length
         );
-        return reject("Request exceeds maximum size of 19150b");
+        return reject("Request exceeds maximum size of 7660b");
       }
 
       // set request expiration timer

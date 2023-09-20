@@ -63,9 +63,10 @@ export function create({
     clientId,
     req,
   });
+  const data = utils.toUtf8Bytes(payload);
 
   // Envelop only needs the target node id - see usages
-  const envelope = new crypto.Envelope(payload, exitId, exitId);
+  const envelope = new crypto.Envelope(data, exitId, exitId);
   const session = crypto.box_request(envelope, exitNodeReadIdentity);
   return {
     id,
@@ -103,7 +104,8 @@ export function messageToReq({
   }
 
   const data = session.get_request_data();
-  const req = Payload.decodeReq(data);
+  const msg = utils.toUtf8String(data);
+  const req = Payload.decodeReq(msg);
   const newCount = session.updated_counter();
   return {
     success: true,
