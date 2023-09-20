@@ -385,6 +385,7 @@ export default class SDK {
       const cacheRes = SegmentCache.incoming(this.segmentCache, segment);
       switch (cacheRes.res) {
         case "complete":
+          log.verbose("completion segment", Segment.prettyPrint(segment));
           this.completeSegmentsEntry(cacheRes.entry!);
           break;
         case "error":

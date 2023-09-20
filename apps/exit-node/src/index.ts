@@ -105,6 +105,10 @@ function setupSocket(state: State, ops: Ops) {
     setTimeout(() => setupSocket(state, ops), SocketReconnectTimeout);
   });
 
+  socket.on("open", () => {
+    log.verbose("opened websocket listener");
+  });
+
   state.socket = socket;
 }
 
