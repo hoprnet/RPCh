@@ -1,5 +1,11 @@
 # @rpch/sdk
 
+## 0.8.0
+
+### Minor Changes
+
+- e65c12b: sdk used default compression
+
 ## 0.7.0
 
 ### Minor Changes

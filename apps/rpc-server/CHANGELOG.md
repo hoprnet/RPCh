@@ -1,5 +1,16 @@
 # @rpch/rpc-server
 
+## 0.5.0
+
+### Minor Changes
+
+- e65c12b: rpc server got an option to skip RPCh entirely - for testing and comparison purpose
+
+### Patch Changes
+
+- Updated dependencies [e65c12b]
+  - @rpch/sdk@0.8.0
+
 ## 0.4.1
 
 ### Patch Changes

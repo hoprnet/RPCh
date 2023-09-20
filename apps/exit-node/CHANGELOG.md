@@ -1,5 +1,16 @@
 # @rpch/exit-node
 
+## 0.4.0
+
+### Minor Changes
+
+- e65c12b: exit node now uses sdk packages with default compression
+
+### Patch Changes
+
+- Updated dependencies [e65c12b]
+  - @rpch/sdk@0.8.0
+
 ## 0.3.0
 
 ### Minor Changes
