@@ -1,54 +1,97 @@
 import { utils } from "ethers";
-import { unbox_response, Envelope } from "@rpch/crypto-for-nodejs";
+import {
+  box_response,
+  unbox_response,
+  Envelope,
+  Session,
+} from "@rpch/crypto-for-nodejs";
 
+import * as JRPC from "./jrpc";
+import * as Payload from "./payload";
 import type { Request } from "./request";
-import * as compression from "./compression";
 
-export function messageToBody(
-  msg: string,
-  request: Request,
-  counter: bigint,
+export type RespSuccess = {
+  success: true;
+  resp: Payload.RespPayload;
+  counter: bigint;
+};
+export type RespError = { success: false; error: string };
+export type Resp = RespSuccess | RespError;
+
+export type MsgSuccess = {
+  success: true;
+  hexData: string;
+  newCount: bigint;
+};
+export type MsgError = { success: false; error: string };
+export type Msg = MsgSuccess | MsgError;
+
+export function respToMessage({
+  crypto,
+  entryId,
+  resp,
+  unboxSession,
+}: {
+  crypto: {
+    Envelope: typeof Envelope;
+    box_response: typeof box_response;
+  };
+  entryId: string;
+  resp: JRPC.Response;
+  unboxSession: Session;
+}): Msg {
+  const payload = Payload.encodeResp({ resp });
+
+  // Envelop only needs the target node id - see usages
+  const envelope = new crypto.Envelope(payload, entryId, entryId);
+  try {
+    crypto.box_response(unboxSession, envelope);
+  } catch (err) {
+    return { success: false, error: `boxing response failed: ${err}` };
+  }
+
+  const hexData = utils.hexlify(unboxSession.get_response_data());
+  const newCount = unboxSession.updated_counter();
+  return { success: true, hexData, newCount };
+}
+
+export function messageToResp({
+  respData,
+  request,
+  counter,
+  crypto,
+}: {
+  respData: Uint8Array;
+  request: Request;
+  counter: bigint;
   crypto: {
     unbox_response: typeof unbox_response;
     Envelope: typeof Envelope;
-  }
-):
-  | { success: true; body: string; counter: bigint }
-  | { success: false; error: string } {
+  };
+}): Resp {
   try {
     crypto.unbox_response(
       request.session,
-      new crypto.Envelope(utils.arrayify(msg), request.entryId, request.exitId),
+      new crypto.Envelope(respData, request.entryId, request.exitId),
       counter
     );
   } catch (err) {
     return { success: false, error: `unboxing response failed: ${err}` };
   }
 
-  const decrypted = utils.toUtf8String(request.session.get_response_data());
-  const parts = decrypted.split("|");
-  if (parts.length === 0) {
-    return { success: false, error: "empty response body" };
-  }
+  const resp = Payload.decodeResp(request.session.get_response_data());
+  const newCount = request.session.updated_counter();
+  return {
+    success: true,
+    resp,
+    counter: newCount,
+  };
+}
 
-  const count = parseInt(parts[0], 10);
-  if (count !== 2) {
-    return { success: false, error: `invalid response parts: ${count}` };
-  }
+export function msgSuccess(res: Msg): res is MsgSuccess {
+  return res.success;
+}
 
-  const type = parts[1];
-  if (type !== "response") {
-    return { success: false, error: `wrong response type ${type}` };
-  }
-  const compressedDecrypted = parts[2];
-  const res = compression.decompressRpcRequest(compressedDecrypted);
-  if (res.success && "json" in res) {
-    const newCount = request.session.updated_counter();
-    return {
-      success: true,
-      body: res.json,
-      counter: newCount,
-    };
-  }
-  return res;
+export function respSuccess(res: Resp): res is RespSuccess {
+  return res.success;
 }

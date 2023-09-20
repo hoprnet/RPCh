@@ -7,6 +7,12 @@ import { ALGORITHM } from "./constants";
 const generateIv = () => crypto.randomBytes(16);
 const getSalt = (str: string): Buffer => crypto.scryptSync(str, "salt", 24);
 
+export type ID = {
+  privateKey: string;
+  publicKey: string;
+  identity: Identity;
+};
+
 /**
  * Generates a random private key.
  * @returns random private key
@@ -86,11 +92,7 @@ export const getIdentity = async ({
   privateKey?: Uint8Array;
   identityFile: string;
   password?: string;
-}): Promise<{
-  privateKey: string;
-  publicKey: string;
-  identity: Identity;
-}> => {
+}): Promise<ID> => {
   if (!privateKey && !password) {
     throw Error("Should provide 'privateKey' or 'password'");
   } else if (!privateKey && password) {

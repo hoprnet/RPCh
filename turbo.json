@@ -91,6 +91,7 @@
         "CLIENT",
         "PROVIDER",
         "RESTRICT_CORS",
+        "SKIP_RPCH",
         "DISABLE_MEV_PROTECTION",
         "MEV_PROTECTION_PROVIDER"
       ]

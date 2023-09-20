@@ -10,11 +10,18 @@ import * as RequestCache from "./request-cache";
 import * as Response from "./response";
 import * as Segment from "./segment";
 import * as SegmentCache from "./segment-cache";
-import * as Utils from "./utils";
+import * as utils from "./utils";
 import NodesCollector from "./nodes-collector";
 import type { EntryNode } from "./entry-node";
 
 export * as JRPC from "./jrpc";
+export * as NodeAPI from "./node-api";
+export * as Payload from "./payload";
+export * as ProviderAPI from "./provider-api";
+export * as Request from "./request";
+export * as Response from "./response";
+export * as Segment from "./segment";
+export * as SegmentCache from "./segment-cache";
 
 /**
  * HOPR SDK options provides global parameter values.
@@ -60,7 +67,7 @@ const defaultOps: Ops = {
 };
 
 const MAX_REQUEST_SEGMENTS = 10;
-const log = Utils.createLogger();
+const log = utils.createLogger();
 
 // message tag - more like port since we tag all our messages the same
 const ApplicationTag = Math.floor(Math.random() * 0xffff);
@@ -134,12 +141,12 @@ export default class SDK {
     this.populateChainIds(ops?.provider);
     return new Promise(async (resolve, reject) => {
       // sanity check provider url
-      if (!Utils.isValidURL(reqOps.provider as string)) {
+      if (!utils.isValidURL(reqOps.provider as string)) {
         return reject("Cannot parse provider URL");
       }
       // sanity check mev protection provider url, if it is set
       if (!!reqOps.mevProtectionProvider) {
-        if (!Utils.isValidURL(reqOps.mevProtectionProvider)) {
+        if (!utils.isValidURL(reqOps.mevProtectionProvider)) {
           return reject("Cannot parse mevProtectionProvider URL");
         }
       }
@@ -163,17 +170,18 @@ export default class SDK {
       // create request
       const { entryNode, exitNode } = res;
       const id = RequestCache.generateId(this.requestCache);
-      const request = Request.create(
-        this.crypto,
+      const request = Request.create({
+        crypto: this.crypto,
         id,
         provider,
         req,
-        entryNode.id,
-        exitNode.id,
-        this.crypto!.Identity.load_identity(
+        clientId: this.clientId,
+        entryId: entryNode.id,
+        exitId: exitNode.id,
+        exitNodeReadIdentity: this.crypto!.Identity.load_identity(
           etherUtils.arrayify(exitNode.pubKey)
-        )
-      );
+        ),
+      });
 
       // split request to segments
       const segments = Request.toSegments(request);
@@ -277,16 +285,18 @@ export default class SDK {
 
     // generate new request
     const id = RequestCache.generateId(this.requestCache);
-    const request = Request.fromOriginal(
-      this.crypto,
+    const request = Request.create({
+      crypto: this.crypto,
       id,
-      origReq,
-      fallback.entryNode.id,
-      fallback.exitNode.id,
-      this.crypto!.Identity.load_identity(
+      provider: origReq.provider,
+      req: origReq.req,
+      clientId: this.clientId,
+      entryId: fallback.entryNode.id,
+      exitId: fallback.exitNode.id,
+      exitNodeReadIdentity: this.crypto!.Identity.load_identity(
         etherUtils.arrayify(fallback.exitNode.pubKey)
-      )
-    );
+      ),
+    });
     // split request to segments
     const segments = Request.toSegments(request);
     if (segments.length > MAX_REQUEST_SEGMENTS) {
@@ -358,7 +368,7 @@ export default class SDK {
   // handle incoming messages
   private onMessages = (messages: NodeAPI.Message[]) => {
     messages.forEach(({ body }) => {
-      const segRes = Segment.fromString(body);
+      const segRes = Segment.fromMessage(body);
       if (!segRes.success) {
         log.info("cannot create segment", segRes.error);
         return;
@@ -375,6 +385,7 @@ export default class SDK {
       const cacheRes = SegmentCache.incoming(this.segmentCache, segment);
       switch (cacheRes.res) {
         case "complete":
+          log.verbose("completion segment", Segment.prettyPrint(segment));
           this.completeSegmentsEntry(cacheRes.entry!);
           break;
         case "error":
@@ -383,8 +394,17 @@ export default class SDK {
         case "already-cached":
           log.info("already cached", Segment.prettyPrint(segment));
           break;
-        case "inserted":
-          log.verbose("inserted new segment", Segment.prettyPrint(segment));
+        case "inserted-new":
+          log.verbose(
+            "inserted new first segment",
+            Segment.prettyPrint(segment)
+          );
+          break;
+        case "added-to-request":
+          log.verbose(
+            "inserted new segment to existing request",
+            Segment.prettyPrint(segment)
+          );
           break;
       }
     });
@@ -400,11 +420,17 @@ export default class SDK {
     const request = this.requestCache.get(firstSeg.requestId)!;
     RequestCache.remove(this.requestCache, request.id);
 
-    const message = SegmentCache.toMessage(entry);
+    const hexResp = SegmentCache.toMessage(entry);
+    const respData = etherUtils.arrayify(hexResp);
     const counter = this.counterStore.get(request.exitId) || BigInt(0);
 
-    const res = Response.messageToBody(message, request, counter, this.crypto);
-    if (res.success) {
+    const res = Response.messageToResp({
+      respData,
+      request,
+      counter,
+      crypto: this.crypto,
+    });
+    if (Response.respSuccess(res)) {
       this.counterStore.set(request.exitId, res.counter);
       const responseTime = Date.now() - request.createdAt;
       log.verbose(
@@ -418,15 +444,9 @@ export default class SDK {
       log.verbose(
         "responded to %s with %s",
         JSON.stringify(request.req),
-        res.body
+        JSON.stringify(res.resp)
       );
-      try {
-        const json = JSON.parse(res.body);
-        return request.resolve(json);
-      } catch (err) {
-        log.error("Parsing response JSON failed with:", err);
-        return request.reject("Unable to parse response");
-      }
+      return request.resolve(res.resp.resp);
     } else {
       log.error("Error extracting message", res.error);
       this.nodesColl.requestFailed(request);
