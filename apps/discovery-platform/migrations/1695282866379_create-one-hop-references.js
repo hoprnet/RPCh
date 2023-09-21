@@ -4,8 +4,16 @@ exports.shorthands = undefined;
 
 exports.up = (pgm) => {
   pgm.createTable("one_hop_pairings", {
-    entry_id: { type: "uuid", references: "registered_nodes", notNull: "true" },
-    exit_id: { type: "uuid", references: "registered_nodes", notNull: "true" },
+    entry_id: {
+      type: "varchar(255)",
+      references: "registered_nodes",
+      notNull: "true",
+    },
+    exit_id: {
+      type: "varchar(255)",
+      references: "registered_nodes",
+      notNull: "true",
+    },
     created_at: "createdAt",
   });
 
@@ -15,8 +23,4 @@ exports.up = (pgm) => {
 
   pgm.createIndex("one_hop_pairings", "entry_id");
   pgm.createIndex("one_hop_pairings", "exit_id");
-
-  // add missing zero hop indexes
-  pgm.createIndex("zero_hop_pairings", "entry_id");
-  pgm.createIndex("zero_hop_pairings", "exit_id");
 };
