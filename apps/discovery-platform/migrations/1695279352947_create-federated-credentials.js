@@ -5,6 +5,7 @@ exports.up = (pgm) => {
   pgm.createIndex("chain_credentials", "user_id");
 
   pgm.createTable("federated_credentials", {
+    id: "id",
     user_id: { type: "uuid", references: "users", notNull: "true" },
     provider: { type: "varchar(255)", notNull: true },
     subject: { type: "varchar(255)", notNull: true },
