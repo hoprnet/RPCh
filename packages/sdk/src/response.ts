@@ -41,9 +41,10 @@ export function respToMessage({
   unboxSession: Session;
 }): Msg {
   const payload = Payload.encodeResp({ resp });
+  const data = utils.toUtf8Bytes(payload);
 
   // Envelop only needs the target node id - see usages
-  const envelope = new crypto.Envelope(payload, entryId, entryId);
+  const envelope = new crypto.Envelope(data, entryId, entryId);
   try {
     crypto.box_response(unboxSession, envelope);
   } catch (err) {
@@ -78,8 +79,9 @@ export function messageToResp({
   } catch (err) {
     return { success: false, error: `unboxing response failed: ${err}` };
   }
-
-  const resp = Payload.decodeResp(request.session.get_response_data());
+  const data = request.session.get_response_data();
+  const msg = utils.toUtf8String(data);
+  const resp = Payload.decodeResp(msg);
   const newCount = request.session.updated_counter();
   return {
     success: true,
