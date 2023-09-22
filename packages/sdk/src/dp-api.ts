@@ -11,9 +11,14 @@ export const NoMoreNodes = "no more nodes";
  * All calls are behind exponential backoff to avoid DOSing the DP on errors.
  */
 
-export type Ops = {
+export type ClientOps = {
   discoveryPlatformEndpoint: string;
   clientId: string;
+};
+
+export type NodeOps = {
+  discoveryPlatformEndpoint: string;
+  nodeAccessToken: string;
 };
 
 export type Nodes = {
@@ -33,7 +38,7 @@ const DefaultBackoff = {
 const log = createLogger(["sdk", "dp-api"]);
 
 export function fetchNodes(
-  ops: Ops,
+  ops: ClientOps,
   amount: number,
   since: Date
 ): Promise<Nodes> {
@@ -43,7 +48,11 @@ export function fetchNodes(
   );
   url.searchParams.set("amount", `${amount}`);
   url.searchParams.set("since", since.toISOString());
-  const headers = { Accept: "application/json", "x-rpch-client": ops.clientId };
+  const headers = {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+    "x-rpch-client": ops.clientId,
+  };
 
   return retry(async (bail, num) => {
     if (num > 1) {
@@ -68,4 +77,33 @@ export function fetchNodes(
     }
     return res.json() as unknown as Nodes;
   }, DefaultBackoff) as Promise<Nodes>;
+}
+
+export function fetchQuota(
+  ops: NodeOps,
+  {
+    clientId,
+    rpcMethod,
+    segmentCount,
+    type,
+  }: {
+    clientId: string;
+    rpcMethod?: string;
+    segmentCount: number;
+    type: "request" | "response";
+  }
+): Promise<void> {
+  const url = new URL(`/api/v1/quota/${type}`, ops.discoveryPlatformEndpoint);
+  const headers = {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+    "x-rpch-node": ops.nodeAccessToken,
+  };
+  const body = JSON.stringify({ clientId, segmentCount, rpcMethod });
+  return fetch(url, { headers, method: "POST", body }).then((res) => {
+    if (res.status === 204) {
+      Promise.resolve();
+    }
+    Promise.reject(`Unexpected response code: ${res.status}`);
+  });
 }

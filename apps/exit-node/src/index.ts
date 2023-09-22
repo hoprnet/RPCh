@@ -6,6 +6,7 @@ import { utils } from "ethers";
 import * as Identity from "./identity";
 import { createLogger } from "./utils";
 import {
+  DPapi,
   NodeAPI,
   ProviderAPI,
   Request,
@@ -35,8 +36,8 @@ type Ops = {
   password?: string;
   apiEndpoint: URL;
   accessToken: string;
-  dpApiEndpoint: URL;
-  dpAccessToken: string;
+  discoveryPlatformEndpoint: string;
+  nodeAccessToken: string;
 };
 
 async function start(ops: Ops) {
@@ -200,9 +201,15 @@ async function completeSegmentsEntry(
 
   state.counterStore.set(entryId, resReq.counter);
 
-  // TODO
-  // inform DP of segments, use entry.count and res.req.clientId
+  // inform DP non blocking
+  const quotaRequest = {
+    clientId: resReq.req.clientId,
+    rpcMethod: resReq.req.req.method,
+    segmentCount: entry.count,
+  };
+  const quotaProm = DPapi.fetchQuota(ops, quotaRequest);
 
+  // do RPC request
   const { provider, req } = resReq.req;
   const resp = await ProviderAPI.fetchRPC(provider, req).catch((err: Error) => {
     log.error("Error doing rpc request", err, provider, req);
@@ -272,7 +279,7 @@ if (require.main === module) {
     password: process.env.RPCH_PASSWORD,
     apiEndpoint: new URL(process.env.HOPRD_API_ENDPOINT),
     accessToken: process.env.HOPRD_API_TOKEN,
-    dpApiEndpoint: new URL(process.env.DISCOVERY_PLATFORM_API_ENDPOINT),
-    dpAccessToken: process.env.DISCOVERY_PLATFORM_ACCESS_TOKEN,
+    discoveryPlatformEndpoint: process.env.DISCOVERY_PLATFORM_API_ENDPOINT,
+    nodeAccessToken: process.env.DISCOVERY_PLATFORM_ACCESS_TOKEN,
   });
 }

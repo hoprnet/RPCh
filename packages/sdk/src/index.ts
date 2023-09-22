@@ -14,6 +14,7 @@ import * as utils from "./utils";
 import NodesCollector from "./nodes-collector";
 import type { EntryNode } from "./entry-node";
 
+export * as DPapi from "./dp-api";
 export * as JRPC from "./jrpc";
 export * as NodeAPI from "./node-api";
 export * as Payload from "./payload";
