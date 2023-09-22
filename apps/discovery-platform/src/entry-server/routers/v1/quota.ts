@@ -34,16 +34,13 @@ export const schema: Record<keyof quota.Attrs, ParamSchema> = {
 };
 
 export function request(dbPool: Pool) {
-  return function (req: Request, res: Response) {
-    console.log("req", req);
-    if ("exitId" in req) {
-      console.log("barf", req.exitId);
+  return function (req: Request & { nodeId?: string }, res: Response) {
+    if (!("nodeId" in req)) {
+      log.error("Expecting authorized node");
+      return res.status(500).end();
     }
-    // TODO
-    return res.status(200).end();
-    /*
     quota
-      .createRequest(dbPool, req.nodeId, req.body)
+      .createRequest(dbPool, req.nodeId!, req.body)
       .then(() => {
         res.status(204).end();
       })
@@ -51,17 +48,17 @@ export function request(dbPool: Pool) {
         log.error("Error during create request quota query", err);
         res.status(500).end();
       });
-  */
   };
 }
 
 export function response(dbPool: Pool) {
-  return function (req: Request, res: Response) {
-    // TODO
-    return res.status(200).end();
-    /*
+  return function (req: Request & { nodeId?: string }, res: Response) {
+    if (!("nodeId" in req)) {
+      log.error("Expecting authorized node");
+      return res.status(500).end();
+    }
     quota
-      .createResponse(dbPool, req.nodeId, req.body)
+      .createResponse(dbPool, req.nodeId!, req.body)
       .then(() => {
         res.status(204).end();
       })
@@ -69,6 +66,5 @@ export function response(dbPool: Pool) {
         log.error("Error during create response quota query", err);
         res.status(500).end();
       });
-  */
   };
 }
