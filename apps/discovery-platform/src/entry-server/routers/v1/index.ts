@@ -7,6 +7,7 @@ import { Pool } from "pg";
 // import * as user from "./user";
 import * as client from "./client";
 import * as login from "./login";
+import * as node from "./node";
 import {
   //  body,
   checkSchema,
@@ -101,8 +102,8 @@ export const v1Router = (ops: {
     "/node/register",
     middleware.metric(requestDurationHistogram),
     middleware.adminAuthorized(ops.secrets.adminSecret),
-    // checkSchema(registerNodeSchema),
-    postNodeRegister(ops.dbPool)
+    checkSchema(node.createSchema),
+    node.create(ops.dbPool)
   );
 
   ////
@@ -135,35 +136,6 @@ export const v1Router = (ops: {
       res.redirect("/login/google");
     }
   );
-
-  //   ////
-  //   // users
-  //   router.get("users", middleware.metric(requestDurationHistogram), user.index);
-  //   router.post(
-  //     "users",
-  //     middleware.metric(requestDurationHistogram),
-  //     user.create
-  //   );
-  //   router.get(
-  //     "users/:id",
-  //     middleware.metric(requestDurationHistogram),
-  //     user.get
-  //   );
-  //   router.patch(
-  //     "users/:id",
-  //     middleware.metric(requestDurationHistogram),
-  //     user.update
-  //   );
-  //   router.put(
-  //     "users/:id",
-  //     middleware.metric(requestDurationHistogram),
-  //     user.update
-  //   );
-  //   router.delete(
-  //     "users/:id",
-  //     middleware.metric(requestDurationHistogram),
-  //     user.delete
-  //   );
 
   ////
   // clients
@@ -839,54 +811,4 @@ function getNodesZeroHopPairings(dbPool: Pool) {
         return res.status(500).json({ reason });
       });
   };
-}
-
-function postNodeRegister(dbPool: Pool) {
-  return async function (req: Request, res: Response) {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json(errors.mapped());
-    }
-    const node: q.RegisteredNode = req.body;
-    q.writeRegisteredNode(dbPool, node)
-      .then((qRes) => {
-        if (qRes.rowCount === 1) {
-          return createExitNodeToken(dbPool, node, req, res);
-        }
-        log.error("Unexpected response during insert", JSON.stringify(qRes));
-        const reason = "Internal server error";
-        return res.status(500).json({ reason });
-      })
-      .catch((ex) => {
-        log.error("Error during write registered_node query", ex);
-        return res.status(422).json({ reason: ex.message });
-      });
-  };
-}
-
-function createExitNodeToken(
-  dbPool: Pool,
-  node: q.RegisteredNode,
-  req: Request,
-  res: Response
-) {
-  if (!node.is_exit_node) {
-    return res.status(201).end();
-  }
-  q.writeExitNodeToken(dbPool, node.id)
-    .then((qRes) => {
-      if (qRes.rowCount === 1) {
-        return res.status(201).json({ accessToken: qRes.rows[0].access_token });
-      }
-      log.error(
-        "Unexpected response during token creation",
-        JSON.stringify(qRes)
-      );
-      const reason = "Internal server error";
-      return res.status(500).json({ reason });
-    })
-    .catch((ex) => {
-      log.error("Error during token creation query", ex);
-      return res.status(422).json({ reason: ex.message });
-    });
 }
