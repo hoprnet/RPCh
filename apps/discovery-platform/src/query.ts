@@ -43,6 +43,8 @@ export type User = UserAttrs & {
   www_address?: string;
   telegram?: string;
   last_logged_in_at?: Date;
+  mev_kickback_address?: string;
+  mev_current_choice?: string;
   created_at: Date;
   updated_at?: Date;
 };
