@@ -35,6 +35,8 @@ type Ops = {
   password?: string;
   apiEndpoint: URL;
   accessToken: string;
+  dpApiEndpoint: URL;
+  dpAccessToken: string;
 };
 
 async function start(ops: Ops) {
@@ -252,6 +254,12 @@ if (require.main === module) {
   if (!process.env.HOPRD_API_TOKEN) {
     throw new Error("Missing 'HOPRD_API_TOKEN' env var.");
   }
+  if (!process.env.DISCOVERY_PLATFORM_API_ENDPOINT) {
+    throw new Error("Missing 'DISCOVERY_PLATFORM_API_ENDPOINT' env var.");
+  }
+  if (!process.env.DISCOVERY_PLATFORM_ACCESS_TOKEN) {
+    throw new Error("Missing 'DISCOVERY_PLATFORM_ACCESS_TOKEN' env var.");
+  }
   const identityFile =
     process.env.RPCH_IDENTITY_FILE || path.join(process.cwd(), ".identity");
   const privateKey = process.env.RPCH_PRIVATE_KEY
@@ -264,5 +272,7 @@ if (require.main === module) {
     password: process.env.RPCH_PASSWORD,
     apiEndpoint: new URL(process.env.HOPRD_API_ENDPOINT),
     accessToken: process.env.HOPRD_API_TOKEN,
+    dpApiEndpoint: new URL(process.env.DISCOVERY_PLATFORM_API_ENDPOINT),
+    dpAccessToken: process.env.DISCOVERY_PLATFORM_ACCESS_TOKEN,
   });
 }
