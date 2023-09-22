@@ -39,6 +39,7 @@ export function request(dbPool: Pool) {
       log.error("Expecting authorized node");
       return res.status(500).end();
     }
+
     quota
       .createRequest(dbPool, req.nodeId!, req.body)
       .then(() => {
@@ -57,6 +58,7 @@ export function response(dbPool: Pool) {
       log.error("Expecting authorized node");
       return res.status(500).end();
     }
+
     quota
       .createResponse(dbPool, req.nodeId!, req.body)
       .then(() => {

@@ -1,44 +1,12 @@
-import { getClientQuotas, type DBInstance } from "../../../db";
-import memoryCache from "memory-cache";
-
-import { createLogger } from "../../../utils";
-import * as client from "../../../client";
-import * as node from "../../../node";
-
+import { validationResult } from "express-validator";
 import type { Pool } from "pg";
 import type { NextFunction, Request, Response } from "express";
-import type { Histogram } from "prom-client";
+
+import * as client from "../../../client";
+import * as node from "../../../node";
+import { createLogger } from "../../../utils";
 
 const log = createLogger(["entry-server", "router", "v1", "middleware"]);
-
-export const getCache = <T>(
-  constructKey: (req: Request) => string,
-  modifyPayload: (body: T) => T
-) => {
-  return (req: Request, res: Response<any, any>, next: NextFunction) => {
-    let key = constructKey(req);
-    let cachedBody = memoryCache.get(key);
-    if (cachedBody) {
-      log.verbose("Returning cached value for endpoint: ", key);
-      return res.json(modifyPayload(cachedBody));
-    }
-    next();
-  };
-};
-
-export const setCache = (key: string, duration: number, body: Object) => {
-  memoryCache.put(key, body, duration);
-};
-
-// middleware used to check if client sent in req has enough quota
-export const doesClientHaveQuota = async (
-  db: DBInstance,
-  client: string,
-  baseQuota: bigint
-) => {
-  const { sum } = await getClientQuotas(db, client);
-  return sum >= baseQuota;
-};
 
 export function clientAuthorized(dbPool: Pool) {
   return async function (req: Request, res: Response, next: NextFunction) {
@@ -101,6 +69,7 @@ export function adminAuthorized(adminSecret: string) {
   };
 }
 
+/*
 // middleware that will track duration of request
 export function metric(histogramMetric: Histogram<string>) {
   return function (req: Request, res: Response, next: NextFunction) {
@@ -122,4 +91,14 @@ export function metric(histogramMetric: Histogram<string>) {
     });
     next();
   };
+}
+*/
+
+export function validateStop(req: Request, res: Response, next: NextFunction) {
+  const errors = validationResult(req);
+  if (errors.isEmpty()) {
+    next();
+  } else {
+    res.status(400).json(errors.mapped());
+  }
 }
