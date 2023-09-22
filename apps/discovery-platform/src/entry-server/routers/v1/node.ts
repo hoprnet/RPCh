@@ -77,8 +77,8 @@ export function create(dbPool: Pool) {
       .then((_qRes) => {
         node
           .createToken(dbPool, req.body.id)
-          .then((qRes) => {
-            res.status(201).json(node.partialTokenFromDB(qRes.rows[0]));
+          .then((rows) => {
+            res.status(201).json(rows[0]);
           })
           .catch((err) => {
             log.error("Error during token create query", err);

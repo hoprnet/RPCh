@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import type { Pool, QueryResult } from "pg";
+import type { Pool } from "pg";
 
 export type DBnode = {
   id: string;
@@ -52,24 +52,6 @@ export type PartialToken = {
   accessToken: string;
 };
 
-export function nodeFromDB(db: DBnode): Node {
-  return {
-    id: db.id,
-    isExitNode: db.is_exit_node,
-    chainId: db.chain_id,
-    hoprdApiEndpoint: db.hoprd_api_endpoint,
-    hoprdApiToken: db.hoprd_api_token,
-    exitNodePubKey: db.exit_node_pub_key,
-    nativeAddress: db.native_address,
-    createdAt: db.created_at,
-    updatedAt: db.updated_at,
-  };
-}
-
-export function partialTokenFromDB(db: DBpartialToken): PartialToken {
-  return { accessToken: db.access_token };
-}
-
 export function createNode(dbPool: Pool, node: Node) {
   const cols = [
     "id",
@@ -103,7 +85,7 @@ export function createNode(dbPool: Pool, node: Node) {
 export function createToken(
   dbPool: Pool,
   nodeId: string
-): Promise<QueryResult<Token>> {
+): Promise<PartialToken[]> {
   const q = [
     "insert into exit_node_tokens",
     "(id, exit_id, access_token)",
@@ -113,5 +95,27 @@ export function createToken(
 
   const token = crypto.randomBytes(24).toString("hex");
   const vals = [nodeId, token];
-  return dbPool.query(q, vals);
+  return dbPool
+    .query(q, vals)
+    .then((qRes) => qRes.rows.map(partialTokenFromDB));
+}
+
+/*
+function nodeFromDB(db: DBnode): Node {
+  return {
+    id: db.id,
+    isExitNode: db.is_exit_node,
+    chainId: db.chain_id,
+    hoprdApiEndpoint: db.hoprd_api_endpoint,
+    hoprdApiToken: db.hoprd_api_token,
+    exitNodePubKey: db.exit_node_pub_key,
+    nativeAddress: db.native_address,
+    createdAt: db.created_at,
+    updatedAt: db.updated_at,
+  };
+}
+*/
+
+function partialTokenFromDB(db: DBpartialToken): PartialToken {
+  return { accessToken: db.access_token };
 }
