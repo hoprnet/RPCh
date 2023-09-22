@@ -35,6 +35,10 @@ export const schema: Record<keyof quota.Attrs, ParamSchema> = {
 
 export function request(dbPool: Pool) {
   return function (req: Request, res: Response) {
+    console.log("req", req);
+    if ("exitId" in req) {
+      console.log("barf", req.exitId);
+    }
     // TODO
     return res.status(200).end();
     /*

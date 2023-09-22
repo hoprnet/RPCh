@@ -111,14 +111,14 @@ export const v1Router = (ops: {
   // quota
 
   router.post(
-    "quota/request",
+    "/quota/request",
     middleware.nodeAuthorized(ops.dbPool),
     checkSchema(quota.schema),
     quota.request(ops.dbPool)
   );
 
   router.post(
-    "quota/response",
+    "/quota/response",
     middleware.nodeAuthorized(ops.dbPool),
     checkSchema(quota.schema),
     quota.response(ops.dbPool)
