@@ -16,24 +16,6 @@ export type Ops = {
   clientId: string;
 };
 
-export type RawNode = {
-  node: {
-    id: string;
-    has_exit_node: boolean;
-    chain_id: number;
-    hoprd_api_endpoint: string;
-    hoprd_api_token: string;
-    exit_node_pub_key: string;
-    native_address: string;
-    total_amount_funded: string;
-    honesty_score: string;
-    reason?: string;
-    status: string;
-    created_at: Date;
-    updated_at: Date;
-  };
-};
-
 export type Nodes = {
   entryNodes: EntryNode[];
   exitNodes: ExitNode[];
@@ -49,19 +31,6 @@ const DefaultBackoff = {
 };
 
 const log = createLogger(["sdk", "dp-api"]);
-
-export function fetchNode(ops: Ops, peerId: string): Promise<RawNode> {
-  const url = new URL(`/api/v1/node/${peerId}`, ops.discoveryPlatformEndpoint);
-  const headers = {
-    Accept: "application/json",
-    "x-rpch-client": ops.clientId,
-  };
-
-  return retry(async (_bail) => {
-    const res = await fetch(url, { headers });
-    return res.json() as unknown as RawNode;
-  }, DefaultBackoff);
-}
 
 export function fetchNodes(
   ops: Ops,
