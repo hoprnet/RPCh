@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import type { Pool, QueryResult } from "pg";
 
 export type Pairing = {
@@ -210,5 +211,21 @@ export function writeRegisteredNode(dbPool: Pool, node: RegisteredNode) {
     `(${cols.join(",")})`,
     `values (${valIdxs.join(",")})`,
   ].join(" ");
+  return dbPool.query(q, vals);
+}
+
+export function writeExitNodeToken(
+  dbPool: Pool,
+  exitId: string
+): Promise<QueryResult<{ access_token: string }>> {
+  const q = [
+    "insert into exit_node_tokens",
+    "(id, exit_id, access_token)",
+    "values (gen_random_uuid(), $1, $2",
+    "returning access_token",
+  ].join(" ");
+
+  const token = crypto.randomBytes(24).toString("hex");
+  const vals = [exitId, token];
   return dbPool.query(q, vals);
 }

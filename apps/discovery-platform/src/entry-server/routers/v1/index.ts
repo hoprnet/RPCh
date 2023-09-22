@@ -851,7 +851,7 @@ function postNodeRegister(dbPool: Pool) {
     q.writeRegisteredNode(dbPool, node)
       .then((qRes) => {
         if (qRes.rowCount === 1) {
-          return res.status(201).end();
+          return createExitNodeToken(dbPool, node, req, res);
         }
         log.error("Unexpected response during insert", JSON.stringify(qRes));
         const reason = "Internal server error";
@@ -862,4 +862,31 @@ function postNodeRegister(dbPool: Pool) {
         return res.status(422).json({ reason: ex.message });
       });
   };
+}
+
+function createExitNodeToken(
+  dbPool: Pool,
+  node: q.RegisteredNode,
+  req: Request,
+  res: Response
+) {
+  if (!node.is_exit_node) {
+    return res.status(201).end();
+  }
+  q.writeExitNodeToken(dbPool, node.id)
+    .then((qRes) => {
+      if (qRes.rowCount === 1) {
+        return res.status(201).json({ accessToken: qRes.rows[0].access_token });
+      }
+      log.error(
+        "Unexpected response during token creation",
+        JSON.stringify(qRes)
+      );
+      const reason = "Internal server error";
+      return res.status(500).json({ reason });
+    })
+    .catch((ex) => {
+      log.error("Error during token creation query", ex);
+      return res.status(422).json({ reason: ex.message });
+    });
 }
