@@ -2,7 +2,8 @@ import { getClientQuotas, type DBInstance } from "../../../db";
 import memoryCache from "memory-cache";
 
 import { createLogger } from "../../../utils";
-import * as dbClient from "../../../client";
+import * as client from "../../../client";
+import * as node from "../../../node";
 
 import type { Pool } from "pg";
 import type { NextFunction, Request, Response } from "express";
@@ -42,7 +43,7 @@ export const doesClientHaveQuota = async (
 export function clientAuthorized(dbPool: Pool) {
   return async function (req: Request, res: Response, next: NextFunction) {
     const clientId = req.headers["x-rpch-client"] as string;
-    const result = await dbClient
+    const result = await client
       .listIdsByExternalToken(dbPool, clientId)
       .catch((ex) => log.error("Error reading clientIds", ex));
     const count = result?.rowCount || 0;
@@ -50,6 +51,28 @@ export function clientAuthorized(dbPool: Pool) {
       next();
     } else {
       const reason = "Client not authorized";
+      res.status(403).json({ reason }).end();
+    }
+  };
+}
+
+export function nodeAuthorized(dbPool: Pool) {
+  return async function (
+    req: Request & { nodeId?: string },
+    res: Response,
+    next: NextFunction
+  ) {
+    const accessToken = req.headers["x-rpch-node"] as string;
+    const result = await node
+      .listIdsByAccessToken(dbPool, accessToken)
+      .catch((ex) => log.error("Error reading node tokens", ex));
+
+    if (result && result.length > 0) {
+      const res = result[0];
+      req.nodeId = res.exitId;
+      next();
+    } else {
+      const reason = "Node not authorized";
       res.status(403).json({ reason }).end();
     }
   };

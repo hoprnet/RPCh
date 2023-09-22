@@ -22,10 +22,6 @@ export type DBtoken = {
   updated_at?: Date;
 };
 
-export type DBpartialToken = {
-  access_token: string;
-};
-
 export type NodeAttrs = {
   id: string;
   isExitNode: boolean;
@@ -46,10 +42,6 @@ export type Node = {
   nativeAddress: string;
   createdAt: Date;
   updatedAt?: Date;
-};
-
-export type PartialToken = {
-  accessToken: string;
 };
 
 export function createNode(dbPool: Pool, node: Node) {
@@ -85,7 +77,7 @@ export function createNode(dbPool: Pool, node: Node) {
 export function createToken(
   dbPool: Pool,
   nodeId: string
-): Promise<PartialToken[]> {
+): Promise<{ accessToken: string }[]> {
   const q = [
     "insert into exit_node_tokens",
     "(id, exit_id, access_token)",
@@ -97,7 +89,23 @@ export function createToken(
   const vals = [nodeId, token];
   return dbPool
     .query(q, vals)
-    .then((qRes) => qRes.rows.map(partialTokenFromDB));
+    .then((q) =>
+      q.rows.map(({ access_token }) => ({ accessToken: access_token }))
+    );
+}
+
+export function listIdsByAccessToken(
+  dbPool: Pool,
+  accessToken: string
+): Promise<{ exitId: string }[]> {
+  const q = [
+    "select exit_id from exit_node_tokens",
+    "where access_token = $1",
+    "and (invalidated_at is null or invalidated_at > now())",
+  ].join(" ");
+  return dbPool
+    .query(q, [accessToken])
+    .then((q) => q.rows.map(({ exit_id }) => ({ exitId: exit_id })));
 }
 
 /*
@@ -115,7 +123,3 @@ function nodeFromDB(db: DBnode): Node {
   };
 }
 */
-
-function partialTokenFromDB(db: DBpartialToken): PartialToken {
-  return { accessToken: db.access_token };
-}

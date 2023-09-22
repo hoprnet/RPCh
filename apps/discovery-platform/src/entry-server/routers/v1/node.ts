@@ -11,7 +11,7 @@ export const createSchema: Record<keyof node.NodeAttrs, ParamSchema> = {
   id: {
     in: "body",
     exists: {
-      errorMessage: "Expected peerId to be in the body",
+      errorMessage: "Expected peerId in body",
       bail: true,
     },
     isString: true,
@@ -19,7 +19,7 @@ export const createSchema: Record<keyof node.NodeAttrs, ParamSchema> = {
   chainId: {
     in: "body",
     exists: {
-      errorMessage: "Expected chainId to be in the body",
+      errorMessage: "Expected chainId in body",
       bail: true,
     },
     isNumeric: true,
@@ -28,7 +28,7 @@ export const createSchema: Record<keyof node.NodeAttrs, ParamSchema> = {
   isExitNode: {
     in: "body",
     exists: {
-      errorMessage: "Expected isExitNode to be in the body",
+      errorMessage: "Expected isExitNode in body",
       bail: true,
     },
     isBoolean: true,
@@ -37,7 +37,7 @@ export const createSchema: Record<keyof node.NodeAttrs, ParamSchema> = {
   hoprdApiEndpoint: {
     in: "body",
     exists: {
-      errorMessage: "Expected hoprdApiEndpoint to be in the body",
+      errorMessage: "Expected hoprdApiEndpoint in body",
       bail: true,
     },
     isString: true,
@@ -45,7 +45,7 @@ export const createSchema: Record<keyof node.NodeAttrs, ParamSchema> = {
   hoprdApiToken: {
     in: "body",
     exists: {
-      errorMessage: "Expected hoprdApiToken to be in the body",
+      errorMessage: "Expected hoprdApiToken in body",
       bail: true,
     },
     isString: true,
@@ -53,7 +53,7 @@ export const createSchema: Record<keyof node.NodeAttrs, ParamSchema> = {
   nativeAddress: {
     in: "body",
     exists: {
-      errorMessage: "Expected nativeAddress to be in the body",
+      errorMessage: "Expected nativeAddress in body",
       bail: true,
     },
     isString: true,

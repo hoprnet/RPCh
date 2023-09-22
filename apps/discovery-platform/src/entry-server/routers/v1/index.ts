@@ -8,6 +8,7 @@ import { Pool } from "pg";
 import * as client from "./client";
 import * as login from "./login";
 import * as node from "./node";
+import * as quota from "./quota";
 import {
   //  body,
   checkSchema,
@@ -104,6 +105,23 @@ export const v1Router = (ops: {
     middleware.adminAuthorized(ops.secrets.adminSecret),
     checkSchema(node.createSchema),
     node.create(ops.dbPool)
+  );
+
+  ////
+  // quota
+
+  router.post(
+    "quota/request",
+    middleware.nodeAuthorized(ops.dbPool),
+    checkSchema(quota.schema),
+    quota.request(ops.dbPool)
+  );
+
+  router.post(
+    "quota/response",
+    middleware.nodeAuthorized(ops.dbPool),
+    checkSchema(quota.schema),
+    quota.response(ops.dbPool)
   );
 
   ////
