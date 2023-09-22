@@ -14,8 +14,7 @@ export function clientAuthorized(dbPool: Pool) {
     const result = await client
       .listIdsByExternalToken(dbPool, clientId)
       .catch((ex) => log.error("Error reading clientIds", ex));
-    const count = result?.rowCount || 0;
-    if (count > 0) {
+    if (result && result.length > 0) {
       next();
     } else {
       const reason = "Client not authorized";

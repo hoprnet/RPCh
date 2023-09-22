@@ -97,11 +97,11 @@ export function listByUserId(
 export function listIdsByExternalToken(
   dbPool: Pool,
   clientId: string
-): Promise<QueryResult<{ id: string }>> {
+): Promise<{ id: string }[]> {
   const q = [
     "select id from clients",
     `where external_token = '${clientId}' and`,
     "(invalidated_at is null or invalidated_at > now())",
   ].join(" ");
-  return dbPool.query(q);
+  return dbPool.query(q).then((q) => q.rows);
 }

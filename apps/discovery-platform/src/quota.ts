@@ -1,12 +1,16 @@
 import type { Pool } from "pg";
 
 export type Attrs = {
-  clientId: string;
   rpcMethod?: string;
   segmentCount: number;
 };
 
-export function createRequest(dbPool: Pool, nodeId: string, attrs: Attrs) {
+export function createRequest(
+  dbPool: Pool,
+  nodeId: string,
+  clientId: string,
+  attrs: Attrs
+) {
   const q = [
     "insert into request_quotas",
     "(id, client_id, rpc_method, segment_count, reported_by_id)",
@@ -14,11 +18,16 @@ export function createRequest(dbPool: Pool, nodeId: string, attrs: Attrs) {
     "returning *",
   ].join(" ");
 
-  const vals = [attrs.clientId, attrs.rpcMethod, attrs.segmentCount, nodeId];
+  const vals = [clientId, attrs.rpcMethod, attrs.segmentCount, nodeId];
   return dbPool.query(q, vals);
 }
 
-export function createResponse(dbPool: Pool, nodeId: string, attrs: Attrs) {
+export function createResponse(
+  dbPool: Pool,
+  nodeId: string,
+  clientId: string,
+  attrs: Attrs
+) {
   const q = [
     "insert into response_quotas",
     "(id, client_id, rpc_method, segment_count, reported_by_id)",
@@ -26,6 +35,6 @@ export function createResponse(dbPool: Pool, nodeId: string, attrs: Attrs) {
     "returning *",
   ].join(" ");
 
-  const vals = [attrs.clientId, attrs.rpcMethod, attrs.segmentCount, nodeId];
+  const vals = [clientId, attrs.rpcMethod, attrs.segmentCount, nodeId];
   return dbPool.query(q, vals);
 }

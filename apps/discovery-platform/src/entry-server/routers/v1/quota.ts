@@ -2,6 +2,7 @@ import type { Pool } from "pg";
 import type { Request, Response } from "express";
 import { ParamSchema } from "express-validator";
 
+import * as client from "../../../client";
 import * as quota from "../../../quota";
 import { createLogger } from "../../../utils";
 
@@ -9,12 +10,11 @@ const log = createLogger(["router", "quota"]);
 
 export type ReqNodeAuthed = Request & { nodeId: string };
 
-export const schema: Record<keyof quota.Attrs, ParamSchema> = {
+export const schema: Record<keyof quota.Attrs & "clientId", ParamSchema> = {
   clientId: {
     in: "body",
     exists: {
       errorMessage: "Expected clientId in body",
-      bail: true,
     },
     isString: true,
   },
@@ -22,7 +22,6 @@ export const schema: Record<keyof quota.Attrs, ParamSchema> = {
     in: "body",
     exists: {
       errorMessage: "Expected segmentCount in body",
-      bail: true,
     },
     isInt: true,
     toInt: true,
@@ -34,39 +33,60 @@ export const schema: Record<keyof quota.Attrs, ParamSchema> = {
 };
 
 export function request(dbPool: Pool) {
-  return function (req: Request & { nodeId?: string }, res: Response) {
-    if (!("nodeId" in req)) {
-      log.error("Expecting authorized node");
-      return res.status(500).end();
-    }
-
-    quota
-      .createRequest(dbPool, req.nodeId!, req.body)
-      .then(() => {
-        res.status(204).end();
-      })
-      .catch((err) => {
-        log.error("Error during create request quota query", err);
-        res.status(500).end();
-      });
+  return async function (req: Request & { nodeId?: string }, res: Response) {
+    validate(dbPool, req, res).then((clientId) => {
+      quota
+        .createRequest(dbPool, req.nodeId!, clientId, req.body)
+        .then(() => {
+          res.status(204).end();
+        })
+        .catch((err) => {
+          log.error("Error during create request quota query", err);
+          res.status(500).end();
+        });
+    });
   };
 }
 
 export function response(dbPool: Pool) {
-  return function (req: Request & { nodeId?: string }, res: Response) {
-    if (!("nodeId" in req)) {
-      log.error("Expecting authorized node");
-      return res.status(500).end();
-    }
-
-    quota
-      .createResponse(dbPool, req.nodeId!, req.body)
-      .then(() => {
-        res.status(204).end();
-      })
-      .catch((err) => {
-        log.error("Error during create response quota query", err);
-        res.status(500).end();
-      });
+  return async function (req: Request & { nodeId?: string }, res: Response) {
+    validate(dbPool, req, res).then((clientId) => {
+      quota
+        .createResponse(dbPool, req.nodeId!, clientId, req.body)
+        .then(() => {
+          res.status(204).end();
+        })
+        .catch((err) => {
+          log.error("Error during create response quota query", err);
+          res.status(500).end();
+        });
+    });
   };
+}
+
+async function validate(
+  dbPool: Pool,
+  req: Request & { nodeId?: string },
+  res: Response
+): Promise<string> {
+  if (!("nodeId" in req)) {
+    log.error("Expecting authorized node");
+    res.status(500).end();
+    return Promise.reject();
+  }
+  const resClient = await client
+    .listIdsByExternalToken(dbPool, req.body.clientId)
+    .catch((ex) => {
+      log.error("Error during listIdsByExternalToken", ex);
+    });
+  if (!resClient) {
+    res.status(500).end();
+    return Promise.reject();
+  }
+  if (resClient.length === 0) {
+    res.status(403).json({ error: "clientId not found" });
+    return Promise.reject();
+  }
+  const { id: clientId } = resClient[0];
+  return Promise.resolve(clientId);
 }
