@@ -201,18 +201,6 @@ async function completeSegmentsEntry(
 
   state.counterStore.set(entryId, resReq.counter);
 
-  // inform DP non blocking
-  const quotaRequest: DPapi.QuotaParams = {
-    clientId: resReq.req.clientId,
-    rpcMethod: resReq.req.req.method,
-    segmentCount: entry.count,
-    type: "request",
-  };
-
-  DPapi.fetchQuota(ops, quotaRequest).catch((ex) => {
-    log.error("Error recording request quota", ex);
-  });
-
   // do RPC request
   const { provider, req } = resReq.req;
   const resp = await ProviderAPI.fetchRPC(provider, req).catch((err: Error) => {
@@ -236,18 +224,6 @@ async function completeSegmentsEntry(
 
   const segments = Segment.toSegments(firstSeg.requestId, resResp.hexData);
 
-  // inform DP non blocking
-  const quotaResponse: DPapi.QuotaParams = {
-    clientId: resReq.req.clientId,
-    rpcMethod: resReq.req.req.method,
-    segmentCount: segments.length,
-    type: "response",
-  };
-
-  DPapi.fetchQuota(ops, quotaResponse).catch((ex) => {
-    log.error("Error recording response quota", ex);
-  });
-
   // queue segment sending for all of them
   segments.forEach((seg: Segment.Segment) => {
     setTimeout(() => {
@@ -260,6 +236,30 @@ async function completeSegmentsEntry(
       });
     });
   });
+
+  // inform DP non blocking
+  setTimeout(() => {
+    const quotaRequest: DPapi.QuotaParams = {
+      clientId: resReq.req.clientId,
+      rpcMethod: resReq.req.req.method,
+      segmentCount: entry.count,
+      type: "request",
+    };
+
+    const quotaResponse: DPapi.QuotaParams = {
+      clientId: resReq.req.clientId,
+      rpcMethod: resReq.req.req.method,
+      segmentCount: segments.length,
+      type: "response",
+    };
+
+    DPapi.fetchQuota(ops, quotaRequest).catch((ex) => {
+      log.error("Error recording request quota", ex);
+    });
+    DPapi.fetchQuota(ops, quotaResponse).catch((ex) => {
+      log.error("Error recording response quota", ex);
+    });
+  }, segments.length);
 }
 
 // if this file is the entrypoint of the nodejs process

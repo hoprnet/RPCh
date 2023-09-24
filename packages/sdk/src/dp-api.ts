@@ -97,10 +97,14 @@ export function fetchQuota(
     "x-rpch-node": ops.nodeAccessToken,
   };
   const body = JSON.stringify({ clientId, segmentCount, rpcMethod });
-  return fetch(url, { headers, method: "POST", body }).then((res) => {
-    if (res.status === 204) {
-      Promise.resolve();
-    }
-    Promise.reject(`Unexpected response code: ${res.status}`);
+  return new Promise((pRes, pRej) => {
+    fetch(url, { headers, method: "POST", body })
+      .then((res) => {
+        if (res.status === 204) {
+          return pRes();
+        }
+        return pRej(`Unexpected response code: ${res.status}`);
+      })
+      .catch((err) => pRej(err));
   });
 }
