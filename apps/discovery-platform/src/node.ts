@@ -81,7 +81,7 @@ export function createToken(
   const q = [
     "insert into exit_node_tokens",
     "(id, exit_id, access_token)",
-    "values (gen_random_uuid(), $1, $2",
+    "values (gen_random_uuid(), $1, $2)",
     "returning access_token",
   ].join(" ");
 
