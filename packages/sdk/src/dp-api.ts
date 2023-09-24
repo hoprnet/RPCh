@@ -27,6 +27,13 @@ export type Nodes = {
   matchedAt: string;
 };
 
+export type QuotaParams = {
+  clientId: string;
+  rpcMethod?: string;
+  segmentCount: number;
+  type: "request" | "response";
+};
+
 const DefaultBackoff = {
   retries: 5,
   factor: 3,
@@ -81,17 +88,7 @@ export function fetchNodes(
 
 export function fetchQuota(
   ops: NodeOps,
-  {
-    clientId,
-    rpcMethod,
-    segmentCount,
-    type,
-  }: {
-    clientId: string;
-    rpcMethod?: string;
-    segmentCount: number;
-    type: "request" | "response";
-  }
+  { clientId, segmentCount, rpcMethod, type }: QuotaParams
 ): Promise<void> {
   const url = new URL(`/api/v1/quota/${type}`, ops.discoveryPlatformEndpoint);
   const headers = {
