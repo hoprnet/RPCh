@@ -1,5 +1,11 @@
 # @rpch/discovery-platform
 
+## 0.6.1
+
+### Patch Changes
+
+- 7ca27e6: fix new user signup
+
 ## 0.6.0
 
 ### Minor Changes

@@ -13,22 +13,17 @@ export type ReqNodeAuthed = Request & { nodeId: string };
 export const schema: Record<keyof quota.Attrs & "clientId", ParamSchema> = {
   clientId: {
     in: "body",
-    exists: {
-      errorMessage: "Expected clientId in body",
-    },
     isString: true,
   },
   segmentCount: {
     in: "body",
-    exists: {
-      errorMessage: "Expected segmentCount in body",
-    },
     isInt: true,
     toInt: true,
   },
   rpcMethod: {
     in: "body",
     isString: true,
+    optional: true,
   },
 };
 

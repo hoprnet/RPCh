@@ -12,6 +12,7 @@ export const createSchema: Record<keyof client.CreateAttrs, ParamSchema> = {
   invalidatedAt: {
     in: "body",
     isDate: true,
+    optional: true,
   },
 };
 
@@ -19,10 +20,6 @@ export const updateSchema: Record<keyof client.CreateAttrs, ParamSchema> = {
   invalidatedAt: {
     in: "body",
     isDate: true,
-    exists: {
-      errorMessage: "Expected invalidatedAt to be in the body",
-      bail: true,
-    },
   },
 };
 
