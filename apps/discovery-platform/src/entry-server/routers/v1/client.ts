@@ -2,9 +2,9 @@ import type { Pool } from "pg";
 import type { Request, Response } from "express";
 import { ParamSchema } from "express-validator";
 
+import * as client from "../../../client";
 import * as q from "../../../query";
 import { createLogger } from "../../../utils";
-import * as client from "../../../client";
 
 const log = createLogger(["router", "client"]);
 

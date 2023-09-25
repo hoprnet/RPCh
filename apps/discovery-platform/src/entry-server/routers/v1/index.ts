@@ -7,6 +7,8 @@ import { Pool } from "pg";
 // import * as user from "./user";
 import * as client from "./client";
 import * as login from "./login";
+import * as node from "./node";
+import * as quota from "./quota";
 import {
   //  body,
   checkSchema,
@@ -33,30 +35,6 @@ export const v1Router = (ops: {
   url: string;
 }) => {
   const loginState = login.create(ops.dbPool, ops.secrets, ops.url);
-  /*
-  // Metrics
-  const counterSuccessfulRequests = ops.metricManager.createCounter(
-    "counter_successful_request",
-    "amount of successful requests discovery platform has processed",
-    { labelNames: ["method", "path", "status"] }
-  );
-
-  const counterFailedRequests = ops.metricManager.createCounter(
-    "counter_failed_request",
-    "amount of failed requests discovery platform has processed",
-    { labelNames: ["method", "path", "status"] }
-  );
- */
-
-  const requestDurationHistogram = ops.metricManager.createHistogram(
-    "request_duration_ms",
-    "duration of requests in milliseconds",
-    {
-      buckets: [10, 50, 100, 200, 500, 1000],
-      labelNames: ["method", "path", "status", "client"],
-    }
-  );
-
   const router = express.Router();
 
   router.use(
@@ -90,7 +68,6 @@ export const v1Router = (ops: {
 
   router.get(
     "/nodes/zero_hop_pairings",
-    middleware.metric(requestDurationHistogram),
     middleware.clientAuthorized(ops.dbPool),
     query("amount").default(10).isInt({ min: 1, max: 100 }),
     query("since").optional().isISO8601(),
@@ -99,32 +76,42 @@ export const v1Router = (ops: {
 
   router.post(
     "/node/register",
-    middleware.metric(requestDurationHistogram),
     middleware.adminAuthorized(ops.secrets.adminSecret),
-    // checkSchema(registerNodeSchema),
-    postNodeRegister(ops.dbPool)
+    checkSchema(node.createSchema),
+    middleware.validateStop,
+    node.create(ops.dbPool)
+  );
+
+  ////
+  // quota
+
+  router.post(
+    "/quota/request",
+    middleware.nodeAuthorized(ops.dbPool),
+    checkSchema(quota.schema),
+    middleware.validateStop,
+    quota.request(ops.dbPool)
+  );
+
+  router.post(
+    "/quota/response",
+    middleware.nodeAuthorized(ops.dbPool),
+    checkSchema(quota.schema),
+    middleware.validateStop,
+    quota.response(ops.dbPool)
   );
 
   ////
   // authentication
-  router.post(
-    "/login/ethereum/challenge",
-    middleware.metric(requestDurationHistogram),
-    login.challenge(loginState)
-  );
+  router.post("/login/ethereum/challenge", login.challenge(loginState));
 
   router.post(
     "/login/ethereum",
-    middleware.metric(requestDurationHistogram),
     passport.authenticate("ethereum", { failureMessage: true }),
     login.signin()
   );
 
-  router.get(
-    "/login/google",
-    middleware.metric(requestDurationHistogram),
-    passport.authenticate("google")
-  );
+  router.get("/login/google", passport.authenticate("google"));
   router.get(
     "/oauth2/redirect/google",
     passport.authenticate("google", {
@@ -136,74 +123,38 @@ export const v1Router = (ops: {
     }
   );
 
-  //   ////
-  //   // users
-  //   router.get("users", middleware.metric(requestDurationHistogram), user.index);
-  //   router.post(
-  //     "users",
-  //     middleware.metric(requestDurationHistogram),
-  //     user.create
-  //   );
-  //   router.get(
-  //     "users/:id",
-  //     middleware.metric(requestDurationHistogram),
-  //     user.get
-  //   );
-  //   router.patch(
-  //     "users/:id",
-  //     middleware.metric(requestDurationHistogram),
-  //     user.update
-  //   );
-  //   router.put(
-  //     "users/:id",
-  //     middleware.metric(requestDurationHistogram),
-  //     user.update
-  //   );
-  //   router.delete(
-  //     "users/:id",
-  //     middleware.metric(requestDurationHistogram),
-  //     user.delete
-  //   );
-
   ////
   // clients
 
-  router.get(
-    "/clients",
-    middleware.metric(requestDurationHistogram),
-    middleware.userAuthorized(),
-    client.index(ops.dbPool)
-  );
+  router.get("/clients", middleware.userAuthorized(), client.index(ops.dbPool));
   router.post(
     "/clients",
-    middleware.metric(requestDurationHistogram),
     middleware.userAuthorized(),
     checkSchema(client.createSchema),
+    middleware.validateStop,
     client.create(ops.dbPool)
   );
   router.get(
     "/clients/:id",
-    middleware.metric(requestDurationHistogram),
     middleware.userAuthorized(),
     client.read(ops.dbPool)
   );
   router.patch(
     "/clients/:id",
-    middleware.metric(requestDurationHistogram),
     middleware.userAuthorized(),
     checkSchema(client.updateSchema),
+    middleware.validateStop,
     client.update(ops.dbPool)
   );
   router.put(
     "/clients/:id",
-    middleware.metric(requestDurationHistogram),
     middleware.userAuthorized(),
     checkSchema(client.updateSchema),
+    middleware.validateStop,
     client.update(ops.dbPool)
   );
   router.delete(
     "/clients/:id",
-    middleware.metric(requestDurationHistogram),
     middleware.userAuthorized(),
     client.del(ops.dbPool)
   );
@@ -837,29 +788,6 @@ function getNodesZeroHopPairings(dbPool: Pool) {
         log.error("Error during read zero_hop_pairings query", ex);
         const reason = "Error querying database";
         return res.status(500).json({ reason });
-      });
-  };
-}
-
-function postNodeRegister(dbPool: Pool) {
-  return async function (req: Request, res: Response) {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json(errors.mapped());
-    }
-    const node: q.RegisteredNode = req.body;
-    q.writeRegisteredNode(dbPool, node)
-      .then((qRes) => {
-        if (qRes.rowCount === 1) {
-          return res.status(201).end();
-        }
-        log.error("Unexpected response during insert", JSON.stringify(qRes));
-        const reason = "Internal server error";
-        return res.status(500).json({ reason });
-      })
-      .catch((ex) => {
-        log.error("Error during write registered_node query", ex);
-        return res.status(422).json({ reason: ex.message });
       });
   };
 }

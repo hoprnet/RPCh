@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import type { Pool, QueryResult } from "pg";
 export type DB = {
   id: string;
@@ -44,11 +45,12 @@ export function create(
   const q = [
     "insert into clients",
     "(id, user_id, external_token, invalidated_at)",
-    "values(gen_random_uuid(), $1, gen_random_uuid(), $2)",
+    "values(gen_random_uuid(), $1, $2, $3)",
     "returning *",
   ].join(" ");
 
-  const vals = [userId, attrs.invalidatedAt];
+  const token = crypto.randomBytes(24).toString("hex");
+  const vals = [userId, token, attrs.invalidatedAt];
   return dbPool.query(q, vals);
 }
 
@@ -95,11 +97,11 @@ export function listByUserId(
 export function listIdsByExternalToken(
   dbPool: Pool,
   clientId: string
-): Promise<QueryResult<{ id: string }>> {
+): Promise<{ id: string }[]> {
   const q = [
     "select id from clients",
     `where external_token = '${clientId}' and`,
     "(invalidated_at is null or invalidated_at > now())",
   ].join(" ");
-  return dbPool.query(q);
+  return dbPool.query(q).then((q) => q.rows);
 }

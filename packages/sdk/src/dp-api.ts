@@ -11,33 +11,27 @@ export const NoMoreNodes = "no more nodes";
  * All calls are behind exponential backoff to avoid DOSing the DP on errors.
  */
 
-export type Ops = {
+export type ClientOps = {
   discoveryPlatformEndpoint: string;
   clientId: string;
 };
 
-export type RawNode = {
-  node: {
-    id: string;
-    has_exit_node: boolean;
-    chain_id: number;
-    hoprd_api_endpoint: string;
-    hoprd_api_token: string;
-    exit_node_pub_key: string;
-    native_address: string;
-    total_amount_funded: string;
-    honesty_score: string;
-    reason?: string;
-    status: string;
-    created_at: Date;
-    updated_at: Date;
-  };
+export type NodeOps = {
+  discoveryPlatformEndpoint: string;
+  nodeAccessToken: string;
 };
 
 export type Nodes = {
   entryNodes: EntryNode[];
   exitNodes: ExitNode[];
   matchedAt: string;
+};
+
+export type QuotaParams = {
+  clientId: string;
+  rpcMethod?: string;
+  segmentCount: number;
+  type: "request" | "response";
 };
 
 const DefaultBackoff = {
@@ -50,21 +44,8 @@ const DefaultBackoff = {
 
 const log = createLogger(["sdk", "dp-api"]);
 
-export function fetchNode(ops: Ops, peerId: string): Promise<RawNode> {
-  const url = new URL(`/api/v1/node/${peerId}`, ops.discoveryPlatformEndpoint);
-  const headers = {
-    Accept: "application/json",
-    "x-rpch-client": ops.clientId,
-  };
-
-  return retry(async (_bail) => {
-    const res = await fetch(url, { headers });
-    return res.json() as unknown as RawNode;
-  }, DefaultBackoff);
-}
-
 export function fetchNodes(
-  ops: Ops,
+  ops: ClientOps,
   amount: number,
   since: Date
 ): Promise<Nodes> {
@@ -74,7 +55,11 @@ export function fetchNodes(
   );
   url.searchParams.set("amount", `${amount}`);
   url.searchParams.set("since", since.toISOString());
-  const headers = { Accept: "application/json", "x-rpch-client": ops.clientId };
+  const headers = {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+    "x-rpch-client": ops.clientId,
+  };
 
   return retry(async (bail, num) => {
     if (num > 1) {
@@ -99,4 +84,27 @@ export function fetchNodes(
     }
     return res.json() as unknown as Nodes;
   }, DefaultBackoff) as Promise<Nodes>;
+}
+
+export function fetchQuota(
+  ops: NodeOps,
+  { clientId, segmentCount, rpcMethod, type }: QuotaParams
+): Promise<void> {
+  const url = new URL(`/api/v1/quota/${type}`, ops.discoveryPlatformEndpoint);
+  const headers = {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+    "x-rpch-node": ops.nodeAccessToken,
+  };
+  const body = JSON.stringify({ clientId, segmentCount, rpcMethod });
+  return new Promise((pRes, pRej) => {
+    fetch(url, { headers, method: "POST", body })
+      .then((res) => {
+        if (res.status === 204) {
+          return pRes();
+        }
+        return pRej(`Unexpected response code: ${res.status}`);
+      })
+      .catch((err) => pRej(err));
+  });
 }

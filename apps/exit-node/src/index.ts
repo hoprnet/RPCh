@@ -6,6 +6,7 @@ import { utils } from "ethers";
 import * as Identity from "./identity";
 import { createLogger } from "./utils";
 import {
+  DPapi,
   NodeAPI,
   ProviderAPI,
   Request,
@@ -35,6 +36,8 @@ type Ops = {
   password?: string;
   apiEndpoint: URL;
   accessToken: string;
+  discoveryPlatformEndpoint: string;
+  nodeAccessToken: string;
 };
 
 async function start(ops: Ops) {
@@ -198,9 +201,7 @@ async function completeSegmentsEntry(
 
   state.counterStore.set(entryId, resReq.counter);
 
-  // TODO
-  // inform DP of segments, use entry.count and res.req.clientId
-
+  // do RPC request
   const { provider, req } = resReq.req;
   const resp = await ProviderAPI.fetchRPC(provider, req).catch((err: Error) => {
     log.error("Error doing rpc request", err, provider, req);
@@ -223,9 +224,6 @@ async function completeSegmentsEntry(
 
   const segments = Segment.toSegments(firstSeg.requestId, resResp.hexData);
 
-  // TODO
-  // inform DP of segments, count and client id
-
   // queue segment sending for all of them
   segments.forEach((seg: Segment.Segment) => {
     setTimeout(() => {
@@ -238,6 +236,30 @@ async function completeSegmentsEntry(
       });
     });
   });
+
+  // inform DP non blocking
+  setTimeout(() => {
+    const quotaRequest: DPapi.QuotaParams = {
+      clientId: resReq.req.clientId,
+      rpcMethod: resReq.req.req.method,
+      segmentCount: entry.count,
+      type: "request",
+    };
+
+    const quotaResponse: DPapi.QuotaParams = {
+      clientId: resReq.req.clientId,
+      rpcMethod: resReq.req.req.method,
+      segmentCount: segments.length,
+      type: "response",
+    };
+
+    DPapi.fetchQuota(ops, quotaRequest).catch((ex) => {
+      log.error("Error recording request quota", ex);
+    });
+    DPapi.fetchQuota(ops, quotaResponse).catch((ex) => {
+      log.error("Error recording response quota", ex);
+    });
+  }, segments.length);
 }
 
 // if this file is the entrypoint of the nodejs process
@@ -252,6 +274,12 @@ if (require.main === module) {
   if (!process.env.HOPRD_API_TOKEN) {
     throw new Error("Missing 'HOPRD_API_TOKEN' env var.");
   }
+  if (!process.env.DISCOVERY_PLATFORM_API_ENDPOINT) {
+    throw new Error("Missing 'DISCOVERY_PLATFORM_API_ENDPOINT' env var.");
+  }
+  if (!process.env.DISCOVERY_PLATFORM_ACCESS_TOKEN) {
+    throw new Error("Missing 'DISCOVERY_PLATFORM_ACCESS_TOKEN' env var.");
+  }
   const identityFile =
     process.env.RPCH_IDENTITY_FILE || path.join(process.cwd(), ".identity");
   const privateKey = process.env.RPCH_PRIVATE_KEY
@@ -264,5 +292,7 @@ if (require.main === module) {
     password: process.env.RPCH_PASSWORD,
     apiEndpoint: new URL(process.env.HOPRD_API_ENDPOINT),
     accessToken: process.env.HOPRD_API_TOKEN,
+    discoveryPlatformEndpoint: process.env.DISCOVERY_PLATFORM_API_ENDPOINT,
+    nodeAccessToken: process.env.DISCOVERY_PLATFORM_ACCESS_TOKEN,
   });
 }
