@@ -16,6 +16,7 @@ T users (
 >> has_many chain_credentials
 >> has_many federated_credentials
 >> has_many monthly_quota_usages
+-> triggers process_initial_monthly_usage()
 
 T clients (
     id (pk)
@@ -103,6 +104,7 @@ T request_quotas (
 );
 >> has_one client
 >> has_one exit_node_token
+-> triggers process_monthly_usage()
 
 T response_quotas (
     id (pk)
@@ -114,6 +116,7 @@ T response_quotas (
 );
 >> has_one client
 >> has_one exit_node_token
+-> triggers process_monthly_usage()
 
 T quota_bundles (
     id (pk)
@@ -133,6 +136,8 @@ T monthly_quota_usages (
     resp_count
 );
 >> has_one user
+>- populated by process_initial_monthly_usage()
+>- populated by process_monthly_usage()
 
 ###
 # payment
