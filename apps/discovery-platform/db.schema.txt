@@ -1,0 +1,203 @@
+###
+# users - clients
+
+T users (
+    id - pk
+    (name)
+    (email)
+    (www_address)
+    (telegram)
+    (last_logged_in_at)
+    (mev_kickback_address)
+    (mev_current_choice)
+    timestamps
+)
+>> has_many clients
+>> has_many chain_credentials
+>> has_many federated_credentials
+>> has_many monthly_quota_usages
+
+T clients (
+    id (pk)
+    user_id (fk)
+    external_token (unique)
+    (invalidated_at)
+    timestamps
+);
+>> has_one user
+>> has_many request_quota
+>> has_many response_quota
+
+###
+# users - authentication
+
+T chain_credentials (
+    user_id (fk)
+    address
+    chain
+);
+>> has_one user
+
+T federated_credentials (
+    id (pk)
+    user_id (fk)
+    provider
+    subject
+);
+>> has_one user
+
+
+###
+# nodes - tokens
+
+T registered_nodes (
+    id (pk)
+    is_exit_node
+    chain_id integer
+    hoprd_api_endpoint
+    hoprd_api_token
+    (exit_node_pub_key)
+    native_address character
+    timestamps
+);
+>> has_many exit_node_tokens
+
+T exit_node_tokens (
+    id (pk)
+    exit_id (fk)
+    access_token (unique)
+    (invalidated_at)
+    timestamps
+);
+>> has_one registered_node
+>> has_many request_quota
+>> has_many response_quota
+
+###
+# aggregated routes
+
+T one_hop_pairings (
+    entry_id (fk)
+    exit_id (fk)
+    created_at
+);
+>> many_to_many: registered_node - registered_node
+
+T zero_hop_pairings (
+    entry_id (fk)
+    exit_id (fk)
+    created_at
+);
+>> many_to_many: registered_node - registered_node
+
+###
+# users - quota
+
+T request_quotas (
+    id (pk),
+    client_id (fk)
+    (rpc_method)
+    segment_count
+    created_at
+    reported_by_id (fk)
+);
+>> has_one client
+>> has_one exit_node_token
+
+T response_quotas (
+    id (pk)
+    client_id (fk)
+    (rpc_method)
+    segment_count
+    created_at
+    reported_by_id character (fk)
+);
+>> has_one client
+>> has_one exit_node_token
+
+T quota_bundles (
+    id (pk)
+    (segment_count)
+    (rpc_method_count)
+    (rpc_method)
+    timestamps
+);
+
+###
+# aggregated quota
+
+T monthly_quota_usages (
+    user_id (fk)
+    started_at
+    req_count
+    resp_count
+);
+>> has_one user
+
+###
+# payment
+
+T billing_schemes (
+    id (pk)
+    name
+    (desc)
+    timestamps
+    ...<todo>...
+);
+
+###
+# packages - voucher
+
+T packages (
+    id (pk)
+    name
+    (desc)
+    billing_scheme_id (fk)
+    (alternative_billing_scheme_id) (fk)
+    timestamps
+);
+>> has_one (has_one_more) billing_scheme
+
+T vouchers (
+    id (pk)
+    (name)
+    code
+    (valid_until)
+    timestamps
+);
+
+###
+# usage resolutions
+
+# what packages does a user have
+T users_packages (
+    user_id (fk)
+    package_id (fk)
+    created_at
+    (invalidated_at)
+);
+>> many_to_many: users - packages
+
+# what volume does a voucher provide
+T vouchers_quota_bundles (
+    voucher_id (fk)
+    quota_bundle_id (fk)
+);
+>> many_to_many: vouchers - quota_bundles
+
+# what volume does a package provide at what time does it become valid or obsolete
+T packages_quota_bundles (
+    package_id (fk)
+    quota_bundle_id (fk)
+    valid_from
+    valid_until
+);
+>> many_to_many: packages - quota_bundles
+
+# does a user get free volumes from a voucher
+T redeemed_vouchers (
+    user_id (fk)
+    voucher_id (fk)
+    createdAt
+);
+>> many_to_many: users - vouchers
