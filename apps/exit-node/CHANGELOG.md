@@ -1,5 +1,17 @@
 # @rpch/exit-node
 
+## 0.5.0
+
+### Minor Changes
+
+- 326a86e: Report quota usages to discovery platform
+
+### Patch Changes
+
+- Updated dependencies [326a86e]
+- Updated dependencies [d3728dc]
+  - @rpch/sdk@0.9.0
+
 ## 0.4.0
 
 ### Minor Changes

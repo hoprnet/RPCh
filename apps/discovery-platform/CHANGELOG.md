@@ -1,5 +1,19 @@
 # @rpch/discovery-platform
 
+## 0.6.0
+
+### Minor Changes
+
+- d3728dc: prepare db migrations for degen
+- 326a86e: Add request and response quota tracking
+  Add aggregation to monthly quota usage
+  Replace token handling with better secret generation
+  Create access tokens for exit nodes upon registration
+
+### Patch Changes
+
+- f1e4602: added mev information to user
+
 ## 0.5.5
 
 ### Patch Changes

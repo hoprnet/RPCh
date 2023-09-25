@@ -25,7 +25,7 @@
   },
   "devDependencies": {
     "@rpch/configs-eslint": "*",
-    "@rpch/ethers": "0.3.9",
+    "@rpch/ethers": "0.3.10",
     "@rpch/crypto-for-nodejs": "0.3.4"
   }
 }

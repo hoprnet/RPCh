@@ -1,5 +1,12 @@
 # @rpch/sdk
 
+## 0.9.0
+
+### Minor Changes
+
+- 326a86e: Report quota usages to discovery platform
+- d3728dc: Use LZ compression before sending requests
+
 ## 0.8.0
 
 ### Minor Changes
