@@ -202,10 +202,12 @@ async function completeSegmentsEntry(
   state.counterStore.set(entryId, resReq.counter);
 
   // do RPC request
-  const { provider, req } = resReq.req;
-  const resp = await ProviderAPI.fetchRPC(provider, req).catch((err: Error) => {
-    log.error("Error doing rpc request", err, provider, req);
-  });
+  const { provider, req, headers } = resReq.req;
+  const resp = await ProviderAPI.fetchRPC(provider, req, headers).catch(
+    (err: Error) => {
+      log.error("Error doing rpc request", err, provider, req);
+    }
+  );
   if (!resp) {
     return;
   }
