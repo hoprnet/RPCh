@@ -20,6 +20,7 @@ T users (
 
 T clients (
     id (pk)
+    (name)
     user_id (fk)
     external_token (unique)
     (invalidated_at)
