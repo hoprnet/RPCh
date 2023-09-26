@@ -212,7 +212,9 @@ function determinePort(portEnv?: string) {
  * CLIENT - client id, identifier of your wallet/application, required
  * RESPONSE_TIMEOUT - default request-response timeout, optional, can be overridden per request
  * PROVIDER - default rpc provider endpoint, optional, can be overridden per request
- * MEV_PROTECTION_PROVIDER - transaction rpc provider endpoint, optional, can be overridden per request
+ * DISABLE_MEV_PROTECTION - disable special handling of transaction request on mainnet
+ * MEV_PROTECTION_PROVIDER - transaction rpc provider endpoint
+ * MEV_KICKBACK_ADDRESS - revenue share address when using mev protection provider
  *
  * See **RPChSDK.RequestOps** for overridable per request parameters.
  */
@@ -232,6 +234,7 @@ if (require.main === module) {
       process.env.DISABLE_MEV_PROTECTION
     ).valueOf(),
     mevProtectionProvider: process.env.MEV_PROTECTION_PROVIDER,
+    mevKickbackAddress: process.env.MEV_KICKBACK_ADDRESS,
   };
 
   const serverOps = {
