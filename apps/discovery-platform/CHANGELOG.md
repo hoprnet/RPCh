@@ -1,5 +1,11 @@
 # @rpch/discovery-platform
 
+## 0.7.0
+
+### Minor Changes
+
+- 9ad3401: add name column to client
+
 ## 0.6.1
 
 ### Patch Changes
