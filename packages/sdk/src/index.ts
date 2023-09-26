@@ -44,6 +44,7 @@ export type Ops = {
   readonly provider?: string;
   readonly disableMevProtection?: boolean;
   readonly mevProtectionProvider?: string;
+  readonly mevKickbackAddress?: string;
 };
 
 /**
@@ -55,6 +56,8 @@ export type RequestOps = {
   readonly provider?: string;
 };
 
+const RPC_PROPELLORHEADS = "https://rpc.propellerheads.xyz/eth";
+
 /**
  * Global defaults.
  * See **Ops** for details.
@@ -64,7 +67,7 @@ const defaultOps: Ops = {
   timeout: 10e3,
   provider: "https://primary.gnosis-chain.rpc.hoprtech.net",
   disableMevProtection: false,
-  mevProtectionProvider: "https://rpc.propellerheads.xyz/eth",
+  mevProtectionProvider: RPC_PROPELLORHEADS,
 };
 
 const MAX_REQUEST_SEGMENTS = 20;
@@ -146,8 +149,8 @@ export default class SDK {
         return reject("Cannot parse provider URL");
       }
       // sanity check mev protection provider url, if it is set
-      if (!!reqOps.mevProtectionProvider) {
-        if (!utils.isValidURL(reqOps.mevProtectionProvider)) {
+      if (!!this.ops.mevProtectionProvider) {
+        if (!utils.isValidURL(this.ops.mevProtectionProvider)) {
           return reject("Cannot parse mevProtectionProvider URL");
         }
       }
@@ -168,6 +171,11 @@ export default class SDK {
         req
       );
 
+      const headers = this.determineHeaders(
+        provider,
+        this.ops.mevKickbackAddress
+      );
+
       // create request
       const { entryNode, exitNode } = res;
       const id = RequestCache.generateId(this.requestCache);
@@ -182,6 +190,7 @@ export default class SDK {
         exitNodeReadIdentity: this.crypto!.Identity.load_identity(
           etherUtils.arrayify(exitNode.pubKey)
         ),
+        headers,
       });
 
       // split request to segments
@@ -477,7 +486,7 @@ export default class SDK {
     };
   };
 
-  private requestOps = (ops?: RequestOps) => {
+  private requestOps = (ops?: RequestOps): RequestOps => {
     if (ops) {
       return {
         timeout: ops.timeout || this.ops.timeout,
@@ -522,6 +531,15 @@ export default class SDK {
       return provider;
     }
     return this.ops.mevProtectionProvider as string;
+  };
+
+  private determineHeaders = (
+    provider: string,
+    mevKickbackAddress?: string
+  ) => {
+    if (provider === RPC_PROPELLORHEADS && mevKickbackAddress) {
+      return { "X-Tx-Origin": mevKickbackAddress };
+    }
   };
 
   private populateChainIds(provider?: string) {

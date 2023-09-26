@@ -45,6 +45,7 @@ export function create({
   entryId,
   exitId,
   exitNodeReadIdentity,
+  headers,
 }: {
   crypto: {
     Envelope: typeof Envelope;
@@ -57,11 +58,13 @@ export function create({
   entryId: string;
   exitId: string;
   exitNodeReadIdentity: Identity;
+  headers?: Record<string, string>;
 }): Request {
   const payload = Payload.encodeReq({
     provider,
     clientId,
     req,
+    headers,
   });
   const data = utils.toUtf8Bytes(payload);
 
