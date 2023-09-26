@@ -10,24 +10,24 @@ exports.up = (pgm) => {
 
 function dropFunctionsAndTriggers(pgm) {
   pgm.dropTrigger("request_quotas", "monthly_req_usage");
-  pgm.dropTrigger("response_quotas", "monthly_req_usage");
+  pgm.dropTrigger("response_quotas", "monthly_resp_usage");
   pgm.dropTrigger("users", "init_monthly_usage");
 
-  pgm.dropFuction("process_monthly_usage");
-  pgm.dropFuction("process_initial_monthly_usage");
+  pgm.dropFunction("process_monthly_usage");
+  pgm.dropFunction("process_initial_monthly_usage");
 }
 
 function updateMonthlyQuotaUsages(pgm) {
-  pgm.renameColumn("monthly_quota_usages", "req_count", "req_segment_count");
-  pgm.renameColumn("monthly_quota_usages", "resp_count", "resp_segment_count");
-
   // initialize then set not null
   pgm.addColumns("monthly_quota_usages", {
-    req_count: { type: "integer" },
-    resp_count: { type: "integer" },
+    req_segment_count: { type: "integer" },
+    resp_segment_count: { type: "integer" },
   });
 
-  pgm.sql("UPDATE monthly_quota_usages SET (req_count, resp_count) = (0, 0)");
+  // reset all columns to have matching data
+  pgm.sql(
+    "UPDATE monthly_quota_usages SET (req_count, resp_count, req_segment_count, resp_segment_count) = (0, 0, 0, 0)"
+  );
 
   pgm.alterColumn("monthly_quota_usages", "req_count", {
     type: "integer",
