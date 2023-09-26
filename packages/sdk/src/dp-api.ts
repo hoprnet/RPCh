@@ -31,6 +31,7 @@ export type QuotaParams = {
   clientId: string;
   rpcMethod?: string;
   segmentCount: number;
+  lastSegmentLength?: number;
   type: "request" | "response";
 };
 
@@ -88,7 +89,7 @@ export function fetchNodes(
 
 export function fetchQuota(
   ops: NodeOps,
-  { clientId, segmentCount, rpcMethod, type }: QuotaParams
+  { clientId, segmentCount, rpcMethod, type, lastSegmentLength }: QuotaParams
 ): Promise<void> {
   const url = new URL(`/api/v1/quota/${type}`, ops.discoveryPlatformEndpoint);
   const headers = {
@@ -96,7 +97,12 @@ export function fetchQuota(
     "Content-Type": "application/json",
     "x-rpch-node": ops.nodeAccessToken,
   };
-  const body = JSON.stringify({ clientId, segmentCount, rpcMethod });
+  const body = JSON.stringify({
+    clientId,
+    segmentCount,
+    rpcMethod,
+    lastSegmentLength,
+  });
   return new Promise((pRes, pRej) => {
     fetch(url, { headers, method: "POST", body })
       .then((res) => {

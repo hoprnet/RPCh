@@ -239,17 +239,21 @@ async function completeSegmentsEntry(
 
   // inform DP non blocking
   setTimeout(() => {
+    const lastReqSeg = entry.segments.get(entry.count - 1)!;
     const quotaRequest: DPapi.QuotaParams = {
       clientId: resReq.req.clientId,
       rpcMethod: resReq.req.req.method,
       segmentCount: entry.count,
+      lastSegmentLength: lastReqSeg.body.length,
       type: "request",
     };
 
+    const lastRespSeg = segments[segments.length - 1]!;
     const quotaResponse: DPapi.QuotaParams = {
       clientId: resReq.req.clientId,
       rpcMethod: resReq.req.req.method,
       segmentCount: segments.length,
+      lastSegmentLength: lastRespSeg.body.length,
       type: "response",
     };
 
