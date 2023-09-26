@@ -100,6 +100,7 @@ T request_quotas (
     client_id (fk)
     (rpc_method)
     segment_count
+    (last_segment_length)
     created_at
     reported_by_id (fk)
 );
@@ -112,6 +113,7 @@ T response_quotas (
     client_id (fk)
     (rpc_method)
     segment_count
+    (last_segment_length)
     created_at
     reported_by_id character (fk)
 );
@@ -135,6 +137,8 @@ T monthly_quota_usages (
     started_at
     req_count
     resp_count
+    req_segment_count
+    resp_segment_count
 );
 >> has_one user
 >- populated by process_initial_monthly_usage()
