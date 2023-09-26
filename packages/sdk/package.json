@@ -1,6 +1,6 @@
 {
   "name": "@rpch/sdk",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "license": "LGPL-3.0",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",

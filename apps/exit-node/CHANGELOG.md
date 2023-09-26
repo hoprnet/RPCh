@@ -1,5 +1,16 @@
 # @rpch/exit-node
 
+## 0.6.0
+
+### Minor Changes
+
+- 26e5292: enhance segment and request counting as well as report segment sizes for future optimization
+
+### Patch Changes
+
+- Updated dependencies [26e5292]
+  - @rpch/sdk@0.10.0
+
 ## 0.5.0
 
 ### Minor Changes

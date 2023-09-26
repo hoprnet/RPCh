@@ -1,5 +1,11 @@
 # @rpch/discovery-platform
 
+## 0.8.0
+
+### Minor Changes
+
+- 26e5292: enhance segment and request counting as well as report segment sizes for future optimization
+
 ## 0.7.0
 
 ### Minor Changes
