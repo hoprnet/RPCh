@@ -1,5 +1,16 @@
 # @rpch/rpc-server
 
+## 0.6.0
+
+### Minor Changes
+
+- afe2ab0: Integrate MEV kickback for propellorheads
+
+### Patch Changes
+
+- Updated dependencies [afe2ab0]
+  - @rpch/sdk@0.11.0
+
 ## 0.5.0
 
 ### Minor Changes

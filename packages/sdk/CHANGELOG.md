@@ -1,5 +1,11 @@
 # @rpch/sdk
 
+## 0.11.0
+
+### Minor Changes
+
+- afe2ab0: Integrate MEV kickback for propellorheads
+
 ## 0.10.0
 
 ### Minor Changes
