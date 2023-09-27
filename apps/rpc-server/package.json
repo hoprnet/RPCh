@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@rpch/crypto-for-nodejs": "0.3.4",
-    "@rpch/sdk": "*",
+    "@rpch/sdk": "0.10.0",
     "leveldown": "^6.1.1",
     "levelup": "^5.1.1"
   }

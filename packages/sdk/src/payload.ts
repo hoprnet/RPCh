@@ -2,9 +2,10 @@ import LZString from "lz-string";
 import * as JRPC from "./jrpc";
 
 export type ReqPayload = {
-  provider: string;
   clientId: string;
+  provider: string;
   req: JRPC.Request;
+  headers?: Record<string, string>;
 };
 
 export type RespPayload = {
