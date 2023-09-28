@@ -2,7 +2,7 @@
 
 exports.up = (pgm) => {
   pgm.createTable("degen_sessions", {
-    sid: "id",
+    sid: { type: "varchar(255)", primaryKey: true },
     sess: { type: "json", notNull: true },
     expire: { type: "timestamp(6)", notNull: true },
   });
