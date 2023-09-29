@@ -25,8 +25,10 @@ exports.up = (pgm) => {
   createDefaultVouchers(pgm);
   updateExistingVouchers(pgm);
 
-  pgm.alterColumn("vouchers", {
-    package_id: { type: "uuid", references: "packages", notNull: true },
+  pgm.alterColumn("vouchers", "package_id", {
+    type: "uuid",
+    references: "packages",
+    notNull: true,
   });
 
   pgm.createIndex("vouchers", "package_id");
