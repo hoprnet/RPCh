@@ -121,14 +121,6 @@ T response_quotas (
 >> has_one exit_node_token
 -> triggers process_monthly_usage()
 
-T quota_bundles (
-    id (pk)
-    (segment_count)
-    (rpc_method_count)
-    (rpc_method)
-    timestamps
-);
-
 ###
 # aggregated quota
 
@@ -162,19 +154,23 @@ T packages (
     id (pk)
     name
     (desc)
-    billing_scheme_id (fk)
+    segment_count_per_month
+    (billing_scheme_id) (fk)
     (alternative_billing_scheme_id) (fk)
     timestamps
 );
 >> has_one (has_one_more) billing_scheme
+>> has_many vouchers
 
 T vouchers (
     id (pk)
+    package_id (fk)
     (name)
     code
     (valid_until)
     timestamps
 );
+>> has_one packages
 
 ###
 # usage resolutions
@@ -188,23 +184,7 @@ T users_packages (
 );
 >> many_to_many: users - packages
 
-# what volume does a voucher provide
-T vouchers_quota_bundles (
-    voucher_id (fk)
-    quota_bundle_id (fk)
-);
->> many_to_many: vouchers - quota_bundles
-
-# what volume does a package provide at what time does it become valid or obsolete
-T packages_quota_bundles (
-    package_id (fk)
-    quota_bundle_id (fk)
-    valid_from
-    valid_until
-);
->> many_to_many: packages - quota_bundles
-
-# does a user get free volumes from a voucher
+# what vouchers did a user already redeem
 T redeemed_vouchers (
     user_id (fk)
     voucher_id (fk)
