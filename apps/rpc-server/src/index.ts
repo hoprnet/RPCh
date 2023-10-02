@@ -155,9 +155,14 @@ function createServer(sdk: RPChSDK, ops: ServerOPS) {
       }
     }
 
-    req.on("data", async (data) => {
+    let body = "";
+    req.on("data", (data) => {
+      body += data;
+    });
+
+    req.on("end", () => {
       const params = extractParams(req.url, req.headers.host);
-      const result = parseBody(data.toString());
+      const result = parseBody(body);
       if (result.success) {
         log.info(
           "sending request",
@@ -171,12 +176,7 @@ function createServer(sdk: RPChSDK, ops: ServerOPS) {
           sendRequest(sdk, result.req, params, res);
         }
       } else {
-        log.info(
-          "Parse error:",
-          result.error,
-          "- during request:",
-          data.toString()
-        );
+        log.info("Parse error:", result.error, "- during request:", body);
         res.statusCode = 500;
         res.write(
           JSON.stringify({
