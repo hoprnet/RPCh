@@ -22,7 +22,7 @@ export const options = {
 export default function () {
   const URL =
     __ENV.RPC_SERVER_URL ||
-    "http://localhost:8080/?exit-provider=https://primary.gnosis-chain.rpc.hoprtech.net";
+    "http://localhost:8080/?exit-provider=https://gnosis-provider.rpch.tech";
 
   for (let i = 0; i < parsed.length; i++) {
     const parsedRequest = parsed[i];

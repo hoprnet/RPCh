@@ -65,7 +65,7 @@ const RPC_PROPELLORHEADS = "https://rpc.propellerheads.xyz/eth";
 const defaultOps: Ops = {
   discoveryPlatformEndpoint: "https://discovery.rpch.tech",
   timeout: 10e3,
-  provider: "https://primary.gnosis-chain.rpc.hoprtech.net",
+  provider: "https://gnosis-provider.rpch.tech",
   disableMevProtection: false,
   mevProtectionProvider: RPC_PROPELLORHEADS,
 };

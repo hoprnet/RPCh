@@ -25,7 +25,7 @@ export const options = {
 export default function () {
   const URL =
     __ENV.RPC_SERVER_URL ||
-    "http://localhost:8080/?exit-provider=https://primary.gnosis-chain.rpc.hoprtech.net";
+    "http://localhost:8080/?exit-provider=https://gnosis-provider.rpch.tech";
   const RPC_REQUEST =
     __ENV.RPC_REQUEST ||
     `{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":83}`;
