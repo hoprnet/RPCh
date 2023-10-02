@@ -21,7 +21,7 @@ import {
 import { createLogger } from "../../../utils";
 import { MetricManager } from "@rpch/common/build/internal/metric-manager";
 import * as middleware from "./middleware";
-import * as q from "./../../../query";
+import * as qNode from "./../../../node";
 
 import type { Secrets } from "./../../../secrets";
 
@@ -729,54 +729,49 @@ function getNodesZeroHopPairings(dbPool: Pool) {
     }
 
     const data = matchedData(req);
-    q.listZeroHopPairings(dbPool, data.amount, data.since)
+    qNode
+      .listZeroHopPairings(dbPool, data.amount, data.since)
       .then((qPairings) => {
-        if (qPairings.rowCount === 0) {
+        if (qPairings.length === 0) {
           // table is empty
           return res.status(204).end();
         }
 
         // collect pairings by entry node
-        const pairings = qPairings.rows.reduce<Map<string, Set<string>>>(
-          (acc, { entry_id, exit_id }) => {
-            const v = acc.get(entry_id);
+        const pairings = qPairings.reduce<Map<string, Set<string>>>(
+          (acc, { entryId, exitId }) => {
+            const v = acc.get(entryId);
             if (v) {
-              v.add(exit_id);
+              v.add(exitId);
               return acc;
             }
-            acc.set(entry_id, new Set([exit_id]));
+            acc.set(entryId, new Set([exitId]));
             return acc;
           },
           new Map()
         );
 
         // query entry and exit nodes
-        const qEntryNodes = q.listEntryNodes(dbPool, pairings.keys());
+        const qEntryNodes = qNode.listEntryNodes(dbPool, pairings.keys());
         const exitIds = Array.from(pairings.values()).reduce((acc, xIds) => {
           for (const xId of xIds) {
             acc.add(xId);
           }
           return acc;
         }, new Set());
-        const qExitNodes = q.listExitNodes(dbPool, exitIds);
+        const qExitNodes = qNode.listExitNodes(dbPool, exitIds);
 
         // wait for entry and exit nodes query results
         Promise.all([qEntryNodes, qExitNodes])
           .then(([qEntries, qExits]) => {
-            const matchedAt = qPairings.rows[0].created_at;
-            const rEntryNodes = qEntries.rows;
-            const rExitNodes = qExits.rows;
-            const entryNodes = rEntryNodes.map((e) => ({
-              id: e.id,
-              apiEndpoint: e.hoprd_api_endpoint,
-              accessToken: e.hoprd_api_token,
+            const matchedAt = qPairings[0].createdAt;
+            const entryNodes = qEntries.map((e) => ({
+              ...e,
               recommendedExits: Array.from(pairings.get(e.id)!),
             }));
-            const exitNodes = rExitNodes.map((x) => ({
-              id: x.id,
-              pubKey: x.exit_node_pub_key,
-            }));
-            return res.status(200).json({ entryNodes, exitNodes, matchedAt });
+            return res
+              .status(200)
+              .json({ entryNodes, exitNodes: qExits, matchedAt });
           })
           .catch((ex) => {
             log.error("Error during read registered_nodes queries", ex);

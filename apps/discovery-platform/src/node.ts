@@ -1,25 +1,30 @@
 import crypto from "crypto";
 import type { Pool } from "pg";
 
-export type DBnode = {
-  id: string;
-  is_exit_node: boolean;
-  chain_id: number;
-  hoprd_api_endpoint: string;
-  hoprd_api_token: string;
-  exit_node_pub_key?: string;
-  native_address: string;
-  created_at: Date;
-  updated_at?: Date;
+export type Pairing = {
+  entryId: string;
+  exitId: string;
+  createdAt: Date;
 };
 
-export type DBtoken = {
+export type EntryNode = {
   id: string;
-  exit_id: string;
-  access_token: string;
-  invalidated_at?: Date;
-  created_at: Date;
-  updated_at?: Date;
+  hoprdApiEndpoint: string;
+  hoprdApiToken: string;
+};
+
+export type ExitNode = {
+  id: string;
+  pubKey: string;
+};
+
+export type Token = {
+  id: string;
+  exitId: string;
+  accessToken: string;
+  invalidatedAt?: Date;
+  createdAt: Date;
+  updatedAt?: Date;
 };
 
 export type NodeAttrs = {
@@ -42,6 +47,46 @@ export type Node = {
   nativeAddress: string;
   createdAt: Date;
   updatedAt?: Date;
+};
+
+/*
+type DBnode = {
+  id: string;
+  is_exit_node: boolean;
+  chain_id: number;
+  hoprd_api_endpoint: string;
+  hoprd_api_token: string;
+  exit_node_pub_key?: string;
+  native_address: string;
+  created_at: Date;
+  updated_at?: Date;
+};
+
+type DBtoken = {
+  id: string;
+  exit_id: string;
+  access_token: string;
+  invalidated_at?: Date;
+  created_at: Date;
+  updated_at?: Date;
+};
+*/
+
+type DBPairing = {
+  entry_id: string;
+  exit_id: string;
+  created_at: Date;
+};
+
+type DBEntryNode = {
+  id: string;
+  hoprd_api_endpoint: string;
+  hoprd_api_token: string;
+};
+
+type DBExitNode = {
+  id: string;
+  exit_node_pub_key: string;
 };
 
 export function createNode(dbPool: Pool, node: Node) {
@@ -94,6 +139,48 @@ export function createToken(
     );
 }
 
+export function listEntryNodes(
+  dbPool: Pool,
+  nodeIds: Iterable<string>
+): Promise<EntryNode[]> {
+  const qIds = Array.from(nodeIds)
+    .map((i) => `'${i}'`)
+    .join(",");
+  const q = `select id, hoprd_api_endpoint, hoprd_api_token from registered_nodes where id in (${qIds})`;
+  return dbPool.query(q).then((r) => r.rows.map(entryNodeFromDB));
+}
+
+export function listExitNodes(
+  dbPool: Pool,
+  nodeIds: Iterable<string>
+): Promise<ExitNode[]> {
+  const qIds = Array.from(nodeIds)
+    .map((i) => `'${i}'`)
+    .join(",");
+  const q = `select id, exit_node_pub_key from registered_nodes where id in (${qIds})`;
+  return dbPool.query(q).then((r) => r.rows.map(exitNodeFromDB));
+}
+
+export function listZeroHopPairings(
+  dbPool: Pool,
+  amount: number,
+  since?: string
+): Promise<Pairing[]> {
+  const qSelect = "select * from zero_hop_pairings";
+  const qOrder = `order by random() limit ${amount}`;
+  if (since) {
+    const q = [qSelect, "where created_at > $1", qOrder].join(" ");
+    // postgres time resolution is higher than js
+    // need to add 1 to timestamp to avoid rounding errors confusion when comparing timestamps
+    // this can cause other confusion but will be fine for our use case
+    const dSince = new Date(since);
+    const date = new Date(dSince.getTime() + 1);
+    return dbPool.query(q, [date]).then((r) => r.rows.map(pairingFromDB));
+  }
+  const q = [qSelect, qOrder].join(" ");
+  return dbPool.query(q).then((r) => r.rows.map(pairingFromDB));
+}
+
 export function listIdsByAccessToken(
   dbPool: Pool,
   accessToken: string
@@ -106,6 +193,29 @@ export function listIdsByAccessToken(
   return dbPool
     .query(q, [accessToken])
     .then((q) => q.rows.map(({ exit_id }) => ({ exitId: exit_id })));
+}
+
+function entryNodeFromDB(db: DBEntryNode): EntryNode {
+  return {
+    id: db.id,
+    hoprdApiEndpoint: db.hoprd_api_endpoint,
+    hoprdApiToken: db.hoprd_api_token,
+  };
+}
+
+function exitNodeFromDB(db: DBExitNode): ExitNode {
+  return {
+    id: db.id,
+    pubKey: db.exit_node_pub_key,
+  };
+}
+
+function pairingFromDB(db: DBPairing): Pairing {
+  return {
+    entryId: db.entry_id,
+    exitId: db.exit_id,
+    createdAt: db.created_at,
+  };
 }
 
 /*
