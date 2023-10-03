@@ -20,17 +20,13 @@ exports.up = (pgm) => {
       notNull: true,
       comment: "Payload of the webhook event",
     },
-    received_at: {
+    created_at: {
       type: "timestamp",
       notNull: true,
       default: pgm.func("current_timestamp"),
       comment: "When the webhook was received",
     },
   });
-
-  // Optionally, add indexes for commonly queried fields
-  pgm.createIndex("webhook_logs", "event_type");
-  pgm.createIndex("webhook_logs", "received_at");
 };
 
 exports.down = (pgm) => {

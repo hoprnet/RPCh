@@ -191,3 +191,11 @@ T redeemed_vouchers (
     createdAt
 );
 >> many_to_many: users - vouchers
+
+# logs of the webhooks received
+T webhook_logs (
+    id (pk)
+    event_type (example: subscription/created)
+    event_data (JSONB of entire payload)
+    created_at
+)
