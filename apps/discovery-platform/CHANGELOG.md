@@ -1,5 +1,12 @@
 # @rpch/discovery-platform
 
+## 0.9.0
+
+### Minor Changes
+
+- 3c45d38: Refactor packages and voucher handling
+  Create default packages and vouchers
+
 ## 0.8.0
 
 ### Minor Changes
