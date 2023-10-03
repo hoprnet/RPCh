@@ -1,5 +1,11 @@
 # @rpch/rpc-server
 
+## 0.6.1
+
+### Patch Changes
+
+- cedc0e7: Allow huge incoming messages at RPC server level, not SDK level though
+
 ## 0.6.0
 
 ### Minor Changes
