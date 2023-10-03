@@ -1,5 +1,11 @@
 # @rpch/discovery-platform
 
+## 0.10.0
+
+### Minor Changes
+
+- Update tag for webhooks table
+
 ## 0.9.0
 
 ### Minor Changes
