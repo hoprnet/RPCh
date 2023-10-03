@@ -1,6 +1,7 @@
 import * as q from "./query";
 import * as PeersCache from "./peers-cache";
 import { createLogger, shortPeerId } from "./utils";
+import * as NodeAPI from "./node-api";
 
 import type { Pool } from "pg";
 import type { RegisteredNode } from "./query";
@@ -26,7 +27,7 @@ async function run(dbPool: Pool) {
   Promise.all([pEntryNodes, pExitNodes])
     .then(([qEntries, qExits]) => {
       runZeroHops(dbPool, qEntries.rows, qExits.rows);
-      //runOneHops(entryNodes, exitNodes);
+      runOneHops(dbPool, qEntries.rows, qExits.rows);
     })
     .catch((ex) => {
       log.error("Error querying database", ex);
@@ -120,4 +121,22 @@ function runZeroHops(
       log.error("Error during zero hop check", err);
       reschedule(dbPool);
     });
+}
+
+function runOneHops(
+  dbPool: Pool,
+  entryNodes: RegisteredNode[],
+  exitNodes: RegisteredNode[]
+) {
+  const peersCache: PeersCache.PeersCache = new Map();
+
+  // run everything non blocking
+  const pPairs = entryNodes.map((entry) => {
+    return NodeAPI.getChannels(entry);
+  });
+  Promise.all(pPairs).then((res) =>
+    res.map(({ incoming, outgoing }) =>
+      console.log("incoming", incoming, "outgoing", outgoing)
+    )
+  );
 }
