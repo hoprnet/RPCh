@@ -1,5 +1,7 @@
 # @rpch/discovery-platform
 
+## 0.10.0
+
 ### Minor Changes
 
 - Create webhook logs table
@@ -8,7 +10,8 @@
 
 ### Minor Changes
 
-  Create default packages and vouchers
+- Refactor packages and voucher handling
+- Create default packages and vouchers
 
 ## 0.8.0
 
