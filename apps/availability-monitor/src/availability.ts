@@ -130,7 +130,7 @@ async function runOneHops(
   }
   const channels = channelsMap(respCh.all);
   const entryPeers = await peersMap(peersCache, entryNodes);
-  const peerChannels = filterChannels(channels, entryPeers);
+  const peerChannels = filterChannels(entryPeers, channels);
   const exitPeers = await peersMap(peersCache, exitNodes);
 
   const peersExits = revertMap(exitPeers);
@@ -231,13 +231,15 @@ function logIds(pairs: q.Pair[]): string {
 }
 
 function filterChannels(
-  channels: Map<string, Set<string>>,
-  peers: Map<string, Set<string>>
+  peers: Map<string, Set<string>>,
+  channels: Map<string, Set<string>>
 ): Map<string, Set<string>> {
-  return Array.from(channels.entries()).reduce((acc, [id, chans]) => {
-    const ps = peers.get(id)!;
-    const vals = [...chans].filter((x) => ps.has(x));
-    acc.set(id, new Set(vals));
+  return Array.from(peers.entries()).reduce((acc, [id, prs]) => {
+    const chans = channels.get(id);
+    if (chans) {
+      const vals = [...prs].filter((x) => chans.has(x));
+      acc.set(id, new Set(vals));
+    }
     return acc;
   }, new Map());
 }
