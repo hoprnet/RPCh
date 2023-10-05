@@ -129,35 +129,38 @@ async function runOneHops(
     return;
   }
   const channels = channelsMap(respCh.all);
-  const entryPeers = peersMap(peersCache, entryNodes);
+  const entryPeers = await peersMap(peersCache, entryNodes);
   const peerChannels = filterChannels(channels, entryPeers);
-  const exitPeers = peersMap(peersCache, exitNodes);
+  const exitPeers = await peersMap(peersCache, exitNodes);
 
   const peersExits = revertMap(exitPeers);
 
-  const pairsMap = Array.from(peerChannels.entries()).reduce(
-    (acc, [entryId, chPs]) => {
-      chPs.forEach((p) => {
-        const exits = peersExits.get(p);
-        if (exits) {
-          if (acc.has(entryId)) {
-            acc.set(entryId, new Set([...acc.get(entryId), ...exits]));
-          } else {
-            acc.set(entryId, exits);
-          }
+  const pairsMap = Array.from(peerChannels.entries()).reduce<
+    Map<string, Set<string>>
+  >((acc, [entryId, chPs]) => {
+    [...chPs].forEach((p) => {
+      const exits = peersExits.get(p);
+      if (exits) {
+        if (acc.has(entryId)) {
+          const vals = acc.get(entryId)!;
+          acc.set(entryId, new Set([...vals, ...exits]));
+        } else {
+          acc.set(entryId, exits);
         }
-        return acc;
-      });
-    },
-    new Map()
-  );
-
-  const pairIds = Array.from(pairsMap).reduce((acc, [entryId, exitIds]) => {
-    exitIds.forEach((exitId) => {
-      acc.push({ entryId, exitId });
+      }
     });
     return acc;
-  }, []);
+  }, new Map());
+
+  const pairIds = Array.from(pairsMap).reduce<q.Pair[]>(
+    (acc, [entryId, exitIds]) => {
+      exitIds.forEach((exitId) => {
+        acc.push({ entryId, exitId });
+      });
+      return acc;
+    },
+    []
+  );
 
   const logStr = logIds(pairIds);
   // now clear table and insert gathered values
@@ -170,20 +173,24 @@ function randomEl<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function peersMap(peersCache, nodes): Map<string, Set<string>> {
-  const raw = nodes
-    .map(async (node) => {
-      const peers = await PeersCache.fetchPeers(peersCache, node).catch((ex) =>
-        log.error("Error fetching peers", err, "for node", node.id)
-      );
-      if (peers) {
-        const ids = peers.map(({ peerId }) => peerId);
-        return [node.id, new Set(ids)];
-      }
-      return null;
-    })
-    .filter((x) => !!x);
-  return new Map(raw);
+async function peersMap(
+  peersCache: PeersCache.PeersCache,
+  nodes: q.RegisteredNode[]
+): Promise<Map<string, Set<string>>> {
+  const pRaw = nodes.map(async (node) => {
+    const peers = await PeersCache.fetchPeers(peersCache, node).catch((err) =>
+      log.error("Error fetching peers", err, "for node", node.id)
+    );
+    if (peers) {
+      const ids = Array.from(peers.values()).map(({ peerId }) => peerId);
+      return [node.id, new Set(ids)];
+    }
+    return null;
+  });
+
+  const raw = await Promise.all(pRaw);
+  const rawValues = raw.filter((val) => !!val) as [string, Set<string>][];
+  return new Map(rawValues);
 }
 
 function channelsMap(channels: NodeAPI.Channel[]): Map<string, Set<string>> {
@@ -221,4 +228,16 @@ function logIds(pairs: q.Pair[]): string {
       ({ entryId, exitId }) => `${shortPeerId(entryId)}>${shortPeerId(exitId)}`
     )
     .join(",");
+}
+
+function filterChannels(
+  channels: Map<string, Set<string>>,
+  peers: Map<string, Set<string>>
+): Map<string, Set<string>> {
+  return Array.from(channels.entries()).reduce((acc, [id, chans]) => {
+    const ps = peers.get(id)!;
+    const vals = [...chans].filter((x) => ps.has(x));
+    acc.set(id, new Set(vals));
+    return acc;
+  }, new Map());
 }
