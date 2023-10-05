@@ -27,7 +27,7 @@ async function run(dbPool: Pool) {
   Promise.all([pEntryNodes, pExitNodes])
     .then(async ([qEntries, qExits]) => {
       const peersCache: PeersCache.PeersCache = new Map();
-      await runZeroHops(dbPool, peersCache, qEntries.rows, qExits.rows);
+      // await runZeroHops(dbPool, peersCache, qEntries.rows, qExits.rows);
       await runOneHops(dbPool, peersCache, qEntries.rows, qExits.rows);
     })
     .catch((ex) => {
@@ -130,12 +130,12 @@ async function runOneHops(
   }
   const channels = channelsMap(respCh.all);
   const entryPeers = await peersMap(peersCache, entryNodes);
-  const peerChannels = filterChannels(entryPeers, channels);
+  const entryPeersChannels = filterChannels(entryPeers, channels);
   const exitPeers = await peersMap(peersCache, exitNodes);
-
   const peersExits = revertMap(exitPeers);
 
-  const pairsMap = Array.from(peerChannels.entries()).reduce<
+  // determine exits reachable by channel peers
+  const pairsMap = Array.from(entryPeersChannels.entries()).reduce<
     Map<string, Set<string>>
   >((acc, [entryId, chPs]) => {
     [...chPs].forEach((p) => {
@@ -152,6 +152,7 @@ async function runOneHops(
     return acc;
   }, new Map());
 
+  // expand to entryId -> exitId routes struct
   const pairIds = Array.from(pairsMap).reduce<q.Pair[]>(
     (acc, [entryId, exitIds]) => {
       exitIds.forEach((exitId) => {
@@ -162,11 +163,10 @@ async function runOneHops(
     []
   );
 
-  const logStr = logIds(pairIds);
-  // now clear table and insert gathered values
-  q.writeOneHopPairings(dbPool, pairIds)
-    .then(() => log.verbose("Updated db with pairIds", logStr))
-    .catch((e) => log.error("Error updating db", e, "with pairIds", logStr));
+  // clear table and insert gathered values
+  q.writeOneHopPairings(dbPool, pairIds).then(() =>
+    log.verbose("Updated db with pairIds", logIds(pairIds))
+  );
 }
 
 function randomEl<T>(arr: T[]): T {
