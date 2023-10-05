@@ -19,6 +19,25 @@ export type Peers = {
   announced: Peer[];
 };
 
+export type Channel = {
+  channelId: string;
+  sourceAddress: string;
+  destinationAddress: string;
+  sourcePeerId: string;
+  destinationPeerId: string;
+  balance: string;
+  status: string;
+  ticketIndex: string;
+  channelEpoch: string;
+  closureTime: string;
+};
+
+export type Channels = {
+  all: Channel[];
+  incoming: [];
+  outgoing: [];
+};
+
 export function getPeers({
   hoprd_api_endpoint,
   hoprd_api_token,
@@ -44,6 +63,7 @@ export function getChannels({
   hoprd_api_token: string;
 }): Promise<any> {
   const url = new URL("/api/v3/channels", hoprd_api_endpoint);
+  url.searchParams.set("fullTopology", "true");
   const headers = {
     Accept: "application/json",
     "Content-Type": "application/json",

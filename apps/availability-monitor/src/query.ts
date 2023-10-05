@@ -12,7 +12,7 @@ export type RegisteredNode = {
   updated_at: Date;
 };
 
-type Pair = {
+export type Pair = {
   entryId: string;
   exitId: string;
 };
@@ -23,16 +23,29 @@ export function entryNodes(dbPool: Pool): Promise<QueryResult<RegisteredNode>> {
   );
 }
 
-export async function exitNodes(
-  dbPool: Pool
-): Promise<QueryResult<RegisteredNode>> {
+export function exitNodes(dbPool: Pool): Promise<QueryResult<RegisteredNode>> {
   return dbPool.query(
     "select * from registered_nodes where is_exit_node = true"
   );
 }
 
-export async function writeZeroHopPairings(
+export function writeZeroHopPairings(
   dbPool: Pool,
+  pairings: Pair[]
+): Promise<QueryResult<any>> {
+  return writePairings(dbPool, "zero_hop_pairings", pairings);
+}
+
+export function writeOneHopPairings(
+  dbPool: Pool,
+  pairings: Pair[]
+): Promise<QueryResult<any>> {
+  return writePairings(dbPool, "one_hop_pairings", pairings);
+}
+
+function writePairings(
+  dbPool: Pool,
+  table: string,
   pairings: Pair[]
 ): Promise<QueryResult<any>> {
   return new Promise((resolve, reject) => {
@@ -41,10 +54,10 @@ export async function writeZeroHopPairings(
       .then(async (client) => {
         try {
           await client.query("begin");
-          await client.query("delete from zero_hop_pairings");
+          await client.query(`delete from ${table}`);
           const inserts = pairings.map(
             ({ entryId, exitId }) =>
-              `insert into zero_hop_pairings(entry_id, exit_id) values ('${entryId}', '${exitId}');`
+              `insert into ${table} (entry_id, exit_id) values ('${entryId}', '${exitId}');`
           );
           inserts.forEach(async (i) => await client.query(i));
           resolve(client.query("commit"));

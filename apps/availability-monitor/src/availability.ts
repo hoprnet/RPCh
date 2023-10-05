@@ -25,14 +25,15 @@ async function run(dbPool: Pool) {
   const pEntryNodes = q.entryNodes(dbPool);
   const pExitNodes = q.exitNodes(dbPool);
   Promise.all([pEntryNodes, pExitNodes])
-    .then(([qEntries, qExits]) => {
-      runZeroHops(dbPool, qEntries.rows, qExits.rows);
-      runOneHops(dbPool, qEntries.rows, qExits.rows);
+    .then(async ([qEntries, qExits]) => {
+      const peersCache: PeersCache.PeersCache = new Map();
+      await runZeroHops(dbPool, peersCache, qEntries.rows, qExits.rows);
+      await runOneHops(dbPool, peersCache, qEntries.rows, qExits.rows);
     })
     .catch((ex) => {
-      log.error("Error querying database", ex);
-      reschedule(dbPool);
-    });
+      log.error("Error during determining routes", ex);
+    })
+    .finally(() => reschedule(dbPool));
 }
 
 function reschedule(dbPool: Pool) {
@@ -45,12 +46,10 @@ function reschedule(dbPool: Pool) {
 
 function runZeroHops(
   dbPool: Pool,
+  peersCache: PeersCache.PeersCache,
   entryNodes: RegisteredNode[],
   exitNodes: RegisteredNode[]
 ) {
-  const peersCache: PeersCache.PeersCache = new Map();
-
-  // run everything non blocking
   const pPairs = entryNodes.map((entry) => {
     return PeersCache.fetchPeers(peersCache, entry).then((entryPeers) => {
       const viableExits = exitNodes.filter((x) => entryPeers.has(x.id));
@@ -70,7 +69,7 @@ function runZeroHops(
   const allSettled = pPairs.map((p) =>
     p.then((pExits) => Promise.allSettled(pExits))
   );
-  Promise.allSettled(allSettled)
+  return Promise.allSettled(allSettled)
     .then((res) => {
       const pairings = res.reduce<Pair[]>((outerAcc, outerPrm) => {
         if ("value" in outerPrm) {
@@ -103,12 +102,6 @@ function runZeroHops(
         exitId: exit.id,
       }));
 
-      const logIds = pairIds
-        .map(
-          ({ entryId, exitId }) =>
-            `${shortPeerId(entryId)}>${shortPeerId(exitId)}`
-        )
-        .join(",");
       // now clear table and insert gathered values
       q.writeZeroHopPairings(dbPool, pairIds)
         .then(() => log.verbose("Updated db with pairIds", logIds))
@@ -119,24 +112,113 @@ function runZeroHops(
     })
     .catch((err) => {
       log.error("Error during zero hop check", err);
-      reschedule(dbPool);
     });
 }
 
-function runOneHops(
+async function runOneHops(
   dbPool: Pool,
+  peersCache: PeersCache.PeersCache,
   entryNodes: RegisteredNode[],
   exitNodes: RegisteredNode[]
 ) {
-  const peersCache: PeersCache.PeersCache = new Map();
-
-  // run everything non blocking
-  const pPairs = entryNodes.map((entry) => {
-    return NodeAPI.getChannels(entry);
-  });
-  Promise.all(pPairs).then((res) =>
-    res.map(({ incoming, outgoing }) =>
-      console.log("incoming", incoming, "outgoing", outgoing)
-    )
+  const entryNode = randomEl(entryNodes);
+  const respCh = await NodeAPI.getChannels(entryNode).catch((err) =>
+    log.error("Error getting channels", err)
   );
+  if (!respCh) {
+    return;
+  }
+  const channels = channelsMap(respCh.all);
+  const entryPeers = peersMap(peersCache, entryNodes);
+  const peerChannels = filterChannels(channels, entryPeers);
+  const exitPeers = peersMap(peersCache, exitNodes);
+
+  const peersExits = revertMap(exitPeers);
+
+  const pairsMap = Array.from(peerChannels.entries()).reduce(
+    (acc, [entryId, chPs]) => {
+      chPs.forEach((p) => {
+        const exits = peersExits.get(p);
+        if (exits) {
+          if (acc.has(entryId)) {
+            acc.set(entryId, new Set([...acc.get(entryId), ...exits]));
+          } else {
+            acc.set(entryId, exits);
+          }
+        }
+        return acc;
+      });
+    },
+    new Map()
+  );
+
+  const pairIds = Array.from(pairsMap).reduce((acc, [entryId, exitIds]) => {
+    exitIds.forEach((exitId) => {
+      acc.push({ entryId, exitId });
+    });
+    return acc;
+  }, []);
+
+  const logStr = logIds(pairIds);
+  // now clear table and insert gathered values
+  q.writeOneHopPairings(dbPool, pairIds)
+    .then(() => log.verbose("Updated db with pairIds", logStr))
+    .catch((e) => log.error("Error updating db", e, "with pairIds", logStr));
+}
+
+function randomEl<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function peersMap(peersCache, nodes): Map<string, Set<string>> {
+  const raw = nodes
+    .map(async (node) => {
+      const peers = await PeersCache.fetchPeers(peersCache, node).catch((ex) =>
+        log.error("Error fetching peers", err, "for node", node.id)
+      );
+      if (peers) {
+        const ids = peers.map(({ peerId }) => peerId);
+        return [node.id, new Set(ids)];
+      }
+      return null;
+    })
+    .filter((x) => !!x);
+  return new Map(raw);
+}
+
+function channelsMap(channels: NodeAPI.Channel[]): Map<string, Set<string>> {
+  return channels.reduce((acc, { sourcePeerId, destinationPeerId }) => {
+    if (acc.has(sourcePeerId)) {
+      acc.get(sourcePeerId).add(destinationPeerId);
+    } else {
+      acc.set(sourcePeerId, new Set([destinationPeerId]));
+    }
+    if (acc.has(destinationPeerId)) {
+      acc.get(destinationPeerId).add(sourcePeerId);
+    } else {
+      acc.set(destinationPeerId, new Set([sourcePeerId]));
+    }
+    return acc;
+  }, new Map());
+}
+
+function revertMap<K, V>(map: Map<K, Set<V>>): Map<V, Set<K>> {
+  return Array.from(map.entries()).reduce((acc, [id, vals]) => {
+    vals.forEach((v) => {
+      if (acc.has(v)) {
+        acc.get(v).add(id);
+      } else {
+        acc.set(v, new Set([id]));
+      }
+    });
+    return acc;
+  }, new Map());
+}
+
+function logIds(pairs: q.Pair[]): string {
+  return pairs
+    .map(
+      ({ entryId, exitId }) => `${shortPeerId(entryId)}>${shortPeerId(exitId)}`
+    )
+    .join(",");
 }
