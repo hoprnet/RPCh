@@ -1,5 +1,11 @@
 # @rpch/discovery-platform
 
+## 0.10.1
+
+### Patch Changes
+
+- 84bef2e: create boomfi associatins table
+
 ## 0.10.0
 
 ### Minor Changes

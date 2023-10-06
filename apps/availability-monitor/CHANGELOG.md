@@ -1,5 +1,16 @@
 # @rpch/availability-monitor
 
+## 0.5.0
+
+### Minor Changes
+
+- ab541f9: Gather one hops alongside zero hops
+
+### Patch Changes
+
+- Updated dependencies [84bef2e]
+  - @rpch/discovery-platform@0.10.1
+
 ## 0.4.0
 
 ### Minor Changes
