@@ -51,12 +51,10 @@ export function fetchNodes(
   amount: number,
   since: Date
 ): Promise<Nodes> {
-  const p = ops.forceZeroHop
-    ? "/api/v1/nodes/zero_hop_pairings"
-    : "/api/v1/nodes/one_hop_pairings";
-  const url = new URL(p, ops.discoveryPlatformEndpoint);
+  const url = new URL("/api/v1/nodes/pairings", ops.discoveryPlatformEndpoint);
   url.searchParams.set("amount", `${amount}`);
   url.searchParams.set("since", since.toISOString());
+  url.searchParams.set("force_zero_hop", `${ops.forceZeroHop}`);
   const headers = {
     Accept: "application/json",
     "Content-Type": "application/json",
