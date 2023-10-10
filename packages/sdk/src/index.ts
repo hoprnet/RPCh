@@ -37,6 +37,8 @@ export * as SegmentCache from "./segment-cache";
  * @param disableMevProtection - disable provider replacement on transaction requests
  * @param mevProtectionProvider - target MEV Protection provider RPC,
  *                                will send transactions through this provider
+ * @param mevKickbackAddress - provide this URL for receiving kickback share to a different address than the tx origin
+ * @param forceZeroHop - disable routing protection
  */
 export type Ops = {
   readonly discoveryPlatformEndpoint?: string;
@@ -45,6 +47,7 @@ export type Ops = {
   readonly disableMevProtection?: boolean;
   readonly mevProtectionProvider?: string;
   readonly mevKickbackAddress?: string;
+  readonly forceZeroHop?: boolean;
 };
 
 /**
@@ -107,6 +110,7 @@ export default class SDK {
     this.nodesColl = new NodesCollector(
       this.ops.discoveryPlatformEndpoint as string,
       this.clientId,
+      !!this.ops.forceZeroHop,
       ApplicationTag,
       this.onMessages
     );
@@ -244,6 +248,7 @@ export default class SDK {
       {
         apiEndpoint: entryNode.apiEndpoint,
         accessToken: entryNode.accessToken,
+        forceZeroHop: !!this.ops.forceZeroHop,
       },
       {
         recipient: request.exitId,
@@ -352,6 +357,7 @@ export default class SDK {
       {
         apiEndpoint: entryNode.apiEndpoint,
         accessToken: entryNode.accessToken,
+        forceZeroHop: !!this.ops.forceZeroHop,
       },
       {
         recipient: request.exitId,

@@ -14,6 +14,7 @@ export const NoMoreNodes = "no more nodes";
 export type ClientOps = {
   discoveryPlatformEndpoint: string;
   clientId: string;
+  forceZeroHop: boolean;
 };
 
 export type NodeOps = {
@@ -50,10 +51,10 @@ export function fetchNodes(
   amount: number,
   since: Date
 ): Promise<Nodes> {
-  const url = new URL(
-    "/api/v1/nodes/zero_hop_pairings",
-    ops.discoveryPlatformEndpoint
-  );
+  const p = ops.forceZeroHop
+    ? "/api/v1/nodes/zero_hop_pairings"
+    : "/api/v1/nodes/one_hop_pairings";
+  const url = new URL(p, ops.discoveryPlatformEndpoint);
   url.searchParams.set("amount", `${amount}`);
   url.searchParams.set("since", since.toISOString());
   const headers = {
