@@ -86,12 +86,17 @@ function sendSkipRPCh(
   }
   ProviderAPI.fetchRPC(provider, req)
     .then((resp: JRPC.Response) => {
-      log.verbose("receiving response", JSON.stringify(resp));
+      log.verbose(
+        "receiving response",
+        JSON.stringify(resp),
+        "to request",
+        JSON.stringify(req)
+      );
       res.statusCode = 200;
       res.write(JSON.stringify(resp));
     })
     .catch((err) => {
-      log.error("Error sending request", err);
+      log.error("Error sending request", err, "request:", JSON.stringify(req));
       res.statusCode = 500;
     })
     .finally(() => res.end());
@@ -106,12 +111,17 @@ function sendRequest(
   sdk
     .send(req, params)
     .then((resp: JRPC.Response) => {
-      log.verbose("receiving response", JSON.stringify(resp));
+      log.verbose(
+        "receiving response",
+        JSON.stringify(resp),
+        "to request",
+        JSON.stringify(req)
+      );
       res.statusCode = 200;
       res.write(JSON.stringify(resp));
     })
     .catch((err: any) => {
-      log.error("Error sending request", err);
+      log.error("Error sending request", err, "request:", JSON.stringify(req));
       res.statusCode = 500;
       res.write(
         JSON.stringify({
