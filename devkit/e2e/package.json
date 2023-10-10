@@ -16,7 +16,7 @@
     "@rpch/configs-eslint": "*",
     "@rpch/configs-prettier": "*",
     "@rpch/configs-jest": "*",
-    "@rpch/ethers": "0.3.12",
+    "@rpch/ethers": "0.3.13",
     "@rpch/common": "0.4.0",
     "@rpch/crypto-for-nodejs": "0.3.4"
   }

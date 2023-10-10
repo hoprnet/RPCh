@@ -1,5 +1,11 @@
 # @rpch/sdk
 
+## 1.0.0
+
+### Major Changes
+
+- 0d4c37e: Implement one hop by default and hide zero hop behind feature flag
+
 ## 0.11.0
 
 ### Minor Changes

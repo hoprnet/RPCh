@@ -1,5 +1,11 @@
 # @rpch/discovery-platform
 
+## 0.11.0
+
+### Minor Changes
+
+- 0d4c37e: Change hop pairing routes endpoint to default one hop and allow zero hop
+
 ## 0.10.1
 
 ### Patch Changes

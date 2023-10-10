@@ -1,5 +1,16 @@
 # @rpch/exit-node
 
+## 0.8.0
+
+### Minor Changes
+
+- 0d4c37e: enable one hop in exit node by default
+
+### Patch Changes
+
+- Updated dependencies [0d4c37e]
+  - @rpch/sdk@1.0.0
+
 ## 0.7.0
 
 ### Minor Changes

@@ -1,5 +1,13 @@
 # @rpch/rpc-server
 
+## 0.6.2
+
+### Patch Changes
+
+- 0d4c37e: allow zero hop params in rpc-server
+- Updated dependencies [0d4c37e]
+  - @rpch/sdk@1.0.0
+
 ## 0.6.1
 
 ### Patch Changes

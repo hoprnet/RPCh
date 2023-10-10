@@ -1,6 +1,6 @@
 {
   "name": "@rpch/ethereum-provider",
-  "version": "0.3.12",
+  "version": "0.3.13",
   "license": "LGPL-3.0",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@rpch/common": "0.4.0",
-    "@rpch/sdk": "0.11.0",
+    "@rpch/sdk": "1.0.0",
     "ethereum-provider": "^0.7.7",
     "events": "^3.3.0"
   },
