@@ -97,7 +97,8 @@
         "SKIP_RPCH",
         "DISABLE_MEV_PROTECTION",
         "MEV_PROTECTION_PROVIDER",
-        "MEV_KICKBACK_ADDRESS"
+        "MEV_KICKBACK_ADDRESS",
+        "FORCE_ZERO_HOP"
       ]
     },
     "@rpch/availability-monitor#build": {
