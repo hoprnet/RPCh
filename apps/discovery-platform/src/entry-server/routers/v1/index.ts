@@ -67,11 +67,12 @@ export const v1Router = (ops: {
   });
 
   router.get(
-    "/nodes/zero_hop_pairings",
+    "/nodes/pairings",
     middleware.clientAuthorized(ops.dbPool),
     query("amount").default(10).isInt({ min: 1, max: 100 }),
     query("since").optional().isISO8601(),
-    getNodesZeroHopPairings(ops.dbPool)
+    query("force_zero_hop").optional().toBoolean(),
+    getNodesPairings(ops.dbPool)
   );
 
   router.post(
@@ -721,7 +722,7 @@ export const v1Router = (ops: {
   return router;
 };
 
-function getNodesZeroHopPairings(dbPool: Pool) {
+function getNodesPairings(dbPool: Pool) {
   return async function (req: Request, res: Response) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -729,8 +730,9 @@ function getNodesZeroHopPairings(dbPool: Pool) {
     }
 
     const data = matchedData(req);
+    const forceZeroHop = !!data.forceZeroHop;
     qNode
-      .listZeroHopPairings(dbPool, data.amount, data.since)
+      .listPairings(dbPool, data.amount, data.since, forceZeroHop)
       .then((qPairings) => {
         if (qPairings.length === 0) {
           // table is empty
@@ -780,7 +782,12 @@ function getNodesZeroHopPairings(dbPool: Pool) {
           });
       })
       .catch((ex) => {
-        log.error("Error during read zero_hop_pairings query", ex);
+        log.error(
+          `Error during read ${
+            forceZeroHop ? "zero" : "one"
+          }_hop_pairings query`,
+          ex
+        );
         const reason = "Error querying database";
         return res.status(500).json({ reason });
       });
