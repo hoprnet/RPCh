@@ -16,7 +16,7 @@ export function connectWS(conn: ConnInfo): WebSocket {
 }
 
 export function sendMessage(
-  conn: ConnInfo,
+  conn: ConnInfo & { forceZeroHop: boolean },
   {
     recipient,
     tag,
@@ -29,12 +29,17 @@ export function sendMessage(
     "Content-Type": "application/json",
     "x-auth-token": conn.accessToken,
   };
-  const body = JSON.stringify({
+  const payload: Record<string, any> = {
     body: message,
-    path: [],
     peerId: recipient,
     tag,
-  });
+  };
+  if (conn.forceZeroHop) {
+    payload.path = [];
+  } else {
+    payload.hops = 1;
+  }
+  const body = JSON.stringify(payload);
   return fetch(url, { method: "POST", headers, body }).then(
     (res) => res.json() as unknown as string
   );

@@ -9,8 +9,8 @@ export type Pairing = {
 
 export type EntryNode = {
   id: string;
-  hoprdApiEndpoint: string;
-  hoprdApiToken: string;
+  apiEndpoint: string;
+  accessToken: string;
 };
 
 export type ExitNode = {
@@ -181,6 +181,28 @@ export function listZeroHopPairings(
   return dbPool.query(q).then((r) => r.rows.map(pairingFromDB));
 }
 
+export function listPairings(
+  dbPool: Pool,
+  amount: number,
+  since?: string,
+  forceZeroHop?: boolean
+): Promise<Pairing[]> {
+  const t = forceZeroHop ? "zero_hop_pairings" : "one_hop_pairings";
+  const qSelect = `select * from ${t}`;
+  const qOrder = `order by random() limit ${amount}`;
+  if (since) {
+    const q = [qSelect, "where created_at > $1", qOrder].join(" ");
+    // postgres time resolution is higher than js
+    // need to add 1 to timestamp to avoid rounding errors confusion when comparing timestamps
+    // this can cause other confusion but will be fine for our use case
+    const dSince = new Date(since);
+    const date = new Date(dSince.getTime() + 1);
+    return dbPool.query(q, [date]).then((r) => r.rows.map(pairingFromDB));
+  }
+  const q = [qSelect, qOrder].join(" ");
+  return dbPool.query(q).then((r) => r.rows.map(pairingFromDB));
+}
+
 export function listIdsByAccessToken(
   dbPool: Pool,
   accessToken: string
@@ -198,8 +220,8 @@ export function listIdsByAccessToken(
 function entryNodeFromDB(db: DBEntryNode): EntryNode {
   return {
     id: db.id,
-    hoprdApiEndpoint: db.hoprd_api_endpoint,
-    hoprdApiToken: db.hoprd_api_token,
+    apiEndpoint: db.hoprd_api_endpoint,
+    accessToken: db.hoprd_api_token,
   };
 }
 

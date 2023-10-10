@@ -23,6 +23,7 @@ export default class NodesCollector {
   constructor(
     private readonly discoveryPlatformEndpoint: string,
     private readonly clientId: string,
+    private readonly forceZeroHop: boolean,
     private readonly applicationTag: number,
     private readonly messageListener: MessageListener
   ) {
@@ -227,6 +228,7 @@ export default class NodesCollector {
       {
         discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
         clientId: this.clientId,
+        forceZeroHop: this.forceZeroHop,
       },
       NodePairAmount,
       this.lastMatchedAt

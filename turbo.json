@@ -21,6 +21,7 @@
         "RPCH_PASSWORD",
         "RPCH_IDENTITY_FILE",
         "RPCH_PRIVATE_KEY",
+        "RPCH_FORCE_ZERO_HOP",
         "RPCH_DATA_DIR",
         "HOPRD_API_TOKEN",
         "HOPRD_API_ENDPOINT",
@@ -96,7 +97,8 @@
         "SKIP_RPCH",
         "DISABLE_MEV_PROTECTION",
         "MEV_PROTECTION_PROVIDER",
-        "MEV_KICKBACK_ADDRESS"
+        "MEV_KICKBACK_ADDRESS",
+        "FORCE_ZERO_HOP"
       ]
     },
     "@rpch/availability-monitor#build": {

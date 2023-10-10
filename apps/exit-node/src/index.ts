@@ -38,6 +38,7 @@ type Ops = {
   accessToken: string;
   discoveryPlatformEndpoint: string;
   nodeAccessToken: string;
+  forceZeroHop: boolean;
 };
 
 async function start(ops: Ops) {
@@ -292,9 +293,12 @@ if (require.main === module) {
     ? utils.arrayify(process.env.RPCH_PRIVATE_KEY)
     : undefined;
 
+  const forceZeroHop = !!process.env.RPCH_FORCE_ZERO_HOP;
+
   start({
     privateKey,
     identityFile,
+    forceZeroHop,
     password: process.env.RPCH_PASSWORD,
     apiEndpoint: new URL(process.env.HOPRD_API_ENDPOINT),
     accessToken: process.env.HOPRD_API_TOKEN,

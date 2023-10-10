@@ -235,6 +235,7 @@ if (require.main === module) {
     ).valueOf(),
     mevProtectionProvider: process.env.MEV_PROTECTION_PROVIDER,
     mevKickbackAddress: process.env.MEV_KICKBACK_ADDRESS,
+    forceZeroHop: !!process.env.FORCE_ZERO_HOP,
   };
 
   const serverOps = {
