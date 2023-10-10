@@ -730,7 +730,7 @@ function getNodesPairings(dbPool: Pool) {
     }
 
     const data = matchedData(req);
-    const forceZeroHop = !!data.forceZeroHop;
+    const forceZeroHop = !!data.force_zero_hop;
     qNode
       .listPairings(dbPool, data.amount, data.since, forceZeroHop)
       .then((qPairings) => {
