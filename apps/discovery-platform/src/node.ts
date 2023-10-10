@@ -9,8 +9,8 @@ export type Pairing = {
 
 export type EntryNode = {
   id: string;
-  hoprdApiEndpoint: string;
-  hoprdApiToken: string;
+  apiEndpoint: string;
+  accessToken: string;
 };
 
 export type ExitNode = {
@@ -220,8 +220,8 @@ export function listIdsByAccessToken(
 function entryNodeFromDB(db: DBEntryNode): EntryNode {
   return {
     id: db.id,
-    hoprdApiEndpoint: db.hoprd_api_endpoint,
-    hoprdApiToken: db.hoprd_api_token,
+    apiEndpoint: db.hoprd_api_endpoint,
+    accessToken: db.hoprd_api_token,
   };
 }
 
