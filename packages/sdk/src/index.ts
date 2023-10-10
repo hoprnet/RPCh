@@ -71,6 +71,7 @@ const defaultOps: Ops = {
   provider: "https://gnosis-provider.rpch.tech",
   disableMevProtection: false,
   mevProtectionProvider: RPC_PROPELLORHEADS,
+  forceZeroHop: false,
 };
 
 const MAX_REQUEST_SEGMENTS = 20;
@@ -489,6 +490,7 @@ export default class SDK {
         ops.disableMevProtection ?? defaultOps.disableMevProtection,
       mevProtectionProvider:
         ops.mevProtectionProvider || defaultOps.mevProtectionProvider,
+      forceZeroHop: ops.forceZeroHop ?? defaultOps.forceZeroHop,
     };
   };
 
