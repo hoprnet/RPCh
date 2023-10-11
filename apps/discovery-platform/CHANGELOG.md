@@ -1,5 +1,11 @@
 # @rpch/discovery-platform
 
+## 0.12.0
+
+### Minor Changes
+
+- e8baa98: add configs table
+
 ## 0.11.0
 
 ### Minor Changes
