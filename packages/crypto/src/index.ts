@@ -1,5 +1,11 @@
 import { hash_length, extract, expand } from 'futoin-hkdf'
 import { chacha20poly1305 } from '@noble/ciphers/chacha'
+import { randomBytes } from 'crypto'
+import {
+  ecdh,
+  privateKeyVerify,
+  publicKeyCreate
+} from 'secp256k1'
 
 
 export type Envelope = {
@@ -50,6 +56,17 @@ function initializeCipher(shared_presecret: Uint8Array, counter: number, salt: U
   ivm.writeUint32BE(counter, cipherIvLen)
 
   return chacha20poly1305(key, ivm)
+}
+
+function generateEphemeralKey() {
+  let privKey
+  do {
+    privKey = randomBytes(32)
+  } while (!privateKeyVerify(privKey))
+
+  // get the public key in a compressed format
+  const pubKey = publicKeyCreate(privKey)
+  return { pubKey, privKey }
 }
 
 export function box_request(request: Envelope, exitNode: Identity): Result<Session> {
