@@ -61,7 +61,7 @@ export function getChannels({
 }: {
   hoprd_api_endpoint: string;
   hoprd_api_token: string;
-}): Promise<any> {
+}): Promise<Channels> {
   const url = new URL("/api/v3/channels", hoprd_api_endpoint);
   url.searchParams.set("fullTopology", "true");
   const headers = {
