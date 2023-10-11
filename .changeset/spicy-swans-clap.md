@@ -2,4 +2,4 @@
 "@rpch/discovery-platform": minor
 ---
 
-add config table
+add configs table

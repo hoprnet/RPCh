@@ -1,7 +1,7 @@
 /* eslint-disable camelcase */
 
 exports.up = (pgm) => {
-  pgm.createTable("config", {
+  pgm.createTable("configs", {
     key: { type: "text", primaryKey: true },
     data: { type: "text", notNull: true },
     created_at: "createdAt",
@@ -10,5 +10,5 @@ exports.up = (pgm) => {
 };
 
 exports.down = (pgm) => {
-  pgm.dropTable("config");
+  pgm.dropTable("configs");
 };
