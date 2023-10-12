@@ -67,8 +67,8 @@ function initializeCipher(sharedPreSecret: Uint8Array, counter: bigint, peerId: 
   // Construct salt for the HKDF
   const salt = Buffer.alloc(1 + peerId.length + saltTag.length)
   salt.writeUint8(RPCH_CRYPTO_VERSION)
-  salt.write(peerId) // utf8 encoded
-  salt.write(saltTag)
+  salt.write(peerId, 1) // utf8 encoded
+  salt.write(saltTag, peerId.length + 1)
 
   // Generate key material for expansion
   const hashLen = hash_length(BLAKE2S256_HASH);
@@ -109,10 +109,9 @@ function generateEphemeralKey(randomFn: (len: number) => Uint8Array) {
 }
 
 /// Extracts the X coordinate from the ECDH result
-function getXCoord(x: any, y: any) {
-  const pubKey = new Uint8Array(33)
-  pubKey[0] = (y[31] & 1) === 0 ? 0x02 : 0x03
-  pubKey.set(x, 1)
+function getXCoord(x: any, _y: any) {
+  const pubKey = new Uint8Array(32)
+  pubKey.set(x)
   return pubKey
 }
 
@@ -139,7 +138,7 @@ export function box_request(request: Envelope, exitNode: Identity, randomFn: (le
   let sharedPreSecret
   try {
     ephemeralKey = generateEphemeralKey(randomFn)
-    sharedPreSecret = ecdh(exitNode.publicKey, ephemeralKey.privKey, { hashfn: getXCoord })
+    sharedPreSecret = ecdh(exitNode.publicKey, ephemeralKey.privKey, { hashfn: getXCoord }, Buffer.alloc(PUBLIC_KEY_SIZE_ENCODED - 1))
   }
   catch (err) {
     return {
@@ -220,8 +219,8 @@ export function unbox_request(request: Envelope, myId: Identity, lastTsOfThisCli
 
   let sharedPreSecret
   try {
-    let ephemeralPk = message.slice(1, PUBLIC_KEY_SIZE_ENCODED)
-    sharedPreSecret = ecdh(ephemeralPk, myId.privateKey, { hashfn: getXCoord })
+    let ephemeralPk = message.slice(1, PUBLIC_KEY_SIZE_ENCODED + 1)
+    sharedPreSecret = ecdh(ephemeralPk, myId.privateKey, { hashfn: getXCoord }, Buffer.alloc(PUBLIC_KEY_SIZE_ENCODED - 1))
   }
   catch (err) {
     return {
@@ -361,7 +360,7 @@ export function unbox_response(session: Session, response: Envelope, lastTsOfThi
 
   let plaintext
   try {
-    plaintext = cipher.decrypt(message.slice(1 + COUNTER_LEN))
+    plaintext = cipher.decrypt(message.slice(COUNTER_LEN))
   }
   catch (err) {
     return {
