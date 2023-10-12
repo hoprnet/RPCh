@@ -15,13 +15,14 @@ export type Envelope = {
 }
 
 export class Identity {
-  constructor(private publicKey: Uint8Array, private privateKey?: Uint8Array) {}
+  constructor(public publicKey: Uint8Array, public privateKey?: Uint8Array) {}
 }
 
 export type Session = {
-  request: Uint8Array,
-  response: Uint8Array,
-  updatedTS: Date
+  request?: Uint8Array,
+  response?: Uint8Array,
+  updatedTS: Date,
+  sharedPresecret: Uint8Array
 }
 
 export class Result<T> {
@@ -35,15 +36,20 @@ export class Result<T> {
   }
 }
 
+const RPCH_CRYPTO_VERSION = 0x12;
+
 const TIMESTAMP_TOLERANCE_MS = 30_000; // milliseconds
+const PUBLIC_KEY_SIZE_ENCODED = 33;
 const CIPHER_KEY_LEN = 32;
 const CIPHER_IV_LEN = 12;
 const COUNTER_LEN = 4;
 const BLAKE2S256_HASH = 'blake2s256'
+const REQUEST_TAG = 'req'
+const RESPONSE_TAG = 'resp'
 
-function initializeCipher(shared_presecret: Uint8Array, counter: number, salt: Uint8Array, startIndex: number) {
+function initializeCipher(sharedPreSecret: Uint8Array, counter: number, salt: Uint8Array, startIndex: number) {
   const hashLen = hash_length(BLAKE2S256_HASH);
-  const prk = extract(BLAKE2S256_HASH, hashLen, Buffer.from(shared_presecret), Buffer.from(salt))
+  const prk = extract(BLAKE2S256_HASH, hashLen, Buffer.from(sharedPreSecret), Buffer.from(salt))
 
   const cipherKeyLen = CIPHER_KEY_LEN;
   const cipherIvLen = CIPHER_IV_LEN - COUNTER_LEN;
@@ -53,9 +59,12 @@ function initializeCipher(shared_presecret: Uint8Array, counter: number, salt: U
   const key = expand(BLAKE2S256_HASH, hashLen, prk, cipherKeyLen, Buffer.from(idx))
   idx[0] = startIndex + 1;
   const ivm = expand(BLAKE2S256_HASH, hashLen, prk, cipherIvLen, Buffer.from(idx))
-  ivm.writeUint32BE(counter, cipherIvLen)
 
-  return chacha20poly1305(key, ivm)
+  let iv = new Buffer(CIPHER_IV_LEN)
+  iv.copy(iv)
+  iv.writeUint32BE(counter, cipherIvLen)
+
+  return chacha20poly1305(key, iv)
 }
 
 function generateEphemeralKey() {
@@ -69,7 +78,48 @@ function generateEphemeralKey() {
   return { pubKey, privKey }
 }
 
+function getXCoord(x: any, y: any) {
+  const pubKey = new Uint8Array(33)
+  pubKey[0] = (y[31] & 1) === 0 ? 0x02 : 0x03
+  pubKey.set(x, 1)
+  return pubKey
+}
+
 export function box_request(request: Envelope, exitNode: Identity): Result<Session> {
+  const ephemeralKey = generateEphemeralKey()
+  const sharedPreSecret = ecdh(exitNode.publicKey, ephemeralKey.privKey, { hashfn: getXCoord })
+
+  const newCounter = Date.now() + 1
+  let cipher
+
+  try {
+    const salt = new Buffer(1 + request.exitPeerId.length + REQUEST_TAG.length)
+    salt.writeUint8(RPCH_CRYPTO_VERSION)
+    salt.write(request.exitPeerId, 'ascii')
+    salt.write(REQUEST_TAG, 'ascii')
+
+    cipher = initializeCipher(sharedPreSecret, newCounter, salt, 0)
+  }
+  catch (err) {
+    return Result.err(`failed to initialize cipher: ${err}`)
+  }
+
+  let cipherText;
+  try {
+    cipherText = cipher.encrypt(request.message)
+  }
+  catch (err) {
+    return Result.err(`failed to encrypt Envelope data: ${err}`)
+  }
+
+  const counterBuf = new Buffer(COUNTER_LEN)
+  counterBuf.writeUint32BE(newCounter)
+
+  const versionBuf = new Buffer(1)
+  versionBuf.writeUint8(RPCH_CRYPTO_VERSION)
+
+  let result = Buffer.concat([versionBuf, ephemeralKey.pubKey, counterBuf, Buffer.from(cipherText)])
+
 
   return Result.err("not implemented")
 }
