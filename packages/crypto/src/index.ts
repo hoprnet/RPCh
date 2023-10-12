@@ -109,10 +109,8 @@ function generateEphemeralKey(randomFn: (len: number) => Uint8Array) {
 }
 
 /// Extracts the X coordinate from the ECDH result
-function getXCoord(x: any, _y: any) {
-  const pubKey = new Uint8Array(32)
-  pubKey.set(x)
-  return pubKey
+function getXCoord(x: any, _: any) {
+  return new Uint8Array(x)
 }
 
 /// Validates that (lowerBound - tolerance) <= value <= (upperBound + tolerance)
