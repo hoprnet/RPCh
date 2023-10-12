@@ -8,24 +8,31 @@ import {
   publicKeyCreate
 } from 'secp256k1'
 
+/// Wrapper for the request/response data
+/// along with the peer ID of the HOPR entry node and exit node
 export type Envelope = {
   message: Uint8Array,
   entryPeerId: string,
   exitPeerId: string,
 }
 
+/// Identifies a party in the protocol.
+/// If the party is remote, only the public key is populated.
+/// If the party is local, also the secret key is populated.
 export type Identity = {
   publicKey: Uint8Array,
   privateKey?: Uint8Array
 }
 
+/// Represents a request-response session.
 export type Session = {
   request?: Uint8Array,
   response?: Uint8Array,
-  updatedTS: Date,
+  updatedTS: bigint,
   sharedPreSecret?: Uint8Array
 }
 
+/// Result of RPCh crypto operation
 export type Result = {
   isErr: boolean
   session?: Session
@@ -36,12 +43,12 @@ export type Result = {
 export const RPCH_CRYPTO_VERSION = 0x12;
 
 /// Tolerance a timestamp could be over lower or upper bound
-const TIMESTAMP_TOLERANCE_SEC = 30;
+const TIMESTAMP_TOLERANCE_MS = 30_000;
 
 /// Encoded public key size |W|
 const PUBLIC_KEY_SIZE_ENCODED = 33;
 /// Length of the counter |C|
-const COUNTER_LEN = 4;
+const COUNTER_LEN = 8;
 
 /// Length of the authentication tag |T|
 const AUTH_TAG_LEN = 16
@@ -53,7 +60,7 @@ const BLAKE2S256_HASH = 'blake2s256'
 const REQUEST_TAG = 'req'
 const RESPONSE_TAG = 'resp'
 
-function initializeCipher(sharedPreSecret: Uint8Array, counter: number,peerId: string, request: boolean) {
+function initializeCipher(sharedPreSecret: Uint8Array, counter: bigint, peerId: string, request: boolean) {
   const startIndex = request ? 0 : 2
   const saltTag = request ? REQUEST_TAG : RESPONSE_TAG
 
@@ -76,22 +83,23 @@ function initializeCipher(sharedPreSecret: Uint8Array, counter: number,peerId: s
 
   // Second key material expansion for IV prefix
   idx[0] = startIndex + 1;
-  const iv_prefix = expand(BLAKE2S256_HASH, hashLen, prk, CIPHER_IV_LEN - COUNTER_LEN, Buffer.from(idx))
+  const prefixLen = CIPHER_IV_LEN - COUNTER_LEN
+  const iv_prefix = expand(BLAKE2S256_HASH, hashLen, prk, prefixLen, Buffer.from(idx))
 
   // Concatenate the prefix with the counter to form the IV
   let iv = Buffer.alloc(CIPHER_IV_LEN)
   iv_prefix.copy(iv)
-  iv.writeUint32BE(counter, CIPHER_IV_LEN - COUNTER_LEN)
+  iv.writeBigUint64BE(counter, prefixLen)
 
   // Initialize Chacha20 with Poly1305
   return chacha20poly1305(key, iv)
 }
 
 /// Generates a random secp256k1 keypair
-function generateEphemeralKey() {
+function generateEphemeralKey(randomFn: (len: number) => Uint8Array) {
   let privKey
   do {
-    privKey = randomBytes(32)
+    privKey = randomFn(32)
   } while (!privateKeyVerify(privKey))
 
   const pubKey = publicKeyCreate(privKey)
@@ -109,7 +117,7 @@ function getXCoord(x: any, y: any) {
 }
 
 /// Validates that (lowerBound - tolerance) <= value <= (upperBound + tolerance)
-function validateTS(value: number, lowerBound: number, upperBound: number) {
+function validateTS(value: bigint, lowerBound: bigint, upperBound: bigint) {
   assert(lowerBound < upperBound)
 
   let lowerDiff = lowerBound - value
@@ -117,20 +125,20 @@ function validateTS(value: number, lowerBound: number, upperBound: number) {
 
   // if `value` < `lowerBound` it must be within tolerance
   // if `value` > `upperBound` it must be within tolerance
-  return lowerDiff <= TIMESTAMP_TOLERANCE_SEC && upperDiff <= TIMESTAMP_TOLERANCE_SEC
+  return lowerDiff <= TIMESTAMP_TOLERANCE_MS && upperDiff <= TIMESTAMP_TOLERANCE_MS
 }
 
 /// Called by the RPCh client
 /// Takes enveloped request data, the identity of the RPCh Exit Node and Request counter for such
 /// RPCh Exit node and then encrypts and authenticates the data.
 /// The encrypted data and new counter value to be persisted is returned in the resulting session.
-export function box_request(request: Envelope, exitNode: Identity): Result {
+export function box_request(request: Envelope, exitNode: Identity, randomFn: (len: number) => Uint8Array = randomBytes): Result {
   assert(exitNode.publicKey.length == PUBLIC_KEY_SIZE_ENCODED, 'incorrect public key size')
 
   let ephemeralKey
   let sharedPreSecret
   try {
-    ephemeralKey = generateEphemeralKey()
+    ephemeralKey = generateEphemeralKey(randomFn)
     sharedPreSecret = ecdh(exitNode.publicKey, ephemeralKey.privKey, { hashfn: getXCoord })
   }
   catch (err) {
@@ -140,7 +148,7 @@ export function box_request(request: Envelope, exitNode: Identity): Result {
     }
   }
 
-  const newCounter = (Date.now() + 1) / 1000
+  const newCounter = BigInt(Date.now() + 1)
 
   let cipher
   try {
@@ -165,7 +173,7 @@ export function box_request(request: Envelope, exitNode: Identity): Result {
   }
 
   const counterBuf = Buffer.alloc(COUNTER_LEN)
-  counterBuf.writeUint32BE(newCounter)
+  counterBuf.writeBigUint64BE(newCounter)
 
   const versionBuf = Buffer.alloc(1)
   versionBuf.writeUint8(RPCH_CRYPTO_VERSION)
@@ -177,7 +185,7 @@ export function box_request(request: Envelope, exitNode: Identity): Result {
     isErr: false,
     session: {
       request: new Uint8Array(result),
-      updatedTS: new Date(newCounter * 1000),
+      updatedTS: newCounter,
       sharedPreSecret
     }
   }
@@ -222,7 +230,7 @@ export function unbox_request(request: Envelope, myId: Identity, lastTsOfThisCli
     }
   }
 
-  const counter = Buffer.from(message).readUint32BE(1 + PUBLIC_KEY_SIZE_ENCODED)
+  const counter = Buffer.from(message).readBigUint64BE(1 + PUBLIC_KEY_SIZE_ENCODED)
 
   let cipher
   try {
@@ -246,7 +254,7 @@ export function unbox_request(request: Envelope, myId: Identity, lastTsOfThisCli
     }
   }
 
-  if (!validateTS(counter, lastTsOfThisClient.getTime()/1000, Date.now()/1000)) {
+  if (!validateTS(counter, BigInt(lastTsOfThisClient.getTime()), BigInt(Date.now()))) {
     return {
       isErr: true,
       message: 'ts verification failed'
@@ -257,7 +265,7 @@ export function unbox_request(request: Envelope, myId: Identity, lastTsOfThisCli
     isErr: false,
     session: {
       request: plaintext,
-      updatedTS: new Date(counter * 1000),
+      updatedTS: counter,
       sharedPreSecret
     }
   }
@@ -276,7 +284,7 @@ export function box_response(session: Session, response: Envelope): Result {
     }
   }
 
-  const newCounter = (Date.now() + 1) / 1000
+  const newCounter = BigInt(Date.now() + 1)
 
   let cipher
   try {
@@ -301,15 +309,15 @@ export function box_response(session: Session, response: Envelope): Result {
   }
 
   const counterBuf = Buffer.alloc(COUNTER_LEN)
-  counterBuf.writeUint32BE(newCounter)
+  counterBuf.writeBigUint64BE(newCounter)
 
   const versionBuf = Buffer.alloc(1)
   versionBuf.writeUint8(RPCH_CRYPTO_VERSION)
 
-  // V,C,R,T
-  let result = Buffer.concat([versionBuf, counterBuf, Buffer.from(cipherText)])
+  // C,R,T
+  let result = Buffer.concat([counterBuf, Buffer.from(cipherText)])
   session.response = new Uint8Array(result)
-  session.updatedTS = new Date(newCounter * 1000)
+  session.updatedTS = newCounter
 
   return {
     isErr: false
@@ -330,21 +338,15 @@ export function unbox_response(session: Session, response: Envelope, lastTsOfThi
   }
 
   const message = response.message
-  if ((message[0] & 0x10) != (RPCH_CRYPTO_VERSION & 0x10)) {
-    return {
-      isErr: true,
-      message: 'unsupported protocol version'
-    }
-  }
 
-  if (message.length <= 1 + COUNTER_LEN + AUTH_TAG_LEN) {
+  if (message.length <= COUNTER_LEN + AUTH_TAG_LEN) {
     return {
       isErr: true,
       message: 'invalid message size'
     }
   }
 
-  const counter = Buffer.from(message).readUint32BE(1 + PUBLIC_KEY_SIZE_ENCODED)
+  const counter = Buffer.from(message).readBigUint64BE()
 
   let cipher
   try {
@@ -368,7 +370,7 @@ export function unbox_response(session: Session, response: Envelope, lastTsOfThi
     }
   }
 
-  if (!validateTS(counter, lastTsOfThisExitNode.getTime()/1000, Date.now()/1000)) {
+  if (!validateTS(counter, BigInt(lastTsOfThisExitNode.getTime()), BigInt(Date.now()))) {
     return {
       isErr: true,
       message: 'ts verification failed'
@@ -376,7 +378,7 @@ export function unbox_response(session: Session, response: Envelope, lastTsOfThi
   }
 
   session.response = plaintext;
-  session.updatedTS = new Date(counter * 1000)
+  session.updatedTS = counter
 
   return {
     isErr: false
