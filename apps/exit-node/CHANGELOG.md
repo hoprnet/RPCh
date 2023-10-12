@@ -1,5 +1,11 @@
 # @rpch/exit-node
 
+## 0.8.2
+
+### Patch Changes
+
+- even better logging
+
 ## 0.8.1
 
 ### Patch Changes
