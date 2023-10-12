@@ -1,13 +1,12 @@
 import { hash_length, extract, expand } from 'futoin-hkdf'
 import { chacha20poly1305 } from '@noble/ciphers/chacha'
 import { randomBytes } from 'crypto'
+import assert from 'assert'
 import {
   ecdh,
   privateKeyVerify,
   publicKeyCreate
 } from 'secp256k1'
-import assert from "assert";
-
 
 export type Envelope = {
   message: Uint8Array,
@@ -27,31 +26,42 @@ export type Session = {
   sharedPreSecret?: Uint8Array
 }
 
-export class Result<T> {
-  constructor(public readonly ok: T | undefined, public readonly error: string, public readonly is_err: boolean) {}
-  public static ok<T>(res: T) {
-    return new Result<T>(res, "", false)
-  }
-  public static err<T>(err: string) {
-    return new Result<T>(undefined, err, true)
-  }
+export type Result = {
+  isErr: boolean
+  session?: Session
+  message?: string
 }
 
-const RPCH_CRYPTO_VERSION = 0x12;
+/// RPCh Crypto protocol version
+export const RPCH_CRYPTO_VERSION = 0x12;
 
+/// Tolerance a timestamp could be over lower or upper bound
 const TIMESTAMP_TOLERANCE_SEC = 30;
+
+/// Encoded public key size |W|
 const PUBLIC_KEY_SIZE_ENCODED = 33;
+/// Length of the counter |C|
+const COUNTER_LEN = 4;
+
+/// Length of the authentication tag |T|
+const AUTH_TAG_LEN = 16
 
 const CIPHER_KEY_LEN = 32;
 const CIPHER_IV_LEN = 12;
-const COUNTER_LEN = 4;
-const CIPHER_AUTH_TAG_LEN = 16
 
 const BLAKE2S256_HASH = 'blake2s256'
 const REQUEST_TAG = 'req'
 const RESPONSE_TAG = 'resp'
 
-function initializeCipher(sharedPreSecret: Uint8Array, counter: number, salt: Uint8Array, startIndex: number) {
+function initializeCipher(sharedPreSecret: Uint8Array, counter: number,peerId: string, request: boolean) {
+  const startIndex = request ? 0 : 2
+  const saltTag = request ? REQUEST_TAG : RESPONSE_TAG
+
+  const salt = Buffer.alloc(1 + peerId.length + saltTag.length)
+  salt.writeUint8(RPCH_CRYPTO_VERSION)
+  salt.write(peerId) // utf8 encoded
+  salt.write(saltTag)
+
   const hashLen = hash_length(BLAKE2S256_HASH);
   const prk = extract(BLAKE2S256_HASH, hashLen, Buffer.from(sharedPreSecret), Buffer.from(salt))
 
@@ -76,8 +86,8 @@ function generateEphemeralKey() {
     privKey = randomBytes(32)
   } while (!privateKeyVerify(privKey))
 
-  // get the public key in a compressed format
   const pubKey = publicKeyCreate(privKey)
+  assert(pubKey.length == PUBLIC_KEY_SIZE_ENCODED)
   return { pubKey, privKey }
 }
 
@@ -99,31 +109,33 @@ function validateTS(value: number, lowerBound: number, upperBound: number) {
   return lowerDiff <= TIMESTAMP_TOLERANCE_SEC && upperDiff <= TIMESTAMP_TOLERANCE_SEC
 }
 
-export function box_request(request: Envelope, exitNode: Identity): Result<Session> {
+export function box_request(request: Envelope, exitNode: Identity): Result {
+  assert(exitNode.publicKey.length == PUBLIC_KEY_SIZE_ENCODED, 'incorrect public key size')
+
   const ephemeralKey = generateEphemeralKey()
   const sharedPreSecret = ecdh(exitNode.publicKey, ephemeralKey.privKey, { hashfn: getXCoord })
-
   const newCounter = (Date.now() + 1) / 1000
+
   let cipher
-
   try {
-    const salt = Buffer.alloc(1 + request.exitPeerId.length + REQUEST_TAG.length)
-    salt.writeUint8(RPCH_CRYPTO_VERSION)
-    salt.write(request.exitPeerId) // utf8 encoded
-    salt.write(REQUEST_TAG)
-
-    cipher = initializeCipher(sharedPreSecret, newCounter, salt, 0)
+    cipher = initializeCipher(sharedPreSecret, newCounter, request.exitPeerId, true)
   }
   catch (err) {
-    return Result.err(`failed to initialize cipher: ${err}`)
+    return {
+      isErr: true,
+      message: `failed to initialize cipher: ${err}`
+    }
   }
 
-  let cipherText;
+  let cipherText
   try {
     cipherText = cipher.encrypt(request.message)
   }
   catch (err) {
-    return Result.err(`failed to encrypt Envelope data: ${err}`)
+    return {
+      isErr: true,
+      message: `failed to encrypt data: ${err}`
+    }
   }
 
   const counterBuf = Buffer.alloc(COUNTER_LEN)
@@ -132,45 +144,55 @@ export function box_request(request: Envelope, exitNode: Identity): Result<Sessi
   const versionBuf = Buffer.alloc(1)
   versionBuf.writeUint8(RPCH_CRYPTO_VERSION)
 
+  // V,W,C,R,T
   let result = Buffer.concat([versionBuf, ephemeralKey.pubKey, counterBuf, Buffer.from(cipherText)])
-  let session: Session = {
-    request: new Uint8Array(result),
-    updatedTS: new Date(newCounter * 1000),
-    sharedPreSecret
-  }
 
-  return Result.ok(session)
+  return {
+    isErr: false,
+    session: {
+      request: new Uint8Array(result),
+      updatedTS: new Date(newCounter * 1000),
+      sharedPreSecret
+    }
+  }
 }
 
-export function unbox_request(request: Envelope, myId: Identity, lastTsOfThisClient: Date): Result<Session> {
+export function unbox_request(request: Envelope, myId: Identity, lastTsOfThisClient: Date): Result {
   const message = request.message
   if ((message[0] & 0x10) != (RPCH_CRYPTO_VERSION & 0x10)) {
-    return Result.err("unsupported protocol version")
+    return {
+      isErr: true,
+      message: 'unsupported protocol version'
+    }
   }
 
-  if (message.length <= 1 + PUBLIC_KEY_SIZE_ENCODED + COUNTER_LEN + CIPHER_AUTH_TAG_LEN) {
-    return Result.err("invalid message size")
+  if (message.length <= 1 + PUBLIC_KEY_SIZE_ENCODED + COUNTER_LEN + AUTH_TAG_LEN) {
+    return {
+      isErr: true,
+      message: 'invalid message size'
+    }
   }
 
   if (!myId.privateKey) {
-    return Result.err("missing identity private key")
+    return {
+      isErr: true,
+      message: 'missing identity private key'
+    }
   }
 
-  let ephemeralPk = request.message.slice(1, PUBLIC_KEY_SIZE_ENCODED)
+  let ephemeralPk = message.slice(1, PUBLIC_KEY_SIZE_ENCODED)
   let sharedPreSecret = ecdh(ephemeralPk, myId.privateKey, { hashfn: getXCoord })
-  let counter = Buffer.from(request.message).readUint32BE(1 + PUBLIC_KEY_SIZE_ENCODED)
+  let counter = Buffer.from(message).readUint32BE(1 + PUBLIC_KEY_SIZE_ENCODED)
 
-  let cipher;
+  let cipher
   try {
-    const salt = Buffer.alloc(1 + request.exitPeerId.length + REQUEST_TAG.length)
-    salt.writeUint8(RPCH_CRYPTO_VERSION)
-    salt.write(request.exitPeerId) // utf8 encoded
-    salt.write(REQUEST_TAG)
-
-    cipher = initializeCipher(sharedPreSecret, counter, salt, 0)
+    cipher = initializeCipher(sharedPreSecret, counter, request.exitPeerId, true)
   }
   catch (err) {
-    return Result.err(`failed to initialize cipher: ${err}`)
+    return {
+      isErr: true,
+      message: `failed to initialize cipher: ${err}`
+    }
   }
 
   let plaintext
@@ -178,26 +200,137 @@ export function unbox_request(request: Envelope, myId: Identity, lastTsOfThisCli
     plaintext = cipher.decrypt(message.slice(1 + PUBLIC_KEY_SIZE_ENCODED + COUNTER_LEN))
   }
   catch (err) {
-    return Result.err(`decryption failed: ${err}`)
+    return {
+      isErr: true,
+      message: `decryption failed: ${err}`
+    }
   }
 
   if (!validateTS(counter, lastTsOfThisClient.getTime()/1000, Date.now()/1000)) {
-    return Result.err("ts verification failed")
+    return {
+      isErr: true,
+      message: 'ts verification failed'
+    }
   }
 
-  let ret: Session = {
-    request: plaintext,
-    updatedTS: new Date(counter * 1000),
-    sharedPreSecret
+  return {
+    isErr: false,
+    session: {
+      request: plaintext,
+      updatedTS: new Date(counter * 1000),
+      sharedPreSecret
+    }
+  }
+}
+
+export function box_response(session: Session, response: Envelope): Result {
+  const sharedPreSecret = session.sharedPreSecret
+  if (!sharedPreSecret) {
+    return {
+      isErr: true,
+      message: 'invalid session'
+    }
   }
 
-  return Result.ok(ret)
+  const newCounter = (Date.now() + 1) / 1000
+
+  let cipher
+  try {
+    cipher = initializeCipher(sharedPreSecret, newCounter, response.entryPeerId, false)
+  }
+  catch (err) {
+    return {
+      isErr: true,
+      message: `failed to initialize cipher: ${err}`
+    }
+  }
+
+  let cipherText
+  try {
+    cipherText = cipher.encrypt(response.message)
+  }
+  catch (err) {
+    return {
+      isErr: true,
+      message: `failed to encrypt data: ${err}`
+    }
+  }
+
+  const counterBuf = Buffer.alloc(COUNTER_LEN)
+  counterBuf.writeUint32BE(newCounter)
+
+  const versionBuf = Buffer.alloc(1)
+  versionBuf.writeUint8(RPCH_CRYPTO_VERSION)
+
+  // V,C,R,T
+  let result = Buffer.concat([versionBuf, counterBuf, Buffer.from(cipherText)])
+  session.response = new Uint8Array(result)
+  session.updatedTS = new Date(newCounter * 1000)
+
+  return {
+    isErr: false
+  }
 }
 
-export function box_response(session: Session, response: Envelope): Result<void> {
-  return Result.err("not implemented")
-}
+export function unbox_response(session: Session, response: Envelope, lastTsOfThisExitNode: Date): Result {
+  let sharedPreSecret = session.sharedPreSecret
+  if (!sharedPreSecret) {
+    return {
+      isErr: true,
+      message: 'invalid session'
+    }
+  }
 
-export function unbox_response(session: Session, response: Envelope, lastTsOfThisExitNode: Date): Result<void> {
-  return Result.err("not implemented")
+  const message = response.message
+  if ((message[0] & 0x10) != (RPCH_CRYPTO_VERSION & 0x10)) {
+    return {
+      isErr: true,
+      message: 'unsupported protocol version'
+    }
+  }
+
+  if (message.length <= 1 + COUNTER_LEN + AUTH_TAG_LEN) {
+    return {
+      isErr: true,
+      message: 'invalid message size'
+    }
+  }
+
+  let counter = Buffer.from(message).readUint32BE(1 + PUBLIC_KEY_SIZE_ENCODED)
+
+  let cipher
+  try {
+    cipher = initializeCipher(sharedPreSecret, counter, response.entryPeerId, false)
+  }
+  catch (err) {
+    return {
+      isErr: true,
+      message: `failed to initialize cipher: ${err}`
+    }
+  }
+
+  let plaintext
+  try {
+    plaintext = cipher.decrypt(message.slice(1 + COUNTER_LEN))
+  }
+  catch (err) {
+    return {
+      isErr: true,
+      message: `decryption failed: ${err}`
+    }
+  }
+
+  if (!validateTS(counter, lastTsOfThisExitNode.getTime()/1000, Date.now()/1000)) {
+    return {
+      isErr: true,
+      message: 'ts verification failed'
+    }
+  }
+
+  session.response = plaintext;
+  session.updatedTS = new Date(counter * 1000)
+
+  return {
+    isErr: false
+  }
 }
