@@ -103,7 +103,7 @@ describe('RPCh Crypto protocol tests', function () {
 
         // Client node side
 
-        let received_req_data: Envelope = {
+        let received_resp_data: Envelope = {
             message: data_on_wire,
             entryPeerId: ENTRY_NODE,
             exitPeerId: EXIT_NODE
@@ -116,12 +116,98 @@ describe('RPCh Crypto protocol tests', function () {
 
         let stored_last_received_resp_ts = new Date(Date.now() - 2000); // 2s ago
 
-        let resp_unbox_result = unbox_response(mock_session_with_exit_node, received_req_data, stored_last_received_resp_ts)
+        let resp_unbox_result = unbox_response(mock_session_with_exit_node, received_resp_data, stored_last_received_resp_ts)
         assert(!resp_unbox_result.isErr, `response unboxing must not fail, error: ${resp_unbox_result.message}`)
 
         assert(mock_session_with_exit_node.response != undefined)
         assert.equal(toHex(mock_session_with_exit_node.response), toHex(response_msg))
         assert.equal(mock_session_with_exit_node.updatedTS, exit_node_resp_creation_ts)
+    });
+
+    it('test complete flow', async function () {
+        // Client side
+        const request_msg = new Uint8Array(randomBytes(300))
+
+        let request_data: Envelope = {
+            message: request_msg,
+            entryPeerId: ENTRY_NODE,
+            exitPeerId: EXIT_NODE
+        }
+
+        let exit_id: Identity = {
+            publicKey: fromHex(EXIT_NODE_PK)
+        }
+
+        let req_box_result = box_request(request_data, exit_id)
+        assert(!req_box_result.isErr, `request boxing must not fail, error: ${req_box_result.message}`)
+
+        let client_session = req_box_result.session
+        assert(client_session != undefined, 'must contain a valid session')
+        assert(client_session.request != undefined, 'session must contain request data')
+
+        // Client side end
+
+        let client_req_creation_ts = client_session.updatedTS
+        let request_data_on_wire = client_session.request
+
+        // Exit node side
+
+        let received_req_data: Envelope = {
+            message: request_data_on_wire,
+            entryPeerId: ENTRY_NODE,
+            exitPeerId: EXIT_NODE
+        }
+
+        let exit_node_identity: Identity = {
+            publicKey: fromHex(EXIT_NODE_PK),
+            privateKey: fromHex(EXIT_NODE_SK)
+        }
+
+        let stored_last_received_req_ts = new Date(Date.now() - 2000); // 2s ago
+
+        let req_unbox_result = unbox_request(received_req_data, exit_node_identity, stored_last_received_req_ts)
+        assert(!req_unbox_result.isErr, `request unboxing must not fail, error: ${req_unbox_result.message}`)
+
+        let exit_session = req_unbox_result.session
+        assert(exit_session != undefined, 'must contain a valid session')
+
+        assert.equal(toHex(exit_session.request), toHex(request_msg))
+        assert.equal(exit_session.updatedTS, client_req_creation_ts)
+
+        // Exit node side
+        let response_msg = new Uint8Array(randomBytes(300))
+
+        let response_data: Envelope = {
+            message: response_msg,
+            entryPeerId: ENTRY_NODE,
+            exitPeerId: EXIT_NODE
+        }
+
+        let resp_box_result = box_response(exit_session, response_data)
+        assert(!resp_box_result.isErr, `response boxing must not fail, error: ${resp_box_result.message}`)
+        assert(exit_session.response != undefined)
+
+        // Exit node side end
+
+        let exit_node_resp_creation_ts = exit_session.updatedTS
+        let response_data_on_wire = exit_session.response
+
+        // Client node side
+
+        let received_resp_data: Envelope = {
+            message: response_data_on_wire,
+            entryPeerId: ENTRY_NODE,
+            exitPeerId: EXIT_NODE
+        }
+
+        let stored_last_received_resp_ts = new Date(Date.now() - 2000); // 2s ago
+
+        let resp_unbox_result = unbox_response(client_session, received_resp_data, stored_last_received_resp_ts)
+        assert(!resp_unbox_result.isErr, `response unboxing must not fail, error: ${resp_unbox_result.message}`)
+
+        assert(client_session.response != undefined)
+        assert.equal(toHex(client_session.response), toHex(response_msg))
+        assert.equal(client_session.updatedTS, exit_node_resp_creation_ts)
     });
 
     it('test vectors on fixed request input', async function () {
@@ -211,7 +297,7 @@ describe('RPCh Crypto protocol tests', function () {
 
         jest.setSystemTime(new Date(TEST_COUNTER + 10))
 
-        let received_req_data: Envelope = {
+        let received_resp_data: Envelope = {
             message: data_on_wire,
             entryPeerId: ENTRY_NODE,
             exitPeerId: EXIT_NODE
@@ -222,7 +308,7 @@ describe('RPCh Crypto protocol tests', function () {
             sharedPreSecret: fromHex(TEST_VECTOR_EPHEMERAL_SECRET)
         }
 
-        let resp_unbox_result = unbox_response(mock_session_with_exit_node, received_req_data, new Date(TEST_COUNTER))
+        let resp_unbox_result = unbox_response(mock_session_with_exit_node, received_resp_data, new Date(TEST_COUNTER))
         assert(!resp_unbox_result.isErr, `response unboxing must not fail, error: ${resp_unbox_result.message}`)
 
         assert(mock_session_with_exit_node.response != undefined)
