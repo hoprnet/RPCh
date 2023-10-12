@@ -4,9 +4,12 @@ export function fetchChainId(provider: string): Promise<JRPC.Response> {
   const url = new URL(provider);
   const headers = { "Content-Type": "application/json" };
   const body = JSON.stringify(JRPC.chainId(provider));
-  return fetch(url, { headers, method: "POST", body }).then(
-    (r) => r.json() as unknown as JRPC.Response
-  );
+  return fetch(url, { headers, method: "POST", body }).then((res) => {
+    if (res.status !== 200) {
+      throw new Error(`Unexpected response: ${res.status}, ${res.text()}`);
+    }
+    return res.json() as unknown as JRPC.Response;
+  });
 }
 
 export function fetchRPC(
@@ -17,9 +20,12 @@ export function fetchRPC(
   const url = new URL(provider);
   const headers = mergeHeaders(reqHeaders);
   const body = JSON.stringify(req);
-  return fetch(url, { headers, method: "POST", body }).then(
-    (r) => r.json() as unknown as JRPC.Response
-  );
+  return fetch(url, { headers, method: "POST", body }).then((res) => {
+    if (res.status !== 200) {
+      throw new Error(`Unexpected response: ${res.status}, ${res.text()}`);
+    }
+    return res.json() as unknown as JRPC.Response;
+  });
 }
 
 function mergeHeaders(headers?: Record<string, string>) {

@@ -206,7 +206,7 @@ async function completeSegmentsEntry(
   const { provider, req, headers } = resReq.req;
   const resp = await ProviderAPI.fetchRPC(provider, req, headers).catch(
     (err: Error) => {
-      log.error("Error doing rpc request", err, provider, req);
+      log.error("Error doing rpc request", err, provider, JSON.stringify(req));
     }
   );
   if (!resp) {
