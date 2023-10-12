@@ -57,29 +57,37 @@ function initializeCipher(sharedPreSecret: Uint8Array, counter: number,peerId: s
   const startIndex = request ? 0 : 2
   const saltTag = request ? REQUEST_TAG : RESPONSE_TAG
 
+  // Construct salt for the HKDF
   const salt = Buffer.alloc(1 + peerId.length + saltTag.length)
   salt.writeUint8(RPCH_CRYPTO_VERSION)
   salt.write(peerId) // utf8 encoded
   salt.write(saltTag)
 
+  // Generate key material for expansion
   const hashLen = hash_length(BLAKE2S256_HASH);
   const prk = extract(BLAKE2S256_HASH, hashLen, Buffer.from(sharedPreSecret), Buffer.from(salt))
 
   const cipherKeyLen = CIPHER_KEY_LEN;
   const idx = new Uint8Array(1);
 
+  // First key material expansion for symmetric key
   idx[0] = startIndex;
   const key = expand(BLAKE2S256_HASH, hashLen, prk, cipherKeyLen, Buffer.from(idx))
-  idx[0] = startIndex + 1;
-  const ivm = expand(BLAKE2S256_HASH, hashLen, prk, CIPHER_IV_LEN - COUNTER_LEN, Buffer.from(idx))
 
+  // Second key material expansion for IV prefix
+  idx[0] = startIndex + 1;
+  const iv_prefix = expand(BLAKE2S256_HASH, hashLen, prk, CIPHER_IV_LEN - COUNTER_LEN, Buffer.from(idx))
+
+  // Concatenate the prefix with the counter to form the IV
   let iv = Buffer.alloc(CIPHER_IV_LEN)
-  ivm.copy(iv)
+  iv_prefix.copy(iv)
   iv.writeUint32BE(counter, CIPHER_IV_LEN - COUNTER_LEN)
 
+  // Initialize Chacha20 with Poly1305
   return chacha20poly1305(key, iv)
 }
 
+/// Generates a random secp256k1 keypair
 function generateEphemeralKey() {
   let privKey
   do {
@@ -88,9 +96,11 @@ function generateEphemeralKey() {
 
   const pubKey = publicKeyCreate(privKey)
   assert(pubKey.length == PUBLIC_KEY_SIZE_ENCODED)
+
   return { pubKey, privKey }
 }
 
+/// Extracts the X coordinate from the ECDH result
 function getXCoord(x: any, y: any) {
   const pubKey = new Uint8Array(33)
   pubKey[0] = (y[31] & 1) === 0 ? 0x02 : 0x03
@@ -98,6 +108,7 @@ function getXCoord(x: any, y: any) {
   return pubKey
 }
 
+/// Validates that (lowerBound - tolerance) <= value <= (upperBound + tolerance)
 function validateTS(value: number, lowerBound: number, upperBound: number) {
   assert(lowerBound < upperBound)
 
@@ -109,11 +120,26 @@ function validateTS(value: number, lowerBound: number, upperBound: number) {
   return lowerDiff <= TIMESTAMP_TOLERANCE_SEC && upperDiff <= TIMESTAMP_TOLERANCE_SEC
 }
 
+/// Called by the RPCh client
+/// Takes enveloped request data, the identity of the RPCh Exit Node and Request counter for such
+/// RPCh Exit node and then encrypts and authenticates the data.
+/// The encrypted data and new counter value to be persisted is returned in the resulting session.
 export function box_request(request: Envelope, exitNode: Identity): Result {
   assert(exitNode.publicKey.length == PUBLIC_KEY_SIZE_ENCODED, 'incorrect public key size')
 
-  const ephemeralKey = generateEphemeralKey()
-  const sharedPreSecret = ecdh(exitNode.publicKey, ephemeralKey.privKey, { hashfn: getXCoord })
+  let ephemeralKey
+  let sharedPreSecret
+  try {
+    ephemeralKey = generateEphemeralKey()
+    sharedPreSecret = ecdh(exitNode.publicKey, ephemeralKey.privKey, { hashfn: getXCoord })
+  }
+  catch (err) {
+    return {
+      isErr: true,
+      message: `ecdh failed ${err}`
+    }
+  }
+
   const newCounter = (Date.now() + 1) / 1000
 
   let cipher
@@ -157,6 +183,10 @@ export function box_request(request: Envelope, exitNode: Identity): Result {
   }
 }
 
+/// Called by the RPCh Exit Node
+/// Takes enveloped encrypted data, the local identity of the RPCh Exit Node and Request counter for
+/// RPCh Client node associated with the request and then decrypts and verifies the data.
+/// The decrypted data and new counter value to be persisted is returned in the resulting session.
 export function unbox_request(request: Envelope, myId: Identity, lastTsOfThisClient: Date): Result {
   const message = request.message
   if ((message[0] & 0x10) != (RPCH_CRYPTO_VERSION & 0x10)) {
@@ -180,9 +210,19 @@ export function unbox_request(request: Envelope, myId: Identity, lastTsOfThisCli
     }
   }
 
-  let ephemeralPk = message.slice(1, PUBLIC_KEY_SIZE_ENCODED)
-  let sharedPreSecret = ecdh(ephemeralPk, myId.privateKey, { hashfn: getXCoord })
-  let counter = Buffer.from(message).readUint32BE(1 + PUBLIC_KEY_SIZE_ENCODED)
+  let sharedPreSecret
+  try {
+    let ephemeralPk = message.slice(1, PUBLIC_KEY_SIZE_ENCODED)
+    sharedPreSecret = ecdh(ephemeralPk, myId.privateKey, { hashfn: getXCoord })
+  }
+  catch (err) {
+    return {
+      isErr: true,
+      message: `ecdh failed: ${err}`
+    }
+  }
+
+  const counter = Buffer.from(message).readUint32BE(1 + PUBLIC_KEY_SIZE_ENCODED)
 
   let cipher
   try {
@@ -223,6 +263,10 @@ export function unbox_request(request: Envelope, myId: Identity, lastTsOfThisCli
   }
 }
 
+/// Called by the RPCh Exit Node
+/// Takes enveloped response data, the request session obtained by unbox_request and Response counter for the associated
+/// RPCh Client node and then encrypts and authenticates the data.
+/// The encrypted data and new counter value to be persisted is returned in the resulting session.
 export function box_response(session: Session, response: Envelope): Result {
   const sharedPreSecret = session.sharedPreSecret
   if (!sharedPreSecret) {
@@ -272,6 +316,10 @@ export function box_response(session: Session, response: Envelope): Result {
   }
 }
 
+/// Called by the RPCh Client Node
+/// Takes enveloped encrypted data, the associated session returned by box_request and Request counter for
+/// RPCh Exit node associated with the response and then decrypts and verifies the data.
+/// The decrypted data and new counter value to be persisted is returned in the resulting session.
 export function unbox_response(session: Session, response: Envelope, lastTsOfThisExitNode: Date): Result {
   let sharedPreSecret = session.sharedPreSecret
   if (!sharedPreSecret) {
@@ -296,7 +344,7 @@ export function unbox_response(session: Session, response: Envelope, lastTsOfThi
     }
   }
 
-  let counter = Buffer.from(message).readUint32BE(1 + PUBLIC_KEY_SIZE_ENCODED)
+  const counter = Buffer.from(message).readUint32BE(1 + PUBLIC_KEY_SIZE_ENCODED)
 
   let cipher
   try {
