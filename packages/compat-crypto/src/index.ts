@@ -3,14 +3,6 @@ import { chacha20poly1305 } from '@noble/ciphers/chacha';
 import { randomBytes } from 'crypto';
 import { ecdh, privateKeyVerify, publicKeyCreate } from 'secp256k1';
 
-/// Wrapper for the request/response data
-/// along with the peer ID of the HOPR entry node and exit node
-export type Envelope = {
-    message: Uint8Array;
-    entryPeerId: string;
-    exitPeerId: string;
-};
-
 /// Represents a request-response session.
 export type Session = {
     request?: Uint8Array;
@@ -126,7 +118,7 @@ function validateTS(value: bigint, lowerBound: bigint, upperBound: bigint) {
 /// RPCh Exit node and then encrypts and authenticates the data.
 /// The encrypted data and new counter value to be persisted is returned in the resulting session.
 export function boxRequest(
-    request: Envelope,
+    { message, exitPeerId }: { message: Uint8Array; exitPeerId: string },
     exitNodePubKey: Uint8Array,
     randomFn: (len: number) => Uint8Array = randomBytes
 ): Result {
@@ -155,7 +147,7 @@ export function boxRequest(
 
     let cipher;
     try {
-        cipher = initializeCipher(sharedPreSecret, newCounter, request.exitPeerId, true);
+        cipher = initializeCipher(sharedPreSecret, newCounter, exitPeerId, true);
     } catch (err) {
         return {
             isErr: true,
@@ -165,7 +157,7 @@ export function boxRequest(
 
     let cipherText;
     try {
-        cipherText = cipher.encrypt(request.message);
+        cipherText = cipher.encrypt(message);
     } catch (err) {
         return {
             isErr: true,
@@ -203,11 +195,10 @@ export function boxRequest(
 /// The decrypted data and new counter value to be persisted is returned in the resulting session.
 /// Returns error and session if count verifcation failed so a response with the error message can still be boxed.
 export function unboxRequest(
-    request: Envelope,
+    { message, exitPeerId }: { message: Uint8Array; exitPeerId: string },
     privateKey: Uint8Array,
     lastTsOfThisClient: Date
 ): Result {
-    const message = request.message;
     if ((message[0] & 0x10) != (RPCH_CRYPTO_VERSION & 0x10)) {
         return {
             isErr: true,
@@ -249,7 +240,7 @@ export function unboxRequest(
 
     let cipher;
     try {
-        cipher = initializeCipher(sharedPreSecret, counter, request.exitPeerId, true);
+        cipher = initializeCipher(sharedPreSecret, counter, exitPeerId, true);
     } catch (err) {
         return {
             isErr: true,
@@ -291,7 +282,10 @@ export function unboxRequest(
 /// Takes enveloped response data, the request session obtained by unboxRequest and Response counter for the associated
 /// RPCh Client node and then encrypts and authenticates the data.
 /// The encrypted data and new counter value to be persisted is returned in the resulting session.
-export function boxResponse(session: Session, response: Envelope): Result {
+export function boxResponse(
+    session: Session,
+    { entryPeerId, message }: { entryPeerId: string; message: Uint8Array }
+): Result {
     const sharedPreSecret = session.sharedPreSecret;
     if (!sharedPreSecret) {
         return {
@@ -304,7 +298,7 @@ export function boxResponse(session: Session, response: Envelope): Result {
 
     let cipher;
     try {
-        cipher = initializeCipher(sharedPreSecret, newCounter, response.entryPeerId, false);
+        cipher = initializeCipher(sharedPreSecret, newCounter, entryPeerId, false);
     } catch (err) {
         return {
             isErr: true,
@@ -314,7 +308,7 @@ export function boxResponse(session: Session, response: Envelope): Result {
 
     let cipherText;
     try {
-        cipherText = cipher.encrypt(response.message);
+        cipherText = cipher.encrypt(message);
     } catch (err) {
         return {
             isErr: true,
@@ -344,7 +338,7 @@ export function boxResponse(session: Session, response: Envelope): Result {
 /// The decrypted data and new counter value to be persisted is returned in the resulting session.
 export function unboxResponse(
     session: Session,
-    response: Envelope,
+    { entryPeerId, message }: { entryPeerId: string; message: Uint8Array },
     lastTsOfThisExitNode: Date
 ): Result {
     const sharedPreSecret = session.sharedPreSecret;
@@ -354,8 +348,6 @@ export function unboxResponse(
             message: 'invalid session',
         };
     }
-
-    const message = response.message;
 
     if (message.length <= COUNTER_LEN + AUTH_TAG_LEN) {
         return {
@@ -368,7 +360,7 @@ export function unboxResponse(
 
     let cipher;
     try {
-        cipher = initializeCipher(sharedPreSecret, counter, response.entryPeerId, false);
+        cipher = initializeCipher(sharedPreSecret, counter, entryPeerId, false);
     } catch (err) {
         return {
             isErr: true,

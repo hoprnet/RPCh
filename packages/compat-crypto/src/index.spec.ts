@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { boxRequest, boxResponse, Envelope, Session, unboxRequest, unboxResponse } from './index';
+import { boxRequest, boxResponse, Session, unboxRequest, unboxResponse } from './index';
 import { randomBytes } from 'crypto';
 
 const EXIT_NODE_PK = '03d73c98d44618b7504bab1001adaa0a0c77adfb04db4b7732b1daba5e6523e7bf';
@@ -36,9 +36,8 @@ describe('RPCh Crypto protocol tests', function () {
         // Client side
         const request_msg = new Uint8Array(randomBytes(300));
 
-        const request_data: Envelope = {
+        const request_data = {
             message: request_msg,
-            entryPeerId: ENTRY_NODE,
             exitPeerId: EXIT_NODE,
         };
 
@@ -61,9 +60,8 @@ describe('RPCh Crypto protocol tests', function () {
 
         // Exit node side
 
-        const received_req_data: Envelope = {
+        const received_req_data = {
             message: data_on_wire,
-            entryPeerId: ENTRY_NODE,
             exitPeerId: EXIT_NODE,
         };
 
@@ -97,10 +95,9 @@ describe('RPCh Crypto protocol tests', function () {
             sharedPreSecret: fromHex(TEST_VECTOR_EPHEMERAL_SECRET),
         };
 
-        const response_data: Envelope = {
+        const response_data = {
             message: response_msg,
             entryPeerId: ENTRY_NODE,
-            exitPeerId: EXIT_NODE,
         };
 
         const resp_box_result = boxResponse(mock_session_with_client, response_data);
@@ -117,10 +114,9 @@ describe('RPCh Crypto protocol tests', function () {
 
         // Client node side
 
-        const received_resp_data: Envelope = {
+        const received_resp_data = {
             message: data_on_wire,
             entryPeerId: ENTRY_NODE,
-            exitPeerId: EXIT_NODE,
         };
 
         const mock_session_with_exit_node: Session = {
@@ -149,9 +145,8 @@ describe('RPCh Crypto protocol tests', function () {
         // Client side
         const request_msg = new Uint8Array(randomBytes(300));
 
-        const request_data: Envelope = {
+        const request_data = {
             message: request_msg,
-            entryPeerId: ENTRY_NODE,
             exitPeerId: EXIT_NODE,
         };
 
@@ -174,9 +169,8 @@ describe('RPCh Crypto protocol tests', function () {
 
         // Exit node side
 
-        const received_req_data: Envelope = {
+        const received_req_data = {
             message: request_data_on_wire,
-            entryPeerId: ENTRY_NODE,
             exitPeerId: EXIT_NODE,
         };
 
@@ -203,10 +197,9 @@ describe('RPCh Crypto protocol tests', function () {
         // Exit node side
         const response_msg = new Uint8Array(randomBytes(300));
 
-        const response_data: Envelope = {
+        const response_data = {
             message: response_msg,
             entryPeerId: ENTRY_NODE,
-            exitPeerId: EXIT_NODE,
         };
 
         const resp_box_result = boxResponse(exit_session, response_data);
@@ -223,10 +216,9 @@ describe('RPCh Crypto protocol tests', function () {
 
         // Client node side
 
-        const received_resp_data: Envelope = {
+        const received_resp_data = {
             message: response_data_on_wire,
             entryPeerId: ENTRY_NODE,
-            exitPeerId: EXIT_NODE,
         };
 
         const stored_last_received_resp_ts = new Date(Date.now() - 2000); // 2s ago
@@ -252,9 +244,8 @@ describe('RPCh Crypto protocol tests', function () {
 
         // Client side
 
-        const request_data: Envelope = {
+        const request_data = {
             message: fromHex(TEST_VECTOR_REQUEST_INPUT),
-            entryPeerId: ENTRY_NODE,
             exitPeerId: EXIT_NODE,
         };
 
@@ -287,9 +278,8 @@ describe('RPCh Crypto protocol tests', function () {
 
         jest.setSystemTime(new Date(TEST_COUNTER + 10));
 
-        const received_req_data: Envelope = {
+        const received_req_data = {
             message: data_on_wire,
-            entryPeerId: ENTRY_NODE,
             exitPeerId: EXIT_NODE,
         };
 
@@ -323,10 +313,9 @@ describe('RPCh Crypto protocol tests', function () {
             sharedPreSecret: fromHex(TEST_VECTOR_EPHEMERAL_SECRET),
         };
 
-        const response_data: Envelope = {
+        const response_data = {
             message: fromHex(TEST_VECTOR_RESPONSE_INPUT),
             entryPeerId: ENTRY_NODE,
-            exitPeerId: EXIT_NODE,
         };
 
         const resp_box_result = boxResponse(mock_session_with_client, response_data);
@@ -347,10 +336,9 @@ describe('RPCh Crypto protocol tests', function () {
 
         jest.setSystemTime(new Date(TEST_COUNTER + 10));
 
-        const received_resp_data: Envelope = {
+        const received_resp_data = {
             message: data_on_wire,
             entryPeerId: ENTRY_NODE,
-            exitPeerId: EXIT_NODE,
         };
 
         const mock_session_with_exit_node: Session = {
