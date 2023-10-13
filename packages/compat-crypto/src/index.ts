@@ -11,12 +11,9 @@ export type Session = {
     sharedPreSecret?: Uint8Array;
 };
 
-/// Result of RPCh crypto operation
-export type Result = {
-    isErr: boolean;
-    session?: Session;
-    message?: string;
-};
+export type ResSuccess = { isErr: false; session: Session };
+export type ResError = { isErr: true; message: string; session?: Session };
+export type Result = ResSuccess | ResError;
 
 /// RPCh Crypto protocol version
 export const RPCH_CRYPTO_VERSION = 0x12;
@@ -329,6 +326,7 @@ export function boxResponse(
 
     return {
         isErr: false,
+        session,
     };
 }
 
@@ -390,5 +388,10 @@ export function unboxResponse(
 
     return {
         isErr: false,
+        session,
     };
+}
+
+export function isError(res: Result): res is ResError {
+    return res.isErr;
 }
