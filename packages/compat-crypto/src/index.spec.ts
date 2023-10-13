@@ -39,11 +39,10 @@ describe('RPCh Crypto protocol tests', function () {
         const request_data = {
             message: request_msg,
             exitPeerId: EXIT_NODE,
+            exitPublicKey: fromHex(EXIT_NODE_PK),
         };
 
-        const exitPublicKey = fromHex(EXIT_NODE_PK);
-
-        const req_box_result = boxRequest(request_data, exitPublicKey);
+        const req_box_result = boxRequest(request_data);
         assert(
             !isError(req_box_result),
             `request boxing must not fail, error: ${
@@ -65,17 +64,12 @@ describe('RPCh Crypto protocol tests', function () {
         const received_req_data = {
             message: data_on_wire,
             exitPeerId: EXIT_NODE,
+            exitPrivateKey: fromHex(EXIT_NODE_SK),
         };
-
-        const exitPrivateKey = fromHex(EXIT_NODE_SK);
 
         const stored_last_received_req_ts = new Date(Date.now() - 2000); // 2s ago
 
-        const req_unbox_result = unboxRequest(
-            received_req_data,
-            exitPrivateKey,
-            stored_last_received_req_ts
-        );
+        const req_unbox_result = unboxRequest(received_req_data, stored_last_received_req_ts);
         assert(
             !isError(req_unbox_result),
             `request unboxing must not fail, error: ${
@@ -156,11 +150,10 @@ describe('RPCh Crypto protocol tests', function () {
         const request_data = {
             message: request_msg,
             exitPeerId: EXIT_NODE,
+            exitPublicKey: fromHex(EXIT_NODE_PK),
         };
 
-        const exitPublicKey = fromHex(EXIT_NODE_PK);
-
-        const req_box_result = boxRequest(request_data, exitPublicKey);
+        const req_box_result = boxRequest(request_data);
         assert(
             !isError(req_box_result),
             `request boxing must not fail, error: ${
@@ -182,17 +175,12 @@ describe('RPCh Crypto protocol tests', function () {
         const received_req_data = {
             message: request_data_on_wire,
             exitPeerId: EXIT_NODE,
+            exitPrivateKey: fromHex(EXIT_NODE_SK),
         };
-
-        const exitPrivateKey = fromHex(EXIT_NODE_SK);
 
         const stored_last_received_req_ts = new Date(Date.now() - 2000); // 2s ago
 
-        const req_unbox_result = unboxRequest(
-            received_req_data,
-            exitPrivateKey,
-            stored_last_received_req_ts
-        );
+        const req_unbox_result = unboxRequest(received_req_data, stored_last_received_req_ts);
         assert(
             !isError(req_unbox_result),
             `request unboxing must not fail, error: ${
@@ -263,11 +251,10 @@ describe('RPCh Crypto protocol tests', function () {
         const request_data = {
             message: fromHex(TEST_VECTOR_REQUEST_INPUT),
             exitPeerId: EXIT_NODE,
+            exitPublicKey: fromHex(EXIT_NODE_PK),
         };
 
-        const exitPublicKey = fromHex(EXIT_NODE_PK);
-
-        const req_box_result = boxRequest(request_data, exitPublicKey, (_) =>
+        const req_box_result = boxRequest(request_data, (_) =>
             fromHex(TEST_VECTOR_EPHEMERAL_PRIVATE_KEY)
         );
         assert(
@@ -299,15 +286,10 @@ describe('RPCh Crypto protocol tests', function () {
         const received_req_data = {
             message: data_on_wire,
             exitPeerId: EXIT_NODE,
+            exitPrivateKey: fromHex(EXIT_NODE_SK),
         };
 
-        const exitPrivateKey = fromHex(EXIT_NODE_SK);
-
-        const req_unbox_result = unboxRequest(
-            received_req_data,
-            exitPrivateKey,
-            new Date(TEST_COUNTER)
-        );
+        const req_unbox_result = unboxRequest(received_req_data, new Date(TEST_COUNTER));
         assert(
             !isError(req_unbox_result),
             `request unboxing must not fail, error: ${

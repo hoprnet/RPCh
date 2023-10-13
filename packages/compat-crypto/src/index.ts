@@ -115,11 +115,14 @@ function validateTS(value: bigint, lowerBound: bigint, upperBound: bigint) {
 /// RPCh Exit node and then encrypts and authenticates the data.
 /// The encrypted data and new counter value to be persisted is returned in the resulting session.
 export function boxRequest(
-    { message, exitPeerId }: { message: Uint8Array; exitPeerId: string },
-    exitNodePubKey: Uint8Array,
+    {
+        message,
+        exitPeerId,
+        exitPublicKey,
+    }: { message: Uint8Array; exitPeerId: string; exitPublicKey: Uint8Array },
     randomFn: (len: number) => Uint8Array = randomBytes
 ): Result {
-    if (exitNodePubKey.length !== PUBLIC_KEY_SIZE_ENCODED) {
+    if (exitPublicKey.length !== PUBLIC_KEY_SIZE_ENCODED) {
         return { isErr: true, message: 'incorrect public key size' };
     }
 
@@ -128,7 +131,7 @@ export function boxRequest(
     try {
         ephemeralKey = generateEphemeralKey(randomFn);
         sharedPreSecret = ecdh(
-            exitNodePubKey,
+            exitPublicKey,
             ephemeralKey.privKey,
             { hashfn: getXCoord },
             Buffer.alloc(PUBLIC_KEY_SIZE_ENCODED - 1)
@@ -192,8 +195,11 @@ export function boxRequest(
 /// The decrypted data and new counter value to be persisted is returned in the resulting session.
 /// Returns error and session if count verifcation failed so a response with the error message can still be boxed.
 export function unboxRequest(
-    { message, exitPeerId }: { message: Uint8Array; exitPeerId: string },
-    privateKey: Uint8Array,
+    {
+        message,
+        exitPeerId,
+        exitPrivateKey,
+    }: { message: Uint8Array; exitPeerId: string; exitPrivateKey: Uint8Array },
     lastTsOfThisClient: Date
 ): Result {
     if ((message[0] & 0x10) != (RPCH_CRYPTO_VERSION & 0x10)) {
@@ -210,7 +216,7 @@ export function unboxRequest(
         };
     }
 
-    if (!privateKey) {
+    if (!exitPrivateKey) {
         return {
             isErr: true,
             message: 'missing private key',
@@ -222,7 +228,7 @@ export function unboxRequest(
         const ephemeralPk = message.slice(1, PUBLIC_KEY_SIZE_ENCODED + 1);
         sharedPreSecret = ecdh(
             ephemeralPk,
-            privateKey,
+            exitPrivateKey,
             { hashfn: getXCoord },
             Buffer.alloc(PUBLIC_KEY_SIZE_ENCODED - 1)
         );
