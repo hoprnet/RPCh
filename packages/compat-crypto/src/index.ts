@@ -1,7 +1,6 @@
 import { hash_length, extract, expand } from 'futoin-hkdf';
 import { chacha20poly1305 } from '@noble/ciphers/chacha';
 import { randomBytes } from 'crypto';
-import assert from 'assert';
 import { ecdh, privateKeyVerify, publicKeyCreate } from 'secp256k1';
 
 /// Wrapper for the request/response data
@@ -96,7 +95,9 @@ function generateEphemeralKey(randomFn: (len: number) => Uint8Array) {
     } while (!privateKeyVerify(privKey));
 
     const pubKey = publicKeyCreate(privKey);
-    assert(pubKey.length == PUBLIC_KEY_SIZE_ENCODED);
+    if (pubKey.length !== PUBLIC_KEY_SIZE_ENCODED) {
+        throw new Error('key size mismatch');
+    }
 
     return { pubKey, privKey };
 }
@@ -108,7 +109,9 @@ function getXCoord(x: Uint8Array, _: Uint8Array) {
 
 /// Validates that (lowerBound - tolerance) <= value <= (upperBound + tolerance)
 function validateTS(value: bigint, lowerBound: bigint, upperBound: bigint) {
-    assert(lowerBound < upperBound);
+    if (lowerBound >= upperBound) {
+        return false;
+    }
 
     const lowerDiff = lowerBound - value;
     const upperDiff = value - upperBound;
