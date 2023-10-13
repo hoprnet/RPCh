@@ -12,14 +12,6 @@ export type Envelope = {
     exitPeerId: string;
 };
 
-/// Identifies a party in the protocol.
-/// If the party is remote, only the public key is populated.
-/// If the party is local, also the secret key is populated.
-export type Identity = {
-    publicKey: Uint8Array;
-    privateKey?: Uint8Array;
-};
-
 /// Represents a request-response session.
 export type Session = {
     request?: Uint8Array;
@@ -127,22 +119,24 @@ function validateTS(value: bigint, lowerBound: bigint, upperBound: bigint) {
 }
 
 /// Called by the RPCh client
-/// Takes enveloped request data, the identity of the RPCh Exit Node and Request counter for such
+/// Takes enveloped request data, the public key of the RPCh Exit Node and Request counter for such
 /// RPCh Exit node and then encrypts and authenticates the data.
 /// The encrypted data and new counter value to be persisted is returned in the resulting session.
 export function boxRequest(
     request: Envelope,
-    exitNode: Identity,
+    exitNodePubKey: Uint8Array,
     randomFn: (len: number) => Uint8Array = randomBytes
 ): Result {
-    assert(exitNode.publicKey.length == PUBLIC_KEY_SIZE_ENCODED, 'incorrect public key size');
+    if (exitNodePubKey.length !== PUBLIC_KEY_SIZE_ENCODED) {
+        return { isErr: true, message: 'incorrect public key size' };
+    }
 
     let ephemeralKey;
     let sharedPreSecret;
     try {
         ephemeralKey = generateEphemeralKey(randomFn);
         sharedPreSecret = ecdh(
-            exitNode.publicKey,
+            exitNodePubKey,
             ephemeralKey.privKey,
             { hashfn: getXCoord },
             Buffer.alloc(PUBLIC_KEY_SIZE_ENCODED - 1)
@@ -201,10 +195,14 @@ export function boxRequest(
 }
 
 /// Called by the RPCh Exit Node
-/// Takes enveloped encrypted data, the local identity of the RPCh Exit Node and Request counter for
+/// Takes enveloped encrypted data, the private key of the RPCh Exit Node and Request counter for
 /// RPCh Client node associated with the request and then decrypts and verifies the data.
 /// The decrypted data and new counter value to be persisted is returned in the resulting session.
-export function unboxRequest(request: Envelope, myId: Identity, lastTsOfThisClient: Date): Result {
+export function unboxRequest(
+    request: Envelope,
+    privateKey: Uint8Array,
+    lastTsOfThisClient: Date
+): Result {
     const message = request.message;
     if ((message[0] & 0x10) != (RPCH_CRYPTO_VERSION & 0x10)) {
         return {
@@ -220,10 +218,10 @@ export function unboxRequest(request: Envelope, myId: Identity, lastTsOfThisClie
         };
     }
 
-    if (!myId.privateKey) {
+    if (!privateKey) {
         return {
             isErr: true,
-            message: 'missing identity private key',
+            message: 'missing private key',
         };
     }
 
@@ -232,7 +230,7 @@ export function unboxRequest(request: Envelope, myId: Identity, lastTsOfThisClie
         const ephemeralPk = message.slice(1, PUBLIC_KEY_SIZE_ENCODED + 1);
         sharedPreSecret = ecdh(
             ephemeralPk,
-            myId.privateKey,
+            privateKey,
             { hashfn: getXCoord },
             Buffer.alloc(PUBLIC_KEY_SIZE_ENCODED - 1)
         );

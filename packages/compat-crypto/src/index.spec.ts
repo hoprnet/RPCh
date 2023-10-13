@@ -1,13 +1,5 @@
 import assert from 'assert';
-import {
-    boxRequest,
-    boxResponse,
-    Envelope,
-    Identity,
-    Session,
-    unboxRequest,
-    unboxResponse,
-} from './index';
+import { boxRequest, boxResponse, Envelope, Session, unboxRequest, unboxResponse } from './index';
 import { randomBytes } from 'crypto';
 
 const EXIT_NODE_PK = '03d73c98d44618b7504bab1001adaa0a0c77adfb04db4b7732b1daba5e6523e7bf';
@@ -50,11 +42,9 @@ describe('RPCh Crypto protocol tests', function () {
             exitPeerId: EXIT_NODE,
         };
 
-        const exit_id: Identity = {
-            publicKey: fromHex(EXIT_NODE_PK),
-        };
+        const exitPublicKey = fromHex(EXIT_NODE_PK);
 
-        const req_box_result = boxRequest(request_data, exit_id);
+        const req_box_result = boxRequest(request_data, exitPublicKey);
         assert(
             !req_box_result.isErr,
             `request boxing must not fail, error: ${req_box_result.message}`
@@ -77,16 +67,13 @@ describe('RPCh Crypto protocol tests', function () {
             exitPeerId: EXIT_NODE,
         };
 
-        const exit_node_identity: Identity = {
-            publicKey: fromHex(EXIT_NODE_PK),
-            privateKey: fromHex(EXIT_NODE_SK),
-        };
+        const exitPrivateKey = fromHex(EXIT_NODE_SK);
 
         const stored_last_received_req_ts = new Date(Date.now() - 2000); // 2s ago
 
         const req_unbox_result = unboxRequest(
             received_req_data,
-            exit_node_identity,
+            exitPrivateKey,
             stored_last_received_req_ts
         );
         assert(
@@ -168,11 +155,9 @@ describe('RPCh Crypto protocol tests', function () {
             exitPeerId: EXIT_NODE,
         };
 
-        const exit_id: Identity = {
-            publicKey: fromHex(EXIT_NODE_PK),
-        };
+        const exitPublicKey = fromHex(EXIT_NODE_PK);
 
-        const req_box_result = boxRequest(request_data, exit_id);
+        const req_box_result = boxRequest(request_data, exitPublicKey);
         assert(
             !req_box_result.isErr,
             `request boxing must not fail, error: ${req_box_result.message}`
@@ -195,16 +180,13 @@ describe('RPCh Crypto protocol tests', function () {
             exitPeerId: EXIT_NODE,
         };
 
-        const exit_node_identity: Identity = {
-            publicKey: fromHex(EXIT_NODE_PK),
-            privateKey: fromHex(EXIT_NODE_SK),
-        };
+        const exitPrivateKey = fromHex(EXIT_NODE_SK);
 
         const stored_last_received_req_ts = new Date(Date.now() - 2000); // 2s ago
 
         const req_unbox_result = unboxRequest(
             received_req_data,
-            exit_node_identity,
+            exitPrivateKey,
             stored_last_received_req_ts
         );
         assert(
@@ -276,11 +258,9 @@ describe('RPCh Crypto protocol tests', function () {
             exitPeerId: EXIT_NODE,
         };
 
-        const exit_id: Identity = {
-            publicKey: fromHex(EXIT_NODE_PK),
-        };
+        const exitPublicKey = fromHex(EXIT_NODE_PK);
 
-        const req_box_result = boxRequest(request_data, exit_id, (_) =>
+        const req_box_result = boxRequest(request_data, exitPublicKey, (_) =>
             fromHex(TEST_VECTOR_EPHEMERAL_PRIVATE_KEY)
         );
         assert(
@@ -313,14 +293,11 @@ describe('RPCh Crypto protocol tests', function () {
             exitPeerId: EXIT_NODE,
         };
 
-        const exit_node_identity: Identity = {
-            publicKey: fromHex(EXIT_NODE_PK),
-            privateKey: fromHex(EXIT_NODE_SK),
-        };
+        const exitPrivateKey = fromHex(EXIT_NODE_SK);
 
         const req_unbox_result = unboxRequest(
             received_req_data,
-            exit_node_identity,
+            exitPrivateKey,
             new Date(TEST_COUNTER)
         );
         assert(
