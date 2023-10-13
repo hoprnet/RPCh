@@ -201,6 +201,7 @@ export function boxRequest(
 /// Takes enveloped encrypted data, the private key of the RPCh Exit Node and Request counter for
 /// RPCh Client node associated with the request and then decrypts and verifies the data.
 /// The decrypted data and new counter value to be persisted is returned in the resulting session.
+/// Returns error and session if count verifcation failed so a response with the error message can still be boxed.
 export function unboxRequest(
     request: Envelope,
     privateKey: Uint8Array,
@@ -266,20 +267,23 @@ export function unboxRequest(
         };
     }
 
+    const session = {
+        request: plaintext,
+        updatedTS: counter,
+        sharedPreSecret,
+    };
+
     if (!validateTS(counter, BigInt(lastTsOfThisClient.getTime()), BigInt(Date.now()))) {
         return {
             isErr: true,
             message: 'ts verification failed',
+            session,
         };
     }
 
     return {
         isErr: false,
-        session: {
-            request: plaintext,
-            updatedTS: counter,
-            sharedPreSecret,
-        },
+        session,
     };
 }
 
