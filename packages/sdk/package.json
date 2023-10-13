@@ -17,8 +17,6 @@
     "@rpch/configs-prettier": "*",
     "@rpch/configs-tsup": "*",
     "@rpch/configs-typescript": "*",
-    "@rpch/crypto": "0.3.4",
-    "@rpch/crypto-for-nodejs": "0.3.4",
     "@types/async-retry": "^1.4.5"
   },
   "dependencies": {
