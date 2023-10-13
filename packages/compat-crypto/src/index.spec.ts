@@ -1,12 +1,12 @@
 import assert from 'assert';
 import {
-    box_request,
-    box_response,
+    boxRequest,
+    boxResponse,
     Envelope,
     Identity,
     Session,
-    unbox_request,
-    unbox_response,
+    unboxRequest,
+    unboxResponse,
 } from './index';
 import { randomBytes } from 'crypto';
 
@@ -54,7 +54,7 @@ describe('RPCh Crypto protocol tests', function () {
             publicKey: fromHex(EXIT_NODE_PK),
         };
 
-        const req_box_result = box_request(request_data, exit_id);
+        const req_box_result = boxRequest(request_data, exit_id);
         assert(
             !req_box_result.isErr,
             `request boxing must not fail, error: ${req_box_result.message}`
@@ -84,7 +84,7 @@ describe('RPCh Crypto protocol tests', function () {
 
         const stored_last_received_req_ts = new Date(Date.now() - 2000); // 2s ago
 
-        const req_unbox_result = unbox_request(
+        const req_unbox_result = unboxRequest(
             received_req_data,
             exit_node_identity,
             stored_last_received_req_ts
@@ -116,7 +116,7 @@ describe('RPCh Crypto protocol tests', function () {
             exitPeerId: EXIT_NODE,
         };
 
-        const resp_box_result = box_response(mock_session_with_client, response_data);
+        const resp_box_result = boxResponse(mock_session_with_client, response_data);
         assert(
             !resp_box_result.isErr,
             `response boxing must not fail, error: ${resp_box_result.message}`
@@ -143,7 +143,7 @@ describe('RPCh Crypto protocol tests', function () {
 
         const stored_last_received_resp_ts = new Date(Date.now() - 2000); // 2s ago
 
-        const resp_unbox_result = unbox_response(
+        const resp_unbox_result = unboxResponse(
             mock_session_with_exit_node,
             received_resp_data,
             stored_last_received_resp_ts
@@ -172,7 +172,7 @@ describe('RPCh Crypto protocol tests', function () {
             publicKey: fromHex(EXIT_NODE_PK),
         };
 
-        const req_box_result = box_request(request_data, exit_id);
+        const req_box_result = boxRequest(request_data, exit_id);
         assert(
             !req_box_result.isErr,
             `request boxing must not fail, error: ${req_box_result.message}`
@@ -202,7 +202,7 @@ describe('RPCh Crypto protocol tests', function () {
 
         const stored_last_received_req_ts = new Date(Date.now() - 2000); // 2s ago
 
-        const req_unbox_result = unbox_request(
+        const req_unbox_result = unboxRequest(
             received_req_data,
             exit_node_identity,
             stored_last_received_req_ts
@@ -227,7 +227,7 @@ describe('RPCh Crypto protocol tests', function () {
             exitPeerId: EXIT_NODE,
         };
 
-        const resp_box_result = box_response(exit_session, response_data);
+        const resp_box_result = boxResponse(exit_session, response_data);
         assert(
             !resp_box_result.isErr,
             `response boxing must not fail, error: ${resp_box_result.message}`
@@ -249,7 +249,7 @@ describe('RPCh Crypto protocol tests', function () {
 
         const stored_last_received_resp_ts = new Date(Date.now() - 2000); // 2s ago
 
-        const resp_unbox_result = unbox_response(
+        const resp_unbox_result = unboxResponse(
             client_session,
             received_resp_data,
             stored_last_received_resp_ts
@@ -280,7 +280,7 @@ describe('RPCh Crypto protocol tests', function () {
             publicKey: fromHex(EXIT_NODE_PK),
         };
 
-        const req_box_result = box_request(request_data, exit_id, (_) =>
+        const req_box_result = boxRequest(request_data, exit_id, (_) =>
             fromHex(TEST_VECTOR_EPHEMERAL_PRIVATE_KEY)
         );
         assert(
@@ -318,7 +318,7 @@ describe('RPCh Crypto protocol tests', function () {
             privateKey: fromHex(EXIT_NODE_SK),
         };
 
-        const req_unbox_result = unbox_request(
+        const req_unbox_result = unboxRequest(
             received_req_data,
             exit_node_identity,
             new Date(TEST_COUNTER)
@@ -352,7 +352,7 @@ describe('RPCh Crypto protocol tests', function () {
             exitPeerId: EXIT_NODE,
         };
 
-        const resp_box_result = box_response(mock_session_with_client, response_data);
+        const resp_box_result = boxResponse(mock_session_with_client, response_data);
         assert(
             !resp_box_result.isErr,
             `response boxing must not fail, error: ${resp_box_result.message}`
@@ -381,7 +381,7 @@ describe('RPCh Crypto protocol tests', function () {
             sharedPreSecret: fromHex(TEST_VECTOR_EPHEMERAL_SECRET),
         };
 
-        const resp_unbox_result = unbox_response(
+        const resp_unbox_result = unboxResponse(
             mock_session_with_exit_node,
             received_resp_data,
             new Date(TEST_COUNTER)

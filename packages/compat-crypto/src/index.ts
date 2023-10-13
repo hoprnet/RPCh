@@ -130,7 +130,7 @@ function validateTS(value: bigint, lowerBound: bigint, upperBound: bigint) {
 /// Takes enveloped request data, the identity of the RPCh Exit Node and Request counter for such
 /// RPCh Exit node and then encrypts and authenticates the data.
 /// The encrypted data and new counter value to be persisted is returned in the resulting session.
-export function box_request(
+export function boxRequest(
     request: Envelope,
     exitNode: Identity,
     randomFn: (len: number) => Uint8Array = randomBytes
@@ -204,7 +204,7 @@ export function box_request(
 /// Takes enveloped encrypted data, the local identity of the RPCh Exit Node and Request counter for
 /// RPCh Client node associated with the request and then decrypts and verifies the data.
 /// The decrypted data and new counter value to be persisted is returned in the resulting session.
-export function unbox_request(request: Envelope, myId: Identity, lastTsOfThisClient: Date): Result {
+export function unboxRequest(request: Envelope, myId: Identity, lastTsOfThisClient: Date): Result {
     const message = request.message;
     if ((message[0] & 0x10) != (RPCH_CRYPTO_VERSION & 0x10)) {
         return {
@@ -283,10 +283,10 @@ export function unbox_request(request: Envelope, myId: Identity, lastTsOfThisCli
 }
 
 /// Called by the RPCh Exit Node
-/// Takes enveloped response data, the request session obtained by unbox_request and Response counter for the associated
+/// Takes enveloped response data, the request session obtained by unboxRequest and Response counter for the associated
 /// RPCh Client node and then encrypts and authenticates the data.
 /// The encrypted data and new counter value to be persisted is returned in the resulting session.
-export function box_response(session: Session, response: Envelope): Result {
+export function boxResponse(session: Session, response: Envelope): Result {
     const sharedPreSecret = session.sharedPreSecret;
     if (!sharedPreSecret) {
         return {
@@ -334,10 +334,10 @@ export function box_response(session: Session, response: Envelope): Result {
 }
 
 /// Called by the RPCh Client Node
-/// Takes enveloped encrypted data, the associated session returned by box_request and Request counter for
+/// Takes enveloped encrypted data, the associated session returned by boxRequest and Request counter for
 /// RPCh Exit node associated with the response and then decrypts and verifies the data.
 /// The decrypted data and new counter value to be persisted is returned in the resulting session.
-export function unbox_response(
+export function unboxResponse(
     session: Session,
     response: Envelope,
     lastTsOfThisExitNode: Date
