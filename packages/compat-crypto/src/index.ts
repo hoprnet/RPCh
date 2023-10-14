@@ -11,9 +11,17 @@ export type Session = {
     sharedPreSecret?: Uint8Array;
 };
 
-export type ResSuccess = { isErr: false; session: Session };
-export type ResError = { isErr: true; message: string; session?: Session };
-export type Result = ResSuccess | ResError;
+enum ResState {
+    Ok,
+    OkFailedCounter,
+    Failed,
+}
+
+export type ResOk = { res: ResState.Ok; session: Session };
+export type ResOkFailedCounter = { res: ResState.OkFailedCounter; session: Session };
+export type ResFailed = { res: ResState.Failed; error: string };
+
+export type Result = ResOk | ResFailed;
 
 /// RPCh Crypto protocol version
 export const RPCH_CRYPTO_VERSION = 0x12;
@@ -123,7 +131,7 @@ export function boxRequest(
     randomFn: (len: number) => Uint8Array = randomBytes
 ): Result {
     if (exitPublicKey.length !== PUBLIC_KEY_SIZE_ENCODED) {
-        return { isErr: true, message: 'incorrect public key size' };
+        return { res: ResState.Failed, error: 'incorrect public key size' };
     }
 
     let ephemeralKey;
@@ -137,10 +145,7 @@ export function boxRequest(
             Buffer.alloc(PUBLIC_KEY_SIZE_ENCODED - 1)
         );
     } catch (err) {
-        return {
-            isErr: true,
-            message: `ecdh failed ${err}`,
-        };
+        return { res: ResState.Failed, error: `ecdh failed ${err}` };
     }
 
     const newCounter = BigInt(Date.now() + 1);
@@ -149,10 +154,7 @@ export function boxRequest(
     try {
         cipher = initializeCipher(sharedPreSecret, newCounter, exitPeerId, true);
     } catch (err) {
-        return {
-            isErr: true,
-            message: `failed to initialize cipher: ${err}`,
-        };
+        return { res: ResState.Failed, error: `failed to initialize cipher: ${err}` };
     }
 
     let cipherText;
@@ -160,8 +162,8 @@ export function boxRequest(
         cipherText = cipher.encrypt(message);
     } catch (err) {
         return {
-            isErr: true,
-            message: `failed to encrypt data: ${err}`,
+            res: ResState.Failed,
+            error: `failed to encrypt data: ${err}`,
         };
     }
 
@@ -180,7 +182,7 @@ export function boxRequest(
     ]);
 
     return {
-        isErr: false,
+        res: ResState.Ok,
         session: {
             request: new Uint8Array(result),
             updatedTS: newCounter,
@@ -201,25 +203,25 @@ export function unboxRequest(
         exitPrivateKey,
     }: { message: Uint8Array; exitPeerId: string; exitPrivateKey: Uint8Array },
     lastTsOfThisClient: Date
-): Result {
+): Result | ResOkFailedCounter {
     if ((message[0] & 0x10) != (RPCH_CRYPTO_VERSION & 0x10)) {
         return {
-            isErr: true,
-            message: 'unsupported protocol version',
+            res: ResState.Failed,
+            error: 'unsupported protocol version',
         };
     }
 
     if (message.length <= 1 + PUBLIC_KEY_SIZE_ENCODED + COUNTER_LEN + AUTH_TAG_LEN) {
         return {
-            isErr: true,
-            message: 'invalid message size',
+            res: ResState.Failed,
+            error: 'invalid message size',
         };
     }
 
     if (!exitPrivateKey) {
         return {
-            isErr: true,
-            message: 'missing private key',
+            res: ResState.Failed,
+            error: 'missing private key',
         };
     }
 
@@ -234,8 +236,8 @@ export function unboxRequest(
         );
     } catch (err) {
         return {
-            isErr: true,
-            message: `ecdh failed: ${err}`,
+            res: ResState.Failed,
+            error: `ecdh failed: ${err}`,
         };
     }
 
@@ -246,8 +248,8 @@ export function unboxRequest(
         cipher = initializeCipher(sharedPreSecret, counter, exitPeerId, true);
     } catch (err) {
         return {
-            isErr: true,
-            message: `failed to initialize cipher: ${err}`,
+            res: ResState.Failed,
+            error: `failed to initialize cipher: ${err}`,
         };
     }
 
@@ -256,8 +258,8 @@ export function unboxRequest(
         plaintext = cipher.decrypt(message.slice(1 + PUBLIC_KEY_SIZE_ENCODED + COUNTER_LEN));
     } catch (err) {
         return {
-            isErr: true,
-            message: `decryption failed: ${err}`,
+            res: ResState.Failed,
+            error: `decryption failed: ${err}`,
         };
     }
 
@@ -269,14 +271,13 @@ export function unboxRequest(
 
     if (!validateTS(counter, BigInt(lastTsOfThisClient.getTime()), BigInt(Date.now()))) {
         return {
-            isErr: true,
-            message: 'ts verification failed',
+            res: ResState.OkFailedCounter,
             session,
         };
     }
 
     return {
-        isErr: false,
+        res: ResState.Ok,
         session,
     };
 }
@@ -292,8 +293,8 @@ export function boxResponse(
     const sharedPreSecret = session.sharedPreSecret;
     if (!sharedPreSecret) {
         return {
-            isErr: true,
-            message: 'invalid session',
+            res: ResState.Failed,
+            error: 'invalid session',
         };
     }
 
@@ -304,8 +305,8 @@ export function boxResponse(
         cipher = initializeCipher(sharedPreSecret, newCounter, entryPeerId, false);
     } catch (err) {
         return {
-            isErr: true,
-            message: `failed to initialize cipher: ${err}`,
+            res: ResState.Failed,
+            error: `failed to initialize cipher: ${err}`,
         };
     }
 
@@ -314,8 +315,8 @@ export function boxResponse(
         cipherText = cipher.encrypt(message);
     } catch (err) {
         return {
-            isErr: true,
-            message: `failed to encrypt data: ${err}`,
+            res: ResState.Failed,
+            error: `failed to encrypt data: ${err}`,
         };
     }
 
@@ -331,7 +332,7 @@ export function boxResponse(
     session.updatedTS = newCounter;
 
     return {
-        isErr: false,
+        res: ResState.Ok,
         session,
     };
 }
@@ -344,19 +345,19 @@ export function unboxResponse(
     session: Session,
     { entryPeerId, message }: { entryPeerId: string; message: Uint8Array },
     lastTsOfThisExitNode: Date
-): Result {
+): Result | ResOkFailedCounter {
     const sharedPreSecret = session.sharedPreSecret;
     if (!sharedPreSecret) {
         return {
-            isErr: true,
-            message: 'invalid session',
+            res: ResState.Failed,
+            error: 'invalid session',
         };
     }
 
     if (message.length <= COUNTER_LEN + AUTH_TAG_LEN) {
         return {
-            isErr: true,
-            message: 'invalid message size',
+            res: ResState.Failed,
+            error: 'invalid message size',
         };
     }
 
@@ -367,8 +368,8 @@ export function unboxResponse(
         cipher = initializeCipher(sharedPreSecret, counter, entryPeerId, false);
     } catch (err) {
         return {
-            isErr: true,
-            message: `failed to initialize cipher: ${err}`,
+            res: ResState.Failed,
+            error: `failed to initialize cipher: ${err}`,
         };
     }
 
@@ -377,27 +378,27 @@ export function unboxResponse(
         plaintext = cipher.decrypt(message.slice(COUNTER_LEN));
     } catch (err) {
         return {
-            isErr: true,
-            message: `decryption failed: ${err}`,
-        };
-    }
-
-    if (!validateTS(counter, BigInt(lastTsOfThisExitNode.getTime()), BigInt(Date.now()))) {
-        return {
-            isErr: true,
-            message: 'ts verification failed',
+            res: ResState.Failed,
+            error: `decryption failed: ${err}`,
         };
     }
 
     session.response = plaintext;
     session.updatedTS = counter;
 
+    if (!validateTS(counter, BigInt(lastTsOfThisExitNode.getTime()), BigInt(Date.now()))) {
+        return {
+            res: ResState.OkFailedCounter,
+            session,
+        };
+    }
+
     return {
-        isErr: false,
+        res: ResState.Ok,
         session,
     };
 }
 
-export function isError(res: Result): res is ResError {
-    return res.isErr;
+export function isError(res: Result | ResOkFailedCounter): res is ResFailed {
+    return res.res == ResState.Failed;
 }
