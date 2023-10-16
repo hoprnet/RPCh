@@ -28,7 +28,4 @@ Install k6 on test machine: https://k6.io/docs/get-started/installation/
 
 ## How to run a flood test
 
-1. Spin up Sandbox or pick pick a discovery platform URL
-2. Navigate to `.\devkit\k6-loadtesting\`
-3. Run:
-   - `yarn start:flood` (Artificial usage with `GET` requests)
+Please refer to [LOAD_TEST](./LOAD_TESTING.md) for more details
