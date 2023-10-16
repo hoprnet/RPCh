@@ -1,4 +1,3 @@
-import type * as RPChCrypto from "@rpch/crypto";
 import "@hoprnet/hopr-sdk";
 import { utils as etherUtils } from "ethers";
 
@@ -98,14 +97,8 @@ export default class SDK {
    * @param crypto crypto instantiation for RPCh, use `@rpch/crypto-for-nodejs` or `@rpch/crypto-for-web`
    * @param ops, see **Ops**
    **/
-  constructor(
-    private readonly clientId: string,
-    private readonly crypto: typeof RPChCrypto,
-    ops: Ops = {}
-  ) {
+  constructor(private readonly clientId: string, ops: Ops = {}) {
     this.ops = this.sdkOps(ops);
-    this.crypto = crypto;
-    this.crypto.set_panic_hook();
     this.requestCache = RequestCache.init();
     this.segmentCache = SegmentCache.init();
     this.nodesColl = new NodesCollector(
