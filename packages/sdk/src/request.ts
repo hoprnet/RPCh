@@ -12,7 +12,7 @@ export type Request = {
   provider: string;
   req: JRPC.Request;
   createdAt: number;
-  entryId: string; // peerID
+  entryPeerId: string;
   exitPeerId: string;
   exitPublicKey: Uint8Array;
   session: crypto.Session;
@@ -40,7 +40,7 @@ export function create({
   provider,
   req,
   clientId,
-  entryId,
+  entryPeerId,
   exitPeerId,
   exitPublicKey,
   headers,
@@ -49,7 +49,7 @@ export function create({
   provider: string;
   req: JRPC.Request;
   clientId: string;
-  entryId: string;
+  entryPeerId: string;
   exitPeerId: string;
   exitPublicKey: Uint8Array;
   headers?: Record<string, string>;
@@ -77,7 +77,7 @@ export function create({
       provider,
       req,
       createdAt: Date.now(),
-      entryId,
+      entryPeerId,
       exitPeerId,
       exitPublicKey,
       session: res.session,
@@ -131,7 +131,7 @@ export function messageToReq({
  */
 export function toSegments(req: Request): Segment.Segment[] {
   // we need the entry id ouside of of the actual encrypted payload
-  const entryIdData = utils.toUtf8Bytes(req.entryId);
+  const entryIdData = utils.toUtf8Bytes(req.entryPeerId);
   const reqData = req.session.get_request_data();
   const hexEntryId = utils.hexlify(entryIdData);
   const hexData = utils.hexlify(reqData);
@@ -143,7 +143,7 @@ export function toSegments(req: Request): Segment.Segment[] {
  * Pretty print request in human readable form.
  */
 export function prettyPrint(req: Request, id?: string) {
-  const eId = shortPeerId(req.entryId);
+  const eId = shortPeerId(req.entryPeerId);
   const xId = shortPeerId(req.exitPeerId);
   const prov = req.provider.substring(0, 14);
   const attrs = [req.id, `${eId}>${xId}`];

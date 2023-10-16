@@ -86,7 +86,7 @@ export default class SDK {
   private readonly requestCache: RequestCache.Cache;
   private readonly segmentCache: SegmentCache.Cache;
   private readonly redoRequests: Set<number> = new Set();
-  private readonly counterStore: Map<string, bigint> = new Map();
+  private readonly counterStore: Map<string, Date> = new Map();
   private readonly nodesColl: NodesCollector;
   private readonly ops: Ops;
   private readonly chainIds: Map<string, number> = new Map();
@@ -154,13 +154,13 @@ export default class SDK {
       }
 
       // gather entry - exit node pair
-      const res = await this.nodesColl
+      const resNodes = await this.nodesColl
         .requestNodePair(reqOps.timeout as number)
         .catch((err) => {
           log.error("Error finding node pair", err);
           return reject(`Could not find node pair in ${reqOps.timeout} ms`);
         });
-      if (!res) {
+      if (!resNodes) {
         return reject(`Unexpected code flow - should never be here`);
       }
 
@@ -175,23 +175,26 @@ export default class SDK {
       );
 
       // create request
-      const { entryNode, exitNode } = res;
+      const { entryNode, exitNode } = resNodes;
       const id = RequestCache.generateId(this.requestCache);
-      const request = Request.create({
-        crypto: this.crypto,
+      const resReq = Request.create({
         id,
         provider,
         req,
         clientId: this.clientId,
-        entryId: entryNode.id,
-        exitId: exitNode.id,
-        exitNodeReadIdentity: this.crypto!.Identity.load_identity(
-          etherUtils.arrayify(exitNode.pubKey)
-        ),
+        entryPeerId: entryNode.id,
+        exitPeerId: exitNode.id,
+        exitPublicKey: etherUtils.arrayify(exitNode.pubKey),
         headers,
       });
 
+      if (!resReq.success) {
+        log.error("Error creating request", resReq.error);
+        return reject("Unable to create request object");
+      }
+
       // split request to segments
+      const request = resReq.req;
       const segments = Request.toSegments(request);
       if (segments.length > MAX_REQUEST_SEGMENTS) {
         log.error(
@@ -245,7 +248,7 @@ export default class SDK {
         forceZeroHop: !!this.ops.forceZeroHop,
       },
       {
-        recipient: request.exitId,
+        recipient: request.exitPeerId,
         tag: ApplicationTag,
         message: Segment.toMessage(segment),
       }
@@ -283,30 +286,32 @@ export default class SDK {
     }
 
     this.redoRequests.add(origReq.id);
-    if (fallback.entryNode.id === origReq.entryId) {
+    if (fallback.entryNode.id === origReq.entryPeerId) {
       log.info(
         "fallback entry node same as original entry node - still trying"
       );
     }
-    if (fallback.exitNode.id === origReq.exitId) {
+    if (fallback.exitNode.id === origReq.exitPeerId) {
       log.info("fallback exit node same as original exit node - still trying");
     }
 
     // generate new request
     const id = RequestCache.generateId(this.requestCache);
-    const request = Request.create({
-      crypto: this.crypto,
+    const resReq = Request.create({
       id,
       provider: origReq.provider,
       req: origReq.req,
       clientId: this.clientId,
-      entryId: fallback.entryNode.id,
-      exitId: fallback.exitNode.id,
-      exitNodeReadIdentity: this.crypto!.Identity.load_identity(
-        etherUtils.arrayify(fallback.exitNode.pubKey)
-      ),
+      entryPeerId: fallback.entryNode.id,
+      exitPeerId: fallback.exitNode.id,
+      exitPublicKey: etherUtils.arrayify(fallback.exitNode.pubKey),
     });
+    if (!resReq.success) {
+      log.info("Error creating fallback request", resReq.error);
+      return cacheEntry.reject("unable to create fallback request object");
+    }
     // split request to segments
+    const request = resReq.req;
     const segments = Request.toSegments(request);
     if (segments.length > MAX_REQUEST_SEGMENTS) {
       log.error(
@@ -354,7 +359,7 @@ export default class SDK {
         forceZeroHop: !!this.ops.forceZeroHop,
       },
       {
-        recipient: request.exitId,
+        recipient: request.exitPeerId,
         tag: ApplicationTag,
         message: Segment.toMessage(segment),
       }
@@ -432,35 +437,41 @@ export default class SDK {
 
     const hexResp = SegmentCache.toMessage(entry);
     const respData = etherUtils.arrayify(hexResp);
-    const counter = this.counterStore.get(request.exitId) || BigInt(0);
+    const counter = this.counterStore.get(request.exitPeerId) || new Date();
 
     const res = Response.messageToResp({
       respData,
       request,
       counter,
-      crypto: this.crypto,
     });
-    if (Response.respSuccess(res)) {
-      this.counterStore.set(request.exitId, res.counter);
-      const responseTime = Date.now() - request.createdAt;
-      log.verbose(
-        "response time for request %s: %s ms, counter %i",
-        request.id,
-        responseTime,
-        counter
-      );
-      this.nodesColl.requestSucceeded(request, responseTime);
+    switch (res.res) {
+      case "error":
+        log.error("Error extracting message", res.reason);
+        this.nodesColl.requestFailed(request);
+        return request.reject("Unable to process response");
+      case "counterfail":
+        log.info("Counter mismatch extracting message");
+        this.nodesColl.requestFailed(request);
+        return request.reject(
+          `Please report exit node with counterfail - expected: ${counter}, got ${res.counter}`
+        );
+      case "success":
+        this.counterStore.set(request.exitPeerId, res.counter);
+        const responseTime = Date.now() - request.createdAt;
+        log.verbose(
+          "response time for request %s: %s ms, counter %i",
+          request.id,
+          responseTime,
+          counter
+        );
+        this.nodesColl.requestSucceeded(request, responseTime);
 
-      log.verbose(
-        "responded to %s with %s",
-        JSON.stringify(request.req),
-        JSON.stringify(res.resp)
-      );
-      return request.resolve(res.resp.resp);
-    } else {
-      log.error("Error extracting message", res.error);
-      this.nodesColl.requestFailed(request);
-      return request.reject("Unable to process response");
+        log.verbose(
+          "responded to %s with %s",
+          JSON.stringify(request.req),
+          JSON.stringify(res.resp)
+        );
+        return request.resolve(res.resp.resp);
     }
   };
 
