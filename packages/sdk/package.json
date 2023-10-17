@@ -5,8 +5,8 @@
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
   "scripts": {
-    "build": "tsup",
-    "dev": "yarn build --watch",
+    "build": "tsc",
+    "dev": "tsc --watch",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "eslint \"src/**/*.ts*\"",
     "test": "jest --coverage"
