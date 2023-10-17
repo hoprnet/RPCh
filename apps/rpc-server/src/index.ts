@@ -1,11 +1,11 @@
 import http from "http";
 import RPChSDK, {
   JRPC,
+  Response,
   ProviderAPI,
   type RequestOps,
   type Ops as SDKops,
 } from "@rpch/sdk";
-import * as RPChCrypto from "@rpch/crypto-for-nodejs";
 import { utils } from "@rpch/common";
 
 type ServerOPS = { restrictCors: boolean; skipRPCh: boolean };
@@ -85,15 +85,23 @@ function sendSkipRPCh(
     return;
   }
   ProviderAPI.fetchRPC(provider, req)
-    .then((resp: JRPC.Response) => {
-      log.verbose(
-        "receiving response",
-        JSON.stringify(resp),
-        "to request",
-        JSON.stringify(req)
-      );
-      res.statusCode = 200;
-      res.write(JSON.stringify(resp));
+    .then((resp: ProviderAPI.RPCResp) => {
+      if ("status" in resp) {
+        log.verbose(
+          "receiving http %i (%s) to request %s",
+          resp.status,
+          resp.message,
+          JSON.stringify(req)
+        );
+        res.statusCode = resp.status;
+        // only write if we are allowed to
+        if (resp.status !== 204 && resp.status !== 304) {
+          res.write(resp.message);
+        }
+      } else {
+        res.statusCode = 200;
+        res.write(JSON.stringify(resp));
+      }
     })
     .catch((err) => {
       log.error("Error sending request", err, "request:", JSON.stringify(req));
@@ -110,6 +118,23 @@ function sendRequest(
 ) {
   sdk
     .send(req, params)
+    .then(async (resp: Response.Response) => {
+      if (resp.status === 200) {
+        return resp.json();
+      }
+      const text = await resp.text();
+      log.verbose(
+        "receiving http %i (%s) to request %s",
+        resp.status,
+        text,
+        JSON.stringify(req)
+      );
+      res.statusCode = resp.status;
+      // only write if we are allowed to
+      if (resp.status !== 204 && resp.status !== 304) {
+        res.write(text);
+      }
+    })
     .then((resp: JRPC.Response) => {
       log.verbose(
         "receiving response",
@@ -254,7 +279,7 @@ if (require.main === module) {
   };
   const port = determinePort(process.env.PORT);
 
-  const sdk = new RPChSDK(clientId, RPChCrypto, ops);
+  const sdk = new RPChSDK(clientId, ops);
   const server = createServer(sdk, serverOps);
   server.listen(port, "0.0.0.0", () => {
     log.verbose(

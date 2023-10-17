@@ -7,8 +7,8 @@ import type { Request } from "./request";
 
 export type Response = {
   status: number;
-  text: Promise<string>;
-  json: Promise<JRPC.Response>;
+  text: () => Promise<string>;
+  json: () => Promise<JRPC.Response>;
 };
 
 export type RespSuccess = {

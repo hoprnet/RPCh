@@ -505,14 +505,14 @@ export default class SDK {
       case "httperror":
         return request.resolve({
           status: resp.status,
-          text: Promise.resolve(resp.text),
-          json: new Promise((r) => r(JSON.parse(resp.text))),
+          text: () => Promise.resolve(resp.text),
+          json: () => new Promise((r) => r(JSON.parse(resp.text))),
         });
       case "resp":
         return request.resolve({
           status: 200,
-          text: new Promise((r) => r(JSON.stringify(resp.resp))),
-          json: Promise.resolve(resp.resp),
+          text: () => new Promise((r) => r(JSON.stringify(resp.resp))),
+          json: () => Promise.resolve(resp.resp),
         });
     }
   };
