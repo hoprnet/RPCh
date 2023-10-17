@@ -26,8 +26,8 @@ export type ReqSuccess = {
 };
 export type ReqCounterFail = {
   res: "counterfail";
+  req: Payload.ReqPayload;
   session: crypto.Session;
-  counter: Date;
 };
 export type ReqError = { res: "error"; reason: string };
 export type Req = ReqSuccess | ReqCounterFail | ReqError;
@@ -100,36 +100,37 @@ export function messageToReq({
     { message, exitPeerId, exitPrivateKey },
     counter
   );
-  switch (res.res) {
-    case crypto.ResState.Failed:
-      return {
-        res: "error",
-        reason: res.error,
-      };
-    case crypto.ResState.OkFailedCounter:
-      return {
-        res: "counterfail",
-        session: res.session,
-        counter: res.session.updatedTS,
-      };
-    case crypto.ResState.Ok:
-    default:
-      if (!res.session.request) {
-        return {
-          res: "error",
-          reason: "crypto session without request object",
-        };
-      }
-      const msg = utils.toUtf8String(res.session.request);
-      const req = Payload.decodeReq(msg);
-      const newCount = res.session.updatedTS;
-      return {
-        res: "success",
-        req,
-        session: res.session,
-        counter: newCount,
-      };
+  if (res.res === crypto.ResState.Failed) {
+    return {
+      res: "error",
+      reason: res.error,
+    };
   }
+
+  if (!res.session.request) {
+    return {
+      res: "error",
+      reason: "crypto session without request object",
+    };
+  }
+
+  const msg = utils.toUtf8String(res.session.request);
+  const req = Payload.decodeReq(msg);
+  if (res.res === crypto.ResState.OkFailedCounter) {
+    return {
+      res: "counterfail",
+      req,
+      session: res.session,
+    };
+  }
+
+  const newCount = res.session.updatedTS;
+  return {
+    res: "success",
+    req,
+    session: res.session,
+    counter: newCount,
+  };
 }
 
 /**

@@ -189,7 +189,7 @@ async function completeSegmentsEntry(
   const reqData = utils.arrayify(hexData);
   const counter = state.counterStore.get(entryPeerId) || new Date(0);
   const resReq = Request.messageToReq({
-    body: reqData,
+    message: reqData,
     counter,
     exitPeerId: state.peerId,
     exitPrivateKey: state.privateKey,
@@ -201,9 +201,8 @@ async function completeSegmentsEntry(
     case "counterfail": {
       const now = new Date();
       log.info(
-        "Counterfail unboxing request - lowerbound",
-        resReq.counter,
-        "upperbound",
+        "Counterfail unboxing request - lowerbound %i upperbound %i",
+        counter,
         now
       );
       // counterfail response
@@ -212,7 +211,7 @@ async function completeSegmentsEntry(
         respPayload: { type: "counterfail", min: counter, max: now },
         unboxSession: resReq.session,
       });
-      if (!Response.msgSuccess(resReq)) {
+      if (!Response.msgSuccess(resResp)) {
         log.error("Error boxing counterfail resp", resResp.error);
         return;
       }
@@ -238,7 +237,7 @@ async function completeSegmentsEntry(
           // rpc critical fail response
           const resResp = Response.respToMessage({
             entryPeerId,
-            respPayload: { type: "error", error: err },
+            respPayload: { type: "error", reason: err.toString() },
             unboxSession: resReq.session,
           });
           if (!Response.msgSuccess(resResp)) {
@@ -262,7 +261,7 @@ async function completeSegmentsEntry(
           respPayload: {
             type: "httperror",
             status: resp.status,
-            text: resp.rext,
+            text: resp.message,
           },
           unboxSession: resReq.session,
         });
@@ -288,7 +287,7 @@ async function completeSegmentsEntry(
         return;
       }
       sendResponse(
-        { ops, entryPeerId, cacheEntry, tag, reqPayload: req.req },
+        { ops, entryPeerId, cacheEntry, tag, reqPayload: resReq.req },
         resResp.hexData
       );
       return;
@@ -312,7 +311,7 @@ function sendResponse(
   },
   resp: string
 ) {
-  const requestId = cacheEntry.segments.get(0).requestId;
+  const requestId = cacheEntry.segments.get(0)!.requestId;
   const segments = Segment.toSegments(requestId, resp);
 
   // queue segment sending for all of them
