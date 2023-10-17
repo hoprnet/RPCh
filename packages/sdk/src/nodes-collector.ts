@@ -97,7 +97,7 @@ export default class NodesCollector {
   };
 
   public requestStarted = (req: Request.Request) => {
-    const np = this.nodePairs.get(req.entryId);
+    const np = this.nodePairs.get(req.entryPeerId);
     if (!np) {
       log.error(
         "requestStarted",
@@ -115,7 +115,7 @@ export default class NodesCollector {
   };
 
   public requestSucceeded = (req: Request.Request, responseTime: number) => {
-    const np = this.nodePairs.get(req.entryId);
+    const np = this.nodePairs.get(req.entryPeerId);
     if (!np) {
       log.error(
         "requestSucceeded",
@@ -133,7 +133,7 @@ export default class NodesCollector {
   };
 
   public requestFailed = (req: Request.Request) => {
-    const np = this.nodePairs.get(req.entryId);
+    const np = this.nodePairs.get(req.entryPeerId);
     if (!np) {
       log.error(
         "requestFailed",
@@ -151,7 +151,7 @@ export default class NodesCollector {
   };
 
   public segmentStarted = (req: Request.Request, seg: Segment.Segment) => {
-    const np = this.nodePairs.get(req.entryId);
+    const np = this.nodePairs.get(req.entryPeerId);
     if (!np) {
       log.error(
         "segmentStarted",
@@ -173,7 +173,7 @@ export default class NodesCollector {
     seg: Segment.Segment,
     responseTime: number
   ) => {
-    const np = this.nodePairs.get(req.entryId);
+    const np = this.nodePairs.get(req.entryPeerId);
     if (!np) {
       log.error(
         "segmentSucceeded",
@@ -191,7 +191,7 @@ export default class NodesCollector {
   };
 
   public segmentFailed = (req: Request.Request, seg: Segment.Segment) => {
-    const np = this.nodePairs.get(req.entryId);
+    const np = this.nodePairs.get(req.entryPeerId);
     if (!np) {
       log.error(
         "segmentFailed",
