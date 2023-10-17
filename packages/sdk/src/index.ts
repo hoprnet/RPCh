@@ -9,7 +9,7 @@ import * as RequestCache from "./request-cache";
 import * as Response from "./response";
 import * as Segment from "./segment";
 import * as SegmentCache from "./segment-cache";
-import * as utils from "./utils";
+import * as Utils from "./utils";
 import NodesCollector from "./nodes-collector";
 import type { EntryNode } from "./entry-node";
 
@@ -22,6 +22,7 @@ export * as Request from "./request";
 export * as Response from "./response";
 export * as Segment from "./segment";
 export * as SegmentCache from "./segment-cache";
+export * as Utils from "./utils";
 
 /**
  * HOPR SDK options provides global parameter values.
@@ -74,7 +75,7 @@ const defaultOps: Ops = {
 };
 
 const MAX_REQUEST_SEGMENTS = 20;
-const log = utils.createLogger();
+const log = Utils.createLogger();
 
 // message tag - more like port since we tag all our messages the same
 const ApplicationTag = Math.floor(Math.random() * 0xffff);
@@ -143,12 +144,12 @@ export default class SDK {
     this.populateChainIds(ops?.provider);
     return new Promise(async (resolve, reject) => {
       // sanity check provider url
-      if (!utils.isValidURL(reqOps.provider as string)) {
+      if (!Utils.isValidURL(reqOps.provider as string)) {
         return reject("Cannot parse provider URL");
       }
       // sanity check mev protection provider url, if it is set
       if (!!this.ops.mevProtectionProvider) {
-        if (!utils.isValidURL(this.ops.mevProtectionProvider)) {
+        if (!Utils.isValidURL(this.ops.mevProtectionProvider)) {
           return reject("Cannot parse mevProtectionProvider URL");
         }
       }

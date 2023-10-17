@@ -13,6 +13,7 @@ import {
   Response,
   Segment,
   SegmentCache,
+  Utils,
 } from "@rpch/sdk";
 
 const log = createLogger();
@@ -72,11 +73,19 @@ async function setup(ops: Ops): Promise<State> {
   }
 
   const { hopr: peerId } = resPeerId;
-  log.verbose("Fetched peer id", peerId);
+  log.verbose("Fetched peer id %s[%s]", Utils.shortPeerId(peerId), peerId);
 
   const cache = SegmentCache.init();
   const deleteTimer = new Map();
   const counterStore = new Map();
+
+  const logOpts = {
+    identityFile: ops.identityFile,
+    apiEndpoint: ops.apiEndpoint,
+    discoveryPlatformEndpoint: ops.discoveryPlatformEndpoint,
+    forceZeroHop: ops.forceZeroHop,
+  };
+  log.verbose("started exit-node with", JSON.stringify(logOpts));
 
   return {
     cache,
@@ -313,6 +322,13 @@ function sendResponse(
 ) {
   const requestId = cacheEntry.segments.get(0)!.requestId;
   const segments = Segment.toSegments(requestId, resp);
+
+  log.verbose(
+    "Returning message to %s, tag: %s, requestId: %i",
+    Utils.shortPeerId(entryPeerId),
+    tag,
+    requestId
+  );
 
   // queue segment sending for all of them
   segments.forEach((seg: Segment.Segment) => {
