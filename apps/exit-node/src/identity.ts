@@ -1,7 +1,6 @@
 import crypto from "crypto";
 import fs from "fs";
 import { Wallet, utils as ethersUtils } from "ethers";
-import { Identity } from "@rpch/crypto-for-nodejs";
 import { ALGORITHM } from "./constants";
 
 const generateIv = () => crypto.randomBytes(16);
@@ -10,7 +9,6 @@ const getSalt = (str: string): Buffer => crypto.scryptSync(str, "salt", 24);
 export type ID = {
   privateKey: string;
   publicKey: string;
-  identity: Identity;
 };
 
 /**
@@ -112,9 +110,5 @@ export const getIdentity = async ({
   return {
     privateKey: wallet.privateKey,
     publicKey,
-    identity: Identity.load_identity(
-      ethersUtils.arrayify(publicKey),
-      ethersUtils.arrayify(wallet.privateKey)
-    ),
   };
 };

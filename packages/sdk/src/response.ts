@@ -1,7 +1,6 @@
 import * as crypto from "@rpch/compat-crypto";
 import { utils } from "ethers";
 
-import * as JRPC from "./jrpc";
 import * as Payload from "./payload";
 import type { Request } from "./request";
 
@@ -26,18 +25,18 @@ export type MsgError = { success: false; error: string };
 export type Msg = MsgSuccess | MsgError;
 
 export function respToMessage({
-  entryId,
-  resp,
+  entryPeerId,
+  respPayload,
   unboxSession,
 }: {
-  entryId: string;
-  resp: JRPC.Response;
+  entryPeerId: string;
+  respPayload: Payload.RespPayload;
   unboxSession: crypto.Session;
 }): Msg {
-  const payload = Payload.encodeResp({ resp });
+  const payload = Payload.encodeResp(respPayload);
   const data = utils.toUtf8Bytes(payload);
   const res = crypto.boxResponse(unboxSession, {
-    entryPeerId: entryId,
+    entryPeerId,
     message: data,
   });
   if (crypto.isError(res)) {
@@ -60,7 +59,7 @@ export function messageToResp({
 }): Resp {
   const res = crypto.unboxResponse(
     request.session,
-    { message: respData, entryPeerId: request.entryId },
+    { message: respData, entryPeerId: request.entryPeerId },
     counter
   );
   switch (res.res) {
@@ -89,5 +88,5 @@ export function msgSuccess(res: Msg): res is MsgSuccess {
 }
 
 export function respSuccess(res: Resp): res is RespSuccess {
-  return res.success;
+  return res.res === "success";
 }

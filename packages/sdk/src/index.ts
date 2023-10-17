@@ -437,7 +437,7 @@ export default class SDK {
 
     const hexResp = SegmentCache.toMessage(entry);
     const respData = etherUtils.arrayify(hexResp);
-    const counter = this.counterStore.get(request.exitPeerId) || new Date();
+    const counter = this.counterStore.get(request.exitPeerId) || new Date(0);
 
     const res = Response.messageToResp({
       respData,
