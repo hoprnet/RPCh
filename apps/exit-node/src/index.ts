@@ -199,16 +199,17 @@ async function completeSegmentsEntry(
       log.error("Error unboxing request", resReq.reason);
       return;
     case "counterfail": {
+      const now = new Date();
       log.info(
         "Counterfail unboxing request - lowerbound",
         resReq.counter,
         "upperbound",
-        new Date()
+        now
       );
       // counterfail response
       const resResp = Response.respToMessage({
         entryPeerId,
-        respPayload: { type: "counterfail", lastCounter: counter },
+        respPayload: { type: "counterfail", min: counter, max: now },
         unboxSession: resReq.session,
       });
       if (!Response.msgSuccess(resReq)) {

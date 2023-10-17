@@ -15,7 +15,8 @@ export type RespPayload =
     }
   | {
       type: "counterfail";
-      lastCounter: Date;
+      min: Date;
+      max: Date;
     }
   | {
       type: "httperror";

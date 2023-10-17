@@ -2,7 +2,14 @@ import * as crypto from "@rpch/compat-crypto";
 import { utils } from "ethers";
 
 import * as Payload from "./payload";
+import * as JRPC from "./jrpc";
 import type { Request } from "./request";
+
+export type Response = {
+  status: number;
+  text: Promise<string>;
+  json: Promise<JRPC.Response>;
+};
 
 export type RespSuccess = {
   res: "success";

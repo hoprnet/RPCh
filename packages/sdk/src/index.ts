@@ -138,7 +138,7 @@ export default class SDK {
   public async send(
     req: JRPC.Request,
     ops?: RequestOps
-  ): Promise<JRPC.Response> {
+  ): Promise<Response.Response> {
     const reqOps = this.requestOps(ops);
     this.populateChainIds(ops?.provider);
     return new Promise(async (resolve, reject) => {
@@ -446,32 +446,74 @@ export default class SDK {
     });
     switch (res.res) {
       case "error":
-        log.error("Error extracting message", res.reason);
-        this.nodesColl.requestFailed(request);
-        return request.reject("Unable to process response");
+        return this.responseError(res, request);
       case "counterfail":
-        log.info("Counter mismatch extracting message");
-        this.nodesColl.requestFailed(request);
-        return request.reject(
-          `Please report exit node with counterfail - expected: ${counter}, got ${res.counter}`
-        );
+        return this.responseCounterFail(res, request, counter);
       case "success":
-        this.counterStore.set(request.exitPeerId, res.counter);
-        const responseTime = Date.now() - request.createdAt;
-        log.verbose(
-          "response time for request %s: %s ms, counter %i",
-          request.id,
-          responseTime,
-          counter
-        );
-        this.nodesColl.requestSucceeded(request, responseTime);
+        return this.responseSuccess(res, request);
+    }
+  };
 
-        log.verbose(
-          "responded to %s with %s",
-          JSON.stringify(request.req),
-          JSON.stringify(res.resp)
+  private responseError = (
+    res: Response.RespError,
+    request: RequestCache.Entry
+  ) => {
+    log.error("Error extracting message", res.reason);
+    this.nodesColl.requestFailed(request);
+    return request.reject("Unable to process response");
+  };
+
+  private responseCounterFail = (
+    res: Response.RespCounterFail,
+    request: RequestCache.Entry,
+    counter: Date
+  ) => {
+    log.info(
+      "Counter mismatch extracting message: last counter %s, new counter %s",
+      counter,
+      res.counter
+    );
+    this.nodesColl.requestFailed(request);
+    return request.reject(
+      `Out of order message from exit node - last counter: ${counter}, new counter ${res.counter}. Check your time settings.`
+    );
+  };
+
+  private responseSuccess = (
+    res: Response.RespSuccess,
+    request: RequestCache.Entry
+  ) => {
+    this.counterStore.set(request.exitPeerId, res.counter);
+    const responseTime = Date.now() - request.createdAt;
+    log.verbose(
+      "response time for request %s: %s ms",
+      request.id,
+      responseTime
+    );
+    this.nodesColl.requestSucceeded(request, responseTime);
+
+    const resp = res.resp;
+    switch (resp.type) {
+      case "error":
+        return request.reject(
+          `Critical error during JSON rpc call: ${resp.reason}`
         );
-        return request.resolve(res.resp.resp);
+      case "counterfail":
+        return request.reject(
+          `Out of order message. Exit node expected message counter between ${resp.min} and ${resp.max}. Check your time settings`
+        );
+      case "httperror":
+        return request.resolve({
+          status: resp.status,
+          text: Promise.resolve(resp.text),
+          json: new Promise((r) => r(JSON.parse(resp.text))),
+        });
+      case "resp":
+        return request.resolve({
+          status: 200,
+          text: new Promise((r) => r(JSON.stringify(resp.resp))),
+          json: Promise.resolve(resp.resp),
+        });
     }
   };
 
