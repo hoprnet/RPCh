@@ -135,7 +135,7 @@ function sendRequest(
         res.write(text);
       }
     })
-    .then((resp: JRPC.Response) => {
+    .then((resp?: JRPC.Response) => {
       log.verbose(
         "receiving response",
         JSON.stringify(resp),
