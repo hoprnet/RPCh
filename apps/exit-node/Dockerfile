@@ -14,6 +14,7 @@ RUN apt-get update \
   python3 \
   unzip \
   curl \
+  python3 \
   build-essential \
   ca-certificates \
   && rm -rf  /var/lib/apt/lists/* \
@@ -34,8 +35,12 @@ RUN turbo prune --scope="@rpch/exit-node" --docker
 # Specify platform to be amd because arm doesn't work
 FROM --platform=linux/amd64 node:18-bullseye-slim AS installer
 RUN apt-get update && \
-  apt-get install -y libc6 python3 && \
-  rm -rf /var/lib/apt/lists/*
+  && apt-get install -y --no-install-recommends \
+  libc6 \
+  python3 \
+  build-essential \
+  && rm -rf /var/lib/apt/lists/* \
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
 WORKDIR /app
 
 # Install the dependencies.
