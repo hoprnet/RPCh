@@ -33,14 +33,17 @@ RUN turbo prune --scope="@rpch/rpc-server" --docker
 # Add lockfile and package.json's of isolated subworkspace.
 # Specify platform to be amd because arm doesn't work
 FROM --platform=linux/amd64 node:18-bullseye-slim AS installer
-RUN apt-get update && \
-  apt-get install -y libc6 && \
-  rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+  libc6 \
+  python3 \
+  build-essential \
+  && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 # Install the dependencies.
 COPY .gitignore .gitignore
-COPY packages-tgz packages-tgz 
+COPY packages-tgz packages-tgz
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/yarn.lock ./yarn.lock
 RUN yarn install --frozen-lockfile
