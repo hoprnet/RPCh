@@ -34,7 +34,7 @@ RUN turbo prune --scope="@rpch/exit-node" --docker
 # Specify platform to be amd because arm doesn't work
 FROM --platform=linux/amd64 node:18-bullseye-slim AS installer
 RUN apt-get update && \
-  apt-get install -y libc6 && \
+  apt-get install -y libc6 python3 && \
   rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
