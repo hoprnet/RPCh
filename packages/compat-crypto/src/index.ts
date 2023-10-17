@@ -7,7 +7,7 @@ import { ecdh, privateKeyVerify, publicKeyCreate } from 'secp256k1';
 export type Session = {
     request?: Uint8Array;
     response?: Uint8Array;
-    updatedTS: bigint;
+    updatedTS: Date;
     sharedPreSecret?: Uint8Array;
 };
 
@@ -185,7 +185,7 @@ export function boxRequest(
         res: ResState.Ok,
         session: {
             request: new Uint8Array(result),
-            updatedTS: newCounter,
+            updatedTS: new Date(Number(newCounter)),
             sharedPreSecret,
         },
     };
@@ -265,7 +265,7 @@ export function unboxRequest(
 
     const session = {
         request: plaintext,
-        updatedTS: counter,
+        updatedTS: new Date(Number(counter)),
         sharedPreSecret,
     };
 
@@ -329,7 +329,7 @@ export function boxResponse(
     // C,R,T
     const result = Buffer.concat([counterBuf, Buffer.from(cipherText)]);
     session.response = new Uint8Array(result);
-    session.updatedTS = newCounter;
+    session.updatedTS = new Date(Number(newCounter));
 
     return {
         res: ResState.Ok,
@@ -384,7 +384,7 @@ export function unboxResponse(
     }
 
     session.response = plaintext;
-    session.updatedTS = counter;
+    session.updatedTS = new Date(Number(counter));
 
     if (!validateTS(counter, BigInt(lastTsOfThisExitNode.getTime()), BigInt(Date.now()))) {
         return {
