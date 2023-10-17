@@ -67,7 +67,7 @@ export function create({
     exitPublicKey,
   });
   if (crypto.isError(res)) {
-    return { success: false, error: res.message };
+    return { success: false, error: res.error };
   }
 
   return {
@@ -87,17 +87,17 @@ export function create({
 
 export function messageToReq({
   counter,
-  body,
+  message,
   exitPeerId,
   exitPrivateKey,
 }: {
-  body: Uint8Array;
+  message: Uint8Array;
   exitPeerId: string;
   exitPrivateKey: Uint8Array;
   counter: Date;
 }): Req {
   const res = crypto.unboxRequest(
-    { body, exitPeerId, exitPrivateKey },
+    { message, exitPeerId, exitPrivateKey },
     counter
   );
   switch (res.res) {
@@ -110,10 +110,16 @@ export function messageToReq({
       return {
         res: "counterfail",
         session: res.session,
-        counter: res.session.counter,
+        counter: res.session.updatedTS,
       };
     case crypto.ResState.Ok:
     default:
+      if (!res.session.request) {
+        return {
+          res: "error",
+          reason: "crypto session without request object",
+        };
+      }
       const msg = utils.toUtf8String(res.session.request);
       const req = Payload.decodeReq(msg);
       const newCount = res.session.updatedTS;
@@ -132,7 +138,7 @@ export function messageToReq({
 export function toSegments(req: Request): Segment.Segment[] {
   // we need the entry id ouside of of the actual encrypted payload
   const entryIdData = utils.toUtf8Bytes(req.entryPeerId);
-  const reqData = req.session.get_request_data();
+  const reqData = req.session.request!;
   const hexEntryId = utils.hexlify(entryIdData);
   const hexData = utils.hexlify(reqData);
   const body = `${hexEntryId},${hexData}`;

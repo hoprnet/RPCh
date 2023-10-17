@@ -26,7 +26,7 @@ export type Resp = RespSuccess | RespCounterFail | RespError;
 export type MsgSuccess = {
   success: true;
   hexData: string;
-  newCount: bigint;
+  newCount: Date;
 };
 export type MsgError = { success: false; error: string };
 export type Msg = MsgSuccess | MsgError;
@@ -49,7 +49,9 @@ export function respToMessage({
   if (crypto.isError(res)) {
     return { success: false, error: res.error };
   }
-
+  if (!unboxSession.response) {
+    return { success: false, error: "crypto session without response object" };
+  }
   const hexData = utils.hexlify(unboxSession.response);
   const newCount = unboxSession.updatedTS;
   return { success: true, hexData, newCount };
@@ -75,10 +77,16 @@ export function messageToResp({
     case crypto.ResState.OkFailedCounter:
       return {
         res: "counterfail",
-        counter: res.session.counter,
+        counter: res.session.updatedTS,
       };
     case crypto.ResState.Ok:
     default:
+      if (!res.session.response) {
+        return {
+          res: "error",
+          reason: "crypto session without response object",
+        };
+      }
       const msg = utils.toUtf8String(res.session.response);
       const resp = Payload.decodeResp(msg);
       const newCount = request.session.updatedTS;

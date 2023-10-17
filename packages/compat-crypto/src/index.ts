@@ -11,7 +11,7 @@ export type Session = {
     sharedPreSecret?: Uint8Array;
 };
 
-enum ResState {
+export enum ResState {
     Ok,
     OkFailedCounter,
     Failed,
