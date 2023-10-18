@@ -1,5 +1,11 @@
 # @rpch/sdk
 
+## 1.1.1
+
+### Patch Changes
+
+- 827de28: Allow sender to determine return amount of hops
+
 ## 1.1.0
 
 ### Minor Changes

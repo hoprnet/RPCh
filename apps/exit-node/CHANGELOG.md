@@ -1,5 +1,13 @@
 # @rpch/exit-node
 
+## 0.9.1
+
+### Patch Changes
+
+- 827de28: Allow sender to determine return amount of hops
+- Updated dependencies [827de28]
+  - @rpch/sdk@1.1.1
+
 ## 0.9.0
 
 ### Minor Changes
