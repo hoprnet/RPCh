@@ -1,5 +1,16 @@
 # @rpch/sdk
 
+## 1.1.0
+
+### Minor Changes
+
+- eaa424c: Http errors and crypto counter errors are now correctly returned by SDK
+
+### Patch Changes
+
+- Updated dependencies [eaa424c]
+  - @rpch/compat-crypto@0.5.0
+
 ## 1.0.0
 
 ### Major Changes

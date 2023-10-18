@@ -1,5 +1,11 @@
 # @rpch/discovery-platform
 
+## 0.12.1
+
+### Patch Changes
+
+- eaa424c: fix last_segment_length reporting
+
 ## 0.12.0
 
 ### Minor Changes

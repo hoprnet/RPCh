@@ -1,5 +1,16 @@
 # @rpch/exit-node
 
+## 0.9.0
+
+### Minor Changes
+
+- eaa424c: Http errors and crypto counter errors are now correctly returned by SDK
+
+### Patch Changes
+
+- Updated dependencies [eaa424c]
+  - @rpch/sdk@1.1.0
+
 ## 0.8.2
 
 ### Patch Changes

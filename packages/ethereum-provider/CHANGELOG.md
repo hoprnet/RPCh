@@ -1,5 +1,12 @@
 # @rpch/ethereum-provider
 
+## 0.3.14
+
+### Patch Changes
+
+- Updated dependencies [eaa424c]
+  - @rpch/sdk@1.1.0
+
 ## 0.3.13
 
 ### Patch Changes
