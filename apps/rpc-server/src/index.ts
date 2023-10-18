@@ -81,14 +81,14 @@ function sendSkipRPCh(
   res: http.ServerResponse
 ) {
   if (!provider) {
-    log.error("Need provider query param");
+    log.error("[NO_RPCH] Need provider query param");
     return;
   }
   ProviderAPI.fetchRPC(provider, req)
     .then((resp: ProviderAPI.RPCResp) => {
       if ("status" in resp) {
         log.verbose(
-          "receiving http %i (%s) to request %s",
+          "[NO_RPCH] Response(HTTP %i): %s [request: %s]",
           resp.status,
           resp.message,
           JSON.stringify(req)
@@ -99,13 +99,19 @@ function sendSkipRPCh(
           res.write(resp.message);
         }
       } else {
+        log.verbose(
+          "[NO_RPCH] Response: %s [request: %s]",
+          JSON.stringify(resp),
+          JSON.stringify(req)
+        );
         res.statusCode = 200;
         res.write(JSON.stringify(resp));
       }
     })
     .catch((err) => {
-      log.error("Error sending request", err, "request:", JSON.stringify(req));
+      log.error("[NO_RPCH] %s [request: %s]", err, JSON.stringify(req));
       res.statusCode = 500;
+      res.write(err);
     })
     .finally(() => res.end());
 }
@@ -124,7 +130,7 @@ function sendRequest(
       }
       const text = await resp.text();
       log.verbose(
-        "receiving http %i (%s) to request %s",
+        "Response(HTTP %i): %s [request: %s]",
         resp.status,
         text,
         JSON.stringify(req)
@@ -137,27 +143,17 @@ function sendRequest(
     })
     .then((resp?: JRPC.Response) => {
       log.verbose(
-        "receiving response",
+        "Response: %s [request: %s]",
         JSON.stringify(resp),
-        "to request",
         JSON.stringify(req)
       );
       res.statusCode = 200;
       res.write(JSON.stringify(resp));
     })
     .catch((err: any) => {
-      log.error("Error sending request", err, "request:", JSON.stringify(req));
+      log.error("%s [request: %s]", err, JSON.stringify(req));
       res.statusCode = 500;
-      res.write(
-        JSON.stringify({
-          jsonrpc: req.jsonrpc,
-          error: {
-            code: -32603,
-            message: `Internal JSON-RPC error: ${err}`,
-          },
-          id: req.id,
-        })
-      );
+      res.write(err);
     })
     .finally(() => {
       res.end();
@@ -199,15 +195,21 @@ function createServer(sdk: RPChSDK, ops: ServerOPS) {
       const params = extractParams(req.url, req.headers.host);
       const result = parseBody(body);
       if (result.success) {
-        log.info(
-          "sending request",
-          JSON.stringify(result.req),
-          "with params",
-          JSON.stringify(params)
-        );
         if (ops.skipRPCh) {
+          log.info(
+            "[NO_RPCH] Sending request",
+            JSON.stringify(result.req),
+            "with params",
+            JSON.stringify(params)
+          );
           sendSkipRPCh(params.provider, result.req, res);
         } else {
+          log.info(
+            "Sending request",
+            JSON.stringify(result.req),
+            "with params",
+            JSON.stringify(params)
+          );
           sendRequest(sdk, result.req, params, res);
         }
       } else {

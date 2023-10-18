@@ -238,15 +238,15 @@ async function completeSegmentsEntry(
       const resp = await ProviderAPI.fetchRPC(provider, req, headers).catch(
         (err: Error) => {
           log.error(
-            "Error doing rpc request",
-            err,
+            "Error RPC requesting %s with %s: %s",
             provider,
-            JSON.stringify(req)
+            JSON.stringify(req),
+            JSON.stringify(err)
           );
           // rpc critical fail response
           const resResp = Response.respToMessage({
             entryPeerId,
-            respPayload: { type: "error", reason: err.toString() },
+            respPayload: { type: "error", reason: JSON.stringify(err) },
             unboxSession: resReq.session,
           });
           if (!Response.msgSuccess(resResp)) {

@@ -496,12 +496,10 @@ export default class SDK {
     const resp = res.resp;
     switch (resp.type) {
       case "error":
-        return request.reject(
-          `Critical error during JSON rpc call: ${resp.reason}`
-        );
+        return request.reject(`Error attempting JSON RPC call: ${resp.reason}`);
       case "counterfail":
         return request.reject(
-          `Out of order message. Exit node expected message counter between ${resp.min} and ${resp.max}. Check your time settings`
+          `Out of order message. Exit node expected message counter between ${resp.min} and ${resp.max}. Check your time settings!`
         );
       case "httperror":
         return request.resolve({
