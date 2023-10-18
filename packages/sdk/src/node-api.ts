@@ -16,7 +16,7 @@ export function connectWS(conn: ConnInfo): WebSocket {
 }
 
 export function sendMessage(
-  conn: ConnInfo & { forceZeroHop: boolean },
+  conn: ConnInfo & { hops?: number },
   {
     recipient,
     tag,
@@ -34,9 +34,10 @@ export function sendMessage(
     peerId: recipient,
     tag,
   };
-  if (conn.forceZeroHop) {
+  if (conn.hops === 0) {
     payload.path = [];
   } else {
+    // default to one hop for now
     payload.hops = 1;
   }
   const body = JSON.stringify(payload);
