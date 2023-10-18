@@ -23,17 +23,19 @@ export function fetchRPC(
   req: JRPC.Request,
   reqHeaders?: Record<string, string>
 ): Promise<RPCResp> {
-  return new Promise((resolve, _reject) => {
+  return new Promise((resolve, reject) => {
     const url = new URL(provider);
     const headers = mergeHeaders(reqHeaders);
     const body = JSON.stringify(req);
-    fetch(url, { headers, method: "POST", body }).then(async (res) => {
-      if (res.status !== 200) {
-        return resolve({ status: res.status, message: await res.text() });
-      }
-      const resp = (await res.json()) as unknown as JRPC.Response;
-      return resolve(resp);
-    });
+    fetch(url, { headers, method: "POST", body })
+      .then(async (res) => {
+        if (res.status !== 200) {
+          return resolve({ status: res.status, message: await res.text() });
+        }
+        const resp = (await res.json()) as unknown as JRPC.Response;
+        return resolve(resp);
+      })
+      .catch(reject);
   });
 }
 
