@@ -6,6 +6,7 @@ export type ReqPayload = {
   provider: string;
   req: JRPC.Request;
   headers?: Record<string, string>;
+  hops?: number;
 };
 
 export type RespPayload =

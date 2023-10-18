@@ -16,6 +16,8 @@ export type Request = {
   exitPeerId: string;
   exitPublicKey: Uint8Array;
   session: crypto.Session;
+  headers?: Record<string, string>;
+  hops?: number;
 };
 
 export type ReqSuccess = {
@@ -44,6 +46,7 @@ export function create({
   exitPeerId,
   exitPublicKey,
   headers,
+  hops,
 }: {
   id: number;
   provider: string;
@@ -53,12 +56,14 @@ export function create({
   exitPeerId: string;
   exitPublicKey: Uint8Array;
   headers?: Record<string, string>;
+  hops?: number;
 }): { success: true; req: Request } | { success: false; error: string } {
   const payload = Payload.encodeReq({
     provider,
     clientId,
     req,
     headers,
+    hops,
   });
   const data = utils.toUtf8Bytes(payload);
   const res = crypto.boxRequest({
@@ -81,6 +86,8 @@ export function create({
       exitPeerId,
       exitPublicKey,
       session: res.session,
+      headers,
+      hops,
     },
   };
 }

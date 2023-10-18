@@ -39,7 +39,6 @@ type Ops = {
   accessToken: string;
   discoveryPlatformEndpoint: string;
   nodeAccessToken: string;
-  forceZeroHop: boolean;
 };
 
 async function start(ops: Ops) {
@@ -83,7 +82,6 @@ async function setup(ops: Ops): Promise<State> {
     identityFile: ops.identityFile,
     apiEndpoint: ops.apiEndpoint,
     discoveryPlatformEndpoint: ops.discoveryPlatformEndpoint,
-    forceZeroHop: ops.forceZeroHop,
   };
   log.verbose("started exit-node with", JSON.stringify(logOpts));
 
@@ -330,10 +328,15 @@ function sendResponse(
     requestId
   );
 
+  const conn = {
+    ...ops,
+    hops: reqPayload.hops,
+  };
+
   // queue segment sending for all of them
   segments.forEach((seg: Segment.Segment) => {
     setTimeout(() => {
-      NodeAPI.sendMessage(ops, {
+      NodeAPI.sendMessage(conn, {
         recipient: entryPeerId,
         tag,
         message: Segment.toMessage(seg),
@@ -396,12 +399,9 @@ if (require.main === module) {
     ? utils.arrayify(process.env.RPCH_PRIVATE_KEY)
     : undefined;
 
-  const forceZeroHop = !!process.env.RPCH_FORCE_ZERO_HOP;
-
   start({
     privateKey,
     identityFile,
-    forceZeroHop,
     password: process.env.RPCH_PASSWORD,
     apiEndpoint: new URL(process.env.HOPRD_API_ENDPOINT),
     accessToken: process.env.HOPRD_API_TOKEN,

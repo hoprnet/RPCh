@@ -175,6 +175,8 @@ export default class SDK {
         this.ops.mevKickbackAddress
       );
 
+      const hops = this.determineHops(!!this.ops.forceZeroHop);
+
       // create request
       const { entryNode, exitNode } = resNodes;
       const id = RequestCache.generateId(this.requestCache);
@@ -187,6 +189,7 @@ export default class SDK {
         exitPeerId: exitNode.id,
         exitPublicKey: etherUtils.arrayify(exitNode.pubKey),
         headers,
+        hops,
       });
 
       if (!resReq.success) {
@@ -242,18 +245,16 @@ export default class SDK {
     cacheEntry: RequestCache.Entry
   ) => {
     const bef = Date.now();
-    NodeAPI.sendMessage(
-      {
-        apiEndpoint: entryNode.apiEndpoint,
-        accessToken: entryNode.accessToken,
-        forceZeroHop: !!this.ops.forceZeroHop,
-      },
-      {
-        recipient: request.exitPeerId,
-        tag: ApplicationTag,
-        message: Segment.toMessage(segment),
-      }
-    )
+    const conn = {
+      apiEndpoint: entryNode.apiEndpoint,
+      accessToken: entryNode.accessToken,
+      hops: request.hops,
+    };
+    NodeAPI.sendMessage(conn, {
+      recipient: request.exitPeerId,
+      tag: ApplicationTag,
+      message: Segment.toMessage(segment),
+    })
       .then((_json) => {
         const dur = Date.now() - bef;
         this.nodesColl.segmentSucceeded(request, segment, dur);
@@ -306,6 +307,8 @@ export default class SDK {
       entryPeerId: fallback.entryNode.id,
       exitPeerId: fallback.exitNode.id,
       exitPublicKey: etherUtils.arrayify(fallback.exitNode.pubKey),
+      headers: origReq.headers,
+      hops: origReq.hops,
     });
     if (!resReq.success) {
       log.info("Error creating fallback request", resReq.error);
@@ -357,7 +360,7 @@ export default class SDK {
       {
         apiEndpoint: entryNode.apiEndpoint,
         accessToken: entryNode.accessToken,
-        forceZeroHop: !!this.ops.forceZeroHop,
+        hops: request.hops,
       },
       {
         recipient: request.exitPeerId,
@@ -594,6 +597,13 @@ export default class SDK {
       return { "X-Tx-Origin": mevKickbackAddress };
     }
   };
+
+  private determineHops(forceZeroHop: boolean) {
+    // defaults to multihop (novalue)
+    if (forceZeroHop) {
+      return 0;
+    }
+  }
 
   private populateChainIds(provider?: string) {
     if (!provider) {
