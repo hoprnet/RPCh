@@ -1,11 +1,5 @@
+import * as crypto from "@rpch/compat-crypto";
 import { utils } from "ethers";
-import type {
-  Envelope,
-  box_request,
-  unbox_request,
-  Session,
-  Identity,
-} from "@rpch/crypto-for-nodejs";
 
 import * as JRPC from "./jrpc";
 import * as Payload from "./payload";
@@ -18,48 +12,48 @@ export type Request = {
   provider: string;
   req: JRPC.Request;
   createdAt: number;
-  entryId: string; // peerID
-  exitId: string; // peerID
-  exitNodeReadIdentity: Identity;
-  session: Session;
+  entryPeerId: string;
+  exitPeerId: string;
+  exitPublicKey: Uint8Array;
+  session: crypto.Session;
 };
 
 export type ReqSuccess = {
-  success: true;
+  res: "success";
   req: Payload.ReqPayload;
-  session: Session;
-  counter: bigint;
+  session: crypto.Session;
+  counter: Date;
 };
-export type ReqError = { success: false; error: string };
-export type Req = ReqSuccess | ReqError;
+export type ReqCounterFail = {
+  res: "counterfail";
+  req: Payload.ReqPayload;
+  session: crypto.Session;
+};
+export type ReqError = { res: "error"; reason: string };
+export type Req = ReqSuccess | ReqCounterFail | ReqError;
 
 /**
  * Creates a request and compresses its payload.
  */
 export function create({
-  crypto,
   id,
   provider,
   req,
   clientId,
-  entryId,
-  exitId,
-  exitNodeReadIdentity,
+  entryPeerId,
+  exitPeerId,
+  exitPublicKey,
   headers,
 }: {
-  crypto: {
-    Envelope: typeof Envelope;
-    box_request: typeof box_request;
-  };
   id: number;
   provider: string;
   req: JRPC.Request;
   clientId: string;
-  entryId: string;
-  exitId: string;
-  exitNodeReadIdentity: Identity;
+  entryPeerId: string;
+  exitPeerId: string;
+  exitPublicKey: Uint8Array;
   headers?: Record<string, string>;
-}): Request {
+}): { success: true; req: Request } | { success: false; error: string } {
   const payload = Payload.encodeReq({
     provider,
     clientId,
@@ -67,53 +61,74 @@ export function create({
     headers,
   });
   const data = utils.toUtf8Bytes(payload);
+  const res = crypto.boxRequest({
+    message: data,
+    exitPeerId,
+    exitPublicKey,
+  });
+  if (crypto.isError(res)) {
+    return { success: false, error: res.error };
+  }
 
-  // Envelop only needs the target node id - see usages
-  const envelope = new crypto.Envelope(data, exitId, exitId);
-  const session = crypto.box_request(envelope, exitNodeReadIdentity);
   return {
-    id,
-    provider,
-    req,
-    createdAt: Date.now(),
-    entryId,
-    exitId,
-    exitNodeReadIdentity,
-    session,
+    success: true,
+    req: {
+      id,
+      provider,
+      req,
+      createdAt: Date.now(),
+      entryPeerId,
+      exitPeerId,
+      exitPublicKey,
+      session: res.session,
+    },
   };
 }
 
 export function messageToReq({
-  crypto,
   counter,
-  body,
-  exitId,
-  exitNodeWriteIdentity,
+  message,
+  exitPeerId,
+  exitPrivateKey,
 }: {
-  body: Uint8Array;
-  exitId: string;
-  exitNodeWriteIdentity: Identity;
-  counter: bigint;
-  crypto: { Envelope: typeof Envelope; unbox_request: typeof unbox_request };
+  message: Uint8Array;
+  exitPeerId: string;
+  exitPrivateKey: Uint8Array;
+  counter: Date;
 }): Req {
-  // Envelop only needs the target node id - see usages
-  const envelope = new crypto.Envelope(body, exitId, exitId);
-
-  let session;
-  try {
-    session = crypto.unbox_request(envelope, exitNodeWriteIdentity, counter);
-  } catch (err) {
-    return { success: false, error: `unboxing request failed: ${err}` };
+  const res = crypto.unboxRequest(
+    { message, exitPeerId, exitPrivateKey },
+    counter
+  );
+  if (res.res === crypto.ResState.Failed) {
+    return {
+      res: "error",
+      reason: res.error,
+    };
   }
 
-  const data = session.get_request_data();
-  const msg = utils.toUtf8String(data);
+  if (!res.session.request) {
+    return {
+      res: "error",
+      reason: "crypto session without request object",
+    };
+  }
+
+  const msg = utils.toUtf8String(res.session.request);
   const req = Payload.decodeReq(msg);
-  const newCount = session.updated_counter();
+  if (res.res === crypto.ResState.OkFailedCounter) {
+    return {
+      res: "counterfail",
+      req,
+      session: res.session,
+    };
+  }
+
+  const newCount = res.session.updatedTS;
   return {
-    success: true,
+    res: "success",
     req,
-    session: session,
+    session: res.session,
     counter: newCount,
   };
 }
@@ -123,8 +138,8 @@ export function messageToReq({
  */
 export function toSegments(req: Request): Segment.Segment[] {
   // we need the entry id ouside of of the actual encrypted payload
-  const entryIdData = utils.toUtf8Bytes(req.entryId);
-  const reqData = req.session.get_request_data();
+  const entryIdData = utils.toUtf8Bytes(req.entryPeerId);
+  const reqData = req.session.request!;
   const hexEntryId = utils.hexlify(entryIdData);
   const hexData = utils.hexlify(reqData);
   const body = `${hexEntryId},${hexData}`;
@@ -134,13 +149,18 @@ export function toSegments(req: Request): Segment.Segment[] {
 /**
  * Pretty print request in human readable form.
  */
-export function prettyPrint(req: Request) {
-  const eId = shortPeerId(req.entryId);
-  const xId = shortPeerId(req.exitId);
+export function prettyPrint(req: Request, id?: string) {
+  const eId = shortPeerId(req.entryPeerId);
+  const xId = shortPeerId(req.exitPeerId);
   const prov = req.provider.substring(0, 14);
-  return `request[id: ${req.id}, entryId: ${eId}, exitId: ${xId}, prov: ${prov}.. ]`;
+  const attrs = [req.id, `${eId}>${xId}`];
+  if (id) {
+    attrs.push(id);
+  }
+  attrs.push(prov);
+  return `req[${attrs.join(",")}]`;
 }
 
 export function reqSuccess(res: Req): res is ReqSuccess {
-  return res.success;
+  return res.res === "success";
 }

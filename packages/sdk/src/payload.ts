@@ -8,9 +8,22 @@ export type ReqPayload = {
   headers?: Record<string, string>;
 };
 
-export type RespPayload = {
-  resp: JRPC.Response;
-};
+export type RespPayload =
+  | {
+      type: "resp";
+      resp: JRPC.Response;
+    }
+  | {
+      type: "counterfail";
+      min: Date;
+      max: Date;
+    }
+  | {
+      type: "httperror";
+      status: number;
+      text: string;
+    }
+  | { type: "error"; reason: string };
 
 export function encodeReq(payload: ReqPayload): string {
   return LZString.compressToUTF16(JSON.stringify(payload));

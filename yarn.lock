@@ -1664,11 +1664,6 @@
   resolved "https://registry.yarnpkg.com/@rpch/crypto-for-nodejs/-/crypto-for-nodejs-0.3.4.tgz#abacba90e24c84ad6ebf0a0bc1573c1f1ee1674a"
   integrity sha512-qKVOmTYqpGOPBQROxSTqyERS2ABpMYAicwAfyptEaaT8pJrDIxXXRDliH58zXvnjWFAUKKhdmDgDOXgkpSS1Yg==
 
-"@rpch/crypto@0.3.4":
-  version "0.3.4"
-  resolved "https://registry.yarnpkg.com/@rpch/crypto/-/crypto-0.3.4.tgz#201b8e5f0efc7ffb8d3d06f210f5eebd04d41acd"
-  integrity sha512-429mUQce5wbAIEHtg1yd9MyEcj8fqxixoDh0msZnVrynhzgFbkyTEHYjBUsj9XHLsyBnMUgzWZGogim8/cR0jw==
-
 "@rushstack/eslint-patch@^1.1.3":
   version "1.3.3"
   resolved "https://registry.yarnpkg.com/@rushstack/eslint-patch/-/eslint-patch-1.3.3.tgz#16ab6c727d8c2020a5b6e4a176a243ecd88d8d69"

@@ -1,4 +1,3 @@
-import type * as RPChCrypto from "@rpch/crypto";
 import "@hoprnet/hopr-sdk";
 import { utils as etherUtils } from "ethers";
 
@@ -10,7 +9,7 @@ import * as RequestCache from "./request-cache";
 import * as Response from "./response";
 import * as Segment from "./segment";
 import * as SegmentCache from "./segment-cache";
-import * as utils from "./utils";
+import * as Utils from "./utils";
 import NodesCollector from "./nodes-collector";
 import type { EntryNode } from "./entry-node";
 
@@ -23,6 +22,7 @@ export * as Request from "./request";
 export * as Response from "./response";
 export * as Segment from "./segment";
 export * as SegmentCache from "./segment-cache";
+export * as Utils from "./utils";
 
 /**
  * HOPR SDK options provides global parameter values.
@@ -75,7 +75,7 @@ const defaultOps: Ops = {
 };
 
 const MAX_REQUEST_SEGMENTS = 20;
-const log = utils.createLogger();
+const log = Utils.createLogger();
 
 // message tag - more like port since we tag all our messages the same
 const ApplicationTag = Math.floor(Math.random() * 0xffff);
@@ -87,7 +87,7 @@ export default class SDK {
   private readonly requestCache: RequestCache.Cache;
   private readonly segmentCache: SegmentCache.Cache;
   private readonly redoRequests: Set<number> = new Set();
-  private readonly counterStore: Map<string, bigint> = new Map();
+  private readonly counterStore: Map<string, Date> = new Map();
   private readonly nodesColl: NodesCollector;
   private readonly ops: Ops;
   private readonly chainIds: Map<string, number> = new Map();
@@ -98,14 +98,8 @@ export default class SDK {
    * @param crypto crypto instantiation for RPCh, use `@rpch/crypto-for-nodejs` or `@rpch/crypto-for-web`
    * @param ops, see **Ops**
    **/
-  constructor(
-    private readonly clientId: string,
-    private readonly crypto: typeof RPChCrypto,
-    ops: Ops = {}
-  ) {
+  constructor(private readonly clientId: string, ops: Ops = {}) {
     this.ops = this.sdkOps(ops);
-    this.crypto = crypto;
-    this.crypto.set_panic_hook();
     this.requestCache = RequestCache.init();
     this.segmentCache = SegmentCache.init();
     this.nodesColl = new NodesCollector(
@@ -145,29 +139,29 @@ export default class SDK {
   public async send(
     req: JRPC.Request,
     ops?: RequestOps
-  ): Promise<JRPC.Response> {
+  ): Promise<Response.Response> {
     const reqOps = this.requestOps(ops);
     this.populateChainIds(ops?.provider);
     return new Promise(async (resolve, reject) => {
       // sanity check provider url
-      if (!utils.isValidURL(reqOps.provider as string)) {
+      if (!Utils.isValidURL(reqOps.provider as string)) {
         return reject("Cannot parse provider URL");
       }
       // sanity check mev protection provider url, if it is set
       if (!!this.ops.mevProtectionProvider) {
-        if (!utils.isValidURL(this.ops.mevProtectionProvider)) {
+        if (!Utils.isValidURL(this.ops.mevProtectionProvider)) {
           return reject("Cannot parse mevProtectionProvider URL");
         }
       }
 
       // gather entry - exit node pair
-      const res = await this.nodesColl
+      const resNodes = await this.nodesColl
         .requestNodePair(reqOps.timeout as number)
         .catch((err) => {
           log.error("Error finding node pair", err);
           return reject(`Could not find node pair in ${reqOps.timeout} ms`);
         });
-      if (!res) {
+      if (!resNodes) {
         return reject(`Unexpected code flow - should never be here`);
       }
 
@@ -182,23 +176,26 @@ export default class SDK {
       );
 
       // create request
-      const { entryNode, exitNode } = res;
+      const { entryNode, exitNode } = resNodes;
       const id = RequestCache.generateId(this.requestCache);
-      const request = Request.create({
-        crypto: this.crypto,
+      const resReq = Request.create({
         id,
         provider,
         req,
         clientId: this.clientId,
-        entryId: entryNode.id,
-        exitId: exitNode.id,
-        exitNodeReadIdentity: this.crypto!.Identity.load_identity(
-          etherUtils.arrayify(exitNode.pubKey)
-        ),
+        entryPeerId: entryNode.id,
+        exitPeerId: exitNode.id,
+        exitPublicKey: etherUtils.arrayify(exitNode.pubKey),
         headers,
       });
 
+      if (!resReq.success) {
+        log.error("Error creating request", resReq.error);
+        return reject("Unable to create request object");
+      }
+
       // split request to segments
+      const request = resReq.req;
       const segments = Request.toSegments(request);
       if (segments.length > MAX_REQUEST_SEGMENTS) {
         log.error(
@@ -252,7 +249,7 @@ export default class SDK {
         forceZeroHop: !!this.ops.forceZeroHop,
       },
       {
-        recipient: request.exitId,
+        recipient: request.exitPeerId,
         tag: ApplicationTag,
         message: Segment.toMessage(segment),
       }
@@ -290,30 +287,32 @@ export default class SDK {
     }
 
     this.redoRequests.add(origReq.id);
-    if (fallback.entryNode.id === origReq.entryId) {
+    if (fallback.entryNode.id === origReq.entryPeerId) {
       log.info(
         "fallback entry node same as original entry node - still trying"
       );
     }
-    if (fallback.exitNode.id === origReq.exitId) {
+    if (fallback.exitNode.id === origReq.exitPeerId) {
       log.info("fallback exit node same as original exit node - still trying");
     }
 
     // generate new request
     const id = RequestCache.generateId(this.requestCache);
-    const request = Request.create({
-      crypto: this.crypto,
+    const resReq = Request.create({
       id,
       provider: origReq.provider,
       req: origReq.req,
       clientId: this.clientId,
-      entryId: fallback.entryNode.id,
-      exitId: fallback.exitNode.id,
-      exitNodeReadIdentity: this.crypto!.Identity.load_identity(
-        etherUtils.arrayify(fallback.exitNode.pubKey)
-      ),
+      entryPeerId: fallback.entryNode.id,
+      exitPeerId: fallback.exitNode.id,
+      exitPublicKey: etherUtils.arrayify(fallback.exitNode.pubKey),
     });
+    if (!resReq.success) {
+      log.info("Error creating fallback request", resReq.error);
+      return cacheEntry.reject("unable to create fallback request object");
+    }
     // split request to segments
+    const request = resReq.req;
     const segments = Request.toSegments(request);
     if (segments.length > MAX_REQUEST_SEGMENTS) {
       log.error(
@@ -361,7 +360,7 @@ export default class SDK {
         forceZeroHop: !!this.ops.forceZeroHop,
       },
       {
-        recipient: request.exitId,
+        recipient: request.exitPeerId,
         tag: ApplicationTag,
         message: Segment.toMessage(segment),
       }
@@ -439,35 +438,81 @@ export default class SDK {
 
     const hexResp = SegmentCache.toMessage(entry);
     const respData = etherUtils.arrayify(hexResp);
-    const counter = this.counterStore.get(request.exitId) || BigInt(0);
+    const counter = this.counterStore.get(request.exitPeerId) || new Date(0);
 
     const res = Response.messageToResp({
       respData,
       request,
       counter,
-      crypto: this.crypto,
     });
-    if (Response.respSuccess(res)) {
-      this.counterStore.set(request.exitId, res.counter);
-      const responseTime = Date.now() - request.createdAt;
-      log.verbose(
-        "response time for request %s: %s ms, counter %i",
-        request.id,
-        responseTime,
-        counter
-      );
-      this.nodesColl.requestSucceeded(request, responseTime);
+    switch (res.res) {
+      case "error":
+        return this.responseError(res, request);
+      case "counterfail":
+        return this.responseCounterFail(res, request, counter);
+      case "success":
+        return this.responseSuccess(res, request);
+    }
+  };
 
-      log.verbose(
-        "responded to %s with %s",
-        JSON.stringify(request.req),
-        JSON.stringify(res.resp)
-      );
-      return request.resolve(res.resp.resp);
-    } else {
-      log.error("Error extracting message", res.error);
-      this.nodesColl.requestFailed(request);
-      return request.reject("Unable to process response");
+  private responseError = (
+    res: Response.RespError,
+    request: RequestCache.Entry
+  ) => {
+    log.error("Error extracting message", res.reason);
+    this.nodesColl.requestFailed(request);
+    return request.reject("Unable to process response");
+  };
+
+  private responseCounterFail = (
+    res: Response.RespCounterFail,
+    request: RequestCache.Entry,
+    counter: Date
+  ) => {
+    log.info(
+      "Counter mismatch extracting message: last counter %s, new counter %s",
+      counter,
+      res.counter
+    );
+    this.nodesColl.requestFailed(request);
+    return request.reject(
+      `Out of order message from exit node - last counter: ${counter}, new counter ${res.counter}. Check your time settings.`
+    );
+  };
+
+  private responseSuccess = (
+    res: Response.RespSuccess,
+    request: RequestCache.Entry
+  ) => {
+    this.counterStore.set(request.exitPeerId, res.counter);
+    const responseTime = Date.now() - request.createdAt;
+    log.verbose(
+      "response time for request %s: %s ms",
+      request.id,
+      responseTime
+    );
+    this.nodesColl.requestSucceeded(request, responseTime);
+
+    const resp = res.resp;
+    switch (resp.type) {
+      case "error":
+        return request.reject(`Error attempting JSON RPC call: ${resp.reason}`);
+      case "counterfail":
+        return request.reject(
+          `Out of order message. Exit node expected message counter between ${resp.min} and ${resp.max}. Check your time settings!`
+        );
+      case "httperror":
+        return request.resolve({
+          status: resp.status,
+          text: () => Promise.resolve(resp.text),
+          json: () => new Promise((r) => r(JSON.parse(resp.text))),
+        });
+      case "resp":
+        return request.resolve({
+          status: 200,
+          text: () => new Promise((r) => r(JSON.stringify(resp.resp))),
+          json: () => Promise.resolve(resp.resp),
+        });
     }
   };
 
@@ -506,7 +551,7 @@ export default class SDK {
 
   private fetchChainId = async (provider: string) => {
     const res = await ProviderAPI.fetchChainId(provider).catch((err) =>
-      log.error("Error fetching chainId for", provider, err)
+      log.error("Error fetching chainId for", provider, JSON.stringify(err))
     );
     if (!res) {
       return;

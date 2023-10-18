@@ -1,10 +1,10 @@
 import type { Request } from "./request";
-import * as JRPC from "./jrpc";
+import type { Response } from "./response";
 
 export type Cache = Map<number, Entry>; // id -> Request
 
 export type Entry = Request & {
-  resolve: (res: JRPC.Response) => void;
+  resolve: (res: Response) => void;
   reject: (error: string) => void;
   timer: ReturnType<typeof setTimeout>;
 };
@@ -19,7 +19,7 @@ export function init(): Cache {
 export function add(
   cache: Cache,
   request: Request,
-  resolve: (res: JRPC.Response) => void,
+  resolve: (res: Response) => void,
   reject: (error: string) => void,
   timer: ReturnType<typeof setTimeout>
 ): Entry {

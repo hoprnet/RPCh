@@ -33,9 +33,12 @@ RUN turbo prune --scope="@rpch/exit-node" --docker
 # Add lockfile and package.json's of isolated subworkspace.
 # Specify platform to be amd because arm doesn't work
 FROM --platform=linux/amd64 node:18-bullseye-slim AS installer
-RUN apt-get update && \
-  apt-get install -y libc6 && \
-  rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+  libc6 \
+  python3 \
+  build-essential \
+  && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 # Install the dependencies.

@@ -1,4 +1,3 @@
-import * as crypto from "@rpch/crypto-for-nodejs";
 import * as path from "path";
 import { WebSocket, MessageEvent, CloseEvent } from "isomorphic-ws";
 import { utils } from "ethers";
@@ -8,11 +7,13 @@ import { createLogger } from "./utils";
 import {
   DPapi,
   NodeAPI,
+  Payload,
   ProviderAPI,
   Request,
   Response,
   Segment,
   SegmentCache,
+  Utils,
 } from "@rpch/sdk";
 
 const log = createLogger();
@@ -23,11 +24,11 @@ const RequestPurgeTimeout = 10e3; // 10sek
 type State = {
   socket?: WebSocket;
   publicKey: string;
-  identity: crypto.Identity;
+  privateKey: Uint8Array;
   peerId: string;
   cache: SegmentCache.Cache;
   deleteTimer: Map<number, ReturnType<typeof setTimeout>>; // deletion timer of requests in segment cache
-  counterStore: Map<string, bigint>;
+  counterStore: Map<string, Date>;
 };
 
 type Ops = {
@@ -72,17 +73,25 @@ async function setup(ops: Ops): Promise<State> {
   }
 
   const { hopr: peerId } = resPeerId;
-  log.verbose("Fetched peer id", peerId);
+  log.verbose("Fetched peer id %s[%s]", Utils.shortPeerId(peerId), peerId);
 
   const cache = SegmentCache.init();
   const deleteTimer = new Map();
   const counterStore = new Map();
 
+  const logOpts = {
+    identityFile: ops.identityFile,
+    apiEndpoint: ops.apiEndpoint,
+    discoveryPlatformEndpoint: ops.discoveryPlatformEndpoint,
+    forceZeroHop: ops.forceZeroHop,
+  };
+  log.verbose("started exit-node with", JSON.stringify(logOpts));
+
   return {
     cache,
     counterStore,
     deleteTimer,
-    identity: resId.identity,
+    privateKey: utils.arrayify(resId.privateKey),
     peerId,
     publicKey: resId.publicKey,
   };
@@ -168,15 +177,15 @@ function onMessage(state: State, ops: Ops) {
 async function completeSegmentsEntry(
   state: State,
   ops: Ops,
-  entry: SegmentCache.Entry,
+  cacheEntry: SegmentCache.Entry,
   tag: number
 ) {
-  const firstSeg = entry.segments.get(0)!;
+  const firstSeg = cacheEntry.segments.get(0)!;
   if (!firstSeg.body.startsWith("0x")) {
     log.info("message is not a request", firstSeg.requestId);
     return;
   }
-  const msg = SegmentCache.toMessage(entry);
+  const msg = SegmentCache.toMessage(cacheEntry);
   const msgParts = msg.split(",");
   if (msgParts.length !== 2) {
     log.info("Invalid message parts", msgParts);
@@ -185,53 +194,147 @@ async function completeSegmentsEntry(
 
   const [hexEntryId, hexData] = msgParts;
   const entryIdData = utils.arrayify(hexEntryId);
-  const entryId = utils.toUtf8String(entryIdData);
+  const entryPeerId = utils.toUtf8String(entryIdData);
   const reqData = utils.arrayify(hexData);
-  const counter = state.counterStore.get(entryId) || BigInt(0);
+  const counter = state.counterStore.get(entryPeerId) || new Date(0);
   const resReq = Request.messageToReq({
-    body: reqData,
-    exitId: state.peerId,
-    exitNodeWriteIdentity: state.identity,
+    message: reqData,
     counter,
-    crypto,
+    exitPeerId: state.peerId,
+    exitPrivateKey: state.privateKey,
   });
-  if (!Request.reqSuccess(resReq)) {
-    log.error("Error unboxing request:", resReq.error);
-    return;
-  }
-
-  state.counterStore.set(entryId, resReq.counter);
-
-  // do RPC request
-  const { provider, req, headers } = resReq.req;
-  const resp = await ProviderAPI.fetchRPC(provider, req, headers).catch(
-    (err: Error) => {
-      log.error("Error doing rpc request", err, provider, JSON.stringify(req));
+  switch (resReq.res) {
+    case "error":
+      log.error("Error unboxing request", resReq.reason);
+      return;
+    case "counterfail": {
+      const now = new Date();
+      log.info(
+        "Counterfail unboxing request - lowerbound %i upperbound %i",
+        counter,
+        now
+      );
+      // counterfail response
+      const resResp = Response.respToMessage({
+        entryPeerId,
+        respPayload: { type: "counterfail", min: counter, max: now },
+        unboxSession: resReq.session,
+      });
+      if (!Response.msgSuccess(resResp)) {
+        log.error("Error boxing counterfail resp", resResp.error);
+        return;
+      }
+      sendResponse(
+        { ops, cacheEntry, tag, reqPayload: resReq.req, entryPeerId },
+        resResp.hexData
+      );
+      return;
     }
+    case "success": {
+      state.counterStore.set(entryPeerId, resReq.counter);
+
+      // do RPC request
+      const { provider, req, headers } = resReq.req;
+      const resp = await ProviderAPI.fetchRPC(provider, req, headers).catch(
+        (err: Error) => {
+          log.error(
+            "Error RPC requesting %s with %s: %s",
+            provider,
+            JSON.stringify(req),
+            JSON.stringify(err)
+          );
+          // rpc critical fail response
+          const resResp = Response.respToMessage({
+            entryPeerId,
+            respPayload: { type: "error", reason: JSON.stringify(err) },
+            unboxSession: resReq.session,
+          });
+          if (!Response.msgSuccess(resResp)) {
+            log.error("Error boxing generic error resp", resResp.error);
+            return;
+          }
+          sendResponse(
+            { ops, cacheEntry, tag, reqPayload: resReq.req, entryPeerId },
+            resResp.hexData
+          );
+        }
+      );
+      if (!resp) {
+        return;
+      }
+
+      // http fail response
+      if ("status" in resp) {
+        const resResp = Response.respToMessage({
+          entryPeerId,
+          respPayload: {
+            type: "httperror",
+            status: resp.status,
+            text: resp.message,
+          },
+          unboxSession: resReq.session,
+        });
+        if (!Response.msgSuccess(resResp)) {
+          log.error("Error boxing http error resp", resResp.error);
+          return;
+        }
+        sendResponse(
+          { ops, cacheEntry, tag, reqPayload: resReq.req, entryPeerId },
+          resResp.hexData
+        );
+        return;
+      }
+
+      // success Response
+      const resResp = Response.respToMessage({
+        entryPeerId,
+        respPayload: { type: "resp", resp },
+        unboxSession: resReq.session,
+      });
+      if (!Response.msgSuccess(resResp)) {
+        log.error("Error boxing response", resResp.error);
+        return;
+      }
+      sendResponse(
+        { ops, entryPeerId, cacheEntry, tag, reqPayload: resReq.req },
+        resResp.hexData
+      );
+      return;
+    }
+  }
+}
+
+function sendResponse(
+  {
+    ops,
+    entryPeerId,
+    cacheEntry,
+    tag,
+    reqPayload,
+  }: {
+    ops: Ops;
+    entryPeerId: string;
+    tag: number;
+    cacheEntry: SegmentCache.Entry;
+    reqPayload: Payload.ReqPayload;
+  },
+  resp: string
+) {
+  const requestId = cacheEntry.segments.get(0)!.requestId;
+  const segments = Segment.toSegments(requestId, resp);
+
+  log.verbose(
+    "Returning message to %s, tag: %s, requestId: %i",
+    Utils.shortPeerId(entryPeerId),
+    tag,
+    requestId
   );
-  if (!resp) {
-    return;
-  }
-
-  const resResp = Response.respToMessage({
-    crypto,
-    entryId,
-    resp,
-    unboxSession: resReq.session,
-  });
-
-  if (!Response.msgSuccess(resResp)) {
-    log.error("Error boxing response", resResp.error);
-    return;
-  }
-
-  const segments = Segment.toSegments(firstSeg.requestId, resResp.hexData);
 
   // queue segment sending for all of them
   segments.forEach((seg: Segment.Segment) => {
     setTimeout(() => {
       NodeAPI.sendMessage(ops, {
-        recipient: entryId,
+        recipient: entryPeerId,
         tag,
         message: Segment.toMessage(seg),
       }).catch((err: Error) => {
@@ -242,19 +345,19 @@ async function completeSegmentsEntry(
 
   // inform DP non blocking
   setTimeout(() => {
-    const lastReqSeg = entry.segments.get(entry.count - 1)!;
+    const lastReqSeg = cacheEntry.segments.get(cacheEntry.count - 1)!;
     const quotaRequest: DPapi.QuotaParams = {
-      clientId: resReq.req.clientId,
-      rpcMethod: resReq.req.req.method,
-      segmentCount: entry.count,
+      clientId: reqPayload.clientId,
+      rpcMethod: reqPayload.req.method,
+      segmentCount: cacheEntry.count,
       lastSegmentLength: lastReqSeg.body.length,
       type: "request",
     };
 
     const lastRespSeg = segments[segments.length - 1]!;
     const quotaResponse: DPapi.QuotaParams = {
-      clientId: resReq.req.clientId,
-      rpcMethod: resReq.req.req.method,
+      clientId: reqPayload.clientId,
+      rpcMethod: reqPayload.req.method,
       segmentCount: segments.length,
       lastSegmentLength: lastRespSeg.body.length,
       type: "response",

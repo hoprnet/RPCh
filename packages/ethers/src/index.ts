@@ -61,7 +61,8 @@ export class RPChProvider extends JsonRpcProvider {
       }
 
       const rpchResponse = await rpchResponsePromise;
-      const response = getResult(rpchResponse);
+      const json = await rpchResponse.json();
+      const response = getResult(json);
       log.verbose("Received response for request");
       this.emit("debug", {
         action: "response",
