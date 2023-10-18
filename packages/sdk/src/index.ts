@@ -553,7 +553,7 @@ export default class SDK {
 
   private fetchChainId = async (provider: string) => {
     const res = await ProviderAPI.fetchChainId(provider).catch((err) =>
-      log.error("Error fetching chainId for", provider, err)
+      log.error("Error fetching chainId for", provider, JSON.stringify(err))
     );
     if (!res) {
       return;
