@@ -39,6 +39,7 @@ export * as Utils from "./utils";
  *                                will send transactions through this provider
  * @param mevKickbackAddress - provide this URL for receiving kickback share to a different address than the tx origin
  * @param forceZeroHop - disable routing protection
+ * @param segmentLimit - limit the number of segment a request can use, fails requests that require a larger number
  */
 export type Ops = {
   readonly discoveryPlatformEndpoint?: string;
@@ -48,6 +49,7 @@ export type Ops = {
   readonly mevProtectionProvider?: string;
   readonly mevKickbackAddress?: string;
   readonly forceZeroHop?: boolean;
+  readonly segmentLimit?: number;
 };
 
 /**
@@ -72,9 +74,9 @@ const defaultOps: Ops = {
   disableMevProtection: false,
   mevProtectionProvider: RPC_PROPELLORHEADS,
   forceZeroHop: false,
+  segmentLimit: 0, // disable segment limit
 };
 
-const MAX_REQUEST_SEGMENTS = 20;
 const log = Utils.createLogger();
 
 // message tag - more like port since we tag all our messages the same
@@ -200,12 +202,9 @@ export default class SDK {
       // split request to segments
       const request = resReq.req;
       const segments = Request.toSegments(request);
-      if (segments.length > MAX_REQUEST_SEGMENTS) {
-        log.error(
-          "Request exceeds maximum amount of segments with %s segments",
-          segments.length
-        );
-        return reject("Request exceeds maximum size of 7660b");
+      const failMsg = this.checkSegmentLimit(segments.length);
+      if (failMsg) {
+        return reject(failMsg);
       }
 
       // set request expiration timer
@@ -317,17 +316,10 @@ export default class SDK {
     // split request to segments
     const request = resReq.req;
     const segments = Request.toSegments(request);
-    if (segments.length > MAX_REQUEST_SEGMENTS) {
-      log.error(
-        "Resend request exceeds maximum amount of segments with %s segments - should never happen",
-        segments.length,
-        "new:",
-        request.id,
-        "original:",
-        request.id
-      );
+    const failMsg = this.checkSegmentLimit(segments.length);
+    if (failMsg) {
       this.removeRequest(request);
-      return cacheEntry.reject("Request exceeds maximum size of 3830b");
+      return cacheEntry.reject(failMsg);
     }
 
     // track request
@@ -539,6 +531,7 @@ export default class SDK {
       mevProtectionProvider:
         ops.mevProtectionProvider || defaultOps.mevProtectionProvider,
       forceZeroHop: ops.forceZeroHop ?? defaultOps.forceZeroHop,
+      segmentLimit: ops.segmentLimit ?? defaultOps.segmentLimit,
     };
   };
 
@@ -613,5 +606,18 @@ export default class SDK {
       return;
     }
     this.fetchChainId(provider);
+  }
+
+  private checkSegmentLimit(segLength: number) {
+    const limit = this.ops.segmentLimit as number;
+    if (limit > 0 && segLength > limit) {
+      log.error(
+        "Request exceeds maximum amount of segments[%i] with %i segments",
+        limit,
+        segLength
+      );
+      const maxSize = Segment.MaxSegmentBody * limit;
+      return `Request exceeds maximum size of ${maxSize}b`;
+    }
   }
 }

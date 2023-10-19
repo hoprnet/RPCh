@@ -273,6 +273,9 @@ if (require.main === module) {
     mevProtectionProvider: process.env.MEV_PROTECTION_PROVIDER,
     mevKickbackAddress: process.env.MEV_KICKBACK_ADDRESS,
     forceZeroHop: !!process.env.FORCE_ZERO_HOP,
+    segmentLimit: process.env.SEGMENT_LIMIT
+      ? parseInt(process.env.SEGMENT_LIMIT, 10)
+      : undefined,
   };
 
   const serverOps = {
