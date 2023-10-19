@@ -53,6 +53,8 @@ async function runZeroHops(
 
   // gather exit peers and determine exit nodes reachable by their peers
   const exitPeers = await peersMap(peersCache, exitNodes);
+  // determine reachable exit nodes
+  const exits = await onlineExits(exitPeers);
   const peersExits = revertMap(exitPeers);
 
   // match routes
@@ -205,3 +207,5 @@ function toPairings(pairsMap: Map<string, Set<string>>): q.Pair[] {
     return acc;
   }, []);
 }
+
+function onlineExits(exitPeers: Map<String, Set<string
