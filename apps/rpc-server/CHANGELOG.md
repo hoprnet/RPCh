@@ -1,5 +1,16 @@
 # @rpch/rpc-server
 
+## 0.8.0
+
+### Minor Changes
+
+- 184fdaf: remove request limit
+
+### Patch Changes
+
+- Updated dependencies [184fdaf]
+  - @rpch/sdk@1.2.0
+
 ## 0.7.1
 
 ### Patch Changes

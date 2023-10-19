@@ -1,6 +1,6 @@
 {
   "name": "@rpch/rpc-server",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "license": "LGPL-3.0",
   "private": true,
   "scripts": {
@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@rpch/crypto-for-nodejs": "0.3.4",
-    "@rpch/sdk": "1.1.1",
+    "@rpch/sdk": "1.2.0",
     "leveldown": "^6.1.1",
     "levelup": "^5.1.1"
   }

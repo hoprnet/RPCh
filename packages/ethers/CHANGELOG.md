@@ -1,5 +1,12 @@
 # @rpch/ethers
 
+## 0.3.16
+
+### Patch Changes
+
+- Updated dependencies [184fdaf]
+  - @rpch/sdk@1.2.0
+
 ## 0.3.15
 
 ### Patch Changes

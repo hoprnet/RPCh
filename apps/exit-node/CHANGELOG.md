@@ -1,5 +1,12 @@
 # @rpch/exit-node
 
+## 0.9.2
+
+### Patch Changes
+
+- Updated dependencies [184fdaf]
+  - @rpch/sdk@1.2.0
+
 ## 0.9.1
 
 ### Patch Changes
