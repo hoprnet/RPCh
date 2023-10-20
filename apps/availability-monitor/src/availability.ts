@@ -13,7 +13,7 @@ type PeersCache = Map<string, Map<string, Peer>>; // node id -> peer id -> Peer
 
 export async function start(dbPool: Pool) {
   dbPool.on("error", (err, client) =>
-    log.error("pg pool error", err, "on client", client)
+    log.error("pg pool error on client %s: %s", client, JSON.stringify(err))
   );
   dbPool.connect();
 
@@ -29,8 +29,8 @@ async function run(dbPool: Pool) {
       await runZeroHops(dbPool, peersCache, qEntries.rows, qExits.rows);
       await runOneHops(dbPool, peersCache, qEntries.rows, qExits.rows);
     })
-    .catch((ex) => {
-      log.error("Error during determining routes", ex);
+    .catch((err) => {
+      log.error("Error during determining routes", JSON.stringify(err));
     })
     .finally(() => reschedule(dbPool));
 }
@@ -82,7 +82,7 @@ async function runOneHops(
   // gather channel structure
   const entryNode = randomEl(entryNodes);
   const respCh = await NodeAPI.getChannels(entryNode).catch((err) =>
-    log.error("Error getting channels", err)
+    log.error("Error getting channels", JSON.stringify(err))
   );
   if (!respCh) {
     return;
@@ -132,7 +132,7 @@ async function peersMap(
 ): Promise<Map<string, Set<string>>> {
   const pRaw = nodes.map(async (node) => {
     const peers = await PeersCache.fetchPeers(peersCache, node).catch((err) =>
-      log.error("Error fetching peers", err, "for node", node.id)
+      log.error("Error fetching peers for %s: %s", node.id, JSON.stringify(err))
     );
     if (peers) {
       const ids = Array.from(peers.values()).map(({ peerId }) => peerId);
