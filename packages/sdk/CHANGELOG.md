@@ -1,5 +1,11 @@
 # @rpch/sdk
 
+## 1.2.1
+
+### Patch Changes
+
+- e6fed45: fix timestamp accuracy to ms
+
 ## 1.2.0
 
 ### Minor Changes

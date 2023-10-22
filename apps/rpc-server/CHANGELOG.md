@@ -1,5 +1,12 @@
 # @rpch/rpc-server
 
+## 0.8.1
+
+### Patch Changes
+
+- Updated dependencies [e6fed45]
+  - @rpch/sdk@1.2.1
+
 ## 0.8.0
 
 ### Minor Changes

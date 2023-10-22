@@ -1,5 +1,13 @@
 # @rpch/exit-node
 
+## 0.9.3
+
+### Patch Changes
+
+- e6fed45: fix timestamp accuracy to ms
+- Updated dependencies [e6fed45]
+  - @rpch/sdk@1.2.1
+
 ## 0.9.2
 
 ### Patch Changes
