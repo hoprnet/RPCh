@@ -28,7 +28,7 @@ type State = {
   peerId: string;
   cache: SegmentCache.Cache;
   deleteTimer: Map<number, ReturnType<typeof setTimeout>>; // deletion timer of requests in segment cache
-  counterStore: Map<string, Date>;
+  counterStore: Map<string, bigint>;
 };
 
 type Ops = {
@@ -194,7 +194,7 @@ async function completeSegmentsEntry(
   const entryIdData = utils.arrayify(hexEntryId);
   const entryPeerId = utils.toUtf8String(entryIdData);
   const reqData = utils.arrayify(hexData);
-  const counter = state.counterStore.get(entryPeerId) || new Date(0);
+  const counter = state.counterStore.get(entryPeerId) || BigInt(0);
   const resReq = Request.messageToReq({
     message: reqData,
     counter,
@@ -206,9 +206,9 @@ async function completeSegmentsEntry(
       log.error("Error unboxing request", resReq.reason);
       return;
     case "counterfail": {
-      const now = new Date();
+      const now = BigInt(Date.now());
       log.info(
-        "Counterfail unboxing request - lowerbound %i upperbound %i",
+        "Counterfail unboxing request - lowerbound %s upperbound %s",
         counter,
         now
       );

@@ -24,7 +24,7 @@ export type ReqSuccess = {
   res: "success";
   req: Payload.ReqPayload;
   session: crypto.Session;
-  counter: Date;
+  counter: bigint;
 };
 export type ReqCounterFail = {
   res: "counterfail";
@@ -101,7 +101,7 @@ export function messageToReq({
   message: Uint8Array;
   exitPeerId: string;
   exitPrivateKey: Uint8Array;
-  counter: Date;
+  counter: bigint;
 }): Req {
   const res = crypto.unboxRequest(
     { message, exitPeerId, exitPrivateKey },

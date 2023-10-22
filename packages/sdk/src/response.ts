@@ -14,11 +14,11 @@ export type Response = {
 export type RespSuccess = {
   res: "success";
   resp: Payload.RespPayload;
-  counter: Date;
+  counter: bigint;
 };
 export type RespCounterFail = {
   res: "counterfail";
-  counter: Date;
+  counter: bigint;
 };
 export type RespError = { res: "error"; reason: string };
 export type Resp = RespSuccess | RespCounterFail | RespError;
@@ -26,7 +26,7 @@ export type Resp = RespSuccess | RespCounterFail | RespError;
 export type MsgSuccess = {
   success: true;
   hexData: string;
-  newCount: Date;
+  newCount: bigint;
 };
 export type MsgError = { success: false; error: string };
 export type Msg = MsgSuccess | MsgError;
@@ -64,7 +64,7 @@ export function messageToResp({
 }: {
   respData: Uint8Array;
   request: Request;
-  counter: Date;
+  counter: bigint;
 }): Resp {
   const res = crypto.unboxResponse(
     request.session,
