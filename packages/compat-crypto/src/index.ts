@@ -7,7 +7,7 @@ import { ecdh, privateKeyVerify, publicKeyCreate } from 'secp256k1';
 export type Session = {
     request?: Uint8Array;
     response?: Uint8Array;
-    updatedTS: Date;
+    updatedTS: bigint;
     sharedPreSecret?: Uint8Array;
 };
 
@@ -185,7 +185,7 @@ export function boxRequest(
         res: ResState.Ok,
         session: {
             request: new Uint8Array(result),
-            updatedTS: new Date(Number(newCounter)),
+            updatedTS: newCounter,
             sharedPreSecret,
         },
     };
@@ -202,7 +202,7 @@ export function unboxRequest(
         exitPeerId,
         exitPrivateKey,
     }: { message: Uint8Array; exitPeerId: string; exitPrivateKey: Uint8Array },
-    lastTsOfThisClient: Date
+    lastTsOfThisClient: bigint
 ): Result | ResOkFailedCounter {
     if ((message[0] & 0x10) != (RPCH_CRYPTO_VERSION & 0x10)) {
         return {
@@ -265,11 +265,11 @@ export function unboxRequest(
 
     const session = {
         request: plaintext,
-        updatedTS: new Date(Number(counter)),
+        updatedTS: counter,
         sharedPreSecret,
     };
 
-    if (!validateTS(counter, BigInt(lastTsOfThisClient.getTime()), BigInt(Date.now()))) {
+    if (!validateTS(counter, lastTsOfThisClient, BigInt(Date.now()))) {
         return {
             res: ResState.OkFailedCounter,
             session,
@@ -329,7 +329,7 @@ export function boxResponse(
     // C,R,T
     const result = Buffer.concat([counterBuf, Buffer.from(cipherText)]);
     session.response = new Uint8Array(result);
-    session.updatedTS = new Date(Number(newCounter));
+    session.updatedTS = newCounter;
 
     return {
         res: ResState.Ok,
@@ -344,7 +344,7 @@ export function boxResponse(
 export function unboxResponse(
     session: Session,
     { entryPeerId, message }: { entryPeerId: string; message: Uint8Array },
-    lastTsOfThisExitNode: Date
+    lastTsOfThisExitNode: bigint
 ): Result | ResOkFailedCounter {
     const sharedPreSecret = session.sharedPreSecret;
     if (!sharedPreSecret) {
@@ -384,9 +384,9 @@ export function unboxResponse(
     }
 
     session.response = plaintext;
-    session.updatedTS = new Date(Number(counter));
+    session.updatedTS = counter;
 
-    if (!validateTS(counter, BigInt(lastTsOfThisExitNode.getTime()), BigInt(Date.now()))) {
+    if (!validateTS(counter, lastTsOfThisExitNode, BigInt(Date.now()))) {
         return {
             res: ResState.OkFailedCounter,
             session,

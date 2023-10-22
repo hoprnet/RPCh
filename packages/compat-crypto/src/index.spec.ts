@@ -20,7 +20,7 @@ const TEST_VECTOR_RESPONSE_INPUT =
     'e1afa1e0a0b3e485ace0b480dcb0e19d88cb92e48496c7b9e48ca3e0b0b2c2b8c7b0c2812dd0a1e198a0e4b490da8ae59693e68da0e197a0e0b6a0e19d9de490a1e780b1e4b5b8e48193e1bca0e18790e4a0a0e5bd89e280a020';
 const TEST_VECTOR_RESPONSE_OUTPUT =
     '000001856a69d9816d0a1e6ed9cfe3b95125d3ae02400ea86d869fce21b7e6241d22dbe911182c51345c8eb13ebc9c5cf9989e7e0f9cac2cd2a3026cc06d6fca6f2df1b45ee17f94543194b0f7f285cf261348b729fd78d6bb9a2021ca947b49f3ccbc36d43eea6efef2c4e25c205bb1286d';
-const TEST_COUNTER = 1672527600000;
+const TEST_COUNTER = BigInt(1672527600000);
 
 function fromHex(str: string) {
     return Uint8Array.from(Buffer.from(str, 'hex'));
@@ -67,7 +67,7 @@ describe('RPCh Crypto protocol tests', function () {
             exitPrivateKey: fromHex(EXIT_NODE_SK),
         };
 
-        const stored_last_received_req_ts = new Date(Date.now() - 2000); // 2s ago
+        const stored_last_received_req_ts = BigInt(Date.now() - 2000); // 2s ago
 
         const req_unbox_result = unboxRequest(received_req_data, stored_last_received_req_ts);
         assert(
@@ -81,7 +81,7 @@ describe('RPCh Crypto protocol tests', function () {
         assert(exit_request_session != undefined, 'must contain a valid session');
 
         assert.equal(toHex(exit_request_session.request), toHex(request_msg));
-        assert.equal(exit_request_session.updatedTS.getTime(), client_req_creation_ts.getTime());
+        assert.equal(exit_request_session.updatedTS, client_req_creation_ts);
     });
 
     it('test response flow', async function () {
@@ -89,7 +89,7 @@ describe('RPCh Crypto protocol tests', function () {
         const response_msg = new Uint8Array(randomBytes(300));
 
         const mock_session_with_client: Session = {
-            updatedTS: new Date(1),
+            updatedTS: BigInt(1),
             sharedPreSecret: fromHex(TEST_VECTOR_EPHEMERAL_SECRET),
         };
 
@@ -120,11 +120,11 @@ describe('RPCh Crypto protocol tests', function () {
         };
 
         const mock_session_with_exit_node: Session = {
-            updatedTS: new Date(1),
+            updatedTS: BigInt(1),
             sharedPreSecret: fromHex(TEST_VECTOR_EPHEMERAL_SECRET),
         };
 
-        const stored_last_received_resp_ts = new Date(Date.now() - 2000); // 2s ago
+        const stored_last_received_resp_ts = BigInt(Date.now() - 2000); // 2s ago
 
         const resp_unbox_result = unboxResponse(
             mock_session_with_exit_node,
@@ -140,10 +140,7 @@ describe('RPCh Crypto protocol tests', function () {
 
         assert(mock_session_with_exit_node.response != undefined);
         assert.equal(toHex(mock_session_with_exit_node.response), toHex(response_msg));
-        assert.equal(
-            mock_session_with_exit_node.updatedTS.getTime(),
-            exit_node_resp_creation_ts.getTime()
-        );
+        assert.equal(mock_session_with_exit_node.updatedTS, exit_node_resp_creation_ts);
     });
 
     it('test complete flow', async function () {
@@ -181,7 +178,7 @@ describe('RPCh Crypto protocol tests', function () {
             exitPrivateKey: fromHex(EXIT_NODE_SK),
         };
 
-        const stored_last_received_req_ts = new Date(Date.now() - 2000); // 2s ago
+        const stored_last_received_req_ts = BigInt(Date.now() - 2000); // 2s ago
 
         const req_unbox_result = unboxRequest(received_req_data, stored_last_received_req_ts);
         assert(
@@ -195,7 +192,7 @@ describe('RPCh Crypto protocol tests', function () {
         assert(exit_session != undefined, 'must contain a valid session');
 
         assert.equal(toHex(exit_session.request), toHex(request_msg));
-        assert.equal(exit_session.updatedTS.getTime(), client_req_creation_ts.getTime());
+        assert.equal(exit_session.updatedTS, client_req_creation_ts);
 
         // Exit node side
         const response_msg = new Uint8Array(randomBytes(300));
@@ -226,7 +223,7 @@ describe('RPCh Crypto protocol tests', function () {
             entryPeerId: ENTRY_NODE,
         };
 
-        const stored_last_received_resp_ts = new Date(Date.now() - 2000); // 2s ago
+        const stored_last_received_resp_ts = BigInt(Date.now() - 2000); // 2s ago
 
         const resp_unbox_result = unboxResponse(
             client_session,
@@ -242,12 +239,12 @@ describe('RPCh Crypto protocol tests', function () {
 
         assert(client_session.response != undefined);
         assert.equal(toHex(client_session.response), toHex(response_msg));
-        assert.equal(client_session.updatedTS.getTime(), exit_node_resp_creation_ts.getTime());
+        assert.equal(client_session.updatedTS, exit_node_resp_creation_ts);
     });
 
     it('test vectors on fixed request input', async function () {
         jest.useFakeTimers();
-        jest.setSystemTime(new Date(TEST_COUNTER));
+        jest.setSystemTime(Number(TEST_COUNTER));
 
         // Client side
 
@@ -277,8 +274,8 @@ describe('RPCh Crypto protocol tests', function () {
             'session data must be equal to test vector'
         );
         assert.equal(
-            client_request_session.updatedTS.getTime(),
-            TEST_COUNTER + 1,
+            client_request_session.updatedTS,
+            Number(TEST_COUNTER) + 1,
             'TS must be increased'
         );
 
@@ -288,7 +285,7 @@ describe('RPCh Crypto protocol tests', function () {
 
         // Exit node side
 
-        jest.setSystemTime(new Date(TEST_COUNTER + 10));
+        jest.setSystemTime(Number(TEST_COUNTER) + 10);
 
         const received_req_data = {
             message: data_on_wire,
@@ -296,7 +293,7 @@ describe('RPCh Crypto protocol tests', function () {
             exitPrivateKey: fromHex(EXIT_NODE_SK),
         };
 
-        const req_unbox_result = unboxRequest(received_req_data, new Date(TEST_COUNTER));
+        const req_unbox_result = unboxRequest(received_req_data, BigInt(TEST_COUNTER));
         assert(
             !isError(req_unbox_result),
             `request unboxing must not fail, error: ${
@@ -308,17 +305,17 @@ describe('RPCh Crypto protocol tests', function () {
         assert(exit_request_session != undefined, 'must contain a valid session');
 
         assert.equal(toHex(exit_request_session.request), TEST_VECTOR_REQUEST_INPUT);
-        assert.equal(exit_request_session.updatedTS.getTime(), TEST_COUNTER + 1);
+        assert.equal(exit_request_session.updatedTS, Number(TEST_COUNTER) + 1);
     });
 
     it('test vectors on fixed response input', async function () {
         jest.useFakeTimers();
-        jest.setSystemTime(new Date(TEST_COUNTER));
+        jest.setSystemTime(Number(TEST_COUNTER));
 
         // Exit node side
 
         const mock_session_with_client: Session = {
-            updatedTS: new Date(1),
+            updatedTS: BigInt(1),
             sharedPreSecret: fromHex(TEST_VECTOR_EPHEMERAL_SECRET),
         };
 
@@ -337,7 +334,7 @@ describe('RPCh Crypto protocol tests', function () {
 
         assert(mock_session_with_client.response != undefined);
         assert.equal(toHex(mock_session_with_client.response), TEST_VECTOR_RESPONSE_OUTPUT);
-        assert.equal(mock_session_with_client.updatedTS.getTime(), TEST_COUNTER + 1);
+        assert.equal(mock_session_with_client.updatedTS, Number(TEST_COUNTER) + 1);
 
         // Exit node side end
 
@@ -345,7 +342,7 @@ describe('RPCh Crypto protocol tests', function () {
 
         // Client node side
 
-        jest.setSystemTime(new Date(TEST_COUNTER + 10));
+        jest.setSystemTime(Number(TEST_COUNTER) + 10);
 
         const received_resp_data = {
             message: data_on_wire,
@@ -353,14 +350,14 @@ describe('RPCh Crypto protocol tests', function () {
         };
 
         const mock_session_with_exit_node: Session = {
-            updatedTS: new Date(1),
+            updatedTS: BigInt(1),
             sharedPreSecret: fromHex(TEST_VECTOR_EPHEMERAL_SECRET),
         };
 
         const resp_unbox_result = unboxResponse(
             mock_session_with_exit_node,
             received_resp_data,
-            new Date(TEST_COUNTER)
+            TEST_COUNTER
         );
         assert(
             !isError(resp_unbox_result),
@@ -371,6 +368,6 @@ describe('RPCh Crypto protocol tests', function () {
 
         assert(mock_session_with_exit_node.response != undefined);
         assert.equal(toHex(mock_session_with_exit_node.response), TEST_VECTOR_RESPONSE_INPUT);
-        assert.equal(mock_session_with_exit_node.updatedTS.getTime(), TEST_COUNTER + 1);
+        assert.equal(mock_session_with_exit_node.updatedTS, Number(TEST_COUNTER) + 1);
     });
 });

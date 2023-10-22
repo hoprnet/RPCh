@@ -89,7 +89,7 @@ export default class SDK {
   private readonly requestCache: RequestCache.Cache;
   private readonly segmentCache: SegmentCache.Cache;
   private readonly redoRequests: Set<number> = new Set();
-  private readonly counterStore: Map<string, Date> = new Map();
+  private readonly counterStore: Map<string, bigint> = new Map();
   private readonly nodesColl: NodesCollector;
   private readonly ops: Ops;
   private readonly chainIds: Map<string, number> = new Map();
@@ -433,7 +433,7 @@ export default class SDK {
 
     const hexResp = SegmentCache.toMessage(entry);
     const respData = etherUtils.arrayify(hexResp);
-    const counter = this.counterStore.get(request.exitPeerId) || new Date(0);
+    const counter = this.counterStore.get(request.exitPeerId) || BigInt(0);
 
     const res = Response.messageToResp({
       respData,
@@ -462,7 +462,7 @@ export default class SDK {
   private responseCounterFail = (
     res: Response.RespCounterFail,
     request: RequestCache.Entry,
-    counter: Date
+    counter: bigint
   ) => {
     log.info(
       "Counter mismatch extracting message: last counter %s, new counter %s",
@@ -471,7 +471,7 @@ export default class SDK {
     );
     this.nodesColl.requestFailed(request);
     return request.reject(
-      `Out of order message from exit node - last counter: ${counter}, new counter ${res.counter}. Check your time settings.`
+      `Check your time settings! Out of order message from exit node - last counter: ${counter}, new counter ${res.counter}.`
     );
   };
 

@@ -27,7 +27,7 @@ export const schema: Record<keyof quota.Attrs & "clientId", ParamSchema> = {
   },
   lastSegmentLength: {
     in: "body",
-    inInt: true,
+    isInt: true,
     toInt: true,
     optional: true,
   },
