@@ -1,4 +1,4 @@
-# Load test
+# Developer setup
 
 See architecture overview [https://docs.rpch.net/docs/tutorial-basics/Architecture-overview](https://docs.rpch.net/docs/tutorial-basics/Architecture-overview)
 
@@ -106,13 +106,3 @@ In a new terminal tab, run
 ```bash
 cd apps/rpc-server/; DEBUG=* FORCE_ZERO_HOP=true PORT=45740 DISCOVERY_PLATFORM_API_ENDPOINT="http://127.0.0.1:3020" CLIENT=loadtesting-secret DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/rpch_dp yarn start | tee ~/Downloads/rpch-test/test.log
 ```
-
-### Run k6 load test
-
-In a new terminal tab, run
-
-```bash
-cd devkit/loadtesting-k6; RPC_SERVER_URL=http://localhost:45740 yarn start:spike-small
-```
-
-Check the result json file and "500” means that there’s failure in RPCh side
