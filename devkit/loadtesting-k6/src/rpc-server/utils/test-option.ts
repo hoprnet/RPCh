@@ -1,5 +1,5 @@
 import { Options } from "k6/options";
-import { OptionTypes, TestOption } from "./types.js";
+import { OptionTypes, TestOption } from "../types.js";
 
 export function getOption(
   optName: OptionTypes
