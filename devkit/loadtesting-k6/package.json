@@ -4,7 +4,7 @@
   "private": true,
   "license": "LGPL-3.0",
   "scripts": {
-    "build": "exit 0",
+    "build": "tsc --build",
     "dev": "exit 0",
     "format": "prettier --check \"src/**/*.{js,md}\"",
     "lint": "eslint \"src/**/*.js*\"",
@@ -25,7 +25,9 @@
   },
   "devDependencies": {
     "@rpch/configs-eslint": "*",
+    "@rpch/crypto-for-nodejs": "0.3.4",
     "@rpch/ethers": "0.3.13",
-    "@rpch/crypto-for-nodejs": "0.3.4"
+    "@types/k6": "^0.47.1",
+    "k6": "^0.0.0"
   }
 }
