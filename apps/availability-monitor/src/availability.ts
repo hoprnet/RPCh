@@ -26,7 +26,7 @@ async function run(dbPool: Pool) {
     .then(async ([qEntries, qExits]) => {
       const peersCache: PeersCache.PeersCache = new Map();
       await runZeroHops(dbPool, peersCache, qEntries.rows, qExits.rows);
-      await runOneHops(dbPool, peersCache, qEntries.rows, qExits.rows);
+      // await runOneHops(dbPool, peersCache, qEntries.rows, qExits.rows);
     })
     .catch((err) => {
       log.error("Error during determining routes", JSON.stringify(err));
@@ -35,8 +35,8 @@ async function run(dbPool: Pool) {
 }
 
 function reschedule(dbPool: Pool) {
-  // schedule new run every max 10 min
-  const next = Math.floor(Math.random() * 10 * 60e3);
+  // schedule new run every min 30sec and max 10 min
+  const next = 30e3 + Math.floor(Math.random() * 9.5 * 60e3);
   const logN = Math.round(next / 1000);
   log.verbose("scheduling next run in", logN, "s");
   setTimeout(() => run(dbPool), next);
@@ -152,48 +152,54 @@ async function peersMap(
     return null;
   });
 
-  const raw = await Promise.all(pRaw);
-  const rawValues = raw.filter((val) => !!val) as [string, Set<string>][];
-  return new Map(rawValues);
+  const raw = await Promise.allSettled(pRaw);
+  const successes = raw.filter(
+    (val) => val.status === "fulfilled" && !!val.value
+  ) as [{ status: "fulfilled"; value: [string, Set<string>] }];
+  return new Map(successes.map(({ value }) => value));
 }
 
 async function filterOnline(
   exitEntries: Map<string, Set<string>>,
   entryNodes: q.RegisteredNode[]
 ) {
-  const pRaw = Array.from(exitEntries.entries()).map(
-    async ([xId, entryIds]) => {
+    const messagePreps = Array.from(exitEntries.entries()).reduce((acc, [xId, entryIds]) => {
       const eId = randomEl(Array.from(entryIds.values()));
-      const eNode = entryNodes.find(
-        (node) => node.id === eId
-      ) as q.RegisteredNode;
-      const conn = {
-        apiEndpoint: new URL(eNode.hoprd_api_endpoint),
-        accessToken: eNode.hoprd_api_token,
-      };
+      const eNode = entryNodes.find((node) => node.id === eId) as q.RegisteredNode;
+      const conn = { apiEndpoint: new URL(eNode.hoprd_api_endpoint), accessToken: eNode.hoprd_api_token};
+      if (acc.has(eId)) {
+          acc.get(eId).exitIds.add(xId);
+      } else {
+          acc.set(eId, { conn, exitIds: new Set([xId])});
+      }
+      return acc;
+    }, new Map())
 
+    const pRaw = Array.from(messagePreps.entries()).map(async ([eId, { conn, exitIds}]) => {
       // delete any previous pongs
       await NodeAPI.deleteMessages(conn, ApplicationTag).catch((err) =>
         log.error(
           "Error deleting messages from %s: %s",
-          JSON.stringify(eNode),
+          shortPeerId(eId),
           JSON.stringify(err)
         )
       );
 
-      // send ping
+      // send pings
+      await Promise.allSettled(exitIds.forEach((xId) => {
+          return new Promise(
       const pingRcpt = await NodeAPI.sendMessage(
         { ...conn, hops: 0 },
         {
           tag: ApplicationTag,
           recipient: xId,
-          message: `ping-${eNode}`,
+          message: `ping-${eId}`,
         }
       ).catch((err) =>
         log.error(
           "Error sending ping to %s from %s: %s",
-          xId,
-          JSON.stringify(eNode),
+          shortPeerId(xId),
+          shortPeerId(eId),
           JSON.stringify(err)
         )
       );
@@ -201,44 +207,61 @@ async function filterOnline(
         return false;
       }
 
-      // receive pong after 5 secs
-      const pongs = await NodeAPI.retrieveMessages(conn, ApplicationTag).catch(
-        (err) =>
-          log.error(
-            "Error retrieving messages from %s: %s",
-            JSON.stringify(eNode),
-            JSON.stringify(err)
-          )
+      return new Promise((resolve) =>
+        setTimeout(async () => {
+          // receive pong after 5 secs
+          const pongs = await NodeAPI.retrieveMessages(
+            conn,
+            ApplicationTag
+          ).catch((err) =>
+            log.error(
+              "Error retrieving messages from %s: %s",
+              JSON.stringify(eNode),
+              JSON.stringify(err)
+            )
+          );
+          if (!pongs) {
+            return resolve(false);
+          }
+          console.log("xId", shortPeerId(xId), pingRcpt, pongs);
+          const { messages: msgs } = pongs;
+          if (msgs.length !== 1) {
+            log.error(
+              "Unexpected pong reponse count %i - Messages: %s",
+              msgs.length,
+              JSON.stringify(msgs)
+            );
+            return resolve(false);
+          }
+          const [{ body: pongMsg }] = msgs;
+          if (!pongMsg.startsWith("pong-")) {
+            log.error(
+              "Unexpected pong body contents from %s: %s",
+              shortPeerId(xId),
+              pongMsg
+            );
+            return resolve(false);
+          }
+          const [, xRespId] = pongMsg.split("-");
+          if (xRespId !== xId) {
+            log.error(
+              "Pong peer id mismatch: expected %s, got %s",
+              shortPeerId(xId),
+              shortPeerId(xRespId)
+            );
+            return resolve(false);
+          }
+          return resolve([xId, entryIds]);
+        }, 5e3)
       );
-      if (!pongs) {
-        return false;
-      }
-      const { messages: msgs } = pongs;
-      if (msgs.length !== 1) {
-        log.error(
-          "Unexpected pong reponse count %i - Messages: %s",
-          msgs.length,
-          JSON.stringify(msgs)
-        );
-        return false;
-      }
-      const [{ body: pongMsg }] = msgs;
-      if (!pongMsg.startsWith("pong-")) {
-        log.error("Unexpected pong body contents from %s: %s", xId, pongMsg);
-        return false;
-      }
-      const [, xRespId] = pongMsg.split("-");
-      if (xRespId !== xId) {
-        log.error("Pong peer id mismatch: expected %s, got %s", xId, xRespId);
-        return false;
-      }
-      return [xId, entryIds];
     }
   );
 
-  const raw = await Promise.all(pRaw);
-  const rawValues = raw.filter((val) => !!val) as [string, Set<string>][];
-  return new Map(rawValues);
+  const raw = await Promise.allSettled(pRaw);
+  const successes = raw.filter(
+    (val) => val.status === "fulfilled" && !!val.value
+  ) as [{ status: "fulfilled"; value: [string, Set<string>] }];
+  return new Map(successes.map(({ value }) => value));
 }
 
 function channelsMap(channels: NodeAPI.Channel[]): Map<string, Set<string>> {
