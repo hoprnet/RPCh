@@ -12,6 +12,7 @@ report.json
 logs
 
 # builds
+build/
 .next/
 out/
 apps/**/build

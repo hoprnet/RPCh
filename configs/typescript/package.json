@@ -10,7 +10,7 @@
     "nodejs.json",
     "react-library.json"
   ],
-  "dependencies": {
+  "devDependencies": {
     "typescript": "^4.5.2",
     "@types/fetch": "*"
   }

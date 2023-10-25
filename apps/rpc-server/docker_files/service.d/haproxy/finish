@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+source /usr/local/lib/bash-logger.sh
+source /usr/local/lib/persist-env.sh
+
+NOTICE "[HAPROXY] -- Ending Service haproxy ..."
+
+sleep 3
+

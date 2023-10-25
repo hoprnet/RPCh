@@ -1,23 +1,10 @@
-# Create exit node container
+# Create rpc-server container
 
 # use slim version of node on Debian bullseye for smaller image sizes
 # Specify platform to be amd because arm doesn't work
-FROM --platform=linux/amd64 node:18-bullseye-slim as builder
+FROM --platform=linux/amd64 node:18-alpine as builder
 
-# use bash to have source command and persistent environment.
-SHELL ["/bin/bash", "-lc"]
-
-# python is used by some nodejs dependencies as an installation requirement.
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
-  git \
-  python3 \
-  unzip \
-  curl \
-  build-essential \
-  ca-certificates \
-  && rm -rf  /var/lib/apt/lists/* \
-  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
+RUN apk upgrade --no-cache
 
 WORKDIR /app
 
@@ -32,13 +19,8 @@ RUN turbo prune --scope="@rpch/rpc-server" --docker
 
 # Add lockfile and package.json's of isolated subworkspace.
 # Specify platform to be amd because arm doesn't work
-FROM --platform=linux/amd64 node:18-bullseye-slim AS installer
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
-  libc6 \
-  python3 \
-  build-essential \
-  && rm -rf /var/lib/apt/lists/*
+FROM --platform=linux/amd64 node:18-alpine as installer
+
 WORKDIR /app
 
 # Install the dependencies.
@@ -53,30 +35,43 @@ COPY --from=builder /app/out/full .
 COPY turbo.json turbo.json
 RUN yarn run build --scope="@rpch/rpc-server"
 
-#  Copy only the necesary files to run the app.
+# prepare for production
+RUN rm -R node_modules && \
+    yarn config set nmMode hardlinks-local && \
+    yarn install --production --frozen-lockfile && \
+    rm -rf node_modules/ethers/dist node_modules/protobufjs/cli
+
 # Specify platform to be amd because arm doesn't work
-FROM --platform=linux/amd64 node:18-bullseye-slim AS runner
+FROM --platform=linux/amd64 alpine:3 as runner
+
+ENV LOGGER=false
 
 WORKDIR /app
 
-RUN mkdir -p /app/db
-# set volume which can be mapped by users on the host system
-VOLUME ["/app/db"]
+RUN apk upgrade --no-cache && \
+    apk add --no-cache curl nodejs haproxy && \
+    curl -L -o /tmp/install-runit.sh https://raw.githubusercontent.com/docker-suite/Install-Scripts/master/alpine-runit/install-runit.sh && \
+    sh /tmp/install-runit.sh && \
+    rm /tmp/install-runit.sh && \
+    curl -L -o /usr/bin/mkcert https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-linux-amd64 && \
+    chmod +x /usr/bin/mkcert && \
+    mkdir -p /etc/certs && \
+    addgroup -g 103 -S www && \
+    adduser -u 103 -D -S -G www www && \
+    chown -R www:www /etc/certs
 
-# we use tini as process 1 to catch signals properly, which is also built into Docker by default
-RUN apt-get update && \
-  apt-get install -y tini && \
-  rm -rf /var/lib/apt/lists/*
+# copy over minimal fileset to run rpc-server
+COPY --from=installer /app/node_modules ./node_modules
+COPY --from=installer /app/package.json .
+COPY --from=installer /app/apps/rpc-server/build/*.js .
+COPY --from=installer /app/packages/sdk ./packages/sdk
+COPY --from=installer /app/packages/common ./packages/common
 
-COPY --from=installer /app/apps/rpc-server/package.json .
-COPY --from=installer /app .
+# copy over runit configurations
+COPY apps/rpc-server/docker_files/haproxy.conf /etc/haproxy/haproxy.conf
+COPY apps/rpc-server/docker_files/service.d /etc/service.d
+COPY apps/rpc-server/docker_files/entrypoint.sh /
 
-# switch to normal user, to prevent dangerous root access
-RUN chown -R node:node .
+ENTRYPOINT ["/entrypoint.sh"]
 
-# finally set the non-root user so the process also run un-privilidged
-USER node
-
-CMD ["node", "apps/rpc-server/build/index.js"]
-
-ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["start"]
