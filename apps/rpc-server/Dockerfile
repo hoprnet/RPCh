@@ -28,7 +28,8 @@ COPY .gitignore .gitignore
 COPY packages-tgz packages-tgz
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/yarn.lock ./yarn.lock
-RUN yarn install --frozen-lockfile
+RUN apk add --no-cache python3 make g++ && \
+    yarn install --frozen-lockfile
 
 # Build the project.
 COPY --from=builder /app/out/full .
@@ -58,6 +59,8 @@ RUN apk upgrade --no-cache && \
     mkdir -p /etc/certs && \
     addgroup -g 103 -S www && \
     adduser -u 103 -D -S -G www www && \
+    addgroup -g 104 -S node && \
+    adduser -u 104 -D -S -G node node && \
     chown -R www:www /etc/certs
 
 # copy over minimal fileset to run rpc-server
@@ -66,6 +69,7 @@ COPY --from=installer /app/package.json .
 COPY --from=installer /app/apps/rpc-server/build/*.js .
 COPY --from=installer /app/packages/sdk ./packages/sdk
 COPY --from=installer /app/packages/common ./packages/common
+COPY --from=installer /app/packages/compat-crypto ./packages/compat-crypto
 
 # copy over runit configurations
 COPY apps/rpc-server/docker_files/haproxy.conf /etc/haproxy/haproxy.conf
