@@ -80,7 +80,8 @@ const defaultOps: Ops = {
 const log = Utils.createLogger();
 
 // message tag - more like port since we tag all our messages the same
-const ApplicationTag = Math.floor(Math.random() * 0xffff);
+// 0xffff reserved for Availability Monitor
+const ApplicationTag = Math.floor(Math.random() * 0xfffe);
 
 /**
  * Send traffic through the RPCh network

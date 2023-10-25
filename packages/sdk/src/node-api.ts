@@ -112,6 +112,24 @@ export function retrieveMessages(
   });
 }
 
+export function deleteMessages(conn: ConnInfo, tag: number): Promise<void> {
+  const url = new URL("/api/v3/messages", conn.apiEndpoint);
+  url.searchParams.set("tag", `${tag}`);
+  const headers = {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+    "x-auth-token": conn.accessToken,
+  };
+  return new Promise((resolve, reject) => {
+    return fetch(url, { method: "DELETE", headers }).then((res) => {
+      if (res.status === 204) {
+        return resolve();
+      }
+      return reject(`Unexpected response status code: ${res.status}`);
+    });
+  });
+}
+
 export function accountAddresses(conn: ConnInfo) {
   const url = new URL("/api/v3/account/addresses", conn.apiEndpoint);
   const headers = {

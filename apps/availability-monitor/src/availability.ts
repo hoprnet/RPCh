@@ -1,15 +1,15 @@
+import { NodeAPI } from "@rpch/sdk";
 import * as q from "./query";
 import * as PeersCache from "./peers-cache";
 import { createLogger, shortPeerId } from "./utils";
-import * as NodeAPI from "./node-api";
 
 import type { Pool } from "pg";
 import type { RegisteredNode } from "./query";
-import type { Peer } from "./node-api";
 
 const log = createLogger(["availability"]);
+const ApplicationTag = 0xffff;
 
-type PeersCache = Map<string, Map<string, Peer>>; // node id -> peer id -> Peer
+type PeersCache = Map<string, Map<string, NodeAPI.Peer>>; // node id -> peer id -> Peer
 
 export async function start(dbPool: Pool) {
   dbPool.on("error", (err, client) =>
@@ -53,8 +53,6 @@ async function runZeroHops(
 
   // gather exit peers and determine exit nodes reachable by their peers
   const exitPeers = await peersMap(peersCache, exitNodes);
-  // determine reachable exit nodes
-  const exits = await onlineExits(exitPeers);
   const peersExits = revertMap(exitPeers);
 
   // match routes
@@ -69,7 +67,12 @@ async function runZeroHops(
     return acc;
   }, new Map());
 
-  const pairIds = toPairings(pairsMap);
+  // determine online exits
+  const exitEntries = revertMap(pairsMap);
+  const onlineExitEntries = await filterOnline(exitEntries, entryNodes);
+  const onlinePairsMap = revertMap(onlineExitEntries);
+
+  const pairIds = toPairings(onlinePairsMap);
   return q
     .writeZeroHopPairings(dbPool, pairIds)
     .then(() => log.verbose("Updated zerohops with pairIds", logIds(pairIds)));
@@ -83,9 +86,10 @@ async function runOneHops(
 ) {
   // gather channel structure
   const entryNode = randomEl(entryNodes);
-  const respCh = await NodeAPI.getChannels(entryNode).catch((err) =>
-    log.error("Error getting channels", JSON.stringify(err))
-  );
+  const respCh = await NodeAPI.getChannels({
+    apiEndpoint: new URL(entryNode.hoprd_api_endpoint),
+    accessToken: entryNode.hoprd_api_token,
+  }).catch((err) => log.error("Error getting channels", JSON.stringify(err)));
   if (!respCh) {
     return;
   }
@@ -122,10 +126,6 @@ async function runOneHops(
   return q
     .writeOneHopPairings(dbPool, pairIds)
     .then(() => log.verbose("Updated onehops with pairIds", logIds(pairIds)));
-}
-
-function randomEl<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
 }
 
 async function peersMap(
@@ -208,4 +208,90 @@ function toPairings(pairsMap: Map<string, Set<string>>): q.Pair[] {
   }, []);
 }
 
-function onlineExits(exitPeers: Map<String, Set<string
+async function filterOnline(
+  exitEntries: Map<string, Set<string>>,
+  entryNodes: RegisteredNode[]
+) {
+  const pRaw = Array.from(exitEntries.entries()).map(
+    async ([xId, entryIds]) => {
+      const eId = randomEl(Array.from(entryIds.values()));
+      const eNode = entryNodes.find(
+        (node) => node.id === eId
+      ) as RegisteredNode;
+      const conn = {
+        apiEndpoint: new URL(eNode.hoprd_api_endpoint),
+        accessToken: eNode.hoprd_api_token,
+      };
+
+      // delete any previous pongs
+      await NodeAPI.deleteMessages(conn, ApplicationTag).catch((err) =>
+        log.error(
+          "Error deleting messages from %s: %s",
+          JSON.stringify(eNode),
+          JSON.stringify(err)
+        )
+      );
+
+      // send ping
+      const pingRcpt = await NodeAPI.sendMessage(
+        { ...conn, hops: 0 },
+        {
+          tag: ApplicationTag,
+          recipient: xId,
+          message: `ping-${eNode}`,
+        }
+      ).catch((err) =>
+        log.error(
+          "Error sending ping to %s from %s: %s",
+          xId,
+          JSON.stringify(eNode),
+          JSON.stringify(err)
+        )
+      );
+      if (!pingRcpt) {
+        return false;
+      }
+
+      // receive pong after 5 secs
+      const pongs = await NodeAPI.retrieveMessages(conn, ApplicationTag).catch(
+        (err) =>
+          log.error(
+            "Error retrieving messages from %s: %s",
+            JSON.stringify(eNode),
+            JSON.stringify(err)
+          )
+      );
+      if (!pongs) {
+        return false;
+      }
+      const { messages: msgs } = pongs;
+      if (msgs.length !== 1) {
+        log.error(
+          "Unexpected pong reponse count %i - Messages: %s",
+          msgs.length,
+          JSON.stringify(msgs)
+        );
+        return false;
+      }
+      const [{ body: pongMsg }] = msgs;
+      if (!pongMsg.startsWith("pong-")) {
+        log.error("Unexpected pong body contents from %s: %s", xId, pongMsg);
+        return false;
+      }
+      const [, xRespId] = pongMsg.split("-");
+      if (xRespId !== xId) {
+        log.error("Pong peer id mismatch: expected %s, got %s", xId, xRespId);
+        return false;
+      }
+      return [xId, entryIds];
+    }
+  );
+
+  const raw = await Promise.all(pRaw);
+  const rawValues = raw.filter((val) => !!val) as [string, Set<string>][];
+  return new Map(rawValues);
+}
+
+function randomEl<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}

@@ -127,7 +127,6 @@ function onMessage(state: State, ops: Ops) {
   return function (evt: MessageEvent) {
     const raw = evt.data.toString();
     const msg: { type: string; tag: number; body: string } = JSON.parse(raw);
-    console.log("msg", msg);
 
     if (msg.type !== "message") {
       return;
