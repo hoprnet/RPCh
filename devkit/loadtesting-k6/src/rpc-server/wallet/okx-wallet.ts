@@ -4,23 +4,14 @@ import { JsonRpcMethod, JsonRpcPayload } from "../types.js";
 import { JsonRpcMethodCounters, MockWallet } from "./mock-wallet.js";
 import { getMethodFromPayload, getRandomPayloadFromDapp, getStandardPayload } from "../utils/rpc-payload.js";
 
-export class MockMetaMaskWallet extends MockWallet implements MockWallet {
+export class MockOkxWallet extends MockWallet implements MockWallet {
     protected buildRequestBodies(): JsonRpcPayload[] {
         const requests = [];
         requests.push(getStandardPayload(JsonRpcMethod.GET_BLOCKNUMBER));
-        requests.push(getStandardPayload(JsonRpcMethod.NET_VERSION));
-        requests.push(getStandardPayload(JsonRpcMethod.GET_BLOCK));
-        // gas price
-        requests.push(getStandardPayload(JsonRpcMethod.GAS_PRICE));
-        // get code of the current account
-        requests.push(getStandardPayload(JsonRpcMethod.GET_CODE));
-        // call
-        requests.push(getStandardPayload(JsonRpcMethod.CALL));
 
         // get balance for all the accounts, here we assume 10
         requests.push(...new Array(10).fill(getStandardPayload(JsonRpcMethod.GET_BALANCE)))
-        // get fee history
-        requests.push(getStandardPayload(JsonRpcMethod.FEE_HISTORY))
+
         // using some dapp randomly
         requests.push(...getRandomPayloadFromDapp());
         
