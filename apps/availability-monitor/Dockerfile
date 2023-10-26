@@ -47,10 +47,7 @@ ENV LOGGER=false
 WORKDIR /app
 
 RUN apk upgrade --no-cache && \
-    apk add --no-cache curl nodejs && \
-    curl -L -o /tmp/install-runit.sh https://raw.githubusercontent.com/docker-suite/Install-Scripts/master/alpine-runit/install-runit.sh && \
-    sh /tmp/install-runit.sh && \
-    rm /tmp/install-runit.sh && \
+    apk add --no-cache curl nodejs tini && \
     addgroup -g 104 -S node && \
     adduser -u 104 -D -S -G node node
 
@@ -62,9 +59,6 @@ COPY --from=installer /app/packages/sdk ./packages/sdk
 COPY --from=installer /app/packages/common ./packages/common
 COPY --from=installer /app/packages/compat-crypto ./packages/compat-crypto
 
-# copy over runit configurations
-COPY apps/rpc-server/docker_files/entrypoint.sh /
+ENTRYPOINT ["/sbin/tini", "--"]
 
-ENTRYPOINT ["/entrypoint.sh"]
-
-CMD ["start"]
+CMD ["node", "index.js"]
