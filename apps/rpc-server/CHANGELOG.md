@@ -1,5 +1,11 @@
 # @rpch/rpc-server
 
+## 0.9.1
+
+### Patch Changes
+
+- fix port overwriting
+
 ## 0.9.0
 
 ### Minor Changes
