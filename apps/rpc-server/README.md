@@ -25,7 +25,6 @@ docker run \
   -e DEBUG="rpch:rpc-server:*" \
   -e RESPONSE_TIMEOUT=10000 \
   -e DISCOVERY_PLATFORM_API_ENDPOINT=http://localhost:3020 \
-  -e FORCE_ZERO_HOP=true
   -e CLIENT="sandbox" \
   -e PORT=8080 \
   -e DATA_DIR=app \
@@ -49,7 +48,6 @@ docker run \
   -e DEBUG="rpch:rpc-server:*" \
   -e RESPONSE_TIMEOUT=10000 \
   -e DISCOVERY_PLATFORM_API_ENDPOINT=http://localhost:3020 \
-  -e FORCE_ZERO_HOP=true
   -e CLIENT="sandbox" \
   -e PORT=8080 \
   -e DATA_DIR=app \
