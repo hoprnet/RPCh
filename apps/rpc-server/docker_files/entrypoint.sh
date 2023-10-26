@@ -40,7 +40,6 @@ fi
 ### Store container env vars for rpc-server
 cat <<EOF > /docker.env
 CLIENT=$CLIENT
-PORT=${PORT:-}
 DEBUG=${DEBUG:-}
 DISCOVERY_PLATFORM_API_ENDPOINT=${DISCOVERY_PLATFORM_API_ENDPOINT:-}
 FORCE_ZERO_HOP=${FORCE_ZERO_HOP:-}
