@@ -238,7 +238,7 @@ function fetchMessages(np: NodePair) {
       np.messageListener(messages);
     })
     .catch((err) => {
-      np.logger.error("Error fetching node messages", err);
+      np.logger.error("Error fetching node messages", JSON.stringify(err));
       np.entryData.fetchMessagesErrors++;
     });
 }

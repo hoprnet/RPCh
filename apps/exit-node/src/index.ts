@@ -132,6 +132,22 @@ function onMessage(state: State, ops: Ops) {
       return;
     }
 
+    // determine if only ping acc
+    if (msg.body.startsWith("ping-")) {
+      log.info("received ping req", msg.body);
+      const [, recipient] = msg.body.split("-");
+      const conn = { ...ops, hops: 0 };
+      NodeAPI.sendMessage(conn, {
+        recipient,
+        tag: msg.tag,
+        message: `pong-${state.peerId}`,
+      }).catch((err) => {
+        log.error("error sending pong", err);
+      });
+      return;
+    }
+
+    // determine if valid segment
     const segRes = Segment.fromMessage(msg.body);
     if (!segRes.success) {
       log.info("cannot create segment", segRes.error);

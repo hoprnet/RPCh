@@ -25,6 +25,7 @@
     "supertest": "^6.3.3"
   },
   "dependencies": {
+    "@rpch/sdk": "1.2.1",
     "@hoprnet/hopr-sdk": "^0.0.1-alpha.12",
     "@rpch/common": "0.4.0",
     "@rpch/discovery-platform": "*",
