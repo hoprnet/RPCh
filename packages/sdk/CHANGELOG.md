@@ -1,5 +1,11 @@
 # @rpch/sdk
 
+## 1.2.2
+
+### Patch Changes
+
+- c5ae645: consolidated NodeAPI functions here
+
 ## 1.2.1
 
 ### Patch Changes

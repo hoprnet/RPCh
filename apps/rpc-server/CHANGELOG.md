@@ -1,5 +1,17 @@
 # @rpch/rpc-server
 
+## 0.9.0
+
+### Minor Changes
+
+- 58cbdc0: - Optimize docker images size
+  - Enabled https certificate generation inside container
+
+### Patch Changes
+
+- Updated dependencies [c5ae645]
+  - @rpch/sdk@1.2.2
+
 ## 0.8.1
 
 ### Patch Changes

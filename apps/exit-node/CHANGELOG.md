@@ -1,5 +1,16 @@
 # @rpch/exit-node
 
+## 0.10.0
+
+### Minor Changes
+
+- c5ae645: allow pong response to ping request
+
+### Patch Changes
+
+- Updated dependencies [c5ae645]
+  - @rpch/sdk@1.2.2
+
 ## 0.9.3
 
 ### Patch Changes
