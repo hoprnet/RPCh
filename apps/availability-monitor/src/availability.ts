@@ -286,7 +286,7 @@ function revertMap<K, V>(map: Map<K, Set<V>>): Map<V, Set<K>> {
 
 function logIds(pairs: q.Pair[]): string {
   if (pairs.length === 0) {
-    return "[none]";
+    return "[(none)]";
   }
   const ids = pairs
     .map(
