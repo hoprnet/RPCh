@@ -22,7 +22,7 @@ export function getOption(
     case TestOption.LONG:
       return longOptions;
     default:
-      console.log("cannot match request");
+      console.error("Cannot find the option.")
       return;
   }
 }

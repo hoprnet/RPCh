@@ -2,14 +2,14 @@ import { check } from "k6";
 import http from "k6/http";
 import { JsonRpcMethod, JsonRpcPayload } from "../types.js";
 import { JsonRpcMethodCounters, MockWallet } from "./mock-wallet.js";
-import { getMethodFromPayload, getPayload } from "../utils/rpc-payload.js";
+import { getMethodFromPayload, getStandardPayload } from "../utils/rpc-payload.js";
 
 export class MockDummyWallet extends MockWallet implements MockWallet {
     protected buildRequestBodies(): JsonRpcPayload[] {
       const requests = [];
-      requests.push(getPayload(JsonRpcMethod.GET_TX_COUNT));
-      requests.push(getPayload(JsonRpcMethod.GET_TX_COUNT));
-      // requests.push(getRequest(JsonRpcMethod.GET_TX_COUNT));
+      requests.push(getStandardPayload(JsonRpcMethod.GET_BLOCKNUMBER));
+      requests.push(getStandardPayload(JsonRpcMethod.NET_VERSION));
+      requests.push(getStandardPayload(JsonRpcMethod.GET_BLOCK));
       return requests
     }
   

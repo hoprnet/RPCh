@@ -5,13 +5,24 @@
 This package utilizes k6 by Grafana Labs.
 Install k6 on test machine: https://k6.io/docs/get-started/installation/
 
-## How to test RPC Server
+## Build
+1. Navigate to `devkit/loadtesting-k6`
+2. Build the repo
+```
+yarn build
+```
+
+## Test
+### How to test RPC Server
 
 1. Spin up Sandbox or all the infrastracture locally (except for the entry/exit nodes) or spin up a RPCh node of staging environment where the RPC Server runs on http://localhost:45740/. Please refer to [DEVELOPER_SETUP](../../DEVELOPER_SETUP.md) for more details
 2. Navigate to `devkit/loadtesting-k6`
 3. Run:
 ```bash
-RPC_SERVER_URL=http://localhost:45740 yarn start:spike-small
+TEST_TYPE=SMOKE WALLET_TYPE=METAMASK \
+   RPC_SERVER_URL=http://localhost:45750 \
+   k6 run ./dist/rpc-server/index.js \
+   --out json=results/results-test.json
 ```
    - `yarn start:artificial` (Artificial usage with `eth_getCode` and `eth_call`)
    - `yarn start:blockwallet` (Real usage of blockwallet)
@@ -22,7 +33,7 @@ RPC_SERVER_URL=http://localhost:45740 yarn start:spike-small
 4. Check the result json file and "500” means that there’s failure in RPCh side
 
 
-## How to test Discovery Platform
+### How to test Discovery Platform
 
 1. Spin up Sandbox
 2. Spin up RPC Server on http://localhost:3040/

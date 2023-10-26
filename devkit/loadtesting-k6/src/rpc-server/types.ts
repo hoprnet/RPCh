@@ -1,9 +1,6 @@
 export enum Wallet {
-  DUMMY_SMALL,
-  DUMMY_MEDIUM,
-  DUMMY_LARGE,
-  REAL_COW_SWAP,
-  REAL_METAMASK,
+  DUMMY,
+  METAMASK_ON_COW_SWAP,
 }
 
 export type WalletTypes = keyof typeof Wallet;
@@ -11,8 +8,12 @@ export type WalletTypes = keyof typeof Wallet;
 export enum JsonRpcMethod {
   GET_BALANCE = "eth_getBalance",
   GET_BLOCKNUMBER = "eth_blockNumber",
+  GET_BLOCK = "eth_getBlockByNumber",
   GET_TX_COUNT = "eth_getBlockTransactionCountByNumber",
-  GET_CODE = "GET_CODE",
+  GET_CODE = "eth_getCode",
+  NET_VERSION = "net_version",
+  FEE_HISTORY = "eth_feeHistory",
+  GAS_PRICE = "eth_gasPrice",
   CALL = "eth_call",
 } 
 
