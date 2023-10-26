@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+source /usr/local/lib/bash-logger.sh
+source /usr/local/lib/persist-env.sh
+
+NOTICE "[HAPROXY] -- Starting Service haproxy ..."
+
+# generate certificates for localhost if none were provided
+if [ ! -f /etc/certs/localhost.pem ] || [ ! -f /etc/certs/localhost.pem.key ]; then
+    cd /etc/certs && mkcert -key-file localhost.pem.key localhost
+    chown -R www:www /etc/certs
+fi
+
+exec /usr/sbin/haproxy -f /etc/haproxy/haproxy.conf 2>&1

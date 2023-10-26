@@ -4,11 +4,9 @@
   "license": "LGPL-3.0",
   "private": true,
   "main": "index.js",
-  "dependencies": {
-    "jest": "^29.2.2",
-    "ts-jest": "^29.0.3"
-  },
   "devDependencies": {
+    "jest": "^29.2.2",
+    "ts-jest": "^29.0.3",
     "@types/jest": "^29.2.1"
   }
 }
