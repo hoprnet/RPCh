@@ -47,7 +47,7 @@ ENV LOGGER=false
 WORKDIR /app
 
 RUN apk upgrade --no-cache && \
-    apk add --no-cache curl nodejs tini && \
+    apk add --no-cache nodejs tini && \
     addgroup -g 104 -S node && \
     adduser -u 104 -D -S -G node node
 

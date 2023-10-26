@@ -1,23 +1,7 @@
-# Create exit node container
-
-# use slim version of node on Debian bullseye for smaller image sizes
 # Specify platform to be amd because arm doesn't work
-FROM --platform=linux/amd64 node:18-bullseye-slim as builder
+FROM --platform=linux/amd64 node:18-alpine as builder
 
-# use bash to have source command and persistent environment.
-SHELL ["/bin/bash", "-lc"]
-
-# python is used by some nodejs dependencies as an installation requirement.
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
-  git \
-  python3 \
-  unzip \
-  curl \
-  build-essential \
-  ca-certificates \
-  && rm -rf  /var/lib/apt/lists/* \
-  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
+RUN apk upgrade --no-cache
 
 WORKDIR /app
 
@@ -32,50 +16,49 @@ RUN turbo prune --scope="@rpch/exit-node" --docker
 
 # Add lockfile and package.json's of isolated subworkspace.
 # Specify platform to be amd because arm doesn't work
-FROM --platform=linux/amd64 node:18-bullseye-slim AS installer
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
-  libc6 \
-  python3 \
-  build-essential \
-  && rm -rf /var/lib/apt/lists/*
+FROM --platform=linux/amd64 node:18-alpine as installer
+
 WORKDIR /app
 
 # Install the dependencies.
 COPY .gitignore .gitignore
+COPY packages-tgz packages-tgz
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/yarn.lock ./yarn.lock
-RUN yarn install --frozen-lockfile
+RUN apk add --no-cache python3 make g++ && \
+    yarn install --frozen-lockfile
 
 # Build the project.
 COPY --from=builder /app/out/full .
 COPY turbo.json turbo.json
 RUN yarn run build --scope="@rpch/exit-node"
 
-#  Copy only the necesary files to run the app.
+# prepare for production
+RUN rm -R node_modules && \
+    yarn config set nmMode hardlinks-local && \
+    yarn install --production --frozen-lockfile && \
+    rm -rf node_modules/ethers/dist node_modules/protobufjs/cli
+
 # Specify platform to be amd because arm doesn't work
-FROM --platform=linux/amd64 node:18-bullseye-slim AS runner
+FROM --platform=linux/amd64 alpine:3 as runner
+
+ENV LOGGER=false
 
 WORKDIR /app
 
-RUN mkdir -p /app/db
-# set volume which can be mapped by users on the host system
-VOLUME ["/app/db"]
+RUN apk upgrade --no-cache && \
+    apk add --no-cache nodejs tini && \
+    addgroup -g 104 -S node && \
+    adduser -u 104 -D -S -G node node
 
-# we use tini as process 1 to catch signals properly, which is also built into Docker by default
-RUN apt-get update && \
-  apt-get install -y tini curl wget netcat && \
-  rm -rf /var/lib/apt/lists/*
+# copy over minimal fileset to run availability-monitor
+COPY --from=installer /app/node_modules ./node_modules
+COPY --from=installer /app/package.json .
+COPY --from=installer /app/apps/exit-node/build/*.js .
+COPY --from=installer /app/packages/sdk ./packages/sdk
+COPY --from=installer /app/packages/common ./packages/common
+COPY --from=installer /app/packages/compat-crypto ./packages/compat-crypto
 
-COPY --from=installer /app/apps/exit-node/package.json .
-COPY --from=installer /app .
+ENTRYPOINT ["/sbin/tini", "--"]
 
-# switch to normal user, to prevent dangerous root access
-RUN chown -R node:node .
-
-# finally set the non-root user so the process also run un-privilidged
-USER node
-
-CMD ["node", "apps/exit-node/build/index.js"]
-
-ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["node", "index.js"]
