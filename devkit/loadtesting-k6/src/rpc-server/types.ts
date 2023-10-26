@@ -1,6 +1,9 @@
 export enum Wallet {
   DUMMY,
-  METAMASK_ON_COW_SWAP,
+  METAMASK,
+  OKX,
+  RABBY,
+  FRAME,
 }
 
 export type WalletTypes = keyof typeof Wallet;
@@ -14,6 +17,8 @@ export enum JsonRpcMethod {
   NET_VERSION = "net_version",
   FEE_HISTORY = "eth_feeHistory",
   GAS_PRICE = "eth_gasPrice",
+  CHAIN_ID = "eth_chainId",
+  SYNCING = "eth_syncing",
   CALL = "eth_call",
 } 
 

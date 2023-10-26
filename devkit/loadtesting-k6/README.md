@@ -19,10 +19,10 @@ yarn build
 2. Navigate to `devkit/loadtesting-k6`
 3. Run:
 ```bash
-TEST_TYPE=SMOKE WALLET_TYPE=METAMASK \
+export TEST_TYPE=SMOKE WALLET_TYPE=METAMASK ; \
    RPC_SERVER_URL=http://localhost:45750 \
    k6 run ./dist/rpc-server/index.js \
-   --out json=results/results-test.json
+   --out json="results/test-$TEST_TYPE-$WALLET_TYPE-$(date +%s).json"
 ```
    - `yarn start:artificial` (Artificial usage with `eth_getCode` and `eth_call`)
    - `yarn start:blockwallet` (Real usage of blockwallet)
