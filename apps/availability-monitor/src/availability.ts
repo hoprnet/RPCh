@@ -162,20 +162,29 @@ async function peersMap(
 async function filterOnline(
   exitEntries: Map<string, Set<string>>,
   entryNodes: q.RegisteredNode[]
-) {
-    const messagePreps = Array.from(exitEntries.entries()).reduce((acc, [xId, entryIds]) => {
+): Promise<Map<string, Set<string>>> {
+  const messagePreps = Array.from(exitEntries.entries()).reduce(
+    (acc, [xId, entryIds]) => {
       const eId = randomEl(Array.from(entryIds.values()));
-      const eNode = entryNodes.find((node) => node.id === eId) as q.RegisteredNode;
-      const conn = { apiEndpoint: new URL(eNode.hoprd_api_endpoint), accessToken: eNode.hoprd_api_token};
+      const eNode = entryNodes.find(
+        (node) => node.id === eId
+      ) as q.RegisteredNode;
       if (acc.has(eId)) {
-          acc.get(eId).exitIds.add(xId);
+        acc.get(eId).exitIds.add(xId);
       } else {
-          acc.set(eId, { conn, exitIds: new Set([xId])});
+        acc.set(eId, { eNode, exitIds: new Set([xId]) });
       }
       return acc;
-    }, new Map())
+    },
+    new Map()
+  ) as Map<string, { eNode: q.RegisteredNode; exitIds: Set<string> }>;
 
-    const pRaw = Array.from(messagePreps.entries()).map(async ([eId, { conn, exitIds}]) => {
+  const pPongs = Array.from(messagePreps.entries()).map(
+    async ([eId, { eNode, exitIds }]) => {
+      const conn = {
+        apiEndpoint: new URL(eNode.hoprd_api_endpoint),
+        accessToken: eNode.hoprd_api_token,
+      };
       // delete any previous pongs
       await NodeAPI.deleteMessages(conn, ApplicationTag).catch((err) =>
         log.error(
@@ -186,82 +195,69 @@ async function filterOnline(
       );
 
       // send pings
-      await Promise.allSettled(exitIds.forEach((xId) => {
-          return new Promise(
-      const pingRcpt = await NodeAPI.sendMessage(
-        { ...conn, hops: 0 },
-        {
-          tag: ApplicationTag,
-          recipient: xId,
-          message: `ping-${eId}`,
-        }
-      ).catch((err) =>
-        log.error(
-          "Error sending ping to %s from %s: %s",
-          shortPeerId(xId),
-          shortPeerId(eId),
-          JSON.stringify(err)
-        )
-      );
-      if (!pingRcpt) {
-        return false;
-      }
-
-      return new Promise((resolve) =>
-        setTimeout(async () => {
-          // receive pong after 5 secs
-          const pongs = await NodeAPI.retrieveMessages(
-            conn,
-            ApplicationTag
-          ).catch((err) =>
-            log.error(
-              "Error retrieving messages from %s: %s",
-              JSON.stringify(eNode),
-              JSON.stringify(err)
+      const pPings = Array.from(exitIds.values()).map((xId, idx) => {
+        return new Promise((resolve, reject) => {
+          setTimeout(() => {
+            NodeAPI.sendMessage(
+              { ...conn, hops: 0 },
+              { tag: ApplicationTag, recipient: xId, message: `ping-${eId}` }
             )
-          );
-          if (!pongs) {
-            return resolve(false);
-          }
-          console.log("xId", shortPeerId(xId), pingRcpt, pongs);
-          const { messages: msgs } = pongs;
-          if (msgs.length !== 1) {
-            log.error(
-              "Unexpected pong reponse count %i - Messages: %s",
-              msgs.length,
-              JSON.stringify(msgs)
-            );
-            return resolve(false);
-          }
-          const [{ body: pongMsg }] = msgs;
-          if (!pongMsg.startsWith("pong-")) {
-            log.error(
-              "Unexpected pong body contents from %s: %s",
-              shortPeerId(xId),
-              pongMsg
-            );
-            return resolve(false);
-          }
-          const [, xRespId] = pongMsg.split("-");
-          if (xRespId !== xId) {
-            log.error(
-              "Pong peer id mismatch: expected %s, got %s",
-              shortPeerId(xId),
-              shortPeerId(xRespId)
-            );
-            return resolve(false);
-          }
-          return resolve([xId, entryIds]);
-        }, 5e3)
-      );
+              .then(resolve)
+              .catch((err) => {
+                log.error(
+                  "Error sending ping from %s to %s: %s",
+                  shortPeerId(eId),
+                  shortPeerId(xId),
+                  JSON.stringify(err)
+                );
+                reject("Error sending ping");
+              });
+          }, idx * 1);
+        });
+      });
+
+      await Promise.all(pPings);
+
+      // receive pongs (give 5 sec grace period)
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          NodeAPI.retrieveMessages(conn, ApplicationTag)
+            .then(resolve)
+            .catch((err) => {
+              log.error(
+                "Error retrieving messages from %s: %s",
+                JSON.stringify(shortPeerId(eId)),
+                JSON.stringify(err)
+              );
+              reject("Error retrieving messages");
+            });
+        }, 5e3);
+      });
     }
   );
 
-  const raw = await Promise.allSettled(pRaw);
-  const successes = raw.filter(
-    (val) => val.status === "fulfilled" && !!val.value
-  ) as [{ status: "fulfilled"; value: [string, Set<string>] }];
-  return new Map(successes.map(({ value }) => value));
+  const results = (await Promise.allSettled(pPongs)) as PromiseSettledResult<{
+    messages: NodeAPI.Message[];
+  }>[];
+  const filteredRes = results.filter((pRes) => pRes.status === "fulfilled") as [
+    { status: "fulfilled"; value: { messages: NodeAPI.Message[] } }
+  ];
+  const msgs = filteredRes.map(({ value }) => value.messages).flat();
+  const onlineXids = msgs
+    .map(({ body: pong }) => {
+      if (pong.startsWith("pong-")) {
+        const [, xId] = pong.split("-");
+        return xId;
+      }
+    })
+    .filter((x) => !!x);
+  const online = new Set(onlineXids);
+
+  return new Map(
+    Array.from(exitEntries.entries()).filter(([xId, _entryIds]) =>
+      online.has(xId)
+    )
+  );
 }
 
 function channelsMap(channels: NodeAPI.Channel[]): Map<string, Set<string>> {
