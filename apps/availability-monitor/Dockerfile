@@ -1,10 +1,7 @@
-# Create availability monitor
+# Specify platform to be amd because arm doesn't work
+FROM --platform=linux/amd64 node:18-alpine as builder
 
-# use slim version of node on Debian bullseye for smaller image sizes
-FROM node:18-bullseye-slim as builder
-
-# use bash to have source command and persistent environment.
-SHELL ["/bin/bash", "-lc"]
+RUN apk upgrade --no-cache
 
 WORKDIR /app
 
@@ -18,42 +15,56 @@ COPY . .
 RUN turbo prune --scope="@rpch/availability-monitor" --docker
 
 # Add lockfile and package.json's of isolated subworkspace.
-FROM node:18-bullseye-slim AS installer
-RUN apt-get update && \
-  apt-get install -y libc6 && \
-  rm -rf /var/lib/apt/lists/*
+# Specify platform to be amd because arm doesn't work
+FROM --platform=linux/amd64 node:18-alpine as installer
+
 WORKDIR /app
 
 # Install the dependencies.
 COPY .gitignore .gitignore
+COPY packages-tgz packages-tgz
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/yarn.lock ./yarn.lock
-RUN yarn install --frozen-lockfile
+RUN apk add --no-cache python3 make g++ && \
+    yarn install --frozen-lockfile
 
 # Build the project.
 COPY --from=builder /app/out/full .
 COPY turbo.json turbo.json
 RUN yarn run build --scope="@rpch/availability-monitor"
 
-#  Copy only the necesary files to run the app.
-FROM node:18-bullseye-slim AS runner
+# prepare for production
+RUN rm -R node_modules && \
+    yarn config set nmMode hardlinks-local && \
+    yarn install --production --frozen-lockfile && \
+    rm -rf node_modules/ethers/dist node_modules/protobufjs/cli
+
+# Specify platform to be amd because arm doesn't work
+FROM --platform=linux/amd64 alpine:3 as runner
+
+ENV LOGGER=false
+
 WORKDIR /app
 
-# we use tini as process 1 to catch signals properly, which is also built into Docker by default
-RUN apt-get update && \
-  apt-get install -y tini && \
-  rm -rf /var/lib/apt/lists/*
+RUN apk upgrade --no-cache && \
+    apk add --no-cache curl nodejs && \
+    curl -L -o /tmp/install-runit.sh https://raw.githubusercontent.com/docker-suite/Install-Scripts/master/alpine-runit/install-runit.sh && \
+    sh /tmp/install-runit.sh && \
+    rm /tmp/install-runit.sh && \
+    addgroup -g 104 -S node && \
+    adduser -u 104 -D -S -G node node
 
-COPY --from=installer /app/apps/availability-monitor/package.json .
-COPY --from=installer /app .
-# COPY apps/availability-monitor/migrations/ /app/
+# copy over minimal fileset to run availability-monitor
+COPY --from=installer /app/node_modules ./node_modules
+COPY --from=installer /app/package.json .
+COPY --from=installer /app/apps/availability-monitor/build/*.js .
+COPY --from=installer /app/packages/sdk ./packages/sdk
+COPY --from=installer /app/packages/common ./packages/common
+COPY --from=installer /app/packages/compat-crypto ./packages/compat-crypto
 
-# switch to normal user, to prevent dangerous root access
-RUN chown -R node:node .
+# copy over runit configurations
+COPY apps/rpc-server/docker_files/entrypoint.sh /
 
-# finally set the non-root user so the process also run un-privilidged
-USER node
+ENTRYPOINT ["/entrypoint.sh"]
 
-CMD ["node", "apps/availability-monitor/build/index.js"]
-
-ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["start"]
