@@ -23,11 +23,8 @@ Launch the container for `http`-only support. \
 ```sh
 docker run \
   -e DEBUG="rpch:rpc-server:*" \
-  -e RESPONSE_TIMEOUT=10000 \
   -e DISCOVERY_PLATFORM_API_ENDPOINT=http://localhost:3020 \
   -e CLIENT="sandbox" \
-  -e PORT=8080 \
-  -e DATA_DIR=app \
   -p 45750:45750 \
   --platform=linux/amd64 \
   --name=rpc-server \
@@ -46,11 +43,8 @@ mkdir -p ./certs
 cd ./certs && mkcert -key-file localhost.pem.key localhost
 docker run \
   -e DEBUG="rpch:rpc-server:*" \
-  -e RESPONSE_TIMEOUT=10000 \
   -e DISCOVERY_PLATFORM_API_ENDPOINT=http://localhost:3020 \
   -e CLIENT="sandbox" \
-  -e PORT=8080 \
-  -e DATA_DIR=app \
   -p 45750:45750 \
   -p 45751:45751 \
   -v "./certs:/etc/certs" \
