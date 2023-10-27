@@ -1,5 +1,11 @@
 # @rpch/availability-monitor
 
+## 0.6.1
+
+### Patch Changes
+
+- fix accidental comment
+
 ## 0.6.0
 
 ### Minor Changes

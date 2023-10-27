@@ -26,7 +26,7 @@ async function run(dbPool: Pool) {
     .then(async ([qEntries, qExits]) => {
       const peersCache: PeersCache.PeersCache = new Map();
       await runZeroHops(dbPool, peersCache, qEntries.rows, qExits.rows);
-      // await runOneHops(dbPool, peersCache, qEntries.rows, qExits.rows);
+      await runOneHops(dbPool, peersCache, qEntries.rows, qExits.rows);
     })
     .catch((err) => {
       log.error("Error during determining routes", JSON.stringify(err));
