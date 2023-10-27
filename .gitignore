@@ -18,6 +18,7 @@ out/
 apps/**/build
 packages/**/build
 devkit/**/build
+**/dist/**
 
 # misc
 .DS_Store
@@ -47,5 +48,3 @@ apps/rpc-server/certs
 
 #k6 results
 devkit/loadtesting-k6/results/*
-
-

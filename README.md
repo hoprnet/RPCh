@@ -32,6 +32,8 @@ Checkout [Sandbox](https://github.com/Rpc-h/RPCh/tree/main/devkit/sandbox#sandbo
 - dependency check: we currently use `check-dependency-version-consistency` to ensure consistency between the dependency version,
   future plan is to use `depcheck` for every project to ensure all libraries are correctly added per `package.json`
 
+Please refer to [DEVELOPER_SETUP](./DEVELOPER_SETUP.md) for more details
+
 ## Changelogs
 
 This project aims to use [Changesets](https://turbo.build/repo/docs/handbook/publishing-packages/versioning-and-publishing) for versioning.

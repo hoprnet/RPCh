@@ -87,6 +87,7 @@ async function runZeroHops(
   });
 }
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
 async function runOneHops(
   dbPool: Pool,
   peersCache: PeersCache.PeersCache,
@@ -136,6 +137,7 @@ async function runOneHops(
     .writeOneHopPairings(dbPool, pairIds)
     .then(() => log.verbose("Updated onehops with pairIds", logIds(pairIds)));
 }
+/* eslint-enable @typescript-eslint/no-unused-vars */
 
 async function peersMap(
   peersCache: PeersCache.PeersCache,
