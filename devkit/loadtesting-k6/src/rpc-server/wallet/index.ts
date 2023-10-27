@@ -1,5 +1,5 @@
 import { Wallet, WalletTypes } from "../types.js";
-import { MockRabbyWallet } from "./Rabby-wallet.js";
+import { MockRabbyWallet } from "./rabby-wallet.js";
 import { MockDummyWallet } from "./dummy-wallet.js";
 import { MockFrameWallet } from "./frame-wallet.js";
 import { MockMetaMaskWallet } from "./metamask-wallet.js";
