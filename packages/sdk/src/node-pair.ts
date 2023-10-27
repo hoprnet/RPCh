@@ -60,7 +60,7 @@ export function id(np: NodePair) {
 }
 
 export function requestStarted(np: NodePair, req: Request.Request) {
-  const data = np.exitDatas.get(req.exitId);
+  const data = np.exitDatas.get(req.exitPeerId);
   if (!data) {
     np.logger.error(
       "requestStarted",
@@ -84,7 +84,7 @@ export function requestSucceeded(
   req: Request.Request,
   responseTime: number
 ) {
-  const data = np.exitDatas.get(req.exitId);
+  const data = np.exitDatas.get(req.exitPeerId);
   if (!data) {
     np.logger.error(
       "requestSucceeded",
@@ -101,7 +101,7 @@ export function requestSucceeded(
 }
 
 export function requestFailed(np: NodePair, req: Request.Request) {
-  const data = np.exitDatas.get(req.exitId);
+  const data = np.exitDatas.get(req.exitPeerId);
   if (!data) {
     np.logger.error(
       "requestFailed",
@@ -238,7 +238,7 @@ function fetchMessages(np: NodePair) {
       np.messageListener(messages);
     })
     .catch((err) => {
-      np.logger.error("Error fetching node messages", err);
+      np.logger.error("Error fetching node messages", JSON.stringify(err));
       np.entryData.fetchMessagesErrors++;
     });
 }

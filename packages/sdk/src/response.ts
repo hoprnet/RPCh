@@ -1,22 +1,27 @@
+import * as crypto from "@rpch/compat-crypto";
 import { utils } from "ethers";
-import {
-  box_response,
-  unbox_response,
-  Envelope,
-  Session,
-} from "@rpch/crypto-for-nodejs";
 
-import * as JRPC from "./jrpc";
 import * as Payload from "./payload";
+import * as JRPC from "./jrpc";
 import type { Request } from "./request";
 
+export type Response = {
+  status: number;
+  text: () => Promise<string>;
+  json: () => Promise<JRPC.Response>;
+};
+
 export type RespSuccess = {
-  success: true;
+  res: "success";
   resp: Payload.RespPayload;
   counter: bigint;
 };
-export type RespError = { success: false; error: string };
-export type Resp = RespSuccess | RespError;
+export type RespCounterFail = {
+  res: "counterfail";
+  counter: bigint;
+};
+export type RespError = { res: "error"; reason: string };
+export type Resp = RespSuccess | RespCounterFail | RespError;
 
 export type MsgSuccess = {
   success: true;
@@ -27,32 +32,28 @@ export type MsgError = { success: false; error: string };
 export type Msg = MsgSuccess | MsgError;
 
 export function respToMessage({
-  crypto,
-  entryId,
-  resp,
+  entryPeerId,
+  respPayload,
   unboxSession,
 }: {
-  crypto: {
-    Envelope: typeof Envelope;
-    box_response: typeof box_response;
-  };
-  entryId: string;
-  resp: JRPC.Response;
-  unboxSession: Session;
+  entryPeerId: string;
+  respPayload: Payload.RespPayload;
+  unboxSession: crypto.Session;
 }): Msg {
-  const payload = Payload.encodeResp({ resp });
+  const payload = Payload.encodeResp(respPayload);
   const data = utils.toUtf8Bytes(payload);
-
-  // Envelop only needs the target node id - see usages
-  const envelope = new crypto.Envelope(data, entryId, entryId);
-  try {
-    crypto.box_response(unboxSession, envelope);
-  } catch (err) {
-    return { success: false, error: `boxing response failed: ${err}` };
+  const res = crypto.boxResponse(unboxSession, {
+    entryPeerId,
+    message: data,
+  });
+  if (crypto.isError(res)) {
+    return { success: false, error: res.error };
   }
-
-  const hexData = utils.hexlify(unboxSession.get_response_data());
-  const newCount = unboxSession.updated_counter();
+  if (!unboxSession.response) {
+    return { success: false, error: "crypto session without response object" };
+  }
+  const hexData = utils.hexlify(unboxSession.response);
+  const newCount = unboxSession.updatedTS;
   return { success: true, hexData, newCount };
 }
 
@@ -60,34 +61,41 @@ export function messageToResp({
   respData,
   request,
   counter,
-  crypto,
 }: {
   respData: Uint8Array;
   request: Request;
   counter: bigint;
-  crypto: {
-    unbox_response: typeof unbox_response;
-    Envelope: typeof Envelope;
-  };
 }): Resp {
-  try {
-    crypto.unbox_response(
-      request.session,
-      new crypto.Envelope(respData, request.entryId, request.exitId),
-      counter
-    );
-  } catch (err) {
-    return { success: false, error: `unboxing response failed: ${err}` };
+  const res = crypto.unboxResponse(
+    request.session,
+    { message: respData, entryPeerId: request.entryPeerId },
+    counter
+  );
+  switch (res.res) {
+    case crypto.ResState.Failed:
+      return { res: "error", reason: res.error };
+    case crypto.ResState.OkFailedCounter:
+      return {
+        res: "counterfail",
+        counter: res.session.updatedTS,
+      };
+    case crypto.ResState.Ok:
+    default:
+      if (!res.session.response) {
+        return {
+          res: "error",
+          reason: "crypto session without response object",
+        };
+      }
+      const msg = utils.toUtf8String(res.session.response);
+      const resp = Payload.decodeResp(msg);
+      const newCount = request.session.updatedTS;
+      return {
+        res: "success",
+        resp,
+        counter: newCount,
+      };
   }
-  const data = request.session.get_response_data();
-  const msg = utils.toUtf8String(data);
-  const resp = Payload.decodeResp(msg);
-  const newCount = request.session.updated_counter();
-  return {
-    success: true,
-    resp,
-    counter: newCount,
-  };
 }
 
 export function msgSuccess(res: Msg): res is MsgSuccess {
@@ -95,5 +103,5 @@ export function msgSuccess(res: Msg): res is MsgSuccess {
 }
 
 export function respSuccess(res: Resp): res is RespSuccess {
-  return res.success;
+  return res.res === "success";
 }

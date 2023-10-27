@@ -1,5 +1,59 @@
 # @rpch/rpc-server
 
+## 0.9.1
+
+### Patch Changes
+
+- fix port overwriting
+
+## 0.9.0
+
+### Minor Changes
+
+- 58cbdc0: - Optimize docker images size
+  - Enabled https certificate generation inside container
+
+### Patch Changes
+
+- Updated dependencies [c5ae645]
+  - @rpch/sdk@1.2.2
+
+## 0.8.1
+
+### Patch Changes
+
+- Updated dependencies [e6fed45]
+  - @rpch/sdk@1.2.1
+
+## 0.8.0
+
+### Minor Changes
+
+- 184fdaf: remove request limit
+
+### Patch Changes
+
+- Updated dependencies [184fdaf]
+  - @rpch/sdk@1.2.0
+
+## 0.7.1
+
+### Patch Changes
+
+- Updated dependencies [827de28]
+  - @rpch/sdk@1.1.1
+
+## 0.7.0
+
+### Minor Changes
+
+- eaa424c: Http errors and crypto counter errors are now correctly returned by SDK
+
+### Patch Changes
+
+- Updated dependencies [eaa424c]
+  - @rpch/sdk@1.1.0
+
 ## 0.6.3
 
 ### Patch Changes

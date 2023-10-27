@@ -6,11 +6,25 @@ export type ReqPayload = {
   provider: string;
   req: JRPC.Request;
   headers?: Record<string, string>;
+  hops?: number;
 };
 
-export type RespPayload = {
-  resp: JRPC.Response;
-};
+export type RespPayload =
+  | {
+      type: "resp";
+      resp: JRPC.Response;
+    }
+  | {
+      type: "counterfail";
+      min: bigint;
+      max: bigint;
+    }
+  | {
+      type: "httperror";
+      status: number;
+      text: string;
+    }
+  | { type: "error"; reason: string };
 
 export function encodeReq(payload: ReqPayload): string {
   return LZString.compressToUTF16(JSON.stringify(payload));

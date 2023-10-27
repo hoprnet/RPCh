@@ -1,5 +1,40 @@
 # @rpch/sdk
 
+## 1.2.2
+
+### Patch Changes
+
+- c5ae645: consolidated NodeAPI functions here
+
+## 1.2.1
+
+### Patch Changes
+
+- e6fed45: fix timestamp accuracy to ms
+
+## 1.2.0
+
+### Minor Changes
+
+- 184fdaf: remove request limit
+
+## 1.1.1
+
+### Patch Changes
+
+- 827de28: Allow sender to determine return amount of hops
+
+## 1.1.0
+
+### Minor Changes
+
+- eaa424c: Http errors and crypto counter errors are now correctly returned by SDK
+
+### Patch Changes
+
+- Updated dependencies [eaa424c]
+  - @rpch/compat-crypto@0.5.0
+
 ## 1.0.0
 
 ### Major Changes

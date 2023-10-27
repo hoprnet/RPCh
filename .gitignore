@@ -12,11 +12,13 @@ report.json
 logs
 
 # builds
+build/
 .next/
 out/
 apps/**/build
 packages/**/build
 devkit/**/build
+**/dist/**
 
 # misc
 .DS_Store
@@ -42,8 +44,7 @@ tmp
 
 # rpc-server db
 apps/rpc-server/db
+apps/rpc-server/certs
 
 #k6 results
 devkit/loadtesting-k6/results/*
-
-**/dist/**

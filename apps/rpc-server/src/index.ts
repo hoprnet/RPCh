@@ -1,11 +1,11 @@
 import http from "http";
 import RPChSDK, {
   JRPC,
+  Response,
   ProviderAPI,
   type RequestOps,
   type Ops as SDKops,
 } from "@rpch/sdk";
-import * as RPChCrypto from "@rpch/crypto-for-nodejs";
 import { utils } from "@rpch/common";
 
 type ServerOPS = { restrictCors: boolean; skipRPCh: boolean };
@@ -81,23 +81,37 @@ function sendSkipRPCh(
   res: http.ServerResponse
 ) {
   if (!provider) {
-    log.error("Need provider query param");
+    log.error("[NO_RPCH] Need provider query param");
     return;
   }
   ProviderAPI.fetchRPC(provider, req)
-    .then((resp: JRPC.Response) => {
-      log.verbose(
-        "receiving response",
-        JSON.stringify(resp),
-        "to request",
-        JSON.stringify(req)
-      );
-      res.statusCode = 200;
-      res.write(JSON.stringify(resp));
+    .then((resp: ProviderAPI.RPCResp) => {
+      if ("status" in resp) {
+        log.verbose(
+          "[NO_RPCH] Response(HTTP %i): %s [request: %s]",
+          resp.status,
+          resp.message,
+          JSON.stringify(req)
+        );
+        res.statusCode = resp.status;
+        // only write if we are allowed to
+        if (resp.status !== 204 && resp.status !== 304) {
+          res.write(resp.message);
+        }
+      } else {
+        log.verbose(
+          "[NO_RPCH] Response: %s [request: %s]",
+          JSON.stringify(resp),
+          JSON.stringify(req)
+        );
+        res.statusCode = 200;
+        res.write(JSON.stringify(resp));
+      }
     })
     .catch((err) => {
-      log.error("Error sending request", err, "request:", JSON.stringify(req));
+      log.error("[NO_RPCH] %s [request: %s]", err, JSON.stringify(req));
       res.statusCode = 500;
+      res.write(err);
     })
     .finally(() => res.end());
 }
@@ -110,29 +124,36 @@ function sendRequest(
 ) {
   sdk
     .send(req, params)
-    .then((resp: JRPC.Response) => {
+    .then(async (resp: Response.Response) => {
+      if (resp.status === 200) {
+        return resp.json();
+      }
+      const text = await resp.text();
       log.verbose(
-        "receiving response",
+        "Response(HTTP %i): %s [request: %s]",
+        resp.status,
+        text,
+        JSON.stringify(req)
+      );
+      res.statusCode = resp.status;
+      // only write if we are allowed to
+      if (resp.status !== 204 && resp.status !== 304) {
+        res.write(text);
+      }
+    })
+    .then((resp?: JRPC.Response) => {
+      log.verbose(
+        "Response: %s [request: %s]",
         JSON.stringify(resp),
-        "to request",
         JSON.stringify(req)
       );
       res.statusCode = 200;
       res.write(JSON.stringify(resp));
     })
     .catch((err: any) => {
-      log.error("Error sending request", err, "request:", JSON.stringify(req));
+      log.error("%s [request: %s]", err, JSON.stringify(req));
       res.statusCode = 500;
-      res.write(
-        JSON.stringify({
-          jsonrpc: req.jsonrpc,
-          error: {
-            code: -32603,
-            message: `Internal JSON-RPC error: ${err}`,
-          },
-          id: req.id,
-        })
-      );
+      res.write(err);
     })
     .finally(() => {
       res.end();
@@ -174,15 +195,21 @@ function createServer(sdk: RPChSDK, ops: ServerOPS) {
       const params = extractParams(req.url, req.headers.host);
       const result = parseBody(body);
       if (result.success) {
-        log.info(
-          "sending request",
-          JSON.stringify(result.req),
-          "with params",
-          JSON.stringify(params)
-        );
         if (ops.skipRPCh) {
+          log.info(
+            "[NO_RPCH] Sending request",
+            JSON.stringify(result.req),
+            "with params",
+            JSON.stringify(params)
+          );
           sendSkipRPCh(params.provider, result.req, res);
         } else {
+          log.info(
+            "Sending request",
+            JSON.stringify(result.req),
+            "with params",
+            JSON.stringify(params)
+          );
           sendRequest(sdk, result.req, params, res);
         }
       } else {
@@ -246,6 +273,9 @@ if (require.main === module) {
     mevProtectionProvider: process.env.MEV_PROTECTION_PROVIDER,
     mevKickbackAddress: process.env.MEV_KICKBACK_ADDRESS,
     forceZeroHop: !!process.env.FORCE_ZERO_HOP,
+    segmentLimit: process.env.SEGMENT_LIMIT
+      ? parseInt(process.env.SEGMENT_LIMIT, 10)
+      : undefined,
   };
 
   const serverOps = {
@@ -254,7 +284,7 @@ if (require.main === module) {
   };
   const port = determinePort(process.env.PORT);
 
-  const sdk = new RPChSDK(clientId, RPChCrypto, ops);
+  const sdk = new RPChSDK(clientId, ops);
   const server = createServer(sdk, serverOps);
   server.listen(port, "0.0.0.0", () => {
     log.verbose(

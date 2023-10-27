@@ -38,10 +38,9 @@ export class RPChEthereumProvider
 
     try {
       const rpchResponse = await this.sdk.send(payload);
-      const response = getResult(rpchResponse) as JsonRpc.Response["result"];
-
+      const json = await rpchResponse.json();
+      const response = getResult(json) as JsonRpc.Response["result"];
       log.verbose("Received response for request");
-
       return response;
     } catch (error) {
       log.error("Did not receive response for request");

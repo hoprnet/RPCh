@@ -4,7 +4,7 @@
   "license": "LGPL-3.0",
   "private": true,
   "main": "index.js",
-  "dependencies": {
+  "devDependencies": {
     "prettier": "^2.8.0"
   }
 }

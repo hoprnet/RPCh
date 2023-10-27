@@ -1,5 +1,50 @@
 # @rpch/exit-node
 
+## 0.10.0
+
+### Minor Changes
+
+- c5ae645: allow pong response to ping request
+
+### Patch Changes
+
+- Updated dependencies [c5ae645]
+  - @rpch/sdk@1.2.2
+
+## 0.9.3
+
+### Patch Changes
+
+- e6fed45: fix timestamp accuracy to ms
+- Updated dependencies [e6fed45]
+  - @rpch/sdk@1.2.1
+
+## 0.9.2
+
+### Patch Changes
+
+- Updated dependencies [184fdaf]
+  - @rpch/sdk@1.2.0
+
+## 0.9.1
+
+### Patch Changes
+
+- 827de28: Allow sender to determine return amount of hops
+- Updated dependencies [827de28]
+  - @rpch/sdk@1.1.1
+
+## 0.9.0
+
+### Minor Changes
+
+- eaa424c: Http errors and crypto counter errors are now correctly returned by SDK
+
+### Patch Changes
+
+- Updated dependencies [eaa424c]
+  - @rpch/sdk@1.1.0
+
 ## 0.8.2
 
 ### Patch Changes

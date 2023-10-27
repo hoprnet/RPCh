@@ -1,5 +1,22 @@
 # @rpch/availability-monitor
 
+## 0.6.0
+
+### Minor Changes
+
+- c5ae645: Determine if exit-nodes are online for zero-hops
+
+### Patch Changes
+
+- Updated dependencies [c5ae645]
+  - @rpch/sdk@1.2.2
+
+## 0.5.1
+
+### Patch Changes
+
+- better logging
+
 ## 0.5.0
 
 ### Minor Changes
