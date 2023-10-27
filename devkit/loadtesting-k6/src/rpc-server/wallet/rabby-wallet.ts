@@ -37,7 +37,7 @@ export class MockRabbyWallet extends MockWallet implements MockWallet {
                 !r.body.includes("error"),
             });
     
-            this.sleep();
+            this.sleep(1, 3);
         }
     }
 }
