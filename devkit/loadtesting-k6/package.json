@@ -16,7 +16,6 @@
     "@rpch/configs-eslint": "*",
     "@rpch/crypto-for-nodejs": "0.3.4",
     "@rpch/ethers": "0.3.18",
-    "@types/k6": "^0.47.1",
-    "k6": "^0.0.0"
+    "@types/k6": "^0.47.1"
   }
 }
