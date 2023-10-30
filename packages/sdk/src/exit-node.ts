@@ -1,4 +1,4 @@
 export type ExitNode = {
-  id: string;
-  pubKey: string;
+    id: string;
+    pubKey: string;
 };
