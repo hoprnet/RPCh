@@ -36,7 +36,7 @@ describe('test entry server', function () {
         const migrationsDirectory = path.join(__dirname, '../../migrations');
         dbInstance = await TestingDatabaseInstance.create(
             getTestingConnectionString(),
-            migrationsDirectory
+            migrationsDirectory,
         );
     });
 

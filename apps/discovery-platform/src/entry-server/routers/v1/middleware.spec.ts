@@ -36,7 +36,7 @@ describe('test v1 middleware', function () {
         const migrationsDirectory = path.join(__dirname, '../../../../migrations');
         dbInstance = await TestingDatabaseInstance.create(
             getTestingConnectionString(),
-            migrationsDirectory
+            migrationsDirectory,
         );
     });
 
@@ -52,7 +52,7 @@ describe('test v1 middleware', function () {
                 metricManager: metricManager,
                 secret: 'secret',
                 getAvailabilityMonitorResults: getAvailabilityMonitorResultsMock,
-            })
+            }),
         );
     });
 
@@ -74,7 +74,7 @@ describe('test v1 middleware', function () {
         const doesClientHaveQuotaResponse = await doesClientHaveQuota(
             dbInstance.db,
             'client',
-            BigInt(2)
+            BigInt(2),
         );
 
         assert.equal(doesClientHaveQuotaResponse, false);
@@ -92,7 +92,7 @@ describe('test v1 middleware', function () {
         const doesClientHaveQuotaResponse = await doesClientHaveQuota(
             dbInstance.db,
             'client',
-            BigInt(1)
+            BigInt(1),
         );
 
         assert.equal(doesClientHaveQuotaResponse, true);
@@ -108,7 +108,7 @@ describe('test v1 middleware', function () {
             setCache('/test', 100, 'test');
             const res = getCache(
                 (req) => req.originalUrl || req.url,
-                (b) => b
+                (b) => b,
             )(mockRequest, mockResponse, {} as any);
             assert.equal(res, 'test');
         });
@@ -122,7 +122,7 @@ describe('test v1 middleware', function () {
             // result
             getCache(
                 (req) => req.originalUrl || req.url,
-                (b) => b
+                (b) => b,
             )(mockRequest, mockResponse, mockNext);
             expect(mockNext).toHaveBeenCalled();
         });
@@ -149,11 +149,11 @@ describe('test v1 middleware', function () {
 
             assert.deepEqual(
                 JSON.stringify(memoryCache.get('/node?hasExitNode=true')),
-                JSON.stringify(allExitNodes.body)
+                JSON.stringify(allExitNodes.body),
             );
             assert.deepEqual(
                 JSON.stringify(memoryCache.get('/node?hasExitNode=true')),
-                JSON.stringify(secondAllExitNodeResponse.body)
+                JSON.stringify(secondAllExitNodeResponse.body),
             );
         });
     });
