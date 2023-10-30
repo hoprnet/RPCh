@@ -99,7 +99,13 @@
     "format": {
       "outputs": []
     },
+    "format:ci": {
+      "outputs": []
+    },
     "lint": {
+      "outputs": []
+    },
+    "lint:ci": {
       "outputs": []
     },
     "test": {

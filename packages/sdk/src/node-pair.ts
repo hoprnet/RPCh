@@ -30,7 +30,7 @@ export function create(
     entryNode: EntryNode,
     exitNodesIt: Iterable<ExitNode>,
     applicationTag: number,
-    messageListener: MessageListener,
+    messageListener: MessageListener
 ): NodePair {
     const entryData = EntryData.create();
     const shortId = shortPeerId(entryNode.id);
@@ -66,7 +66,7 @@ export function requestStarted(np: NodePair, req: Request.Request) {
             'requestStarted',
             Request.prettyPrint(req),
             'cannot track on missing exitId',
-            prettyPrint(np),
+            prettyPrint(np)
         );
         return;
     }
@@ -83,7 +83,7 @@ export function requestSucceeded(np: NodePair, req: Request.Request, responseTim
             'requestSucceeded',
             Request.prettyPrint(req),
             'cannot track on missing exitId',
-            prettyPrint(np),
+            prettyPrint(np)
         );
         return;
     }
@@ -100,7 +100,7 @@ export function requestFailed(np: NodePair, req: Request.Request) {
             'requestFailed',
             Request.prettyPrint(req),
             'cannot track on missing exitId',
-            prettyPrint(np),
+            prettyPrint(np)
         );
         return;
     }
@@ -174,7 +174,7 @@ export function prettyPrint(np: NodePair): string {
     const mesStr = prettyOngoingNumbers(np, 0, mesSuc, mesTot, mesLat);
     const ping = np.entryData.pingDuration ? `${np.entryData.pingDuration}ms` : '..';
     return `${shortPeerId(
-        id(np),
+        id(np)
     )}[ping: ${ping}, seg: ${segStr}, msgs: ${mesStr}, ${exCount}x: ${exStrs.join(', ')}]`;
 }
 
@@ -183,7 +183,7 @@ function prettyOngoingNumbers(
     ongoing: number,
     successes: number,
     total: number,
-    average: number,
+    average: number
 ) {
     if (total === 0) {
         if (ongoing === 0) {

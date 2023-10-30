@@ -69,7 +69,7 @@ export function messageToResp({
     const res = crypto.unboxResponse(
         request.session,
         { message: respData, entryPeerId: request.entryPeerId },
-        counter,
+        counter
     );
     switch (res.res) {
         case crypto.ResState.Failed:

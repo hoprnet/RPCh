@@ -57,7 +57,7 @@ export function connectWS(conn: ConnInfo): WS.WebSocket {
 
 export function sendMessage(
     conn: ConnInfo & { hops?: number },
-    { recipient, tag, message }: { recipient: string; tag: number; message: string },
+    { recipient, tag, message }: { recipient: string; tag: number; message: string }
 ): Promise<string> {
     const url = new URL('/api/v3/messages', conn.apiEndpoint);
     const headers = {
@@ -78,7 +78,7 @@ export function sendMessage(
     }
     const body = JSON.stringify(payload);
     return fetch(url, { method: 'POST', headers, body }).then(
-        (res) => res.json() as unknown as string,
+        (res) => res.json() as unknown as string
     );
 }
 

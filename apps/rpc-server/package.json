@@ -7,7 +7,9 @@
         "build": "tsc",
         "dev": "tsc --watch",
         "format": "prettier --write src/ .eslintrc.js package.json .prettierrc.js tsconfig.json",
+        "format:ci": "prettier --check src/ .eslintrc.js package.json .prettierrc.js tsconfig.json",
         "lint": "eslint --fix src/",
+        "lint:ci": "eslint --max-warnings 0 src/",
         "start": "node build/index.js"
     },
     "dependencies": {

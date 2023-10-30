@@ -13,10 +13,11 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "format": "turbo run format",
-    "format:fix": "turbo run format -- --check=false --write=true",
+    "format:ci": "turbo run format:ci",
     "lint": "turbo run lint",
+    "lint:ci": "turbo run lint:ci",
     "depcheck": "check-dependency-version-consistency",
-    "test": "turbo run test --concurrency 1 --",
+    "test": "turbo run test",
     "test:e2e": "turbo run start --filter @rpch/e2e"
   },
   "devDependencies": {

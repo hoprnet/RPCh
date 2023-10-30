@@ -51,10 +51,10 @@ jobs:
           TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
       - name: Review linting
-        run: yarn lint
+        run: yarn lint:ci
 
       - name: Review formatting
-        run: yarn format
+        run: yarn format:ci
 
       - name: Review dependencies
         run: yarn depcheck
