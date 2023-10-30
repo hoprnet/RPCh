@@ -54,7 +54,7 @@ export function readUserById(dbPool: Pool, id: string): Promise<QueryResult<User
 export function readUserByChainCred(
     dbPool: Pool,
     address: string,
-    chain: string,
+    chain: string
 ): Promise<QueryResult<User>> {
     const q = [
         'select * from users',
@@ -67,7 +67,7 @@ export function readUserByChainCred(
 export function readUserByFederatedCred(
     dbPool: Pool,
     provider: string,
-    subject: string,
+    subject: string
 ): Promise<QueryResult<User>> {
     const q = [
         'select * from users',

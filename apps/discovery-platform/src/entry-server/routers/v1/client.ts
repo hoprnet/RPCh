@@ -32,7 +32,7 @@ export function index(dbPool: Pool) {
                 res.status(200).json({
                     entries: qRes.rows.map(client.mapFromDB),
                     count: qRes.rowCount,
-                }),
+                })
             )
             .catch((err) => {
                 log.error('Error during client listByUserId query', err);

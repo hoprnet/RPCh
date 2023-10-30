@@ -60,7 +60,7 @@ jobs:
         run: yarn depcheck
 
       - name: Run tests and coverage
-        run: yarn test --ci
+        run: yarn test
         env:
           TESTING_DB_CONNECTION_STRING: postgres://postgres:postgres@localhost:5432/postgres
 

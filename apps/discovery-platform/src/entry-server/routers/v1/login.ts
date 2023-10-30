@@ -36,7 +36,7 @@ export function create(dbPool: Pool, secrets: Secrets, url: string): Login {
                     log.error('Error during readUserByChainCred query', err);
                     cb(err);
                 });
-        }),
+        })
     );
 
     const cbURL = new URL('oauth2/redirect/google', url);
@@ -54,8 +54,8 @@ export function create(dbPool: Pool, secrets: Secrets, url: string): Login {
                         log.error('Error during readUserByFederatedCred query', err);
                         cb(err);
                     });
-            },
-        ),
+            }
+        )
     );
 
     passport.serializeUser(function (user, done) {
@@ -171,7 +171,7 @@ function loginFederated(
     issuer: string,
     profile: { id: string; displayName: string },
     res: QueryResult<q.User>,
-    cb: VerifyCb,
+    cb: VerifyCb
 ) {
     if (res.rowCount === 0) {
         return createFederatedLogin(dbPool, issuer, profile, cb);
@@ -188,7 +188,7 @@ function createFederatedLogin(
     dbPool: Pool,
     issuer: string,
     profile: { id: string; displayName: string },
-    cb: VerifyCb,
+    cb: VerifyCb
 ) {
     q.createUser(dbPool, { name: profile.displayName })
         .then((res) => {
