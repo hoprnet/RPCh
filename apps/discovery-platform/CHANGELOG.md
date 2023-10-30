@@ -1,5 +1,13 @@
 # @rpch/discovery-platform
 
+## 0.12.3
+
+### Patch Changes
+
+- f3f9ee2: cleanup dependencies and consolidate formatting
+- Updated dependencies [f3f9ee2]
+  - @rpch/sdk@1.2.3
+
 ## 0.12.2
 
 ### Patch Changes

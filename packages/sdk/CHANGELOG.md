@@ -1,5 +1,13 @@
 # @rpch/sdk
 
+## 1.2.3
+
+### Patch Changes
+
+- f3f9ee2: cleanup dependencies and consolidate formatting
+- Updated dependencies [f3f9ee2]
+  - @rpch/compat-crypto@0.5.1
+
 ## 1.2.2
 
 ### Patch Changes

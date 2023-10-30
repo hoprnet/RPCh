@@ -1,5 +1,13 @@
 # @rpch/exit-node
 
+## 0.10.1
+
+### Patch Changes
+
+- f3f9ee2: cleanup dependencies and consolidate formatting
+- Updated dependencies [f3f9ee2]
+  - @rpch/sdk@1.2.3
+
 ## 0.10.0
 
 ### Minor Changes

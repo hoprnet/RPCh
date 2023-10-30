@@ -1,5 +1,13 @@
 # @rpch/availability-monitor
 
+## 0.6.2
+
+### Patch Changes
+
+- f3f9ee2: cleanup dependencies and consolidate formatting
+- Updated dependencies [f3f9ee2]
+  - @rpch/sdk@1.2.3
+
 ## 0.6.1
 
 ### Patch Changes
