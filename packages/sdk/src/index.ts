@@ -1,3 +1,4 @@
+import 'url-polyfill';
 import { utils as etherUtils } from 'ethers';
 
 import * as JRPC from './jrpc';
@@ -100,10 +101,7 @@ export default class SDK {
      * @param crypto crypto instantiation for RPCh, use `@rpch/crypto-for-nodejs` or `@rpch/crypto-for-web`
      * @param ops, see **Ops**
      **/
-    constructor(
-        private readonly clientId: string,
-        ops: Ops = {},
-    ) {
+    constructor(private readonly clientId: string, ops: Ops = {}) {
         this.ops = this.sdkOps(ops);
         this.requestCache = RequestCache.init();
         this.segmentCache = SegmentCache.init();
@@ -112,7 +110,7 @@ export default class SDK {
             this.clientId,
             !!this.ops.forceZeroHop,
             ApplicationTag,
-            this.onMessages,
+            this.onMessages
         );
         this.fetchChainId(this.ops.provider as string);
     }
@@ -222,7 +220,7 @@ export default class SDK {
                 setTimeout(() => {
                     this.nodesColl.segmentStarted(request, s);
                     this.sendSegment(request, s, entryNode, entry);
-                }),
+                })
             );
         });
     }
@@ -231,7 +229,7 @@ export default class SDK {
         request: Request.Request,
         segment: Segment.Segment,
         entryNode: EntryNode,
-        cacheEntry: RequestCache.Entry,
+        cacheEntry: RequestCache.Entry
     ) => {
         const bef = Date.now();
         const conn = {
@@ -258,7 +256,7 @@ export default class SDK {
     private resendRequest(
         origReq: Request.Request,
         entryNode: EntryNode,
-        cacheEntry: RequestCache.Entry,
+        cacheEntry: RequestCache.Entry
     ) {
         if (this.redoRequests.has(origReq.id)) {
             log.verbose('ignoring already triggered resend', origReq.id);
@@ -314,7 +312,7 @@ export default class SDK {
             request,
             cacheEntry.resolve,
             cacheEntry.reject,
-            cacheEntry.timer,
+            cacheEntry.timer
         );
         this.nodesColl.requestStarted(request);
 
@@ -323,7 +321,7 @@ export default class SDK {
 
         // send segments sequentially
         segments.forEach((s) =>
-            setTimeout(() => this.resendSegment(s, request, entryNode, newCacheEntry)),
+            setTimeout(() => this.resendSegment(s, request, entryNode, newCacheEntry))
         );
     }
 
@@ -331,7 +329,7 @@ export default class SDK {
         segment: Segment.Segment,
         request: Request.Request,
         entryNode: EntryNode,
-        cacheEntry: RequestCache.Entry,
+        cacheEntry: RequestCache.Entry
     ) => {
         const bef = Date.now();
         NodeAPI.sendMessage(
@@ -344,7 +342,7 @@ export default class SDK {
                 recipient: request.exitPeerId,
                 tag: ApplicationTag,
                 message: Segment.toMessage(segment),
-            },
+            }
         )
             .then((_json) => {
                 const dur = Date.now() - bef;
@@ -390,7 +388,7 @@ export default class SDK {
                 case 'added-to-request':
                     log.verbose(
                         'inserted new segment to existing requestId',
-                        Segment.prettyPrint(segment),
+                        Segment.prettyPrint(segment)
                     );
                     break;
             }
@@ -435,16 +433,16 @@ export default class SDK {
     private responseCounterFail = (
         res: Response.RespCounterFail,
         request: RequestCache.Entry,
-        counter: bigint,
+        counter: bigint
     ) => {
         log.info(
             'Counter mismatch extracting message: last counter %s, new counter %s',
             counter,
-            res.counter,
+            res.counter
         );
         this.nodesColl.requestFailed(request);
         return request.reject(
-            `Check your time settings! Out of order message from exit node - last counter: ${counter}, new counter ${res.counter}.`,
+            `Check your time settings! Out of order message from exit node - last counter: ${counter}, new counter ${res.counter}.`
         );
     };
 
@@ -460,7 +458,7 @@ export default class SDK {
                 return request.reject(`Error attempting JSON RPC call: ${resp.reason}`);
             case 'counterfail':
                 return request.reject(
-                    `Out of order message. Exit node expected message counter between ${resp.min} and ${resp.max}. Check your time settings!`,
+                    `Out of order message. Exit node expected message counter between ${resp.min} and ${resp.max}. Check your time settings!`
                 );
             case 'httperror':
                 return request.resolve({
@@ -511,7 +509,7 @@ export default class SDK {
 
     private fetchChainId = async (provider: string) => {
         const res = await ProviderAPI.fetchChainId(provider).catch((err) =>
-            log.error('Error fetching chainId for', provider, JSON.stringify(err)),
+            log.error('Error fetching chainId for', provider, JSON.stringify(err))
         );
         if (!res) {
             return;
@@ -526,7 +524,7 @@ export default class SDK {
 
     private determineProvider = (
         { provider }: { provider: string },
-        { method }: JRPC.Request,
+        { method }: JRPC.Request
     ): string => {
         if (this.ops.disableMevProtection) {
             return provider;
@@ -571,7 +569,7 @@ export default class SDK {
             log.error(
                 'Request exceeds maximum amount of segments[%i] with %i segments',
                 limit,
-                segLength,
+                segLength
             );
             const maxSize = Segment.MaxSegmentBody * limit;
             return `Request exceeds maximum size of ${maxSize}b`;
