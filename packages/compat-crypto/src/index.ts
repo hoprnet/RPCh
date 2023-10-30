@@ -48,7 +48,7 @@ function initializeCipher(
     sharedPreSecret: Uint8Array,
     counter: bigint,
     peerId: string,
-    request: boolean
+    request: boolean,
 ) {
     const startIndex = request ? 0 : 2;
     const saltTag = request ? REQUEST_TAG : RESPONSE_TAG;
@@ -128,7 +128,7 @@ export function boxRequest(
         exitPeerId,
         exitPublicKey,
     }: { message: Uint8Array; exitPeerId: string; exitPublicKey: Uint8Array },
-    randomFn: (len: number) => Uint8Array = randomBytes
+    randomFn: (len: number) => Uint8Array = randomBytes,
 ): Result {
     if (exitPublicKey.length !== PUBLIC_KEY_SIZE_ENCODED) {
         return { res: ResState.Failed, error: 'incorrect public key size' };
@@ -142,7 +142,7 @@ export function boxRequest(
             exitPublicKey,
             ephemeralKey.privKey,
             { hashfn: getXCoord },
-            Buffer.alloc(PUBLIC_KEY_SIZE_ENCODED - 1)
+            Buffer.alloc(PUBLIC_KEY_SIZE_ENCODED - 1),
         );
     } catch (err) {
         return { res: ResState.Failed, error: `ecdh failed ${err}` };
@@ -202,7 +202,7 @@ export function unboxRequest(
         exitPeerId,
         exitPrivateKey,
     }: { message: Uint8Array; exitPeerId: string; exitPrivateKey: Uint8Array },
-    lastTsOfThisClient: bigint
+    lastTsOfThisClient: bigint,
 ): Result | ResOkFailedCounter {
     if ((message[0] & 0x10) != (RPCH_CRYPTO_VERSION & 0x10)) {
         return {
@@ -232,7 +232,7 @@ export function unboxRequest(
             ephemeralPk,
             exitPrivateKey,
             { hashfn: getXCoord },
-            Buffer.alloc(PUBLIC_KEY_SIZE_ENCODED - 1)
+            Buffer.alloc(PUBLIC_KEY_SIZE_ENCODED - 1),
         );
     } catch (err) {
         return {
@@ -288,7 +288,7 @@ export function unboxRequest(
 /// The encrypted data and new counter value to be persisted is returned in the resulting session.
 export function boxResponse(
     session: Session,
-    { entryPeerId, message }: { entryPeerId: string; message: Uint8Array }
+    { entryPeerId, message }: { entryPeerId: string; message: Uint8Array },
 ): Result {
     const sharedPreSecret = session.sharedPreSecret;
     if (!sharedPreSecret) {
@@ -344,7 +344,7 @@ export function boxResponse(
 export function unboxResponse(
     session: Session,
     { entryPeerId, message }: { entryPeerId: string; message: Uint8Array },
-    lastTsOfThisExitNode: bigint
+    lastTsOfThisExitNode: bigint,
 ): Result | ResOkFailedCounter {
     const sharedPreSecret = session.sharedPreSecret;
     if (!sharedPreSecret) {

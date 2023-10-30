@@ -7,7 +7,7 @@
     "scripts": {
         "build": "tsc",
         "dev": "tsc --watch",
-        "format": "prettier --write src/ package.json",
+        "format": "prettier --write src/ .eslintrc.js jest.config.ts package.json .prettierrc.js tsconfig.json",
         "lint": "eslint --fix src/",
         "test": "jest --coverage"
     },
