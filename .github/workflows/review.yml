@@ -75,7 +75,6 @@ jobs:
           - exit-node
           - discovery-platform
           - rpc-server
-          - manager
           - availability-monitor
         include:
           - project: exit-node
@@ -86,8 +85,6 @@ jobs:
             directory: apps
           - project: rpc-server
             directory: apps
-          - project: manager
-            directory: devkit
 
     steps:
       - name: Check out code
