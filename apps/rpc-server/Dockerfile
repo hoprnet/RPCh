@@ -1,7 +1,3 @@
-# Create rpc-server container
-
-# use slim version of node on Debian bullseye for smaller image sizes
-# Specify platform to be amd because arm doesn't work
 FROM --platform=linux/amd64 node:18-alpine as builder
 
 RUN apk upgrade --no-cache
