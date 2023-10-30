@@ -1,4 +1,3 @@
-import 'url-polyfill';
 import { utils as etherUtils } from 'ethers';
 
 import * as JRPC from './jrpc';
