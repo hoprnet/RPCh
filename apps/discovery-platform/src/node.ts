@@ -153,7 +153,7 @@ export function listExitNodes(dbPool: Pool, nodeIds: Iterable<string>): Promise<
 export function listZeroHopPairings(
     dbPool: Pool,
     amount: number,
-    since?: string
+    since?: string,
 ): Promise<Pairing[]> {
     const qSelect = 'select * from zero_hop_pairings';
     const qOrder = `order by random() limit ${amount}`;
@@ -174,7 +174,7 @@ export function listPairings(
     dbPool: Pool,
     amount: number,
     since?: string,
-    forceZeroHop?: boolean
+    forceZeroHop?: boolean,
 ): Promise<Pairing[]> {
     const t = forceZeroHop ? 'zero_hop_pairings' : 'one_hop_pairings';
     const qSelect = `select * from ${t}`;
@@ -194,7 +194,7 @@ export function listPairings(
 
 export function listIdsByAccessToken(
     dbPool: Pool,
-    accessToken: string
+    accessToken: string,
 ): Promise<{ exitId: string }[]> {
     const q = [
         'select exit_id from exit_node_tokens',

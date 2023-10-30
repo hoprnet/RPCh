@@ -34,7 +34,7 @@ export function routePair(nodePairs: Map<string, NodePair.NodePair>): Result {
  */
 export function fallbackRoutePair(
     nodePairs: Map<string, NodePair.NodePair>,
-    exclude: EntryNode
+    exclude: EntryNode,
 ): Result {
     const routePerfs = createRoutePerfs(nodePairs);
     const filtered = routePerfs.filter(({ entryNode }) => entryNode.id !== exclude.id);
@@ -173,7 +173,7 @@ function eSuccess({ entryNode }: EntryPerf, routePerfs: ExitPerf[], via: string)
 
 function createEntryPerfs(
     nodePairs: Map<string, NodePair.NodePair>,
-    routePerfs: ExitPerf[]
+    routePerfs: ExitPerf[],
 ): EntryPerf[] {
     const entryNodes = routePerfs.map(({ entryNode }) => entryNode);
     return Array.from(new Set(entryNodes)).map((entryNode) => {

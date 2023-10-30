@@ -21,7 +21,7 @@ export function add(
     request: Request,
     resolve: (res: Response) => void,
     reject: (error: string) => void,
-    timer: ReturnType<typeof setTimeout>
+    timer: ReturnType<typeof setTimeout>,
 ): Entry {
     const entry = {
         ...request,

@@ -28,7 +28,7 @@ export const createPrivateKey = async (): Promise<Uint8Array> => {
 export const storePrivateKey = async (
     privateKey: Uint8Array,
     password: string,
-    file: string
+    file: string,
 ): Promise<Uint8Array> => {
     const key = getSalt(password);
     const iv = generateIv();
@@ -48,7 +48,7 @@ export const storePrivateKey = async (
  */
 export const loadPrivateKey = async (
     password: string,
-    file: string
+    file: string,
 ): Promise<Uint8Array | undefined> => {
     let blob: Buffer;
     try {

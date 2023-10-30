@@ -31,7 +31,7 @@ export function toSegments(requestId: number, hexData: string): Segment[] {
  * Create segment from string message.
  */
 export function fromMessage(
-    str: string
+    str: string,
 ): { success: true; segment: Segment } | { success: false; error: string } {
     const parts = str.split('|');
     if (parts.length === 0) {

@@ -79,7 +79,7 @@ export function fetchNodes(ops: ClientOps, amount: number, since: Date): Promise
 
 export function fetchQuota(
     ops: NodeOps,
-    { clientId, segmentCount, rpcMethod, type, lastSegmentLength }: QuotaParams
+    { clientId, segmentCount, rpcMethod, type, lastSegmentLength }: QuotaParams,
 ): Promise<void> {
     const url = new URL(`/api/v1/quota/${type}`, ops.discoveryPlatformEndpoint);
     const headers = {

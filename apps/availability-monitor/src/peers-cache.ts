@@ -5,7 +5,7 @@ export type PeersCache = Map<string, Map<string, NodeAPI.Peer>>; // node id -> p
 
 export function fetchPeers(
     cache: PeersCache,
-    node: RegisteredNode
+    node: RegisteredNode,
 ): Promise<Map<string, NodeAPI.Peer>> {
     return new Promise((resolve, reject) => {
         if (cache.has(node.id)) {

@@ -43,7 +43,7 @@ function writePairings(dbPool: Pool, table: string, pairings: Pair[]): Promise<Q
                     await client.query(`delete from ${table}`);
                     const inserts = pairings.map(
                         ({ entryId, exitId }) =>
-                            `insert into ${table} (entry_id, exit_id) values ('${entryId}', '${exitId}');`
+                            `insert into ${table} (entry_id, exit_id) values ('${entryId}', '${exitId}');`,
                     );
                     inserts.forEach(async (i) => await client.query(i));
                     resolve(client.query('commit'));

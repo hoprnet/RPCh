@@ -11,7 +11,7 @@ type PeersCache = Map<string, Map<string, NodeAPI.Peer>>; // node id -> peer id 
 
 export async function start(dbPool: Pool) {
     dbPool.on('error', (err, client) =>
-        log.error('pg pool error on client %s: %s', client, JSON.stringify(err))
+        log.error('pg pool error on client %s: %s', client, JSON.stringify(err)),
     );
     dbPool.connect();
 
@@ -45,7 +45,7 @@ async function runZeroHops(
     dbPool: Pool,
     peersCache: PeersCache.PeersCache,
     entryNodes: q.RegisteredNode[],
-    exitNodes: q.RegisteredNode[]
+    exitNodes: q.RegisteredNode[],
 ) {
     const entryPeers = await peersMap(peersCache, entryNodes);
 
@@ -63,7 +63,7 @@ async function runZeroHops(
             }
             return acc;
         },
-        new Map()
+        new Map(),
     );
 
     // determine online exits
@@ -78,7 +78,7 @@ async function runZeroHops(
             entryNodes.map((eNode) => {
                 const xIds = exitNodes.map(({ id }) => id);
                 return [eNode.id, new Set(xIds)];
-            })
+            }),
         );
         const diffPeers = diffStr(all, pairsMap);
         diffPeers.forEach((s) => log.verbose('Missing peer matches: %s', s));
@@ -92,7 +92,7 @@ async function runOneHops(
     dbPool: Pool,
     peersCache: PeersCache.PeersCache,
     entryNodes: q.RegisteredNode[],
-    exitNodes: q.RegisteredNode[]
+    exitNodes: q.RegisteredNode[],
 ) {
     // gather channel structure
     const entryNode = randomEl(entryNodes);
@@ -129,7 +129,7 @@ async function runOneHops(
             });
             return acc;
         },
-        new Map()
+        new Map(),
     );
 
     // clear table and insert gathered values
@@ -142,11 +142,11 @@ async function runOneHops(
 
 async function peersMap(
     peersCache: PeersCache.PeersCache,
-    nodes: q.RegisteredNode[]
+    nodes: q.RegisteredNode[],
 ): Promise<Map<string, Set<string>>> {
     const pRaw = nodes.map(async (node) => {
         const peers = await PeersCache.fetchPeers(peersCache, node).catch((err) =>
-            log.error('Error fetching peers for %s: %s', node.id, JSON.stringify(err))
+            log.error('Error fetching peers for %s: %s', node.id, JSON.stringify(err)),
         );
         if (peers) {
             const ids = Array.from(peers.values()).map(({ peerId }) => peerId);
@@ -157,14 +157,14 @@ async function peersMap(
 
     const raw = await Promise.allSettled(pRaw);
     const successes = raw.filter((val) => val.status === 'fulfilled' && !!val.value) as [
-        { status: 'fulfilled'; value: [string, Set<string>] }
+        { status: 'fulfilled'; value: [string, Set<string>] },
     ];
     return new Map(successes.map(({ value }) => value));
 }
 
 async function filterOnline(
     exitEntries: Map<string, Set<string>>,
-    entryNodes: q.RegisteredNode[]
+    entryNodes: q.RegisteredNode[],
 ): Promise<Map<string, Set<string>>> {
     const messagePreps = Array.from(exitEntries.entries()).reduce((acc, [xId, entryIds]) => {
         const eId = randomEl(Array.from(entryIds.values()));
@@ -187,8 +187,8 @@ async function filterOnline(
             log.error(
                 'Error deleting messages from %s: %s',
                 Utils.shortPeerId(eId),
-                JSON.stringify(err)
-            )
+                JSON.stringify(err),
+            ),
         );
 
         // send pings
@@ -197,7 +197,7 @@ async function filterOnline(
                 setTimeout(() => {
                     NodeAPI.sendMessage(
                         { ...conn, hops: 0 },
-                        { tag: ApplicationTag, recipient: xId, message: `ping-${eId}` }
+                        { tag: ApplicationTag, recipient: xId, message: `ping-${eId}` },
                     )
                         .then(resolve)
                         .catch((err) => {
@@ -205,7 +205,7 @@ async function filterOnline(
                                 'Error sending ping from %s to %s: %s',
                                 Utils.shortPeerId(eId),
                                 Utils.shortPeerId(xId),
-                                JSON.stringify(err)
+                                JSON.stringify(err),
                             );
                             reject('Error sending ping');
                         });
@@ -224,7 +224,7 @@ async function filterOnline(
                         log.error(
                             'Error retrieving messages from %s: %s',
                             JSON.stringify(Utils.shortPeerId(eId)),
-                            JSON.stringify(err)
+                            JSON.stringify(err),
                         );
                         reject('Error retrieving messages');
                     });
@@ -236,7 +236,7 @@ async function filterOnline(
         messages: NodeAPI.Message[];
     }>[];
     const filteredRes = results.filter((pRes) => pRes.status === 'fulfilled') as [
-        { status: 'fulfilled'; value: { messages: NodeAPI.Message[] } }
+        { status: 'fulfilled'; value: { messages: NodeAPI.Message[] } },
     ];
     const msgs = filteredRes.map(({ value }) => value.messages).flat();
     const onlineXids = msgs
@@ -288,7 +288,7 @@ function logIds(pairs: q.Pair[]): string {
 
 function filterChannels(
     peers: Map<string, Set<string>>,
-    channels: Map<string, Set<string>>
+    channels: Map<string, Set<string>>,
 ): Map<string, Set<string>> {
     return Array.from(peers.entries()).reduce((acc, [id, prs]) => {
         const chans = channels.get(id);

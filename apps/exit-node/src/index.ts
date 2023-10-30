@@ -170,7 +170,7 @@ function onMessage(state: State, ops: Ops) {
             case 'added-to-request':
                 log.verbose(
                     'inserted new segment to existing request',
-                    Segment.prettyPrint(segment)
+                    Segment.prettyPrint(segment),
                 );
                 break;
             case 'inserted-new':
@@ -180,7 +180,7 @@ function onMessage(state: State, ops: Ops) {
                     setTimeout(() => {
                         log.info('purging incomplete request', segment.requestId);
                         SegmentCache.remove(state.cache, segment.requestId);
-                    }, RequestPurgeTimeout)
+                    }, RequestPurgeTimeout),
                 );
                 break;
         }
@@ -191,7 +191,7 @@ async function completeSegmentsEntry(
     state: State,
     ops: Ops,
     cacheEntry: SegmentCache.Entry,
-    tag: number
+    tag: number,
 ) {
     const firstSeg = cacheEntry.segments.get(0)!;
     if (!firstSeg.body.startsWith('0x')) {
@@ -235,7 +235,7 @@ async function completeSegmentsEntry(
             }
             sendResponse(
                 { ops, cacheEntry, tag, reqPayload: resReq.req, entryPeerId },
-                resResp.hexData
+                resResp.hexData,
             );
             return;
         }
@@ -249,7 +249,7 @@ async function completeSegmentsEntry(
                     'Error RPC requesting %s with %s: %s',
                     provider,
                     JSON.stringify(req),
-                    JSON.stringify(err)
+                    JSON.stringify(err),
                 );
                 // rpc critical fail response
                 const resResp = Response.respToMessage({
@@ -263,7 +263,7 @@ async function completeSegmentsEntry(
                 }
                 sendResponse(
                     { ops, cacheEntry, tag, reqPayload: resReq.req, entryPeerId },
-                    resResp.hexData
+                    resResp.hexData,
                 );
             });
             if (!resp) {
@@ -287,7 +287,7 @@ async function completeSegmentsEntry(
                 }
                 sendResponse(
                     { ops, cacheEntry, tag, reqPayload: resReq.req, entryPeerId },
-                    resResp.hexData
+                    resResp.hexData,
                 );
                 return;
             }
@@ -304,7 +304,7 @@ async function completeSegmentsEntry(
             }
             sendResponse(
                 { ops, entryPeerId, cacheEntry, tag, reqPayload: resReq.req },
-                resResp.hexData
+                resResp.hexData,
             );
             return;
         }
@@ -325,7 +325,7 @@ function sendResponse(
         cacheEntry: SegmentCache.Entry;
         reqPayload: Payload.ReqPayload;
     },
-    resp: string
+    resp: string,
 ) {
     const requestId = cacheEntry.segments.get(0)!.requestId;
     const segments = Segment.toSegments(requestId, resp);
@@ -334,7 +334,7 @@ function sendResponse(
         'Returning message to %s, tag: %s, requestId: %i',
         Utils.shortPeerId(entryPeerId),
         tag,
-        requestId
+        requestId,
     );
 
     const conn = {
