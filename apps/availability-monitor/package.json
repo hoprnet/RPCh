@@ -12,7 +12,7 @@
         "start": "node build/index.js"
     },
     "dependencies": {
-        "@rpch/sdk": "1.2.2",
+        "@rpch/sdk": "*",
         "pg": "^8.11.3"
     },
     "devDependencies": {
