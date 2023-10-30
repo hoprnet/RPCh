@@ -13,6 +13,7 @@
     },
     "devDependencies": {
         "@types/async-retry": "^1.4.5",
+        "@types/lz-string": "^1.5.0",
         "eslint-plugin-compat": "^4.2.0"
     },
     "dependencies": {
