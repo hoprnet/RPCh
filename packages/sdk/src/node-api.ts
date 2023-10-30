@@ -1,4 +1,4 @@
-import WS from 'isomorphic-ws';
+import WS = require('isomorphic-ws');
 
 /**
  * to be replaced with HOPR sdk soon.
