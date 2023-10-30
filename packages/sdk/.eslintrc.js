@@ -1,6 +1,7 @@
 module.exports = {
     env: {
         browser: true,
+        es2016: true,
     },
     extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended', 'prettier'],
     parser: '@typescript-eslint/parser',
@@ -11,5 +12,6 @@ module.exports = {
             'warn',
             { argsIgnorePattern: '^_', varsIgnorePattern: '^_ignored' },
         ],
+        '@typescript-eslint/no-explicit-any': ['off'],
     },
 };
