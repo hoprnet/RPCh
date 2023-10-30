@@ -16,7 +16,7 @@
     "format:ci": "turbo run format:ci --no-cache",
     "lint": "turbo run lint --no-cache",
     "lint:ci": "turbo run lint:ci --no-cache",
-    "depcheck": "check-dependency-version-consistency --no-cache",
+    "depcheck": "check-dependency-version-consistency",
     "test": "turbo run test --no-cache",
     "test:e2e": "turbo run start --filter @rpch/e2e"
   },
