@@ -1,6 +1,4 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import { WebSocket } from 'isomorphic-ws';
+import WS from 'isomorphic-ws';
 
 /**
  * to be replaced with HOPR sdk soon.
@@ -50,16 +48,16 @@ export type Channels = {
     outgoing: [];
 };
 
-export function connectWS(conn: ConnInfo): WebSocket {
+export function connectWS(conn: ConnInfo): WS.WebSocket {
     const wsURL = new URL('/api/v3/messages/websocket', conn.apiEndpoint);
     wsURL.protocol = conn.apiEndpoint.protocol === 'https:' ? 'wss:' : 'ws:';
     wsURL.search = `?apiToken=${conn.accessToken}`;
-    return new WebSocket(wsURL);
+    return new WS.WebSocket(wsURL);
 }
 
 export function sendMessage(
     conn: ConnInfo & { hops?: number },
-    { recipient, tag, message }: { recipient: string; tag: number; message: string },
+    { recipient, tag, message }: { recipient: string; tag: number; message: string }
 ): Promise<string> {
     const url = new URL('/api/v3/messages', conn.apiEndpoint);
     const headers = {
@@ -80,7 +78,7 @@ export function sendMessage(
     }
     const body = JSON.stringify(payload);
     return fetch(url, { method: 'POST', headers, body }).then(
-        (res) => res.json() as unknown as string,
+        (res) => res.json() as unknown as string
     );
 }
 
