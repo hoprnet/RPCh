@@ -73,15 +73,12 @@ jobs:
         # TODO: dynamically get this list
         project:
           - exit-node
-          - funding-service
           - discovery-platform
           - rpc-server
           - manager
           - availability-monitor
         include:
           - project: exit-node
-            directory: apps
-          - project: funding-service
             directory: apps
           - project: discovery-platform
             directory: apps
@@ -101,12 +98,12 @@ jobs:
         run: |
           export short_sha=$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-7)
           echo "SHORT_SHA=$short_sha" >> $GITHUB_ENV
-          
+
           if echo "${{ github.ref_name }}" | grep -q "${{ matrix.project }}"; then
             export tag=$(echo ${{ github.ref_name }} | sed -E 's/[^0-9.]//g')
             echo "TAG=$tag" >> $GITHUB_ENV
           fi
-          
+
           export tags=$(echo $short_sha,$tag | sed 's/^[ \t,]*//; s/[ \t,]*$//') #remove leading and trailing whitespaces and commas
           echo "TAGS=$tags" >> $GITHUB_ENV
 
