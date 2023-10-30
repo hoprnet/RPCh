@@ -1,45 +1,45 @@
-import type { Request } from "./request";
-import type { Response } from "./response";
+import type { Request } from './request';
+import type { Response } from './response';
 
 export type Cache = Map<number, Entry>; // id -> Request
 
 export type Entry = Request & {
-  resolve: (res: Response) => void;
-  reject: (error: string) => void;
-  timer: ReturnType<typeof setTimeout>;
+    resolve: (res: Response) => void;
+    reject: (error: string) => void;
+    timer: ReturnType<typeof setTimeout>;
 };
 
 export function init(): Cache {
-  return new Map();
+    return new Map();
 }
 
 /**
  * Add request data to cache and return generated id.
  */
 export function add(
-  cache: Cache,
-  request: Request,
-  resolve: (res: Response) => void,
-  reject: (error: string) => void,
-  timer: ReturnType<typeof setTimeout>
+    cache: Cache,
+    request: Request,
+    resolve: (res: Response) => void,
+    reject: (error: string) => void,
+    timer: ReturnType<typeof setTimeout>,
 ): Entry {
-  const entry = {
-    ...request,
-    resolve,
-    reject,
-    timer,
-  };
-  cache.set(request.id, entry);
-  return entry;
+    const entry = {
+        ...request,
+        resolve,
+        reject,
+        timer,
+    };
+    cache.set(request.id, entry);
+    return entry;
 }
 
 /**
  * Remove request id from cache.
  */
 export function remove(cache: Cache, id: number) {
-  const t = cache.get(id)?.timer;
-  clearTimeout(t);
-  cache.delete(id);
+    const t = cache.get(id)?.timer;
+    clearTimeout(t);
+    cache.delete(id);
 }
 
 /**
@@ -47,9 +47,9 @@ export function remove(cache: Cache, id: number) {
  * Will loop indefinitely if all request ids are taken (max ~1e7).
  */
 export function generateId(cache: Cache): number {
-  let id = Math.floor(Math.random() * 1e6);
-  while (cache.has(id)) {
-    id = Math.floor(Math.random() * 1e6);
-  }
-  return id;
+    let id = Math.floor(Math.random() * 1e6);
+    while (cache.has(id)) {
+        id = Math.floor(Math.random() * 1e6);
+    }
+    return id;
 }

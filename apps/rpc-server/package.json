@@ -1,31 +1,18 @@
 {
-  "name": "@rpch/rpc-server",
-  "version": "0.9.1",
-  "license": "LGPL-3.0",
-  "private": true,
-  "scripts": {
-    "build": "tsup",
-    "dev": "yarn build --watch",
-    "format": "prettier --check \"src/**/*.{ts,md}\"",
-    "lint": "eslint \"src/**/*.ts*\"",
-    "start": "node build/index.js"
-  },
-  "devDependencies": {
-    "@rpch/configs-eslint": "*",
-    "@rpch/configs-jest": "*",
-    "@rpch/configs-prettier": "*",
-    "@rpch/configs-tsup": "*",
-    "@rpch/configs-typescript": "*",
-    "@types/leveldown": "^4.0.3",
-    "@types/levelup": "^5.1.2",
-    "@types/memdown": "^3.0.0",
-    "memdown": "^6.1.1",
-    "supertest": "^6.3.3"
-  },
-  "dependencies": {
-    "@rpch/crypto-for-nodejs": "0.3.4",
-    "@rpch/sdk": "1.2.2",
-    "leveldown": "^6.1.1",
-    "levelup": "^5.1.1"
-  }
+    "name": "@rpch/rpc-server",
+    "version": "0.9.1",
+    "license": "LGPL-3.0",
+    "private": true,
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch",
+        "format": "prettier --write src/ .eslintrc.js package.json .prettierrc.js tsconfig.json",
+        "format:ci": "prettier --check src/ .eslintrc.js package.json .prettierrc.js tsconfig.json",
+        "lint": "eslint --fix src/",
+        "lint:ci": "eslint --max-warnings 0 src/",
+        "start": "node build/index.js"
+    },
+    "dependencies": {
+        "@rpch/sdk": "*"
+    }
 }

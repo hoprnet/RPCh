@@ -18,16 +18,13 @@
         "build/**"
       ],
       "env": [
+        "RPCH_PRIVATE_KEY",
         "RPCH_PASSWORD",
         "RPCH_IDENTITY_FILE",
-        "RPCH_PRIVATE_KEY",
-        "RPCH_DATA_DIR",
         "HOPRD_API_TOKEN",
         "HOPRD_API_ENDPOINT",
         "DISCOVERY_PLATFORM_API_ENDPOINT",
-        "DISCOVERY_PLATFORM_ACCESS_TOKEN",
-        "RESPONSE_TIMEOUT",
-        "OPT_IN_METRICS"
+        "DISCOVERY_PLATFORM_ACCESS_TOKEN"
       ]
     },
     "@rpch/e2e#build": {
@@ -40,26 +37,6 @@
         "ENTRY_NODE_PEER_ID",
         "EXIT_NODE_PEER_ID",
         "EXIT_NODE_PUB_KEY"
-      ]
-    },
-    "@rpch/funding-service#build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "build/**"
-      ],
-      "env": [
-        "SECRET_KEY",
-        "WALLET_PRIV_KEY",
-        "PORT",
-        "DB_CONNECTION_URL",
-        "CONFIRMATIONS",
-        "MAX_AMOUNT_OF_TOKENS",
-        "TIMEOUT",
-        "FORCE_CHAIN_ID",
-        "FORCE_RPC_URL",
-        "FORCE_SMART_CONTRACT_ADDRESS"
       ]
     },
     "@rpch/discovery-platform#build": {
@@ -122,7 +99,13 @@
     "format": {
       "outputs": []
     },
+    "format:ci": {
+      "outputs": []
+    },
     "lint": {
+      "outputs": []
+    },
+    "lint:ci": {
       "outputs": []
     },
     "test": {

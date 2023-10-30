@@ -1,21 +1,20 @@
 {
-  "name": "@rpch/loadtesting-6",
-  "version": "0.1.0",
-  "private": true,
-  "license": "LGPL-3.0",
-  "scripts": {
-    "build": "tsc --build",
-    "dev": "exit 0",
-    "format": "prettier --check \"src/**/*.{js,md}\"",
-    "lint": "eslint \"src/**/*.js*\"",
-    "test": "exit 0",
-    "help": "node dist/rpc-server/help.js",
-    "start:discovery-platform": "k6 run src/discovery-platform/artificial.js --out json=results/results-discovery-platform.json"
-  },
-  "devDependencies": {
-    "@rpch/configs-eslint": "*",
-    "@rpch/crypto-for-nodejs": "0.3.4",
-    "@rpch/ethers": "0.3.18",
-    "@types/k6": "^0.47.1"
-  }
+    "name": "@rpch/loadtesting-6",
+    "version": "0.1.0",
+    "private": true,
+    "license": "LGPL-3.0",
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch",
+        "format": "prettier --write src/ .eslintrc.js package.json .prettierrc.js tsconfig.json",
+        "format:ci": "prettier --check src/ .eslintrc.js package.json .prettierrc.js tsconfig.json",
+        "lint": "eslint --fix src/",
+        "lint:ci": "eslint --max-warnings 0 src/",
+        "test": "exit 0",
+        "help": "node dist/rpc-server/help.js",
+        "start:discovery-platform": "k6 run src/discovery-platform/artificial.js --out json=results/results-discovery-platform.json"
+    },
+    "devDependencies": {
+        "@types/k6": "^0.47.1"
+    }
 }

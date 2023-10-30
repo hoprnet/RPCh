@@ -1,5 +1,0 @@
-{
-  "extends": "@rpch/configs-typescript/nodejs-library.json",
-  "include": ["src", "./hardhat.config.ts"],
-  "exclude": ["node_modules"]
-}

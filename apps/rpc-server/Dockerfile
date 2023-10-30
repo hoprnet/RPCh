@@ -1,7 +1,3 @@
-# Create rpc-server container
-
-# use slim version of node on Debian bullseye for smaller image sizes
-# Specify platform to be amd because arm doesn't work
 FROM --platform=linux/amd64 node:18-alpine as builder
 
 RUN apk upgrade --no-cache
@@ -68,7 +64,6 @@ COPY --from=installer /app/node_modules ./node_modules
 COPY --from=installer /app/package.json .
 COPY --from=installer /app/apps/rpc-server/build/*.js .
 COPY --from=installer /app/packages/sdk ./packages/sdk
-COPY --from=installer /app/packages/common ./packages/common
 COPY --from=installer /app/packages/compat-crypto ./packages/compat-crypto
 
 # copy over runit configurations

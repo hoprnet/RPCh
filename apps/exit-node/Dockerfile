@@ -56,7 +56,6 @@ COPY --from=installer /app/node_modules ./node_modules
 COPY --from=installer /app/package.json .
 COPY --from=installer /app/apps/exit-node/build/*.js .
 COPY --from=installer /app/packages/sdk ./packages/sdk
-COPY --from=installer /app/packages/common ./packages/common
 COPY --from=installer /app/packages/compat-crypto ./packages/compat-crypto
 
 ENTRYPOINT ["/sbin/tini", "--"]

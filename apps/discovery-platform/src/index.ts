@@ -1,176 +1,162 @@
-import { Pool } from "pg";
-import { entryServer } from "./entry-server";
-import { createLogger } from "./utils";
-// import { checkCommitmentForFreshNodes } from "./registered-node";
-// import { checkCommitment, getChannelsFromGraph } from "./graph-api";
-import * as constants from "./constants";
-import * as Prometheus from "prom-client";
-import { MetricManager } from "@rpch/common/build/internal/metric-manager";
-import { runMigrations } from "@rpch/common/build/internal/db";
-// import * as async from "async";
-import path from "path";
-import migrate from "node-pg-migrate";
+import { Pool } from 'pg';
+import { Utils } from '@rpch/sdk';
 
-import type { Secrets } from "./secrets";
-// import type { RegisteredNodeDB, AvailabilityMonitorResult } from "./types";
+import { entryServer } from './entry-server';
+import path from 'path';
+import migrate from 'node-pg-migrate';
 
-const log = createLogger();
+import type { Secrets } from './secrets';
+
+const log = Utils.logger(['discovery-platform']);
 
 const start = async (ops: {
-  connectionString: string;
-  dbPool: Pool;
-  port: number;
-  secrets: Secrets;
-  url: string;
+    connectionString: string;
+    dbPool: Pool;
+    port: number;
+    secrets: Secrets;
+    url: string;
 }) => {
-  // run db migrations
-  const migrationsDirectory = path.join(__dirname, "../migrations");
-  await runMigrations(ops.connectionString, migrationsDirectory, migrate);
+    // run db migrations
+    const migrationsDirectory = path.join(__dirname, '../migrations');
+    await migrate({
+        direction: 'up',
+        databaseUrl: ops.connectionString,
+        migrationsTable: 'migrations',
+        dir: migrationsDirectory,
+        log: log.verbose,
+    });
 
-  // create prometheus registry
-  const register = new Prometheus.Registry();
+    const app = entryServer({
+        dbPool: ops.dbPool,
+        secrets: ops.secrets,
+        url: ops.url,
+    });
 
-  // add default metrics to registry
-  Prometheus.collectDefaultMetrics({ register });
+    // start listening at PORT for requests
+    const host = '0.0.0.0';
+    /* const server = */ app.listen(ops.port, host, () => {
+        log.info(`entry server running on ${host}:${ops.port}`);
+    });
 
-  const metricManager = new MetricManager(
-    Prometheus,
-    register,
-    constants.METRIC_PREFIX
-  );
+    // set server timeout to 30s
+    // server.setTimeout(30e3);
 
-  const app = entryServer({
-    dbPool: ops.dbPool,
-    metricManager: metricManager,
-    secrets: ops.secrets,
-    url: ops.url,
-  });
+    // Create a task queue with a concurrency limit of QUEUE_CONCURRENCY_LIMIT
+    // to process nodes in parallel for commitment check
+    //   const queueCheckCommitment = async.queue(
+    //     async (task: RegisteredNodeDB, callback) => {
+    //       try {
+    //         const channels = await getChannelsFromGraph(task.id);
+    //         const nodeIsCommitted = await checkCommitment({
+    //           channels,
+    //           node: task,
+    //           minBalance: constants.BALANCE_THRESHOLD,
+    //           minChannels: constants.CHANNELS_THRESHOLD,
+    //         });
+    //
+    //         if (nodeIsCommitted) {
+    //           await updateRegisteredNode(ops.db, {
+    //             ...task,
+    //             status: "READY",
+    //           });
+    //         }
+    //
+    //         callback();
+    //       } catch (e) {}
+    //     },
+    //     constants.QUEUE_CONCURRENCY_LIMIT
+    //   );
+    //
+    // adds fresh node to queue
+    // const checkCommitmentInterval = setInterval(
+    //   () =>
+    //     checkCommitmentForFreshNodes(
+    //       ops.db,
+    //       queueCheckCommitment,
+    //       (node, err) => {
+    //         if (err) {
+    //           log.error("Failed to process node", node, err);
+    //         }
+    //       }
+    //     ),
+    //   60e3
+    // );
 
-  // start listening at PORT for requests
-  const host = "0.0.0.0";
-  /* const server = */ app.listen(ops.port, host, () => {
-    log.normal(`entry server running on ${host}:${ops.port}`);
-  });
+    // fetch and cache availability monitor results
+    // const updateAvailabilityMonitorResultsInterval = setInterval(async () => {
+    //   try {
+    //     if (!ops.availabilityMonitorUrl) return;
+    //     const response = await fetch(
+    //       `${ops.availabilityMonitorUrl}/api/nodes`
+    //     ).then(
+    //       (res) => res.json() as unknown as [string, AvailabilityMonitorResult][]
+    //     );
+    //     availabilityMonitorResults = new Map(response);
+    //     log.verbose(
+    //       "Updated availability monitor results with size %i",
+    //       availabilityMonitorResults.size
+    //     );
+    //   } catch (error) {
+    //     log.error("Error fetching availability monitor results", error);
+    //   }
+    // }, 1000);
 
-  // set server timeout to 30s
-  // server.setTimeout(30e3);
-
-  // Create a task queue with a concurrency limit of QUEUE_CONCURRENCY_LIMIT
-  // to process nodes in parallel for commitment check
-  //   const queueCheckCommitment = async.queue(
-  //     async (task: RegisteredNodeDB, callback) => {
-  //       try {
-  //         const channels = await getChannelsFromGraph(task.id);
-  //         const nodeIsCommitted = await checkCommitment({
-  //           channels,
-  //           node: task,
-  //           minBalance: constants.BALANCE_THRESHOLD,
-  //           minChannels: constants.CHANNELS_THRESHOLD,
-  //         });
-  //
-  //         if (nodeIsCommitted) {
-  //           await updateRegisteredNode(ops.db, {
-  //             ...task,
-  //             status: "READY",
-  //           });
-  //         }
-  //
-  //         callback();
-  //       } catch (e) {}
-  //     },
-  //     constants.QUEUE_CONCURRENCY_LIMIT
-  //   );
-  //
-  // adds fresh node to queue
-  // const checkCommitmentInterval = setInterval(
-  //   () =>
-  //     checkCommitmentForFreshNodes(
-  //       ops.db,
-  //       queueCheckCommitment,
-  //       (node, err) => {
-  //         if (err) {
-  //           log.error("Failed to process node", node, err);
-  //         }
-  //       }
-  //     ),
-  //   60e3
-  // );
-
-  // fetch and cache availability monitor results
-  // const updateAvailabilityMonitorResultsInterval = setInterval(async () => {
-  //   try {
-  //     if (!ops.availabilityMonitorUrl) return;
-  //     const response = await fetch(
-  //       `${ops.availabilityMonitorUrl}/api/nodes`
-  //     ).then(
-  //       (res) => res.json() as unknown as [string, AvailabilityMonitorResult][]
-  //     );
-  //     availabilityMonitorResults = new Map(response);
-  //     log.verbose(
-  //       "Updated availability monitor results with size %i",
-  //       availabilityMonitorResults.size
-  //     );
-  //   } catch (error) {
-  //     log.error("Error fetching availability monitor results", error);
-  //   }
-  // }, 1000);
-
-  return () => {
-    // clearInterval(checkCommitmentInterval);
-    // clearInterval(updateAvailabilityMonitorResultsInterval);
-  };
+    return () => {
+        // clearInterval(checkCommitmentInterval);
+        // clearInterval(updateAvailabilityMonitorResultsInterval);
+    };
 };
 
 const main = () => {
-  // server port
-  if (!process.env.PORT) {
-    throw new Error("Missing 'PORT' env var.");
-  }
-  // public url
-  if (!process.env.URL) {
-    throw new Error("Missing 'URL' env var.");
-  }
-  // postgres url
-  if (!process.env.DATABASE_URL) {
-    throw new Error("Missing 'DATABASE_URL' env var.");
-  }
-  // admin secret
-  if (!process.env.ADMIN_SECRET) {
-    throw new Error("Missing 'ADMIN_SECRET' env var.");
-  }
-  // cookie secret
-  if (!process.env.SESSION_SECRET) {
-    throw new Error("Missing 'SESSION_SECRET' env var.");
-  }
-  // google oauth
-  if (!process.env.GOOGLE_CLIENT_ID) {
-    throw new Error("Missing 'GOOGLE_CLIENT_ID' env var.");
-  }
-  if (!process.env.GOOGLE_CLIENT_SECRET) {
-    throw new Error("Missing 'GOOGLE_CLIENT_SECRET' env var.");
-  }
+    // server port
+    if (!process.env.PORT) {
+        throw new Error("Missing 'PORT' env var.");
+    }
+    // public url
+    if (!process.env.URL) {
+        throw new Error("Missing 'URL' env var.");
+    }
+    // postgres url
+    if (!process.env.DATABASE_URL) {
+        throw new Error("Missing 'DATABASE_URL' env var.");
+    }
+    // admin secret
+    if (!process.env.ADMIN_SECRET) {
+        throw new Error("Missing 'ADMIN_SECRET' env var.");
+    }
+    // cookie secret
+    if (!process.env.SESSION_SECRET) {
+        throw new Error("Missing 'SESSION_SECRET' env var.");
+    }
+    // google oauth
+    if (!process.env.GOOGLE_CLIENT_ID) {
+        throw new Error("Missing 'GOOGLE_CLIENT_ID' env var.");
+    }
+    if (!process.env.GOOGLE_CLIENT_SECRET) {
+        throw new Error("Missing 'GOOGLE_CLIENT_SECRET' env var.");
+    }
 
-  // init db
-  const connectionString = process.env.DATABASE_URL;
-  const dbPool = new Pool({ connectionString });
+    // init db
+    const connectionString = process.env.DATABASE_URL;
+    const dbPool = new Pool({ connectionString });
 
-  const secrets = {
-    adminSecret: process.env.ADMIN_SECRET,
-    sessionSecret: process.env.SESSION_SECRET,
-    googleClientID: process.env.GOOGLE_CLIENT_ID,
-    googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  };
+    const secrets = {
+        adminSecret: process.env.ADMIN_SECRET,
+        sessionSecret: process.env.SESSION_SECRET,
+        googleClientID: process.env.GOOGLE_CLIENT_ID,
+        googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    };
 
-  start({
-    connectionString,
-    dbPool,
-    port: parseInt(process.env.PORT, 10),
-    secrets,
-    url: process.env.URL,
-  });
+    start({
+        connectionString,
+        dbPool,
+        port: parseInt(process.env.PORT, 10),
+        secrets,
+        url: process.env.URL,
+    });
 };
 
 // if this file is the entrypoint of the nodejs process
 if (require.main === module) {
-  main();
+    main();
 }

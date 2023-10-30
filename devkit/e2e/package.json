@@ -6,18 +6,9 @@
   "scripts": {
     "build": "exit 0",
     "dev": "exit 0",
-    "format": "prettier --check \"src/**/*.{ts,md}\"",
-    "lint": "eslint \"src/**/*.ts*\"",
+    "format": "exit 0",
+    "lint": "exit 0",
     "test": "exit 0",
     "start": "bash ./src/start.sh"
-  },
-  "devDependencies": {
-    "@rpch/configs-typescript": "*",
-    "@rpch/configs-eslint": "*",
-    "@rpch/configs-prettier": "*",
-    "@rpch/configs-jest": "*",
-    "@rpch/ethers": "0.3.18",
-    "@rpch/common": "0.4.0",
-    "@rpch/crypto-for-nodejs": "0.3.4"
   }
 }

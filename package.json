@@ -12,17 +12,24 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
-    "format": "turbo run format",
-    "format:fix": "turbo run format -- --check=false --write=true",
-    "lint": "turbo run lint",
+    "format": "turbo run format --no-cache",
+    "format:ci": "turbo run format:ci --no-cache",
+    "lint": "turbo run lint --no-cache",
+    "lint:ci": "turbo run lint:ci --no-cache",
     "depcheck": "check-dependency-version-consistency",
-    "test": "turbo run test --concurrency 1 --",
+    "test": "turbo run test --no-cache",
     "test:e2e": "turbo run start --filter @rpch/e2e"
   },
   "devDependencies": {
     "@changesets/cli": "^2.26.2",
+    "@typescript-eslint/eslint-plugin": "^6.9.0",
+    "@typescript-eslint/parser": "^6.9.0",
     "check-dependency-version-consistency": "^3.0.3",
-    "turbo": "^1.6.3"
+    "eslint": "^8.52.0",
+    "eslint-config-prettier": "^9.0.0",
+    "prettier": "^3.0.3",
+    "turbo": "^1.6.3",
+    "typescript": "^5.2.2"
   },
   "engines": {
     "node": ">=18.0.0"
