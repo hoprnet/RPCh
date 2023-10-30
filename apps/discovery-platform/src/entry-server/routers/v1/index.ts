@@ -1,166 +1,152 @@
-const cors = require("cors");
-import express, { Request, Response } from "express";
-import passport from "passport";
-import session from "express-session";
-import { Pool } from "pg";
+import { Utils } from '@rpch/sdk';
+const cors = require('cors');
+import express, { Request, Response } from 'express';
+import passport from 'passport';
+import session from 'express-session';
+import { Pool } from 'pg';
 
 // import * as user from "./user";
-import * as client from "./client";
-import * as login from "./login";
-import * as node from "./node";
-import * as quota from "./quota";
+import * as client from './client';
+import * as login from './login';
+import * as node from './node';
+import * as quota from './quota';
 import {
-  //  body,
-  checkSchema,
-  //  header,
-  //  param,
-  matchedData,
-  query,
-  validationResult,
-} from "express-validator";
-import { createLogger } from "../../../utils";
-import { MetricManager } from "@rpch/common/build/internal/metric-manager";
-import * as middleware from "./middleware";
-import * as qNode from "./../../../node";
+    //  body,
+    checkSchema,
+    //  header,
+    //  param,
+    matchedData,
+    query,
+    validationResult,
+} from 'express-validator';
+import * as middleware from './middleware';
+import * as qNode from './../../../node';
 
-import type { Secrets } from "./../../../secrets";
+import type { Secrets } from './../../../secrets';
 
-const log = createLogger(["entry-server", "router"]);
+const log = Utils.logger(['discovery-platform', 'router']);
 
 // Express Router
-export const v1Router = (ops: {
-  dbPool: Pool;
-  metricManager: MetricManager;
-  secrets: Secrets;
-  url: string;
-}) => {
-  const loginState = login.create(ops.dbPool, ops.secrets, ops.url);
-  const router = express.Router();
+export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) => {
+    const loginState = login.create(ops.dbPool, ops.secrets, ops.url);
+    const router = express.Router();
 
-  router.use(
-    session({
-      secret: ops.secrets.sessionSecret,
-      cookie: { path: "/", secure: true, maxAge: undefined, sameSite: "none" },
-      resave: false,
-      saveUninitialized: false,
-      // cookie: { secure: false, maxAge: 60000 },
-    })
-  );
-  router.use(passport.initialize());
-  router.use(passport.session());
-  router.use(
-    cors({
-      origin: true,
-      credentials: true,
-    })
-  );
-  router.use(express.json());
+    router.use(
+        session({
+            secret: ops.secrets.sessionSecret,
+            cookie: { path: '/', secure: true, maxAge: undefined, sameSite: 'none' },
+            resave: false,
+            saveUninitialized: false,
+            // cookie: { secure: false, maxAge: 60000 },
+        })
+    );
+    router.use(passport.initialize());
+    router.use(passport.session());
+    router.use(
+        cors({
+            origin: true,
+            credentials: true,
+        })
+    );
+    router.use(express.json());
 
-  // log entry calls
-  router.use((req, _res, next) => {
-    const { method, path, params, body } = req;
-    log.verbose(`${method.toUpperCase()} ${path}`, {
-      params,
-      body,
+    // log entry calls
+    router.use((req, _res, next) => {
+        const { method, path, params, body } = req;
+        log.verbose(`${method.toUpperCase()} ${path}`, {
+            params,
+            body,
+        });
+        next();
     });
-    next();
-  });
 
-  router.get(
-    "/nodes/pairings",
-    middleware.clientAuthorized(ops.dbPool),
-    query("amount").default(10).isInt({ min: 1, max: 100 }),
-    query("since").optional().isISO8601(),
-    query("force_zero_hop").optional().toBoolean(),
-    getNodesPairings(ops.dbPool)
-  );
+    router.get(
+        '/nodes/pairings',
+        middleware.clientAuthorized(ops.dbPool),
+        query('amount').default(10).isInt({ min: 1, max: 100 }),
+        query('since').optional().isISO8601(),
+        query('force_zero_hop').optional().toBoolean(),
+        getNodesPairings(ops.dbPool)
+    );
 
-  router.post(
-    "/node/register",
-    middleware.adminAuthorized(ops.secrets.adminSecret),
-    checkSchema(node.createSchema),
-    middleware.validateStop,
-    node.create(ops.dbPool)
-  );
+    router.post(
+        '/node/register',
+        middleware.adminAuthorized(ops.secrets.adminSecret),
+        checkSchema(node.createSchema),
+        middleware.validateStop,
+        node.create(ops.dbPool)
+    );
 
-  ////
-  // quota
+    ////
+    // quota
 
-  router.post(
-    "/quota/request",
-    middleware.nodeAuthorized(ops.dbPool),
-    checkSchema(quota.schema),
-    middleware.validateStop,
-    quota.request(ops.dbPool)
-  );
+    router.post(
+        '/quota/request',
+        middleware.nodeAuthorized(ops.dbPool),
+        checkSchema(quota.schema),
+        middleware.validateStop,
+        quota.request(ops.dbPool)
+    );
 
-  router.post(
-    "/quota/response",
-    middleware.nodeAuthorized(ops.dbPool),
-    checkSchema(quota.schema),
-    middleware.validateStop,
-    quota.response(ops.dbPool)
-  );
+    router.post(
+        '/quota/response',
+        middleware.nodeAuthorized(ops.dbPool),
+        checkSchema(quota.schema),
+        middleware.validateStop,
+        quota.response(ops.dbPool)
+    );
 
-  ////
-  // authentication
-  router.post("/login/ethereum/challenge", login.challenge(loginState));
+    ////
+    // authentication
+    router.post('/login/ethereum/challenge', login.challenge(loginState));
 
-  router.post(
-    "/login/ethereum",
-    passport.authenticate("ethereum", { failureMessage: true }),
-    login.signin()
-  );
+    router.post(
+        '/login/ethereum',
+        passport.authenticate('ethereum', { failureMessage: true }),
+        login.signin()
+    );
 
-  router.get("/login/google", passport.authenticate("google"));
-  router.get(
-    "/oauth2/redirect/google",
-    passport.authenticate("google", {
-      failureRedirect: "/login/google",
-      failureMessage: true,
-    }),
-    function (req, res) {
-      res.redirect("/login/google");
-    }
-  );
+    router.get('/login/google', passport.authenticate('google'));
+    router.get(
+        '/oauth2/redirect/google',
+        passport.authenticate('google', {
+            failureRedirect: '/login/google',
+            failureMessage: true,
+        }),
+        function (req, res) {
+            res.redirect('/login/google');
+        }
+    );
 
-  ////
-  // clients
+    ////
+    // clients
 
-  router.get("/clients", middleware.userAuthorized(), client.index(ops.dbPool));
-  router.post(
-    "/clients",
-    middleware.userAuthorized(),
-    checkSchema(client.createSchema),
-    middleware.validateStop,
-    client.create(ops.dbPool)
-  );
-  router.get(
-    "/clients/:id",
-    middleware.userAuthorized(),
-    client.read(ops.dbPool)
-  );
-  router.patch(
-    "/clients/:id",
-    middleware.userAuthorized(),
-    checkSchema(client.updateSchema),
-    middleware.validateStop,
-    client.update(ops.dbPool)
-  );
-  router.put(
-    "/clients/:id",
-    middleware.userAuthorized(),
-    checkSchema(client.updateSchema),
-    middleware.validateStop,
-    client.update(ops.dbPool)
-  );
-  router.delete(
-    "/clients/:id",
-    middleware.userAuthorized(),
-    client.del(ops.dbPool)
-  );
+    router.get('/clients', middleware.userAuthorized(), client.index(ops.dbPool));
+    router.post(
+        '/clients',
+        middleware.userAuthorized(),
+        checkSchema(client.createSchema),
+        middleware.validateStop,
+        client.create(ops.dbPool)
+    );
+    router.get('/clients/:id', middleware.userAuthorized(), client.read(ops.dbPool));
+    router.patch(
+        '/clients/:id',
+        middleware.userAuthorized(),
+        checkSchema(client.updateSchema),
+        middleware.validateStop,
+        client.update(ops.dbPool)
+    );
+    router.put(
+        '/clients/:id',
+        middleware.userAuthorized(),
+        checkSchema(client.updateSchema),
+        middleware.validateStop,
+        client.update(ops.dbPool)
+    );
+    router.delete('/clients/:id', middleware.userAuthorized(), client.del(ops.dbPool));
 
-  /*
+    /*
   router.get(
     "/node",
     middleware.metric(requestDurationHistogram),
@@ -553,7 +539,7 @@ export const v1Router = (ops: {
   );
  */
 
-  /*
+    /*
   router.post(
     "/request/one-hop-delivery-routes",
     middleware.metric(requestDurationHistogram),
@@ -719,77 +705,73 @@ export const v1Router = (ops: {
   );
   */
 
-  return router;
+    return router;
 };
 
 function getNodesPairings(dbPool: Pool) {
-  return async function (req: Request, res: Response) {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json(errors.mapped());
-    }
-
-    const data = matchedData(req);
-    const forceZeroHop = !!data.force_zero_hop;
-    qNode
-      .listPairings(dbPool, data.amount, data.since, forceZeroHop)
-      .then((qPairings) => {
-        if (qPairings.length === 0) {
-          // table is empty
-          return res.status(204).end();
+    return async function (req: Request, res: Response) {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json(errors.mapped());
         }
 
-        // collect pairings by entry node
-        const pairings = qPairings.reduce<Map<string, Set<string>>>(
-          (acc, { entryId, exitId }) => {
-            const v = acc.get(entryId);
-            if (v) {
-              v.add(exitId);
-              return acc;
-            }
-            acc.set(entryId, new Set([exitId]));
-            return acc;
-          },
-          new Map()
-        );
+        const data = matchedData(req);
+        const forceZeroHop = !!data.force_zero_hop;
+        qNode
+            .listPairings(dbPool, data.amount, data.since, forceZeroHop)
+            .then((qPairings) => {
+                if (qPairings.length === 0) {
+                    // table is empty
+                    return res.status(204).end();
+                }
 
-        // query entry and exit nodes
-        const qEntryNodes = qNode.listEntryNodes(dbPool, pairings.keys());
-        const exitIds = Array.from(pairings.values()).reduce((acc, xIds) => {
-          for (const xId of xIds) {
-            acc.add(xId);
-          }
-          return acc;
-        }, new Set());
-        const qExitNodes = qNode.listExitNodes(dbPool, exitIds);
+                // collect pairings by entry node
+                const pairings = qPairings.reduce<Map<string, Set<string>>>(
+                    (acc, { entryId, exitId }) => {
+                        const v = acc.get(entryId);
+                        if (v) {
+                            v.add(exitId);
+                            return acc;
+                        }
+                        acc.set(entryId, new Set([exitId]));
+                        return acc;
+                    },
+                    new Map()
+                );
 
-        // wait for entry and exit nodes query results
-        Promise.all([qEntryNodes, qExitNodes])
-          .then(([qEntries, qExits]) => {
-            const matchedAt = qPairings[0].createdAt;
-            const entryNodes = qEntries.map((e) => ({
-              ...e,
-              recommendedExits: Array.from(pairings.get(e.id)!),
-            }));
-            return res
-              .status(200)
-              .json({ entryNodes, exitNodes: qExits, matchedAt });
-          })
-          .catch((ex) => {
-            log.error("Error during read registered_nodes queries", ex);
-            const reason = "Error querying database";
-            return res.status(500).json({ reason });
-          });
-      })
-      .catch((ex) => {
-        log.error(
-          `Error during read ${
-            forceZeroHop ? "zero" : "one"
-          }_hop_pairings query`,
-          ex
-        );
-        const reason = "Error querying database";
-        return res.status(500).json({ reason });
-      });
-  };
+                // query entry and exit nodes
+                const qEntryNodes = qNode.listEntryNodes(dbPool, pairings.keys());
+                const exitIds = Array.from(pairings.values()).reduce((acc, xIds) => {
+                    for (const xId of xIds) {
+                        acc.add(xId);
+                    }
+                    return acc;
+                }, new Set());
+                const qExitNodes = qNode.listExitNodes(dbPool, exitIds);
+
+                // wait for entry and exit nodes query results
+                Promise.all([qEntryNodes, qExitNodes])
+                    .then(([qEntries, qExits]) => {
+                        const matchedAt = qPairings[0].createdAt;
+                        const entryNodes = qEntries.map((e) => ({
+                            ...e,
+                            recommendedExits: Array.from(pairings.get(e.id)!),
+                        }));
+                        return res.status(200).json({ entryNodes, exitNodes: qExits, matchedAt });
+                    })
+                    .catch((ex) => {
+                        log.error('Error during read registered_nodes queries', ex);
+                        const reason = 'Error querying database';
+                        return res.status(500).json({ reason });
+                    });
+            })
+            .catch((ex) => {
+                log.error(
+                    `Error during read ${forceZeroHop ? 'zero' : 'one'}_hop_pairings query`,
+                    ex
+                );
+                const reason = 'Error querying database';
+                return res.status(500).json({ reason });
+            });
+    };
 }
