@@ -1,7 +1,7 @@
 module.exports = {
     env: {
         browser: true,
-        es2016: true,
+        es2018: true,
     },
     extends: [
         'eslint:recommended',

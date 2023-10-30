@@ -20,6 +20,8 @@ export function isValidURL(url: string) {
         return URL.canParse(url);
     }
     try {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
         new URL(url);
         return true;
     } catch (_ex) {
