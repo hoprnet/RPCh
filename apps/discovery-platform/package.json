@@ -32,5 +32,9 @@
         "passport-ethereum-siwe-2": "^0.1.2",
         "passport-google-oidc": "^0.1.0",
         "pg": "^8.11.3"
+    },
+    "devDependencies": {
+        "@types/compression": "^1.7.4",
+        "@types/cors": "^2.8.15"
     }
 }

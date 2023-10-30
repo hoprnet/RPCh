@@ -1,6 +1,4 @@
 import { Utils } from '@rpch/sdk';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
 import cors = require('cors');
 import express, { Request, Response } from 'express';
 import passport from 'passport';
