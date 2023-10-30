@@ -50,11 +50,11 @@ jobs:
           TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
           TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
-      - name: Review formatting
-        run: yarn format
-
       - name: Review linting
         run: yarn lint
+
+      - name: Review formatting
+        run: yarn format
 
       - name: Review dependencies
         run: yarn depcheck
