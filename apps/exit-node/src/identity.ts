@@ -1,14 +1,13 @@
-import crypto from "crypto";
-import fs from "fs";
-import { Wallet, utils as ethersUtils } from "ethers";
-import { ALGORITHM } from "./constants";
+import crypto from 'crypto';
+import fs from 'fs';
+import { Wallet, utils as ethersUtils } from 'ethers';
 
 const generateIv = () => crypto.randomBytes(16);
-const getSalt = (str: string): Buffer => crypto.scryptSync(str, "salt", 24);
+const getSalt = (str: string): Buffer => crypto.scryptSync(str, 'salt', 24);
 
 export type ID = {
-  privateKey: string;
-  publicKey: string;
+    privateKey: string;
+    publicKey: string;
 };
 
 /**
@@ -16,7 +15,7 @@ export type ID = {
  * @returns random private key
  */
 export const createPrivateKey = async (): Promise<Uint8Array> => {
-  return ethersUtils.arrayify(Wallet.createRandom().privateKey);
+    return ethersUtils.arrayify(Wallet.createRandom().privateKey);
 };
 
 /**
@@ -27,18 +26,18 @@ export const createPrivateKey = async (): Promise<Uint8Array> => {
  * @returns a Uint8Array of [iv, encryptedPrivateKey]
  */
 export const storePrivateKey = async (
-  privateKey: Uint8Array,
-  password: string,
-  file: string
+    privateKey: Uint8Array,
+    password: string,
+    file: string,
 ): Promise<Uint8Array> => {
-  const key = getSalt(password);
-  const iv = generateIv();
-  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
-  const encrypted = Buffer.concat([cipher.update(privateKey), cipher.final()]);
-  // include IV into file
-  const result = Buffer.concat([iv, encrypted]);
-  await fs.promises.writeFile(file, result, "hex");
-  return Uint8Array.from(result);
+    const key = getSalt(password);
+    const iv = generateIv();
+    const cipher = crypto.createCipheriv('aes-192-cbc', key, iv);
+    const encrypted = Buffer.concat([cipher.update(privateKey), cipher.final()]);
+    // include IV into file
+    const result = Buffer.concat([iv, encrypted]);
+    await fs.promises.writeFile(file, result, 'hex');
+    return Uint8Array.from(result);
 };
 
 /**
@@ -48,33 +47,27 @@ export const storePrivateKey = async (
  * @returns
  */
 export const loadPrivateKey = async (
-  password: string,
-  file: string
+    password: string,
+    file: string,
 ): Promise<Uint8Array | undefined> => {
-  let blob: Buffer;
-  try {
-    blob = await fs.promises.readFile(file);
-  } catch (error: any) {
-    if (error.code === "ENOENT") {
-      return undefined;
-    } else {
-      throw error;
+    let blob: Buffer;
+    try {
+        blob = await fs.promises.readFile(file);
+    } catch (error: any) {
+        if (error.code === 'ENOENT') {
+            return undefined;
+        } else {
+            throw error;
+        }
     }
-  }
 
-  const key = getSalt(password);
-  // split IV and encrypted content
-  const [iv, encrypted] = [
-    blob.subarray(0, 16),
-    blob.subarray(16, blob.byteLength),
-  ];
-  const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
-  const decrypted = Buffer.concat([
-    decipher.update(encrypted),
-    decipher.final(),
-  ]);
+    const key = getSalt(password);
+    // split IV and encrypted content
+    const [iv, encrypted] = [blob.subarray(0, 16), blob.subarray(16, blob.byteLength)];
+    const decipher = crypto.createDecipheriv('aes-192-cbc', key, iv);
+    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
 
-  return Uint8Array.from(decrypted);
+    return Uint8Array.from(decrypted);
 };
 
 /**
@@ -83,32 +76,32 @@ export const loadPrivateKey = async (
  * @returns Identity
  */
 export const getIdentity = async ({
-  identityFile,
-  privateKey,
-  password,
+    identityFile,
+    privateKey,
+    password,
 }: {
-  privateKey?: Uint8Array;
-  identityFile: string;
-  password?: string;
+    privateKey?: Uint8Array;
+    identityFile: string;
+    password?: string;
 }): Promise<ID> => {
-  if (!privateKey && !password) {
-    throw Error("Should provide 'privateKey' or 'password'");
-  } else if (!privateKey && password) {
-    // search for private key in storage
-    privateKey = await loadPrivateKey(password, identityFile);
-    if (!privateKey) {
-      // if not found create a new one
-      privateKey = await createPrivateKey();
-      // store it in storage
-      await storePrivateKey(privateKey, password, identityFile);
+    if (!privateKey && !password) {
+        throw Error("Should provide 'privateKey' or 'password'");
+    } else if (!privateKey && password) {
+        // search for private key in storage
+        privateKey = await loadPrivateKey(password, identityFile);
+        if (!privateKey) {
+            // if not found create a new one
+            privateKey = await createPrivateKey();
+            // store it in storage
+            await storePrivateKey(privateKey, password, identityFile);
+        }
     }
-  }
 
-  const wallet = new Wallet(privateKey!);
-  const publicKey = ethersUtils.computePublicKey(wallet.publicKey, true);
+    const wallet = new Wallet(privateKey!);
+    const publicKey = ethersUtils.computePublicKey(wallet.publicKey, true);
 
-  return {
-    privateKey: wallet.privateKey,
-    publicKey,
-  };
+    return {
+        privateKey: wallet.privateKey,
+        publicKey,
+    };
 };
