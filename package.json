@@ -12,12 +12,12 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
-    "format": "turbo run format",
-    "format:ci": "turbo run format:ci",
-    "lint": "turbo run lint",
-    "lint:ci": "turbo run lint:ci",
-    "depcheck": "check-dependency-version-consistency",
-    "test": "turbo run test",
+    "format": "turbo run format --no-cache",
+    "format:ci": "turbo run format:ci --no-cache",
+    "lint": "turbo run lint --no-cache",
+    "lint:ci": "turbo run lint:ci --no-cache",
+    "depcheck": "check-dependency-version-consistency --no-cache",
+    "test": "turbo run test --no-cache",
     "test:e2e": "turbo run start --filter @rpch/e2e"
   },
   "devDependencies": {
