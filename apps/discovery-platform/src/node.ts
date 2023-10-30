@@ -108,7 +108,7 @@ export function createNode(dbPool: Pool, node: Node) {
     ];
     if (node.isExitNode) {
         cols.push('exit_node_pub_key');
-        vals.push(node.exitNodePubKey!);
+        vals.push(node.exitNodePubKey as string);
     }
     const valIdxs = vals.map((_e, idx) => `$${idx + 1}`);
     const q = [

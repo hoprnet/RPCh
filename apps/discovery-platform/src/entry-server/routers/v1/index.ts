@@ -1,5 +1,7 @@
 import { Utils } from '@rpch/sdk';
-const cors = require('cors');
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import cors = require('cors');
 import express, { Request, Response } from 'express';
 import passport from 'passport';
 import session from 'express-session';
@@ -755,7 +757,7 @@ function getNodesPairings(dbPool: Pool) {
                         const matchedAt = qPairings[0].createdAt;
                         const entryNodes = qEntries.map((e) => ({
                             ...e,
-                            recommendedExits: Array.from(pairings.get(e.id)!),
+                            recommendedExits: Array.from(pairings.get(e.id) as Set<string>),
                         }));
                         return res.status(200).json({ entryNodes, exitNodes: qExits, matchedAt });
                     })

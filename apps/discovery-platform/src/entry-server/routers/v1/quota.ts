@@ -37,7 +37,7 @@ export function request(dbPool: Pool) {
     return async function (req: Request & { nodeId?: string }, res: Response) {
         validate(dbPool, req, res).then((clientId) => {
             quota
-                .createRequest(dbPool, req.nodeId!, clientId, req.body)
+                .createRequest(dbPool, req.nodeId as string, clientId, req.body)
                 .then(() => {
                     res.status(204).end();
                 })
@@ -53,7 +53,7 @@ export function response(dbPool: Pool) {
     return async function (req: Request & { nodeId?: string }, res: Response) {
         validate(dbPool, req, res).then((clientId) => {
             quota
-                .createResponse(dbPool, req.nodeId!, clientId, req.body)
+                .createResponse(dbPool, req.nodeId as string, clientId, req.body)
                 .then(() => {
                     res.status(204).end();
                 })

@@ -1,6 +1,8 @@
 import { Utils } from '@rpch/sdk';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import EthereumStrategy, { SessionNonceStore } from 'passport-ethereum-siwe-2';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import GoogleStrategy from 'passport-google-oidc';
 import passport from 'passport';
@@ -20,7 +22,7 @@ const log = Utils.logger(['discovery-platform', 'router', 'login']);
 
 const chainId = 'eip155:1';
 
-type VerifyCb = (err?: Error, user?: q.User | false) => {};
+type VerifyCb = (err?: Error, user?: q.User | false) => void;
 
 export function create(dbPool: Pool, secrets: Secrets, url: string): Login {
     const store = new SessionNonceStore();
