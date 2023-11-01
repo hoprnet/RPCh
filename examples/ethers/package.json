@@ -1,0 +1,21 @@
+{
+  "name": "@rpch/ethers",
+  "version": "0.0.1",
+  "license": "LGPL-3.0",
+  "main": "./build/index.js",
+  "types": "./build/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "dev": "yarn build --watch",
+    "format": "prettier --check \"src/**/*.{ts,md}\"",
+    "lint": "eslint \"src/**/*.ts*\""
+  },
+  "dependencies": {
+    "ethers": "^6.8.0",
+    "@rpch/sdk": "*"
+  },
+  "browserslist": [
+    "defaults",
+    "not op_mini all"
+  ]
+}
