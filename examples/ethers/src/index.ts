@@ -1,6 +1,7 @@
 import HoprSDK, { JRPC } from '@rpch/sdk';
 import { JsonRpcProvider, JsonRpcPayload, JsonRpcResult } from 'ethers';
-
+import dotenv from 'dotenv';
+dotenv.config();
 /**
  * The RPCh ethers adapter is an extension of the original
  *  JsonRpcProvider which allows clients to use drop-in and replace,
@@ -74,7 +75,7 @@ export class RPChProvider extends JsonRpcProvider {
 async function example() {
     // this client secret can be found in your dashboard
     const sdk = new HoprSDK(process.env.CLIENT_SECRET!, { forceZeroHop: true });
-    const provider = new RPChProvider('https://gnosis.drpc.org', sdk);
+    const provider = new RPChProvider('https://ethereum-provider.rpch.tech', sdk);
     const response = await provider.send('eth_blockNumber', []);
     return response;
 }
