@@ -7,10 +7,7 @@ import { JsonRpcProvider, JsonRpcPayload, JsonRpcResult } from 'ethers';
  * so they can send their RPC requests through the RPCh network.
  */
 export class RPChProvider extends JsonRpcProvider {
-    constructor(
-        public readonly url: string,
-        public readonly sdk: HoprSDK,
-    ) {
+    constructor(public readonly url: string, public readonly sdk: HoprSDK) {
         super(url);
     }
 
@@ -70,3 +67,18 @@ export class RPChProvider extends JsonRpcProvider {
         };
     }
 }
+
+/**
+ * Example of how to use RPChProvider
+ */
+async function example() {
+    // this client secret can be found in your dashboard
+    const sdk = new HoprSDK(process.env.CLIENT_SECRET!, { forceZeroHop: true });
+    const provider = new RPChProvider('https://gnosis.drpc.org', sdk);
+    const response = await provider.send('eth_blockNumber', []);
+    return response;
+}
+
+example()
+    .then((res) => console.log(res))
+    .catch((err) => console.error(err));
