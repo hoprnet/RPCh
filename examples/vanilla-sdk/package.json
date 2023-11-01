@@ -5,8 +5,7 @@
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
   "scripts": {
-    "build": "tsup",
-    "dev": "yarn build --watch",
+    "dev": "ts-node ./src/index.ts",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "eslint \"src/**/*.ts*\""
   },
@@ -19,6 +18,7 @@
     "not op_mini all"
   ],
   "devDependencies": {
-    "@types/dotenv": "^8.2.0"
+    "@types/dotenv": "^8.2.0",
+    "ts-node": "^10.9.1"
   }
 }
