@@ -2,7 +2,7 @@
 
 The `examples/` directory is a growing & living folder, and open for contributions.
 
-Each example has its own isolated [StackBlitz](https://new.viem.sh) project, so folks can easily play around with the example.
+Each example has its own isolated StackBlitz project, so folks can easily play around with the example.
 
 The below list is not exhaustive, and is a work in progress.
 
