@@ -1,13 +1,13 @@
-import HoprSDK from '@rpch/sdk';
+import SDK from '@rpch/sdk';
 import dotenv from 'dotenv';
 dotenv.config();
 
 /**
- * Example of how to use HoprSDK
+ * Example of how to use SDK
  */
 async function example() {
     // this client secret can be found in your dashboard
-    const sdk = new HoprSDK(process.env.CLIENT_SECRET!, { forceZeroHop: true });
+    const sdk = new SDK(process.env.CLIENT_SECRET!, { forceZeroHop: true });
 
     const response = await sdk.send(
         {

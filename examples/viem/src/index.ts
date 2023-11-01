@@ -1,10 +1,10 @@
-import HoprSDK, { JRPC } from '@rpch/sdk';
-import { createClient, custom, publicActions } from 'viem';
-import { mainnet } from 'viem/chains';
+import SDK, { JRPC } from '@rpch/sdk';
 import dotenv from 'dotenv';
+import { PublicClient, createClient, custom, publicActions } from 'viem';
+import { mainnet } from 'viem/chains';
 dotenv.config();
 
-const sdk = new HoprSDK(process.env.CLIENT_SECRET!, { forceZeroHop: true });
+const sdk = new SDK(process.env.CLIENT_SECRET!, { forceZeroHop: true });
 
 async function sendRpchRequest({
     method,
@@ -13,7 +13,7 @@ async function sendRpchRequest({
 }: {
     method: string;
     params?: object | any[] | undefined;
-    sdk: HoprSDK;
+    sdk: SDK;
 }): Promise<JRPC.Result> {
     console.log(method, params, sdk);
     const req: JRPC.Request = {
@@ -33,7 +33,7 @@ async function sendRpchRequest({
     return responseJson.result;
 }
 
-function publicRPChClient() {
+function publicRPChClient(): PublicClient {
     return createClient({
         chain: mainnet,
         transport: custom({
