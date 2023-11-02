@@ -1,4 +1,4 @@
-import SDK, { JRPC } from '@rpch/sdk';
+import SDK from '@rpch/sdk';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -22,11 +22,7 @@ async function example() {
 
     const responseJSON = await response.json();
 
-    if (JRPC.isError(responseJSON)) {
-        throw new Error(responseJSON.error.message);
-    }
-
-    return responseJSON.result;
+    return responseJSON;
 }
 
 async function main() {

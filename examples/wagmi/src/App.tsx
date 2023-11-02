@@ -1,4 +1,4 @@
-import SDK, { JRPC } from "@rpch/sdk";
+import SDK from "@rpch/sdk";
 import {
   Chain,
   PublicClient,
@@ -13,38 +13,6 @@ import { CLIENT_SECRET } from "./config";
 
 const sdk = new SDK(CLIENT_SECRET, { forceZeroHop: true });
 
-async function sendRpchRequest({
-  method,
-  sdk,
-  params,
-}: {
-  method: string;
-  params?: object | unknown[] | undefined;
-  sdk: SDK;
-}): Promise<JRPC.Result> {
-  console.log(method, params);
-
-  const req: JRPC.Request = {
-    jsonrpc: "2.0",
-    method: method,
-    params: params,
-  };
-
-  const rpchResponse = await sdk.send(req);
-
-  console.log("rpchResponse", rpchResponse);
-
-  const responseJson = await rpchResponse.json();
-
-  if (JRPC.isError(responseJson)) {
-    throw new Error(responseJson.error.message);
-  }
-
-  console.log("result", responseJson.result);
-
-  return responseJson.result;
-}
-
 function publicRPChClient(): PublicClient<Transport, Chain> {
   return createClient({
     chain: mainnet,
@@ -56,8 +24,9 @@ function publicRPChClient(): PublicClient<Transport, Chain> {
       {
         async request({ method, params }) {
           try {
-            const response = await sendRpchRequest({ method, sdk, params });
-            return response;
+            const response = await sdk.send({ method, params, jsonrpc: "2.0" });
+            const responseJson = await response.json();
+            return responseJson;
           } catch (e) {
             console.log(e);
           }

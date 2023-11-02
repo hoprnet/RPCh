@@ -30,7 +30,17 @@ export class RPChProvider extends JsonRpcProvider {
     async _send(payload: JsonRpcPayload | Array<JsonRpcPayload>): Promise<Array<JsonRpcResult>> {
         try {
             const payloads = Array.isArray(payload) ? payload : [payload];
-            return await Promise.all(payloads.map((payload) => this.sendRpchRequest(payload)));
+            const responses = await Promise.all(
+                payloads.map(async (payload) => (await this.sdk.send(payload)).json()),
+            );
+            // responses need to have a response property
+            // and the id needs to be a number to meet the type
+            // requirements for JsonRpcResult
+            return responses.map((res) => ({
+                ...res,
+                id: Number(res.id),
+                result: JRPC.isError(res) ? res.error : res.result,
+            }));
         } catch (error) {
             console.log(error);
             this.emit('debug', {
@@ -41,34 +51,6 @@ export class RPChProvider extends JsonRpcProvider {
 
             throw error;
         }
-    }
-
-    /**
-     * helper function that receives a payload and returns a result
-     * that is compatible with JsonRpcProvider
-     */
-    async sendRpchRequest(reqPayload: JsonRpcPayload): Promise<JsonRpcResult> {
-        const req: JRPC.Request = {
-            jsonrpc: '2.0',
-            method: reqPayload.method,
-            params: reqPayload.params,
-            id: reqPayload.id,
-        };
-
-        const rpchResponse = await this.sdk.send(req, {
-            provider: this.url,
-        });
-
-        const responseJson = await rpchResponse.json();
-
-        if (JRPC.isError(responseJson)) {
-            throw new Error(responseJson.error.message);
-        }
-
-        return {
-            id: Number(responseJson.id),
-            result: responseJson.result,
-        };
     }
 }
 
