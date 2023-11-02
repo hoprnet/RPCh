@@ -36,6 +36,7 @@
     "dependencies": {
         "@rpch/compat-crypto": "*",
         "async-retry": "^1.3.3",
+        "debug": "^4.3.4",
         "ethers": "^5.7.2",
         "isomorphic-ws": "^5.0.0",
         "lz-string": "^1.5.0"
