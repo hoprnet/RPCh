@@ -16,10 +16,6 @@ const sdk = new SDK(CLIENT_SECRET, { forceZeroHop: true });
 function publicRPChClient(): PublicClient<Transport, Chain> {
   return createClient({
     chain: mainnet,
-    batch: {
-      multicall: true,
-    },
-    pollingInterval: 30_000,
     transport: custom(
       {
         async request({ method, params }) {
