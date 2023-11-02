@@ -8,7 +8,10 @@ dotenv.config();
  * so they can send their RPC requests through the RPCh network.
  */
 export class RPChProvider extends JsonRpcProvider {
-    constructor(public readonly url: string, public readonly sdk: SDK) {
+    constructor(
+        public readonly url: string,
+        public readonly sdk: SDK,
+    ) {
         super(url);
     }
 
@@ -74,7 +77,7 @@ export class RPChProvider extends JsonRpcProvider {
  */
 async function example() {
     // this client secret can be found in your dashboard
-    const sdk = new SDK(process.env.CLIENT_SECRET!, { forceZeroHop: true });
+    const sdk = new SDK(process.env.CLIENT_SECRET!);
     const provider = new RPChProvider('https://ethereum-provider.rpch.tech', sdk);
     const response = await provider.send('eth_blockNumber', []);
     return response;

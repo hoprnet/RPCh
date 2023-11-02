@@ -4,7 +4,7 @@ import { PublicClient, createClient, custom, publicActions } from 'viem';
 import { mainnet } from 'viem/chains';
 dotenv.config();
 
-const sdk = new SDK(process.env.CLIENT_SECRET!, { forceZeroHop: true });
+const sdk = new SDK(process.env.CLIENT_SECRET!);
 
 async function sendRpchRequest({
     method,

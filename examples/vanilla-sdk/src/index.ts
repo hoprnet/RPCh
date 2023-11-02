@@ -1,4 +1,4 @@
-import SDK from '@rpch/sdk';
+import SDK, { JRPC } from '@rpch/sdk';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -7,7 +7,7 @@ dotenv.config();
  */
 async function example() {
     // this client secret can be found in your dashboard
-    const sdk = new SDK(process.env.CLIENT_SECRET!, { forceZeroHop: true });
+    const sdk = new SDK(process.env.CLIENT_SECRET!);
 
     const response = await sdk.send(
         {
@@ -20,9 +20,22 @@ async function example() {
         },
     );
 
-    return response;
+    const responseJSON = await response.json();
+
+    if (JRPC.isError(responseJSON)) {
+        throw new Error(responseJSON.error.message);
+    }
+
+    return responseJSON.result;
 }
 
-example()
-    .then((res) => console.log(res))
-    .catch((err) => console.error(err));
+async function main() {
+    try {
+        const response = await example();
+        console.log(response);
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+main();
