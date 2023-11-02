@@ -9,7 +9,7 @@ export default function Profile() {
     connector: new InjectedConnector(),
   })
   const { disconnect } = useDisconnect()
-
+  console.log({ block })
   if (isConnected)
     return (
       <div>
