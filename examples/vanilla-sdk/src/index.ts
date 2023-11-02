@@ -6,7 +6,7 @@ dotenv.config();
  * Example of how to use SDK
  */
 async function example() {
-    // this client secret can be found in your dashboard
+    // This client secret can be found in your dashboard
     const sdk = new SDK(process.env.CLIENT_SECRET!);
 
     const response = await sdk.send(

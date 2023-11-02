@@ -58,7 +58,7 @@ export class RPChProvider extends JsonRpcProvider {
  * Example of how to use RPChProvider
  */
 async function example() {
-    // this client secret can be found in your dashboard
+    // This client secret can be found in your dashboard
     const sdk = new SDK(process.env.CLIENT_SECRET!);
     const provider = new RPChProvider('https://ethereum-provider.rpch.tech', sdk);
     const response = await provider.send('eth_blockNumber', []);

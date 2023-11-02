@@ -4,6 +4,7 @@ import { PublicClient, createClient, custom, publicActions } from 'viem';
 import { mainnet } from 'viem/chains';
 dotenv.config();
 
+// This client secret can be found in your dashboard
 const sdk = new SDK(process.env.CLIENT_SECRET!);
 
 function publicRPChClient(): PublicClient {
