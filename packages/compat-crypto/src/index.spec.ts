@@ -1,4 +1,4 @@
-import assert from 'assert';
+import assert = require('assert');
 import { isError, boxRequest, boxResponse, Session, unboxRequest, unboxResponse } from './index';
 import { randomBytes } from 'crypto';
 

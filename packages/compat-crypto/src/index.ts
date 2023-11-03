@@ -253,7 +253,10 @@ export function unboxRequest(
         };
     }
 
-    const counterArr = message.slice(1 + PUBLIC_KEY_SIZE_ENCODED, 1 + PUBLIC_KEY_SIZE_ENCODED + 8);
+    const counterArr = message.slice(
+        1 + PUBLIC_KEY_SIZE_ENCODED,
+        1 + PUBLIC_KEY_SIZE_ENCODED + COUNTER_LEN,
+    );
     const counter = uint8BEtoBigint(counterArr);
 
     let cipher;
@@ -372,7 +375,7 @@ export function unboxResponse(
         };
     }
 
-    const counterArr = message.slice(0, 8);
+    const counterArr = message.slice(0, COUNTER_LEN);
     const counter = uint8BEtoBigint(counterArr);
 
     let cipher;
