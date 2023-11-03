@@ -1,4 +1,4 @@
-import WS = require('isomorphic-ws');
+import WebSocket = require('isomorphic-ws');
 
 /**
  * to be replaced with HOPR sdk soon.
@@ -48,11 +48,11 @@ export type Channels = {
     outgoing: [];
 };
 
-export function connectWS(conn: ConnInfo): WS.WebSocket {
+export function connectWS(conn: ConnInfo): WebSocket {
     const wsURL = new URL('/api/v3/messages/websocket', conn.apiEndpoint);
     wsURL.protocol = conn.apiEndpoint.protocol === 'https:' ? 'wss:' : 'ws:';
     wsURL.search = `?apiToken=${conn.accessToken}`;
-    return new WS.WebSocket(wsURL);
+    return new WebSocket(wsURL);
 }
 
 export function sendMessage(

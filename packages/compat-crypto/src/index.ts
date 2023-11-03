@@ -1,11 +1,8 @@
 import * as hkdf from '@noble/hashes/hkdf';
-import { secp256k1 } from '@noble/curves/secp256k1';
-
+import { Input, randomBytes, toBytes } from '@noble/hashes/utils';
 import { blake2s } from '@noble/hashes/blake2s';
 import { chacha20poly1305 } from '@noble/ciphers/chacha';
-import { Input, toBytes } from "@noble/hashes/utils";
-
-import { randomBytes } from 'crypto';
+import { secp256k1 } from '@noble/curves/secp256k1';
 
 /// Represents a request-response session.
 export type Session = {
@@ -48,11 +45,33 @@ const BLAKE2S_LEN = 32;
 const REQUEST_TAG = 'req';
 const RESPONSE_TAG = 'resp';
 
+function bigintToUint8BE(nr: bigint): Uint8Array {
+    const result = new Uint8Array(8); // 8 bytes for a 64-bit BigInt
+
+    for (let i = 7; i >= 0; i--) {
+        result[i] = Number(nr & 0xffn); // Masking with 0xFFn to get the least significant byte
+        nr = nr >> 8n; // Shift right by 8 bits to get the next byte
+    }
+
+    return result;
+}
+
+function uint8BEtoBigint(arr: Uint8Array): bigint {
+    let result = 0n;
+
+    for (let i = 0; i < arr.length; i++) {
+        result = (result << 8n) | BigInt(arr[i]);
+    }
+
+    return result;
+}
+
 function wrapBlake2s256() {
     const blakeOpts = { dkLen: BLAKE2S_LEN };
-    const tmp = blake2s.create(blakeOpts)
+    const tmp = blake2s.create(blakeOpts);
 
-    const hashC = (msg: Input): Uint8Array => blake2s.create(blakeOpts).update(toBytes(msg)).digest();
+    const hashC = (msg: Input): Uint8Array =>
+        blake2s.create(blakeOpts).update(toBytes(msg)).digest();
     hashC.outputLen = tmp.outputLen;
     hashC.blockLen = tmp.blockLen;
     hashC.create = () => blake2s.create(blakeOpts);
@@ -69,31 +88,31 @@ function initializeCipher(
     const saltTag = request ? REQUEST_TAG : RESPONSE_TAG;
 
     // Construct salt for the HKDF
-    const salt = Buffer.alloc(1 + peerId.length + saltTag.length);
-    salt.writeUint8(RPCH_CRYPTO_VERSION);
-    salt.write(peerId, 1); // utf8 encoded
-    salt.write(saltTag, peerId.length + 1);
-
+    const textEnc = new TextEncoder();
+    const salt = new Uint8Array(1 + peerId.length + saltTag.length);
+    salt[0] = RPCH_CRYPTO_VERSION;
+    salt.set(textEnc.encode(peerId), 1);
+    salt.set(textEnc.encode(saltTag), peerId.length + 1);
 
     // Generate key material for expansion
-    const prk = hkdf.extract(wrapBlake2s256(), Buffer.from(sharedPreSecret), Buffer.from(salt));
+    const prk = hkdf.extract(wrapBlake2s256(), sharedPreSecret, salt);
 
     const cipherKeyLen = CIPHER_KEY_LEN;
     const idx = new Uint8Array(1);
 
     // First key material expansion for symmetric key
     idx[0] = startIndex;
-    const key = hkdf.expand(wrapBlake2s256(), prk, Buffer.from(idx), cipherKeyLen);
+    const key = hkdf.expand(wrapBlake2s256(), prk, idx, cipherKeyLen);
 
     // Second key material expansion for IV prefix
     idx[0] = startIndex + 1;
     const prefixLen = CIPHER_IV_LEN - COUNTER_LEN;
-    const iv_prefix = Buffer.from(hkdf.expand(wrapBlake2s256(), prk, Buffer.from(idx), prefixLen));
+    const iv_prefix = hkdf.expand(wrapBlake2s256(), prk, idx, prefixLen);
 
     // Concatenate the prefix with the counter to form the IV
-    const iv = Buffer.alloc(CIPHER_IV_LEN);
-    iv_prefix.copy(iv);
-    iv.writeBigUint64BE(counter, prefixLen);
+    const iv = new Uint8Array(CIPHER_IV_LEN);
+    iv.set(iv_prefix, 0);
+    iv.set(bigintToUint8BE(counter), prefixLen);
 
     // Initialize Chacha20 with Poly1305
     return chacha20poly1305(key, iv);
@@ -102,7 +121,7 @@ function initializeCipher(
 /// Generates a random secp256k1 keypair
 function generateEphemeralKey(randomFn: (len: number) => Uint8Array) {
     const privKey = randomFn(32);
-    const pubKey = secp256k1.getPublicKey(privKey)
+    const pubKey = secp256k1.getPublicKey(privKey);
     if (pubKey.length !== PUBLIC_KEY_SIZE_ENCODED) {
         throw new Error('key size mismatch');
     }
@@ -168,19 +187,17 @@ export function boxRequest(
         };
     }
 
-    const counterBuf = Buffer.alloc(COUNTER_LEN);
-    counterBuf.writeBigUint64BE(newCounter);
-
-    const versionBuf = Buffer.alloc(1);
-    versionBuf.writeUint8(RPCH_CRYPTO_VERSION);
+    const counterBuf = bigintToUint8BE(newCounter);
+    const versionBuf = new Uint8Array([RPCH_CRYPTO_VERSION]);
 
     // V,W,C,R,T
-    const result = Buffer.concat([
-        versionBuf,
-        ephemeralKey.pubKey,
-        counterBuf,
-        Buffer.from(cipherText),
-    ]);
+    const result = new Uint8Array(
+        versionBuf.length + ephemeralKey.pubKey.length + counterBuf.length + cipherText.length,
+    );
+    result.set(versionBuf, 0);
+    result.set(ephemeralKey.pubKey, versionBuf.length);
+    result.set(counterBuf, versionBuf.length + ephemeralKey.pubKey.length);
+    result.set(cipherText, versionBuf.length + ephemeralKey.pubKey.length + counterBuf.length);
 
     return {
         res: ResState.Ok,
@@ -237,7 +254,11 @@ export function unboxRequest(
         };
     }
 
-    const counter = Buffer.from(message).readBigUint64BE(1 + PUBLIC_KEY_SIZE_ENCODED);
+    const counterArr = message.slice(
+        1 + PUBLIC_KEY_SIZE_ENCODED,
+        1 + PUBLIC_KEY_SIZE_ENCODED + COUNTER_LEN,
+    );
+    const counter = uint8BEtoBigint(counterArr);
 
     let cipher;
     try {
@@ -316,15 +337,13 @@ export function boxResponse(
         };
     }
 
-    const counterBuf = Buffer.alloc(COUNTER_LEN);
-    counterBuf.writeBigUint64BE(newCounter);
-
-    const versionBuf = Buffer.alloc(1);
-    versionBuf.writeUint8(RPCH_CRYPTO_VERSION);
+    const counterBuf = bigintToUint8BE(newCounter);
 
     // C,R,T
-    const result = Buffer.concat([counterBuf, Buffer.from(cipherText)]);
-    session.response = new Uint8Array(result);
+    const result = new Uint8Array(counterBuf.length + cipherText.length);
+    result.set(counterBuf, 0);
+    result.set(cipherText, counterBuf.length);
+    session.response = result;
     session.updatedTS = newCounter;
 
     return {
@@ -357,7 +376,8 @@ export function unboxResponse(
         };
     }
 
-    const counter = Buffer.from(message).readBigUint64BE();
+    const counterArr = message.slice(0, COUNTER_LEN);
+    const counter = uint8BEtoBigint(counterArr);
 
     let cipher;
     try {
