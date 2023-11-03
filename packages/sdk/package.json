@@ -31,8 +31,7 @@
     },
     "devDependencies": {
         "@types/async-retry": "^1.4.5",
-        "@types/debug": "^4.1.10",
-        "eslint-plugin-compat": "^4.2.0"
+        "@types/debug": "^4.1.10"
     },
     "dependencies": {
         "@rpch/compat-crypto": "*",
@@ -40,9 +39,5 @@
         "ethers": "^5.7.2",
         "isomorphic-ws": "^5.0.0",
         "lz-string": "^1.5.0"
-    },
-    "browserslist": [
-        "defaults",
-        "not op_mini all"
-    ]
+    }
 }
