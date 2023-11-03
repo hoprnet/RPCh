@@ -12,8 +12,8 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
-    "format": "turbo run format --no-cache; prettier --write .eslintrc.js .prettierrc.js tsconfig.js",
-    "format:ci": "turbo run format:ci --no-cache; prettier --check .eslintrc.js .prettierrc.js tsconfig.js",
+    "format": "turbo run format --no-cache; prettier --write .eslintrc.js .prettierrc.js tsconfig.json",
+    "format:ci": "turbo run format:ci --no-cache; prettier --check .eslintrc.js .prettierrc.js tsconfig.json",
     "lint": "turbo run lint --no-cache",
     "lint:ci": "turbo run lint:ci --no-cache",
     "depcheck": "check-dependency-version-consistency",
