@@ -1,5 +1,11 @@
 # @rpch/compat-crypto
 
+## 0.5.3
+
+### Patch Changes
+
+- 10eb627: making crypto module browser compatible
+
 ## 0.5.1
 
 ### Patch Changes

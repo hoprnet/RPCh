@@ -1,5 +1,14 @@
 # @rpch/rpc-server
 
+## 0.9.3
+
+### Patch Changes
+
+- fb64847: fix missing dependency resolution
+- Updated dependencies [10eb627]
+- Updated dependencies [fb64847]
+  - @rpch/sdk@1.2.4
+
 ## 0.9.2
 
 ### Patch Changes

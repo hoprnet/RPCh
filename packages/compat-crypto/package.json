@@ -1,6 +1,6 @@
 {
     "name": "@rpch/compat-crypto",
-    "version": "0.5.2",
+    "version": "0.5.3",
     "license": "LGPL-3.0",
     "main": "./build/index.js",
     "types": "./build/index.d.ts",

@@ -1,5 +1,14 @@
 # @rpch/sdk
 
+## 1.2.4
+
+### Patch Changes
+
+- 10eb627: making crypto module browser compatible
+- fb64847: fix missing dependency resolution
+- Updated dependencies [10eb627]
+  - @rpch/compat-crypto@0.5.3
+
 ## 1.2.3
 
 ### Patch Changes
