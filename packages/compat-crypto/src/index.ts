@@ -46,23 +46,24 @@ const REQUEST_TAG = 'req';
 const RESPONSE_TAG = 'resp';
 
 function bigintToUint8BE(nr: bigint): Uint8Array {
-    const uint8Array = new Uint8Array(8); // 8 bytes for a 64-bit BigInt
+    const result = new Uint8Array(8); // 8 bytes for a 64-bit BigInt
 
     for (let i = 7; i >= 0; i--) {
-        uint8Array[i] = Number(nr & 0xffn); // Masking with 0xFFn to get the least significant byte
+        result[i] = Number(nr & 0xffn); // Masking with 0xFFn to get the least significant byte
         nr = nr >> 8n; // Shift right by 8 bits to get the next byte
     }
 
-    return uint8Array;
+    return result;
 }
 
 function uint8BEtoBigint(arr: Uint8Array): bigint {
-    let bigIntValue = 0n;
-    for (let i = 0; i < 8; i++) {
-        bigIntValue += BigInt(arr[i]) << (8n * BigInt(i));
+    let result = 0n;
+
+    for (let i = 0; i < arr.length; i++) {
+        result = (result << 8n) | BigInt(arr[i]);
     }
 
-    return bigIntValue;
+    return result;
 }
 
 function wrapBlake2s256() {
