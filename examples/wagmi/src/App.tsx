@@ -11,7 +11,7 @@ import { WagmiConfig, createConfig, mainnet } from "wagmi";
 import Profile from "./Profile";
 import { CLIENT_SECRET } from "./config";
 
-const sdk = new SDK(CLIENT_SECRET, { forceZeroHop: true });
+const sdk = new SDK(CLIENT_SECRET);
 
 function publicRPChClient(): PublicClient<Transport, Chain> {
   return createClient({
@@ -22,7 +22,9 @@ function publicRPChClient(): PublicClient<Transport, Chain> {
           try {
             const response = await sdk.send({ method, params, jsonrpc: "2.0" });
             const responseJson = await response.json();
-            return responseJson;
+            return "error" in responseJson
+              ? responseJson.error
+              : responseJson.result;
           } catch (e) {
             console.log(e);
           }
