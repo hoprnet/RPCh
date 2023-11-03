@@ -7,6 +7,7 @@ The below list is not exhaustive, and is a work in progress.
 - Libraries
   - [x] [Ethers](./ethers/)
   - [x] [Viem](./viem/)
+  - [x] [Wagmi](./wagmi/)
 - Environments
   - [x] Node
-  - [] Browser
+  - [x] Browser
