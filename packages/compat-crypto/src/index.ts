@@ -1,7 +1,11 @@
-import { hash_length, extract, expand } from 'futoin-hkdf';
+import * as hkdf from '@noble/hashes/hkdf';
+import { secp256k1 } from '@noble/curves/secp256k1';
+
+import { blake2s } from '@noble/hashes/blake2s';
 import { chacha20poly1305 } from '@noble/ciphers/chacha';
+import { Input, toBytes } from "@noble/hashes/utils";
+
 import { randomBytes } from 'crypto';
-import { ecdh, privateKeyVerify, publicKeyCreate } from 'secp256k1';
 
 /// Represents a request-response session.
 export type Session = {
@@ -40,9 +44,20 @@ const AUTH_TAG_LEN = 16;
 const CIPHER_KEY_LEN = 32;
 const CIPHER_IV_LEN = 12;
 
-const BLAKE2S256_HASH = 'blake2s256';
+const BLAKE2S_LEN = 32;
 const REQUEST_TAG = 'req';
 const RESPONSE_TAG = 'resp';
+
+function wrapBlake2s256() {
+    const blakeOpts = { dkLen: BLAKE2S_LEN };
+    const tmp = blake2s.create(blakeOpts)
+
+    const hashC = (msg: Input): Uint8Array => blake2s.create(blakeOpts).update(toBytes(msg)).digest();
+    hashC.outputLen = tmp.outputLen;
+    hashC.blockLen = tmp.blockLen;
+    hashC.create = () => blake2s.create(blakeOpts);
+    return hashC;
+}
 
 function initializeCipher(
     sharedPreSecret: Uint8Array,
@@ -59,21 +74,21 @@ function initializeCipher(
     salt.write(peerId, 1); // utf8 encoded
     salt.write(saltTag, peerId.length + 1);
 
+
     // Generate key material for expansion
-    const hashLen = hash_length(BLAKE2S256_HASH);
-    const prk = extract(BLAKE2S256_HASH, hashLen, Buffer.from(sharedPreSecret), Buffer.from(salt));
+    const prk = hkdf.extract(wrapBlake2s256(), Buffer.from(sharedPreSecret), Buffer.from(salt));
 
     const cipherKeyLen = CIPHER_KEY_LEN;
     const idx = new Uint8Array(1);
 
     // First key material expansion for symmetric key
     idx[0] = startIndex;
-    const key = expand(BLAKE2S256_HASH, hashLen, prk, cipherKeyLen, Buffer.from(idx));
+    const key = hkdf.expand(wrapBlake2s256(), prk, Buffer.from(idx), cipherKeyLen);
 
     // Second key material expansion for IV prefix
     idx[0] = startIndex + 1;
     const prefixLen = CIPHER_IV_LEN - COUNTER_LEN;
-    const iv_prefix = expand(BLAKE2S256_HASH, hashLen, prk, prefixLen, Buffer.from(idx));
+    const iv_prefix = Buffer.from(hkdf.expand(wrapBlake2s256(), prk, Buffer.from(idx), prefixLen));
 
     // Concatenate the prefix with the counter to form the IV
     const iv = Buffer.alloc(CIPHER_IV_LEN);
@@ -86,22 +101,13 @@ function initializeCipher(
 
 /// Generates a random secp256k1 keypair
 function generateEphemeralKey(randomFn: (len: number) => Uint8Array) {
-    let privKey;
-    do {
-        privKey = randomFn(32);
-    } while (!privateKeyVerify(privKey));
-
-    const pubKey = publicKeyCreate(privKey);
+    const privKey = randomFn(32);
+    const pubKey = secp256k1.getPublicKey(privKey)
     if (pubKey.length !== PUBLIC_KEY_SIZE_ENCODED) {
         throw new Error('key size mismatch');
     }
 
     return { pubKey, privKey };
-}
-
-/// Extracts the X coordinate from the ECDH result
-function getXCoord(x: Uint8Array, _: Uint8Array) {
-    return new Uint8Array(x);
 }
 
 /// Validates that (lowerBound - tolerance) <= value <= (upperBound + tolerance)
@@ -138,12 +144,7 @@ export function boxRequest(
     let sharedPreSecret;
     try {
         ephemeralKey = generateEphemeralKey(randomFn);
-        sharedPreSecret = ecdh(
-            exitPublicKey,
-            ephemeralKey.privKey,
-            { hashfn: getXCoord },
-            Buffer.alloc(PUBLIC_KEY_SIZE_ENCODED - 1),
-        );
+        sharedPreSecret = secp256k1.getSharedSecret(ephemeralKey.privKey, exitPublicKey).slice(1);
     } catch (err) {
         return { res: ResState.Failed, error: `ecdh failed ${err}` };
     }
@@ -228,12 +229,7 @@ export function unboxRequest(
     let sharedPreSecret;
     try {
         const ephemeralPk = message.slice(1, PUBLIC_KEY_SIZE_ENCODED + 1);
-        sharedPreSecret = ecdh(
-            ephemeralPk,
-            exitPrivateKey,
-            { hashfn: getXCoord },
-            Buffer.alloc(PUBLIC_KEY_SIZE_ENCODED - 1),
-        );
+        sharedPreSecret = secp256k1.getSharedSecret(exitPrivateKey, ephemeralPk).slice(1);
     } catch (err) {
         return {
             res: ResState.Failed,

@@ -25,9 +25,8 @@
     },
     "dependencies": {
         "@noble/ciphers": "0.3.0",
-        "blake2": "5.0.0",
-        "futoin-hkdf": "1.5.3",
-        "secp256k1": "5.0.0"
+        "@noble/hashes": "1.3.2",
+        "@noble/curves": "1.2.0"
     },
     "devDependencies": {
         "@types/jest": "^29.5.6",
