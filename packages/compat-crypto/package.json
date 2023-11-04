@@ -17,8 +17,8 @@
     "scripts": {
         "build": "tsc",
         "dev": "tsc --watch",
-        "format": "prettier --write src/ .eslintrc.js jest.config.ts package.json .prettierrc.js tsconfig.json",
-        "format:ci": "prettier --check src/ .eslintrc.js jest.config.ts package.json .prettierrc.js tsconfig.json",
+        "format": "prettier --write src/ .eslintrc.js jest.config.ts package.json tsconfig.json",
+        "format:ci": "prettier --check src/ .eslintrc.js jest.config.ts package.json tsconfig.json",
         "lint": "eslint --fix src/",
         "lint:ci": "eslint --max-warnings 0 src/",
         "test": "jest --coverage"

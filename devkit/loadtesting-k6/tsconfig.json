@@ -1,28 +1,8 @@
 {
     "compilerOptions": {
-        "target": "es6",
-        "module": "commonjs",
-        "strict": true,
-        "outDir": "./dist",
-
-        "moduleResolution": "classic",
-        "allowJs": true,
-        "removeComments": false,
-
-        "noImplicitAny": true,
-        "noImplicitThis": true,
-
-        "noUnusedLocals": true,
-        "noUnusedParameters": true,
-        "noImplicitReturns": true,
-        "noFallthroughCasesInSwitch": true,
-
-        "allowSyntheticDefaultImports": true,
-        "esModuleInterop": true,
-        "experimentalDecorators": true,
-        "emitDecoratorMetadata": true,
-
-        "skipLibCheck": true
+        "rootDir": "./src",
+        "outDir": "./build"
     },
-    "include": ["src/**/*"]
+    "include": ["src/"],
+    "extends": "../../tsconfig.json"
 }

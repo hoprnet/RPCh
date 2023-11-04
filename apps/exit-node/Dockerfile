@@ -25,8 +25,8 @@ COPY .gitignore .gitignore
 COPY packages-tgz packages-tgz
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/yarn.lock ./yarn.lock
-RUN apk add --no-cache python3 make g++ && \
-    yarn install --frozen-lockfile
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
+RUN yarn install --frozen-lockfile
 
 # Build the project.
 COPY --from=builder /app/out/full .
