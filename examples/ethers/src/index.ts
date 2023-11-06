@@ -15,15 +15,6 @@ export class RPChProvider extends JsonRpcProvider {
         super(url);
     }
 
-    async send(method: string, params: Array<any> | Record<string, any>): Promise<any> {
-        // All requests are over HTTP, so we can just start handling requests
-        // We do this here rather than the constructor so that we don't send any
-        // requests to the network (i.e. eth_chainId) until we absolutely have to.
-        await this._start();
-
-        return await super.send(method, params);
-    }
-
     /**
      * sends singular or multiple requests through RPCh network
      */
