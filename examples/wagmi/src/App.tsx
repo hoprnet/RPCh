@@ -13,6 +13,7 @@ import { CLIENT_SECRET } from "./config";
 
 const sdk = new SDK(CLIENT_SECRET);
 
+/* Viem config */
 function publicRPChClient(): PublicClient<Transport, Chain> {
   return createClient({
     chain: mainnet,
@@ -22,6 +23,7 @@ function publicRPChClient(): PublicClient<Transport, Chain> {
           try {
             const response = await sdk.send({ method, params, jsonrpc: "2.0" });
             const responseJson = await response.json();
+
             return "error" in responseJson
               ? responseJson.error
               : responseJson.result;
@@ -38,6 +40,7 @@ function publicRPChClient(): PublicClient<Transport, Chain> {
   }).extend(publicActions);
 }
 
+/* Wagmi config */
 const config = createConfig({
   autoConnect: true,
   publicClient: publicRPChClient(),
