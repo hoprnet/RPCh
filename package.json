@@ -7,8 +7,7 @@
     "configs/*",
     "packages/*",
     "apps/*",
-    "devkit/*",
-    "examples/*"
+    "devkit/*"
   ],
   "scripts": {
     "build": "turbo run build",
