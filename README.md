@@ -12,6 +12,7 @@ We have four main project folders:
 2. [packages](./packages/): contains libraries that are used internally, and could be used externally, published
 3. [apps](./apps/): contains services which are run centrally by the RPCh org
 4. [devkit](./devkit/): contains developer tools and sandbox material
+5. [examples](./examples/): contains examples of how to use the SDK with popular libraries
 
 ### Getting started
 
