@@ -18,8 +18,12 @@ export type RespPayload =
       }
     | {
           type: 'counterfail';
-          min: number;
-          max: number;
+          counter: number;
+          now: number;
+      }
+    | {
+          type: 'duplicatefail';
+          id: string;
       }
     | {
           type: 'httperror';

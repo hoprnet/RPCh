@@ -7,7 +7,7 @@ export type RequestStore = {
     db: sqlite3.Database;
 };
 
-export function setup(dbFile: string): Promise<boolean> {
+export function setup(dbFile: string): Promise<RequestStore> {
     return new Promise((res, rej) => {
         const db = new sqlite3.Database(dbFile, (err) => {
             if (err) {
@@ -31,12 +31,14 @@ export function setup(dbFile: string): Promise<boolean> {
                     if (err) {
                         rej(`Error creating index request_store_counter_index: ${err}`);
                     }
-                    res(true);
+                    res({ db });
                 }
             );
         });
     });
 }
+
+export function addIfAbsent({ db }: RequestStore, id: string) {}
 
 export function close({ db }: RequestStore): Promise<void> {
     return new Promise((res, rej) => {

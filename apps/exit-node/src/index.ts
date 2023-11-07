@@ -1,3 +1,5 @@
+import * as Res from './result';
+import * as compatCrypto from '@rpch/compat-crypto';
 import * as path from 'path';
 import WS from 'isomorphic-ws';
 import { utils } from 'ethers';
@@ -20,6 +22,7 @@ const log = Utils.logger(['exit-node']);
 
 const SocketReconnectTimeout = 1e3; // 1sek
 const RequestPurgeTimeout = 10e3; // 10sek
+const ValidCounterPeriod = 10e3 * 60 * 60; // 1hour
 
 type State = {
     socket?: WS.WebSocket;
@@ -29,6 +32,7 @@ type State = {
     cache: SegmentCache.Cache;
     deleteTimer: Map<number, ReturnType<typeof setTimeout>>; // deletion timer of requests in segment cache
     counterStore: Map<string, bigint>;
+    requestStore: RequestStore.RequestStore;
 };
 
 type Ops = {
@@ -53,10 +57,10 @@ async function start(ops: Ops) {
 }
 
 async function setup(ops: Ops): Promise<State> {
-    const resDb = await RequestStore.setup(ops.dbFile).catch((err) => {
+    const requestStore = await RequestStore.setup(ops.dbFile).catch((err) => {
         log.error('Error setting up request store:', err);
     });
-    if (!resDb) {
+    if (!requestStore) {
         return Promise.reject();
     }
 
@@ -103,6 +107,7 @@ async function setup(ops: Ops): Promise<State> {
         privateKey: utils.arrayify(resId.privateKey),
         peerId,
         publicKey: resId.publicKey,
+        requestStore,
     };
 }
 
@@ -221,6 +226,42 @@ async function completeSegmentsEntry(
     const entryIdData = utils.arrayify(hexEntryId);
     const entryPeerId = utils.toUtf8String(entryIdData);
     const reqData = utils.arrayify(hexData);
+
+    const resReq = Request.messageToReq({
+        message: reqData,
+        exitPeerId: state.peerId,
+        exitPrivateKey: state.privateKey,
+    });
+
+    if (Res.isErr(resReq)) {
+        log.error(`Error decrypting request: ${resReq.error}`);
+        return;
+    }
+
+    const unboxedReq = resReq.res;
+
+    const counter = unboxedReq.session.updatedTS;
+    const now = Date.now();
+    const valid = now - ValidCounterPeriod;
+    if (counter < valid) {
+        log.info("Counter %d outside valid period %d (now: %d)", counter, valid, (now))
+        sendCounterfailResp();
+        return;
+    }
+
+    const id = unboxedReq.req.id;
+    const res = RequestStore.addIfAbsent(store, id);
+    if (res.duplicate) {
+        log.info("Duplicate request id");
+        sendDuplicateResp();
+        return;
+    }
+
+    handleIncomingReq();
+}
+
+
+function handleIncomingReq() {
     const counter = state.counterStore.get(entryPeerId) || BigInt(0);
     const resReq = Request.messageToReq({
         message: reqData,
@@ -322,6 +363,28 @@ async function completeSegmentsEntry(
         }
     }
 }
+
+function sendCounterfailResp( { ops, entryPeerId, cacheEntry, tag, counter, now, unboxRequest}: {
+        ops: Ops;
+        entryPeerId: string;
+        tag: number;
+        cacheEntry: SegmentCache.Entry;
+        counter: number,
+        now: number,
+        unboxRequest: Request.UnboxRequest
+    }
+                            ) {
+        // counterfail response
+        const resResp = Response.respToMessage({entryPeerId, respPayload: { type: 'counterfail', counter, now }, unboxSession: unboxRequest.session});
+            if (!Response.msgSuccess(resResp)) {
+                log.error('Error boxing counterfail resp', resResp.error);
+                return;
+            }
+            sendResponse(
+                { ops, cacheEntry, tag, reqPayload: resReq.req, entryPeerId },
+                resResp.hexData
+            );
+            return;
 
 function sendResponse(
     {

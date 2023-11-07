@@ -1,8 +1,9 @@
-import * as crypto from '@rpch/compat-crypto';
+import * as compatCrypto from '@rpch/compat-crypto';
 import { utils } from 'ethers';
 
-import * as Payload from './payload';
 import * as JRPC from './jrpc';
+import * as Payload from './payload';
+import * as Res from './result';
 import type { Request } from './request';
 
 export type Response = {
@@ -11,25 +12,10 @@ export type Response = {
     json: () => Promise<JRPC.Response>;
 };
 
-export type RespSuccess = {
-    res: 'success';
+export type UnboxResponse = {
     resp: Payload.RespPayload;
-    counter: bigint;
+    session: compatCrypto.Session;
 };
-export type RespCounterFail = {
-    res: 'counterfail';
-    counter: bigint;
-};
-export type RespError = { res: 'error'; reason: string };
-export type Resp = RespSuccess | RespCounterFail | RespError;
-
-export type MsgSuccess = {
-    success: true;
-    hexData: string;
-    newCount: bigint;
-};
-export type MsgError = { success: false; error: string };
-export type Msg = MsgSuccess | MsgError;
 
 export function respToMessage({
     entryPeerId,
@@ -38,71 +24,59 @@ export function respToMessage({
 }: {
     entryPeerId: string;
     respPayload: Payload.RespPayload;
-    unboxSession: crypto.Session;
-}): Msg {
-    const payload = Payload.encodeResp(respPayload);
-    const data = utils.toUtf8Bytes(payload);
-    const res = crypto.boxResponse(unboxSession, {
+    unboxSession: compatCrypto.Session;
+}): Res.Result<string> {
+    const resEncode = Payload.encodeResp(respPayload);
+    if (Res.isErr(resEncode)) {
+        return resEncode;
+    }
+
+    const data = utils.toUtf8Bytes(resEncode.res);
+    const resBox = compatCrypto.boxResponse(unboxSession, {
         entryPeerId,
         message: data,
     });
-    if (crypto.isError(res)) {
-        return { success: false, error: res.error };
+    if (compatCrypto.isError(resBox)) {
+        return Res.err(resBox.error);
     }
-    if (!unboxSession.response) {
-        return { success: false, error: 'crypto session without response object' };
+
+    if (!resBox.session.response) {
+        return Res.err('Crypto session without response object');
     }
-    const hexData = utils.hexlify(unboxSession.response);
-    const newCount = unboxSession.updatedTS;
-    return { success: true, hexData, newCount };
+
+    const hexData = utils.hexlify(resBox.session.response);
+    return Res.ok(hexData);
 }
 
 export function messageToResp({
     respData,
     request,
-    counter,
+    session,
 }: {
     respData: Uint8Array;
     request: Request;
-    counter: bigint;
-}): Resp {
-    const res = crypto.unboxResponse(
-        request.session,
-        { message: respData, entryPeerId: request.entryPeerId },
-        counter,
-    );
-    switch (res.res) {
-        case crypto.ResState.Failed:
-            return { res: 'error', reason: res.error };
-        case crypto.ResState.OkFailedCounter:
-            return {
-                res: 'counterfail',
-                counter: res.session.updatedTS,
-            };
-        case crypto.ResState.Ok:
-        default: {
-            if (!res.session.response) {
-                return {
-                    res: 'error',
-                    reason: 'crypto session without response object',
-                };
-            }
-            const msg = utils.toUtf8String(res.session.response);
-            const resp = Payload.decodeResp(msg);
-            const newCount = request.session.updatedTS;
-            return {
-                res: 'success',
-                resp,
-                counter: newCount,
-            };
-        }
+    session: compatCrypto.Session;
+}): Res.Result<UnboxResponse> {
+    const resUnbox = compatCrypto.unboxResponse(session, {
+        message: respData,
+        entryPeerId: request.entryPeerId,
+    });
+    if (compatCrypto.isError(resUnbox)) {
+        return Res.err(resUnbox.error);
     }
-}
 
-export function msgSuccess(res: Msg): res is MsgSuccess {
-    return res.success;
-}
+    if (!resUnbox.session.response) {
+        return Res.err(`Crypto session without response object`);
+    }
 
-export function respSuccess(res: Resp): res is RespSuccess {
-    return res.res === 'success';
+    const msg = utils.toUtf8String(resUnbox.session.response);
+    const resDecode = Payload.decodeResp(msg);
+    if (Res.isErr(resDecode)) {
+        return resDecode;
+    }
+
+    return Res.ok({
+        session: resUnbox.session,
+        resp: resDecode.res,
+    });
 }

@@ -4,7 +4,7 @@ const MaxBytes = 400;
 export const MaxSegmentBody = MaxBytes - 17;
 
 export type Segment = {
-    requestId: number;
+    requestId: string;
     nr: number;
     totalCount: number;
     body: string;
@@ -13,7 +13,7 @@ export type Segment = {
 /**
  * Slice data into segments.
  */
-export function toSegments(requestId: number, hexData: string): Segment[] {
+export function toSegments(requestId: string, hexData: string): Segment[] {
     const chunks: string[] = [];
     for (let i = 0; i < hexData.length; i += MaxSegmentBody) {
         chunks.push(hexData.slice(i, i + MaxSegmentBody));
@@ -31,7 +31,7 @@ export function toSegments(requestId: number, hexData: string): Segment[] {
  * Create segment from string message.
  */
 export function fromMessage(
-    str: string,
+    str: string
 ): { success: true; segment: Segment } | { success: false; error: string } {
     const parts = str.split('|');
     if (parts.length === 0) {
@@ -43,7 +43,7 @@ export function fromMessage(
         return { success: false, error: `invalid segment parts: ${count}` };
     }
 
-    const requestId = parseInt(parts[1], 10);
+    const requestId = parts[1];
     const nr = parseInt(parts[2], 10);
     const totalCount = parseInt(parts[3], 10);
     const body = parts[4];
