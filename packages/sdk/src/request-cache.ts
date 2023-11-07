@@ -1,11 +1,15 @@
+import * as compatCrypto from '@rpch/compat-crypto';
+import * as crypto from 'crypto';
 import type { Request } from './request';
 import type { Response } from './response';
 
-export type Cache = Map<number, Entry>; // id -> Request
+export type Cache = Map<string, Entry>; // id -> Request
 
-export type Entry = Request & {
+export type Entry = {
+    request: Request;
     resolve: (res: Response) => void;
     reject: (error: string) => void;
+    session: compatCrypto.Session;
     timer: ReturnType<typeof setTimeout>;
 };
 
@@ -18,15 +22,25 @@ export function init(): Cache {
  */
 export function add(
     cache: Cache,
-    request: Request,
-    resolve: (res: Response) => void,
-    reject: (error: string) => void,
-    timer: ReturnType<typeof setTimeout>,
-): Entry {
-    const entry = {
-        ...request,
+    {
+        request,
         resolve,
         reject,
+        session,
+        timer,
+    }: {
+        request: Request;
+        resolve: (res: Response) => void;
+        reject: (error: string) => void;
+        session: compatCrypto.Session;
+        timer: ReturnType<typeof setTimeout>;
+    },
+): Entry {
+    const entry = {
+        request,
+        resolve,
+        reject,
+        session,
         timer,
     };
     cache.set(request.id, entry);
@@ -36,20 +50,15 @@ export function add(
 /**
  * Remove request id from cache.
  */
-export function remove(cache: Cache, id: number) {
+export function remove(cache: Cache, id: string) {
     const t = cache.get(id)?.timer;
     clearTimeout(t);
     cache.delete(id);
 }
 
 /**
- * Generate an available request id.
- * Will loop indefinitely if all request ids are taken (max ~1e7).
+ * Generate a sufficiently unique request id.
  */
-export function generateId(cache: Cache): number {
-    let id = Math.floor(Math.random() * 1e6);
-    while (cache.has(id)) {
-        id = Math.floor(Math.random() * 1e6);
-    }
-    return id;
+export function generateId(_cache: Cache): string {
+    return crypto.randomUUID();
 }

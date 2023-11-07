@@ -1,21 +1,19 @@
 import * as crypto from '@rpch/compat-crypto';
 import { utils } from 'ethers';
 
+import * as Res from './result';
 import * as JRPC from './jrpc';
 import * as Payload from './payload';
 import * as Segment from './segment';
 import { shortPeerId } from './utils';
 
 export type Request = {
-    id: number;
-    originalId?: number;
+    id: string; // uuid
     provider: string;
     req: JRPC.Request;
     createdAt: number;
     entryPeerId: string;
     exitPeerId: string;
-    exitPublicKey: Uint8Array;
-    session: crypto.Session;
     headers?: Record<string, string>;
     hops?: number;
 };
@@ -57,7 +55,7 @@ export function create({
     exitPublicKey: Uint8Array;
     headers?: Record<string, string>;
     hops?: number;
-}): { success: true; req: Request } | { success: false; error: string } {
+}): Res.Result<Request> {
     const payload = Payload.encodeReq({
         provider,
         clientId,
