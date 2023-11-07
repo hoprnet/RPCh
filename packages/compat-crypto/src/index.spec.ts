@@ -122,13 +122,7 @@ describe('RPCh Crypto protocol tests', function () {
             sharedPreSecret: fromHex(TEST_VECTOR_EPHEMERAL_SECRET),
         };
 
-        const stored_last_received_resp_ts = BigInt(Date.now() - 2000); // 2s ago
-
-        const resp_unbox_result = unboxResponse(
-            mock_session_with_exit_node,
-            received_resp_data,
-            stored_last_received_resp_ts
-        );
+        const resp_unbox_result = unboxResponse(mock_session_with_exit_node, received_resp_data);
         assert(
             !isError(resp_unbox_result),
             `response unboxing must not fail, error: ${
@@ -219,13 +213,7 @@ describe('RPCh Crypto protocol tests', function () {
             entryPeerId: ENTRY_NODE,
         };
 
-        const stored_last_received_resp_ts = BigInt(Date.now() - 2000); // 2s ago
-
-        const resp_unbox_result = unboxResponse(
-            client_session,
-            received_resp_data,
-            stored_last_received_resp_ts
-        );
+        const resp_unbox_result = unboxResponse(client_session, received_resp_data);
         assert(
             !isError(resp_unbox_result),
             `response unboxing must not fail, error: ${
@@ -350,11 +338,7 @@ describe('RPCh Crypto protocol tests', function () {
             sharedPreSecret: fromHex(TEST_VECTOR_EPHEMERAL_SECRET),
         };
 
-        const resp_unbox_result = unboxResponse(
-            mock_session_with_exit_node,
-            received_resp_data,
-            TEST_COUNTER
-        );
+        const resp_unbox_result = unboxResponse(mock_session_with_exit_node, received_resp_data);
         assert(
             !isError(resp_unbox_result),
             `response unboxing must not fail, error: ${
