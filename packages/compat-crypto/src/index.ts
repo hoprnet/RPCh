@@ -82,7 +82,7 @@ function initializeCipher(
     sharedPreSecret: Uint8Array,
     counter: bigint,
     peerId: string,
-    request: boolean,
+    request: boolean
 ) {
     const startIndex = request ? 0 : 2;
     const saltTag = request ? REQUEST_TAG : RESPONSE_TAG;
@@ -153,7 +153,7 @@ export function boxRequest(
         exitPeerId,
         exitPublicKey,
     }: { message: Uint8Array; exitPeerId: string; exitPublicKey: Uint8Array },
-    randomFn: (len: number) => Uint8Array = randomBytes,
+    randomFn: (len: number) => Uint8Array = randomBytes
 ): Result {
     if (exitPublicKey.length !== PUBLIC_KEY_SIZE_ENCODED) {
         return { res: ResState.Failed, error: 'incorrect public key size' };
@@ -192,7 +192,7 @@ export function boxRequest(
 
     // V,W,C,R,T
     const result = new Uint8Array(
-        versionBuf.length + ephemeralKey.pubKey.length + counterBuf.length + cipherText.length,
+        versionBuf.length + ephemeralKey.pubKey.length + counterBuf.length + cipherText.length
     );
     result.set(versionBuf, 0);
     result.set(ephemeralKey.pubKey, versionBuf.length);
@@ -214,14 +214,15 @@ export function boxRequest(
 /// RPCh Client node associated with the request and then decrypts and verifies the data.
 /// The decrypted data and new counter value to be persisted is returned in the resulting session.
 /// Returns error and session if count verifcation failed so a response with the error message can still be boxed.
-export function unboxRequest(
-    {
-        message,
-        exitPeerId,
-        exitPrivateKey,
-    }: { message: Uint8Array; exitPeerId: string; exitPrivateKey: Uint8Array },
-    lastTsOfThisClient: bigint,
-): Result | ResOkFailedCounter {
+export function unboxRequest({
+    message,
+    exitPeerId,
+    exitPrivateKey,
+}: {
+    message: Uint8Array;
+    exitPeerId: string;
+    exitPrivateKey: Uint8Array;
+}): Result {
     if ((message[0] & 0x10) != (RPCH_CRYPTO_VERSION & 0x10)) {
         return {
             res: ResState.Failed,
@@ -256,7 +257,7 @@ export function unboxRequest(
 
     const counterArr = message.slice(
         1 + PUBLIC_KEY_SIZE_ENCODED,
-        1 + PUBLIC_KEY_SIZE_ENCODED + COUNTER_LEN,
+        1 + PUBLIC_KEY_SIZE_ENCODED + COUNTER_LEN
     );
     const counter = uint8BEtoBigint(counterArr);
 
@@ -286,13 +287,6 @@ export function unboxRequest(
         sharedPreSecret,
     };
 
-    if (!validateTS(counter, lastTsOfThisClient, BigInt(Date.now()))) {
-        return {
-            res: ResState.OkFailedCounter,
-            session,
-        };
-    }
-
     return {
         res: ResState.Ok,
         session,
@@ -305,7 +299,7 @@ export function unboxRequest(
 /// The encrypted data and new counter value to be persisted is returned in the resulting session.
 export function boxResponse(
     session: Session,
-    { entryPeerId, message }: { entryPeerId: string; message: Uint8Array },
+    { entryPeerId, message }: { entryPeerId: string; message: Uint8Array }
 ): Result {
     const sharedPreSecret = session.sharedPreSecret;
     if (!sharedPreSecret) {
@@ -359,7 +353,7 @@ export function boxResponse(
 export function unboxResponse(
     session: Session,
     { entryPeerId, message }: { entryPeerId: string; message: Uint8Array },
-    lastTsOfThisExitNode: bigint,
+    lastTsOfThisExitNode: bigint
 ): Result | ResOkFailedCounter {
     const sharedPreSecret = session.sharedPreSecret;
     if (!sharedPreSecret) {
