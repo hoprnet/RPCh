@@ -1,3 +1,5 @@
+import * as Res from './result';
+
 // Maximum bytes we should be sending within the HOPR network.
 const MaxBytes = 400;
 // Maximum segment overhead is 17 bytes, could be as little as 13 though (e.g. `4|999999|999|999|` vs `4|999999|9|9|`)
@@ -30,32 +32,27 @@ export function toSegments(requestId: string, hexData: string): Segment[] {
 /**
  * Create segment from string message.
  */
-export function fromMessage(
-    str: string
-): { success: true; segment: Segment } | { success: false; error: string } {
+export function fromMessage(str: string): Res.Result<Segment> {
     const parts = str.split('|');
     if (parts.length === 0) {
-        return { success: false, error: 'empty string' };
+        return Res.err('empty string');
     }
 
     const count = parseInt(parts[0], 10);
     if (count !== 4) {
-        return { success: false, error: `invalid segment parts: ${count}` };
+        return Res.err(`invalid segment parts: ${count}`);
     }
 
     const requestId = parts[1];
     const nr = parseInt(parts[2], 10);
     const totalCount = parseInt(parts[3], 10);
     const body = parts[4];
-    return {
-        success: true,
-        segment: {
-            requestId,
-            nr,
-            totalCount,
-            body,
-        },
-    };
+    return Res.ok({
+        requestId,
+        nr,
+        totalCount,
+        body,
+    });
 }
 
 /**

@@ -1,19 +1,15 @@
-import { shortPeerId, randomEl } from './utils';
-import * as NodePair from './node-pair';
 import * as EntryData from './entry-data';
 import * as ExitData from './exit-data';
 import * as NodeMatch from './node-match';
+import * as NodePair from './node-pair';
+import * as Res from './result';
 import type { EntryNode } from './entry-node';
+import { shortPeerId, randomEl } from './utils';
 
-export type ResultOk = {
-    success: true;
+export type NodeSelection = {
     match: NodeMatch.NodeMatch;
     via: string;
 };
-
-export type ResultErr = { success: false; error: string };
-
-export type Result = ResultOk | ResultErr;
 
 type EntryPerf = EntryData.Perf & { entryNode: EntryNode };
 type ExitPerf = ExitData.Perf & NodeMatch.NodeMatch;
@@ -22,7 +18,7 @@ type ExitPerf = ExitData.Perf & NodeMatch.NodeMatch;
  * Try to distribute evenly with best route pairs preferred.
  *
  */
-export function routePair(nodePairs: Map<string, NodePair.NodePair>): Result {
+export function routePair(nodePairs: Map<string, NodePair.NodePair>): Res.Result<NodeSelection> {
     const routePerfs = createRoutePerfs(nodePairs);
     return match(nodePairs, routePerfs);
 }
@@ -34,30 +30,30 @@ export function routePair(nodePairs: Map<string, NodePair.NodePair>): Result {
  */
 export function fallbackRoutePair(
     nodePairs: Map<string, NodePair.NodePair>,
-    exclude: EntryNode,
-): Result {
+    exclude: EntryNode
+): Res.Result<NodeSelection> {
     const routePerfs = createRoutePerfs(nodePairs);
     const filtered = routePerfs.filter(({ entryNode }) => entryNode.id !== exclude.id);
     return match(nodePairs, filtered);
 }
 
-export function isOk(res: Result): res is ResultOk {
-    return res.success;
-}
-
-export function prettyPrint(res: Result) {
-    if (isOk(res)) {
-        const eId = shortPeerId(res.match.entryNode.id);
-        const xId = shortPeerId(res.match.exitNode.id);
-        return `${eId} > ${xId} (via ${res.via})`;
+export function prettyPrint(res: Res.Result<NodeSelection>) {
+    if (Res.isOk(res)) {
+        const sel = res.res;
+        const eId = shortPeerId(sel.match.entryNode.id);
+        const xId = shortPeerId(sel.match.exitNode.id);
+        return `${eId} > ${xId} (via ${sel.via})`;
     }
     return `${res.error}`;
 }
 
-function match(nodePairs: Map<string, NodePair.NodePair>, routePerfs: ExitPerf[]): Result {
+function match(
+    nodePairs: Map<string, NodePair.NodePair>,
+    routePerfs: ExitPerf[]
+): Res.Result<NodeSelection> {
     // special case no nodes
     if (routePerfs.length === 0) {
-        return { success: false, error: 'no nodes' };
+        return Res.err('no nodes');
     }
     // special case only one route
     if (routePerfs.length === 1) {
@@ -113,15 +109,15 @@ function match(nodePairs: Map<string, NodePair.NodePair>, routePerfs: ExitPerf[]
 
     return { success: false, error: 'insufficient data' };
 }
-function success({ entryNode, exitNode }: NodeMatch.NodeMatch, via: string): ResultOk {
-    return {
-        success: true,
-        match: {
-            entryNode,
-            exitNode,
-        },
+
+function success(
+    { entryNode, exitNode }: NodeMatch.NodeMatch,
+    via: string
+): Res.Result<NodeSelection> {
+    return Res.ok({
+        match: { entryNode, exitNode },
         via,
-    };
+    });
 }
 
 function createRoutePerfs(nodePairs: Map<string, NodePair.NodePair>) {
@@ -161,19 +157,22 @@ function leastReqOngoing(routePerfs: ExitPerf[]): ExitPerf[] {
     return routePerfs;
 }
 
-function eSuccess({ entryNode }: EntryPerf, routePerfs: ExitPerf[], via: string): ResultOk {
+function eSuccess(
+    { entryNode }: EntryPerf,
+    routePerfs: ExitPerf[],
+    via: string
+): Res.Result<NodeSelection> {
     const xPerfs = routePerfs.filter(({ entryNode: en }) => en.id === entryNode.id);
     const el = randomEl(xPerfs);
-    return {
-        success: true,
+    return Res.ok({
         match: { entryNode, exitNode: el.exitNode },
         via,
-    };
+    });
 }
 
 function createEntryPerfs(
     nodePairs: Map<string, NodePair.NodePair>,
-    routePerfs: ExitPerf[],
+    routePerfs: ExitPerf[]
 ): EntryPerf[] {
     const entryNodes = routePerfs.map(({ entryNode }) => entryNode);
     return Array.from(new Set(entryNodes)).map((entryNode) => {

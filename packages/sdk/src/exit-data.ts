@@ -12,9 +12,9 @@ export type Perf = {
 };
 
 export type ExitData = {
-    requestsOngoing: number[]; // sorted ongoing request ids
-    requestsHistory: number[]; // sorted resolved request ids
-    requests: Map<number, PerfData.PerfData>; // request data
+    requestsOngoing: string[]; // sorted ongoing request ids
+    requestsHistory: string[]; // sorted resolved request ids
+    requests: Map<string, PerfData.PerfData>; // request data
 };
 
 export function create() {
@@ -34,7 +34,7 @@ export function recSuccess(xd: ExitData, req: Request.Request, dur: number) {
     xd.requestsOngoing = xd.requestsOngoing.filter((rId) => rId !== req.id);
     xd.requestsHistory.push(req.id);
     if (xd.requestsHistory.length > NodeMatch.MaxRequestsHistory) {
-        const rId = xd.requestsHistory.shift() as number;
+        const rId = xd.requestsHistory.shift() as string;
         xd.requests.delete(rId);
     }
     const perf = xd.requests.get(req.id);
@@ -47,7 +47,7 @@ export function recFailed(xd: ExitData, req: Request.Request) {
     xd.requestsOngoing = xd.requestsOngoing.filter((rId) => rId !== req.id);
     xd.requestsHistory.push(req.id);
     if (xd.requestsHistory.length > NodeMatch.MaxRequestsHistory) {
-        const rId = xd.requestsHistory.shift() as number;
+        const rId = xd.requestsHistory.shift() as string;
         xd.requests.delete(rId);
     }
     const perf = xd.requests.get(req.id);

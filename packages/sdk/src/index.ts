@@ -366,11 +366,11 @@ export default class SDK {
     private onMessages = (messages: NodeAPI.Message[]) => {
         messages.forEach(({ body }) => {
             const segRes = Segment.fromMessage(body);
-            if (!segRes.success) {
+            if (Res.isErr(segRes)) {
                 log.info('cannot create segment', segRes.error);
                 return;
             }
-            const segment = segRes.segment;
+            const segment = segRes.res;
             if (!this.requestCache.has(segment.requestId)) {
                 log.info('dropping unrelated request segment', Segment.prettyPrint(segment));
                 return;
@@ -380,7 +380,7 @@ export default class SDK {
             switch (cacheRes.res) {
                 case 'complete':
                     log.verbose('completion segment', Segment.prettyPrint(segment));
-                    this.completeSegmentsEntry(cacheRes.entry!);
+                    this.completeSegmentsEntry(cacheRes.entry as SegmentCache.Entry);
                     break;
                 case 'error':
                     log.error('error caching segment', cacheRes.reason);
@@ -402,13 +402,13 @@ export default class SDK {
     };
 
     private completeSegmentsEntry = (entry: SegmentCache.Entry) => {
-        const firstSeg = entry.segments.get(0)!;
+        const firstSeg = entry.segments.get(0) as Segment.Segment;
         if (!firstSeg.body.startsWith('0x')) {
             log.info('message is not a response', firstSeg.requestId);
             return;
         }
 
-        const reqEntry = this.requestCache.get(firstSeg.requestId)!;
+        const reqEntry = this.requestCache.get(firstSeg.requestId) as RequestCache.Entry;
         const { request, session } = reqEntry;
         RequestCache.remove(this.requestCache, request.id);
 
