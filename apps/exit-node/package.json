@@ -17,6 +17,10 @@
     "dependencies": {
         "@rpch/sdk": "*",
         "ethers": "^5.7.2",
-        "isomorphic-ws": "^5.0.0"
+        "isomorphic-ws": "^5.0.0",
+        "sqlite3": "^5.1.6"
+    },
+    "devDependencies": {
+        "@types/sqlite3": "^3.1.10"
     }
 }

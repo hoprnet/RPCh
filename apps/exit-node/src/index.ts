@@ -3,6 +3,7 @@ import WS from 'isomorphic-ws';
 import { utils } from 'ethers';
 
 import * as Identity from './identity';
+import * as RequestStore from './request-store';
 import {
     DPapi,
     NodeAPI,
@@ -38,18 +39,29 @@ type Ops = {
     accessToken: string;
     discoveryPlatformEndpoint: string;
     nodeAccessToken: string;
+    dbFile: string;
 };
 
 async function start(ops: Ops) {
-    const state = await setup(ops);
+    const state = await setup(ops).catch(() => {
+        log.error('Fatal error initializing exit node');
+    });
     if (!state) {
-        log.error('Fatal error initializing exit code');
         process.exit(1);
     }
     setupSocket(state, ops);
 }
 
 async function setup(ops: Ops): Promise<State> {
+    const resDb = await RequestStore.setup(ops.dbFile).catch((err) => {
+        log.error('Error setting up request store:', err);
+    });
+    if (!resDb) {
+        return Promise.reject();
+    }
+
+    log.verbose('Setup db at', ops.dbFile);
+
     const resId = await Identity.getIdentity({
         identityFile: ops.identityFile,
         password: ops.password,
@@ -170,7 +182,7 @@ function onMessage(state: State, ops: Ops) {
             case 'added-to-request':
                 log.verbose(
                     'inserted new segment to existing request',
-                    Segment.prettyPrint(segment),
+                    Segment.prettyPrint(segment)
                 );
                 break;
             case 'inserted-new':
@@ -180,7 +192,7 @@ function onMessage(state: State, ops: Ops) {
                     setTimeout(() => {
                         log.info('purging incomplete request', segment.requestId);
                         SegmentCache.remove(state.cache, segment.requestId);
-                    }, RequestPurgeTimeout),
+                    }, RequestPurgeTimeout)
                 );
                 break;
         }
@@ -191,7 +203,7 @@ async function completeSegmentsEntry(
     state: State,
     ops: Ops,
     cacheEntry: SegmentCache.Entry,
-    tag: number,
+    tag: number
 ) {
     const firstSeg = cacheEntry.segments.get(0)!;
     if (!firstSeg.body.startsWith('0x')) {
@@ -226,7 +238,7 @@ async function completeSegmentsEntry(
             // counterfail response
             const resResp = Response.respToMessage({
                 entryPeerId,
-                respPayload: { type: 'counterfail', min: counter, max: now },
+                respPayload: { type: 'counterfail', min: Number(counter), max: Number(now) },
                 unboxSession: resReq.session,
             });
             if (!Response.msgSuccess(resResp)) {
@@ -235,7 +247,7 @@ async function completeSegmentsEntry(
             }
             sendResponse(
                 { ops, cacheEntry, tag, reqPayload: resReq.req, entryPeerId },
-                resResp.hexData,
+                resResp.hexData
             );
             return;
         }
@@ -249,7 +261,7 @@ async function completeSegmentsEntry(
                     'Error RPC requesting %s with %s: %s',
                     provider,
                     JSON.stringify(req),
-                    JSON.stringify(err),
+                    JSON.stringify(err)
                 );
                 // rpc critical fail response
                 const resResp = Response.respToMessage({
@@ -263,7 +275,7 @@ async function completeSegmentsEntry(
                 }
                 sendResponse(
                     { ops, cacheEntry, tag, reqPayload: resReq.req, entryPeerId },
-                    resResp.hexData,
+                    resResp.hexData
                 );
             });
             if (!resp) {
@@ -287,7 +299,7 @@ async function completeSegmentsEntry(
                 }
                 sendResponse(
                     { ops, cacheEntry, tag, reqPayload: resReq.req, entryPeerId },
-                    resResp.hexData,
+                    resResp.hexData
                 );
                 return;
             }
@@ -304,7 +316,7 @@ async function completeSegmentsEntry(
             }
             sendResponse(
                 { ops, entryPeerId, cacheEntry, tag, reqPayload: resReq.req },
-                resResp.hexData,
+                resResp.hexData
             );
             return;
         }
@@ -325,7 +337,7 @@ function sendResponse(
         cacheEntry: SegmentCache.Entry;
         reqPayload: Payload.ReqPayload;
     },
-    resp: string,
+    resp: string
 ) {
     const requestId = cacheEntry.segments.get(0)!.requestId;
     const segments = Segment.toSegments(requestId, resp);
@@ -334,7 +346,7 @@ function sendResponse(
         'Returning message to %s, tag: %s, requestId: %i',
         Utils.shortPeerId(entryPeerId),
         tag,
-        requestId,
+        requestId
     );
 
     const conn = {
@@ -402,6 +414,9 @@ if (require.main === module) {
     if (!process.env.DISCOVERY_PLATFORM_ACCESS_TOKEN) {
         throw new Error("Missing 'DISCOVERY_PLATFORM_ACCESS_TOKEN' env var.");
     }
+    if (!process.env.RPCH_DB_FILE) {
+        throw new Error('Missing RPCH_DB_FILE env var.');
+    }
     const identityFile = process.env.RPCH_IDENTITY_FILE || path.join(process.cwd(), '.identity');
     const privateKey = process.env.RPCH_PRIVATE_KEY
         ? utils.arrayify(process.env.RPCH_PRIVATE_KEY)
@@ -415,5 +430,6 @@ if (require.main === module) {
         accessToken: process.env.HOPRD_API_TOKEN,
         discoveryPlatformEndpoint: process.env.DISCOVERY_PLATFORM_API_ENDPOINT,
         nodeAccessToken: process.env.DISCOVERY_PLATFORM_ACCESS_TOKEN,
+        dbFile: process.env.RPCH_DB_FILE,
     });
 }

@@ -46,5 +46,8 @@ tmp
 apps/rpc-server/db
 apps/rpc-server/certs
 
+# exit node db
+exit-node.sqlite
+
 #k6 results
 devkit/loadtesting-k6/results/*
