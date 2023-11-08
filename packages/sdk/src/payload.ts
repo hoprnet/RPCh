@@ -39,7 +39,7 @@ export type RespPayload =
           reason: string;
       };
 
-export function encodeReq(payload: ReqPayload): Res.ResultStr<string> {
+export function encodeReq(payload: ReqPayload): Res.Result<string> {
     try {
         const res = LZString.compressToUTF16(JSON.stringify(payload));
         return Res.ok(res);
@@ -48,7 +48,7 @@ export function encodeReq(payload: ReqPayload): Res.ResultStr<string> {
     }
 }
 
-export function decodeReq(payload: string): Res.ResultStr<ReqPayload> {
+export function decodeReq(payload: string): Res.Result<ReqPayload> {
     try {
         const res = JSON.parse(LZString.decompressFromUTF16(payload));
         return Res.ok(res);
@@ -57,7 +57,7 @@ export function decodeReq(payload: string): Res.ResultStr<ReqPayload> {
     }
 }
 
-export function encodeResp(payload: RespPayload): Res.ResultStr<string> {
+export function encodeResp(payload: RespPayload): Res.Result<string> {
     try {
         const res = LZString.compressToUTF16(JSON.stringify(payload));
         return Res.ok(res);
@@ -66,7 +66,7 @@ export function encodeResp(payload: RespPayload): Res.ResultStr<string> {
     }
 }
 
-export function decodeResp(payload: string): Res.ResultStr<RespPayload> {
+export function decodeResp(payload: string): Res.Result<RespPayload> {
     try {
         const res = JSON.parse(LZString.decompressFromUTF16(payload));
         return Res.ok(res);

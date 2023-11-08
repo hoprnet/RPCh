@@ -32,7 +32,7 @@ export function toSegments(requestId: string, hexData: string): Segment[] {
 /**
  * Create segment from string message.
  */
-export function fromMessage(str: string): Res.ResultStr<Segment> {
+export function fromMessage(str: string): Res.Result<Segment> {
     const parts = str.split('|');
     if (parts.length === 0) {
         return Res.err('empty string');

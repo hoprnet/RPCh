@@ -56,7 +56,6 @@ export function create({
         req,
         headers,
         hops,
-        id,
     });
     if (Res.isErr(resEncode)) {
         return resEncode;

@@ -1,8 +1,9 @@
 import http from 'http';
 import RPChSDK, {
     JRPC,
-    Response,
     ProviderAPI,
+    Response,
+    Result as Res,
     Utils,
     type RequestOps,
     type Ops as SDKops,
@@ -46,7 +47,7 @@ function extractParams(urlStr: undefined | string, host: undefined | string): Re
 }
 
 function parseBody(
-    str: string,
+    str: string
 ): { success: false; error: string; id?: string } | { success: true; req: JRPC.Request } {
     try {
         const json = JSON.parse(str);
@@ -76,24 +77,26 @@ function sendSkipRPCh(provider: string | undefined, req: JRPC.Request, res: http
         return;
     }
     ProviderAPI.fetchRPC(provider, req)
-        .then((resp: ProviderAPI.RPCResp) => {
-            if ('status' in resp) {
+        .then((resFetch: Res.Result<JRPC.Response, ProviderAPI.RPCFailure>) => {
+            if (Res.isErr(resFetch)) {
+                const { status, message } = resFetch.error;
                 log.verbose(
                     '[NO_RPCH] Response(HTTP %i): %s [request: %s]',
-                    resp.status,
-                    resp.message,
-                    JSON.stringify(req),
+                    status,
+                    message,
+                    JSON.stringify(req)
                 );
-                res.statusCode = resp.status;
+                res.statusCode = status;
                 // only write if we are allowed to
-                if (resp.status !== 204 && resp.status !== 304) {
-                    res.write(resp.message);
+                if (status !== 204 && status !== 304) {
+                    res.write(message);
                 }
             } else {
+                const resp = resFetch.res;
                 log.verbose(
                     '[NO_RPCH] Response: %s [request: %s]',
                     JSON.stringify(resp),
-                    JSON.stringify(req),
+                    JSON.stringify(req)
                 );
                 res.statusCode = 200;
                 res.write(JSON.stringify(resp));
@@ -111,7 +114,7 @@ function sendRequest(
     sdk: RPChSDK,
     req: JRPC.Request,
     params: RequestOps,
-    res: http.ServerResponse,
+    res: http.ServerResponse
 ) {
     sdk.send(req, params)
         .then(async (resp: Response.Response) => {
@@ -123,7 +126,7 @@ function sendRequest(
                 'Response(HTTP %i): %s [request: %s]',
                 resp.status,
                 text,
-                JSON.stringify(req),
+                JSON.stringify(req)
             );
             res.statusCode = resp.status;
             // only write if we are allowed to
@@ -186,7 +189,7 @@ function createServer(sdk: RPChSDK, ops: ServerOPS) {
                         '[NO_RPCH] Sending request',
                         JSON.stringify(result.req),
                         'with params',
-                        JSON.stringify(params),
+                        JSON.stringify(params)
                     );
                     sendSkipRPCh(params.provider, result.req, res);
                 } else {
@@ -194,7 +197,7 @@ function createServer(sdk: RPChSDK, ops: ServerOPS) {
                         'Sending request',
                         JSON.stringify(result.req),
                         'with params',
-                        JSON.stringify(params),
+                        JSON.stringify(params)
                     );
                     sendRequest(sdk, result.req, params, res);
                 }
@@ -206,7 +209,7 @@ function createServer(sdk: RPChSDK, ops: ServerOPS) {
                         jsonrpc: '2.0',
                         error: { code: -32700, message: `Parse error: ${result.error}` },
                         id: result.id,
-                    }),
+                    })
                 );
                 res.end();
             }
