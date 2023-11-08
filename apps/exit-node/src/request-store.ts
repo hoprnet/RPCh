@@ -66,6 +66,21 @@ export function addIfAbsent({ db }: RequestStore, id: string, counter: number): 
     });
 }
 
+export function removeExpired({ db }: RequestStore, olderThan: number): Promise<void> {
+    return new Promise((res, rej) => {
+        db.run(
+            'DELETE FROM request_store where counter < $counter;',
+            { $counter: olderThan },
+            (err) => {
+                if (err) {
+                    return rej(`Error deleting from request_store: ${err}`);
+                }
+                return res();
+            },
+        );
+    });
+}
+
 export function close({ db }: RequestStore): Promise<void> {
     return new Promise((res, rej) => {
         db.close((err) => {
