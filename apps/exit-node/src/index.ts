@@ -21,7 +21,8 @@ const log = Utils.logger(['exit-node']);
 
 const SocketReconnectTimeout = 1e3; // 1sek
 const RequestPurgeTimeout = 10e3; // 10sek
-const ValidCounterPeriod = 10e3 * 60 * 60; // 1hour
+const ValidCounterPeriod = 1e3 * 60 * 60; // 1hour
+const Version = process.env.npm_package_version;
 
 type State = {
     socket?: WS.WebSocket;
@@ -86,8 +87,6 @@ async function setup(ops: Ops): Promise<State> {
     }
 
     const { hopr: peerId } = resPeerId;
-    log.verbose('Fetched peer id %s[%s]', Utils.shortPeerId(peerId), peerId);
-
     const cache = SegmentCache.init();
     const deleteTimer = new Map();
 
@@ -96,7 +95,13 @@ async function setup(ops: Ops): Promise<State> {
         apiEndpoint: ops.apiEndpoint,
         discoveryPlatformEndpoint: ops.discoveryPlatformEndpoint,
     };
-    log.verbose('started exit-node with', JSON.stringify(logOpts));
+    log.verbose(
+        'Started exit-node[%s(%s),v%s] with %s',
+        Utils.shortPeerId(peerId),
+        peerId,
+        Version,
+        JSON.stringify(logOpts),
+    );
 
     return {
         cache,
@@ -152,8 +157,10 @@ function cleanup(state: State) {
 function scheduleCleanup(state: State) {
     // schdule next run somehwere between 1h and 1h and 10m
     const next = ValidCounterPeriod + Math.floor(Math.random() * 10 * 60e3);
-    const logN = Math.round(next / 1000);
-    log.verbose('scheduling next cleanup in', logN, 's');
+    const logH = Math.floor(next / 1000 / 60 / 60);
+    const logM = Math.round(next / 1000 / 60) - logH * 60;
+
+    log.verbose('scheduling next cleanup in %dh%dm', logH, logM);
     setTimeout(() => cleanup(state), next);
 }
 
