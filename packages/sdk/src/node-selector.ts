@@ -62,17 +62,22 @@ function match(
         return success(routePerfs[0], 'only route available');
     }
 
+    // special case version mismatches
+    const xVersionMatches = versionMatches(routePerfs);
+    if (xVersionMatches.length === 1) {
+        return success(xVersionMatches[0], 'only (assumed) version match');
+    }
+    if (xVersionMatches.length === 0) {
+        return Res.err('no nodes matching required version');
+    }
+
     ////
     // 1. compare exit node performances
-    const xNoInfoFails = noInfoFails(routePerfs);
+    const xNoInfoFails = noInfoFails(xVersionMatches);
     if (xNoInfoFails.length === 1) {
-        return success(xNoInfoFails[0], 'only info success');
+        return success(xNoInfoFails[0], 'only info req success');
     }
-    const xVersionMatches = versionMatches(xNoInfoFails);
-    if (xVersionMatches.length === 1) {
-        return success(xVersionMatches[0], 'only version match');
-    }
-    const xLeastErrs = leastReqErrors(xVersionMatches);
+    const xLeastErrs = leastReqErrors(xNoInfoFails);
     if (xLeastErrs.length === 1) {
         return success(xLeastErrs[0], 'least request errors');
     }
@@ -146,7 +151,21 @@ function createRoutePerfs(nodePairs: Map<string, NodePair.NodePair>) {
 }
 
 function noInfoFails(routePerfs: ExitPerf[]): ExitPerf[] {
-    return routePerfs.filter(({ infoFail }) => !infoFail);
+    // boolean sort: false first
+    routePerfs.sort((l, r) => {
+        if (l.infoFail === r.infoFail) {
+            return 0;
+        }
+        if (l.infoFail) {
+            return 1;
+        }
+        return -1;
+    });
+    const idx = routePerfs.findIndex(({ infoFail }) => infoFail);
+    if (idx > 0) {
+        return routePerfs.slice(0, idx);
+    }
+    return routePerfs;
 }
 
 function versionMatches(routePerfs: ExitPerf[]): ExitPerf[] {
