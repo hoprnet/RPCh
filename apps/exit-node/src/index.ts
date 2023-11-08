@@ -22,7 +22,7 @@ const log = Utils.logger(['exit-node']);
 const SocketReconnectTimeout = 1e3; // 1sek
 const RequestPurgeTimeout = 10e3; // 10sek
 const ValidCounterPeriod = 1e3 * 60 * 60; // 1hour
-const Version = process.env.npm_package_version;
+const Version = String(process.env.npm_package_version);
 
 type State = {
     socket?: WS.WebSocket;
@@ -43,6 +43,12 @@ type Ops = {
     discoveryPlatformEndpoint: string;
     nodeAccessToken: string;
     dbFile: string;
+};
+
+type Msg = {
+    type: string;
+    tag: number;
+    body: string;
 };
 
 async function start(ops: Ops) {
@@ -123,19 +129,19 @@ function setupSocket(state: State, ops: Ops) {
     socket.onmessage = onMessage(state, ops);
 
     socket.on('error', (err: Error) => {
-        log.error('ws error', err);
+        log.error('Websocket error', err);
         // attempt reconnect
         setTimeout(() => setupSocket(state, ops), SocketReconnectTimeout);
     });
 
     socket.on('close', (evt: WS.CloseEvent) => {
-        log.error('ws close', evt);
+        log.error('Websocket close', evt);
         // attempt reconnect
         setTimeout(() => setupSocket(state, ops), SocketReconnectTimeout);
     });
 
     socket.on('open', () => {
-        log.verbose('opened websocket listener');
+        log.verbose('Opened websocket listener');
     });
 
     state.socket = socket;
@@ -160,38 +166,33 @@ function scheduleCleanup(state: State) {
     const logH = Math.floor(next / 1000 / 60 / 60);
     const logM = Math.round(next / 1000 / 60) - logH * 60;
 
-    log.verbose('scheduling next cleanup in %dh%dm', logH, logM);
+    log.verbose('Scheduling next cleanup in %dh%dm', logH, logM);
     setTimeout(() => cleanup(state), next);
 }
 
 function onMessage(state: State, ops: Ops) {
     return function (evt: WS.MessageEvent) {
         const raw = evt.data.toString();
-        const msg: { type: string; tag: number; body: string } = JSON.parse(raw);
+        const msg = JSON.parse(raw) as Msg;
 
         if (msg.type !== 'message') {
             return;
         }
 
-        // determine if only ping acc
+        // determine if ping req
         if (msg.body.startsWith('ping-')) {
-            log.info('received ping req', msg.body);
-            const [, recipient] = msg.body.split('-');
-            const conn = { ...ops, hops: 0 };
-            NodeAPI.sendMessage(conn, {
-                recipient,
-                tag: msg.tag,
-                message: `pong-${state.peerId}`,
-            }).catch((err) => {
-                log.error('error sending pong', err);
-            });
-            return;
+            return onPingReq(state, ops, msg);
+        }
+
+        // deterine if info req
+        if (msg.body.startsWith('info-')) {
+            return onInfoReq(state, ops, msg);
         }
 
         // determine if valid segment
         const segRes = Segment.fromMessage(msg.body);
         if (Res.isErr(segRes)) {
-            log.info('cannot create segment', segRes.error);
+            log.info('Cannot create segment:', segRes.error);
             return;
         }
 
@@ -199,34 +200,72 @@ function onMessage(state: State, ops: Ops) {
         const cacheRes = SegmentCache.incoming(state.cache, segment);
         switch (cacheRes.res) {
             case 'complete':
-                log.verbose('completion segment', Segment.prettyPrint(segment));
+                log.verbose('Completing segment:', Segment.prettyPrint(segment));
                 clearTimeout(state.deleteTimer.get(segment.requestId));
                 completeSegmentsEntry(state, ops, cacheRes.entry as SegmentCache.Entry, msg.tag);
                 break;
             case 'error':
-                log.error('error caching segment', cacheRes.reason);
+                log.error('Error caching segment:', cacheRes.reason);
                 break;
             case 'already-cached':
-                log.info('already cached', Segment.prettyPrint(segment));
+                log.info('Already cached:', Segment.prettyPrint(segment));
                 break;
             case 'added-to-request':
                 log.verbose(
-                    'inserted new segment to existing request',
+                    'Inserted new segment to existing request:',
                     Segment.prettyPrint(segment),
                 );
                 break;
             case 'inserted-new':
-                log.verbose('inserted new first segment', Segment.prettyPrint(segment));
+                log.verbose('Inserted new first segment:', Segment.prettyPrint(segment));
                 state.deleteTimer.set(
                     segment.requestId,
                     setTimeout(() => {
-                        log.info('purging incomplete request', segment.requestId);
+                        log.info('Purging incomplete request:', segment.requestId);
                         SegmentCache.remove(state.cache, segment.requestId);
                     }, RequestPurgeTimeout),
                 );
                 break;
         }
     };
+}
+
+function onPingReq(state: State, ops: Ops, msg: Msg) {
+    log.info('Received ping req:', msg.body);
+    const [, recipient] = msg.body.split('-');
+    const conn = { ...ops, hops: 0 };
+    NodeAPI.sendMessage(conn, {
+        recipient,
+        tag: msg.tag,
+        message: `pong-${state.peerId}`,
+    }).catch((err) => {
+        log.error('Error sending pong:', err);
+    });
+}
+
+function onInfoReq(state: State, ops: Ops, msg: Msg) {
+    log.info('Received info req:', msg.body);
+    const [, recipient, hopsStr] = msg.body.split('-');
+    const hops = parseInt(hopsStr, 10);
+    const conn = { ...ops, hops };
+    const info = {
+        peerId: state.peerId,
+        counter: Date.now(),
+        version: Version,
+    };
+    const res = Payload.encodeInfo(info);
+    if (Res.isErr(res)) {
+        log.error('Error encoding info:', res.error);
+        return;
+    }
+    const message = res.res;
+    NodeAPI.sendMessage(conn, {
+        recipient,
+        tag: msg.tag,
+        message,
+    }).catch((err) => {
+        log.error('Error sending info:', err);
+    });
 }
 
 async function completeSegmentsEntry(
@@ -237,14 +276,14 @@ async function completeSegmentsEntry(
 ) {
     const firstSeg = cacheEntry.segments.get(0) as Segment.Segment;
     if (!firstSeg.body.startsWith('0x')) {
-        log.info('message is not a request', firstSeg.requestId);
+        log.info('Message is not a request:', firstSeg.requestId);
         return;
     }
     const requestId = firstSeg.requestId;
     const msg = SegmentCache.toMessage(cacheEntry);
     const msgParts = msg.split(',');
     if (msgParts.length !== 2) {
-        log.info('Invalid message parts', msgParts);
+        log.info('Invalid message parts:', msgParts);
         return;
     }
 
@@ -260,7 +299,7 @@ async function completeSegmentsEntry(
     });
 
     if (Res.isErr(resReq)) {
-        log.error(`Error unboxing request: ${resReq.error}`);
+        log.error(`Error unboxing request:`, resReq.error);
         return;
     }
 
@@ -364,7 +403,7 @@ function sendResponse(
                 tag,
                 message: Segment.toMessage(seg),
             }).catch((err: Error) => {
-                log.error('error sending segment', Segment.prettyPrint(seg), err);
+                log.error('Error sending segment:', Segment.prettyPrint(seg), err);
             });
         });
     });
@@ -390,10 +429,10 @@ function sendResponse(
         };
 
         DPapi.fetchQuota(ops, quotaRequest).catch((ex) => {
-            log.error('Error recording request quota', ex);
+            log.error('Error recording request quota:', ex);
         });
         DPapi.fetchQuota(ops, quotaResponse).catch((ex) => {
-            log.error('Error recording response quota', ex);
+            log.error('Error recording response quota:', ex);
         });
     }, segments.length);
 }
