@@ -6,6 +6,8 @@ import * as Res from './result';
 import type { EntryNode } from './entry-node';
 import { shortPeerId, randomEl } from './utils';
 
+const ExitNodesCompatVersions = ['0.11'];
+
 export type NodeSelection = {
     match: NodeMatch.NodeMatch;
     via: string;
@@ -62,7 +64,15 @@ function match(
 
     ////
     // 1. compare exit node performances
-    const xLeastErrs = leastReqErrors(routePerfs);
+    const xNoInfoFails = noInfoFails(routePerfs);
+    if (xNoInfoFails.length === 1) {
+        return success(xNoInfoFails[0], 'only info success');
+    }
+    const xVersionMatches = versionMatches(xNoInfoFails);
+    if (xVersionMatches.length === 1) {
+        return success(xVersionMatches[0], 'only version match');
+    }
+    const xLeastErrs = leastReqErrors(xVersionMatches);
     if (xLeastErrs.length === 1) {
         return success(xLeastErrs[0], 'least request errors');
     }
@@ -73,6 +83,10 @@ function match(
     const xBestLats = bestReqLatencies(xLeastOngoing);
     if (xBestLats.length > 0) {
         return success(xBestLats[0], 'best request latency');
+    }
+    const xBestInfoLats = bestInfoLatencies(xLeastOngoing);
+    if (xBestInfoLats.length > 0) {
+        return success(xBestInfoLats[0], 'best info req latency');
     }
 
     const entryPerfs = createEntryPerfs(nodePairs, xLeastOngoing);
@@ -131,6 +145,20 @@ function createRoutePerfs(nodePairs: Map<string, NodePair.NodePair>) {
     }, []);
 }
 
+function noInfoFails(routePerfs: ExitPerf[]): ExitPerf[] {
+    return routePerfs.filter(({ infoFail }) => !infoFail);
+}
+
+function versionMatches(routePerfs: ExitPerf[]): ExitPerf[] {
+    return routePerfs.filter(({ version }) => {
+        if (version) {
+            return ExitNodesCompatVersions.some((v) => version.startsWith(v));
+        }
+        // do not exclude not yet determined ones
+        return true;
+    });
+}
+
 function leastReqErrors(routePerfs: ExitPerf[]): ExitPerf[] {
     routePerfs.sort((l, r) => l.failures - r.failures);
     const min = routePerfs[0].failures;
@@ -144,6 +172,12 @@ function leastReqErrors(routePerfs: ExitPerf[]): ExitPerf[] {
 function bestReqLatencies(routePerfs: ExitPerf[]): ExitPerf[] {
     const haveLats = routePerfs.filter(({ avgLats }) => avgLats > 0);
     haveLats.sort((l, r) => l.avgLats - r.avgLats);
+    return haveLats;
+}
+
+function bestInfoLatencies(routePerfs: ExitPerf[]): ExitPerf[] {
+    const haveLats = routePerfs.filter(({ infoLat }) => !!infoLat);
+    haveLats.sort((l, r) => l.infoLat - r.infoLat);
     return haveLats;
 }
 

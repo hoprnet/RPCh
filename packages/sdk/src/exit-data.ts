@@ -9,6 +9,8 @@ export type Perf = {
     successes: number;
     total: number;
     avgLats: number;
+    infoFail: boolean;
+    version?: string;
     infoLat: number;
 };
 
@@ -70,6 +72,8 @@ export function perf(xd: ExitData): Perf {
     const failures = total - successes;
     const avgLats = average(lats);
     const infoLat = xd.infoLat || -1;
+    const infoFail = !!xd.infoFail;
+    const version = xd.version;
     return {
         ongoing,
         failures,
@@ -77,5 +81,7 @@ export function perf(xd: ExitData): Perf {
         total,
         avgLats,
         infoLat,
+        infoFail,
+        version,
     };
 }
