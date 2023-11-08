@@ -195,7 +195,7 @@ function bestReqLatencies(routePerfs: ExitPerf[]): ExitPerf[] {
 }
 
 function bestInfoLatencies(routePerfs: ExitPerf[]): ExitPerf[] {
-    const haveLats = routePerfs.filter(({ infoLat }) => !!infoLat);
+    const haveLats = routePerfs.filter(({ infoLat }) => infoLat > 0);
     haveLats.sort((l, r) => l.infoLat - r.infoLat);
     return haveLats;
 }
