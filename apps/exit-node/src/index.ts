@@ -54,7 +54,10 @@ type Msg = {
 
 async function start(ops: Ops) {
     const state = await setup(ops).catch(() => {
-        log.error('Fatal error initializing exit node');
+        log.error(
+            'Fatal error initializing %s',
+            ExitNode.prettyPrint('(unknown)', Version, Date.now()),
+        );
     });
     if (!state) {
         process.exit(1);
@@ -71,7 +74,7 @@ async function setup(ops: Ops): Promise<State> {
         return Promise.reject();
     }
 
-    log.verbose('Setup db at', ops.dbFile);
+    log.verbose('Set up DB at', ops.dbFile);
 
     const resId = await Identity.getIdentity({
         identityFile: ops.identityFile,
