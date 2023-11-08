@@ -2,6 +2,7 @@ import { utils as etherUtils } from 'ethers';
 
 import * as JRPC from './jrpc';
 import * as NodeAPI from './node-api';
+import * as Payload from './payload';
 import * as ProviderAPI from './provider-api';
 import * as Request from './request';
 import * as RequestCache from './request-cache';
@@ -440,30 +441,30 @@ export default class SDK {
         this.nodesColl.requestSucceeded(request, responseTime);
 
         switch (resp.type) {
-            case 'error':
-                return reject(`Error attempting JSON RPC call: ${resp.reason}`);
-            case 'counterfail': {
-                const counter = reqEntry.session.updatedTS;
-                return reject(
-                    `Message out of counter range. Exit node expected message counter near ${resp.now} - request got ${counter}.`
-                );
-            }
-            case 'duplicatefail':
-                return reject(
-                    `Message duplicate error. Exit node rejected already processed message`
-                );
-            case 'httperror':
-                return resolve({
-                    status: resp.status,
-                    text: () => Promise.resolve(resp.text),
-                    json: () => new Promise((r) => r(JSON.parse(resp.text))),
-                });
-            case 'resp':
+            case Payload.RespType.Resp:
                 return resolve({
                     status: 200,
                     text: () => new Promise((r) => r(JSON.stringify(resp.resp))),
                     json: () => Promise.resolve(resp.resp),
                 });
+            case Payload.RespType.CounterFail: {
+                const counter = reqEntry.session.updatedTS;
+                return reject(
+                    `Message out of counter range. Exit node expected message counter near ${resp.now} - request got ${counter}.`
+                );
+            }
+            case Payload.RespType.DuplicateFail:
+                return reject(
+                    `Message duplicate error. Exit node rejected already processed message`
+                );
+            case Payload.RespType.HttpError:
+                return resolve({
+                    status: resp.status,
+                    text: () => Promise.resolve(resp.text),
+                    json: () => new Promise((r) => r(JSON.parse(resp.text))),
+                });
+            case Payload.RespType.Error:
+                return reject(`Error attempting JSON RPC call: ${resp.reason}`);
         }
     };
 

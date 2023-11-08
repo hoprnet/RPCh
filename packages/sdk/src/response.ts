@@ -25,7 +25,7 @@ export function respToMessage({
     entryPeerId: string;
     respPayload: Payload.RespPayload;
     unboxSession: compatCrypto.Session;
-}): Res.Result<string> {
+}): Res.ResultStr<string> {
     const resEncode = Payload.encodeResp(respPayload);
     if (Res.isErr(resEncode)) {
         return resEncode;
@@ -56,7 +56,7 @@ export function messageToResp({
     respData: Uint8Array;
     request: Request;
     session: compatCrypto.Session;
-}): Res.Result<UnboxResponse> {
+}): Res.ResultStr<UnboxResponse> {
     const resUnbox = compatCrypto.unboxResponse(session, {
         message: respData,
         entryPeerId: request.entryPeerId,

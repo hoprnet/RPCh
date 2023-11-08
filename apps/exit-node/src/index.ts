@@ -29,7 +29,7 @@ type State = {
     privateKey: Uint8Array;
     peerId: string;
     cache: SegmentCache.Cache;
-    deleteTimer: Map<number, ReturnType<typeof setTimeout>>; // deletion timer of requests in segment cache
+    deleteTimer: Map<string, ReturnType<typeof setTimeout>>; // deletion timer of requests in segment cache
     requestStore: RequestStore.RequestStore;
 };
 
@@ -161,18 +161,18 @@ function onMessage(state: State, ops: Ops) {
 
         // determine if valid segment
         const segRes = Segment.fromMessage(msg.body);
-        if (!segRes.success) {
+        if (Res.isErr(segRes)) {
             log.info('cannot create segment', segRes.error);
             return;
         }
 
-        const segment = segRes.segment;
+        const segment = segRes.res;
         const cacheRes = SegmentCache.incoming(state.cache, segment);
         switch (cacheRes.res) {
             case 'complete':
                 log.verbose('completion segment', Segment.prettyPrint(segment));
                 clearTimeout(state.deleteTimer.get(segment.requestId));
-                completeSegmentsEntry(state, ops, cacheRes.entry!, msg.tag);
+                completeSegmentsEntry(state, ops, cacheRes.entry as SegmentCache.Entry, msg.tag);
                 break;
             case 'error':
                 log.error('error caching segment', cacheRes.reason);
@@ -206,11 +206,12 @@ async function completeSegmentsEntry(
     cacheEntry: SegmentCache.Entry,
     tag: number
 ) {
-    const firstSeg = cacheEntry.segments.get(0)!;
+    const firstSeg = cacheEntry.segments.get(0) as Segment.Segment;
     if (!firstSeg.body.startsWith('0x')) {
         log.info('message is not a request', firstSeg.requestId);
         return;
     }
+    const requestId = firstSeg.requestId;
     const msg = SegmentCache.toMessage(cacheEntry);
     const msgParts = msg.split(',');
     if (msgParts.length !== 2) {
@@ -249,7 +250,7 @@ async function completeSegmentsEntry(
     }
 
     // check uuid
-    const res = await RequestStore.addIfAbsent(state.requestStore, reqPayload.id, counter);
+    const res = await RequestStore.addIfAbsent(state.requestStore, requestId, counter);
     if (res === RequestStore.AddRes.Duplicate) {
         log.info('Duplicate request id');
         // duplicate fail resp
@@ -311,7 +312,7 @@ function sendResponse(
         return;
     }
 
-    const requestId = cacheEntry.segments.get(0)!.requestId;
+    const requestId = (cacheEntry.segments.get(0) as Segment.Segment).requestId;
     const segments = Segment.toSegments(requestId, resResp.res);
 
     log.verbose(
@@ -341,7 +342,7 @@ function sendResponse(
 
     // inform DP non blocking
     setTimeout(() => {
-        const lastReqSeg = cacheEntry.segments.get(cacheEntry.count - 1)!;
+        const lastReqSeg = cacheEntry.segments.get(cacheEntry.count - 1) as Segment.Segment;
         const quotaRequest: DPapi.QuotaParams = {
             clientId: reqPayload.clientId,
             rpcMethod: reqPayload.req.method,
@@ -350,7 +351,7 @@ function sendResponse(
             type: 'request',
         };
 
-        const lastRespSeg = segments[segments.length - 1]!;
+        const lastRespSeg = segments[segments.length - 1];
         const quotaResponse: DPapi.QuotaParams = {
             clientId: reqPayload.clientId,
             rpcMethod: reqPayload.req.method,
