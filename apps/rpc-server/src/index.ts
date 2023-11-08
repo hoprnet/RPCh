@@ -22,6 +22,8 @@ const corsHeaders = {
 
 const defaultPort = 45750;
 
+const Version = String(process.env.npm_package_version);
+
 function toURL(urlStr: string, host: string): null | URL {
     try {
         return new URL(urlStr, host);
@@ -274,6 +276,11 @@ if (require.main === module) {
     const sdk = new RPChSDK(clientId, ops);
     const server = createServer(sdk, serverOps);
     server.listen(port, '0.0.0.0', () => {
-        log.verbose(`rpc server started on '0.0.0.0:${port}' with ${JSON.stringify(ops)}`);
+        log.verbose(
+            "RPCServer[v%s] started on '0.0.0.0:%d' with %s",
+            Version,
+            port,
+            JSON.stringify(ops),
+        );
     });
 }

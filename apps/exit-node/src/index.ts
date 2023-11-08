@@ -103,7 +103,7 @@ async function setup(ops: Ops): Promise<State> {
         discoveryPlatformEndpoint: ops.discoveryPlatformEndpoint,
     };
     log.verbose(
-        'Started %s with %s',
+        '%s started with %s',
         ExitNode.prettyPrint(peerId, Version, Date.now()),
         JSON.stringify(logOpts),
     );

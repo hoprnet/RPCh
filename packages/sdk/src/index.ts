@@ -225,7 +225,7 @@ export default class SDK {
             this.nodesColl.requestStarted(request);
 
             // send request to hoprd
-            log.info('sending request %i', request.id);
+            log.info('sending request %s', request.id);
 
             // queue segment sending for all of them
             segments.forEach((s) =>
