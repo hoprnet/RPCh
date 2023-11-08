@@ -52,6 +52,7 @@ async function start(ops: Ops) {
         process.exit(1);
     }
     setupSocket(state, ops);
+    cleanup(state);
 }
 
 async function setup(ops: Ops): Promise<State> {
@@ -133,6 +134,27 @@ function setupSocket(state: State, ops: Ops) {
     });
 
     state.socket = socket;
+}
+
+function cleanup(state: State) {
+    RequestStore.removeExpired(state.requestStore, ValidCounterPeriod)
+        .then(() => {
+            log.info('Successfully ran removeExpired on requestStore');
+        })
+        .catch((err) => {
+            log.error('Error during cleanup:', err);
+        })
+        .finally(() => {
+            scheduleCleanup(state);
+        });
+}
+
+function scheduleCleanup(state: State) {
+    // schdule next run somehwere between 1h and 1h and 10m
+    const next = ValidCounterPeriod + Math.floor(Math.random() * 10 * 60e3);
+    const logN = Math.round(next / 1000);
+    log.verbose('scheduling next cleanup in', logN, 's');
+    setTimeout(() => cleanup(state), next);
 }
 
 function onMessage(state: State, ops: Ops) {
