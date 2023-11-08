@@ -20,7 +20,7 @@ export type Request = {
 };
 
 export type UnboxRequest = {
-    req: Payload.ReqPayload;
+    reqPayload: Payload.ReqPayload;
     session: compatCrypto.Session;
 };
 
@@ -114,7 +114,7 @@ export function messageToReq({
     }
 
     return Res.ok({
-        req: resDecode.res,
+        reqPayload: resDecode.res,
         session: resUnbox.session,
     });
 }

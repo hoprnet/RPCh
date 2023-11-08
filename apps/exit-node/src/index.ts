@@ -1,5 +1,3 @@
-import * as Res from './result';
-import * as compatCrypto from '@rpch/compat-crypto';
 import * as path from 'path';
 import WS from 'isomorphic-ws';
 import { utils } from 'ethers';
@@ -13,6 +11,7 @@ import {
     ProviderAPI,
     Request,
     Response,
+    Result as Res,
     Segment,
     SegmentCache,
     Utils,
@@ -31,7 +30,6 @@ type State = {
     peerId: string;
     cache: SegmentCache.Cache;
     deleteTimer: Map<number, ReturnType<typeof setTimeout>>; // deletion timer of requests in segment cache
-    counterStore: Map<string, bigint>;
     requestStore: RequestStore.RequestStore;
 };
 
@@ -91,7 +89,6 @@ async function setup(ops: Ops): Promise<State> {
 
     const cache = SegmentCache.init();
     const deleteTimer = new Map();
-    const counterStore = new Map();
 
     const logOpts = {
         identityFile: ops.identityFile,
@@ -102,7 +99,6 @@ async function setup(ops: Ops): Promise<State> {
 
     return {
         cache,
-        counterStore,
         deleteTimer,
         privateKey: utils.arrayify(resId.privateKey),
         peerId,
@@ -234,157 +230,60 @@ async function completeSegmentsEntry(
     });
 
     if (Res.isErr(resReq)) {
-        log.error(`Error decrypting request: ${resReq.error}`);
+        log.error(`Error unboxing request: ${resReq.error}`);
         return;
     }
 
-    const unboxedReq = resReq.res;
+    const unboxRequest = resReq.res;
+    const { reqPayload, session: unboxSession } = unboxRequest;
+    const sendParams = { ops, entryPeerId, cacheEntry, tag, unboxRequest };
 
-    const counter = unboxedReq.session.updatedTS;
+    // check counter
+    const counter = Number(unboxSession.updatedTS);
     const now = Date.now();
     const valid = now - ValidCounterPeriod;
     if (counter < valid) {
-        log.info("Counter %d outside valid period %d (now: %d)", counter, valid, (now))
-        sendCounterfailResp();
-        return;
+        log.info('Counter %d outside valid period %d (now: %d)', counter, valid, now);
+        // counter fail resp
+        return sendResponse(sendParams, { type: Payload.RespType.CounterFail, now });
     }
 
-    const id = unboxedReq.req.id;
-    const res = RequestStore.addIfAbsent(store, id);
-    if (res.duplicate) {
-        log.info("Duplicate request id");
-        sendDuplicateResp();
-        return;
+    // check uuid
+    const res = await RequestStore.addIfAbsent(state.requestStore, reqPayload.id, counter);
+    if (res === RequestStore.AddRes.Duplicate) {
+        log.info('Duplicate request id');
+        // duplicate fail resp
+        return sendResponse(sendParams, { type: Payload.RespType.DuplicateFail });
     }
 
-    handleIncomingReq();
-}
-
-
-function handleIncomingReq() {
-    const counter = state.counterStore.get(entryPeerId) || BigInt(0);
-    const resReq = Request.messageToReq({
-        message: reqData,
-        counter,
-        exitPeerId: state.peerId,
-        exitPrivateKey: state.privateKey,
+    // do RPC request
+    const { provider, req, headers } = reqPayload;
+    const resFetch = await ProviderAPI.fetchRPC(provider, req, headers).catch((err: Error) => {
+        log.error(
+            'Error RPC requesting %s with %s: %s',
+            provider,
+            JSON.stringify(req),
+            JSON.stringify(err)
+        );
+        // rpc critical fail response
+        return sendResponse(sendParams, {
+            type: Payload.RespType.Error,
+            reason: JSON.stringify(err),
+        });
     });
-    switch (resReq.res) {
-        case 'error':
-            log.error('Error unboxing request', resReq.reason);
-            return;
-        case 'counterfail': {
-            const now = BigInt(Date.now());
-            log.info('Counterfail unboxing request - lowerbound %s upperbound %s', counter, now);
-            // counterfail response
-            const resResp = Response.respToMessage({
-                entryPeerId,
-                respPayload: { type: 'counterfail', min: Number(counter), max: Number(now) },
-                unboxSession: resReq.session,
-            });
-            if (!Response.msgSuccess(resResp)) {
-                log.error('Error boxing counterfail resp', resResp.error);
-                return;
-            }
-            sendResponse(
-                { ops, cacheEntry, tag, reqPayload: resReq.req, entryPeerId },
-                resResp.hexData
-            );
-            return;
-        }
-        case 'success': {
-            state.counterStore.set(entryPeerId, resReq.counter);
-
-            // do RPC request
-            const { provider, req, headers } = resReq.req;
-            const resp = await ProviderAPI.fetchRPC(provider, req, headers).catch((err: Error) => {
-                log.error(
-                    'Error RPC requesting %s with %s: %s',
-                    provider,
-                    JSON.stringify(req),
-                    JSON.stringify(err)
-                );
-                // rpc critical fail response
-                const resResp = Response.respToMessage({
-                    entryPeerId,
-                    respPayload: { type: 'error', reason: JSON.stringify(err) },
-                    unboxSession: resReq.session,
-                });
-                if (!Response.msgSuccess(resResp)) {
-                    log.error('Error boxing generic error resp', resResp.error);
-                    return;
-                }
-                sendResponse(
-                    { ops, cacheEntry, tag, reqPayload: resReq.req, entryPeerId },
-                    resResp.hexData
-                );
-            });
-            if (!resp) {
-                return;
-            }
-
-            // http fail response
-            if ('status' in resp) {
-                const resResp = Response.respToMessage({
-                    entryPeerId,
-                    respPayload: {
-                        type: 'httperror',
-                        status: resp.status,
-                        text: resp.message,
-                    },
-                    unboxSession: resReq.session,
-                });
-                if (!Response.msgSuccess(resResp)) {
-                    log.error('Error boxing http error resp', resResp.error);
-                    return;
-                }
-                sendResponse(
-                    { ops, cacheEntry, tag, reqPayload: resReq.req, entryPeerId },
-                    resResp.hexData
-                );
-                return;
-            }
-
-            // success Response
-            const resResp = Response.respToMessage({
-                entryPeerId,
-                respPayload: { type: 'resp', resp },
-                unboxSession: resReq.session,
-            });
-            if (!Response.msgSuccess(resResp)) {
-                log.error('Error boxing response', resResp.error);
-                return;
-            }
-            sendResponse(
-                { ops, entryPeerId, cacheEntry, tag, reqPayload: resReq.req },
-                resResp.hexData
-            );
-            return;
-        }
+    if (!resFetch) {
+        return;
     }
+
+    // http fail response
+    if (Res.isErr(resFetch)) {
+        const { status, message: text } = resFetch.error;
+        return sendResponse(sendParams, { type: Payload.RespType.HttpError, status, text });
+    }
+
+    const resp = resFetch.res;
+    return sendResponse(sendParams, { type: Payload.RespType.Resp, resp });
 }
-
-function sendCounterfailResp( { ops, entryPeerId, cacheEntry, tag, counter, now, unboxRequest}: {
-        ops: Ops;
-        entryPeerId: string;
-        tag: number;
-        cacheEntry: SegmentCache.Entry;
-        counter: number,
-        now: number,
-        unboxRequest: Request.UnboxRequest
-    }
-                            ) {
-        // counterfail response
-        const resResp = Response.respToMessage({entryPeerId, respPayload: { type: 'counterfail', counter, now }, unboxSession: unboxRequest.session});
-            if (!Response.msgSuccess(resResp)) {
-                log.error('Error boxing counterfail resp', resResp.error);
-                return;
-            }
-            sendResponse(
-                { ops, cacheEntry, tag, reqPayload: resReq.req, entryPeerId },
-                resResp.hexData
-            );
-            return;
 
 function sendResponse(
     {
@@ -392,18 +291,28 @@ function sendResponse(
         entryPeerId,
         cacheEntry,
         tag,
-        reqPayload,
+        unboxRequest: { session: unboxSession, reqPayload },
     }: {
         ops: Ops;
         entryPeerId: string;
         tag: number;
         cacheEntry: SegmentCache.Entry;
-        reqPayload: Payload.ReqPayload;
+        unboxRequest: Request.UnboxRequest;
     },
-    resp: string
+    respPayload: Payload.RespPayload
 ) {
+    const resResp = Response.respToMessage({
+        entryPeerId,
+        respPayload,
+        unboxSession,
+    });
+    if (Res.isErr(resResp)) {
+        log.error('Error boxing response', resResp.error);
+        return;
+    }
+
     const requestId = cacheEntry.segments.get(0)!.requestId;
-    const segments = Segment.toSegments(requestId, resp);
+    const segments = Segment.toSegments(requestId, resResp.res);
 
     log.verbose(
         'Returning message to %s, tag: %s, requestId: %i',

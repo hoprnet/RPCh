@@ -11,31 +11,36 @@ export type ReqPayload = {
     id: string;
 };
 
+export enum RespType {
+    Resp,
+    CounterFail,
+    DuplicateFail,
+    HttpError,
+    Error,
+}
 export type RespPayload =
     | {
-          type: 'resp';
+          type: RespType.Resp;
           resp: JRPC.Response;
       }
     | {
-          type: 'counterfail';
-          counter: number;
+          type: RespType.CounterFail;
           now: number;
       }
     | {
-          type: 'duplicatefail';
-          id: string;
+          type: RespType.DuplicateFail;
       }
     | {
-          type: 'httperror';
+          type: RespType.HttpError;
           status: number;
           text: string;
       }
     | {
-          type: 'error';
+          type: RespType.Error;
           reason: string;
       };
 
-export function encodeReq(payload: ReqPayload): Res.Result<string> {
+export function encodeReq(payload: ReqPayload): Res.ResultStr<string> {
     try {
         const res = LZString.compressToUTF16(JSON.stringify(payload));
         return Res.ok(res);
@@ -44,7 +49,7 @@ export function encodeReq(payload: ReqPayload): Res.Result<string> {
     }
 }
 
-export function decodeReq(payload: string): Res.Result<ReqPayload> {
+export function decodeReq(payload: string): Res.ResultStr<ReqPayload> {
     try {
         const res = JSON.parse(LZString.decompressFromUTF16(payload));
         return Res.ok(res);
@@ -53,7 +58,7 @@ export function decodeReq(payload: string): Res.Result<ReqPayload> {
     }
 }
 
-export function encodeResp(payload: RespPayload): Res.Result<string> {
+export function encodeResp(payload: RespPayload): Res.ResultStr<string> {
     try {
         const res = LZString.compressToUTF16(JSON.stringify(payload));
         return Res.ok(res);
@@ -62,7 +67,7 @@ export function encodeResp(payload: RespPayload): Res.Result<string> {
     }
 }
 
-export function decodeResp(payload: string): Res.Result<RespPayload> {
+export function decodeResp(payload: string): Res.ResultStr<RespPayload> {
     try {
         const res = JSON.parse(LZString.decompressFromUTF16(payload));
         return Res.ok(res);

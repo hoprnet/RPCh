@@ -20,6 +20,7 @@ export * as Payload from './payload';
 export * as ProviderAPI from './provider-api';
 export * as Request from './request';
 export * as Response from './response';
+export * as Result from './result';
 export * as Segment from './segment';
 export * as SegmentCache from './segment-cache';
 export * as Utils from './utils';
