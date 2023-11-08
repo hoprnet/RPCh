@@ -1,14 +1,16 @@
 import * as EntryData from './entry-data';
 import * as ExitData from './exit-data';
+import * as ExitNode from './exit-node';
 import * as NodeAPI from './node-api';
 import * as NodeMatch from './node-match';
+import * as Payload from './payload';
 import * as PerfData from './perf-data';
 import * as Request from './request';
+import * as Res from './result';
 import * as Segment from './segment';
 import { average, logger, shortPeerId } from './utils';
 
 import type { EntryNode } from './entry-node';
-import type { ExitNode } from './exit-node';
 
 export type MessageListener = (messages: NodeAPI.Message[]) => void;
 
@@ -17,9 +19,10 @@ const MessagesFetchInterval = 333; // ms
 export type NodePair = {
     entryNode: EntryNode;
     entryData: EntryData.EntryData;
-    exitNodes: Map<string, ExitNode>;
+    exitNodes: Map<string, ExitNode.ExitNode>;
     exitDatas: Map<string, ExitData.ExitData>;
     applicationTag: number;
+    hops?: number;
     messageListener: MessageListener;
     fetchInterval?: ReturnType<typeof setInterval>;
     fetchMessagesOngoing: boolean;
@@ -28,9 +31,10 @@ export type NodePair = {
 
 export function create(
     entryNode: EntryNode,
-    exitNodesIt: Iterable<ExitNode>,
+    exitNodesIt: Iterable<ExitNode.ExitNode>,
     applicationTag: number,
     messageListener: MessageListener,
+    hops?: number,
 ): NodePair {
     const entryData = EntryData.create();
     const shortId = shortPeerId(entryNode.id);
@@ -48,6 +52,7 @@ export function create(
         messageListener,
         fetchMessagesOngoing: false,
         log,
+        hops,
     };
 }
 
@@ -76,6 +81,7 @@ export function requestStarted(np: NodePair, req: Request.Request) {
         np.fetchInterval = setInterval(() => fetchMessages(np), MessagesFetchInterval);
     }
 }
+
 export function requestSucceeded(np: NodePair, req: Request.Request, responseTime: number) {
     const data = np.exitDatas.get(req.exitPeerId);
     if (!data) {
@@ -112,7 +118,7 @@ export function requestFailed(np: NodePair, req: Request.Request) {
 
 function checkStopInterval(np: NodePair) {
     // stop interval if applicable
-    if (np.entryData.requestsOngoing === 0) {
+    if (np.entryData.requestsOngoing === 0 && np.entryData.infoOngoing === 0) {
         clearInterval(np.fetchInterval);
         np.fetchInterval = undefined;
     }
@@ -131,16 +137,36 @@ export function segmentFailed(np: NodePair, seg: Segment.Segment) {
 }
 
 /**
+ * Run initial discovery steps.
  * Ping entry node version.
+ * Request info msg from exit nodes.
  */
-export function ping(np: NodePair): Promise<number> {
-    return new Promise((res) => {
-        const startPingTime = Date.now();
-        NodeAPI.version(np.entryNode).then((_) => {
-            np.entryData.pingDuration = Date.now() - startPingTime;
-            return res(np.entryData.pingDuration);
-        });
+export function discover(np: NodePair) {
+    const startPingTime = Date.now();
+    NodeAPI.version(np.entryNode).then((_) => {
+        np.entryData.pingDuration = Date.now() - startPingTime;
     });
+    Array.from(np.exitNodes.values()).map((x, idx) => {
+        setTimeout(() => requestInfo(np, x), idx);
+    });
+}
+
+function requestInfo(np: NodePair, exitNode: ExitNode.ExitNode) {
+    NodeAPI.sendMessage(
+        {
+            ...np.entryNode,
+            hops: np.hops,
+        },
+        {
+            recipient: exitNode.id,
+            tag: np.applicationTag,
+            message: `info-${np.entryNode.id}-${np.hops}`,
+        },
+    );
+    EntryData.addOngoingInfo(np.entryData);
+    if (!np.fetchInterval) {
+        np.fetchInterval = setInterval(() => fetchMessages(np), MessagesFetchInterval);
+    }
 }
 
 export function prettyPrint(np: NodePair): string {
@@ -208,10 +234,50 @@ function fetchMessages(np: NodePair) {
             if (np.entryData.fetchMessagesLatencies.length > NodeMatch.MaxMessagesHistory) {
                 np.entryData.fetchMessagesLatencies.shift();
             }
-            np.messageListener(messages);
+            const { msgs, infoResps } = messages.reduce<{
+                msgs: NodeAPI.Message[];
+                infoResps: NodeAPI.Message[];
+            }>(
+                (acc, m) => {
+                    if (m.body.startsWith('nfrp-')) {
+                        acc.infoResps.push(m);
+                    } else {
+                        acc.msgs.push(m);
+                    }
+                    return acc;
+                },
+                { infoResps: [], msgs: [] },
+            );
+            incInfoResps(np, infoResps);
+            np.messageListener(msgs);
         })
         .catch((err) => {
             np.log.error('Error fetching node messages', JSON.stringify(err));
             np.entryData.fetchMessagesErrors++;
         });
+}
+
+function incInfoResps(np: NodePair, infoResps: NodeAPI.Message[]) {
+    infoResps.forEach(({ body, receivedAt }) => {
+        const [, payload] = body.split('-');
+        const resDec = Payload.decodeInfo(payload);
+        if (Res.isErr(resDec)) {
+            return np.log.error('Error decoding info payload:', resDec.error);
+        }
+        const { peerId, version, counter } = resDec.res;
+        const nodeLog = ExitNode.prettyPrint(peerId, version, counter);
+        const exitNode = np.exitNodes.get(peerId);
+        if (!exitNode) {
+            return np.log.info('Received untracked info from %s', nodeLog);
+        }
+        const exitData = np.exitDatas.get(peerId);
+        if (!exitData) {
+            return np.log.error('ExitData mismatch for %s', nodeLog);
+        }
+        exitData.version = version;
+        exitData.counterOffset = Date.now() - counter;
+        exitData.infoLat = receivedAt - counter;
+        EntryData.removeOngoingInfo(np.entryData);
+    });
+    checkStopInterval(np);
 }

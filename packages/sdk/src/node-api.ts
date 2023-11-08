@@ -6,7 +6,7 @@ import WebSocket = require('isomorphic-ws');
 
 export type ConnInfo = { apiEndpoint: URL; accessToken: string };
 
-export type Message = { tag: number; body: string };
+export type Message = { tag: number; body: string, receivedAt: number };
 
 export type Heartbeats = {
     sent: number;

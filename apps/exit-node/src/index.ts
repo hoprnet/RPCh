@@ -6,6 +6,7 @@ import * as Identity from './identity';
 import * as RequestStore from './request-store';
 import {
     DPapi,
+    ExitNode,
     NodeAPI,
     Payload,
     ProviderAPI,
@@ -102,10 +103,8 @@ async function setup(ops: Ops): Promise<State> {
         discoveryPlatformEndpoint: ops.discoveryPlatformEndpoint,
     };
     log.verbose(
-        'Started exit-node[%s(%s),v%s] with %s',
-        Utils.shortPeerId(peerId),
-        peerId,
-        Version,
+        'Started %s with %s',
+        ExitNode.prettyPrint(peerId, Version, Date.now()),
         JSON.stringify(logOpts),
     );
 
@@ -232,6 +231,7 @@ function onMessage(state: State, ops: Ops) {
 
 function onPingReq(state: State, ops: Ops, msg: Msg) {
     log.info('Received ping req:', msg.body);
+    // ping-originPeerId
     const [, recipient] = msg.body.split('-');
     const conn = { ...ops, hops: 0 };
     NodeAPI.sendMessage(conn, {
@@ -245,6 +245,7 @@ function onPingReq(state: State, ops: Ops, msg: Msg) {
 
 function onInfoReq(state: State, ops: Ops, msg: Msg) {
     log.info('Received info req:', msg.body);
+    // info-originPeerId-hops
     const [, recipient, hopsStr] = msg.body.split('-');
     const hops = parseInt(hopsStr, 10);
     const conn = { ...ops, hops };
@@ -258,7 +259,7 @@ function onInfoReq(state: State, ops: Ops, msg: Msg) {
         log.error('Error encoding info:', res.error);
         return;
     }
-    const message = res.res;
+    const message = `nfrp-${res.res}`;
     NodeAPI.sendMessage(conn, {
         recipient,
         tag: msg.tag,

@@ -15,6 +15,8 @@ import NodesCollector from './nodes-collector';
 import type { EntryNode } from './entry-node';
 
 export * as DPapi from './dp-api';
+export * as EntryNode from './entry-node';
+export * as ExitNode from './exit-node';
 export * as JRPC from './jrpc';
 export * as NodeAPI from './node-api';
 export * as Payload from './payload';
@@ -95,6 +97,7 @@ export default class SDK {
     private readonly nodesColl: NodesCollector;
     private readonly ops: Ops;
     private readonly chainIds: Map<string, number> = new Map();
+    private readonly hops?: number;
 
     /**
      * Construct an SDK instance enabling RPCh requests.
@@ -109,12 +112,13 @@ export default class SDK {
         this.ops = this.sdkOps(ops);
         this.requestCache = RequestCache.init();
         this.segmentCache = SegmentCache.init();
+        this.hops = this.determineHops(!!this.ops.forceZeroHop);
         this.nodesColl = new NodesCollector(
             this.ops.discoveryPlatformEndpoint as string,
             this.clientId,
-            !!this.ops.forceZeroHop,
             ApplicationTag,
             this.onMessages,
+            this.hops,
         );
         this.fetchChainId(this.ops.provider as string);
     }
@@ -175,8 +179,6 @@ export default class SDK {
 
             const headers = this.determineHeaders(provider, this.ops.mevKickbackAddress);
 
-            const hops = this.determineHops(!!this.ops.forceZeroHop);
-
             // create request
             const { entryNode, exitNode } = resNodes;
             const id = RequestCache.generateId(this.requestCache);
@@ -189,7 +191,7 @@ export default class SDK {
                 exitPeerId: exitNode.id,
                 exitPublicKey: etherUtils.arrayify(exitNode.pubKey),
                 headers,
-                hops,
+                hops: this.hops,
             });
 
             if (Res.isErr(resReq)) {

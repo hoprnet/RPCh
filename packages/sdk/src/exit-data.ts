@@ -9,15 +9,20 @@ export type Perf = {
     successes: number;
     total: number;
     avgLats: number;
+    infoLat: number;
 };
 
 export type ExitData = {
     requestsOngoing: string[]; // sorted ongoing request ids
     requestsHistory: string[]; // sorted resolved request ids
     requests: Map<string, PerfData.PerfData>; // request data
+    infoFail?: boolean; // info req hard fail
+    counterOffset?: number; // counter offset after info msg
+    version?: string; // exit node version
+    infoLat?: number; // latency for info resp between entry node and exit node
 };
 
-export function create() {
+export function create(): ExitData {
     return {
         requestsOngoing: [],
         requestsHistory: [],
@@ -64,11 +69,13 @@ export function perf(xd: ExitData): Perf {
     const successes = lats.length;
     const failures = total - successes;
     const avgLats = average(lats);
+    const infoLat = xd.infoLat || -1;
     return {
         ongoing,
         failures,
         successes,
         total,
         avgLats,
+        infoLat,
     };
 }

@@ -24,9 +24,9 @@ export default class NodesCollector {
     constructor(
         private readonly discoveryPlatformEndpoint: string,
         private readonly clientId: string,
-        private readonly forceZeroHop: boolean,
         private readonly applicationTag: number,
         private readonly messageListener: MessageListener,
+        private readonly hops?: number,
     ) {
         this.fetchNodePairs();
     }
@@ -181,7 +181,7 @@ export default class NodesCollector {
             {
                 discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
                 clientId: this.clientId,
-                forceZeroHop: this.forceZeroHop,
+                forceZeroHop: this.hops === 0,
             },
             NodePairAmount,
             this.lastMatchedAt,
@@ -211,11 +211,12 @@ export default class NodesCollector {
                     exitNodes,
                     this.applicationTag,
                     this.messageListener,
+                    this.hops,
                 );
                 this.nodePairs.set(NodePair.id(np), np);
             });
 
         // reping all nodes
-        this.nodePairs.forEach((np) => NodePair.ping(np));
+        this.nodePairs.forEach((np) => NodePair.discover(np));
     };
 }
