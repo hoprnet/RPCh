@@ -183,7 +183,7 @@ function onMessage(state: State, ops: Ops) {
             case 'added-to-request':
                 log.verbose(
                     'inserted new segment to existing request',
-                    Segment.prettyPrint(segment)
+                    Segment.prettyPrint(segment),
                 );
                 break;
             case 'inserted-new':
@@ -193,7 +193,7 @@ function onMessage(state: State, ops: Ops) {
                     setTimeout(() => {
                         log.info('purging incomplete request', segment.requestId);
                         SegmentCache.remove(state.cache, segment.requestId);
-                    }, RequestPurgeTimeout)
+                    }, RequestPurgeTimeout),
                 );
                 break;
         }
@@ -204,7 +204,7 @@ async function completeSegmentsEntry(
     state: State,
     ops: Ops,
     cacheEntry: SegmentCache.Entry,
-    tag: number
+    tag: number,
 ) {
     const firstSeg = cacheEntry.segments.get(0) as Segment.Segment;
     if (!firstSeg.body.startsWith('0x')) {
@@ -264,7 +264,7 @@ async function completeSegmentsEntry(
             'Error RPC requesting %s with %s: %s',
             provider,
             JSON.stringify(req),
-            JSON.stringify(err)
+            JSON.stringify(err),
         );
         // rpc critical fail response
         return sendResponse(sendParams, {
@@ -300,7 +300,7 @@ function sendResponse(
         cacheEntry: SegmentCache.Entry;
         unboxRequest: Request.UnboxRequest;
     },
-    respPayload: Payload.RespPayload
+    respPayload: Payload.RespPayload,
 ) {
     const resResp = Response.respToMessage({
         entryPeerId,
@@ -319,7 +319,7 @@ function sendResponse(
         'Returning message to %s, tag: %s, requestId: %i',
         Utils.shortPeerId(entryPeerId),
         tag,
-        requestId
+        requestId,
     );
 
     const conn = {

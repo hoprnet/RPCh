@@ -26,7 +26,7 @@ export default class NodesCollector {
         private readonly clientId: string,
         private readonly forceZeroHop: boolean,
         private readonly applicationTag: number,
-        private readonly messageListener: MessageListener
+        private readonly messageListener: MessageListener,
     ) {
         this.fetchNodePairs();
     }
@@ -140,7 +140,7 @@ export default class NodesCollector {
     public segmentSucceeded = (
         req: Request.Request,
         seg: Segment.Segment,
-        responseTime: number
+        responseTime: number,
     ) => {
         const np = this.nodePairs.get(req.entryPeerId);
         if (!np) {
@@ -171,7 +171,7 @@ export default class NodesCollector {
             log.verbose(
                 'fetchNodePairs too early - need to wait',
                 NodePairFetchTimeout - diff,
-                'ms'
+                'ms',
             );
             return;
         }
@@ -184,7 +184,7 @@ export default class NodesCollector {
                 forceZeroHop: this.forceZeroHop,
             },
             NodePairAmount,
-            this.lastMatchedAt
+            this.lastMatchedAt,
         )
             .then(this.initNodes)
             .catch((err) => {
@@ -210,7 +210,7 @@ export default class NodesCollector {
                     en,
                     exitNodes,
                     this.applicationTag,
-                    this.messageListener
+                    this.messageListener,
                 );
                 this.nodePairs.set(NodePair.id(np), np);
             });

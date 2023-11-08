@@ -27,7 +27,7 @@ export function setup(dbFile: string): Promise<RequestStore> {
                     if (err) {
                         return rej(`Error creating table request_store: ${err}`);
                     }
-                }
+                },
             );
 
             db.run(
@@ -37,7 +37,7 @@ export function setup(dbFile: string): Promise<RequestStore> {
                         return rej(`Error creating index request_store_counter_index: ${err}`);
                     }
                     return res({ db });
-                }
+                },
             );
         });
     });
@@ -61,7 +61,7 @@ export function addIfAbsent({ db }: RequestStore, id: string, counter: number): 
                     return rej(`Error inserting into request_store: ${err}`);
                 }
                 return res(AddRes.Success);
-            }
+            },
         );
     });
 }

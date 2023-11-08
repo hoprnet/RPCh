@@ -77,7 +77,7 @@ function initializeCipher(
     sharedPreSecret: Uint8Array,
     counter: bigint,
     peerId: string,
-    request: boolean
+    request: boolean,
 ) {
     const startIndex = request ? 0 : 2;
     const saltTag = request ? REQUEST_TAG : RESPONSE_TAG;
@@ -134,7 +134,7 @@ export function boxRequest(
         exitPeerId,
         exitPublicKey,
     }: { message: Uint8Array; exitPeerId: string; exitPublicKey: Uint8Array },
-    randomFn: (len: number) => Uint8Array = randomBytes
+    randomFn: (len: number) => Uint8Array = randomBytes,
 ): Result {
     if (exitPublicKey.length !== PUBLIC_KEY_SIZE_ENCODED) {
         return { res: ResState.Failed, error: 'incorrect public key size' };
@@ -173,7 +173,7 @@ export function boxRequest(
 
     // V,W,C,R,T
     const result = new Uint8Array(
-        versionBuf.length + ephemeralKey.pubKey.length + counterBuf.length + cipherText.length
+        versionBuf.length + ephemeralKey.pubKey.length + counterBuf.length + cipherText.length,
     );
     result.set(versionBuf, 0);
     result.set(ephemeralKey.pubKey, versionBuf.length);
@@ -238,7 +238,7 @@ export function unboxRequest({
 
     const counterArr = message.slice(
         1 + PUBLIC_KEY_SIZE_ENCODED,
-        1 + PUBLIC_KEY_SIZE_ENCODED + COUNTER_LEN
+        1 + PUBLIC_KEY_SIZE_ENCODED + COUNTER_LEN,
     );
     const counter = uint8BEtoBigint(counterArr);
 
@@ -280,7 +280,7 @@ export function unboxRequest({
 /// The encrypted data and new counter value to be persisted is returned in the resulting session.
 export function boxResponse(
     session: Session,
-    { entryPeerId, message }: { entryPeerId: string; message: Uint8Array }
+    { entryPeerId, message }: { entryPeerId: string; message: Uint8Array },
 ): Result {
     const sharedPreSecret = session.sharedPreSecret;
     if (!sharedPreSecret) {
@@ -333,7 +333,7 @@ export function boxResponse(
 /// The decrypted data and new counter value to be persisted is returned in the resulting session.
 export function unboxResponse(
     session: Session,
-    { entryPeerId, message }: { entryPeerId: string; message: Uint8Array }
+    { entryPeerId, message }: { entryPeerId: string; message: Uint8Array },
 ): Result {
     const sharedPreSecret = session.sharedPreSecret;
     if (!sharedPreSecret) {

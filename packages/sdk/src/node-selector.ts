@@ -30,7 +30,7 @@ export function routePair(nodePairs: Map<string, NodePair.NodePair>): Res.Result
  */
 export function fallbackRoutePair(
     nodePairs: Map<string, NodePair.NodePair>,
-    exclude: EntryNode
+    exclude: EntryNode,
 ): Res.Result<NodeSelection> {
     const routePerfs = createRoutePerfs(nodePairs);
     const filtered = routePerfs.filter(({ entryNode }) => entryNode.id !== exclude.id);
@@ -49,7 +49,7 @@ export function prettyPrint(res: Res.Result<NodeSelection>) {
 
 function match(
     nodePairs: Map<string, NodePair.NodePair>,
-    routePerfs: ExitPerf[]
+    routePerfs: ExitPerf[],
 ): Res.Result<NodeSelection> {
     // special case no nodes
     if (routePerfs.length === 0) {
@@ -112,7 +112,7 @@ function match(
 
 function success(
     { entryNode, exitNode }: NodeMatch.NodeMatch,
-    via: string
+    via: string,
 ): Res.Result<NodeSelection> {
     return Res.ok({
         match: { entryNode, exitNode },
@@ -160,7 +160,7 @@ function leastReqOngoing(routePerfs: ExitPerf[]): ExitPerf[] {
 function eSuccess(
     { entryNode }: EntryPerf,
     routePerfs: ExitPerf[],
-    via: string
+    via: string,
 ): Res.Result<NodeSelection> {
     const xPerfs = routePerfs.filter(({ entryNode: en }) => en.id === entryNode.id);
     const el = randomEl(xPerfs);
@@ -172,7 +172,7 @@ function eSuccess(
 
 function createEntryPerfs(
     nodePairs: Map<string, NodePair.NodePair>,
-    routePerfs: ExitPerf[]
+    routePerfs: ExitPerf[],
 ): EntryPerf[] {
     const entryNodes = routePerfs.map(({ entryNode }) => entryNode);
     return Array.from(new Set(entryNodes)).map((entryNode) => {
