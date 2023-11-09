@@ -78,6 +78,7 @@ function initializeCipher(
     counter: bigint,
     peerId: string,
     request: boolean,
+    aad?: string
 ) {
     const startIndex = request ? 0 : 2;
     const saltTag = request ? REQUEST_TAG : RESPONSE_TAG;
@@ -110,7 +111,7 @@ function initializeCipher(
     iv.set(bigintToUint8BE(counter), prefixLen);
 
     // Initialize Chacha20 with Poly1305
-    return chacha20poly1305(key, iv);
+    return chacha20poly1305(key, iv, aad ? textEnc.encode(aad) : undefined);
 }
 
 /// Generates a random secp256k1 keypair
@@ -131,9 +132,10 @@ function generateEphemeralKey(randomFn: (len: number) => Uint8Array) {
 export function boxRequest(
     {
         message,
+        uuid,
         exitPeerId,
         exitPublicKey,
-    }: { message: Uint8Array; exitPeerId: string; exitPublicKey: Uint8Array },
+    }: { message: Uint8Array; uuid?: string, exitPeerId: string; exitPublicKey: Uint8Array },
     randomFn: (len: number) => Uint8Array = randomBytes,
 ): Result {
     if (exitPublicKey.length !== PUBLIC_KEY_SIZE_ENCODED) {
@@ -153,7 +155,7 @@ export function boxRequest(
 
     let cipher;
     try {
-        cipher = initializeCipher(sharedPreSecret, newCounter, exitPeerId, true);
+        cipher = initializeCipher(sharedPreSecret, newCounter, exitPeerId, true, uuid);
     } catch (err) {
         return { res: ResState.Failed, error: `failed to initialize cipher: ${err}` };
     }
@@ -197,10 +199,12 @@ export function boxRequest(
 /// Returns error and session if count verifcation failed so a response with the error message can still be boxed.
 export function unboxRequest({
     message,
+    uuid,
     exitPeerId,
     exitPrivateKey,
 }: {
     message: Uint8Array;
+    uuid?: string,
     exitPeerId: string;
     exitPrivateKey: Uint8Array;
 }): Result {
@@ -244,7 +248,7 @@ export function unboxRequest({
 
     let cipher;
     try {
-        cipher = initializeCipher(sharedPreSecret, counter, exitPeerId, true);
+        cipher = initializeCipher(sharedPreSecret, counter, exitPeerId, true, uuid);
     } catch (err) {
         return {
             res: ResState.Failed,
@@ -280,7 +284,7 @@ export function unboxRequest({
 /// The encrypted data and new counter value to be persisted is returned in the resulting session.
 export function boxResponse(
     session: Session,
-    { entryPeerId, message }: { entryPeerId: string; message: Uint8Array },
+    { entryPeerId, uuid, message }: { entryPeerId: string; uuid?: string, message: Uint8Array },
 ): Result {
     const sharedPreSecret = session.sharedPreSecret;
     if (!sharedPreSecret) {
@@ -294,7 +298,7 @@ export function boxResponse(
 
     let cipher;
     try {
-        cipher = initializeCipher(sharedPreSecret, newCounter, entryPeerId, false);
+        cipher = initializeCipher(sharedPreSecret, newCounter, entryPeerId, false, uuid);
     } catch (err) {
         return {
             res: ResState.Failed,
@@ -333,7 +337,7 @@ export function boxResponse(
 /// The decrypted data and new counter value to be persisted is returned in the resulting session.
 export function unboxResponse(
     session: Session,
-    { entryPeerId, message }: { entryPeerId: string; message: Uint8Array },
+    { entryPeerId, uuid, message }: { entryPeerId: string; uuid?: string, message: Uint8Array },
 ): Result {
     const sharedPreSecret = session.sharedPreSecret;
     if (!sharedPreSecret) {
@@ -355,7 +359,7 @@ export function unboxResponse(
 
     let cipher;
     try {
-        cipher = initializeCipher(sharedPreSecret, counter, entryPeerId, false);
+        cipher = initializeCipher(sharedPreSecret, counter, entryPeerId, false, uuid);
     } catch (err) {
         return {
             res: ResState.Failed,

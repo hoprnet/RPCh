@@ -1,6 +1,6 @@
 import assert = require('assert');
 import { isError, boxRequest, boxResponse, Session, unboxRequest, unboxResponse } from './index';
-import { randomBytes } from 'crypto';
+import * as crypto from 'crypto';
 
 const EXIT_NODE_PK = '03d73c98d44618b7504bab1001adaa0a0c77adfb04db4b7732b1daba5e6523e7bf';
 const EXIT_NODE_SK = '06ef2a621eb9df81f7d6a8f7a2499b9e670613f757648dc3258640767ebd7e0a';
@@ -34,10 +34,12 @@ function toHex(bytes: Uint8Array | undefined) {
 describe('RPCh Crypto protocol tests', function () {
     it('test request flow', async function () {
         // Client side
-        const request_msg = new Uint8Array(randomBytes(300));
+        const request_msg = new Uint8Array(crypto.randomBytes(300));
+        const request_uuid = crypto.randomUUID();
 
         const request_data = {
             message: request_msg,
+            uuid: request_uuid,
             exitPeerId: EXIT_NODE,
             exitPublicKey: fromHex(EXIT_NODE_PK),
         };
@@ -58,11 +60,13 @@ describe('RPCh Crypto protocol tests', function () {
 
         const client_req_creation_ts = client_request_session.updatedTS;
         const data_on_wire = client_request_session.request;
+        // also request_uuid gets sent next to the data
 
         // Exit node side
 
         const received_req_data = {
             message: data_on_wire,
+            uuid: request_uuid,
             exitPeerId: EXIT_NODE,
             exitPrivateKey: fromHex(EXIT_NODE_SK),
         };
@@ -84,7 +88,8 @@ describe('RPCh Crypto protocol tests', function () {
 
     it('test response flow', async function () {
         // Exit node side
-        const response_msg = new Uint8Array(randomBytes(300));
+        const response_msg = new Uint8Array(crypto.randomBytes(300));
+        const response_uuid = crypto.randomUUID();
 
         const mock_session_with_client: Session = {
             updatedTS: BigInt(1),
@@ -93,6 +98,7 @@ describe('RPCh Crypto protocol tests', function () {
 
         const response_data = {
             message: response_msg,
+            uuid: response_uuid,
             entryPeerId: ENTRY_NODE,
         };
 
@@ -109,11 +115,13 @@ describe('RPCh Crypto protocol tests', function () {
 
         const exit_node_resp_creation_ts = mock_session_with_client.updatedTS;
         const data_on_wire = mock_session_with_client.response;
+        // also request_uuid gets sent next to the data
 
         // Client node side
 
         const received_resp_data = {
             message: data_on_wire,
+            uuid: response_uuid,
             entryPeerId: ENTRY_NODE,
         };
 
@@ -137,10 +145,12 @@ describe('RPCh Crypto protocol tests', function () {
 
     it('test complete flow', async function () {
         // Client side
-        const request_msg = new Uint8Array(randomBytes(300));
+        const request_msg = new Uint8Array(crypto.randomBytes(300));
+        const request_uuid = crypto.randomUUID();
 
         const request_data = {
             message: request_msg,
+            uuid: request_uuid,
             exitPeerId: EXIT_NODE,
             exitPublicKey: fromHex(EXIT_NODE_PK),
         };
@@ -161,12 +171,14 @@ describe('RPCh Crypto protocol tests', function () {
 
         const client_req_creation_ts = client_session.updatedTS;
         const request_data_on_wire = client_session.request;
+        // also request_uuid gets sent next to the data
 
         // Exit node side
 
         const received_req_data = {
             message: request_data_on_wire,
             exitPeerId: EXIT_NODE,
+            uuid: request_uuid,
             exitPrivateKey: fromHex(EXIT_NODE_SK),
         };
 
@@ -185,10 +197,12 @@ describe('RPCh Crypto protocol tests', function () {
         assert.equal(exit_session.updatedTS, client_req_creation_ts);
 
         // Exit node side
-        const response_msg = new Uint8Array(randomBytes(300));
+        const response_msg = new Uint8Array(crypto.randomBytes(300));
+        const response_uuid = crypto.randomUUID();
 
         const response_data = {
             message: response_msg,
+            uuid: response_uuid,
             entryPeerId: ENTRY_NODE,
         };
 
@@ -205,11 +219,13 @@ describe('RPCh Crypto protocol tests', function () {
 
         const exit_node_resp_creation_ts = exit_session.updatedTS;
         const response_data_on_wire = exit_session.response;
+        // also response_uuid gets sent next to the data
 
         // Client node side
 
         const received_resp_data = {
             message: response_data_on_wire,
+            uuid: response_uuid,
             entryPeerId: ENTRY_NODE,
         };
 
