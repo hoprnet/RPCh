@@ -218,5 +218,10 @@ export default class NodesCollector {
 
         // reping all nodes
         this.nodePairs.forEach((np) => NodePair.discover(np));
+        log.verbose(
+            'Discovered %d node-pairs with %d exits',
+            this.nodePairs.size,
+            lookupExitNodes.size,
+        );
     };
 }
