@@ -1,6 +1,5 @@
 import { Utils } from '@rpch/sdk';
 import { Pool } from 'pg';
-
 import * as availability from './availability';
 import Version from './version';
 

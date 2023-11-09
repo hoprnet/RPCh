@@ -87,7 +87,6 @@
         "build/**"
       ],
       "env": [
-        "PORT",
         "DATABASE_URL"
       ]
     },

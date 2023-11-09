@@ -4,6 +4,7 @@ import { utils } from 'ethers';
 
 import * as Identity from './identity';
 import * as RequestStore from './request-store';
+import Version from './version';
 import {
     DPapi,
     ExitNode,
@@ -23,7 +24,6 @@ const log = Utils.logger(['exit-node']);
 const SocketReconnectTimeout = 1e3; // 1sek
 const RequestPurgeTimeout = 10e3; // 10sek
 const ValidCounterPeriod = 1e3 * 60 * 60; // 1hour
-const Version = String(process.env.npm_package_version);
 
 type State = {
     socket?: WS.WebSocket;

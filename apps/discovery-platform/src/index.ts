@@ -1,16 +1,14 @@
 import fs from 'fs';
+import migrate from 'node-pg-migrate';
 import { Pool } from 'pg';
 import { Utils } from '@rpch/sdk';
 
-import { entryServer } from './entry-server';
+import Version from './version';
 import path from 'path';
-import migrate from 'node-pg-migrate';
-
 import type { Secrets } from './secrets';
+import { entryServer } from './entry-server';
 
 const log = Utils.logger(['discovery-platform']);
-
-const Version = String(process.env.npm_package_version);
 
 const start = async (ops: {
     connectionString: string;

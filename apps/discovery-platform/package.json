@@ -5,7 +5,8 @@
     "private": true,
     "scripts": {
         "migrate": "node-pg-migrate --migrations-table migrations",
-        "build": "tsc",
+        "prebuild": "node -p \"'export default \\'' + require('./package.json').version + '\\';'\" > src/version.ts",
+        "build": "yarn prebuild && tsc",
         "dev": "tsc --watch",
         "format": "prettier --write src/ .eslintrc.js jest.config.ts package.json tsconfig.json",
         "format:ci": "prettier --check src/ .eslintrc.js jest.config.ts package.json tsconfig.json",
