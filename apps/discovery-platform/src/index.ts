@@ -1,3 +1,4 @@
+import fs from 'fs';
 import { Pool } from 'pg';
 import { Utils } from '@rpch/sdk';
 
@@ -18,8 +19,12 @@ const start = async (ops: {
     secrets: Secrets;
     url: string;
 }) => {
-    // run db migrations
-    const migrationsDirectory = path.join(__dirname, '../migrations');
+    // run db migrations - different dirs inside and outside container
+    let migrationsDirectory = path.join(__dirname, './migrations');
+    if (!fs.existsSync(migrationsDirectory)) {
+        migrationsDirectory = path.join(__dirname, '../migrations');
+    }
+
     await migrate({
         direction: 'up',
         databaseUrl: ops.connectionString,
