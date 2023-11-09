@@ -24,6 +24,7 @@ export type EntryData = {
     fetchMessagesSuccesses: number; // count of successful message fetches
     fetchMessagesErrors: number; // count of error message fetches
     requestsOngoing: number; // count of ongoing requests
+    infoOngoing: number;
 };
 
 export function create(): EntryData {
@@ -36,6 +37,7 @@ export function create(): EntryData {
         fetchMessagesSuccesses: 0,
         fetchMessagesErrors: 0,
         requestsOngoing: 0,
+        infoOngoing: 0,
     };
 }
 
@@ -45,6 +47,14 @@ export function addOngoingReq(ed: EntryData) {
 
 export function removeOngoingReq(ed: EntryData) {
     ed.requestsOngoing--;
+}
+
+export function addOngoingInfo(ed: EntryData) {
+    ed.infoOngoing++;
+}
+
+export function removeOngoingInfo(ed: EntryData) {
+    ed.infoOngoing--;
 }
 
 export function addOngoingSeg(ed: EntryData, seg: Segment.Segment) {

@@ -1,5 +1,10 @@
+import { Utils } from '@rpch/sdk';
 import { Pool } from 'pg';
 import * as availability from './availability';
+
+const Version = String(process.env.npm_package_version);
+
+const log = Utils.logger(['availability-monitor']);
 
 function main() {
     // server port
@@ -15,6 +20,7 @@ function main() {
     const connectionString = process.env.DATABASE_URL;
     const dbPool = new Pool({ connectionString });
 
+    log.info(`AM[v%s] running`, Version);
     availability.start(dbPool);
 }
 

@@ -9,6 +9,8 @@ import type { Secrets } from './secrets';
 
 const log = Utils.logger(['discovery-platform']);
 
+const Version = String(process.env.npm_package_version);
+
 const start = async (ops: {
     connectionString: string;
     dbPool: Pool;
@@ -35,7 +37,13 @@ const start = async (ops: {
     // start listening at PORT for requests
     const host = '0.0.0.0';
     /* const server = */ app.listen(ops.port, host, () => {
-        log.info(`entry server running on ${host}:${ops.port}`);
+        log.info(
+            `DP[v%s] running on %s:%d with %s`,
+            Version,
+            host,
+            ops.port,
+            JSON.stringify({ connectionString: ops.connectionString, url: ops.url }),
+        );
     });
 
     // set server timeout to 30s

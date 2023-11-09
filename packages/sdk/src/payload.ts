@@ -1,5 +1,6 @@
 import LZString from 'lz-string';
 import * as JRPC from './jrpc';
+import * as Res from './result';
 
 export type ReqPayload = {
     clientId: string;
@@ -9,35 +10,91 @@ export type ReqPayload = {
     hops?: number;
 };
 
+export enum RespType {
+    Resp,
+    CounterFail,
+    DuplicateFail,
+    HttpError,
+    Error,
+}
 export type RespPayload =
     | {
-          type: 'resp';
+          type: RespType.Resp;
           resp: JRPC.Response;
       }
     | {
-          type: 'counterfail';
-          min: bigint;
-          max: bigint;
+          type: RespType.CounterFail;
+          now: number;
       }
     | {
-          type: 'httperror';
+          type: RespType.DuplicateFail;
+      }
+    | {
+          type: RespType.HttpError;
           status: number;
           text: string;
       }
-    | { type: 'error'; reason: string };
+    | {
+          type: RespType.Error;
+          reason: string;
+      };
 
-export function encodeReq(payload: ReqPayload): string {
-    return LZString.compressToUTF16(JSON.stringify(payload));
+export type InfoPayload = {
+    peerId: string;
+    version: string;
+    counter: number;
+};
+
+export function encodeReq(payload: ReqPayload): Res.Result<string> {
+    try {
+        const res = LZString.compressToUTF16(JSON.stringify(payload));
+        return Res.ok(res);
+    } catch (ex) {
+        return Res.err(`Error encoding request payload: ${ex}`);
+    }
 }
 
-export function decodeReq(payload: string): ReqPayload {
-    return JSON.parse(LZString.decompressFromUTF16(payload));
+export function decodeReq(payload: string): Res.Result<ReqPayload> {
+    try {
+        const res = JSON.parse(LZString.decompressFromUTF16(payload));
+        return Res.ok(res);
+    } catch (ex) {
+        return Res.err(`Error decoding request payload: ${ex}`);
+    }
 }
 
-export function encodeResp(payload: RespPayload): string {
-    return LZString.compressToUTF16(JSON.stringify(payload));
+export function encodeResp(payload: RespPayload): Res.Result<string> {
+    try {
+        const res = LZString.compressToUTF16(JSON.stringify(payload));
+        return Res.ok(res);
+    } catch (ex) {
+        return Res.err(`Error encoding response payload: ${ex}`);
+    }
 }
 
-export function decodeResp(payload: string): RespPayload {
-    return JSON.parse(LZString.decompressFromUTF16(payload));
+export function decodeResp(payload: string): Res.Result<RespPayload> {
+    try {
+        const res = JSON.parse(LZString.decompressFromUTF16(payload));
+        return Res.ok(res);
+    } catch (ex) {
+        return Res.err(`Error decoding response payload: ${ex}`);
+    }
+}
+
+export function encodeInfo(payload: InfoPayload): Res.Result<string> {
+    try {
+        const res = LZString.compressToUTF16(JSON.stringify(payload));
+        return Res.ok(res);
+    } catch (ex) {
+        return Res.err(`Error encoding info payload`);
+    }
+}
+
+export function decodeInfo(payload: string): Res.Result<InfoPayload> {
+    try {
+        const res = JSON.parse(LZString.decompressFromUTF16(payload));
+        return Res.ok(res);
+    } catch (ex) {
+        return Res.err(`Error encoding info payload`);
+    }
 }

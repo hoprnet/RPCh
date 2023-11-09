@@ -14,21 +14,16 @@ export type Session = {
 
 export enum ResState {
     Ok,
-    OkFailedCounter,
     Failed,
 }
 
 export type ResOk = { res: ResState.Ok; session: Session };
-export type ResOkFailedCounter = { res: ResState.OkFailedCounter; session: Session };
 export type ResFailed = { res: ResState.Failed; error: string };
 
 export type Result = ResOk | ResFailed;
 
 /// RPCh Crypto protocol version
 export const RPCH_CRYPTO_VERSION = 0x12;
-
-/// Tolerance a timestamp could be over lower or upper bound
-const TIMESTAMP_TOLERANCE_MS = 30_000;
 
 /// Encoded public key size |W|
 const PUBLIC_KEY_SIZE_ENCODED = 33;
@@ -129,20 +124,6 @@ function generateEphemeralKey(randomFn: (len: number) => Uint8Array) {
     return { pubKey, privKey };
 }
 
-/// Validates that (lowerBound - tolerance) <= value <= (upperBound + tolerance)
-function validateTS(value: bigint, lowerBound: bigint, upperBound: bigint) {
-    if (lowerBound >= upperBound) {
-        return false;
-    }
-
-    const lowerDiff = lowerBound - value;
-    const upperDiff = value - upperBound;
-
-    // if `value` < `lowerBound` it must be within tolerance
-    // if `value` > `upperBound` it must be within tolerance
-    return lowerDiff <= TIMESTAMP_TOLERANCE_MS && upperDiff <= TIMESTAMP_TOLERANCE_MS;
-}
-
 /// Called by the RPCh client
 /// Takes enveloped request data, the public key of the RPCh Exit Node and Request counter for such
 /// RPCh Exit node and then encrypts and authenticates the data.
@@ -214,14 +195,15 @@ export function boxRequest(
 /// RPCh Client node associated with the request and then decrypts and verifies the data.
 /// The decrypted data and new counter value to be persisted is returned in the resulting session.
 /// Returns error and session if count verifcation failed so a response with the error message can still be boxed.
-export function unboxRequest(
-    {
-        message,
-        exitPeerId,
-        exitPrivateKey,
-    }: { message: Uint8Array; exitPeerId: string; exitPrivateKey: Uint8Array },
-    lastTsOfThisClient: bigint,
-): Result | ResOkFailedCounter {
+export function unboxRequest({
+    message,
+    exitPeerId,
+    exitPrivateKey,
+}: {
+    message: Uint8Array;
+    exitPeerId: string;
+    exitPrivateKey: Uint8Array;
+}): Result {
     if ((message[0] & 0x10) != (RPCH_CRYPTO_VERSION & 0x10)) {
         return {
             res: ResState.Failed,
@@ -285,13 +267,6 @@ export function unboxRequest(
         updatedTS: counter,
         sharedPreSecret,
     };
-
-    if (!validateTS(counter, lastTsOfThisClient, BigInt(Date.now()))) {
-        return {
-            res: ResState.OkFailedCounter,
-            session,
-        };
-    }
 
     return {
         res: ResState.Ok,
@@ -359,8 +334,7 @@ export function boxResponse(
 export function unboxResponse(
     session: Session,
     { entryPeerId, message }: { entryPeerId: string; message: Uint8Array },
-    lastTsOfThisExitNode: bigint,
-): Result | ResOkFailedCounter {
+): Result {
     const sharedPreSecret = session.sharedPreSecret;
     if (!sharedPreSecret) {
         return {
@@ -402,19 +376,16 @@ export function unboxResponse(
     session.response = plaintext;
     session.updatedTS = counter;
 
-    if (!validateTS(counter, lastTsOfThisExitNode, BigInt(Date.now()))) {
-        return {
-            res: ResState.OkFailedCounter,
-            session,
-        };
-    }
-
     return {
         res: ResState.Ok,
         session,
     };
 }
 
-export function isError(res: Result | ResOkFailedCounter): res is ResFailed {
+export function isOk(res: Result): res is ResOk {
+    return res.res == ResState.Ok;
+}
+
+export function isError(res: Result): res is ResFailed {
     return res.res == ResState.Failed;
 }

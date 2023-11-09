@@ -53,7 +53,7 @@ RUN apk upgrade --no-cache && \
 # copy over minimal fileset to run discovery-platform
 COPY --from=installer /app/node_modules ./node_modules
 COPY --from=installer /app/package.json .
-COPY --from=installer /app/apps/discovery-platform/build/*.js .
+COPY --from=installer /app/apps/discovery-platform/build .
 COPY --from=installer /app/packages/sdk ./packages/sdk
 COPY --from=installer /app/packages/compat-crypto ./packages/compat-crypto
 

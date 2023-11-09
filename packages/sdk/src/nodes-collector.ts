@@ -1,8 +1,9 @@
 import * as DPapi from './dp-api';
-import * as Request from './request';
-import * as Segment from './segment';
-import * as NodeSel from './node-selector';
 import * as NodePair from './node-pair';
+import * as NodeSel from './node-selector';
+import * as Request from './request';
+import * as Res from './result';
+import * as Segment from './segment';
 import { logger } from './utils';
 
 import type { MessageListener } from './node-pair';
@@ -23,9 +24,9 @@ export default class NodesCollector {
     constructor(
         private readonly discoveryPlatformEndpoint: string,
         private readonly clientId: string,
-        private readonly forceZeroHop: boolean,
         private readonly applicationTag: number,
         private readonly messageListener: MessageListener,
+        private readonly hops?: number,
     ) {
         this.fetchNodePairs();
     }
@@ -47,7 +48,7 @@ export default class NodesCollector {
                 const now = Date.now();
                 const elapsed = now - start;
                 const res = NodeSel.routePair(this.nodePairs);
-                if (NodeSel.isOk(res)) {
+                if (Res.isOk(res)) {
                     log.verbose('ready with route pair', NodeSel.prettyPrint(res));
                     return resolve(true);
                 }
@@ -71,9 +72,9 @@ export default class NodesCollector {
                 const now = Date.now();
                 const elapsed = now - start;
                 const res = NodeSel.routePair(this.nodePairs);
-                if (NodeSel.isOk(res)) {
+                if (Res.isOk(res)) {
                     log.verbose('found route pair', NodeSel.prettyPrint(res));
-                    return resolve(res.match);
+                    return resolve(res.res.match);
                 }
                 if (elapsed > timeout) {
                     log.error('Timeout waiting for node pair', elapsed, res.error);
@@ -90,9 +91,9 @@ export default class NodesCollector {
      */
     public fallbackNodePair = (exclude: EntryNode): NodeMatch | undefined => {
         const res = NodeSel.fallbackRoutePair(this.nodePairs, exclude);
-        if (NodeSel.isOk(res)) {
+        if (Res.isOk(res)) {
             log.verbose('found fallback route pair', NodeSel.prettyPrint(res));
-            return res.match;
+            return res.res.match;
         }
     };
 
@@ -180,7 +181,7 @@ export default class NodesCollector {
             {
                 discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
                 clientId: this.clientId,
-                forceZeroHop: this.forceZeroHop,
+                forceZeroHop: this.hops === 0,
             },
             NodePairAmount,
             this.lastMatchedAt,
@@ -210,11 +211,17 @@ export default class NodesCollector {
                     exitNodes,
                     this.applicationTag,
                     this.messageListener,
+                    this.hops,
                 );
                 this.nodePairs.set(NodePair.id(np), np);
             });
 
         // reping all nodes
-        this.nodePairs.forEach((np) => NodePair.ping(np));
+        this.nodePairs.forEach((np) => NodePair.discover(np));
+        log.verbose(
+            'Discovered %d node-pairs with %d exits',
+            this.nodePairs.size,
+            lookupExitNodes.size,
+        );
     };
 }

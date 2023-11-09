@@ -1,8 +1,7 @@
 import * as JRPC from './jrpc';
+import * as Res from './result';
 
-export type RPCSuccess = JRPC.Response;
 export type RPCFailure = { status: number; message: string };
-export type RPCResp = RPCSuccess | RPCFailure;
 
 export function fetchChainId(provider: string): Promise<JRPC.Response> {
     const url = new URL(provider);
@@ -20,7 +19,7 @@ export function fetchRPC(
     provider: string,
     req: JRPC.Request,
     reqHeaders?: Record<string, string>,
-): Promise<RPCResp> {
+): Promise<Res.Result<JRPC.Response, RPCFailure>> {
     return new Promise((resolve, reject) => {
         const url = new URL(provider);
         const headers = mergeHeaders(reqHeaders);
@@ -28,10 +27,10 @@ export function fetchRPC(
         fetch(url, { headers, method: 'POST', body })
             .then(async (res) => {
                 if (res.status !== 200) {
-                    return resolve({ status: res.status, message: await res.text() });
+                    return resolve(Res.err({ status: res.status, message: await res.text() }));
                 }
                 const resp = (await res.json()) as unknown as JRPC.Response;
-                return resolve(resp);
+                return resolve(Res.ok(resp));
             })
             .catch(reject);
     });

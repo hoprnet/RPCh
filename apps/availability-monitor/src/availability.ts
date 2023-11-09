@@ -4,7 +4,7 @@ import * as PeersCache from './peers-cache';
 
 import type { Pool } from 'pg';
 
-const log = Utils.logger(['availability-monitor']);
+const log = Utils.logger(['availability-monitor:availability']);
 const ApplicationTag = 0xffff;
 
 type PeersCache = Map<string, Map<string, NodeAPI.Peer>>; // node id -> peer id -> Peer

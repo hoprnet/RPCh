@@ -1,8 +1,9 @@
 import http from 'http';
 import RPChSDK, {
     JRPC,
-    Response,
     ProviderAPI,
+    Response,
+    Result as Res,
     Utils,
     type RequestOps,
     type Ops as SDKops,
@@ -20,6 +21,8 @@ const corsHeaders = {
 };
 
 const defaultPort = 45750;
+
+const Version = String(process.env.npm_package_version);
 
 function toURL(urlStr: string, host: string): null | URL {
     try {
@@ -76,20 +79,22 @@ function sendSkipRPCh(provider: string | undefined, req: JRPC.Request, res: http
         return;
     }
     ProviderAPI.fetchRPC(provider, req)
-        .then((resp: ProviderAPI.RPCResp) => {
-            if ('status' in resp) {
+        .then((resFetch: Res.Result<JRPC.Response, ProviderAPI.RPCFailure>) => {
+            if (Res.isErr(resFetch)) {
+                const { status, message } = resFetch.error;
                 log.verbose(
                     '[NO_RPCH] Response(HTTP %i): %s [request: %s]',
-                    resp.status,
-                    resp.message,
+                    status,
+                    message,
                     JSON.stringify(req),
                 );
-                res.statusCode = resp.status;
+                res.statusCode = status;
                 // only write if we are allowed to
-                if (resp.status !== 204 && resp.status !== 304) {
-                    res.write(resp.message);
+                if (status !== 204 && status !== 304) {
+                    res.write(message);
                 }
             } else {
+                const resp = resFetch.res;
                 log.verbose(
                     '[NO_RPCH] Response: %s [request: %s]',
                     JSON.stringify(resp),
@@ -271,6 +276,11 @@ if (require.main === module) {
     const sdk = new RPChSDK(clientId, ops);
     const server = createServer(sdk, serverOps);
     server.listen(port, '0.0.0.0', () => {
-        log.verbose(`rpc server started on '0.0.0.0:${port}' with ${JSON.stringify(ops)}`);
+        log.verbose(
+            "RPCServer[v%s] started on '0.0.0.0:%d' with %s",
+            Version,
+            port,
+            JSON.stringify(ops),
+        );
     });
 }

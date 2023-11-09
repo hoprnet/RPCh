@@ -1,44 +1,35 @@
-import * as crypto from '@rpch/compat-crypto';
+import * as compatCrypto from '@rpch/compat-crypto';
 import { utils } from 'ethers';
 
+import * as Res from './result';
 import * as JRPC from './jrpc';
 import * as Payload from './payload';
 import * as Segment from './segment';
 import { shortPeerId } from './utils';
 
 export type Request = {
-    id: number;
-    originalId?: number;
+    id: string; // uuid
+    originalId?: string;
     provider: string;
     req: JRPC.Request;
     createdAt: number;
     entryPeerId: string;
     exitPeerId: string;
-    exitPublicKey: Uint8Array;
-    session: crypto.Session;
     headers?: Record<string, string>;
     hops?: number;
 };
 
-export type ReqSuccess = {
-    res: 'success';
-    req: Payload.ReqPayload;
-    session: crypto.Session;
-    counter: bigint;
+export type UnboxRequest = {
+    reqPayload: Payload.ReqPayload;
+    session: compatCrypto.Session;
 };
-export type ReqCounterFail = {
-    res: 'counterfail';
-    req: Payload.ReqPayload;
-    session: crypto.Session;
-};
-export type ReqError = { res: 'error'; reason: string };
-export type Req = ReqSuccess | ReqCounterFail | ReqError;
 
 /**
  * Creates a request and compresses its payload.
  */
 export function create({
     id,
+    originalId,
     provider,
     req,
     clientId,
@@ -48,7 +39,8 @@ export function create({
     headers,
     hops,
 }: {
-    id: number;
+    id: string;
+    originalId?: string;
     provider: string;
     req: JRPC.Request;
     clientId: string;
@@ -57,43 +49,46 @@ export function create({
     exitPublicKey: Uint8Array;
     headers?: Record<string, string>;
     hops?: number;
-}): { success: true; req: Request } | { success: false; error: string } {
-    const payload = Payload.encodeReq({
+}): Res.Result<{ request: Request; session: compatCrypto.Session }> {
+    const resEncode = Payload.encodeReq({
         provider,
         clientId,
         req,
         headers,
         hops,
     });
-    const data = utils.toUtf8Bytes(payload);
-    const res = crypto.boxRequest({
+    if (Res.isErr(resEncode)) {
+        return resEncode;
+    }
+
+    const data = utils.toUtf8Bytes(resEncode.res);
+    const resBox = compatCrypto.boxRequest({
         message: data,
         exitPeerId,
         exitPublicKey,
     });
-    if (crypto.isError(res)) {
-        return { success: false, error: res.error };
+    if (compatCrypto.isError(resBox)) {
+        return Res.err(resBox.error);
     }
 
-    return {
-        success: true,
-        req: {
+    return Res.ok({
+        request: {
             id,
+            originalId,
             provider,
             req,
             createdAt: Date.now(),
             entryPeerId,
             exitPeerId,
             exitPublicKey,
-            session: res.session,
             headers,
             hops,
         },
-    };
+        session: resBox.session,
+    });
 }
 
 export function messageToReq({
-    counter,
     message,
     exitPeerId,
     exitPrivateKey,
@@ -101,49 +96,35 @@ export function messageToReq({
     message: Uint8Array;
     exitPeerId: string;
     exitPrivateKey: Uint8Array;
-    counter: bigint;
-}): Req {
-    const res = crypto.unboxRequest({ message, exitPeerId, exitPrivateKey }, counter);
-    if (res.res === crypto.ResState.Failed) {
-        return {
-            res: 'error',
-            reason: res.error,
-        };
+}): Res.Result<UnboxRequest> {
+    const resUnbox = compatCrypto.unboxRequest({ message, exitPeerId, exitPrivateKey });
+    if (compatCrypto.isError(resUnbox)) {
+        return Res.err(resUnbox.error);
     }
 
-    if (!res.session.request) {
-        return {
-            res: 'error',
-            reason: 'crypto session without request object',
-        };
+    if (!resUnbox.session.request) {
+        return Res.err(`Crypto session without request object`);
     }
 
-    const msg = utils.toUtf8String(res.session.request);
-    const req = Payload.decodeReq(msg);
-    if (res.res === crypto.ResState.OkFailedCounter) {
-        return {
-            res: 'counterfail',
-            req,
-            session: res.session,
-        };
+    const msg = utils.toUtf8String(resUnbox.session.request);
+    const resDecode = Payload.decodeReq(msg);
+    if (Res.isErr(resDecode)) {
+        return resDecode;
     }
 
-    const newCount = res.session.updatedTS;
-    return {
-        res: 'success',
-        req,
-        session: res.session,
-        counter: newCount,
-    };
+    return Res.ok({
+        reqPayload: resDecode.res,
+        session: resUnbox.session,
+    });
 }
 
 /**
  * Convert request to segments.
  */
-export function toSegments(req: Request): Segment.Segment[] {
+export function toSegments(req: Request, session: compatCrypto.Session): Segment.Segment[] {
     // we need the entry id ouside of of the actual encrypted payload
     const entryIdData = utils.toUtf8Bytes(req.entryPeerId);
-    const reqData = req.session.request!;
+    const reqData = session.request!;
     const hexEntryId = utils.hexlify(entryIdData);
     const hexData = utils.hexlify(reqData);
     const body = `${hexEntryId},${hexData}`;
@@ -163,8 +144,4 @@ export function prettyPrint(req: Request, id?: string) {
     }
     attrs.push(prov);
     return `req[${attrs.join(',')}]`;
-}
-
-export function reqSuccess(res: Req): res is ReqSuccess {
-    return res.res === 'success';
 }

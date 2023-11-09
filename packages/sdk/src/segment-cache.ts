@@ -1,6 +1,6 @@
 import type { Segment } from './segment';
 
-export type Cache = Map<number, Entry>; // requestId -> segmentNr -> Segment
+export type Cache = Map<string, Entry>; // requestId -> segmentNr -> Segment
 
 export type Entry = {
     segments: Map<number, Segment>;
@@ -80,6 +80,6 @@ export function toMessage({ segments, count }: Entry) {
  * Remove everything related to request id.
  *
  */
-export function remove(cache: Cache, requestId: number) {
+export function remove(cache: Cache, requestId: string) {
     cache.delete(requestId);
 }

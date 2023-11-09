@@ -21,6 +21,7 @@
         "RPCH_PRIVATE_KEY",
         "RPCH_PASSWORD",
         "RPCH_IDENTITY_FILE",
+        "RPCH_DB_FILE",
         "HOPRD_API_TOKEN",
         "HOPRD_API_ENDPOINT",
         "DISCOVERY_PLATFORM_API_ENDPOINT",

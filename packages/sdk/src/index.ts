@@ -2,9 +2,11 @@ import { utils as etherUtils } from 'ethers';
 
 import * as JRPC from './jrpc';
 import * as NodeAPI from './node-api';
+import * as Payload from './payload';
 import * as ProviderAPI from './provider-api';
 import * as Request from './request';
 import * as RequestCache from './request-cache';
+import * as Res from './result';
 import * as Response from './response';
 import * as Segment from './segment';
 import * as SegmentCache from './segment-cache';
@@ -13,12 +15,15 @@ import NodesCollector from './nodes-collector';
 import type { EntryNode } from './entry-node';
 
 export * as DPapi from './dp-api';
+export * as EntryNode from './entry-node';
+export * as ExitNode from './exit-node';
 export * as JRPC from './jrpc';
 export * as NodeAPI from './node-api';
 export * as Payload from './payload';
 export * as ProviderAPI from './provider-api';
 export * as Request from './request';
 export * as Response from './response';
+export * as Result from './result';
 export * as Segment from './segment';
 export * as SegmentCache from './segment-cache';
 export * as Utils from './utils';
@@ -88,11 +93,11 @@ const ApplicationTag = Math.floor(Math.random() * 0xfffe);
 export default class SDK {
     private readonly requestCache: RequestCache.Cache;
     private readonly segmentCache: SegmentCache.Cache;
-    private readonly redoRequests: Set<number> = new Set();
-    private readonly counterStore: Map<string, bigint> = new Map();
+    private readonly redoRequests: Set<string> = new Set();
     private readonly nodesColl: NodesCollector;
     private readonly ops: Ops;
     private readonly chainIds: Map<string, number> = new Map();
+    private readonly hops?: number;
 
     /**
      * Construct an SDK instance enabling RPCh requests.
@@ -107,12 +112,13 @@ export default class SDK {
         this.ops = this.sdkOps(ops);
         this.requestCache = RequestCache.init();
         this.segmentCache = SegmentCache.init();
+        this.hops = this.determineHops(!!this.ops.forceZeroHop);
         this.nodesColl = new NodesCollector(
             this.ops.discoveryPlatformEndpoint as string,
             this.clientId,
-            !!this.ops.forceZeroHop,
             ApplicationTag,
             this.onMessages,
+            this.hops,
         );
         this.fetchChainId(this.ops.provider as string);
     }
@@ -173,8 +179,6 @@ export default class SDK {
 
             const headers = this.determineHeaders(provider, this.ops.mevKickbackAddress);
 
-            const hops = this.determineHops(!!this.ops.forceZeroHop);
-
             // create request
             const { entryNode, exitNode } = resNodes;
             const id = RequestCache.generateId(this.requestCache);
@@ -187,17 +191,17 @@ export default class SDK {
                 exitPeerId: exitNode.id,
                 exitPublicKey: etherUtils.arrayify(exitNode.pubKey),
                 headers,
-                hops,
+                hops: this.hops,
             });
 
-            if (!resReq.success) {
+            if (Res.isErr(resReq)) {
                 log.error('Error creating request', resReq.error);
                 return reject('Unable to create request object');
             }
 
             // split request to segments
-            const request = resReq.req;
-            const segments = Request.toSegments(request);
+            const { request, session } = resReq.res;
+            const segments = Request.toSegments(request, session);
             const failMsg = this.checkSegmentLimit(segments.length);
             if (failMsg) {
                 return reject(failMsg);
@@ -211,11 +215,17 @@ export default class SDK {
             }, reqOps.timeout);
 
             // track request
-            const entry = RequestCache.add(this.requestCache, request, resolve, reject, timer);
+            const entry = RequestCache.add(this.requestCache, {
+                request,
+                resolve,
+                reject,
+                timer,
+                session,
+            });
             this.nodesColl.requestStarted(request);
 
             // send request to hoprd
-            log.info('sending request %i', request.id);
+            log.info('sending request %s', request.id);
 
             // queue segment sending for all of them
             segments.forEach((s) =>
@@ -286,6 +296,7 @@ export default class SDK {
         const id = RequestCache.generateId(this.requestCache);
         const resReq = Request.create({
             id,
+            originalId: origReq.id,
             provider: origReq.provider,
             req: origReq.req,
             clientId: this.clientId,
@@ -295,13 +306,13 @@ export default class SDK {
             headers: origReq.headers,
             hops: origReq.hops,
         });
-        if (!resReq.success) {
+        if (Res.isErr(resReq)) {
             log.info('Error creating fallback request', resReq.error);
             return cacheEntry.reject('unable to create fallback request object');
         }
         // split request to segments
-        const request = resReq.req;
-        const segments = Request.toSegments(request);
+        const { request, session } = resReq.res;
+        const segments = Request.toSegments(request, session);
         const failMsg = this.checkSegmentLimit(segments.length);
         if (failMsg) {
             this.removeRequest(request);
@@ -309,13 +320,13 @@ export default class SDK {
         }
 
         // track request
-        const newCacheEntry = RequestCache.add(
-            this.requestCache,
+        const newCacheEntry = RequestCache.add(this.requestCache, {
             request,
-            cacheEntry.resolve,
-            cacheEntry.reject,
-            cacheEntry.timer,
-        );
+            resolve: cacheEntry.resolve,
+            reject: cacheEntry.reject,
+            timer: cacheEntry.timer,
+            session,
+        });
         this.nodesColl.requestStarted(request);
 
         // send request to hoprd
@@ -362,11 +373,11 @@ export default class SDK {
     private onMessages = (messages: NodeAPI.Message[]) => {
         messages.forEach(({ body }) => {
             const segRes = Segment.fromMessage(body);
-            if (!segRes.success) {
+            if (Res.isErr(segRes)) {
                 log.info('cannot create segment', segRes.error);
                 return;
             }
-            const segment = segRes.segment;
+            const segment = segRes.res;
             if (!this.requestCache.has(segment.requestId)) {
                 log.info('dropping unrelated request segment', Segment.prettyPrint(segment));
                 return;
@@ -376,7 +387,7 @@ export default class SDK {
             switch (cacheRes.res) {
                 case 'complete':
                     log.verbose('completion segment', Segment.prettyPrint(segment));
-                    this.completeSegmentsEntry(cacheRes.entry!);
+                    this.completeSegmentsEntry(cacheRes.entry as SegmentCache.Entry);
                     break;
                 case 'error':
                     log.error('error caching segment', cacheRes.reason);
@@ -398,82 +409,67 @@ export default class SDK {
     };
 
     private completeSegmentsEntry = (entry: SegmentCache.Entry) => {
-        const firstSeg = entry.segments.get(0)!;
+        const firstSeg = entry.segments.get(0) as Segment.Segment;
         if (!firstSeg.body.startsWith('0x')) {
             log.info('message is not a response', firstSeg.requestId);
             return;
         }
 
-        const request = this.requestCache.get(firstSeg.requestId)!;
+        const reqEntry = this.requestCache.get(firstSeg.requestId) as RequestCache.Entry;
+        const { request, session } = reqEntry;
         RequestCache.remove(this.requestCache, request.id);
 
         const hexResp = SegmentCache.toMessage(entry);
         const respData = etherUtils.arrayify(hexResp);
-        const counter = this.counterStore.get(request.exitPeerId) || BigInt(0);
 
-        const res = Response.messageToResp({
+        const resUnbox = Response.messageToResp({
             respData,
             request,
-            counter,
+            session,
         });
-        switch (res.res) {
-            case 'error':
-                return this.responseError(res, request);
-            case 'counterfail':
-                return this.responseCounterFail(res, request, counter);
-            case 'success':
-                return this.responseSuccess(res, request);
+        if (Res.isOk(resUnbox)) {
+            return this.responseSuccess(resUnbox.res, reqEntry);
         }
+        return this.responseError(resUnbox.error, reqEntry);
     };
 
-    private responseError = (res: Response.RespError, request: RequestCache.Entry) => {
-        log.error('Error extracting message', res.reason);
-        this.nodesColl.requestFailed(request);
-        return request.reject('Unable to process response');
+    private responseError = (error: string, reqEntry: RequestCache.Entry) => {
+        log.error('Error extracting message', error);
+        this.nodesColl.requestFailed(reqEntry.request);
+        return reqEntry.reject('Unable to process response');
     };
 
-    private responseCounterFail = (
-        res: Response.RespCounterFail,
-        request: RequestCache.Entry,
-        counter: bigint,
-    ) => {
-        log.info(
-            'Counter mismatch extracting message: last counter %s, new counter %s',
-            counter,
-            res.counter,
-        );
-        this.nodesColl.requestFailed(request);
-        return request.reject(
-            `Check your time settings! Out of order message from exit node - last counter: ${counter}, new counter ${res.counter}.`,
-        );
-    };
-
-    private responseSuccess = (res: Response.RespSuccess, request: RequestCache.Entry) => {
-        this.counterStore.set(request.exitPeerId, res.counter);
+    private responseSuccess = ({ resp }: Response.UnboxResponse, reqEntry: RequestCache.Entry) => {
+        const { request, reject, resolve } = reqEntry;
         const responseTime = Date.now() - request.createdAt;
         log.verbose('response time for request %s: %s ms', request.id, responseTime);
         this.nodesColl.requestSucceeded(request, responseTime);
 
-        const resp = res.resp;
         switch (resp.type) {
-            case 'error':
-                return request.reject(`Error attempting JSON RPC call: ${resp.reason}`);
-            case 'counterfail':
-                return request.reject(
-                    `Out of order message. Exit node expected message counter between ${resp.min} and ${resp.max}. Check your time settings!`,
-                );
-            case 'httperror':
-                return request.resolve({
-                    status: resp.status,
-                    text: () => Promise.resolve(resp.text),
-                    json: () => new Promise((r) => r(JSON.parse(resp.text))),
-                });
-            case 'resp':
-                return request.resolve({
+            case Payload.RespType.Resp:
+                return resolve({
                     status: 200,
                     text: () => new Promise((r) => r(JSON.stringify(resp.resp))),
                     json: () => Promise.resolve(resp.resp),
                 });
+            case Payload.RespType.CounterFail: {
+                const counter = reqEntry.session.updatedTS;
+                return reject(
+                    `Message out of counter range. Exit node expected message counter near ${resp.now} - request got ${counter}.`,
+                );
+            }
+            case Payload.RespType.DuplicateFail:
+                return reject(
+                    `Message duplicate error. Exit node rejected already processed message`,
+                );
+            case Payload.RespType.HttpError:
+                return resolve({
+                    status: resp.status,
+                    text: () => Promise.resolve(resp.text),
+                    json: () => new Promise((r) => r(JSON.parse(resp.text))),
+                });
+            case Payload.RespType.Error:
+                return reject(`Error attempting JSON RPC call: ${resp.reason}`);
         }
     };
 

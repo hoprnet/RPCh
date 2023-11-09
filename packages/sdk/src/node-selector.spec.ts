@@ -2,6 +2,7 @@ import * as ExitData from './exit-data';
 import * as NodePair from './node-pair';
 import * as NodeSel from './node-selector';
 import * as PerfData from './perf-data';
+import * as Res from './result';
 
 import type { EntryNode } from './entry-node';
 import type { ExitNode } from './exit-node';
@@ -13,14 +14,17 @@ describe('test node selector', function () {
         const np = NodePair.create(en, [xn], 0, () => {});
         const nodePairs = new Map([[NodePair.id(np), np]]);
         const res = NodeSel.routePair(nodePairs);
-        expect(res).toMatchObject({
-            success: true,
-            match: {
-                entryNode: en,
-                exitNode: xn,
-            },
-            via: 'only route available',
-        });
+        if (Res.isOk(res)) {
+            expect(res.res).toMatchObject({
+                match: {
+                    entryNode: en,
+                    exitNode: xn,
+                },
+                via: 'only route available',
+            });
+        } else {
+            throw new Error(res.error);
+        }
     });
 
     it('selects quickest ping', function () {
@@ -37,14 +41,17 @@ describe('test node selector', function () {
             [NodePair.id(np2), np2],
         ]);
         const res = NodeSel.routePair(nodePairs);
-        expect(res).toMatchObject({
-            success: true,
-            match: {
-                entryNode: en2,
-                exitNode: xn2,
-            },
-            via: 'quickest version ping',
-        });
+        if (Res.isOk(res)) {
+            expect(res.res).toMatchObject({
+                match: {
+                    entryNode: en2,
+                    exitNode: xn2,
+                },
+                via: 'quickest version ping',
+            });
+        } else {
+            throw new Error(res.error);
+        }
     });
 
     it('selects best msgs latencies', function () {
@@ -64,14 +71,17 @@ describe('test node selector', function () {
             [NodePair.id(np2), np2],
         ]);
         const res = NodeSel.routePair(nodePairs);
-        expect(res).toMatchObject({
-            success: true,
-            match: {
-                entryNode: en2,
-                exitNode: xn3,
-            },
-            via: 'best message retrieval latency',
-        });
+        if (Res.isOk(res)) {
+            expect(res.res).toMatchObject({
+                match: {
+                    entryNode: en2,
+                    exitNode: xn3,
+                },
+                via: 'best message retrieval latency',
+            });
+        } else {
+            throw new Error(res.error);
+        }
     });
 
     it('selects least msgs errors', function () {
@@ -89,14 +99,17 @@ describe('test node selector', function () {
             [NodePair.id(np2), np2],
         ]);
         const res = NodeSel.routePair(nodePairs);
-        expect(res).toMatchObject({
-            success: true,
-            match: {
-                entryNode: en2,
-                exitNode: xn3,
-            },
-            via: 'least message retrieval errors',
-        });
+        if (Res.isOk(res)) {
+            expect(res.res).toMatchObject({
+                match: {
+                    entryNode: en2,
+                    exitNode: xn3,
+                },
+                via: 'least message retrieval errors',
+            });
+        } else {
+            throw new Error(res.error);
+        }
     });
 
     it('selects least seg ongoing', function () {
@@ -114,14 +127,17 @@ describe('test node selector', function () {
             [NodePair.id(np2), np2],
         ]);
         const res = NodeSel.routePair(nodePairs);
-        expect(res).toMatchObject({
-            success: true,
-            match: {
-                entryNode: en2,
-                exitNode: xn3,
-            },
-            via: 'least ongoing segments',
-        });
+        if (Res.isOk(res)) {
+            expect(res.res).toMatchObject({
+                match: {
+                    entryNode: en2,
+                    exitNode: xn3,
+                },
+                via: 'least ongoing segments',
+            });
+        } else {
+            throw new Error(res.error);
+        }
     });
 
     it('selects best seg latencies', function () {
@@ -148,14 +164,17 @@ describe('test node selector', function () {
             [NodePair.id(np2), np2],
         ]);
         const res = NodeSel.routePair(nodePairs);
-        expect(res).toMatchObject({
-            success: true,
-            match: {
-                entryNode: en2,
-                exitNode: xn3,
-            },
-            via: 'best segment latency',
-        });
+        if (Res.isOk(res)) {
+            expect(res.res).toMatchObject({
+                match: {
+                    entryNode: en2,
+                    exitNode: xn3,
+                },
+                via: 'best segment latency',
+            });
+        } else {
+            throw new Error(res.error);
+        }
     });
 
     it('selects least seg errors', function () {
@@ -182,14 +201,17 @@ describe('test node selector', function () {
             [NodePair.id(np2), np2],
         ]);
         const res = NodeSel.routePair(nodePairs);
-        expect(res).toMatchObject({
-            success: true,
-            match: {
-                entryNode: en2,
-                exitNode: xn3,
-            },
-            via: 'least segment errors',
-        });
+        if (Res.isOk(res)) {
+            expect(res.res).toMatchObject({
+                match: {
+                    entryNode: en2,
+                    exitNode: xn3,
+                },
+                via: 'least segment errors',
+            });
+        } else {
+            throw new Error(res.error);
+        }
     });
 
     it('selects least ongoing reqs', function () {
@@ -210,14 +232,48 @@ describe('test node selector', function () {
             [NodePair.id(np2), np2],
         ]);
         const res = NodeSel.routePair(nodePairs);
-        expect(res).toMatchObject({
-            success: true,
-            match: {
-                entryNode: en1,
-                exitNode: xn2,
-            },
-            via: 'least ongoing requests',
-        });
+        if (Res.isOk(res)) {
+            expect(res.res).toMatchObject({
+                match: {
+                    entryNode: en1,
+                    exitNode: xn2,
+                },
+                via: 'least ongoing requests',
+            });
+        } else {
+            throw new Error(res.error);
+        }
+    });
+
+    it('selects best info req latency', function () {
+        const xn1 = genExitNode('x1');
+        const xn2 = genExitNode('x2');
+        const xn3 = genExitNode('x3');
+        const en1 = genEntryNode('e1', [xn1.id, xn2.id]);
+        const en2 = genEntryNode('e2', [xn3.id]);
+        const np1 = NodePair.create(en1, [xn1, xn2], 0, () => {});
+        const np2 = NodePair.create(en2, [xn3], 0, () => {});
+        np1.exitDatas = new Map([
+            ['x1', genExitData({ infoLat: 100 })],
+            ['x2', genExitData({ infoLat: 200 })],
+        ]);
+        np2.exitDatas = new Map([['x3', genExitData()]]);
+        const nodePairs = new Map([
+            [NodePair.id(np1), np1],
+            [NodePair.id(np2), np2],
+        ]);
+        const res = NodeSel.routePair(nodePairs);
+        if (Res.isOk(res)) {
+            expect(res.res).toMatchObject({
+                match: {
+                    entryNode: en1,
+                    exitNode: xn1,
+                },
+                via: 'best info req latency',
+            });
+        } else {
+            throw new Error(res.error);
+        }
     });
 
     it('selects best request latency', function () {
@@ -265,14 +321,17 @@ describe('test node selector', function () {
             [NodePair.id(np2), np2],
         ]);
         const res = NodeSel.routePair(nodePairs);
-        expect(res).toMatchObject({
-            success: true,
-            match: {
-                entryNode: en1,
-                exitNode: xn2,
-            },
-            via: 'best request latency',
-        });
+        if (Res.isOk(res)) {
+            expect(res.res).toMatchObject({
+                match: {
+                    entryNode: en1,
+                    exitNode: xn2,
+                },
+                via: 'best request latency',
+            });
+        } else {
+            throw new Error(res.error);
+        }
     });
 
     it('selects least request errors', function () {
@@ -320,14 +379,75 @@ describe('test node selector', function () {
             [NodePair.id(np2), np2],
         ]);
         const res = NodeSel.routePair(nodePairs);
-        expect(res).toMatchObject({
-            success: true,
-            match: {
-                entryNode: en1,
-                exitNode: xn2,
-            },
-            via: 'least request errors',
-        });
+        if (Res.isOk(res)) {
+            expect(res.res).toMatchObject({
+                match: {
+                    entryNode: en1,
+                    exitNode: xn2,
+                },
+                via: 'least request errors',
+            });
+        } else {
+            throw new Error(res.error);
+        }
+    });
+
+    it('selects info req success', function () {
+        const xn1 = genExitNode('x1');
+        const xn2 = genExitNode('x2');
+        const en1 = genEntryNode('e1', [xn1.id]);
+        const en2 = genEntryNode('e2', [xn2.id]);
+        const np1 = NodePair.create(en1, [xn1], 0, () => {});
+        const np2 = NodePair.create(en2, [xn2], 0, () => {});
+        np1.exitDatas = new Map([['x1', genExitData({ infoFail: false })]]);
+        np2.exitDatas = new Map([['x2', genExitData({ infoFail: true })]]);
+        const nodePairs = new Map([
+            [NodePair.id(np1), np1],
+            [NodePair.id(np2), np2],
+        ]);
+        const res = NodeSel.routePair(nodePairs);
+        if (Res.isOk(res)) {
+            expect(res.res).toMatchObject({
+                match: {
+                    entryNode: en1,
+                    exitNode: xn1,
+                },
+                via: 'only info req success',
+            });
+        } else {
+            throw new Error(res.error);
+        }
+    });
+
+    it('selects version assumptions', function () {
+        const xn1 = genExitNode('x1');
+        const xn2 = genExitNode('x2');
+        const xn3 = genExitNode('x3');
+        const en1 = genEntryNode('e1', [xn1.id, xn2.id]);
+        const en2 = genEntryNode('e2', [xn3.id]);
+        const np1 = NodePair.create(en1, [xn1, xn2], 0, () => {});
+        const np2 = NodePair.create(en2, [xn3], 0, () => {});
+        np1.exitDatas = new Map([
+            ['x1', genExitData({ version: '0.10' })],
+            ['x2', genExitData()],
+        ]);
+        np2.exitDatas = new Map([['x3', genExitData({ version: '0.10' })]]);
+        const nodePairs = new Map([
+            [NodePair.id(np1), np1],
+            [NodePair.id(np2), np2],
+        ]);
+        const res = NodeSel.routePair(nodePairs);
+        if (Res.isOk(res)) {
+            expect(res.res).toMatchObject({
+                match: {
+                    entryNode: en1,
+                    exitNode: xn2,
+                },
+                via: 'only (assumed) version match',
+            });
+        } else {
+            throw new Error(res.error);
+        }
     });
 });
 
@@ -362,7 +482,7 @@ function genErr(): PerfData.PerfData {
     };
 }
 
-function genExitData(additionals: any): ExitData.ExitData {
+function genExitData(additionals: any = {}): ExitData.ExitData {
     return {
         requestsOngoing: [],
         requestsHistory: [],

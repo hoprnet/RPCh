@@ -11,12 +11,16 @@
         "lint": "eslint --fix src/",
         "lint:ci": "eslint --max-warnings 0 src/",
         "start": "node build/index.js",
-        "test": "exit 0",
+        "test": "jest --coverage",
         "generate-exit-node-keypair": "node gen-keypair.js"
     },
     "dependencies": {
         "@rpch/sdk": "*",
         "ethers": "^5.7.2",
-        "isomorphic-ws": "^5.0.0"
+        "isomorphic-ws": "^5.0.0",
+        "sqlite3": "^5.1.6"
+    },
+    "devDependencies": {
+        "@types/sqlite3": "^3.1.10"
     }
 }
