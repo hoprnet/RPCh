@@ -1,19 +1,25 @@
 # @rpch/compat-crypto
 
+## 0.6.0
+
+### Minor Changes
+
+-   34e0d18: removed counter handling
+
 ## 0.5.3
 
 ### Patch Changes
 
-- 10eb627: making crypto module browser compatible
+-   10eb627: making crypto module browser compatible
 
 ## 0.5.1
 
 ### Patch Changes
 
-- f3f9ee2: cleanup dependencies and consolidate formatting
+-   f3f9ee2: cleanup dependencies and consolidate formatting
 
 ## 0.5.0
 
 ### Minor Changes
 
-- eaa424c: Update to return session even on counter fail
+-   eaa424c: Update to return session even on counter fail
