@@ -1,5 +1,11 @@
 # @rpch/discovery-platform
 
+## 0.12.5
+
+### Patch Changes
+
+-   fix container build
+
 ## 0.12.4
 
 ### Patch Changes
