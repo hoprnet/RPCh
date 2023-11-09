@@ -10,4 +10,5 @@ export const OngoingReqThreshold = 5;
 export type NodeMatch = {
     entryNode: EntryNode;
     exitNode: ExitNode;
+    counterOffset: number;
 };

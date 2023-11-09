@@ -130,11 +130,11 @@ function match(
 }
 
 function success(
-    { entryNode, exitNode }: NodeMatch.NodeMatch,
+    { entryNode, exitNode, counterOffset }: ExitPerf,
     via: string,
 ): Res.Result<NodeSelection> {
     return Res.ok({
-        match: { entryNode, exitNode },
+        match: { entryNode, exitNode, counterOffset },
         via,
     });
 }
@@ -218,7 +218,7 @@ function eSuccess(
     const xPerfs = routePerfs.filter(({ entryNode: en }) => en.id === entryNode.id);
     const el = randomEl(xPerfs);
     return Res.ok({
-        match: { entryNode, exitNode: el.exitNode },
+        match: { entryNode, exitNode: el.exitNode, counterOffset: el.counterOffset },
         via,
     });
 }

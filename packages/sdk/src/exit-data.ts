@@ -12,6 +12,7 @@ export type Perf = {
     infoFail: boolean;
     version?: string;
     infoLat: number;
+    counterOffset: number; // counter offset after info msg
 };
 
 export type ExitData = {
@@ -73,6 +74,7 @@ export function perf(xd: ExitData): Perf {
     const avgLats = average(lats);
     const infoLat = xd.infoLat || -1;
     const infoFail = !!xd.infoFail;
+    const counterOffset = xd.counterOffset || 0;
     const version = xd.version;
     return {
         ongoing,
@@ -83,5 +85,6 @@ export function perf(xd: ExitData): Perf {
         infoLat,
         infoFail,
         version,
+        counterOffset,
     };
 }

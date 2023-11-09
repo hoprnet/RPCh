@@ -18,10 +18,12 @@ export type UnboxResponse = {
 };
 
 export function respToMessage({
+    requestId,
     entryPeerId,
     respPayload,
     unboxSession,
 }: {
+    requestId: string;
     entryPeerId: string;
     respPayload: Payload.RespPayload;
     unboxSession: compatCrypto.Session;
@@ -33,6 +35,7 @@ export function respToMessage({
 
     const data = utils.toUtf8Bytes(resEncode.res);
     const resBox = compatCrypto.boxResponse(unboxSession, {
+        uuid: requestId,
         entryPeerId,
         message: data,
     });
@@ -58,6 +61,7 @@ export function messageToResp({
     session: compatCrypto.Session;
 }): Res.Result<UnboxResponse> {
     const resUnbox = compatCrypto.unboxResponse(session, {
+        uuid: request.id,
         message: respData,
         entryPeerId: request.entryPeerId,
     });

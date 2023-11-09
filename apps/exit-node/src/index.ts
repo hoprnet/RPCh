@@ -297,6 +297,7 @@ async function completeSegmentsEntry(
     const reqData = utils.arrayify(hexData);
 
     const resReq = Request.messageToReq({
+        requestId,
         message: reqData,
         exitPeerId: state.peerId,
         exitPrivateKey: state.privateKey,
@@ -374,7 +375,9 @@ function sendResponse(
     },
     respPayload: Payload.RespPayload,
 ) {
+    const requestId = (cacheEntry.segments.get(0) as Segment.Segment).requestId;
     const resResp = Response.respToMessage({
+        requestId,
         entryPeerId,
         respPayload,
         unboxSession,
@@ -384,7 +387,6 @@ function sendResponse(
         return;
     }
 
-    const requestId = (cacheEntry.segments.get(0) as Segment.Segment).requestId;
     const segments = Segment.toSegments(requestId, resResp.res);
 
     log.verbose(
