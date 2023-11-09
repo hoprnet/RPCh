@@ -16,7 +16,11 @@ function main() {
     const connectionString = process.env.DATABASE_URL;
     const dbPool = new Pool({ connectionString });
 
-    log.info('AM[v%s] running with %s', Version, connectionString);
+    log.info(
+        'AM[v%s] running with %s',
+        Version,
+        JSON.stringify({ connectionString: '<redacted>' }),
+    );
     availability.start(dbPool);
 }
 
