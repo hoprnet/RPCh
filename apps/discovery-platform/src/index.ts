@@ -40,7 +40,7 @@ const start = async (ops: {
             Version,
             host,
             ops.port,
-            JSON.stringify({ connectionString: ops.connectionString, url: ops.url }),
+            JSON.stringify({ connectionString: '<redacted>', url: ops.url }),
         );
     });
 
