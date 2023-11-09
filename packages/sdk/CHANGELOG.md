@@ -1,5 +1,18 @@
 # @rpch/sdk
 
+## 1.4.0
+
+### Minor Changes
+
+-   d1479ea: use request uuid inside crypto box
+    use determined exit node counter offset inside crypto counter as well
+    better version output log
+
+### Patch Changes
+
+-   Updated dependencies [d1479ea]
+    -   @rpch/compat-crypto@0.7.0
+
 ## 1.3.0
 
 ### Minor Changes

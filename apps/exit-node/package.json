@@ -1,6 +1,6 @@
 {
     "name": "@rpch/exit-node",
-    "version": "0.11.0",
+    "version": "0.12.0",
     "license": "LGPL-3.0",
     "private": true,
     "scripts": {

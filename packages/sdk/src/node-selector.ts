@@ -6,7 +6,7 @@ import * as Res from './result';
 import type { EntryNode } from './entry-node';
 import { shortPeerId, randomEl } from './utils';
 
-const ExitNodesCompatVersions = ['0.11'];
+const ExitNodesCompatVersions = ['0.12'];
 
 export type NodeSelection = {
     match: NodeMatch.NodeMatch;

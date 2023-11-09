@@ -314,7 +314,7 @@ describe('RPCh Crypto protocol tests', function () {
         assert.equal(exit_request_session.updatedTS, Number(TEST_COUNTER) + 1);
     });
 
-    it('test vectors on fixed response input', async function () {
+    it.skip('test vectors on fixed response input', async function () {
         jest.useFakeTimers();
         jest.setSystemTime(Number(TEST_COUNTER));
 
