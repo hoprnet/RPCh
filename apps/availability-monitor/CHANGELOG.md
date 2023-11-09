@@ -1,5 +1,11 @@
 # @rpch/availability-monitor
 
+## 0.7.1
+
+### Patch Changes
+
+-   3de2d3d: redact secrets from startup log
+
 ## 0.7.0
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # @rpch/discovery-platform
 
+## 0.13.1
+
+### Patch Changes
+
+-   3de2d3d: redact secrets from startup log
+
 ## 0.13.0
 
 ### Minor Changes
