@@ -1,6 +1,5 @@
 import assert = require('assert');
 import { isError, boxRequest, boxResponse, Session, unboxRequest, unboxResponse } from './index';
-import { randomBytes } from 'crypto';
 import * as crypto from 'crypto';
 
 const EXIT_NODE_PK = '03d73c98d44618b7504bab1001adaa0a0c77adfb04db4b7732b1daba5e6523e7bf';
@@ -35,7 +34,7 @@ function toHex(bytes: Uint8Array | undefined) {
 describe('RPCh Crypto protocol tests', function () {
     it('test request flow', async function () {
         // Client side
-        const request_msg = new Uint8Array(randomBytes(300));
+        const request_msg = new Uint8Array(crypto.randomBytes(300));
         const request_uuid = crypto.randomUUID();
 
         const request_data = {
@@ -89,7 +88,7 @@ describe('RPCh Crypto protocol tests', function () {
 
     it('test response flow', async function () {
         // Exit node side
-        const response_msg = new Uint8Array(randomBytes(300));
+        const response_msg = new Uint8Array(crypto.randomBytes(300));
         const response_uuid = crypto.randomUUID();
 
         const mock_session_with_client: Session = {
@@ -146,7 +145,7 @@ describe('RPCh Crypto protocol tests', function () {
 
     it('test complete flow', async function () {
         // Client side
-        const request_msg = new Uint8Array(randomBytes(300));
+        const request_msg = new Uint8Array(crypto.randomBytes(300));
         const request_uuid = crypto.randomUUID();
 
         const request_data = {
@@ -198,7 +197,7 @@ describe('RPCh Crypto protocol tests', function () {
         assert.equal(exit_session.updatedTS, client_req_creation_ts);
 
         // Exit node side
-        const response_msg = new Uint8Array(randomBytes(300));
+        const response_msg = new Uint8Array(crypto.randomBytes(300));
         const response_uuid = crypto.randomUUID();
 
         const response_data = {
