@@ -103,7 +103,7 @@ export function messageToReq({
     }
 
     if (!resUnbox.session.request) {
-        return Res.err(`Crypto session without request object`);
+        return Res.err('Crypto session without request object');
     }
 
     const msg = utils.toUtf8String(resUnbox.session.request);

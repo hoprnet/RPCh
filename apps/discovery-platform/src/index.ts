@@ -38,7 +38,7 @@ const start = async (ops: {
     const host = '0.0.0.0';
     /* const server = */ app.listen(ops.port, host, () => {
         log.info(
-            `DP[v%s] running on %s:%d with %s`,
+            'DP[v%s] running on %s:%d with %s',
             Version,
             host,
             ops.port,
