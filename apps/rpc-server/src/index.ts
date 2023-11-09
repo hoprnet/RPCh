@@ -1,4 +1,6 @@
 import http from 'http';
+
+import Version from './version';
 import RPChSDK, {
     JRPC,
     ProviderAPI,
@@ -21,8 +23,6 @@ const corsHeaders = {
 };
 
 const defaultPort = 45750;
-
-const Version = String(process.env.npm_package_version);
 
 function toURL(urlStr: string, host: string): null | URL {
     try {

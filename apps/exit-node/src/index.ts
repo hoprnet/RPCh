@@ -4,6 +4,7 @@ import { utils } from 'ethers';
 
 import * as Identity from './identity';
 import * as RequestStore from './request-store';
+import Version from './version';
 import {
     DPapi,
     ExitNode,
@@ -23,7 +24,6 @@ const log = Utils.logger(['exit-node']);
 const SocketReconnectTimeout = 1e3; // 1sek
 const RequestPurgeTimeout = 10e3; // 10sek
 const ValidCounterPeriod = 1e3 * 60 * 60; // 1hour
-const Version = String(process.env.npm_package_version);
 
 type State = {
     socket?: WS.WebSocket;
@@ -297,6 +297,7 @@ async function completeSegmentsEntry(
     const reqData = utils.arrayify(hexData);
 
     const resReq = Request.messageToReq({
+        requestId,
         message: reqData,
         exitPeerId: state.peerId,
         exitPrivateKey: state.privateKey,
@@ -374,7 +375,9 @@ function sendResponse(
     },
     respPayload: Payload.RespPayload,
 ) {
+    const requestId = (cacheEntry.segments.get(0) as Segment.Segment).requestId;
     const resResp = Response.respToMessage({
+        requestId,
         entryPeerId,
         respPayload,
         unboxSession,
@@ -384,7 +387,6 @@ function sendResponse(
         return;
     }
 
-    const requestId = (cacheEntry.segments.get(0) as Segment.Segment).requestId;
     const segments = Segment.toSegments(requestId, resResp.res);
 
     log.verbose(

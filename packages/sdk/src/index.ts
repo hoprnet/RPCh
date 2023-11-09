@@ -180,7 +180,7 @@ export default class SDK {
             const headers = this.determineHeaders(provider, this.ops.mevKickbackAddress);
 
             // create request
-            const { entryNode, exitNode } = resNodes;
+            const { entryNode, exitNode, counterOffset } = resNodes;
             const id = RequestCache.generateId(this.requestCache);
             const resReq = Request.create({
                 id,
@@ -190,6 +190,7 @@ export default class SDK {
                 entryPeerId: entryNode.id,
                 exitPeerId: exitNode.id,
                 exitPublicKey: etherUtils.arrayify(exitNode.pubKey),
+                counterOffset,
                 headers,
                 hops: this.hops,
             });
@@ -303,6 +304,7 @@ export default class SDK {
             entryPeerId: fallback.entryNode.id,
             exitPeerId: fallback.exitNode.id,
             exitPublicKey: etherUtils.arrayify(fallback.exitNode.pubKey),
+            counterOffset: fallback.counterOffset,
             headers: origReq.headers,
             hops: origReq.hops,
         });

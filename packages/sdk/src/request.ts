@@ -36,6 +36,7 @@ export function create({
     entryPeerId,
     exitPeerId,
     exitPublicKey,
+    counterOffset,
     headers,
     hops,
 }: {
@@ -47,6 +48,7 @@ export function create({
     entryPeerId: string;
     exitPeerId: string;
     exitPublicKey: Uint8Array;
+    counterOffset: number;
     headers?: Record<string, string>;
     hops?: number;
 }): Res.Result<{ request: Request; session: compatCrypto.Session }> {
@@ -65,7 +67,9 @@ export function create({
     const resBox = compatCrypto.boxRequest({
         message: data,
         exitPeerId,
+        uuid: id,
         exitPublicKey,
+        counterOffset,
     });
     if (compatCrypto.isError(resBox)) {
         return Res.err(resBox.error);
@@ -90,14 +94,21 @@ export function create({
 
 export function messageToReq({
     message,
+    requestId,
     exitPeerId,
     exitPrivateKey,
 }: {
+    requestId: string;
     message: Uint8Array;
     exitPeerId: string;
     exitPrivateKey: Uint8Array;
 }): Res.Result<UnboxRequest> {
-    const resUnbox = compatCrypto.unboxRequest({ message, exitPeerId, exitPrivateKey });
+    const resUnbox = compatCrypto.unboxRequest({
+        message,
+        uuid: requestId,
+        exitPeerId,
+        exitPrivateKey,
+    });
     if (compatCrypto.isError(resUnbox)) {
         return Res.err(resUnbox.error);
     }

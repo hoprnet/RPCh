@@ -78,7 +78,7 @@ function initializeCipher(
     counter: bigint,
     peerId: string,
     request: boolean,
-    aad?: string
+    aad: string,
 ) {
     const startIndex = request ? 0 : 2;
     const saltTag = request ? REQUEST_TAG : RESPONSE_TAG;
@@ -111,7 +111,7 @@ function initializeCipher(
     iv.set(bigintToUint8BE(counter), prefixLen);
 
     // Initialize Chacha20 with Poly1305
-    return chacha20poly1305(key, iv, aad ? textEnc.encode(aad) : undefined);
+    return chacha20poly1305(key, iv, textEnc.encode(aad));
 }
 
 /// Generates a random secp256k1 keypair
@@ -133,9 +133,16 @@ export function boxRequest(
     {
         message,
         uuid,
+        counterOffset,
         exitPeerId,
         exitPublicKey,
-    }: { message: Uint8Array; uuid?: string, exitPeerId: string; exitPublicKey: Uint8Array },
+    }: {
+        message: Uint8Array;
+        uuid: string;
+        counterOffset: number;
+        exitPeerId: string;
+        exitPublicKey: Uint8Array;
+    },
     randomFn: (len: number) => Uint8Array = randomBytes,
 ): Result {
     if (exitPublicKey.length !== PUBLIC_KEY_SIZE_ENCODED) {
@@ -151,7 +158,7 @@ export function boxRequest(
         return { res: ResState.Failed, error: `ecdh failed ${err}` };
     }
 
-    const newCounter = BigInt(Date.now() + 1);
+    const newCounter = BigInt(Date.now() + 1 + counterOffset);
 
     let cipher;
     try {
@@ -204,7 +211,7 @@ export function unboxRequest({
     exitPrivateKey,
 }: {
     message: Uint8Array;
-    uuid?: string,
+    uuid: string;
     exitPeerId: string;
     exitPrivateKey: Uint8Array;
 }): Result {
@@ -284,7 +291,7 @@ export function unboxRequest({
 /// The encrypted data and new counter value to be persisted is returned in the resulting session.
 export function boxResponse(
     session: Session,
-    { entryPeerId, uuid, message }: { entryPeerId: string; uuid?: string, message: Uint8Array },
+    { entryPeerId, uuid, message }: { entryPeerId: string; uuid: string; message: Uint8Array },
 ): Result {
     const sharedPreSecret = session.sharedPreSecret;
     if (!sharedPreSecret) {
@@ -337,7 +344,7 @@ export function boxResponse(
 /// The decrypted data and new counter value to be persisted is returned in the resulting session.
 export function unboxResponse(
     session: Session,
-    { entryPeerId, uuid, message }: { entryPeerId: string; uuid?: string, message: Uint8Array },
+    { entryPeerId, uuid, message }: { entryPeerId: string; uuid: string; message: Uint8Array },
 ): Result {
     const sharedPreSecret = session.sharedPreSecret;
     if (!sharedPreSecret) {

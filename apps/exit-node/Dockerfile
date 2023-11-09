@@ -54,10 +54,10 @@ RUN apk upgrade --no-cache && \
 # copy over minimal fileset to run availability-monitor
 COPY --from=installer /app/node_modules ./node_modules
 COPY --from=installer /app/package.json .
-COPY --from=installer /app/apps/exit-node/build/*.js .
+COPY --from=installer /app/apps/exit-node/build ./build
 COPY --from=installer /app/packages/sdk ./packages/sdk
 COPY --from=installer /app/packages/compat-crypto ./packages/compat-crypto
 
 ENTRYPOINT ["/sbin/tini", "--"]
 
-CMD ["node", "index.js"]
+CMD ["node", "build/index.js"]
