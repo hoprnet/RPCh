@@ -64,7 +64,6 @@ export function create({
     }
 
     const data = utils.toUtf8Bytes(resEncode.res);
-    console.log('counterOffset', counterOffset);
     const resBox = compatCrypto.boxRequest({
         message: data,
         exitPeerId,
