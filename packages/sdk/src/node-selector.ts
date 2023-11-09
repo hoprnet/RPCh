@@ -195,8 +195,10 @@ function bestReqLatencies(routePerfs: ExitPerf[]): ExitPerf[] {
 }
 
 function bestInfoLatencies(routePerfs: ExitPerf[]): ExitPerf[] {
-    const haveLats = routePerfs.filter(({ infoLat }) => infoLat > 0);
-    haveLats.sort((l, r) => l.infoLat - r.infoLat);
+    // have some leeway here since info lat is in seconds and compared to ms
+    // treat 1 sec diff as 0 sec diff
+    const haveLats = routePerfs.filter(({ infoLatSec }) => infoLatSec > 1);
+    haveLats.sort((l, r) => Math.min(l.infoLatSec, 0) - Math.min(r.infoLatSec, 0));
     return haveLats;
 }
 

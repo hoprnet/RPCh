@@ -276,7 +276,7 @@ function incInfoResps(np: NodePair, infoResps: NodeAPI.Message[]) {
         }
         exitData.version = version;
         exitData.counterOffset = Date.now() - counter;
-        exitData.infoLat = receivedAt - counter;
+        exitData.infoLatSec = Math.abs(receivedAt - Math.floor(counter / 1000));
         EntryData.removeOngoingInfo(np.entryData);
     });
     checkStopInterval(np);
