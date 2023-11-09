@@ -36,8 +36,9 @@ async function run(dbPool: Pool) {
 function reschedule(dbPool: Pool) {
     // schedule new run every min 30sec and max 10 min
     const next = 30e3 + Math.floor(Math.random() * 9.5 * 60e3);
-    const logN = Math.round(next / 1000);
-    log.verbose('scheduling next run in', logN, 's');
+    const logM = Math.floor(next / 1000 / 60);
+    const logS = Math.round(next / 1000) - logM * 60;
+    log.verbose('scheduling next run in %dm%ds', logM, logS);
     setTimeout(() => run(dbPool), next);
 }
 

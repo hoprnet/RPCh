@@ -1,5 +1,11 @@
 # @rpch/availability-monitor
 
+## 0.7.2
+
+### Patch Changes
+
+-   better log output
+
 ## 0.7.1
 
 ### Patch Changes
