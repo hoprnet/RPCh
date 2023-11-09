@@ -172,7 +172,7 @@ export default class SDK {
                     return reject(`Could not find node pair in ${reqOps.timeout} ms`);
                 });
             if (!resNodes) {
-                return reject(`Unexpected code flow - should never be here`);
+                return reject('Unexpected code flow - should never be here');
             }
 
             const provider = this.determineProvider(reqOps as { provider: string }, req);
@@ -460,7 +460,7 @@ export default class SDK {
             }
             case Payload.RespType.DuplicateFail:
                 return reject(
-                    `Message duplicate error. Exit node rejected already processed message`,
+                    'Message duplicate error. Exit node rejected already processed message',
                 );
             case Payload.RespType.HttpError:
                 return resolve({

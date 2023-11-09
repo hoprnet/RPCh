@@ -59,7 +59,7 @@ export function readUserByChainCred(
     const q = [
         'select * from users',
         'where id = (select user_id from chain_credentials',
-        `where chain = $1 and address = $2)`,
+        'where chain = $1 and address = $2)',
     ].join(' ');
     return dbPool.query(q, [chain, address]);
 }
@@ -72,7 +72,7 @@ export function readUserByFederatedCred(
     const q = [
         'select * from users',
         'where id = (select user_id from federated_credentials',
-        `where provider = $1 and subject = $2)`,
+        'where provider = $1 and subject = $2)',
     ].join(' ');
     return dbPool.query(q, [provider, subject]);
 }

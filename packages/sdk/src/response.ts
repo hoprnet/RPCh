@@ -66,7 +66,7 @@ export function messageToResp({
     }
 
     if (!resUnbox.session.response) {
-        return Res.err(`Crypto session without response object`);
+        return Res.err('Crypto session without response object');
     }
 
     const msg = utils.toUtf8String(resUnbox.session.response);

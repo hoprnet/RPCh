@@ -303,7 +303,7 @@ async function completeSegmentsEntry(
     });
 
     if (Res.isErr(resReq)) {
-        log.error(`Error unboxing request:`, resReq.error);
+        log.error('Error unboxing request:', resReq.error);
         return;
     }
 
