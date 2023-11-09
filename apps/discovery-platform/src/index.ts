@@ -37,7 +37,13 @@ const start = async (ops: {
     // start listening at PORT for requests
     const host = '0.0.0.0';
     /* const server = */ app.listen(ops.port, host, () => {
-        log.info(`DP[v%s] running on %s:%d with %s`, Version, host, ops.port, JSON.stringify(ops));
+        log.info(
+            `DP[v%s] running on %s:%d with %s`,
+            Version,
+            host,
+            ops.port,
+            JSON.stringify({ connectionString: ops.connectionString, url: ops.url }),
+        );
     });
 
     // set server timeout to 30s
