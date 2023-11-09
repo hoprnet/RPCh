@@ -1,8 +1,7 @@
 import { Utils } from '@rpch/sdk';
 import { Pool } from 'pg';
 import * as availability from './availability';
-
-const Version = String(process.env.npm_package_version);
+import Version from './version';
 
 const log = Utils.logger(['availability-monitor']);
 
