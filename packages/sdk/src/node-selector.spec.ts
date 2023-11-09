@@ -254,8 +254,8 @@ describe('test node selector', function () {
         const np1 = NodePair.create(en1, [xn1, xn2], 0, () => {});
         const np2 = NodePair.create(en2, [xn3], 0, () => {});
         np1.exitDatas = new Map([
-            ['x1', genExitData({ infoLat: 100 })],
-            ['x2', genExitData({ infoLat: 200 })],
+            ['x1', genExitData({ infoLatSec: 100 })],
+            ['x2', genExitData({ infoLatSec: 200 })],
         ]);
         np2.exitDatas = new Map([['x3', genExitData()]]);
         const nodePairs = new Map([
