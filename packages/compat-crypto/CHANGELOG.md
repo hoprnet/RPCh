@@ -1,5 +1,11 @@
 # @rpch/compat-crypto
 
+## 0.8.0
+
+### Minor Changes
+
+-   d5505c3: update crypto protocol version
+
 ## 0.7.0
 
 ### Minor Changes

@@ -1,5 +1,16 @@
 # @rpch/rpc-server
 
+## 0.11.0
+
+### Minor Changes
+
+-   crypto protocol update
+
+### Patch Changes
+
+-   Updated dependencies
+    -   @rpch/sdk@1.5.0
+
 ## 0.10.0
 
 ### Minor Changes

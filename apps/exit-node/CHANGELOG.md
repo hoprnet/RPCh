@@ -1,5 +1,16 @@
 # @rpch/exit-node
 
+## 0.13.0
+
+### Minor Changes
+
+-   crypto protocol update
+
+### Patch Changes
+
+-   Updated dependencies
+    -   @rpch/sdk@1.5.0
+
 ## 0.12.0
 
 ### Minor Changes
