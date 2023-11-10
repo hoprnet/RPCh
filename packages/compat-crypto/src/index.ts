@@ -23,7 +23,7 @@ export type ResFailed = { res: ResState.Failed; error: string };
 export type Result = ResOk | ResFailed;
 
 /// RPCh Crypto protocol version
-export const RPCH_CRYPTO_VERSION = 0x12;
+export const RPCH_CRYPTO_VERSION = 0x21;
 
 /// Encoded public key size |W|
 const PUBLIC_KEY_SIZE_ENCODED = 33;
