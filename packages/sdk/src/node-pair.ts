@@ -152,6 +152,7 @@ export function discover(np: NodePair) {
 }
 
 function requestInfo(np: NodePair, exitNode: ExitNode.ExitNode) {
+    const message = `info-${np.entryNode.id}-${np.hops ?? '_'}`;
     NodeAPI.sendMessage(
         {
             ...np.entryNode,
@@ -160,7 +161,7 @@ function requestInfo(np: NodePair, exitNode: ExitNode.ExitNode) {
         {
             recipient: exitNode.id,
             tag: np.applicationTag,
-            message: `info-${np.entryNode.id}-${np.hops}`,
+            message,
         },
     );
     EntryData.addOngoingInfo(np.entryData);
