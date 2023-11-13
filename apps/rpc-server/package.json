@@ -1,6 +1,6 @@
 {
     "name": "@rpch/rpc-server",
-    "version": "0.11.2",
+    "version": "0.11.3",
     "license": "LGPL-3.0",
     "private": true,
     "scripts": {

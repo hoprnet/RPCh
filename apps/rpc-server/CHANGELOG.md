@@ -1,5 +1,11 @@
 # @rpch/rpc-server
 
+## 0.11.3
+
+### Patch Changes
+
+-   fix env var forwarding
+
 ## 0.11.2
 
 ### Patch Changes
