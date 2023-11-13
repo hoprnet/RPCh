@@ -1,5 +1,11 @@
 # @rpch/rpc-server
 
+## 0.11.5
+
+### Patch Changes
+
+-   increase HAPROXY server side timeout values
+
 ## 0.11.4
 
 ### Patch Changes
