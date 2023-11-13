@@ -15,6 +15,7 @@ import type { EntryNode } from './entry-node';
 export type MessageListener = (messages: NodeAPI.Message[]) => void;
 
 const MessagesFetchInterval = 333; // ms
+const InfoResponseTimeout = 10e3; // 10s
 
 export type NodePair = {
     entryNode: EntryNode;
@@ -58,6 +59,7 @@ export function create(
 
 export function destruct(np: NodePair) {
     clearInterval(np.fetchInterval);
+    np.fetchInterval = undefined;
 }
 
 export function id(np: NodePair) {
@@ -168,6 +170,17 @@ function requestInfo(np: NodePair, exitNode: ExitNode.ExitNode) {
     if (!np.fetchInterval) {
         np.fetchInterval = setInterval(() => fetchMessages(np), MessagesFetchInterval);
     }
+    // stop checking for info resp at after this
+    // will still be able to receive info resp if messages went over this route
+    setTimeout(() => {
+        EntryData.removeOngoingInfo(np.entryData);
+        checkStopInterval(np);
+        const exitData = np.exitDatas.get(exitNode.id);
+        if (!exitData) {
+            return np.log.error('requestInfo ExitData mismatch for %s', exitNode.id);
+        }
+        exitData.infoFail = true;
+    }, InfoResponseTimeout);
 }
 
 export function prettyPrint(np: NodePair): string {
@@ -253,7 +266,7 @@ function fetchMessages(np: NodePair) {
             np.messageListener(msgs);
         })
         .catch((err) => {
-            np.log.error('Error fetching node messages', JSON.stringify(err));
+            np.log.error('Error fetching node messages: %s[%o]', JSON.stringify(err), err);
             np.entryData.fetchMessagesErrors++;
         });
 }
@@ -278,6 +291,7 @@ function incInfoResps(np: NodePair, infoResps: NodeAPI.Message[]) {
         exitData.version = version;
         exitData.counterOffset = Date.now() - counter;
         exitData.infoLatSec = Math.abs(receivedAt - Math.floor(counter / 1000));
+        exitData.infoFail = false;
         EntryData.removeOngoingInfo(np.entryData);
     });
     checkStopInterval(np);

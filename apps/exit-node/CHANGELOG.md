@@ -1,5 +1,14 @@
 # @rpch/exit-node
 
+## 0.13.1
+
+### Patch Changes
+
+-   fix info resp dangling response polling
+    increase exit-node request purging timeout
+-   Updated dependencies
+    -   @rpch/sdk@1.5.3
+
 ## 0.13.0
 
 ### Minor Changes

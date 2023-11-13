@@ -1,5 +1,12 @@
 # @rpch/sdk
 
+## 1.5.3
+
+### Patch Changes
+
+-   fix info resp dangling response polling
+    increase exit-node request purging timeout
+
 ## 1.5.2
 
 ### Patch Changes

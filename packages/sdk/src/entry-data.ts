@@ -55,6 +55,10 @@ export function addOngoingInfo(ed: EntryData) {
 
 export function removeOngoingInfo(ed: EntryData) {
     ed.infoOngoing--;
+    // when info request takes longer than its timeout
+    if (ed.infoOngoing < 0) {
+        ed.infoOngoing = 0;
+    }
 }
 
 export function addOngoingSeg(ed: EntryData, seg: Segment.Segment) {

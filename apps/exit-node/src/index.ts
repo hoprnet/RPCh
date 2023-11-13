@@ -22,7 +22,7 @@ import {
 const log = Utils.logger(['exit-node']);
 
 const SocketReconnectTimeout = 1e3; // 1sek
-const RequestPurgeTimeout = 10e3; // 10sek
+const RequestPurgeTimeout = 60e3; // 60sek
 const ValidCounterPeriod = 1e3 * 60 * 60; // 1hour
 
 type State = {
