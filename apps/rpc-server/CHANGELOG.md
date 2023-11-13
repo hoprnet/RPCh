@@ -1,5 +1,13 @@
 # @rpch/rpc-server
 
+## 0.11.2
+
+### Patch Changes
+
+-   better timeout logs
+-   Updated dependencies
+    -   @rpch/sdk@1.5.2
+
 ## 0.11.1
 
 ### Patch Changes

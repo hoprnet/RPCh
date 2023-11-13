@@ -210,9 +210,9 @@ export default class SDK {
 
             // set request expiration timer
             const timer = setTimeout(() => {
-                log.error('request expired', request.id);
+                log.error('Request %s expired after %dms timeout', request.id, reqOps.timeout);
                 this.removeRequest(request);
-                return reject('request timed out');
+                return reject('Request timed out');
             }, reqOps.timeout);
 
             // track request
@@ -282,7 +282,7 @@ export default class SDK {
         const fallback = this.nodesColl.fallbackNodePair(entryNode);
         if (!fallback) {
             log.info('no fallback for resending request available');
-            return cacheEntry.reject('no fallback node pair to retry sending request');
+            return cacheEntry.reject('No fallback node pair to retry sending request');
         }
 
         this.redoRequests.add(origReq.id);
@@ -310,7 +310,7 @@ export default class SDK {
         });
         if (Res.isErr(resReq)) {
             log.info('Error creating fallback request', resReq.error);
-            return cacheEntry.reject('unable to create fallback request object');
+            return cacheEntry.reject('Unable to create fallback request object');
         }
         // split request to segments
         const { request, session } = resReq.res;

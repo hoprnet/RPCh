@@ -1,5 +1,11 @@
 # @rpch/sdk
 
+## 1.5.2
+
+### Patch Changes
+
+-   better timeout logs
+
 ## 1.5.1
 
 ### Patch Changes
