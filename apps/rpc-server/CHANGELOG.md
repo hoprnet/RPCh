@@ -1,5 +1,11 @@
 # @rpch/rpc-server
 
+## 0.11.4
+
+### Patch Changes
+
+-   dace3d5: update to latest SDK
+
 ## 0.11.3
 
 ### Patch Changes
