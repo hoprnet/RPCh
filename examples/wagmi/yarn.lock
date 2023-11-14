@@ -922,22 +922,23 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@rpch/compat-crypto@*":
-  version "0.5.3"
-  resolved "https://registry.yarnpkg.com/@rpch/compat-crypto/-/compat-crypto-0.5.3.tgz#2588e36d21ea96a218a02eef547d2995464a6f74"
-  integrity sha512-KCOL8ljuB/3F8re3bBSN4GUNbdYGgGxZ1gNCE/CKxOcNxk56K8nd2AROBYHy5G2WJ27rAXWG3wWijxHoR5YIfQ==
+"@rpch/compat-crypto@^0.7.0":
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/@rpch/compat-crypto/-/compat-crypto-0.7.0.tgz#e033a5be81745b5dbcf4df79ea79cbe3c0cc5e7f"
+  integrity sha512-Du/Gd5G8m0qVkg6xT7z0X4gxkk7Y6qgClAtP8AhJhXzYKYsXGuHTgiUvc5GP6TGfeybhNO1iJ3WBzlUYxNt3WA==
   dependencies:
     "@noble/ciphers" "^0.4.0"
     "@noble/curves" "^1.2.0"
     "@noble/hashes" "^1.3.2"
 
-"@rpch/sdk@1.2.3":
-  version "1.2.3"
-  resolved "https://registry.yarnpkg.com/@rpch/sdk/-/sdk-1.2.3.tgz#ddde0140728956361cc352ec1af5a34091adca41"
-  integrity sha512-cb8fWgdSacnj8XSM4xDXLwMG4d6qi00x1DGVoNiCAFtDhE8vb7p9yHiI09A5oyuW+uA89nIdFyGSPozI2ZbBXQ==
+"@rpch/sdk@^1.4.1":
+  version "1.4.1"
+  resolved "https://registry.yarnpkg.com/@rpch/sdk/-/sdk-1.4.1.tgz#711af5a9fc7407f58c67608bcc3ca13a4e0361f4"
+  integrity sha512-yOXblzMfle/NnCJFiXhxJNjbgwd1P23ouwvU7fFtE75wQahBekvx0vjx74GMLxK7PJuj0s3p0q78jMf+d++Tgg==
   dependencies:
-    "@rpch/compat-crypto" "*"
+    "@rpch/compat-crypto" "^0.7.0"
     async-retry "^1.3.3"
+    debug "^4.3.4"
     ethers "^5.7.2"
     isomorphic-ws "^5.0.0"
     lz-string "^1.5.0"

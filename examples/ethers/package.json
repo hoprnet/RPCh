@@ -10,7 +10,7 @@
     "lint": "eslint \"src/**/*.ts*\""
   },
   "dependencies": {
-    "@rpch/sdk": "^1.2.3",
+    "@rpch/sdk": "^1.4.1",
     "dotenv": "^16.3.1",
     "ethers": "^6.8.0"
   },
@@ -20,6 +20,7 @@
   ],
   "devDependencies": {
     "@types/dotenv": "^8.2.0",
-    "ts-node": "^10.9.1"
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
   }
 }
