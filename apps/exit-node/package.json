@@ -16,7 +16,7 @@
         "generate-exit-node-keypair": "node gen-keypair.js"
     },
     "dependencies": {
-        "@rpch/sdk": "*",
+        "@rpch/sdk": "1.5.3",
         "ethers": "^5.7.2",
         "isomorphic-ws": "^5.0.0",
         "sqlite3": "^5.1.6"
