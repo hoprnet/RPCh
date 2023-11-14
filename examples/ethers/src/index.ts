@@ -33,7 +33,7 @@ export class RPChProvider extends JsonRpcProvider {
                 result: JRPC.isError(res) ? res.error : res.result,
             }));
         } catch (error) {
-            console.log(error);
+            console.warn('Error:', error);
             this.emit('debug', {
                 action: 'response',
                 error: error,
@@ -52,8 +52,9 @@ async function example() {
     // This client secret can be found in your dashboard
     const sdk = new SDK(process.env.CLIENT_SECRET!);
     const provider = new RPChProvider('https://ethereum-provider.rpch.tech', sdk);
-    const response = await provider.send('eth_blockNumber', []);
-    return response;
+    const blockNumber = await provider.send('eth_blockNumber', []);
+    const balance = await provider.getBalance('0x00000000219ab540356cbb839cbe05303d7705fa');
+    return {blockNumber, balance};
 }
 
 example()
