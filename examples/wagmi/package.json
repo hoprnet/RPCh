@@ -13,7 +13,7 @@
     "react-dom": "^18.2.0",
     "viem": "^1.18.3",
     "wagmi": "^1.4.5",
-    "@rpch/sdk": "1.2.3"
+    "@rpch/sdk": "^1.4.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.15",
