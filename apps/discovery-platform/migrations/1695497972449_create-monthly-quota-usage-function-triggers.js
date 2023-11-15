@@ -3,9 +3,9 @@
 exports.up = (pgm) => {
   // aggregate quota
   pgm.createFunction(
-    "process_monthly_usage",
+    'process_monthly_usage',
     [],
-    { returns: "TRIGGER", language: "plpgsql" },
+    { returns: 'TRIGGER', language: 'plpgsql' },
     `
     BEGIN
         IF (TG_TABLE_NAME = 'request_quotas') THEN
@@ -18,24 +18,24 @@ exports.up = (pgm) => {
     `
   );
 
-  pgm.createTrigger("request_quotas", "monthly_req_usage", {
-    when: "AFTER",
-    operation: "INSERT",
-    level: "ROW",
-    function: "process_monthly_usage",
+  pgm.createTrigger('request_quotas', 'monthly_req_usage', {
+    when: 'AFTER',
+    operation: 'INSERT',
+    level: 'ROW',
+    function: 'process_monthly_usage',
   });
-  pgm.createTrigger("response_quotas", "monthly_resp_usage", {
-    when: "AFTER",
-    operation: "INSERT",
-    level: "ROW",
-    function: "process_monthly_usage",
+  pgm.createTrigger('response_quotas', 'monthly_resp_usage', {
+    when: 'AFTER',
+    operation: 'INSERT',
+    level: 'ROW',
+    function: 'process_monthly_usage',
   });
 
   // initialze aggregated quota
   pgm.createFunction(
-    "process_initial_monthly_usage",
+    'process_initial_monthly_usage',
     [],
-    { returns: "TRIGGER", language: "plpgsql" },
+    { returns: 'TRIGGER', language: 'plpgsql' },
     `
     BEGIN
         INSERT INTO monthly_quota_usages (user_id, started_at, req_count, resp_count) VALUES (NEW.id, NEW.created_at, 0, 0);
@@ -44,11 +44,11 @@ exports.up = (pgm) => {
     `
   );
 
-  pgm.createTrigger("users", "init_monthly_usage", {
-    when: "AFTER",
-    operation: "INSERT",
-    level: "ROW",
-    function: "process_initial_monthly_usage",
+  pgm.createTrigger('users', 'init_monthly_usage', {
+    when: 'AFTER',
+    operation: 'INSERT',
+    level: 'ROW',
+    function: 'process_initial_monthly_usage',
   });
 
   // initialize already existing
