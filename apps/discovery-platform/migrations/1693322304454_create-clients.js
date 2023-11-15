@@ -1,11 +1,11 @@
 /* eslint-disable camelcase */
 
 exports.up = (pgm) =>
-  pgm.createTable('clients', {
-    id: 'id',
-    user_id: { type: 'uuid', references: 'users', notNull: 'true' },
-    external_token: { type: 'varchar(255)', unique: true, notNull: 'true' },
-    invalidated_at: 'timestamp',
-    created_at: 'createdAt',
-    updated_at: 'timestamp',
-  });
+    pgm.createTable('clients', {
+        id: 'id',
+        user_id: { type: 'uuid', references: 'users', notNull: 'true' },
+        external_token: { type: 'varchar(255)', unique: true, notNull: 'true' },
+        invalidated_at: 'timestamp',
+        created_at: 'createdAt',
+        updated_at: 'timestamp',
+    });
