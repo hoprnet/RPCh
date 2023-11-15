@@ -11,10 +11,9 @@ type PeersCache = Map<string, Map<string, NodeAPI.Peer>>; // node id -> peer id 
 
 export async function start(dbPool: Pool) {
     dbPool.on('error', (err, client) =>
-        log.error('pg pool error on client %s: %s', client, JSON.stringify(err)),
+        log.error('pg pool [client %s]: %s[%o]', client, JSON.stringify(err), err),
     );
     dbPool.connect();
-
     run(dbPool);
 }
 
@@ -28,7 +27,7 @@ async function run(dbPool: Pool) {
             await runOneHops(dbPool, peersCache, qEntries.rows, qExits.rows);
         })
         .catch((err) => {
-            log.error('Error during determining routes', JSON.stringify(err));
+            log.error('run main loop: %s[%o]', JSON.stringify(err), err);
         })
         .finally(() => reschedule(dbPool));
 }
@@ -38,7 +37,7 @@ function reschedule(dbPool: Pool) {
     const next = 30e3 + Math.floor(Math.random() * 9.5 * 60e3);
     const logM = Math.floor(next / 1000 / 60);
     const logS = Math.round(next / 1000) - logM * 60;
-    log.verbose('scheduling next run in %dm%ds', logM, logS);
+    log.info('scheduling next run in %dm%ds', logM, logS);
     setTimeout(() => run(dbPool), next);
 }
 
@@ -74,7 +73,7 @@ async function runZeroHops(
 
     const pairIds = toPairings(onlinePairsMap);
     return q.writeZeroHopPairings(dbPool, pairIds).then(() => {
-        log.verbose('Updated zerohops with pairIds', logIds(pairIds));
+        log.info('updated zerohops with pairIds:', logIds(pairIds));
         const all = new Map(
             entryNodes.map((eNode) => {
                 const xIds = exitNodes.map(({ id }) => id);
@@ -82,9 +81,9 @@ async function runZeroHops(
             }),
         );
         const diffPeers = diffStr(all, pairsMap);
-        diffPeers.forEach((s) => log.verbose('Missing peer matches: %s', s));
+        diffPeers.forEach((s) => log.info('missing peer matches: %s', s));
         const diffOnline = diffStr(pairsMap, onlinePairsMap);
-        diffOnline.forEach((s) => log.verbose('Missing online exit nodes: %s', s));
+        diffOnline.forEach((s) => log.info('missing online exit nodes: %s', s));
     });
 }
 
@@ -100,7 +99,7 @@ async function runOneHops(
     const respCh = await NodeAPI.getChannels({
         apiEndpoint: new URL(entryNode.hoprd_api_endpoint),
         accessToken: entryNode.hoprd_api_token,
-    }).catch((err) => log.error('Error getting channels', JSON.stringify(err)));
+    }).catch((err) => log.error('get channels: %s[%o]', JSON.stringify(err), err));
     if (!respCh) {
         return;
     }
@@ -137,7 +136,7 @@ async function runOneHops(
     const pairIds = toPairings(pairsMap);
     return q
         .writeOneHopPairings(dbPool, pairIds)
-        .then(() => log.verbose('Updated onehops with pairIds', logIds(pairIds)));
+        .then(() => log.info('updated onehops with pairIds:', logIds(pairIds)));
 }
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
@@ -147,7 +146,7 @@ async function peersMap(
 ): Promise<Map<string, Set<string>>> {
     const pRaw = nodes.map(async (node) => {
         const peers = await PeersCache.fetchPeers(peersCache, node).catch((err) =>
-            log.error('Error fetching peers for %s: %s', node.id, JSON.stringify(err)),
+            log.error('fetch peers from %s: %s[%o]', node.id, JSON.stringify(err), err),
         );
         if (peers) {
             const ids = Array.from(peers.values()).map(({ peerId }) => peerId);
@@ -186,9 +185,10 @@ async function filterOnline(
         // delete any previous pongs
         await NodeAPI.deleteMessages(conn, ApplicationTag).catch((err) =>
             log.error(
-                'Error deleting messages from %s: %s',
+                'delete messages from %s: %s[%o]',
                 Utils.shortPeerId(eId),
                 JSON.stringify(err),
+                err,
             ),
         );
 
@@ -203,10 +203,11 @@ async function filterOnline(
                         .then(resolve)
                         .catch((err) => {
                             log.error(
-                                'Error sending ping from %s to %s: %s',
+                                'send ping from %s to %s: %s[%o]',
                                 Utils.shortPeerId(eId),
                                 Utils.shortPeerId(xId),
                                 JSON.stringify(err),
+                                err,
                             );
                             reject('Error sending ping');
                         });
@@ -223,9 +224,10 @@ async function filterOnline(
                     .then(resolve)
                     .catch((err) => {
                         log.error(
-                            'Error retrieving messages from %s: %s',
+                            'retrieve messages from %s: %s[%o]',
                             JSON.stringify(Utils.shortPeerId(eId)),
                             JSON.stringify(err),
+                            err,
                         );
                         reject('Error retrieving messages');
                     });
