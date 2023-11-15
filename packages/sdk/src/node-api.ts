@@ -42,6 +42,11 @@ export type Channel = {
     closureTime: string;
 };
 
+export type NodeError = {
+    status: string;
+    error: string;
+};
+
 export type Channels = {
     all: Channel[];
     incoming: [];
@@ -135,7 +140,7 @@ export function accountAddresses(conn: ConnInfo) {
     });
 }
 
-export function getPeers(conn: ConnInfo): Promise<Peers> {
+export function getPeers(conn: ConnInfo): Promise<Peers | NodeError> {
     const url = new URL('/api/v3/node/peers', conn.apiEndpoint);
     url.searchParams.set('quality', '1');
     const headers = {
@@ -155,4 +160,8 @@ export function getChannels(conn: ConnInfo): Promise<Channels> {
         'x-auth-token': conn.accessToken,
     };
     return fetch(url, { headers }).then((res) => res.json());
+}
+
+export function isError(payload: NonNullable<unknown> | NodeError): payload is NodeError {
+    return 'error' in payload;
 }

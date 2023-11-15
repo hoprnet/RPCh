@@ -16,12 +16,15 @@ export function fetchPeers(
             accessToken: node.hoprd_api_token,
         })
             .then((peers) => {
+                if (NodeAPI.isError(peers)) {
+                    return reject(JSON.stringify(peers));
+                }
                 const peersMap = new Map(peers.connected.map((p) => [p.peerId, p]));
                 cache.set(node.id, peersMap);
-                resolve(peersMap);
+                return resolve(peersMap);
             })
             .catch((err) => {
-                reject(err);
+                return reject(err);
             });
     });
 }
