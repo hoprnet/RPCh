@@ -17,7 +17,7 @@ export function fetchPeers(
         })
             .then((peers) => {
                 if (NodeAPI.isError(peers)) {
-                    return reject(JSON.stringify(peers));
+                    return reject(peers);
                 }
                 const peersMap = new Map(peers.connected.map((p) => [p.peerId, p]));
                 cache.set(node.id, peersMap);

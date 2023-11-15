@@ -1,5 +1,11 @@
 # @rpch/availability-monitor
 
+## 0.7.5
+
+### Patch Changes
+
+-   increasing error reporting even further
+
 ## 0.7.4
 
 ### Patch Changes
