@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { PgLiteral } = require('node-pg-migrate');
 
 /* eslint-disable camelcase */
