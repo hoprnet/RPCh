@@ -2,10 +2,13 @@ import migrate from 'node-pg-migrate';
 import { Pool } from 'pg';
 import { Utils } from '@rpch/sdk';
 
+import * as quota from './quota';
 import Version from './version';
 import path from 'path';
 import type { Secrets } from './secrets';
 import { entryServer } from './entry-server';
+
+const IntervalQuotaWrap = 1e3 * 60 * 60; // 1hour
 
 const log = Utils.logger(['discovery-platform']);
 
@@ -44,74 +47,33 @@ const start = async (ops: {
         );
     });
 
-    // set server timeout to 30s
-    // server.setTimeout(30e3);
-
-    // Create a task queue with a concurrency limit of QUEUE_CONCURRENCY_LIMIT
-    // to process nodes in parallel for commitment check
-    //   const queueCheckCommitment = async.queue(
-    //     async (task: RegisteredNodeDB, callback) => {
-    //       try {
-    //         const channels = await getChannelsFromGraph(task.id);
-    //         const nodeIsCommitted = await checkCommitment({
-    //           channels,
-    //           node: task,
-    //           minBalance: constants.BALANCE_THRESHOLD,
-    //           minChannels: constants.CHANNELS_THRESHOLD,
-    //         });
-    //
-    //         if (nodeIsCommitted) {
-    //           await updateRegisteredNode(ops.db, {
-    //             ...task,
-    //             status: "READY",
-    //           });
-    //         }
-    //
-    //         callback();
-    //       } catch (e) {}
-    //     },
-    //     constants.QUEUE_CONCURRENCY_LIMIT
-    //   );
-    //
-    // adds fresh node to queue
-    // const checkCommitmentInterval = setInterval(
-    //   () =>
-    //     checkCommitmentForFreshNodes(
-    //       ops.db,
-    //       queueCheckCommitment,
-    //       (node, err) => {
-    //         if (err) {
-    //           log.error("Failed to process node", node, err);
-    //         }
-    //       }
-    //     ),
-    //   60e3
-    // );
-
-    // fetch and cache availability monitor results
-    // const updateAvailabilityMonitorResultsInterval = setInterval(async () => {
-    //   try {
-    //     if (!ops.availabilityMonitorUrl) return;
-    //     const response = await fetch(
-    //       `${ops.availabilityMonitorUrl}/api/nodes`
-    //     ).then(
-    //       (res) => res.json() as unknown as [string, AvailabilityMonitorResult][]
-    //     );
-    //     availabilityMonitorResults = new Map(response);
-    //     log.verbose(
-    //       "Updated availability monitor results with size %i",
-    //       availabilityMonitorResults.size
-    //     );
-    //   } catch (error) {
-    //     log.error("Error fetching availability monitor results", error);
-    //   }
-    // }, 1000);
-
-    return () => {
-        // clearInterval(checkCommitmentInterval);
-        // clearInterval(updateAvailabilityMonitorResultsInterval);
-    };
+    // schedule initial quota wrapping after startup
+    setTimeout(() => runQuotaWrap(ops.dbPool));
 };
+
+function runQuotaWrap(dbPool: Pool) {
+    quota
+        .wrapMonthlyQuotas(dbPool)
+        .then((count) => {
+            if (count === 0) {
+                log.info('no monthly quotas wrapped into history');
+            } else {
+                log.info('wrapped %d monthly quotas into history', count);
+            }
+        })
+        .catch((err) => log.error('running wrap monthly quota: %s[%o]', JSON.stringify(err), err))
+        .finally(() => scheduleQuotaWrap(dbPool));
+}
+
+function scheduleQuotaWrap(dbPool: Pool) {
+    // schdule next run somehwere between 1h and 1h and 10m
+    const next = IntervalQuotaWrap + Math.floor(Math.random() * 10 * 60e3);
+    const logH = Math.floor(next / 1000 / 60 / 60);
+    const logM = Math.round(next / 1000 / 60) - logH * 60;
+
+    log.verbose('scheduling next quota wrap run in %dh%dm', logH, logM);
+    setTimeout(() => runQuotaWrap(dbPool), next);
+}
 
 const main = () => {
     // server port
