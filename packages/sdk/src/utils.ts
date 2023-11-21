@@ -1,4 +1,12 @@
 import debug from 'debug';
+import * as Res from './result';
+
+export enum VrsnCmp {
+    Identical,
+    PatchMismatch,
+    MinorMismatch,
+    MajorMismatch,
+}
 
 export function shortPeerId(peerId: string): string {
     return `.${peerId.substring(peerId.length - 4)}`;
@@ -47,4 +55,27 @@ export function logger(namespaces: string[]) {
         verbose,
         warn,
     };
+}
+
+export function versionCompare(ref: string, version: string): Res.Result<VrsnCmp> {
+    const r = ref.split('.');
+    if (r.length < 3) {
+        return Res.err('invalid ref');
+    }
+    const v = version.split('.');
+    if (v.length < 3) {
+        return Res.err('invalid version');
+    }
+    const [rMj, rMn, rP] = r;
+    const [vMj, vMn, vP] = v;
+    if (parseInt(rMj, 10) !== parseInt(vMj, 10)) {
+        return Res.ok(VrsnCmp.MajorMismatch);
+    }
+    if (parseInt(rMn, 10) !== parseInt(vMn, 10)) {
+        return Res.ok(VrsnCmp.MinorMismatch);
+    }
+    if (parseInt(rP, 10) !== parseInt(vP, 10)) {
+        return Res.ok(VrsnCmp.PatchMismatch);
+    }
+    return Res.ok(VrsnCmp.Identical);
 }
