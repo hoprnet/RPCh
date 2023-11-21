@@ -12,6 +12,7 @@ import * as Segment from './segment';
 import * as SegmentCache from './segment-cache';
 import * as Utils from './utils';
 import NodesCollector from './nodes-collector';
+import Version from './version';
 import type { EntryNode } from './entry-node';
 
 export * as DPapi from './dp-api';
@@ -121,6 +122,7 @@ export default class SDK {
             this.hops,
         );
         this.fetchChainId(this.ops.provider as string);
+        log.info('RPCh SDK[v%s] started', Version);
     }
 
     /**

@@ -10,6 +10,8 @@ import type { MessageListener } from './node-pair';
 import type { EntryNode } from './entry-node';
 import type { NodeMatch } from './node-match';
 
+export type VersionListener = (versions: DPapi.Versions) => void;
+
 const log = logger(['sdk', 'nodes-collector']);
 
 const NodePairFetchTimeout = 10e3; // 10 seconds downtime to avoid repeatedly querying DP
@@ -26,6 +28,7 @@ export default class NodesCollector {
         private readonly clientId: string,
         private readonly applicationTag: number,
         private readonly messageListener: MessageListener,
+        private readonly versionListener: VersionListener,
         private readonly hops?: number,
     ) {
         this.fetchNodePairs();
@@ -218,10 +221,11 @@ export default class NodesCollector {
 
         // reping all nodes
         this.nodePairs.forEach((np) => NodePair.discover(np));
-        log.verbose(
+        log.info(
             'Discovered %d node-pairs with %d exits',
             this.nodePairs.size,
             lookupExitNodes.size,
         );
+        this.versionListener(nodes.versions);
     };
 }
