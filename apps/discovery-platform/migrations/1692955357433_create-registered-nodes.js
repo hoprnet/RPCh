@@ -1,4 +1,4 @@
-const { PgLiteral } = import('node-pg-migrate');
+const { PgLiteral } = require('node-pg-migrate');
 
 /* eslint-disable camelcase */
 

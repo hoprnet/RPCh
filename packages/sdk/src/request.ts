@@ -148,7 +148,7 @@ export function toSegments(req: Request, session: compatCrypto.Session): Segment
 export function prettyPrint(req: Request, id?: string) {
     const eId = shortPeerId(req.entryPeerId);
     const xId = shortPeerId(req.exitPeerId);
-    const prov = req.provider.substring(0, 14);
+    const prov = req.provider;
     const attrs = [req.id, `${eId}>${xId}`];
     if (id) {
         attrs.push(id);
