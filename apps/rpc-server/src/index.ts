@@ -2,6 +2,7 @@ import http from 'http';
 
 import Version from './version';
 import RPChSDK, {
+    DPapi,
     JRPC,
     ProviderAPI,
     Response,
@@ -229,6 +230,59 @@ function determinePort(portEnv?: string) {
     return defaultPort;
 }
 
+function versionListener({ rpcServer }: DPapi.Versions) {
+    const cmp = Utils.versionCompare(rpcServer, Version);
+    if (Res.isErr(cmp)) {
+        log.error('error comparing versions: %s', cmp.error);
+        return;
+    }
+    const logErr = () => {
+        const errMessage = [
+            `*** RPCServer[v${Version}] outdated and will not work -`,
+            `please update to latest version v${rpcServer}.`,
+            `Visit https://degen.rpch.net for detail! ***`,
+        ].join(' ');
+        const errDeco = Array.from({ length: errMessage.length }, () => '*').join('');
+        log.error(`!!! ${errDeco} !!!`);
+        log.error(`!!! ${errMessage} !!!`);
+        log.error(`!!! ${errDeco} !!!`);
+    };
+    switch (cmp.res) {
+        case Utils.VrsnCmp.Identical:
+            log.info('Version check successful - RPCServer[v%s] is up to date', Version);
+            break;
+        case Utils.VrsnCmp.PatchMismatch:
+            log.info(
+                [
+                    'Newer version available -',
+                    'RPCServer[v%s] can be updated to v%s.',
+                    'Please visit https://degen.rpch.net to get the latest version!',
+                ].join(' '),
+                Version,
+                rpcServer,
+            );
+            break;
+        case Utils.VrsnCmp.MinorMismatch:
+            // treat as major mismatch as long as still v0.x.x
+            if (Version.startsWith('0.')) {
+                logErr();
+            } else {
+                log.warn(
+                    [
+                        'Severely outdated - RPCServer[v%s] needs to update to v%s.',
+                        'Please visit https://degen.rpch.net to get the latest version!',
+                    ].join(' '),
+                    Version,
+                    rpcServer,
+                );
+            }
+            break;
+        case Utils.VrsnCmp.MajorMismatch:
+            logErr();
+            break;
+    }
+}
+
 /**
  * RPC server - uses RPChSDK to perform JSON-RPC requests.
  *
@@ -265,6 +319,7 @@ if (require.main === module) {
         segmentLimit: process.env.SEGMENT_LIMIT
             ? parseInt(process.env.SEGMENT_LIMIT, 10)
             : undefined,
+        versionListener,
     };
 
     const serverOps = {
@@ -276,7 +331,7 @@ if (require.main === module) {
     const sdk = new RPChSDK(clientId, ops);
     const server = createServer(sdk, serverOps);
     server.listen(port, '0.0.0.0', () => {
-        log.verbose(
+        log.info(
             "RPCServer[v%s] started on '0.0.0.0:%d' with %s",
             Version,
             port,

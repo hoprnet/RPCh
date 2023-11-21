@@ -11,6 +11,7 @@ module.exports = {
             'single',
             { avoidEscape: true, allowTemplateLiterals: false },
         ],
+        '@stylistic/indent': ['warn', { SwitchCase: 0 }],
     },
     overrides: [
         {
