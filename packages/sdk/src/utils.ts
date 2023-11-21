@@ -31,15 +31,20 @@ export function isValidURL(url: string) {
 
 export function logger(namespaces: string[]) {
     namespaces.unshift('rpch');
-    const base = debug(namespaces.join(':'));
-    base.log = console.log.bind(console);
-
-    const verbose = base.extend('verbose');
-    const error = base.extend('error');
+    const ns = namespaces.join(':');
+    const verbose = debug(`${ns}:verbose`);
+    verbose.log = console.log.bind(console);
+    const info = debug(`${ns}:info`);
+    info.log = console.info.bind(console);
+    const warn = debug(`${ns}:warn`);
+    warn.log = console.warn.bind(console);
+    const error = debug(`${ns}:error`);
+    error.log = console.error.bind(console);
 
     return {
         error,
-        info: base,
+        info,
         verbose,
+        warn,
     };
 }
