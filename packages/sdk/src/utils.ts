@@ -79,3 +79,7 @@ export function versionCompare(ref: string, version: string): Res.Result<VrsnCmp
     }
     return Res.ok(VrsnCmp.Identical);
 }
+
+export function setDebugScope(scope: string) {
+    debug.enable(scope);
+}

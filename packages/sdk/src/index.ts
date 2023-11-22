@@ -46,6 +46,8 @@ export * as Utils from './utils';
  * @param mevKickbackAddress - provide this URL for receiving kickback share to a different address than the tx origin
  * @param forceZeroHop - disable routing protection
  * @param segmentLimit - limit the number of segment a request can use, fails requests that require a larger number
+ * @param versionListener - if you need to know what the current versions of RPCh related components are
+ * @param debugScope - programatically set debug scope for SDK
  */
 export type Ops = {
     readonly discoveryPlatformEndpoint?: string;
@@ -57,7 +59,7 @@ export type Ops = {
     readonly forceZeroHop?: boolean;
     readonly segmentLimit?: number;
     readonly versionListener?: (versions: DPapi.Versions) => void;
-    readonly debugString?: string;
+    readonly debugScope?: string;
 };
 
 /**
@@ -114,6 +116,7 @@ export default class SDK {
         ops: Ops = {},
     ) {
         this.ops = this.sdkOps(ops);
+        this.ops.debugScope && Utils.setDebugScope(this.ops.debugScope);
         this.requestCache = RequestCache.init();
         this.segmentCache = SegmentCache.init();
         this.hops = this.determineHops(!!this.ops.forceZeroHop);
@@ -501,7 +504,7 @@ export default class SDK {
             forceZeroHop: ops.forceZeroHop ?? defaultOps.forceZeroHop,
             segmentLimit: ops.segmentLimit ?? defaultOps.segmentLimit,
             versionListener: ops.versionListener,
-            debugString: ops.debugString,
+            debugScope: ops.debugScope,
         };
     };
 
