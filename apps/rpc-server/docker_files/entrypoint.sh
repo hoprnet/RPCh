@@ -39,7 +39,7 @@ fi
 
 ### Store container env vars for rpc-server
 cat <<EOF > /docker.env
-CLIENT=$CLIENT
+CLIENT=${CLIENT}
 DEBUG=${DEBUG:-}
 DISCOVERY_PLATFORM_API_ENDPOINT=${DISCOVERY_PLATFORM_API_ENDPOINT:-}
 RESPONSE_TIMEOUT=${RESPONSE_TIMEOUT:-}
@@ -52,6 +52,13 @@ SEGMENT_LIMIT=${SEGMENT_LIMIT:-}
 RESTRICT_CORS=${RESTRICT_CORS:-}
 SKIP_RPCH=${SKIP_RPCH:-}
 PORT=${PORT:-}
+EOF
+
+### Store container env vars for rpc-server
+cat <<EOF > /haproxy.env
+PORT=${PORT:-}
+FRONTEND_HTTP_PORT=${FRONTEND_HTTP_PORT:-45750}
+FRONTEND_HTTPS_PORT=${FRONTEND_HTTPS_PORT:-45751}
 EOF
 
 ### Execute script with arguments
