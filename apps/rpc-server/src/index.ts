@@ -74,21 +74,20 @@ function parseBody(
     }
 }
 
-function sendSkipRPCh(provider: string | undefined, req: JRPC.Request, res: http.ServerResponse) {
+async function sendSkipRPCh(
+    provider: string | undefined,
+    req: JRPC.Request,
+    res: http.ServerResponse,
+) {
     if (!provider) {
-        log.error('[NO_RPCH] Need provider query param');
+        log.error('[NO_RPCH] need provider query param');
         return;
     }
-    ProviderAPI.fetchRPC(provider, req)
+    const resFetch = await ProviderAPI.fetchRPC(provider, req)
         .then((resFetch: Res.Result<JRPC.Response, ProviderAPI.RPCFailure>) => {
             if (Res.isErr(resFetch)) {
                 const { status, message } = resFetch.error;
-                log.verbose(
-                    '[NO_RPCH] Response(HTTP %i): %s [request: %s]',
-                    status,
-                    message,
-                    JSON.stringify(req),
-                );
+                log.info('[NO_RPCH] response[HTTP %d]: %s request[%o]', status, message, req);
                 res.statusCode = status;
                 // only write if we are allowed to
                 if (status !== 204 && status !== 304) {
@@ -96,17 +95,13 @@ function sendSkipRPCh(provider: string | undefined, req: JRPC.Request, res: http
                 }
             } else {
                 const resp = resFetch.res;
-                log.verbose(
-                    '[NO_RPCH] Response: %s [request: %s]',
-                    JSON.stringify(resp),
-                    JSON.stringify(req),
-                );
+                log.info('[NO_RPCH] response: %o request[%o]', resp, req);
                 res.statusCode = 200;
                 res.write(JSON.stringify(resp));
             }
         })
         .catch((err) => {
-            log.error('[NO_RPCH] %s [request: %s]', err, JSON.stringify(req));
+            log.error('[NO_RPCH] %s request[%o]', err, req);
             res.statusCode = 500;
             res.write(err);
         })
@@ -125,12 +120,7 @@ function sendRequest(
                 return resp.json();
             }
             const text = await resp.text();
-            log.verbose(
-                'Response(HTTP %i): %s [request: %s]',
-                resp.status,
-                text,
-                JSON.stringify(req),
-            );
+            log.info('response[HTTP %d]: %s request[%o]', resp.status, text, req);
             res.statusCode = resp.status;
             // only write if we are allowed to
             if (resp.status !== 204 && resp.status !== 304) {
@@ -138,12 +128,12 @@ function sendRequest(
             }
         })
         .then((resp?: JRPC.Response) => {
-            log.verbose('Response: %s [request: %s]', JSON.stringify(resp), JSON.stringify(req));
+            log.info('response: %o request[%o]', resp, req);
             res.statusCode = 200;
             res.write(JSON.stringify(resp));
         })
         .catch((err: any) => {
-            log.error('%s [request: %s]', err, JSON.stringify(req));
+            log.error('error sending request[%o]: %s[%o]', req, JSON.stringify(err), err);
             res.statusCode = 500;
             res.write(err);
         })
@@ -155,11 +145,11 @@ function sendRequest(
 function createServer(sdk: RPChSDK, ops: ServerOPS) {
     return http.createServer((req, res) => {
         req.on('error', (err) => {
-            log.error('Unexpected error occured on http.Request', err);
+            log.error('error on http.Request: %s[%o]', JSON.stringify(err), err);
         });
 
         res.on('error', (err) => {
-            log.error('Unexpected error occured on http.Response', err);
+            log.error('error on http.Response: %s[%o]', JSON.stringify(err), err);
         });
 
         if (!ops.restrictCors) {
@@ -188,24 +178,14 @@ function createServer(sdk: RPChSDK, ops: ServerOPS) {
             const result = parseBody(body);
             if (result.success) {
                 if (ops.skipRPCh) {
-                    log.info(
-                        '[NO_RPCH] Sending request',
-                        JSON.stringify(result.req),
-                        'with params',
-                        JSON.stringify(params),
-                    );
+                    log.info('[NO_RPCH] sending request[%o] with params[%o]', result.req, params);
                     sendSkipRPCh(params.provider, result.req, res);
                 } else {
-                    log.info(
-                        'Sending request',
-                        JSON.stringify(result.req),
-                        'with params',
-                        JSON.stringify(params),
-                    );
+                    log.info('sending request[%o] with params[%o]', result.req, params);
                     sendRequest(sdk, result.req, params, res);
                 }
             } else {
-                log.info('Parse error:', result.error, '- during request:', body);
+                log.error('error parsing body: %s - during request: %s', result.error, body);
                 res.statusCode = 500;
                 res.write(
                     JSON.stringify({
@@ -249,7 +229,7 @@ function versionListener({ rpcServer }: DPapi.Versions) {
     };
     switch (cmp.res) {
         case Utils.VrsnCmp.Identical:
-            log.info('Version check successful - RPCServer[v%s] is up to date', Version);
+            log.verbose('version check successful - RPCServer[v%s] is up to date', Version);
             break;
         case Utils.VrsnCmp.PatchMismatch:
             log.info(
