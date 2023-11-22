@@ -1,5 +1,6 @@
 import { utils as etherUtils } from 'ethers';
 
+import * as DPapi from './dp-api';
 import * as JRPC from './jrpc';
 import * as NodeAPI from './node-api';
 import * as Payload from './payload';
@@ -12,6 +13,7 @@ import * as Segment from './segment';
 import * as SegmentCache from './segment-cache';
 import * as Utils from './utils';
 import NodesCollector from './nodes-collector';
+import Version from './version';
 import type { EntryNode } from './entry-node';
 
 export * as DPapi from './dp-api';
@@ -44,6 +46,8 @@ export * as Utils from './utils';
  * @param mevKickbackAddress - provide this URL for receiving kickback share to a different address than the tx origin
  * @param forceZeroHop - disable routing protection
  * @param segmentLimit - limit the number of segment a request can use, fails requests that require a larger number
+ * @param versionListener - if you need to know what the current versions of RPCh related components are
+ * @param debugScope - programatically set debug scope for SDK
  */
 export type Ops = {
     readonly discoveryPlatformEndpoint?: string;
@@ -54,6 +58,8 @@ export type Ops = {
     readonly mevKickbackAddress?: string;
     readonly forceZeroHop?: boolean;
     readonly segmentLimit?: number;
+    readonly versionListener?: (versions: DPapi.Versions) => void;
+    readonly debugScope?: string;
 };
 
 /**
@@ -110,6 +116,7 @@ export default class SDK {
         ops: Ops = {},
     ) {
         this.ops = this.sdkOps(ops);
+        this.ops.debugScope && Utils.setDebugScope(this.ops.debugScope);
         this.requestCache = RequestCache.init();
         this.segmentCache = SegmentCache.init();
         this.hops = this.determineHops(!!this.ops.forceZeroHop);
@@ -118,9 +125,11 @@ export default class SDK {
             this.clientId,
             ApplicationTag,
             this.onMessages,
+            this.onVersions,
             this.hops,
         );
         this.fetchChainId(this.ops.provider as string);
+        log.info('RPCh SDK[v%s] started', Version);
     }
 
     /**
@@ -138,16 +147,16 @@ export default class SDK {
      * Resolves true when node pairs are awailable.
      * If no timeout specified, global timeout is used.
      */
-    public async isReady(timeout?: number): Promise<boolean> {
+    public isReady = async (timeout?: number): Promise<boolean> => {
         const t = timeout || (this.ops.timeout as number);
         return this.nodesColl.ready(t).then((_) => true);
-    }
+    };
 
     /**
      * Send an **RPCrequest** via RPCh.
      * See **RequestOps** for overridable options.
      */
-    public async send(req: JRPC.Request, ops?: RequestOps): Promise<Response.Response> {
+    public send = async (req: JRPC.Request, ops?: RequestOps): Promise<Response.Response> => {
         const reqOps = this.requestOps(ops);
         this.populateChainIds(ops?.provider);
         // TODO fixme
@@ -236,7 +245,7 @@ export default class SDK {
                 }),
             );
         });
-    }
+    };
 
     private sendSegment = (
         request: Request.Request,
@@ -260,17 +269,22 @@ export default class SDK {
                 this.nodesColl.segmentSucceeded(request, segment, dur);
             })
             .catch((error) => {
-                log.error('error sending segment', Segment.prettyPrint(segment), error);
+                log.error(
+                    'error sending %s: %s[%o]',
+                    Segment.prettyPrint(segment),
+                    JSON.stringify(error),
+                    error,
+                );
                 this.nodesColl.segmentFailed(request, segment);
                 this.resendRequest(request, entryNode, cacheEntry);
             });
     };
 
-    private resendRequest(
+    private resendRequest = (
         origReq: Request.Request,
         entryNode: EntryNode,
         cacheEntry: RequestCache.Entry,
-    ) {
+    ) => {
         if (this.redoRequests.has(origReq.id)) {
             log.verbose('ignoring already triggered resend', origReq.id);
             return;
@@ -309,7 +323,7 @@ export default class SDK {
             hops: origReq.hops,
         });
         if (Res.isErr(resReq)) {
-            log.info('Error creating fallback request', resReq.error);
+            log.error('error creating fallback request', resReq.error);
             return cacheEntry.reject('Unable to create fallback request object');
         }
         // split request to segments
@@ -332,13 +346,13 @@ export default class SDK {
         this.nodesColl.requestStarted(request);
 
         // send request to hoprd
-        log.info('resending request %i', request.id, 'for original', origReq.id);
+        log.info('resending request %s', request.id, 'for original', origReq.id);
 
         // send segments sequentially
         segments.forEach((s) =>
             setTimeout(() => this.resendSegment(s, request, entryNode, newCacheEntry)),
         );
-    }
+    };
 
     private resendSegment = (
         segment: Segment.Segment,
@@ -364,7 +378,12 @@ export default class SDK {
                 this.nodesColl.segmentSucceeded(request, segment, dur);
             })
             .catch((error) => {
-                log.error('error resending segment', Segment.prettyPrint(segment), error);
+                log.error(
+                    'error resending %s: %s[%o]',
+                    Segment.prettyPrint(segment),
+                    JSON.stringify(error),
+                    error,
+                );
                 this.nodesColl.segmentFailed(request, segment);
                 this.removeRequest(request);
                 return cacheEntry.reject('Sending message failed');
@@ -436,7 +455,7 @@ export default class SDK {
     };
 
     private responseError = (error: string, reqEntry: RequestCache.Entry) => {
-        log.error('Error extracting message', error);
+        log.error('error extracting message', error);
         this.nodesColl.requestFailed(reqEntry.request);
         return reqEntry.reject('Unable to process response');
     };
@@ -494,6 +513,8 @@ export default class SDK {
             mevProtectionProvider: ops.mevProtectionProvider || defaultOps.mevProtectionProvider,
             forceZeroHop: ops.forceZeroHop ?? defaultOps.forceZeroHop,
             segmentLimit: ops.segmentLimit ?? defaultOps.segmentLimit,
+            versionListener: ops.versionListener,
+            debugScope: ops.debugScope,
         };
     };
 
@@ -546,14 +567,14 @@ export default class SDK {
         }
     };
 
-    private determineHops(forceZeroHop: boolean) {
+    private determineHops = (forceZeroHop: boolean) => {
         // defaults to multihop (novalue)
         if (forceZeroHop) {
             return 0;
         }
-    }
+    };
 
-    private populateChainIds(provider?: string) {
+    private populateChainIds = (provider?: string) => {
         if (!provider) {
             return;
         }
@@ -561,9 +582,9 @@ export default class SDK {
             return;
         }
         this.fetchChainId(provider);
-    }
+    };
 
-    private checkSegmentLimit(segLength: number) {
+    private checkSegmentLimit = (segLength: number) => {
         const limit = this.ops.segmentLimit as number;
         if (limit > 0 && segLength > limit) {
             log.error(
@@ -574,5 +595,33 @@ export default class SDK {
             const maxSize = Segment.MaxSegmentBody * limit;
             return `Request exceeds maximum size of ${maxSize}b`;
         }
-    }
+    };
+
+    private onVersions = (versions: DPapi.Versions) => {
+        const vSdk = versions.sdk;
+        const cmp = Utils.versionCompare(vSdk, Version);
+        if (Res.isOk(cmp)) {
+            switch (cmp.res) {
+                case Utils.VrsnCmp.Identical:
+                    log.verbose('RPCh SDK[v%s] is up to date', Version);
+                    break;
+                case Utils.VrsnCmp.PatchMismatch:
+                    log.info('RPCh SDK[v%s] can be updated to v%s.', Version, vSdk);
+                    break;
+                case Utils.VrsnCmp.MinorMismatch:
+                    log.warn('RPCh SDK[v%s] needs to update to v%s.', Version, vSdk);
+                    break;
+                case Utils.VrsnCmp.MajorMismatch:
+                    log.error('RPCh SDK[v%s] must be updated to v%s!', Version, vSdk);
+                    break;
+            }
+        } else {
+            log.error('error comparing versions: %s', cmp.error);
+        }
+
+        // dont fetch exceptions on external code
+        setTimeout(() => {
+            this.ops.versionListener && this.ops.versionListener(versions);
+        });
+    };
 }

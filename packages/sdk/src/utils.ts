@@ -1,4 +1,12 @@
 import debug from 'debug';
+import * as Res from './result';
+
+export enum VrsnCmp {
+    Identical,
+    PatchMismatch,
+    MinorMismatch,
+    MajorMismatch,
+}
 
 export function shortPeerId(peerId: string): string {
     return `.${peerId.substring(peerId.length - 4)}`;
@@ -31,15 +39,47 @@ export function isValidURL(url: string) {
 
 export function logger(namespaces: string[]) {
     namespaces.unshift('rpch');
-    const base = debug(namespaces.join(':'));
-    base.log = console.log.bind(console);
-
-    const verbose = base.extend('verbose');
-    const error = base.extend('error');
+    const ns = namespaces.join(':');
+    const verbose = debug(`${ns}:verbose`);
+    verbose.log = console.log.bind(console);
+    const info = debug(`${ns}:info`);
+    info.log = console.info.bind(console);
+    const warn = debug(`${ns}:warn`);
+    warn.log = console.warn.bind(console);
+    const error = debug(`${ns}:error`);
+    error.log = console.error.bind(console);
 
     return {
         error,
-        info: base,
+        info,
         verbose,
+        warn,
     };
+}
+
+export function versionCompare(ref: string, version: string): Res.Result<VrsnCmp> {
+    const r = ref.split('.');
+    if (r.length < 3) {
+        return Res.err('invalid ref');
+    }
+    const v = version.split('.');
+    if (v.length < 3) {
+        return Res.err('invalid version');
+    }
+    const [rMj, rMn, rP] = r;
+    const [vMj, vMn, vP] = v;
+    if (parseInt(rMj, 10) !== parseInt(vMj, 10)) {
+        return Res.ok(VrsnCmp.MajorMismatch);
+    }
+    if (parseInt(rMn, 10) !== parseInt(vMn, 10)) {
+        return Res.ok(VrsnCmp.MinorMismatch);
+    }
+    if (parseInt(rP, 10) !== parseInt(vP, 10)) {
+        return Res.ok(VrsnCmp.PatchMismatch);
+    }
+    return Res.ok(VrsnCmp.Identical);
+}
+
+export function setDebugScope(scope: string) {
+    debug.enable(scope);
 }

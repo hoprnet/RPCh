@@ -39,14 +39,10 @@ export function fallbackRoutePair(
     return match(nodePairs, filtered);
 }
 
-export function prettyPrint(res: Res.Result<NodeSelection>) {
-    if (Res.isOk(res)) {
-        const sel = res.res;
-        const eId = shortPeerId(sel.match.entryNode.id);
-        const xId = shortPeerId(sel.match.exitNode.id);
-        return `${eId} > ${xId} (via ${sel.via})`;
-    }
-    return `${res.error}`;
+export function prettyPrint(sel: NodeSelection) {
+    const eId = shortPeerId(sel.match.entryNode.id);
+    const xId = shortPeerId(sel.match.exitNode.id);
+    return `${eId} > ${xId} (via ${sel.via})`;
 }
 
 function match(

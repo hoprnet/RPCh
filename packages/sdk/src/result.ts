@@ -18,3 +18,9 @@ export function isOk<V, X>(res: Result<V, X>): res is ResultOk<V> {
 export function isErr<V, X>(res: Result<V, X>): res is ResultErr<X> {
     return !res.success;
 }
+
+export function assertOk<V, X>(res: Result<V, X>): asserts res is ResultOk<V> {
+    if (isErr(res)) {
+        throw new Error('Not an OK result');
+    }
+}

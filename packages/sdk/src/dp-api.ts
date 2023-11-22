@@ -23,10 +23,16 @@ export type NodeOps = {
     nodeAccessToken: string;
 };
 
+export type Versions = {
+    sdk: string;
+    rpcServer: string;
+};
+
 export type Nodes = {
     entryNodes: EntryNode[];
     exitNodes: ExitNode[];
     matchedAt: string;
+    versions: Versions;
 };
 
 export type QuotaParams = {

@@ -1,25 +1,18 @@
-import { Utils } from '@rpch/sdk';
 import cors = require('cors');
 import express, { Request, Response } from 'express';
 import passport from 'passport';
 import session from 'express-session';
 import { Pool } from 'pg';
+import { Utils } from '@rpch/sdk';
+import { checkSchema, matchedData, query, validationResult } from 'express-validator';
 
-// import * as user from "./user";
 import * as client from './client';
 import * as login from './login';
+import * as middleware from './middleware';
 import * as node from './node';
 import * as quota from './quota';
-import {
-    //  body,
-    checkSchema,
-    //  header,
-    //  param,
-    matchedData,
-    query,
-    validationResult,
-} from 'express-validator';
-import * as middleware from './middleware';
+
+import * as configs from './../../../configs';
 import * as qNode from './../../../node';
 
 import type { Secrets } from './../../../secrets';
@@ -748,16 +741,29 @@ function getNodesPairings(dbPool: Pool) {
                     return acc;
                 }, new Set());
                 const qExitNodes = qNode.listExitNodes(dbPool, exitIds);
+                const qRPCServerVersion = configs.readConfig(
+                    dbPool,
+                    configs.Keys.RPCh_DOCKER_IMAGE_VERSION,
+                );
+                const qSDKVersion = configs.readConfig(dbPool, configs.Keys.RPCh_SDK_VERSION);
 
                 // wait for entry and exit nodes query results
-                Promise.all([qEntryNodes, qExitNodes])
-                    .then(([qEntries, qExits]) => {
+                Promise.all([qEntryNodes, qExitNodes, qRPCServerVersion, qSDKVersion])
+                    .then(([qEntries, qExits, vRPCserver, vSDK]) => {
                         const matchedAt = qPairings[0].createdAt;
                         const entryNodes = qEntries.map((e) => ({
                             ...e,
                             recommendedExits: Array.from(pairings.get(e.id) as Set<string>),
                         }));
-                        return res.status(200).json({ entryNodes, exitNodes: qExits, matchedAt });
+                        return res.status(200).json({
+                            entryNodes,
+                            exitNodes: qExits,
+                            matchedAt,
+                            versions: {
+                                sdk: vSDK,
+                                rpcServer: vRPCserver,
+                            },
+                        });
                     })
                     .catch((ex) => {
                         log.error('Error during read registered_nodes queries', ex);
