@@ -58,6 +58,7 @@ export function logger(namespaces: string[]) {
 }
 
 export function versionCompare(ref: string, version: string): Res.Result<VrsnCmp> {
+    console.log(ref, version);
     const r = ref.split('.');
     if (r.length < 3) {
         return Res.err('invalid ref');

@@ -147,16 +147,16 @@ export default class SDK {
      * Resolves true when node pairs are awailable.
      * If no timeout specified, global timeout is used.
      */
-    public async isReady(timeout?: number): Promise<boolean> {
+    public isReady = async (timeout?: number): Promise<boolean> => {
         const t = timeout || (this.ops.timeout as number);
         return this.nodesColl.ready(t).then((_) => true);
-    }
+    };
 
     /**
      * Send an **RPCrequest** via RPCh.
      * See **RequestOps** for overridable options.
      */
-    public async send(req: JRPC.Request, ops?: RequestOps): Promise<Response.Response> {
+    public send = async (req: JRPC.Request, ops?: RequestOps): Promise<Response.Response> => {
         const reqOps = this.requestOps(ops);
         this.populateChainIds(ops?.provider);
         // TODO fixme
@@ -245,7 +245,7 @@ export default class SDK {
                 }),
             );
         });
-    }
+    };
 
     private sendSegment = (
         request: Request.Request,
@@ -275,11 +275,11 @@ export default class SDK {
             });
     };
 
-    private resendRequest(
+    private resendRequest = (
         origReq: Request.Request,
         entryNode: EntryNode,
         cacheEntry: RequestCache.Entry,
-    ) {
+    ) => {
         if (this.redoRequests.has(origReq.id)) {
             log.verbose('ignoring already triggered resend', origReq.id);
             return;
@@ -347,7 +347,7 @@ export default class SDK {
         segments.forEach((s) =>
             setTimeout(() => this.resendSegment(s, request, entryNode, newCacheEntry)),
         );
-    }
+    };
 
     private resendSegment = (
         segment: Segment.Segment,
@@ -557,14 +557,14 @@ export default class SDK {
         }
     };
 
-    private determineHops(forceZeroHop: boolean) {
+    private determineHops = (forceZeroHop: boolean) => {
         // defaults to multihop (novalue)
         if (forceZeroHop) {
             return 0;
         }
-    }
+    };
 
-    private populateChainIds(provider?: string) {
+    private populateChainIds = (provider?: string) => {
         if (!provider) {
             return;
         }
@@ -572,9 +572,9 @@ export default class SDK {
             return;
         }
         this.fetchChainId(provider);
-    }
+    };
 
-    private checkSegmentLimit(segLength: number) {
+    private checkSegmentLimit = (segLength: number) => {
         const limit = this.ops.segmentLimit as number;
         if (limit > 0 && segLength > limit) {
             log.error(
@@ -585,9 +585,10 @@ export default class SDK {
             const maxSize = Segment.MaxSegmentBody * limit;
             return `Request exceeds maximum size of ${maxSize}b`;
         }
-    }
+    };
 
-    private onVersions(versions: DPapi.Versions) {
+    private onVersions = (versions: DPapi.Versions) => {
+        console.log('onVersions', versions);
         const vSdk = versions.sdk;
         const cmp = Utils.versionCompare(vSdk, Version);
         if (Res.isOk(cmp)) {
@@ -609,6 +610,9 @@ export default class SDK {
             log.error('error comparing versions: %s', cmp.error);
         }
 
-        this.ops.versionListener && this.ops.versionListener(versions);
-    }
+        // dont fetch exceptions on external code
+        setTimeout(() => {
+            this.ops.versionListener && this.ops.versionListener(versions);
+        });
+    };
 }
