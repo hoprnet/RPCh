@@ -52,11 +52,11 @@ export default class NodesCollector {
                 const elapsed = now - start;
                 const res = NodeSel.routePair(this.nodePairs);
                 if (Res.isOk(res)) {
-                    log.verbose('ready with route pair', NodeSel.prettyPrint(res));
+                    log.verbose('ready with route pair: %s', NodeSel.prettyPrint(res.res));
                     return resolve(true);
                 }
                 if (elapsed > timeout) {
-                    log.error('Timeout waiting for ready', elapsed, res.error);
+                    log.error('timeout after %d waiting for ready: %s', elapsed, res.error);
                     return reject(`timeout after ${elapsed} ms`);
                 }
                 setTimeout(check, 100);
@@ -76,11 +76,11 @@ export default class NodesCollector {
                 const elapsed = now - start;
                 const res = NodeSel.routePair(this.nodePairs);
                 if (Res.isOk(res)) {
-                    log.verbose('found route pair', NodeSel.prettyPrint(res));
+                    log.verbose('found route pair: %s', NodeSel.prettyPrint(res.res));
                     return resolve(res.res.match);
                 }
                 if (elapsed > timeout) {
-                    log.error('Timeout waiting for node pair', elapsed, res.error);
+                    log.error('timeout after %d waiting for node pair: %s', elapsed, res.error);
                     return reject(`timeout after ${elapsed} ms`);
                 }
                 setTimeout(check, 100);
@@ -95,7 +95,7 @@ export default class NodesCollector {
     public fallbackNodePair = (exclude: EntryNode): NodeMatch | undefined => {
         const res = NodeSel.fallbackRoutePair(this.nodePairs, exclude);
         if (Res.isOk(res)) {
-            log.verbose('found fallback route pair', NodeSel.prettyPrint(res));
+            log.verbose('found fallback route pair: %s', NodeSel.prettyPrint(res.res));
             return res.res.match;
         }
     };
@@ -103,41 +103,41 @@ export default class NodesCollector {
     public requestStarted = (req: Request.Request) => {
         const np = this.nodePairs.get(req.entryPeerId);
         if (!np) {
-            log.error('requestStarted', Request.prettyPrint(req), 'on non existing node pair');
+            log.error('started %s on non existing node pair', Request.prettyPrint(req));
             return;
         }
         NodePair.requestStarted(np, req);
-        log.verbose('requestStarted', Request.prettyPrint(req), NodePair.prettyPrint(np));
+        log.verbose('started %s on %s', Request.prettyPrint(req), NodePair.prettyPrint(np));
     };
 
     public requestSucceeded = (req: Request.Request, responseTime: number) => {
         const np = this.nodePairs.get(req.entryPeerId);
         if (!np) {
-            log.error('requestSucceeded', Request.prettyPrint(req), 'on non existing node pair');
+            log.error('successful %s on non existing node pair', Request.prettyPrint(req));
             return;
         }
         NodePair.requestSucceeded(np, req, responseTime);
-        log.verbose('requestSucceeded', Request.prettyPrint(req), NodePair.prettyPrint(np));
+        log.info('successful %s on %s', Request.prettyPrint(req), NodePair.prettyPrint(np));
     };
 
     public requestFailed = (req: Request.Request) => {
         const np = this.nodePairs.get(req.entryPeerId);
         if (!np) {
-            log.error('requestFailed', Request.prettyPrint(req), 'on non exiting node pair');
+            log.error('failed %s on non exiting node pair', Request.prettyPrint(req));
             return;
         }
         NodePair.requestFailed(np, req);
-        log.verbose('requestFailed', Request.prettyPrint(req), NodePair.prettyPrint(np));
+        log.warn('failed %s on %s', Request.prettyPrint(req), NodePair.prettyPrint(np));
     };
 
     public segmentStarted = (req: Request.Request, seg: Segment.Segment) => {
         const np = this.nodePairs.get(req.entryPeerId);
         if (!np) {
-            log.error('segmentStarted', Segment.prettyPrint(seg), 'on non existing node pair');
+            log.error('started %s on non existing node pair', Segment.prettyPrint(seg));
             return;
         }
         NodePair.segmentStarted(np, seg);
-        log.verbose('segmentStarted', Segment.prettyPrint(seg), NodePair.prettyPrint(np));
+        log.verbose('started %s on %s', Segment.prettyPrint(seg), NodePair.prettyPrint(np));
     };
 
     public segmentSucceeded = (
@@ -147,36 +147,34 @@ export default class NodesCollector {
     ) => {
         const np = this.nodePairs.get(req.entryPeerId);
         if (!np) {
-            log.error('segmentSucceeded', Segment.prettyPrint(seg), 'on non existing node pair');
+            log.error('successful %s on non existing node pair', Segment.prettyPrint(seg), '');
             return;
         }
         NodePair.segmentSucceeded(np, seg, responseTime);
-        log.verbose('segmentSucceeded', Segment.prettyPrint(seg), NodePair.prettyPrint(np));
+        log.info('successful %s on %s', Segment.prettyPrint(seg), NodePair.prettyPrint(np));
     };
 
     public segmentFailed = (req: Request.Request, seg: Segment.Segment) => {
         const np = this.nodePairs.get(req.entryPeerId);
         if (!np) {
-            log.error('segmentFailed', Segment.prettyPrint(seg), 'on non existing node pair');
+            log.error('failed %s on non existing node pair', Segment.prettyPrint(seg));
             return;
         }
         NodePair.segmentFailed(np, seg);
-        log.verbose('segmentFailed', Segment.prettyPrint(seg), NodePair.prettyPrint(np));
+        log.warn('failed %s on %s', Segment.prettyPrint(seg), NodePair.prettyPrint(np));
     };
 
     private fetchNodePairs = () => {
         if (this.ongoingFetchPairs) {
-            log.verbose('fetchNodePairs ongoing');
+            log.verbose('discovering node pairs ongoing');
             return;
         }
         const diff = Date.now() - this.lastFetchNodePairs;
         if (diff < NodePairFetchTimeout) {
             log.verbose(
-                'fetchNodePairs too early - need to wait',
+                'discovering node pairs too early - need to wait %dms',
                 NodePairFetchTimeout - diff,
-                'ms',
             );
-            return;
         }
         this.ongoingFetchPairs = true;
 
@@ -192,9 +190,9 @@ export default class NodesCollector {
             .then(this.initNodes)
             .catch((err) => {
                 if (err.message === DPapi.NoMoreNodes) {
-                    log.info('No node pairs available');
+                    log.warn('no node pairs available');
                 } else {
-                    log.error('Error fetching nodes', err);
+                    log.error('error fetching node pairs: %s[%o]', JSON.stringify(err), err);
                 }
             })
             .finally(() => {
@@ -222,7 +220,7 @@ export default class NodesCollector {
         // reping all nodes
         this.nodePairs.forEach((np) => NodePair.discover(np));
         log.info(
-            'Discovered %d node-pairs with %d exits',
+            'discovered %d node-pairs with %d exits',
             this.nodePairs.size,
             lookupExitNodes.size,
         );

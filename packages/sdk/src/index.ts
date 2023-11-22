@@ -1,5 +1,6 @@
 import { utils as etherUtils } from 'ethers';
 
+import * as DPapi from './dp-api';
 import * as JRPC from './jrpc';
 import * as NodeAPI from './node-api';
 import * as Payload from './payload';
@@ -55,6 +56,8 @@ export type Ops = {
     readonly mevKickbackAddress?: string;
     readonly forceZeroHop?: boolean;
     readonly segmentLimit?: number;
+    readonly versionListener?: (versions: DPapi.Versions) => void;
+    readonly debugString?: string;
 };
 
 /**
@@ -119,6 +122,7 @@ export default class SDK {
             this.clientId,
             ApplicationTag,
             this.onMessages,
+            this.onVersions,
             this.hops,
         );
         this.fetchChainId(this.ops.provider as string);
@@ -496,6 +500,8 @@ export default class SDK {
             mevProtectionProvider: ops.mevProtectionProvider || defaultOps.mevProtectionProvider,
             forceZeroHop: ops.forceZeroHop ?? defaultOps.forceZeroHop,
             segmentLimit: ops.segmentLimit ?? defaultOps.segmentLimit,
+            versionListener: ops.versionListener,
+            debugString: ops.debugString,
         };
     };
 
@@ -576,5 +582,30 @@ export default class SDK {
             const maxSize = Segment.MaxSegmentBody * limit;
             return `Request exceeds maximum size of ${maxSize}b`;
         }
+    }
+
+    private onVersions(versions: DPapi.Versions) {
+        const vSdk = versions.sdk;
+        const cmp = Utils.versionCompare(vSdk, Version);
+        if (Res.isOk(cmp)) {
+            switch (cmp.res) {
+                case Utils.VrsnCmp.Identical:
+                    log.verbose('RPCh SDK[v%s] is up to date', Version);
+                    break;
+                case Utils.VrsnCmp.PatchMismatch:
+                    log.info('RPCh SDK[v%s] can be updated to v%s.', Version, vSdk);
+                    break;
+                case Utils.VrsnCmp.MinorMismatch:
+                    log.warn('RPCh SDK[v%s] needs to update to v%s.', Version, vSdk);
+                    break;
+                case Utils.VrsnCmp.MajorMismatch:
+                    log.error('RPCh SDK[v%s] must be updated to v%s!', Version, vSdk);
+                    break;
+            }
+        } else {
+            log.error('error comparing versions: %s', cmp.error);
+        }
+
+        this.ops.versionListener && this.ops.versionListener(versions);
     }
 }

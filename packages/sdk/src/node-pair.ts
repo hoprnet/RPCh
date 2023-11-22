@@ -195,6 +195,9 @@ export function prettyPrint(np: NodePair): string {
 
     const exCount = np.exitNodes.size;
     const exStrs = Array.from(np.exitDatas).map(([id, d]) => {
+        const v = d.version;
+        const ctrOff = d.counterOffset?.toFixed(2) || 0;
+        const info = d.infoFail ? 'fail' : `${d.infoLatSec}s`;
         const o = d.requestsOngoing.length;
         const tot = d.requestsHistory.length;
         const lats = Array.from(d.requests.values()).reduce<number[]>((acc, rd) => {
@@ -205,7 +208,7 @@ export function prettyPrint(np: NodePair): string {
         }, []);
         const str = prettyOngoingNumbers(np, o, lats.length, tot, average(lats));
         const nId = shortPeerId(id);
-        return `${nId}[${str}]`;
+        return `${nId}[v${v},o:${ctrOff}ms,i:${info},${str}]`;
     });
     const segStr = prettyOngoingNumbers(np, segOngoing, segLats.length, segTotal, average(segLats));
     const mesLat = average(np.entryData.fetchMessagesLatencies);
