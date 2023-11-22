@@ -101,8 +101,14 @@ jobs:
             echo "TAG=$tag" >> $GITHUB_ENV
           fi
 
+          if [ ${{ github.ref }} == "refs/heads/main" ]; then
+            lat_tag=",latest"
+          else
+            lat_tag=""
+          fi
+
           export tags=$(echo $short_sha,$tag | sed 's/^[ \t,]*//; s/[ \t,]*$//') #remove leading and trailing whitespaces and commas
-          echo "TAGS=$tags" >> $GITHUB_ENV
+          echo "TAGS=${tags}${lat_tag}" >> $GITHUB_ENV
 
       - name: Login to GCP
         id: gcloud
