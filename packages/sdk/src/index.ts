@@ -341,7 +341,7 @@ export default class SDK {
         this.nodesColl.requestStarted(request);
 
         // send request to hoprd
-        log.info('resending request %i', request.id, 'for original', origReq.id);
+        log.info('resending request %s', request.id, 'for original', origReq.id);
 
         // send segments sequentially
         segments.forEach((s) =>
