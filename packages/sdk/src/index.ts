@@ -269,7 +269,12 @@ export default class SDK {
                 this.nodesColl.segmentSucceeded(request, segment, dur);
             })
             .catch((error) => {
-                log.error('error sending segment', Segment.prettyPrint(segment), error);
+                log.error(
+                    'error sending %s: %s[%o]',
+                    Segment.prettyPrint(segment),
+                    JSON.stringify(error),
+                    error,
+                );
                 this.nodesColl.segmentFailed(request, segment);
                 this.resendRequest(request, entryNode, cacheEntry);
             });
@@ -318,7 +323,7 @@ export default class SDK {
             hops: origReq.hops,
         });
         if (Res.isErr(resReq)) {
-            log.info('Error creating fallback request', resReq.error);
+            log.error('error creating fallback request', resReq.error);
             return cacheEntry.reject('Unable to create fallback request object');
         }
         // split request to segments
@@ -373,7 +378,12 @@ export default class SDK {
                 this.nodesColl.segmentSucceeded(request, segment, dur);
             })
             .catch((error) => {
-                log.error('error resending segment', Segment.prettyPrint(segment), error);
+                log.error(
+                    'error resending %s: %s[%o]',
+                    Segment.prettyPrint(segment),
+                    JSON.stringify(error),
+                    error,
+                );
                 this.nodesColl.segmentFailed(request, segment);
                 this.removeRequest(request);
                 return cacheEntry.reject('Sending message failed');
@@ -445,7 +455,7 @@ export default class SDK {
     };
 
     private responseError = (error: string, reqEntry: RequestCache.Entry) => {
-        log.error('Error extracting message', error);
+        log.error('error extracting message', error);
         this.nodesColl.requestFailed(reqEntry.request);
         return reqEntry.reject('Unable to process response');
     };
