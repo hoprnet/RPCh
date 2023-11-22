@@ -83,7 +83,7 @@ async function sendSkipRPCh(
         log.error('[NO_RPCH] need provider query param');
         return;
     }
-    const resFetch = await ProviderAPI.fetchRPC(provider, req)
+    ProviderAPI.fetchRPC(provider, req)
         .then((resFetch: Res.Result<JRPC.Response, ProviderAPI.RPCFailure>) => {
             if (Res.isErr(resFetch)) {
                 const { status, message } = resFetch.error;
@@ -220,7 +220,7 @@ function versionListener({ rpcServer }: DPapi.Versions) {
         const errMessage = [
             `*** RPCServer[v${Version}] outdated and will not work -`,
             `please update to latest version v${rpcServer}.`,
-            `Visit https://degen.rpch.net for detail! ***`,
+            'Visit https://degen.rpch.net for detail! ***',
         ].join(' ');
         const errDeco = Array.from({ length: errMessage.length }, () => '*').join('');
         log.error(`!!! ${errDeco} !!!`);
