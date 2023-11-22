@@ -1,5 +1,12 @@
 # @rpch/exit-node
 
+## 0.13.2
+
+### Patch Changes
+
+-   Updated dependencies [cda0447]
+    -   @rpch/sdk@1.6.0
+
 ## 0.13.1
 
 ### Patch Changes

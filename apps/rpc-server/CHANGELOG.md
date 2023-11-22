@@ -1,5 +1,16 @@
 # @rpch/rpc-server
 
+## 0.12.0
+
+### Minor Changes
+
+-   cda0447: yell at the user when outdated
+
+### Patch Changes
+
+-   Updated dependencies [cda0447]
+    -   @rpch/sdk@1.6.0
+
 ## 0.11.5
 
 ### Patch Changes

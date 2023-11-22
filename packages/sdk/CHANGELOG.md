@@ -1,5 +1,11 @@
 # @rpch/sdk
 
+## 1.6.0
+
+### Minor Changes
+
+-   cda0447: inform user about version mismatches and improve logging
+
 ## 1.5.3
 
 ### Patch Changes

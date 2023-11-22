@@ -1,5 +1,17 @@
 # @rpch/discovery-platform
 
+## 0.14.0
+
+### Minor Changes
+
+-   458f598: wrap monthly quota usages into history table when applicable'
+-   cda0447: expose versions on node pairs request
+
+### Patch Changes
+
+-   Updated dependencies [cda0447]
+    -   @rpch/sdk@1.6.0
+
 ## 0.13.1
 
 ### Patch Changes
