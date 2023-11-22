@@ -588,7 +588,6 @@ export default class SDK {
     };
 
     private onVersions = (versions: DPapi.Versions) => {
-        console.log('onVersions', versions);
         const vSdk = versions.sdk;
         const cmp = Utils.versionCompare(vSdk, Version);
         if (Res.isOk(cmp)) {
