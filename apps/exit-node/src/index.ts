@@ -125,12 +125,12 @@ function setupSocket(state: State, ops: Ops) {
 
     socket.on('error', (err: Error) => {
         log.error('error on socket: %s[%o]', JSON.stringify(err), err);
-        // attempt reconnect
-        setTimeout(() => setupSocket(state, ops), SocketReconnectTimeout);
+        socket.onmessage = false;
+        socket.close();
     });
 
     socket.on('close', (evt: WS.CloseEvent) => {
-        log.error('error unexpectedly closing socket %o', evt);
+        log.warn('closing socket %o - attempting reconnect', evt);
         // attempt reconnect
         setTimeout(() => setupSocket(state, ops), SocketReconnectTimeout);
     });
