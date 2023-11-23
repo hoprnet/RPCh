@@ -145,10 +145,10 @@ function setupSocket(state: State, ops: Ops) {
 function cleanup(state: State) {
     RequestStore.removeExpired(state.requestStore, ValidCounterPeriod)
         .then(() => {
-            log.info('Successfully ran removeExpired on requestStore');
+            log.info('successfully removed expired requests from store');
         })
         .catch((err) => {
-            log.error('Error during cleanup:', err);
+            log.error('error during cleanup: %s[%o]', JSON.stringify(err), err);
         })
         .finally(() => {
             scheduleCleanup(state);
@@ -161,7 +161,7 @@ function scheduleCleanup(state: State) {
     const logH = Math.floor(next / 1000 / 60 / 60);
     const logM = Math.round(next / 1000 / 60) - logH * 60;
 
-    log.verbose('Scheduling next cleanup in %dh%dm', logH, logM);
+    log.verbose('scheduling next cleanup in %dh%dm', logH, logM);
     setTimeout(() => cleanup(state), next);
 }
 
@@ -187,7 +187,7 @@ function onMessage(state: State, ops: Ops) {
         // determine if valid segment
         const segRes = Segment.fromMessage(msg.body);
         if (Res.isErr(segRes)) {
-            log.info('Cannot create segment:', segRes.error);
+            log.info('cannot create segment:', segRes.error);
             return;
         }
 
@@ -195,28 +195,28 @@ function onMessage(state: State, ops: Ops) {
         const cacheRes = SegmentCache.incoming(state.cache, segment);
         switch (cacheRes.res) {
             case 'complete':
-                log.verbose('Completing segment:', Segment.prettyPrint(segment));
+                log.verbose('completing segment:', Segment.prettyPrint(segment));
                 clearTimeout(state.deleteTimer.get(segment.requestId));
                 completeSegmentsEntry(state, ops, cacheRes.entry as SegmentCache.Entry, msg.tag);
                 break;
             case 'error':
-                log.error('Error caching segment:', cacheRes.reason);
+                log.error('error caching segment:', cacheRes.reason);
                 break;
             case 'already-cached':
-                log.info('Already cached:', Segment.prettyPrint(segment));
+                log.info('already cached:', Segment.prettyPrint(segment));
                 break;
             case 'added-to-request':
                 log.verbose(
-                    'Inserted new segment to existing request:',
+                    'inserted new segment to existing request:',
                     Segment.prettyPrint(segment),
                 );
                 break;
             case 'inserted-new':
-                log.verbose('Inserted new first segment:', Segment.prettyPrint(segment));
+                log.verbose('inserted new first segment:', Segment.prettyPrint(segment));
                 state.deleteTimer.set(
                     segment.requestId,
                     setTimeout(() => {
-                        log.info('Purging incomplete request:', segment.requestId);
+                        log.info('purging incomplete request:', segment.requestId);
                         SegmentCache.remove(state.cache, segment.requestId);
                     }, RequestPurgeTimeout),
                 );
@@ -226,7 +226,7 @@ function onMessage(state: State, ops: Ops) {
 }
 
 function onPingReq(state: State, ops: Ops, msg: Msg) {
-    log.info('Received ping req:', msg.body);
+    log.info('received ping req:', msg.body);
     // ping-originPeerId
     const [, recipient] = msg.body.split('-');
     const conn = { ...ops, hops: 0 };
@@ -235,12 +235,12 @@ function onPingReq(state: State, ops: Ops, msg: Msg) {
         tag: msg.tag,
         message: `pong-${state.peerId}`,
     }).catch((err) => {
-        log.error('Error sending pong:', err);
+        log.error('error sending pong: %s[%o]', JSON.stringify(err), err);
     });
 }
 
 function onInfoReq(state: State, ops: Ops, msg: Msg) {
-    log.info('Received info req:', msg.body);
+    log.info('ceceived info req:', msg.body);
     // info-originPeerId-hops
     const [, recipient, hopsStr] = msg.body.split('-');
     const hops = parseInt(hopsStr, 10);
@@ -252,7 +252,7 @@ function onInfoReq(state: State, ops: Ops, msg: Msg) {
     };
     const res = Payload.encodeInfo(info);
     if (Res.isErr(res)) {
-        log.error('Error encoding info:', res.error);
+        log.error('error encoding info:', res.error);
         return;
     }
     const message = `nfrp-${res.res}`;
@@ -261,7 +261,7 @@ function onInfoReq(state: State, ops: Ops, msg: Msg) {
         tag: msg.tag,
         message,
     }).catch((err) => {
-        log.error('Error sending info:', err);
+        log.error('error sending info: %s[%o]', JSON.stringify(err), err);
     });
 }
 
@@ -273,14 +273,14 @@ async function completeSegmentsEntry(
 ) {
     const firstSeg = cacheEntry.segments.get(0) as Segment.Segment;
     if (!firstSeg.body.startsWith('0x')) {
-        log.info('Message is not a request:', firstSeg.requestId);
+        log.info('message is not a request:', firstSeg.requestId);
         return;
     }
     const requestId = firstSeg.requestId;
     const msg = SegmentCache.toMessage(cacheEntry);
     const msgParts = msg.split(',');
     if (msgParts.length !== 2) {
-        log.info('Invalid message parts:', msgParts);
+        log.info('invalid message parts:', msgParts);
         return;
     }
 
@@ -297,7 +297,7 @@ async function completeSegmentsEntry(
     });
 
     if (Res.isErr(resReq)) {
-        log.error('Error unboxing request:', resReq.error);
+        log.error('error unboxing request:', resReq.error);
         return;
     }
 
@@ -310,7 +310,7 @@ async function completeSegmentsEntry(
     const now = Date.now();
     const valid = now - ValidCounterPeriod;
     if (counter < valid) {
-        log.info('Counter %d outside valid period %d (now: %d)', counter, valid, now);
+        log.info('counter %d outside valid period %d (now: %d)', counter, valid, now);
         // counter fail resp
         return sendResponse(sendParams, { type: Payload.RespType.CounterFail, now });
     }
@@ -318,7 +318,7 @@ async function completeSegmentsEntry(
     // check uuid
     const res = await RequestStore.addIfAbsent(state.requestStore, requestId, counter);
     if (res === RequestStore.AddRes.Duplicate) {
-        log.info('Duplicate request id');
+        log.info('duplicate request id:', requestId);
         // duplicate fail resp
         return sendResponse(sendParams, { type: Payload.RespType.DuplicateFail });
     }
@@ -327,10 +327,11 @@ async function completeSegmentsEntry(
     const { provider, req, headers } = reqPayload;
     const resFetch = await ProviderAPI.fetchRPC(provider, req, headers).catch((err: Error) => {
         log.error(
-            'Error RPC requesting %s with %s: %s',
+            'error doing JRPC on %s with %o: %s[%o]',
             provider,
-            JSON.stringify(req),
+            req,
             JSON.stringify(err),
+            err,
         );
         // rpc critical fail response
         return sendResponse(sendParams, {
@@ -376,14 +377,14 @@ function sendResponse(
         unboxSession,
     });
     if (Res.isErr(resResp)) {
-        log.error('Error boxing response', resResp.error);
+        log.error('error boxing response:', resResp.error);
         return;
     }
 
     const segments = Segment.toSegments(requestId, resResp.res);
 
     log.verbose(
-        'Returning message to %s, tag: %s, requestId: %i',
+        'returning message to %s, tag: %s, requestId: %s',
         Utils.shortPeerId(entryPeerId),
         tag,
         requestId,
@@ -402,7 +403,12 @@ function sendResponse(
                 tag,
                 message: Segment.toMessage(seg),
             }).catch((err: Error) => {
-                log.error('Error sending segment:', Segment.prettyPrint(seg), err);
+                log.error(
+                    'error sending %s: %s[%o]',
+                    Segment.prettyPrint(seg),
+                    JSON.stringify(err),
+                    err,
+                );
             });
         });
     });
@@ -427,11 +433,11 @@ function sendResponse(
             type: 'response',
         };
 
-        DPapi.fetchQuota(ops, quotaRequest).catch((ex) => {
-            log.error('Error recording request quota:', ex);
+        DPapi.fetchQuota(ops, quotaRequest).catch((err) => {
+            log.error('error recording request quota: %s[%o]', JSON.stringify(err), err);
         });
-        DPapi.fetchQuota(ops, quotaResponse).catch((ex) => {
-            log.error('Error recording response quota:', ex);
+        DPapi.fetchQuota(ops, quotaResponse).catch((err) => {
+            log.error('error recording response quota: %s[%o]', JSON.stringify(err), err);
         });
     }, segments.length);
 }
