@@ -102,7 +102,7 @@ async function setup(ops: Ops): Promise<State> {
         apiEndpoint: ops.apiEndpoint,
         discoveryPlatformEndpoint: ops.discoveryPlatformEndpoint,
     };
-    log.verbose('%s started with %o', ExitNode.prettyPrint(peerId, Version, Date.now()), logOpts);
+    log.info('%s started with %o', ExitNode.prettyPrint(peerId, Version, Date.now()), logOpts);
 
     return {
         cache,
@@ -161,7 +161,7 @@ function scheduleCleanup(state: State) {
     const logH = Math.floor(next / 1000 / 60 / 60);
     const logM = Math.round(next / 1000 / 60) - logH * 60;
 
-    log.verbose('scheduling next cleanup in %dh%dm', logH, logM);
+    log.info('scheduling next cleanup in %dh%dm', logH, logM);
     setTimeout(() => cleanup(state), next);
 }
 
