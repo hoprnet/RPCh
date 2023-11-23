@@ -54,10 +54,7 @@ type Msg = {
 
 async function start(ops: Ops) {
     const state = await setup(ops).catch(() => {
-        log.error(
-            'Fatal error initializing %s',
-            ExitNode.prettyPrint('(unknown)', Version, Date.now()),
-        );
+        log.error('error initializing %s', ExitNode.prettyPrint('(unknown)', Version, Date.now()));
     });
     if (!state) {
         process.exit(1);
@@ -68,29 +65,29 @@ async function start(ops: Ops) {
 
 async function setup(ops: Ops): Promise<State> {
     const requestStore = await RequestStore.setup(ops.dbFile).catch((err) => {
-        log.error('Error setting up request store:', err);
+        log.error('error setting up request store: %s[%o]', JSON.stringify(err), err);
     });
     if (!requestStore) {
         return Promise.reject();
     }
 
-    log.verbose('Set up DB at', ops.dbFile);
+    log.verbose('set up DB at', ops.dbFile);
 
     const resId = await Identity.getIdentity({
         identityFile: ops.identityFile,
         password: ops.password,
         privateKey: ops.privateKey,
     }).catch((err: Error) => {
-        log.error('Error accessing identity', err);
+        log.error('error accessing identity: %s[%o]', JSON.stringify(err), err);
     });
     if (!resId) {
         return Promise.reject();
     }
 
-    log.verbose('Got identity', resId.publicKey);
+    log.verbose('got identity', resId.publicKey);
 
     const resPeerId = await NodeAPI.accountAddresses(ops).catch((err: Error) => {
-        log.error('Error fetching account addresses', err);
+        log.error('error fetching account addresses: %s[%o]', JSON.stringify(err), err);
     });
     if (!resPeerId) {
         return Promise.reject();
@@ -105,11 +102,7 @@ async function setup(ops: Ops): Promise<State> {
         apiEndpoint: ops.apiEndpoint,
         discoveryPlatformEndpoint: ops.discoveryPlatformEndpoint,
     };
-    log.verbose(
-        '%s started with %s',
-        ExitNode.prettyPrint(peerId, Version, Date.now()),
-        JSON.stringify(logOpts),
-    );
+    log.verbose('%s started with %o', ExitNode.prettyPrint(peerId, Version, Date.now()), logOpts);
 
     return {
         cache,
@@ -124,26 +117,26 @@ async function setup(ops: Ops): Promise<State> {
 function setupSocket(state: State, ops: Ops) {
     const socket = NodeAPI.connectWS(ops);
     if (!socket) {
-        log.error('Failed opening websocket');
+        log.error('error opening websocket');
         process.exit(3);
     }
 
     socket.onmessage = onMessage(state, ops);
 
     socket.on('error', (err: Error) => {
-        log.error('Websocket error', err);
+        log.error('error on socket: %s[%o]', JSON.stringify(err), err);
         // attempt reconnect
         setTimeout(() => setupSocket(state, ops), SocketReconnectTimeout);
     });
 
     socket.on('close', (evt: WS.CloseEvent) => {
-        log.error('Websocket close', evt);
+        log.error('error unexpectedly closing socket %o', evt);
         // attempt reconnect
         setTimeout(() => setupSocket(state, ops), SocketReconnectTimeout);
     });
 
     socket.on('open', () => {
-        log.verbose('Opened websocket listener');
+        log.verbose('opened websocket listener');
     });
 
     state.socket = socket;
