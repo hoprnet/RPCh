@@ -223,9 +223,11 @@ function versionListener({ rpcServer }: DPapi.Versions) {
             'Visit https://degen.rpch.net for detail! ***',
         ].join(' ');
         const errDeco = Array.from({ length: errMessage.length }, () => '*').join('');
+        log.error('');
         log.error(`!!! ${errDeco} !!!`);
         log.error(`!!! ${errMessage} !!!`);
         log.error(`!!! ${errDeco} !!!`);
+        log.error('');
     };
     switch (cmp.res) {
         case Utils.VrsnCmp.Identical:

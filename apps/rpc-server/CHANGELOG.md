@@ -1,5 +1,11 @@
 # @rpch/rpc-server
 
+## 0.12.1
+
+### Patch Changes
+
+-   improved version outdated error log
+
 ## 0.12.0
 
 ### Minor Changes
