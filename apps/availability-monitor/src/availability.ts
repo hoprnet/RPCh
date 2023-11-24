@@ -171,20 +171,6 @@ async function runOneHops(
         },
         new Map(),
     );
-
-    /*
-    // clear table and insert gathered values
-    const pairIds = toOneHopPairings(pairsRelaysMap);
-    const max = entryNodes.length * exitNodes.length * (entryNodes.length + exitNodes.length - 2);
-    return q
-        .writeOneHopPairings(dbPool, pairIds)
-        .then(() =>
-            log.info(
-                'updated onehops with pairIds:',
-                logOneHopIds(pairsRelaysMap, pairIds.length, max),
-            ),
-        );
-*/
 }
 
 async function peersMap(
@@ -216,10 +202,11 @@ async function filterOnline(
 ): Promise<Set<string>> {
     const messagePreps: Map<string, { eNode: q.RegisteredNode; exitIds: Set<string> }> =
         await Array.from(exitIds).reduce((acc, xId) => {
-            const eNode = nodes.get(xId) as q.RegisteredNode;
-            const peers = peersCache.get(xId) as Map<string, NodeAPI.Peer>;
-            if (peers.size > 0) {
-                const p = randomEl(Array.from(peers.values()));
+            const allPeers = peersCache.get(xId) as Map<string, NodeAPI.Peer>;
+            const peers = Array.from(allPeers.values()).filter((p) => nodes.has(p.peerId));
+            if (peers.length > 0) {
+                const p = randomEl(peers);
+                const eNode = nodes.get(p.peerId) as q.RegisteredNode;
                 if (acc.has(p.peerId)) {
                     acc.get(p.peerId).exitIds.add(xId);
                 } else {
@@ -246,6 +233,7 @@ async function filterOnline(
 
         // send pings
         const pPings = Array.from(exitIds.values()).map((xId, idx) => {
+            const delay = idx * 1;
             return new Promise((resolve, reject) => {
                 setTimeout(() => {
                     NodeAPI.sendMessage(
@@ -263,11 +251,13 @@ async function filterOnline(
                             );
                             reject('Error sending ping');
                         });
-                }, idx * 1);
+                }, delay);
             });
         });
 
-        await Promise.all(pPings);
+        await Promise.all(pPings).catch((err) => {
+            log.warn('some ping messages failed: %s', err);
+        });
 
         // receive pongs (give 5 sec grace period)
         return new Promise((resolve, reject) => {
