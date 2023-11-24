@@ -8,7 +8,7 @@ exports.up = (pgm) => {
         },
     });
 
-    pgm.dropIndex('one_hop_pairings', ['entry_id', 'exit_id']);
+    pgm.dropIndex('one_hop_pairings', ['entry_id', 'exit_id'], { unique: true });
     pgm.createIndex('one_hop_pairings', ['entry_id', 'exit_id', 'relay_id'], {
         unique: true,
     });
