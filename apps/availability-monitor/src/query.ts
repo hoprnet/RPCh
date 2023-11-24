@@ -65,8 +65,6 @@ export async function writeOneHopPairings(dbPool: Pool, pairings: OneHopPair[]) 
             .map(({ entryId, exitId, relayId }) => `('${entryId}','${exitId}','${relayId}')`)
             .join(','),
     ].join(' ');
-    console.log('qDel', qDel);
-    console.log('qIns', qIns);
 
     // run as transaction
     const client = await dbPool.connect();

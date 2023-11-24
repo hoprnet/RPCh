@@ -79,7 +79,7 @@ async function runZeroHops(
 
     const pairIds = toZeroHopPairings(onlinePairsMap);
     return q.writeZeroHopPairings(dbPool, pairIds).then(() => {
-        log.info('updated zerohops with pairIds:', logIds(pairIds));
+        log.info('updated zerohops with pairIds:', logZeroHopIds(pairIds));
         const all = new Map(
             entryNodes.map((eNode) => {
                 const xIds = exitNodes.map(({ id }) => id);
@@ -153,7 +153,9 @@ async function runOneHops(
     const pairIds = toOneHopPairings(pairsRelaysMap);
     return q
         .writeOneHopPairings(dbPool, pairIds)
-        .then(() => log.info('updated onehops with pairIds:', logIds(pairIds)));
+        .then(() =>
+            log.info('updated onehops with pairIds:', logOneHopIds(pairsRelaysMap, pairIds.length)),
+        );
 }
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
@@ -296,7 +298,7 @@ function revertMap<K, V>(map: Map<K, Set<V>>): Map<V, Set<K>> {
     }, new Map());
 }
 
-function logIds(pairs: q.ZeroHopPair[]): string {
+function logZeroHopIds(pairs: q.ZeroHopPair[]): string {
     if (pairs.length === 0) {
         return '[(none)]';
     }
@@ -304,6 +306,21 @@ function logIds(pairs: q.ZeroHopPair[]): string {
         .map(({ entryId, exitId }) => `${Utils.shortPeerId(entryId)}>${Utils.shortPeerId(exitId)}`)
         .join(',');
     return `[${ids}]`;
+}
+
+function logOneHopIds(pairsRelayMap: Map<string, Map<string, Set<string>>>, total: number): string {
+    const eCount = pairsRelayMap.size;
+    if (eCount === 0) {
+        return '[(none)]';
+    }
+    const entries = Array.from(pairsRelayMap).map(([eId, exitRelays]) => {
+        const exits = Array.from(exitRelays).map(
+            ([xId, relayIds]) => `${Utils.shortPeerId(xId)}[r:${relayIds.size}]`,
+        );
+        const xCount = exitRelays.size;
+        return `${Utils.shortPeerId(eId)}[${xCount}x:${exits.join(',')}]`;
+    });
+    return `${total}routes ${eCount}e:${entries.join(' ')}`;
 }
 
 function filterChannels(
