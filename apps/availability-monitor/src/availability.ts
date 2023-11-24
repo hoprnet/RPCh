@@ -20,16 +20,22 @@ export async function start(dbPool: Pool) {
 async function run(dbPool: Pool) {
     const pEntryNodes = q.entryNodes(dbPool);
     const pExitNodes = q.exitNodes(dbPool);
-    Promise.all([pEntryNodes, pExitNodes])
-        .then(async ([entries, exits]) => {
+    try {
+        const [entries, exits] = await Promise.all([pEntryNodes, pExitNodes]);
+        if (entries.length === 0) {
+            log.warn('no entry nodes');
+        } else if (exits.length === 0) {
+            log.warn('no exit nodes');
+        } else {
             const peersCache: PeersCache.PeersCache = new Map();
             // await runZeroHops(dbPool, peersCache, qEntries.rows, qExits.rows);
             await runOneHops(dbPool, peersCache, entries, exits);
-        })
-        .catch((err) => {
-            log.error('run main loop: %s[%o]', JSON.stringify(err), err);
-        })
-        .finally(() => reschedule(dbPool));
+        }
+    } catch (err) {
+        log.error('run main loop: %s[%o]', JSON.stringify(err), err);
+    } finally {
+        reschedule(dbPool);
+    }
 }
 
 function reschedule(dbPool: Pool) {
