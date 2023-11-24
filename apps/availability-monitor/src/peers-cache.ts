@@ -15,11 +15,11 @@ export function fetchPeers(
             apiEndpoint: new URL(node.hoprd_api_endpoint),
             accessToken: node.hoprd_api_token,
         })
-            .then((peers) => {
-                if (NodeAPI.isError(peers)) {
-                    return reject(peers);
+            .then((res: NodeAPI.Peers | NodeAPI.NodeError) => {
+                if (NodeAPI.isError(res)) {
+                    return reject(res);
                 }
-                const peersMap = new Map(peers.connected.map((p) => [p.peerId, p]));
+                const peersMap = new Map(res.connected.map((p) => [p.peerId, p]));
                 cache.set(node.id, peersMap);
                 return resolve(peersMap);
             })

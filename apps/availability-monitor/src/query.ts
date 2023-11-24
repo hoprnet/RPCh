@@ -47,7 +47,9 @@ export async function writeZeroHopPairings(dbPool: Pool, pairings: ZeroHopPair[]
     try {
         await client.query('begin');
         await client.query(qDel);
-        await client.query(qIns);
+        if (pairings.length > 0) {
+            await client.query(qIns);
+        }
         await client.query('commit');
     } catch (err) {
         await client.query('rollback');
@@ -71,7 +73,9 @@ export async function writeOneHopPairings(dbPool: Pool, pairings: OneHopPair[]) 
     try {
         await client.query('begin');
         await client.query(qDel);
-        await client.query(qIns);
+        if (pairings.length > 0) {
+            await client.query(qIns);
+        }
         await client.query('commit');
     } catch (err) {
         await client.query('rollback');
