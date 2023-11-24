@@ -21,10 +21,10 @@ async function run(dbPool: Pool) {
     const pEntryNodes = q.entryNodes(dbPool);
     const pExitNodes = q.exitNodes(dbPool);
     Promise.all([pEntryNodes, pExitNodes])
-        .then(async ([qEntries, qExits]) => {
+        .then(async ([entries, exits]) => {
             const peersCache: PeersCache.PeersCache = new Map();
-            await runZeroHops(dbPool, peersCache, qEntries.rows, qExits.rows);
-            await runOneHops(dbPool, peersCache, qEntries.rows, qExits.rows);
+            // await runZeroHops(dbPool, peersCache, qEntries.rows, qExits.rows);
+            await runOneHops(dbPool, peersCache, entries, exits);
         })
         .catch((err) => {
             log.error('run main loop: %s[%o]', JSON.stringify(err), err);
@@ -71,7 +71,7 @@ async function runZeroHops(
     const onlineExitEntries = await filterOnline(exitEntries, entryNodes);
     const onlinePairsMap = revertMap(onlineExitEntries);
 
-    const pairIds = toPairings(onlinePairsMap);
+    const pairIds = toZeroHopPairings(onlinePairsMap);
     return q.writeZeroHopPairings(dbPool, pairIds).then(() => {
         log.info('updated zerohops with pairIds:', logIds(pairIds));
         const all = new Map(
@@ -87,7 +87,6 @@ async function runZeroHops(
     });
 }
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
 async function runOneHops(
     dbPool: Pool,
     peersCache: PeersCache.PeersCache,
@@ -106,34 +105,46 @@ async function runOneHops(
     const channels = channelsMap(respCh.all);
 
     // match channels with peers
-    const entryPeers = await peersMap(peersCache, entryNodes);
-    const entryPeersChannels = filterChannels(entryPeers, channels);
+    const allEntryPeers = await peersMap(peersCache, entryNodes);
+    const entryPeersChannels = filterChannels(allEntryPeers, channels);
+    const nodeIds = new Set(entryNodes.map((e) => e.id).concat(exitNodes.map((x) => x.id)));
+    const entryPeers = filterRelays(entryPeersChannels, nodeIds);
 
     // gather exit peers and determine exit nodes reachable by their peers
-    const exitPeers = await peersMap(peersCache, exitNodes);
+    const allExitPeers = await peersMap(peersCache, exitNodes);
+    const exitPeers = filterRelays(allExitPeers, nodeIds);
     const peersExits = revertMap(exitPeers);
 
     // match exits reachable by channel peers
-    const pairsMap = Array.from(entryPeersChannels.entries()).reduce<Map<string, Set<string>>>(
-        (acc, [entryId, chPs]) => {
-            [...chPs].forEach((p) => {
-                const exits = peersExits.get(p);
-                if (exits) {
-                    if (acc.has(entryId)) {
-                        const vals = acc.get(entryId)!;
-                        acc.set(entryId, new Set([...vals, ...exits]));
-                    } else {
-                        acc.set(entryId, exits);
-                    }
+    const pairsRelaysMap = Array.from(entryPeers.entries()).reduce<
+        Map<string, Map<string, Set<string>>>
+    >((acc, [entryId, chPs]) => {
+        [...chPs].forEach((p) => {
+            const exits = peersExits.get(p);
+            if (exits) {
+                if (acc.has(entryId)) {
+                    const exitRelays = acc.get(entryId) as Map<string, Set<string>>;
+                    exits.forEach((x) => {
+                        if (exitRelays.has(x)) {
+                            const relays = exitRelays.get(x) as Set<string>;
+                            relays.add(p);
+                        } else {
+                            exitRelays.set(x, new Set([p]));
+                        }
+                    });
+                } else {
+                    exits.forEach((x) => {
+                        const exitRelays = new Map([[x, new Set([p])]]);
+                        acc.set(entryId, exitRelays);
+                    });
                 }
-            });
-            return acc;
-        },
-        new Map(),
-    );
+            }
+        });
+        return acc;
+    }, new Map());
 
     // clear table and insert gathered values
-    const pairIds = toPairings(pairsMap);
+    const pairIds = toOneHopPairings(pairsRelaysMap);
     return q
         .writeOneHopPairings(dbPool, pairIds)
         .then(() => log.info('updated onehops with pairIds:', logIds(pairIds)));
@@ -279,7 +290,7 @@ function revertMap<K, V>(map: Map<K, Set<V>>): Map<V, Set<K>> {
     }, new Map());
 }
 
-function logIds(pairs: q.Pair[]): string {
+function logIds(pairs: q.ZeroHopPair[]): string {
     if (pairs.length === 0) {
         return '[(none)]';
     }
@@ -303,13 +314,33 @@ function filterChannels(
     }, new Map());
 }
 
+function filterRelays(
+    peers: Map<string, Set<string>>,
+    relays: Set<string>,
+): Map<string, Set<string>> {
+    return Array.from(peers.entries()).reduce((acc, [id, prs]) => {
+        const vals = [...prs].filter((x) => relays.has(x));
+        acc.set(id, new Set(vals));
+        return acc;
+    }, new Map());
+}
+
 // expand to entryId -> exitId routes struct
-function toPairings(pairsMap: Map<string, Set<string>>): q.Pair[] {
-    return Array.from(pairsMap).reduce<q.Pair[]>((acc, [entryId, exitIds]) => {
+function toZeroHopPairings(pairsMap: Map<string, Set<string>>): q.ZeroHopPair[] {
+    return Array.from(pairsMap).reduce<q.ZeroHopPair[]>((acc, [entryId, exitIds]) => {
         exitIds.forEach((exitId) => {
             acc.push({ entryId, exitId });
         });
         return acc;
+    }, []);
+}
+
+function toOneHopPairings(pairsRelayMap: Map<string, Map<string, Set<string>>>): q.OneHopPair[] {
+    return Array.from(pairsRelayMap).reduce<q.OneHopPair[]>((outerAcc, [entryId, exitRelays]) => {
+        return Array.from(exitRelays).reduce<q.OneHopPair[]>((innerAcc, [exitId, relayIds]) => {
+            const entries = Array.from(relayIds).map((relayId) => ({ entryId, exitId, relayId }));
+            return innerAcc.concat(entries);
+        }, outerAcc);
     }, []);
 }
 

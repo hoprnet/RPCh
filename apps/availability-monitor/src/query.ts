@@ -1,4 +1,4 @@
-import type { Pool, QueryResult } from 'pg';
+import type { Pool } from 'pg';
 
 export type RegisteredNode = {
     id: string;
@@ -12,50 +12,73 @@ export type RegisteredNode = {
     updated_at: Date;
 };
 
-export type Pair = {
+export type ZeroHopPair = {
     entryId: string;
     exitId: string;
 };
 
-export function entryNodes(dbPool: Pool): Promise<QueryResult<RegisteredNode>> {
-    return dbPool.query('select * from registered_nodes where is_exit_node = false');
+export type OneHopPair = {
+    entryId: string;
+    exitId: string;
+    relayId: string;
+};
+
+export async function entryNodes(dbPool: Pool): Promise<RegisteredNode[]> {
+    return dbPool
+        .query('select * from registered_nodes where is_exit_node = false')
+        .then(({ rows }) => rows);
 }
 
-export function exitNodes(dbPool: Pool): Promise<QueryResult<RegisteredNode>> {
-    return dbPool.query('select * from registered_nodes where is_exit_node = true');
+export async function exitNodes(dbPool: Pool): Promise<RegisteredNode[]> {
+    return dbPool
+        .query('select * from registered_nodes where is_exit_node = true')
+        .then(({ rows }) => rows);
 }
 
-export function writeZeroHopPairings(dbPool: Pool, pairings: Pair[]): Promise<QueryResult<any>> {
-    return writePairings(dbPool, 'zero_hop_pairings', pairings);
+export async function writeZeroHopPairings(dbPool: Pool, pairings: ZeroHopPair[]) {
+    const qDel = 'delete from zero_hop_pairings';
+    const qIns = [
+        'insert into one_hop_pairings (entry_id, exit_id) values',
+        pairings.map(({ entryId, exitId }) => `('${entryId}','${exitId}')`).join(','),
+    ].join(' ');
+
+    // run as transaction
+    const client = await dbPool.connect();
+    try {
+        await client.query('begin');
+        await client.query(qDel);
+        await client.query(qIns);
+        await client.query('commit');
+    } catch (err) {
+        await client.query('rollback');
+        throw err;
+    } finally {
+        client.release();
+    }
 }
 
-export function writeOneHopPairings(dbPool: Pool, pairings: Pair[]): Promise<QueryResult<any>> {
-    return writePairings(dbPool, 'one_hop_pairings', pairings);
-}
+export async function writeOneHopPairings(dbPool: Pool, pairings: OneHopPair[]) {
+    const qDel = 'delete from one_hop_pairings';
+    const qIns = [
+        'insert into one_hop_pairings (entry_id, exit_id, relay_id) values',
+        pairings
+            .map(({ entryId, exitId, relayId }) => `('${entryId}','${exitId}','${relayId}')`)
+            .join(','),
+    ].join(' ');
+    console.log('qDel', qDel);
+    console.log('qIns', qIns);
 
-function writePairings(dbPool: Pool, table: string, pairings: Pair[]): Promise<QueryResult<any>> {
-    return new Promise((resolve, reject) => {
-        dbPool
-            .connect()
-            .then(async (client) => {
-                try {
-                    await client.query('begin');
-                    await client.query(`delete from ${table}`);
-                    const inserts = pairings.map(
-                        ({ entryId, exitId }) =>
-                            `insert into ${table} (entry_id, exit_id) values ('${entryId}', '${exitId}');`,
-                    );
-                    inserts.forEach(async (i) => await client.query(i));
-                    resolve(client.query('commit'));
-                } catch (e) {
-                    await client.query('rollback');
-                    reject(e);
-                } finally {
-                    client.release();
-                }
-            })
-            .catch((e) => {
-                reject(e);
-            });
-    });
+    // run as transaction
+    const client = await dbPool.connect();
+    try {
+        await client.query('begin');
+        await client.query(qDel);
+        await client.query(qIns);
+        await client.query('commit');
+    } catch (err) {
+        await client.query('rollback');
+        throw err;
+    } finally {
+        client.release();
+    }
 }
