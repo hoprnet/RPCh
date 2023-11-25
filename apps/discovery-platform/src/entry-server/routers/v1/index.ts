@@ -710,9 +710,7 @@ function getNodesPairings(dbPool: Pool) {
 
         const data = matchedData(req);
         const forceZeroHop = !!data.force_zero_hop;
-        qNode
-            .listPairings(dbPool, data.amount, data.since, forceZeroHop)
-            .then((qPairings) => {
+        const qPairings = await qNode .listPairings(dbPool, data.amount, data.since, forceZeroHop)
                 if (qPairings.length === 0) {
                     // table is empty
                     return res.status(204).end();
@@ -720,7 +718,7 @@ function getNodesPairings(dbPool: Pool) {
 
                 // collect pairings by entry node
                 const pairings = qPairings.reduce<Map<string, Set<string>>>(
-                    (acc, { entryId, exitId }) => {
+                    (acc, { entryId, exitId, relayId }) => {
                         const v = acc.get(entryId);
                         if (v) {
                             v.add(exitId);

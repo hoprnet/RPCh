@@ -15,6 +15,7 @@ export type Request = {
     createdAt: number;
     entryPeerId: string;
     exitPeerId: string;
+    relayId?: string;
     headers?: Record<string, string>;
     hops?: number;
 };
@@ -39,6 +40,7 @@ export function create({
     counterOffset,
     headers,
     hops,
+    relayId,
 }: {
     id: string;
     originalId?: string;
@@ -51,6 +53,7 @@ export function create({
     counterOffset: number;
     headers?: Record<string, string>;
     hops?: number;
+    relayId?: string;
 }): Res.Result<{ request: Request; session: compatCrypto.Session }> {
     const resEncode = Payload.encodeReq({
         provider,
@@ -87,6 +90,7 @@ export function create({
             exitPublicKey,
             headers,
             hops,
+            relayId,
         },
         session: resBox.session,
     });
@@ -148,6 +152,7 @@ export function toSegments(req: Request, session: compatCrypto.Session): Segment
 export function prettyPrint(req: Request, id?: string) {
     const eId = shortPeerId(req.entryPeerId);
     const xId = shortPeerId(req.exitPeerId);
+
     const prov = req.provider;
     const attrs = [req.id, `${eId}>${xId}`];
     if (id) {
