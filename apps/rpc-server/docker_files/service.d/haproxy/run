@@ -11,4 +11,6 @@ if [ ! -f /etc/certs/localhost.pem ] || [ ! -f /etc/certs/localhost.pem.key ]; t
     chown -R www:www /etc/certs
 fi
 
+export $(grep -v '^#' /haproxy.env | xargs -0)
+
 exec /usr/sbin/haproxy -f /etc/haproxy/haproxy.conf 2>&1
