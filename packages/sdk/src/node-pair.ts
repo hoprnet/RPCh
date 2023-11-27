@@ -22,6 +22,8 @@ export type NodePair = {
     entryData: EntryData.EntryData;
     exitNodes: Map<string, ExitNode.ExitNode>;
     exitDatas: Map<string, ExitData.ExitData>;
+    reqRelays: Map<string, string[]>; // exitId -> relayId for request
+    respRelays: Map<string, string[]>; // exitId -> relayId for response
     applicationTag: number;
     hops?: number;
     messageListener: MessageListener;
@@ -35,6 +37,10 @@ export function create(
     exitNodesIt: Iterable<ExitNode.ExitNode>,
     applicationTag: number,
     messageListener: MessageListener,
+    {
+        reqRelays,
+        respRelays,
+    }: { reqRelays: Map<string, string[]>; respRelays: Map<string, string[]> },
     hops?: number,
 ): NodePair {
     const entryData = EntryData.create();
@@ -49,6 +55,8 @@ export function create(
         entryData,
         exitNodes,
         exitDatas,
+        reqRelays,
+        respRelays,
         applicationTag,
         messageListener,
         fetchMessagesOngoing: false,

@@ -240,7 +240,7 @@ function onPingReq(state: State, ops: Ops, msg: Msg) {
 }
 
 function onInfoReq(state: State, ops: Ops, msg: Msg) {
-    log.info('ceceived info req:', msg.body);
+    log.info('received info req:', msg.body);
     // info-originPeerId-hops
     const [, recipient, hopsStr] = msg.body.split('-');
     const hops = parseInt(hopsStr, 10);
