@@ -74,12 +74,7 @@ export function id(np: NodePair) {
 export function requestStarted(np: NodePair, req: Request.Request) {
     const data = np.exitDatas.get(req.exitPeerId);
     if (!data) {
-        np.log.error(
-            'requestStarted',
-            Request.prettyPrint(req),
-            'cannot track on missing exitId',
-            prettyPrint(np),
-        );
+        np.log.error('started %s on missing exit data', Request.prettyPrint(req));
         return;
     }
     EntryData.addOngoingReq(np.entryData);
@@ -92,12 +87,7 @@ export function requestStarted(np: NodePair, req: Request.Request) {
 export function requestSucceeded(np: NodePair, req: Request.Request, responseTime: number) {
     const data = np.exitDatas.get(req.exitPeerId);
     if (!data) {
-        np.log.error(
-            'requestSucceeded',
-            Request.prettyPrint(req),
-            'cannot track on missing exitId',
-            prettyPrint(np),
-        );
+        np.log.error('successful %s on missing exit data', Request.prettyPrint(req));
         return;
     }
 
@@ -109,12 +99,7 @@ export function requestSucceeded(np: NodePair, req: Request.Request, responseTim
 export function requestFailed(np: NodePair, req: Request.Request) {
     const data = np.exitDatas.get(req.exitPeerId);
     if (!data) {
-        np.log.error(
-            'requestFailed',
-            Request.prettyPrint(req),
-            'cannot track on missing exitId',
-            prettyPrint(np),
-        );
+        np.log.error('failed %s on missing exit data', Request.prettyPrint(req));
         return;
     }
 
@@ -184,7 +169,7 @@ function requestInfo(np: NodePair, exitNode: ExitNode.ExitNode) {
         checkStopInterval(np);
         const exitData = np.exitDatas.get(exitNode.id);
         if (!exitData) {
-            return np.log.error('requestInfo ExitData mismatch for %s', exitNode.id);
+            return np.log.error('missing exit data for %s during info resp timeout', exitNode.id);
         }
         exitData.infoFail = true;
     }, InfoResponseTimeout);
@@ -276,7 +261,7 @@ function fetchMessages(np: NodePair) {
             np.messageListener(msgs);
         })
         .catch((err) => {
-            np.log.error('Error fetching node messages: %s[%o]', JSON.stringify(err), err);
+            np.log.error('error fetching node messages: %s[%o]', JSON.stringify(err), err);
             np.entryData.fetchMessagesErrors++;
         });
 }
@@ -286,17 +271,17 @@ function incInfoResps(np: NodePair, infoResps: NodeAPI.Message[]) {
         const [, payload] = body.split('-');
         const resDec = Payload.decodeInfo(payload);
         if (Res.isErr(resDec)) {
-            return np.log.error('Error decoding info payload:', resDec.error);
+            return np.log.error('error decoding info payload:', resDec.error);
         }
         const { peerId, version, counter } = resDec.res;
         const nodeLog = ExitNode.prettyPrint(peerId, version, counter);
         const exitNode = np.exitNodes.get(peerId);
         if (!exitNode) {
-            return np.log.info('Received untracked info from %s', nodeLog);
+            return np.log.info('info response for missing exit node %s', nodeLog);
         }
         const exitData = np.exitDatas.get(peerId);
         if (!exitData) {
-            return np.log.error('ExitData mismatch for %s', nodeLog);
+            return np.log.error('info response missing exit data %s', nodeLog);
         }
         exitData.version = version;
         exitData.counterOffset = Date.now() - counter;
@@ -320,4 +305,6 @@ function incPeers(np: NodePair, res: NodeAPI.Peers | NodeAPI.NodeError, startPin
     np.relays = res.connected
         .filter(({ reportedVersion }) => RelayNodesCompatVersions.includes(reportedVersion))
         .map(({ peerId }) => peerId);
+
+    np.log.info('found %d potential relays', np.relays.length);
 }
