@@ -28,6 +28,7 @@ export type NodePair = {
     hops?: number;
     messageListener: MessageListener;
     fetchInterval?: ReturnType<typeof setInterval>;
+    infoTimeout?: ReturnType<typeof setTimeout>;
     fetchMessagesOngoing: boolean;
     log: ReturnType<typeof logger>;
 };
@@ -180,7 +181,7 @@ function requestInfo(np: NodePair, exitNode: ExitNode.ExitNode) {
     }
     // stop checking for info resp at after this
     // will still be able to receive info resp if messages went over this route
-    setTimeout(() => {
+    np.infoTimeout = setTimeout(() => {
         EntryData.removeOngoingInfo(np.entryData);
         checkStopInterval(np);
         const exitData = np.exitDatas.get(exitNode.id);
@@ -304,6 +305,8 @@ function incInfoResps(np: NodePair, infoResps: NodeAPI.Message[]) {
         exitData.infoLatSec = Math.abs(receivedAt - Math.floor(counter / 1000));
         exitData.infoFail = false;
         EntryData.removeOngoingInfo(np.entryData);
+        clearTimeout(np.infoTimeout);
+        np.infoTimeout = undefined;
     });
     checkStopInterval(np);
 }
