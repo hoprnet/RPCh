@@ -70,19 +70,19 @@ async function doRun(dbPool: Pool, entries: q.RegisteredNode[], exits: q.Registe
     const offlineExits = Array.from(allExitIds).filter((id) => !onlineExitIds.has(id));
 
     const zhOnline = filterZhOnline(zhPairs, onlineExitIds);
-    const ohOnline = filterOhOnline(ohRelPairs, onlineExitIds);
+    const ohOnline = filterZhOnline(ohRelPairs, onlineExitIds);
 
     // write zero hops
     const zhMax = entries.length * exits.length;
-    const zhPairIds = toZeroHopPairings(zhOnline);
+    const zhPairIds = toPairings(zhOnline);
     await q.writeZeroHopPairings(dbPool, zhPairIds);
     log.info('updated zerohops with pairIds:', logZeroHopIds(zhOnline, zhPairIds.length, zhMax));
 
     // write one hops
     const ohMax = entries.length * exits.length * (entries.length + exits.length - 2);
-    const ohPairIds = toOneHopPairings(ohOnline);
+    const ohPairIds = toPairings(ohOnline);
     await q.writeOneHopPairings(dbPool, ohPairIds);
-    log.info('updated onehops with pairIds:', logOneHopIds(ohOnline, ohPairIds.length, ohMax));
+    log.info('updated onehops with pairIds:', logZeroHopIds(ohOnline, ohPairIds.length, ohMax));
 
     // complain about offline peers
     const offIds = Array.from(offlineExits).map((xId) => Utils.shortPeerId(xId));
@@ -120,7 +120,7 @@ async function runOneHops(
     peersCache: PeersCache.PeersCache,
     entryNodes: q.RegisteredNode[],
     exitNodes: q.RegisteredNode[],
-): Promise<Map<string, Map<string, Set<string>>>> {
+): Promise<Map<string, Set<string>>> {
     // gather channel structure
     const entryNode = randomEl(entryNodes);
     const respCh = await NodeAPI.getChannels({
@@ -134,39 +134,20 @@ async function runOneHops(
 
     // match channels with peers
     const allEntryPeers = await peersMap(peersCache, entryNodes);
-    const entryPeersChannels = filterChannels(allEntryPeers, channels);
-    const nodeIds = new Set(entryNodes.map((e) => e.id).concat(exitNodes.map((x) => x.id)));
-    const entryPeers = filterRelays(entryPeersChannels, nodeIds);
+    const entryPeers = filterChannels(allEntryPeers, channels);
 
     // gather exit peers and determine exit nodes reachable by their peers
-    const allExitPeers = await peersMap(peersCache, exitNodes);
-    const exitPeers = filterRelays(allExitPeers, nodeIds);
+    const exitPeers = await peersMap(peersCache, exitNodes);
     const peersExits = revertMap(exitPeers);
 
     // match exits reachable by channel peers
-    return Array.from(entryPeers.entries()).reduce<Map<string, Map<string, Set<string>>>>(
+    return Array.from(entryPeers.entries()).reduce<Map<string, Set<string>>>(
         (acc, [entryId, chPs]) => {
-            [...chPs].forEach((p) => {
-                const exits = peersExits.get(p);
-                if (exits) {
-                    if (acc.has(entryId)) {
-                        const exitRelays = acc.get(entryId) as Map<string, Set<string>>;
-                        exits.forEach((x) => {
-                            if (exitRelays.has(x)) {
-                                const relays = exitRelays.get(x) as Set<string>;
-                                relays.add(p);
-                            } else {
-                                exitRelays.set(x, new Set([p]));
-                            }
-                        });
-                    } else {
-                        exits.forEach((x) => {
-                            const exitRelays = new Map([[x, new Set([p])]]);
-                            acc.set(entryId, exitRelays);
-                        });
-                    }
-                }
-            });
+            const exits = peersExits.get(entryId);
+            if (exits) {
+                const filteredPeers = [...chPs].filter((p) => exits.has(p));
+                acc.set(entryId, new Set(filteredPeers));
+            }
             return acc;
         },
         new Map(),
@@ -332,6 +313,7 @@ function logZeroHopIds(pairs: Map<string, Set<string>>, total: number, max: numb
     return `${total}/${max} routes over ${eCount} entries ${entries.join(',')}`;
 }
 
+/**
 function logOneHopIds(
     pairsRelayMap: Map<string, Map<string, Set<string>>>,
     total: number,
@@ -350,6 +332,7 @@ function logOneHopIds(
     });
     return `${total}/${max} routes over ${eCount} entries ${entries.join(',')}`;
 }
+*/
 
 function filterChannels(
     peers: Map<string, Set<string>>,
@@ -361,17 +344,6 @@ function filterChannels(
             const vals = [...prs].filter((x) => chans.has(x));
             acc.set(id, new Set(vals));
         }
-        return acc;
-    }, new Map());
-}
-
-function filterRelays(
-    peers: Map<string, Set<string>>,
-    relays: Set<string>,
-): Map<string, Set<string>> {
-    return Array.from(peers.entries()).reduce((acc, [id, prs]) => {
-        const vals = [...prs].filter((x) => relays.has(x));
-        acc.set(id, new Set(vals));
         return acc;
     }, new Map());
 }
@@ -389,6 +361,7 @@ function filterZhOnline(
     }, new Map());
 }
 
+/*
 function filterOhOnline(
     pairs: Map<string, Map<string, Set<string>>>,
     online: Set<string>,
@@ -401,23 +374,15 @@ function filterOhOnline(
         return acc;
     }, new Map());
 }
+*/
 
 // expand to entryId -> exitId routes struct
-function toZeroHopPairings(pairsMap: Map<string, Set<string>>): q.ZeroHopPair[] {
-    return Array.from(pairsMap).reduce<q.ZeroHopPair[]>((acc, [entryId, exitIds]) => {
+function toPairings(pairsMap: Map<string, Set<string>>): q.Pair[] {
+    return Array.from(pairsMap).reduce<q.Pair[]>((acc, [entryId, exitIds]) => {
         exitIds.forEach((exitId) => {
             acc.push({ entryId, exitId });
         });
         return acc;
-    }, []);
-}
-
-function toOneHopPairings(pairsRelayMap: Map<string, Map<string, Set<string>>>): q.OneHopPair[] {
-    return Array.from(pairsRelayMap).reduce<q.OneHopPair[]>((outerAcc, [entryId, exitRelays]) => {
-        return Array.from(exitRelays).reduce<q.OneHopPair[]>((innerAcc, [exitId, relayIds]) => {
-            const entries = Array.from(relayIds).map((relayId) => ({ entryId, exitId, relayId }));
-            return innerAcc.concat(entries);
-        }, outerAcc);
     }, []);
 }
 
