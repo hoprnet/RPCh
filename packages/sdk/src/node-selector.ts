@@ -126,21 +126,26 @@ function match(
 }
 
 function success(
-    { entryNode, exitNode, counterOffset }: ExitPerf,
+    { entryNode, exitNode, counterOffset, reqRelayPeerId, respRelayPeerId }: ExitPerf,
     via: string,
 ): Res.Result<NodeSelection> {
     return Res.ok({
-        match: { entryNode, exitNode, counterOffset },
+        match: { entryNode, exitNode, counterOffset, reqRelayPeerId, respRelayPeerId },
         via,
     });
 }
 
 function createRoutePerfs(nodePairs: Map<string, NodePair.NodePair>) {
+    // TODO better relay selection
     return Array.from(nodePairs.values()).reduce<ExitPerf[]>((acc, np) => {
+        const reqRelayPeerId = randomEl(np.relays);
+        const respRelayPeerId = randomEl(np.relays);
         const perfs = Array.from(np.exitDatas).map(([xId, xd]) => ({
             ...ExitData.perf(xd),
             entryNode: np.entryNode,
             exitNode: np.exitNodes.get(xId)!,
+            reqRelayPeerId,
+            respRelayPeerId,
         }));
         return acc.concat(perfs);
     }, []);

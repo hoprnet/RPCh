@@ -8,6 +8,7 @@ export type ReqPayload = {
     req: JRPC.Request;
     headers?: Record<string, string>;
     hops?: number;
+    relayPeerId?: string;
 };
 
 export enum RespType {
