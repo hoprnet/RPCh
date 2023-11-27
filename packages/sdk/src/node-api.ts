@@ -61,7 +61,7 @@ export function connectWS(conn: ConnInfo): WebSocket {
 }
 
 export function sendMessage(
-    conn: ConnInfo & { hops?: number },
+    conn: ConnInfo & { hops?: number; relay?: string },
     { recipient, tag, message }: { recipient: string; tag: number; message: string },
 ): Promise<string> {
     const url = new URL('/api/v3/messages', conn.apiEndpoint);
@@ -78,8 +78,11 @@ export function sendMessage(
     if (conn.hops === 0) {
         payload.path = [];
     } else {
-        // default to one hop for now
+        // default to one hop
         payload.hops = 1;
+        if (conn.relay) {
+            payload.path = [conn.relay];
+        }
     }
     const body = JSON.stringify(payload);
     return fetch(url, { method: 'POST', headers, body }).then(

@@ -265,6 +265,7 @@ export default class SDK {
             apiEndpoint: entryNode.apiEndpoint,
             accessToken: entryNode.accessToken,
             hops: request.hops,
+            relay: request.reqRelayPeerId,
         };
         NodeAPI.sendMessage(conn, {
             recipient: request.exitPeerId,
@@ -375,6 +376,7 @@ export default class SDK {
                 apiEndpoint: entryNode.apiEndpoint,
                 accessToken: entryNode.accessToken,
                 hops: request.hops,
+                relay: request.reqRelayPeerId,
             },
             {
                 recipient: request.exitPeerId,
