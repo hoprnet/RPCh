@@ -393,6 +393,7 @@ function sendResponse(
     const conn = {
         ...ops,
         hops: reqPayload.hops,
+        respRelayPeerId: reqPayload.relayPeerId,
     };
 
     // queue segment sending for all of them

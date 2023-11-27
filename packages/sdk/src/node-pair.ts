@@ -313,7 +313,9 @@ function incPeers(np: NodePair, res: NodeAPI.Peers | NodeAPI.NodeError, startPin
     // successful peers
     np.entryData.pingDuration = Date.now() - startPingTime;
     np.relays = res.connected
-        .filter(({ reportedVersion }) => RelayNodesCompatVersions.includes(reportedVersion))
+        .filter(({ reportedVersion }) =>
+            RelayNodesCompatVersions.some((v) => reportedVersion.startsWith(v)),
+        )
         .map(({ peerId }) => peerId);
 
     np.log.info('found %d potential relays', np.relays.length);
