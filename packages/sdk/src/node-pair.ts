@@ -135,11 +135,21 @@ export function segmentFailed(np: NodePair, seg: Segment.Segment) {
  */
 export function discover(np: NodePair) {
     const startPingTime = Date.now();
-    NodeAPI.getPeers(np.entryNode)
-        .then((r) => incPeers(np, r, startPingTime))
-        .catch((err) => {
-            np.log.error('error fetching peers: %s[%o]', JSON.stringify(err), err);
-        });
+    if (np.hops === 0) {
+        NodeAPI.version(np.entryNode)
+            .then(() => {
+                np.entryData.pingDuration = Date.now() - startPingTime;
+            })
+            .catch((err) => {
+                np.log.error('error fetching version: %s[%o]', JSON.stringify(err), err);
+            });
+    } else {
+        NodeAPI.getPeers(np.entryNode)
+            .then((r) => incPeers(np, r, startPingTime))
+            .catch((err) => {
+                np.log.error('error fetching peers: %s[%o]', JSON.stringify(err), err);
+            });
+    }
     Array.from(np.exitNodes.values()).map((x, idx) => {
         setTimeout(() => requestInfo(np, x), idx);
     });
@@ -188,7 +198,7 @@ export function prettyPrint(np: NodePair): string {
     const exCount = np.exitNodes.size;
     const exStrs = Array.from(np.exitDatas).map(([id, d]) => {
         const v = d.version;
-        const ctrOff = d.counterOffset?.toFixed(2) || 0;
+        const ctrOff = d.counterOffset?.toFixed(0) || 0;
         const info = d.infoFail ? 'fail' : `${d.infoLatSec}s`;
         const o = d.requestsOngoing.length;
         const tot = d.requestsHistory.length;

@@ -169,5 +169,5 @@ export function prettyPrint(req: Request) {
     }
     const id = req.id;
     const prov = req.provider;
-    return `request[${id},${path.join('>')},${prov}]`;
+    return `request[${id}, ${path.join('>')}, ${prov}]`;
 }

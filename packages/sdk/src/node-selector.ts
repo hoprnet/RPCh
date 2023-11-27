@@ -40,9 +40,18 @@ export function fallbackRoutePair(
 }
 
 export function prettyPrint(sel: NodeSelection) {
-    const eId = shortPeerId(sel.match.entryNode.id);
-    const xId = shortPeerId(sel.match.exitNode.id);
-    return `${eId} > ${xId} (via ${sel.via})`;
+    const { entryNode, exitNode, reqRelayPeerId, respRelayPeerId } = sel.match;
+    const eId = shortPeerId(entryNode.id);
+    const xId = shortPeerId(exitNode.id);
+    const path = [`e${eId}`];
+    if (reqRelayPeerId) {
+        path.push(`r${shortPeerId(reqRelayPeerId)}`);
+    }
+    path.push(`x${xId}`);
+    if (respRelayPeerId) {
+        path.push(`r${shortPeerId(respRelayPeerId)}`);
+    }
+    return `${path.join('>')} (via ${sel.via})`;
 }
 
 function match(
