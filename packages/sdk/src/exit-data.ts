@@ -11,7 +11,7 @@ export type Perf = {
     avgLats: number;
     infoFail: boolean;
     version?: string;
-    infoLatSec: number;
+    infoLatMs: number;
     counterOffset: number; // counter offset after info msg
 };
 
@@ -22,7 +22,8 @@ export type ExitData = {
     infoFail?: boolean; // info req hard fail
     counterOffset?: number; // counter offset after info msg
     version?: string; // exit node version
-    infoLatSec?: number; // latency for info resp between entry node and exit node
+    infoLatMs?: number; // latency for info resp between entry node and exit node
+    infoLatStarted?: number;
 };
 
 export function create(): ExitData {
@@ -72,7 +73,7 @@ export function perf(xd: ExitData): Perf {
     const successes = lats.length;
     const failures = total - successes;
     const avgLats = average(lats);
-    const infoLatSec = xd.infoLatSec || -1;
+    const infoLatMs = xd.infoLatMs || -1;
     const infoFail = !!xd.infoFail;
     const counterOffset = xd.counterOffset || 0;
     const version = xd.version;
@@ -82,7 +83,7 @@ export function perf(xd: ExitData): Perf {
         successes,
         total,
         avgLats,
-        infoLatSec,
+        infoLatMs,
         infoFail,
         version,
         counterOffset,

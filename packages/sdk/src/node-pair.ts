@@ -157,6 +157,11 @@ export function discover(np: NodePair) {
 
 function requestInfo(np: NodePair, exitNode: ExitNode.ExitNode) {
     const message = `info-${np.entryNode.id}-${np.hops ?? '_'}`;
+    const exitData = np.exitDatas.get(exitNode.id);
+    if (!exitData) {
+        return np.log.error('missing exit data for %s before info req', exitNode.id);
+    }
+    exitData.infoLatStarted = Date.now();
     NodeAPI.sendMessage(
         {
             ...np.entryNode,
@@ -199,7 +204,7 @@ export function prettyPrint(np: NodePair): string {
     const exStrs = Array.from(np.exitDatas).map(([id, d]) => {
         const v = d.version;
         const ctrOff = d.counterOffset?.toFixed(0) || 0;
-        const info = d.infoFail ? 'fail' : `${d.infoLatSec}s`;
+        const info = d.infoFail ? 'fail' : `${d.infoLatMs?.toFixed(0)}ms`;
         const o = d.requestsOngoing.length;
         const tot = d.requestsHistory.length;
         const lats = Array.from(d.requests.values()).reduce<number[]>((acc, rd) => {
@@ -277,7 +282,7 @@ function fetchMessages(np: NodePair) {
 }
 
 function incInfoResps(np: NodePair, infoResps: NodeAPI.Message[]) {
-    infoResps.forEach(({ body, receivedAt }) => {
+    infoResps.forEach(({ body }) => {
         const [, payload] = body.split('-');
         const resDec = Payload.decodeInfo(payload);
         if (Res.isErr(resDec)) {
@@ -295,7 +300,7 @@ function incInfoResps(np: NodePair, infoResps: NodeAPI.Message[]) {
         }
         exitData.version = version;
         exitData.counterOffset = Date.now() - counter;
-        exitData.infoLatSec = Math.abs(receivedAt - Math.floor(counter / 1000));
+        exitData.infoLatMs = exitData.infoLatStarted && Date.now() - exitData.infoLatStarted;
         exitData.infoFail = false;
         EntryData.removeOngoingInfo(np.entryData);
         clearTimeout(np.infoTimeout);
