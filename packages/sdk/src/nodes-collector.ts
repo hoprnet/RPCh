@@ -212,7 +212,6 @@ export default class NodesCollector {
                     exitNodes,
                     this.applicationTag,
                     this.messageListener,
-                    { reqRelays: new Map(), respRelays: new Map() },
                     this.hops,
                 );
                 this.nodePairs.set(NodePair.id(np), np);

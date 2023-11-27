@@ -17,13 +17,14 @@ export type MessageListener = (messages: NodeAPI.Message[]) => void;
 const MessagesFetchInterval = 333; // ms
 const InfoResponseTimeout = 10e3; // 10s
 
+const RelayNodesCompatVersions = ['2.0.4'];
+
 export type NodePair = {
     entryNode: EntryNode;
     entryData: EntryData.EntryData;
     exitNodes: Map<string, ExitNode.ExitNode>;
     exitDatas: Map<string, ExitData.ExitData>;
-    reqRelays: Map<string, string[]>; // exitId -> relayId for request
-    respRelays: Map<string, string[]>; // exitId -> relayId for response
+    relays: string[]; // peerIds of potential relays
     applicationTag: number;
     hops?: number;
     messageListener: MessageListener;
@@ -38,10 +39,6 @@ export function create(
     exitNodesIt: Iterable<ExitNode.ExitNode>,
     applicationTag: number,
     messageListener: MessageListener,
-    {
-        reqRelays,
-        respRelays,
-    }: { reqRelays: Map<string, string[]>; respRelays: Map<string, string[]> },
     hops?: number,
 ): NodePair {
     const entryData = EntryData.create();
@@ -56,8 +53,7 @@ export function create(
         entryData,
         exitNodes,
         exitDatas,
-        reqRelays,
-        respRelays,
+        relays: [],
         applicationTag,
         messageListener,
         fetchMessagesOngoing: false,
@@ -149,14 +145,16 @@ export function segmentFailed(np: NodePair, seg: Segment.Segment) {
 
 /**
  * Run initial discovery steps.
- * Ping entry node version.
+ * Request peers from entry node.
  * Request info msg from exit nodes.
  */
 export function discover(np: NodePair) {
     const startPingTime = Date.now();
-    NodeAPI.version(np.entryNode).then((_) => {
-        np.entryData.pingDuration = Date.now() - startPingTime;
-    });
+    NodeAPI.getPeers(np.entryNode)
+        .then((r) => incPeers(np, r, startPingTime))
+        .catch((err) => {
+            np.log.error('error fetching peers: %s[%o]', JSON.stringify(err), err);
+        });
     Array.from(np.exitNodes.values()).map((x, idx) => {
         setTimeout(() => requestInfo(np, x), idx);
     });
@@ -309,4 +307,17 @@ function incInfoResps(np: NodePair, infoResps: NodeAPI.Message[]) {
         np.infoTimeout = undefined;
     });
     checkStopInterval(np);
+}
+
+function incPeers(np: NodePair, res: NodeAPI.Peers | NodeAPI.NodeError, startPingTime: number) {
+    if (NodeAPI.isError(res)) {
+        np.log.error('error node internal: %o', res);
+        return;
+    }
+
+    // successful peers
+    np.entryData.pingDuration = Date.now() - startPingTime;
+    np.relays = res.connected
+        .filter(({ reportedVersion }) => RelayNodesCompatVersions.includes(reportedVersion))
+        .map(({ peerId }) => peerId);
 }
