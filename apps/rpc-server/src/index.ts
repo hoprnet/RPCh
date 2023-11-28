@@ -265,6 +265,19 @@ function versionListener({ rpcServer }: DPapi.Versions) {
     }
 }
 
+function parseBooleanEnv(env?: string) {
+    if (env) {
+        if ('0' === env.toLowerCase()) {
+            return false;
+        }
+        if ('no' === env.toLowerCase()) {
+            return false;
+        }
+        return env.toLowerCase() !== 'false';
+    }
+    return false;
+}
+
 /**
  * RPC server - uses RPChSDK to perform JSON-RPC requests.
  *
@@ -286,7 +299,6 @@ if (require.main === module) {
     if (!process.env.CLIENT) {
         throw new Error("Missing 'CLIENT' env var.");
     }
-
     const clientId = process.env.CLIENT;
     const ops: SDKops = {
         discoveryPlatformEndpoint: process.env.DISCOVERY_PLATFORM_API_ENDPOINT,
@@ -294,10 +306,11 @@ if (require.main === module) {
             ? parseInt(process.env.RESPONSE_TIMEOUT, 10)
             : undefined,
         provider: process.env.PROVIDER,
-        disableMevProtection: new Boolean(process.env.DISABLE_MEV_PROTECTION).valueOf(),
+        disableMevProtection: parseBooleanEnv(process.env.DISABLE_MEV_PROTECTION),
         mevProtectionProvider: process.env.MEV_PROTECTION_PROVIDER,
         mevKickbackAddress: process.env.MEV_KICKBACK_ADDRESS,
-        forceZeroHop: !!process.env.FORCE_ZERO_HOP,
+        forceZeroHop: parseBooleanEnv(process.env.FORCE_ZERO_HOP),
+        forceManualRelaying: parseBooleanEnv(process.env.FORCE_MANUAL_RELAYING),
         segmentLimit: process.env.SEGMENT_LIMIT
             ? parseInt(process.env.SEGMENT_LIMIT, 10)
             : undefined,

@@ -60,6 +60,7 @@ export type Ops = {
     readonly segmentLimit?: number;
     readonly versionListener?: (versions: DPapi.Versions) => void;
     readonly debugScope?: string;
+    readonly forceManualRelaying?: boolean;
 };
 
 /**
@@ -85,6 +86,7 @@ const defaultOps: Ops = {
     mevProtectionProvider: RPC_PROPELLORHEADS,
     forceZeroHop: false,
     segmentLimit: 0, // disable segment limit
+    forceManualRelaying: false,
 };
 
 const log = Utils.logger(['sdk']);
@@ -189,8 +191,10 @@ export default class SDK {
             const headers = this.determineHeaders(provider, this.ops.mevKickbackAddress);
 
             // create request
-            const { entryNode, exitNode, reqRelayPeerId, respRelayPeerId, counterOffset } =
-                resNodes;
+            const { entryNode, exitNode, counterOffset } = resNodes;
+            const { reqRelayPeerId, respRelayPeerId } = this.ops.forceManualRelaying
+                ? resNodes
+                : { reqRelayPeerId: undefined, respRelayPeerId: undefined };
             const id = RequestCache.generateId(this.requestCache);
             const resReq = Request.create({
                 id,
@@ -526,6 +530,7 @@ export default class SDK {
             segmentLimit: ops.segmentLimit ?? defaultOps.segmentLimit,
             versionListener: ops.versionListener,
             debugScope: ops.debugScope,
+            forceManualRelaying: ops.forceManualRelaying ?? defaultOps.forceManualRelaying,
         };
     };
 
