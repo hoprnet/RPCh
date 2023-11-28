@@ -24,6 +24,8 @@ const log = Utils.logger(['exit-node']);
 const SocketReconnectTimeout = 1e3; // 1sek
 const RequestPurgeTimeout = 60e3; // 60sek
 const ValidCounterPeriod = 1e3 * 60 * 60; // 1hour
+const RelayNodesCompatVersions = ['2.0.4'];
+const SetupRelayPeriod = 1e3 * 60 * 15; // 15 min
 
 type State = {
     socket?: WS.WebSocket;
@@ -33,6 +35,7 @@ type State = {
     cache: SegmentCache.Cache;
     deleteTimer: Map<string, ReturnType<typeof setTimeout>>; // deletion timer of requests in segment cache
     requestStore: RequestStore.RequestStore;
+    relays: string[];
 };
 
 type Ops = {
@@ -61,6 +64,7 @@ async function start(ops: Ops) {
     }
     setupSocket(state, ops);
     cleanup(state);
+    setupRelays(state, ops);
 }
 
 async function setup(ops: Ops): Promise<State> {
@@ -111,6 +115,7 @@ async function setup(ops: Ops): Promise<State> {
         peerId,
         publicKey: resId.publicKey,
         requestStore,
+        relays: [],
     };
 }
 
@@ -163,6 +168,48 @@ function scheduleCleanup(state: State) {
 
     log.info('scheduling next cleanup in %dh%dm', logH, logM);
     setTimeout(() => cleanup(state), next);
+}
+
+async function setupRelays(state: State, ops: Ops) {
+    try {
+        const resPeers = await NodeAPI.getPeers(ops);
+        if (NodeAPI.isError(resPeers)) {
+            throw new Error(`node internal: ${JSON.stringify(resPeers)}`);
+        }
+
+        // available peers
+        const relays = resPeers.connected
+            .filter(({ reportedVersion }) =>
+                RelayNodesCompatVersions.some((v) => reportedVersion.startsWith(v)),
+            )
+            .map(({ peerId, peerAddress }) => ({ peerId, peerAddress }));
+
+        const resChannels = await NodeAPI.getNodeChannels(ops);
+
+        // open channels
+        const openChannelsArr = resChannels.outgoing
+            .filter(({ status }) => status === 'Open')
+            .map(({ peerAddress }) => peerAddress);
+        const openChannels = new Set(openChannelsArr);
+        state.relays = relays
+            .filter(({ peerAddress }) => openChannels.has(peerAddress))
+            .map(({ peerId }) => peerId);
+        log.info('found %d potential relays', relays.length);
+    } catch (err) {
+        log.error('error during relay setup: %s[%o]', err);
+    } finally {
+        setTimeout(() => scheduleSetupRelays(state, ops));
+    }
+}
+
+function scheduleSetupRelays(state: State, ops: Ops) {
+    // schdule next run somehwere between 15min and 20min
+    const next = SetupRelayPeriod + Math.floor(Math.random() * 5 * 60e3);
+    const logM = Math.floor(next / 1000 / 60);
+    const logS = Math.round(next / 1000) - logM * 60;
+
+    log.info('scheduling next setup relays in %dm%ds', logM, logS);
+    setTimeout(() => setupRelays(state, ops), next);
 }
 
 function onMessage(state: State, ops: Ops) {
@@ -303,7 +350,8 @@ async function completeSegmentsEntry(
 
     const unboxRequest = resReq.res;
     const { reqPayload, session: unboxSession } = unboxRequest;
-    const sendParams = { ops, entryPeerId, cacheEntry, tag, unboxRequest };
+    const relay = determineRelay(state, reqPayload);
+    const sendParams = { state, ops, entryPeerId, cacheEntry, tag, relay, unboxRequest };
 
     // check counter
     const counter = Number(unboxSession.updatedTS);
@@ -353,19 +401,38 @@ async function completeSegmentsEntry(
     return sendResponse(sendParams, { type: Payload.RespType.Resp, resp });
 }
 
+function determineRelay(
+    state: State,
+    { hops, respRelayPeerId }: { hops?: number; respRelayPeerId?: string },
+) {
+    if (hops === 0) {
+        return;
+    }
+    if (!respRelayPeerId) {
+        return Utils.randomEl(state.relays);
+    }
+    if (state.relays.includes(respRelayPeerId)) {
+        return respRelayPeerId;
+    }
+}
+
 function sendResponse(
     {
+        state,
         ops,
         entryPeerId,
         cacheEntry,
         tag,
         unboxRequest: { session: unboxSession, reqPayload },
+        relay,
     }: {
+        state: State;
         ops: Ops;
         entryPeerId: string;
         tag: number;
         cacheEntry: SegmentCache.Entry;
         unboxRequest: Request.UnboxRequest;
+        relay?: string;
     },
     respPayload: Payload.RespPayload,
 ) {
@@ -383,9 +450,12 @@ function sendResponse(
 
     const segments = Segment.toSegments(requestId, resResp.res);
 
+    const relayString = relay ? `(${Utils.shortPeerId(relay)})` : '';
+
     log.verbose(
-        'returning message to %s, tag: %s, requestId: %s',
+        'returning message to %s%s, tag: %s, requestId: %s',
         Utils.shortPeerId(entryPeerId),
+        relayString,
         tag,
         requestId,
     );
@@ -393,7 +463,7 @@ function sendResponse(
     const conn = {
         ...ops,
         hops: reqPayload.hops,
-        respRelayPeerId: reqPayload.relayPeerId,
+        respRelayPeerId: relay,
     };
 
     // queue segment sending for all of them
@@ -410,6 +480,8 @@ function sendResponse(
                     JSON.stringify(err),
                     err,
                 );
+                // remove relay if it fails
+                state.relays = state.relays.filter((r) => r !== relay);
             });
         });
     });
