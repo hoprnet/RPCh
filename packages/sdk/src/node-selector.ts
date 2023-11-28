@@ -147,15 +147,18 @@ function success(
 function createRoutePerfs(nodePairs: Map<string, NodePair.NodePair>) {
     // TODO better relay selection
     return Array.from(nodePairs.values()).reduce<ExitPerf[]>((acc, np) => {
-        const reqRelayPeerId = randomEl(np.relays);
-        const respRelayPeerId = randomEl(np.relays);
-        const perfs = Array.from(np.exitDatas).map(([xId, xd]) => ({
-            ...ExitData.perf(xd),
-            entryNode: np.entryNode,
-            exitNode: np.exitNodes.get(xId)!,
-            reqRelayPeerId,
-            respRelayPeerId,
-        }));
+        const perfs = Array.from(np.exitDatas).map(([xId, xd]) => {
+            const relays = np.relays.filter((rId) => rId !== xId && rId !== np.entryNode.id);
+            const reqRelayPeerId = randomEl(relays);
+            const respRelayPeerId = randomEl(relays);
+            return {
+                ...ExitData.perf(xd),
+                entryNode: np.entryNode,
+                exitNode: np.exitNodes.get(xId)!,
+                reqRelayPeerId,
+                respRelayPeerId,
+            };
+        });
         return acc.concat(perfs);
     }, []);
 }
