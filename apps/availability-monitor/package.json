@@ -1,6 +1,6 @@
 {
     "name": "@rpch/availability-monitor",
-    "version": "0.8.0",
+    "version": "0.8.1",
     "license": "LGPL-3.0",
     "private": true,
     "scripts": {
@@ -15,7 +15,7 @@
         "start": "node build/index.js"
     },
     "dependencies": {
-        "@rpch/sdk": "1.7.0",
+        "@rpch/sdk": "1.7.1",
         "pg": "^8.11.3"
     },
     "devDependencies": {

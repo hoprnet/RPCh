@@ -1,5 +1,11 @@
 # @rpch/sdk
 
+## 1.7.1
+
+### Patch Changes
+
+-   fix exit nodes compats
+
 ## 1.7.0
 
 ### Minor Changes
