@@ -76,6 +76,7 @@
         "MEV_PROTECTION_PROVIDER",
         "MEV_KICKBACK_ADDRESS",
         "FORCE_ZERO_HOP",
+        "FORCE_MANUAL_RELAYING",
         "SEGMENT_LIMIT"
       ]
     },

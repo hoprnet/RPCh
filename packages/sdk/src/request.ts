@@ -17,6 +17,8 @@ export type Request = {
     exitPeerId: string;
     headers?: Record<string, string>;
     hops?: number;
+    reqRelayPeerId?: string;
+    respRelayPeerId?: string;
 };
 
 export type UnboxRequest = {
@@ -39,6 +41,8 @@ export function create({
     counterOffset,
     headers,
     hops,
+    reqRelayPeerId,
+    respRelayPeerId,
 }: {
     id: string;
     originalId?: string;
@@ -51,6 +55,8 @@ export function create({
     counterOffset: number;
     headers?: Record<string, string>;
     hops?: number;
+    reqRelayPeerId?: string;
+    respRelayPeerId?: string;
 }): Res.Result<{ request: Request; session: compatCrypto.Session }> {
     const resEncode = Payload.encodeReq({
         provider,
@@ -58,6 +64,7 @@ export function create({
         req,
         headers,
         hops,
+        relayPeerId: respRelayPeerId,
     });
     if (Res.isErr(resEncode)) {
         return resEncode;
@@ -87,6 +94,8 @@ export function create({
             exitPublicKey,
             headers,
             hops,
+            reqRelayPeerId,
+            respRelayPeerId,
         },
         session: resBox.session,
     });
@@ -145,14 +154,20 @@ export function toSegments(req: Request, session: compatCrypto.Session): Segment
 /**
  * Pretty print request in human readable form.
  */
-export function prettyPrint(req: Request, id?: string) {
+export function prettyPrint(req: Request) {
     const eId = shortPeerId(req.entryPeerId);
     const xId = shortPeerId(req.exitPeerId);
-    const prov = req.provider;
-    const attrs = [req.id, `${eId}>${xId}`];
-    if (id) {
-        attrs.push(id);
+    const path = [`e${eId}`];
+    if (req.reqRelayPeerId) {
+        path.push(`r${shortPeerId(req.reqRelayPeerId)}`);
+    } else if (req.hops !== 0) {
+        path.push('(r)');
     }
-    attrs.push(prov);
-    return `request[${attrs.join(',')}]`;
+    path.push(`x${xId}`);
+    if (req.respRelayPeerId) {
+        path.push(`r${shortPeerId(req.respRelayPeerId)}`);
+    }
+    const id = req.id;
+    const prov = req.provider;
+    return `request[${id}, ${path.join('>')}, ${prov}]`;
 }

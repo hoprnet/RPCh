@@ -24,6 +24,8 @@ const log = Utils.logger(['exit-node']);
 const SocketReconnectTimeout = 1e3; // 1sek
 const RequestPurgeTimeout = 60e3; // 60sek
 const ValidCounterPeriod = 1e3 * 60 * 60; // 1hour
+const RelayNodesCompatVersions = ['2.0.4'];
+const SetupRelayPeriod = 1e3 * 60 * 15; // 15 min
 
 type State = {
     socket?: WS.WebSocket;
@@ -33,6 +35,7 @@ type State = {
     cache: SegmentCache.Cache;
     deleteTimer: Map<string, ReturnType<typeof setTimeout>>; // deletion timer of requests in segment cache
     requestStore: RequestStore.RequestStore;
+    relays: string[];
 };
 
 type Ops = {
@@ -54,43 +57,41 @@ type Msg = {
 
 async function start(ops: Ops) {
     const state = await setup(ops).catch(() => {
-        log.error(
-            'Fatal error initializing %s',
-            ExitNode.prettyPrint('(unknown)', Version, Date.now()),
-        );
+        log.error('error initializing %s', ExitNode.prettyPrint('(unknown)', Version, Date.now()));
     });
     if (!state) {
         process.exit(1);
     }
     setupSocket(state, ops);
     cleanup(state);
+    setupRelays(state, ops);
 }
 
 async function setup(ops: Ops): Promise<State> {
     const requestStore = await RequestStore.setup(ops.dbFile).catch((err) => {
-        log.error('Error setting up request store:', err);
+        log.error('error setting up request store: %s[%o]', JSON.stringify(err), err);
     });
     if (!requestStore) {
         return Promise.reject();
     }
 
-    log.verbose('Set up DB at', ops.dbFile);
+    log.verbose('set up DB at', ops.dbFile);
 
     const resId = await Identity.getIdentity({
         identityFile: ops.identityFile,
         password: ops.password,
         privateKey: ops.privateKey,
     }).catch((err: Error) => {
-        log.error('Error accessing identity', err);
+        log.error('error accessing identity: %s[%o]', JSON.stringify(err), err);
     });
     if (!resId) {
         return Promise.reject();
     }
 
-    log.verbose('Got identity', resId.publicKey);
+    log.verbose('got identity', resId.publicKey);
 
     const resPeerId = await NodeAPI.accountAddresses(ops).catch((err: Error) => {
-        log.error('Error fetching account addresses', err);
+        log.error('error fetching account addresses: %s[%o]', JSON.stringify(err), err);
     });
     if (!resPeerId) {
         return Promise.reject();
@@ -105,11 +106,7 @@ async function setup(ops: Ops): Promise<State> {
         apiEndpoint: ops.apiEndpoint,
         discoveryPlatformEndpoint: ops.discoveryPlatformEndpoint,
     };
-    log.verbose(
-        '%s started with %s',
-        ExitNode.prettyPrint(peerId, Version, Date.now()),
-        JSON.stringify(logOpts),
-    );
+    log.info('%s started with %o', ExitNode.prettyPrint(peerId, Version, Date.now()), logOpts);
 
     return {
         cache,
@@ -118,32 +115,33 @@ async function setup(ops: Ops): Promise<State> {
         peerId,
         publicKey: resId.publicKey,
         requestStore,
+        relays: [],
     };
 }
 
 function setupSocket(state: State, ops: Ops) {
     const socket = NodeAPI.connectWS(ops);
     if (!socket) {
-        log.error('Failed opening websocket');
+        log.error('error opening websocket');
         process.exit(3);
     }
 
     socket.onmessage = onMessage(state, ops);
 
     socket.on('error', (err: Error) => {
-        log.error('Websocket error', err);
-        // attempt reconnect
-        setTimeout(() => setupSocket(state, ops), SocketReconnectTimeout);
+        log.error('error on socket: %s[%o]', JSON.stringify(err), err);
+        socket.onmessage = false;
+        socket.close();
     });
 
     socket.on('close', (evt: WS.CloseEvent) => {
-        log.error('Websocket close', evt);
+        log.warn('closing socket %o - attempting reconnect', evt);
         // attempt reconnect
         setTimeout(() => setupSocket(state, ops), SocketReconnectTimeout);
     });
 
     socket.on('open', () => {
-        log.verbose('Opened websocket listener');
+        log.verbose('opened websocket listener');
     });
 
     state.socket = socket;
@@ -152,10 +150,10 @@ function setupSocket(state: State, ops: Ops) {
 function cleanup(state: State) {
     RequestStore.removeExpired(state.requestStore, ValidCounterPeriod)
         .then(() => {
-            log.info('Successfully ran removeExpired on requestStore');
+            log.info('successfully removed expired requests from store');
         })
         .catch((err) => {
-            log.error('Error during cleanup:', err);
+            log.error('error during cleanup: %s[%o]', JSON.stringify(err), err);
         })
         .finally(() => {
             scheduleCleanup(state);
@@ -168,8 +166,50 @@ function scheduleCleanup(state: State) {
     const logH = Math.floor(next / 1000 / 60 / 60);
     const logM = Math.round(next / 1000 / 60) - logH * 60;
 
-    log.verbose('Scheduling next cleanup in %dh%dm', logH, logM);
+    log.info('scheduling next cleanup in %dh%dm', logH, logM);
     setTimeout(() => cleanup(state), next);
+}
+
+async function setupRelays(state: State, ops: Ops) {
+    try {
+        const resPeers = await NodeAPI.getPeers(ops);
+        if (NodeAPI.isError(resPeers)) {
+            throw new Error(`node internal: ${JSON.stringify(resPeers)}`);
+        }
+
+        // available peers
+        const relays = resPeers.connected
+            .filter(({ reportedVersion }) =>
+                RelayNodesCompatVersions.some((v) => reportedVersion.startsWith(v)),
+            )
+            .map(({ peerId, peerAddress }) => ({ peerId, peerAddress }));
+
+        const resChannels = await NodeAPI.getNodeChannels(ops);
+
+        // open channels
+        const openChannelsArr = resChannels.outgoing
+            .filter(({ status }) => status === 'Open')
+            .map(({ peerAddress }) => peerAddress);
+        const openChannels = new Set(openChannelsArr);
+        state.relays = relays
+            .filter(({ peerAddress }) => openChannels.has(peerAddress))
+            .map(({ peerId }) => peerId);
+        log.info('found %d potential relays', relays.length);
+    } catch (err) {
+        log.error('error during relay setup: %s[%o]', err);
+    } finally {
+        setTimeout(() => scheduleSetupRelays(state, ops));
+    }
+}
+
+function scheduleSetupRelays(state: State, ops: Ops) {
+    // schdule next run somehwere between 15min and 20min
+    const next = SetupRelayPeriod + Math.floor(Math.random() * 5 * 60e3);
+    const logM = Math.floor(next / 1000 / 60);
+    const logS = Math.round(next / 1000) - logM * 60;
+
+    log.info('scheduling next setup relays in %dm%ds', logM, logS);
+    setTimeout(() => setupRelays(state, ops), next);
 }
 
 function onMessage(state: State, ops: Ops) {
@@ -194,7 +234,7 @@ function onMessage(state: State, ops: Ops) {
         // determine if valid segment
         const segRes = Segment.fromMessage(msg.body);
         if (Res.isErr(segRes)) {
-            log.info('Cannot create segment:', segRes.error);
+            log.info('cannot create segment:', segRes.error);
             return;
         }
 
@@ -202,28 +242,28 @@ function onMessage(state: State, ops: Ops) {
         const cacheRes = SegmentCache.incoming(state.cache, segment);
         switch (cacheRes.res) {
             case 'complete':
-                log.verbose('Completing segment:', Segment.prettyPrint(segment));
+                log.verbose('completing segment:', Segment.prettyPrint(segment));
                 clearTimeout(state.deleteTimer.get(segment.requestId));
                 completeSegmentsEntry(state, ops, cacheRes.entry as SegmentCache.Entry, msg.tag);
                 break;
             case 'error':
-                log.error('Error caching segment:', cacheRes.reason);
+                log.error('error caching segment:', cacheRes.reason);
                 break;
             case 'already-cached':
-                log.info('Already cached:', Segment.prettyPrint(segment));
+                log.info('already cached:', Segment.prettyPrint(segment));
                 break;
             case 'added-to-request':
                 log.verbose(
-                    'Inserted new segment to existing request:',
+                    'inserted new segment to existing request:',
                     Segment.prettyPrint(segment),
                 );
                 break;
             case 'inserted-new':
-                log.verbose('Inserted new first segment:', Segment.prettyPrint(segment));
+                log.verbose('inserted new first segment:', Segment.prettyPrint(segment));
                 state.deleteTimer.set(
                     segment.requestId,
                     setTimeout(() => {
-                        log.info('Purging incomplete request:', segment.requestId);
+                        log.info('purging incomplete request:', segment.requestId);
                         SegmentCache.remove(state.cache, segment.requestId);
                     }, RequestPurgeTimeout),
                 );
@@ -233,7 +273,7 @@ function onMessage(state: State, ops: Ops) {
 }
 
 function onPingReq(state: State, ops: Ops, msg: Msg) {
-    log.info('Received ping req:', msg.body);
+    log.info('received ping req:', msg.body);
     // ping-originPeerId
     const [, recipient] = msg.body.split('-');
     const conn = { ...ops, hops: 0 };
@@ -242,12 +282,12 @@ function onPingReq(state: State, ops: Ops, msg: Msg) {
         tag: msg.tag,
         message: `pong-${state.peerId}`,
     }).catch((err) => {
-        log.error('Error sending pong:', err);
+        log.error('error sending pong: %s[%o]', JSON.stringify(err), err);
     });
 }
 
 function onInfoReq(state: State, ops: Ops, msg: Msg) {
-    log.info('Received info req:', msg.body);
+    log.info('received info req:', msg.body);
     // info-originPeerId-hops
     const [, recipient, hopsStr] = msg.body.split('-');
     const hops = parseInt(hopsStr, 10);
@@ -259,7 +299,7 @@ function onInfoReq(state: State, ops: Ops, msg: Msg) {
     };
     const res = Payload.encodeInfo(info);
     if (Res.isErr(res)) {
-        log.error('Error encoding info:', res.error);
+        log.error('error encoding info:', res.error);
         return;
     }
     const message = `nfrp-${res.res}`;
@@ -268,7 +308,7 @@ function onInfoReq(state: State, ops: Ops, msg: Msg) {
         tag: msg.tag,
         message,
     }).catch((err) => {
-        log.error('Error sending info:', err);
+        log.error('error sending info: %s[%o]', JSON.stringify(err), err);
     });
 }
 
@@ -280,14 +320,14 @@ async function completeSegmentsEntry(
 ) {
     const firstSeg = cacheEntry.segments.get(0) as Segment.Segment;
     if (!firstSeg.body.startsWith('0x')) {
-        log.info('Message is not a request:', firstSeg.requestId);
+        log.info('message is not a request:', firstSeg.requestId);
         return;
     }
     const requestId = firstSeg.requestId;
     const msg = SegmentCache.toMessage(cacheEntry);
     const msgParts = msg.split(',');
     if (msgParts.length !== 2) {
-        log.info('Invalid message parts:', msgParts);
+        log.info('invalid message parts:', msgParts);
         return;
     }
 
@@ -304,20 +344,21 @@ async function completeSegmentsEntry(
     });
 
     if (Res.isErr(resReq)) {
-        log.error('Error unboxing request:', resReq.error);
+        log.error('error unboxing request:', resReq.error);
         return;
     }
 
     const unboxRequest = resReq.res;
     const { reqPayload, session: unboxSession } = unboxRequest;
-    const sendParams = { ops, entryPeerId, cacheEntry, tag, unboxRequest };
+    const relay = determineRelay(state, reqPayload);
+    const sendParams = { state, ops, entryPeerId, cacheEntry, tag, relay, unboxRequest };
 
     // check counter
     const counter = Number(unboxSession.updatedTS);
     const now = Date.now();
     const valid = now - ValidCounterPeriod;
     if (counter < valid) {
-        log.info('Counter %d outside valid period %d (now: %d)', counter, valid, now);
+        log.info('counter %d outside valid period %d (now: %d)', counter, valid, now);
         // counter fail resp
         return sendResponse(sendParams, { type: Payload.RespType.CounterFail, now });
     }
@@ -325,7 +366,7 @@ async function completeSegmentsEntry(
     // check uuid
     const res = await RequestStore.addIfAbsent(state.requestStore, requestId, counter);
     if (res === RequestStore.AddRes.Duplicate) {
-        log.info('Duplicate request id');
+        log.info('duplicate request id:', requestId);
         // duplicate fail resp
         return sendResponse(sendParams, { type: Payload.RespType.DuplicateFail });
     }
@@ -334,10 +375,11 @@ async function completeSegmentsEntry(
     const { provider, req, headers } = reqPayload;
     const resFetch = await ProviderAPI.fetchRPC(provider, req, headers).catch((err: Error) => {
         log.error(
-            'Error RPC requesting %s with %s: %s',
+            'error doing JRPC on %s with %o: %s[%o]',
             provider,
-            JSON.stringify(req),
+            req,
             JSON.stringify(err),
+            err,
         );
         // rpc critical fail response
         return sendResponse(sendParams, {
@@ -359,19 +401,43 @@ async function completeSegmentsEntry(
     return sendResponse(sendParams, { type: Payload.RespType.Resp, resp });
 }
 
+/**
+ * The exit node will only select a relay if one was given via request payload.
+ * It will check if that is a valid relay, otherwise it will choose one of the relays determine by itself.
+ */
+function determineRelay(
+    state: State,
+    { hops, respRelayPeerId }: { hops?: number; respRelayPeerId?: string },
+) {
+    if (hops === 0) {
+        return;
+    }
+    if (respRelayPeerId) {
+        if (state.relays.includes(respRelayPeerId)) {
+            return respRelayPeerId;
+        } else {
+            return Utils.randomEl(state.relays);
+        }
+    }
+}
+
 function sendResponse(
     {
+        state,
         ops,
         entryPeerId,
         cacheEntry,
         tag,
         unboxRequest: { session: unboxSession, reqPayload },
+        relay,
     }: {
+        state: State;
         ops: Ops;
         entryPeerId: string;
         tag: number;
         cacheEntry: SegmentCache.Entry;
         unboxRequest: Request.UnboxRequest;
+        relay?: string;
     },
     respPayload: Payload.RespPayload,
 ) {
@@ -383,15 +449,18 @@ function sendResponse(
         unboxSession,
     });
     if (Res.isErr(resResp)) {
-        log.error('Error boxing response', resResp.error);
+        log.error('error boxing response:', resResp.error);
         return;
     }
 
     const segments = Segment.toSegments(requestId, resResp.res);
 
+    const relayString = relay ? `(${Utils.shortPeerId(relay)})` : '';
+
     log.verbose(
-        'Returning message to %s, tag: %s, requestId: %i',
+        'returning message to %s%s, tag: %s, requestId: %s',
         Utils.shortPeerId(entryPeerId),
+        relayString,
         tag,
         requestId,
     );
@@ -399,6 +468,7 @@ function sendResponse(
     const conn = {
         ...ops,
         hops: reqPayload.hops,
+        respRelayPeerId: relay,
     };
 
     // queue segment sending for all of them
@@ -409,7 +479,14 @@ function sendResponse(
                 tag,
                 message: Segment.toMessage(seg),
             }).catch((err: Error) => {
-                log.error('Error sending segment:', Segment.prettyPrint(seg), err);
+                log.error(
+                    'error sending %s: %s[%o]',
+                    Segment.prettyPrint(seg),
+                    JSON.stringify(err),
+                    err,
+                );
+                // remove relay if it fails
+                state.relays = state.relays.filter((r) => r !== relay);
             });
         });
     });
@@ -434,11 +511,11 @@ function sendResponse(
             type: 'response',
         };
 
-        DPapi.fetchQuota(ops, quotaRequest).catch((ex) => {
-            log.error('Error recording request quota:', ex);
+        DPapi.fetchQuota(ops, quotaRequest).catch((err) => {
+            log.error('error recording request quota: %s[%o]', JSON.stringify(err), err);
         });
-        DPapi.fetchQuota(ops, quotaResponse).catch((ex) => {
-            log.error('Error recording response quota:', ex);
+        DPapi.fetchQuota(ops, quotaResponse).catch((err) => {
+            log.error('error recording response quota: %s[%o]', JSON.stringify(err), err);
         });
     }, segments.length);
 }

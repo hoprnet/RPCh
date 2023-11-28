@@ -10,5 +10,7 @@ export const OngoingReqThreshold = 5;
 export type NodeMatch = {
     entryNode: EntryNode;
     exitNode: ExitNode;
+    reqRelayPeerId?: string;
+    respRelayPeerId?: string;
     counterOffset: number;
 };

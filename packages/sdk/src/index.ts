@@ -60,6 +60,7 @@ export type Ops = {
     readonly segmentLimit?: number;
     readonly versionListener?: (versions: DPapi.Versions) => void;
     readonly debugScope?: string;
+    readonly forceManualRelaying?: boolean;
 };
 
 /**
@@ -85,6 +86,7 @@ const defaultOps: Ops = {
     mevProtectionProvider: RPC_PROPELLORHEADS,
     forceZeroHop: false,
     segmentLimit: 0, // disable segment limit
+    forceManualRelaying: false,
 };
 
 const log = Utils.logger(['sdk']);
@@ -190,6 +192,9 @@ export default class SDK {
 
             // create request
             const { entryNode, exitNode, counterOffset } = resNodes;
+            const { reqRelayPeerId, respRelayPeerId } = this.ops.forceManualRelaying
+                ? resNodes
+                : { reqRelayPeerId: undefined, respRelayPeerId: undefined };
             const id = RequestCache.generateId(this.requestCache);
             const resReq = Request.create({
                 id,
@@ -202,10 +207,12 @@ export default class SDK {
                 counterOffset,
                 headers,
                 hops: this.hops,
+                reqRelayPeerId,
+                respRelayPeerId,
             });
 
             if (Res.isErr(resReq)) {
-                log.error('Error creating request', resReq.error);
+                log.error('error creating request', resReq.error);
                 return reject('Unable to create request object');
             }
 
@@ -219,7 +226,11 @@ export default class SDK {
 
             // set request expiration timer
             const timer = setTimeout(() => {
-                log.error('Request %s expired after %dms timeout', request.id, reqOps.timeout);
+                log.error(
+                    '%s expired after %dms timeout',
+                    Request.prettyPrint(request),
+                    reqOps.timeout,
+                );
                 this.removeRequest(request);
                 return reject('Request timed out');
             }, reqOps.timeout);
@@ -235,7 +246,7 @@ export default class SDK {
             this.nodesColl.requestStarted(request);
 
             // send request to hoprd
-            log.info('sending request %s', request.id);
+            log.info('sending request %s', Request.prettyPrint(request));
 
             // queue segment sending for all of them
             segments.forEach((s) =>
@@ -258,6 +269,7 @@ export default class SDK {
             apiEndpoint: entryNode.apiEndpoint,
             accessToken: entryNode.accessToken,
             hops: request.hops,
+            relay: request.reqRelayPeerId,
         };
         NodeAPI.sendMessage(conn, {
             recipient: request.exitPeerId,
@@ -321,6 +333,8 @@ export default class SDK {
             counterOffset: fallback.counterOffset,
             headers: origReq.headers,
             hops: origReq.hops,
+            reqRelayPeerId: fallback.reqRelayPeerId,
+            respRelayPeerId: fallback.respRelayPeerId,
         });
         if (Res.isErr(resReq)) {
             log.error('error creating fallback request', resReq.error);
@@ -346,7 +360,7 @@ export default class SDK {
         this.nodesColl.requestStarted(request);
 
         // send request to hoprd
-        log.info('resending request %s', request.id, 'for original', origReq.id);
+        log.info('resending request %s', Request.prettyPrint(request));
 
         // send segments sequentially
         segments.forEach((s) =>
@@ -366,6 +380,7 @@ export default class SDK {
                 apiEndpoint: entryNode.apiEndpoint,
                 accessToken: entryNode.accessToken,
                 hops: request.hops,
+                relay: request.reqRelayPeerId,
             },
             {
                 recipient: request.exitPeerId,
@@ -515,6 +530,7 @@ export default class SDK {
             segmentLimit: ops.segmentLimit ?? defaultOps.segmentLimit,
             versionListener: ops.versionListener,
             debugScope: ops.debugScope,
+            forceManualRelaying: ops.forceManualRelaying ?? defaultOps.forceManualRelaying,
         };
     };
 
@@ -530,13 +546,13 @@ export default class SDK {
 
     private fetchChainId = async (provider: string) => {
         const res = await ProviderAPI.fetchChainId(provider).catch((err) =>
-            log.error('Error fetching chainId for', provider, JSON.stringify(err)),
+            log.error('error fetching chainId for %s: %s[%o]', provider, JSON.stringify(err), err),
         );
         if (!res) {
             return;
         }
         if (JRPC.isError(res)) {
-            log.info('Unable to resolve chainId for', provider, JSON.stringify(res.error));
+            log.info('unable to resolve chainId for %s: %s', provider, JSON.stringify(res.error));
             return;
         }
         const id = parseInt(res.result, 16);
@@ -588,7 +604,7 @@ export default class SDK {
         const limit = this.ops.segmentLimit as number;
         if (limit > 0 && segLength > limit) {
             log.error(
-                'Request exceeds maximum amount of segments[%i] with %i segments',
+                'request exceeds maximum amount of segments[%i] with %i segments',
                 limit,
                 segLength,
             );

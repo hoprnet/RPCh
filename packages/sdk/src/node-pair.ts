@@ -17,15 +17,19 @@ export type MessageListener = (messages: NodeAPI.Message[]) => void;
 const MessagesFetchInterval = 333; // ms
 const InfoResponseTimeout = 10e3; // 10s
 
+const RelayNodesCompatVersions = ['2.0.4'];
+
 export type NodePair = {
     entryNode: EntryNode;
     entryData: EntryData.EntryData;
     exitNodes: Map<string, ExitNode.ExitNode>;
     exitDatas: Map<string, ExitData.ExitData>;
+    relays: string[]; // peerIds of potential relays
     applicationTag: number;
     hops?: number;
     messageListener: MessageListener;
-    fetchInterval?: ReturnType<typeof setInterval>;
+    fetchTimeout?: ReturnType<typeof setTimeout>;
+    infoTimeout?: ReturnType<typeof setTimeout>;
     fetchMessagesOngoing: boolean;
     log: ReturnType<typeof logger>;
 };
@@ -49,6 +53,7 @@ export function create(
         entryData,
         exitNodes,
         exitDatas,
+        relays: [],
         applicationTag,
         messageListener,
         fetchMessagesOngoing: false,
@@ -58,8 +63,8 @@ export function create(
 }
 
 export function destruct(np: NodePair) {
-    clearInterval(np.fetchInterval);
-    np.fetchInterval = undefined;
+    clearTimeout(np.fetchTimeout);
+    np.fetchTimeout = undefined;
 }
 
 export function id(np: NodePair) {
@@ -69,30 +74,20 @@ export function id(np: NodePair) {
 export function requestStarted(np: NodePair, req: Request.Request) {
     const data = np.exitDatas.get(req.exitPeerId);
     if (!data) {
-        np.log.error(
-            'requestStarted',
-            Request.prettyPrint(req),
-            'cannot track on missing exitId',
-            prettyPrint(np),
-        );
+        np.log.error('started %s on missing exit data', Request.prettyPrint(req));
         return;
     }
     EntryData.addOngoingReq(np.entryData);
     ExitData.addOngoing(data, req);
-    if (!np.fetchInterval) {
-        np.fetchInterval = setInterval(() => fetchMessages(np), MessagesFetchInterval);
+    if (!np.fetchTimeout) {
+        np.fetchTimeout = setTimeout(() => fetchMessages(np), MessagesFetchInterval);
     }
 }
 
 export function requestSucceeded(np: NodePair, req: Request.Request, responseTime: number) {
     const data = np.exitDatas.get(req.exitPeerId);
     if (!data) {
-        np.log.error(
-            'requestSucceeded',
-            Request.prettyPrint(req),
-            'cannot track on missing exitId',
-            prettyPrint(np),
-        );
+        np.log.error('successful %s on missing exit data', Request.prettyPrint(req));
         return;
     }
 
@@ -104,12 +99,7 @@ export function requestSucceeded(np: NodePair, req: Request.Request, responseTim
 export function requestFailed(np: NodePair, req: Request.Request) {
     const data = np.exitDatas.get(req.exitPeerId);
     if (!data) {
-        np.log.error(
-            'requestFailed',
-            Request.prettyPrint(req),
-            'cannot track on missing exitId',
-            prettyPrint(np),
-        );
+        np.log.error('failed %s on missing exit data', Request.prettyPrint(req));
         return;
     }
 
@@ -121,8 +111,8 @@ export function requestFailed(np: NodePair, req: Request.Request) {
 function checkStopInterval(np: NodePair) {
     // stop interval if applicable
     if (np.entryData.requestsOngoing === 0 && np.entryData.infoOngoing === 0) {
-        clearInterval(np.fetchInterval);
-        np.fetchInterval = undefined;
+        clearTimeout(np.fetchTimeout);
+        np.fetchTimeout = undefined;
     }
 }
 
@@ -140,14 +130,26 @@ export function segmentFailed(np: NodePair, seg: Segment.Segment) {
 
 /**
  * Run initial discovery steps.
- * Ping entry node version.
+ * Request peers from entry node.
  * Request info msg from exit nodes.
  */
 export function discover(np: NodePair) {
     const startPingTime = Date.now();
-    NodeAPI.version(np.entryNode).then((_) => {
-        np.entryData.pingDuration = Date.now() - startPingTime;
-    });
+    if (np.hops === 0) {
+        NodeAPI.version(np.entryNode)
+            .then(() => {
+                np.entryData.pingDuration = Date.now() - startPingTime;
+            })
+            .catch((err) => {
+                np.log.error('error fetching version: %s[%o]', JSON.stringify(err), err);
+            });
+    } else {
+        NodeAPI.getPeers(np.entryNode)
+            .then((r) => incPeers(np, r, startPingTime))
+            .catch((err) => {
+                np.log.error('error fetching peers: %s[%o]', JSON.stringify(err), err);
+            });
+    }
     Array.from(np.exitNodes.values()).map((x, idx) => {
         setTimeout(() => requestInfo(np, x), idx);
     });
@@ -155,6 +157,11 @@ export function discover(np: NodePair) {
 
 function requestInfo(np: NodePair, exitNode: ExitNode.ExitNode) {
     const message = `info-${np.entryNode.id}-${np.hops ?? '_'}`;
+    const exitData = np.exitDatas.get(exitNode.id);
+    if (!exitData) {
+        return np.log.error('missing exit data for %s before info req', exitNode.id);
+    }
+    exitData.infoLatStarted = Date.now();
     NodeAPI.sendMessage(
         {
             ...np.entryNode,
@@ -167,17 +174,18 @@ function requestInfo(np: NodePair, exitNode: ExitNode.ExitNode) {
         },
     );
     EntryData.addOngoingInfo(np.entryData);
-    if (!np.fetchInterval) {
-        np.fetchInterval = setInterval(() => fetchMessages(np), MessagesFetchInterval);
+    if (!np.fetchTimeout) {
+        np.fetchTimeout = setTimeout(() => fetchMessages(np), MessagesFetchInterval);
     }
     // stop checking for info resp at after this
     // will still be able to receive info resp if messages went over this route
-    setTimeout(() => {
+    np.infoTimeout = setTimeout(() => {
+        np.log.warn('timeout (%dms) waiting for info response', InfoResponseTimeout);
         EntryData.removeOngoingInfo(np.entryData);
         checkStopInterval(np);
         const exitData = np.exitDatas.get(exitNode.id);
         if (!exitData) {
-            return np.log.error('requestInfo ExitData mismatch for %s', exitNode.id);
+            return np.log.error('missing exit data for %s during info resp timeout', exitNode.id);
         }
         exitData.infoFail = true;
     }, InfoResponseTimeout);
@@ -196,8 +204,8 @@ export function prettyPrint(np: NodePair): string {
     const exCount = np.exitNodes.size;
     const exStrs = Array.from(np.exitDatas).map(([id, d]) => {
         const v = d.version;
-        const ctrOff = d.counterOffset?.toFixed(2) || 0;
-        const info = d.infoFail ? 'fail' : `${d.infoLatSec}s`;
+        const ctrOff = d.counterOffset?.toFixed(0) || 0;
+        const info = d.infoFail ? 'fail' : `${d.infoLatMs?.toFixed(0)}ms`;
         const o = d.requestsOngoing.length;
         const tot = d.requestsHistory.length;
         const lats = Array.from(d.requests.values()).reduce<number[]>((acc, rd) => {
@@ -269,33 +277,80 @@ function fetchMessages(np: NodePair) {
             np.messageListener(msgs);
         })
         .catch((err) => {
-            np.log.error('Error fetching node messages: %s[%o]', JSON.stringify(err), err);
+            np.log.error('error fetching node messages: %s[%o]', JSON.stringify(err), err);
             np.entryData.fetchMessagesErrors++;
+        })
+        .finally(() => {
+            // if not canceled fetch again
+            if (np.fetchTimeout) {
+                np.fetchTimeout = setTimeout(() => fetchMessages(np), MessagesFetchInterval);
+            }
         });
 }
 
 function incInfoResps(np: NodePair, infoResps: NodeAPI.Message[]) {
-    infoResps.forEach(({ body, receivedAt }) => {
+    infoResps.forEach(({ body }) => {
         const [, payload] = body.split('-');
         const resDec = Payload.decodeInfo(payload);
         if (Res.isErr(resDec)) {
-            return np.log.error('Error decoding info payload:', resDec.error);
+            return np.log.error('error decoding info payload:', resDec.error);
         }
         const { peerId, version, counter } = resDec.res;
         const nodeLog = ExitNode.prettyPrint(peerId, version, counter);
         const exitNode = np.exitNodes.get(peerId);
         if (!exitNode) {
-            return np.log.info('Received untracked info from %s', nodeLog);
+            return np.log.info('info response for missing exit node %s', nodeLog);
         }
         const exitData = np.exitDatas.get(peerId);
         if (!exitData) {
-            return np.log.error('ExitData mismatch for %s', nodeLog);
+            return np.log.error('info response missing exit data %s', nodeLog);
         }
+        np.log.verbose('got exit node info: %s', nodeLog);
         exitData.version = version;
         exitData.counterOffset = Date.now() - counter;
-        exitData.infoLatSec = Math.abs(receivedAt - Math.floor(counter / 1000));
+        exitData.infoLatMs = exitData.infoLatStarted && Date.now() - exitData.infoLatStarted;
         exitData.infoFail = false;
         EntryData.removeOngoingInfo(np.entryData);
+        clearTimeout(np.infoTimeout);
+        np.infoTimeout = undefined;
     });
     checkStopInterval(np);
+}
+
+function incPeers(np: NodePair, res: NodeAPI.Peers | NodeAPI.NodeError, startPingTime: number) {
+    if (NodeAPI.isError(res)) {
+        np.log.error('error node internal: %o', res);
+        return;
+    }
+
+    // available peers
+    const relays = res.connected
+        .filter(({ reportedVersion }) =>
+            RelayNodesCompatVersions.some((v) => reportedVersion.startsWith(v)),
+        )
+        .map(({ peerId, peerAddress }) => ({ peerId, peerAddress }));
+    NodeAPI.getNodeChannels(np.entryNode)
+        .then((ch) => incChannels(np, ch, relays, startPingTime))
+        .catch((err) => {
+            np.log.error('error fetching channels: %s[%o]', JSON.stringify(err), err);
+        });
+}
+
+function incChannels(
+    np: NodePair,
+    channels: NodeAPI.NodeChannels,
+    relays: { peerId: string; peerAddress: string }[],
+    startPingTime: number,
+) {
+    np.entryData.pingDuration = Date.now() - startPingTime;
+
+    // open channels
+    const openChannelsArr = channels.outgoing
+        .filter(({ status }) => status === 'Open')
+        .map(({ peerAddress }) => peerAddress);
+    const openChannels = new Set(openChannelsArr);
+    np.relays = relays
+        .filter(({ peerAddress }) => openChannels.has(peerAddress))
+        .map(({ peerId }) => peerId);
+    np.log.info('found %d potential relays', np.relays.length);
 }

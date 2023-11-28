@@ -96,12 +96,12 @@ async function doWrapMonthlyQuotas(dbPool: Pool, userIds: string[]) {
     // run as transaction
     const client = await dbPool.connect();
     try {
-        await client.query('BEGIN');
+        await client.query('begin');
         await client.query(qIns, userIds);
         await client.query(qUpd, userIds);
-        await client.query('COMMIT');
+        await client.query('commit');
     } catch (err) {
-        await client.query('ROLLBACK');
+        await client.query('rollback');
         throw err;
     } finally {
         client.release();

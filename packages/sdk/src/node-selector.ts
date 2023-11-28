@@ -40,9 +40,18 @@ export function fallbackRoutePair(
 }
 
 export function prettyPrint(sel: NodeSelection) {
-    const eId = shortPeerId(sel.match.entryNode.id);
-    const xId = shortPeerId(sel.match.exitNode.id);
-    return `${eId} > ${xId} (via ${sel.via})`;
+    const { entryNode, exitNode, reqRelayPeerId, respRelayPeerId } = sel.match;
+    const eId = shortPeerId(entryNode.id);
+    const xId = shortPeerId(exitNode.id);
+    const path = [`e${eId}`];
+    if (reqRelayPeerId) {
+        path.push(`r${shortPeerId(reqRelayPeerId)}`);
+    }
+    path.push(`x${xId}`);
+    if (respRelayPeerId) {
+        path.push(`r${shortPeerId(respRelayPeerId)}`);
+    }
+    return `${path.join('>')} (via ${sel.via})`;
 }
 
 function match(
@@ -126,22 +135,30 @@ function match(
 }
 
 function success(
-    { entryNode, exitNode, counterOffset }: ExitPerf,
+    { entryNode, exitNode, counterOffset, reqRelayPeerId, respRelayPeerId }: ExitPerf,
     via: string,
 ): Res.Result<NodeSelection> {
     return Res.ok({
-        match: { entryNode, exitNode, counterOffset },
+        match: { entryNode, exitNode, counterOffset, reqRelayPeerId, respRelayPeerId },
         via,
     });
 }
 
 function createRoutePerfs(nodePairs: Map<string, NodePair.NodePair>) {
+    // TODO better relay selection
     return Array.from(nodePairs.values()).reduce<ExitPerf[]>((acc, np) => {
-        const perfs = Array.from(np.exitDatas).map(([xId, xd]) => ({
-            ...ExitData.perf(xd),
-            entryNode: np.entryNode,
-            exitNode: np.exitNodes.get(xId)!,
-        }));
+        const perfs = Array.from(np.exitDatas).map(([xId, xd]) => {
+            const relays = np.relays.filter((rId) => rId !== xId && rId !== np.entryNode.id);
+            const reqRelayPeerId = randomEl(relays);
+            const respRelayPeerId = randomEl(relays);
+            return {
+                ...ExitData.perf(xd),
+                entryNode: np.entryNode,
+                exitNode: np.exitNodes.get(xId)!,
+                reqRelayPeerId,
+                respRelayPeerId,
+            };
+        });
         return acc.concat(perfs);
     }, []);
 }
@@ -191,10 +208,8 @@ function bestReqLatencies(routePerfs: ExitPerf[]): ExitPerf[] {
 }
 
 function bestInfoLatencies(routePerfs: ExitPerf[]): ExitPerf[] {
-    // have some leeway here since info lat is in seconds and compared to ms
-    // treat 1 sec diff as 0 sec diff
-    const haveLats = routePerfs.filter(({ infoLatSec }) => infoLatSec > 1);
-    haveLats.sort((l, r) => Math.min(l.infoLatSec, 0) - Math.min(r.infoLatSec, 0));
+    const haveLats = routePerfs.filter(({ infoLatMs }) => infoLatMs > 0);
+    haveLats.sort((l, r) => l.infoLatMs - r.infoLatMs);
     return haveLats;
 }
 

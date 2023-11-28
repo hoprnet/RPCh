@@ -15,6 +15,7 @@ export type Heartbeats = {
 
 export type Peer = {
     peerId: string;
+    peerAddress: string;
     multiAddr: string;
     heartbeats: Heartbeats[];
     lastSeen: number;
@@ -42,15 +43,29 @@ export type Channel = {
     closureTime: string;
 };
 
+export type PartChannel = {
+    type: 'incoming' | 'outgoing';
+    id: string;
+    peerAddress: string;
+    status: string;
+    balance: string;
+};
+
 export type NodeError = {
     status: string;
     error: string;
 };
 
-export type Channels = {
+export type AllChannels = {
     all: Channel[];
     incoming: [];
     outgoing: [];
+};
+
+export type NodeChannels = {
+    all: [];
+    incoming: PartChannel[];
+    outgoing: PartChannel[];
 };
 
 export function connectWS(conn: ConnInfo): WebSocket {
@@ -61,7 +76,7 @@ export function connectWS(conn: ConnInfo): WebSocket {
 }
 
 export function sendMessage(
-    conn: ConnInfo & { hops?: number },
+    conn: ConnInfo & { hops?: number; relay?: string },
     { recipient, tag, message }: { recipient: string; tag: number; message: string },
 ): Promise<string> {
     const url = new URL('/api/v3/messages', conn.apiEndpoint);
@@ -78,13 +93,22 @@ export function sendMessage(
     if (conn.hops === 0) {
         payload.path = [];
     } else {
-        // default to one hop for now
-        payload.hops = 1;
+        // default to one hop
+        if (conn.relay) {
+            payload.path = [conn.relay];
+        } else {
+            payload.hops = 1;
+        }
     }
     const body = JSON.stringify(payload);
-    return fetch(url, { method: 'POST', headers, body }).then(
-        (res) => res.json() as unknown as string,
-    );
+    return new Promise((resolve, reject) => {
+        return fetch(url, { method: 'POST', headers, body }).then((res) => {
+            if (res.status !== 202) {
+                return reject(`Unexpected response status code: ${res.status}`);
+            }
+            resolve(res.json() as unknown as string);
+        });
+    });
 }
 
 export function version(conn: ConnInfo) {
@@ -151,9 +175,19 @@ export function getPeers(conn: ConnInfo): Promise<Peers | NodeError> {
     return fetch(url, { headers }).then((res) => res.json());
 }
 
-export function getChannels(conn: ConnInfo): Promise<Channels> {
+export function getAllChannels(conn: ConnInfo): Promise<AllChannels> {
     const url = new URL('/api/v3/channels', conn.apiEndpoint);
     url.searchParams.set('fullTopology', 'true');
+    const headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'x-auth-token': conn.accessToken,
+    };
+    return fetch(url, { headers }).then((res) => res.json());
+}
+
+export function getNodeChannels(conn: ConnInfo): Promise<NodeChannels> {
+    const url = new URL('/api/v3/channels', conn.apiEndpoint);
     const headers = {
         'Accept': 'application/json',
         'Content-Type': 'application/json',

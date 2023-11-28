@@ -7,5 +7,5 @@ export type ExitNode = {
 
 export function prettyPrint(peerId: string, version: string, counter: number) {
     const shortPid = utils.shortPeerId(peerId);
-    return `ExitNode[${shortPid}(${peerId}),v${version},c:${counter}]`;
+    return `ExitNode[x${shortPid},v${version},c:${counter}]`;
 }
