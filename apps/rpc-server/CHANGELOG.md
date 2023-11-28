@@ -1,5 +1,17 @@
 # @rpch/rpc-server
 
+## 0.13.0
+
+### Minor Changes
+
+-   d2b7a70: better handling of boolean env vars, allowing 'false', 'no', and 0 as a negative boolean
+    exposing new forceManualRelaying SDK option
+
+### Patch Changes
+
+-   Updated dependencies [d2b7a70]
+    -   @rpch/sdk@1.7.0
+
 ## 0.12.1
 
 ### Patch Changes

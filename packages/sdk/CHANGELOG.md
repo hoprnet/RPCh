@@ -1,5 +1,13 @@
 # @rpch/sdk
 
+## 1.7.0
+
+### Minor Changes
+
+-   d2b7a70: Correctly determine info ping latency.
+    Determine potential relays for 1hop messages.
+    Force manual relaying only via env var.
+
 ## 1.6.0
 
 ### Minor Changes

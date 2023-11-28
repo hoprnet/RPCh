@@ -1,5 +1,16 @@
 # @rpch/availability-monitor
 
+## 0.8.0
+
+### Minor Changes
+
+-   d2b7a70: exclude offline exit nodes from one hop pairs as well
+
+### Patch Changes
+
+-   Updated dependencies [d2b7a70]
+    -   @rpch/sdk@1.7.0
+
 ## 0.7.6
 
 ### Patch Changes

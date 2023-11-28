@@ -1,5 +1,18 @@
 # @rpch/exit-node
 
+## 0.14.0
+
+### Minor Changes
+
+-   d2b7a70: Will determine available relays for responses.
+    If request payload contains relay will choose this one or - if invalid - a random determined one.
+
+### Patch Changes
+
+-   d2b7a70: Fix opening multiple Websocket connections on hoprd restarts
+-   Updated dependencies [d2b7a70]
+    -   @rpch/sdk@1.7.0
+
 ## 0.13.2
 
 ### Patch Changes
