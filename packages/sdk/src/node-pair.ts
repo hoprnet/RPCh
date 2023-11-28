@@ -323,13 +323,34 @@ function incPeers(np: NodePair, res: NodeAPI.Peers | NodeAPI.NodeError, startPin
         return;
     }
 
-    // successful peers
-    np.entryData.pingDuration = Date.now() - startPingTime;
-    np.relays = res.connected
+    // available peers
+    const relays = res.connected
         .filter(({ reportedVersion }) =>
             RelayNodesCompatVersions.some((v) => reportedVersion.startsWith(v)),
         )
-        .map(({ peerId }) => peerId);
+        .map(({ peerId, peerAddress }) => ({ peerId, peerAddress }));
+    NodeAPI.getNodeChannels(np.entryNode)
+        .then((ch) => incChannels(np, ch, relays, startPingTime))
+        .catch((err) => {
+            np.log.error('error fetching channels: %s[%o]', JSON.stringify(err), err);
+        });
+}
 
+function incChannels(
+    np: NodePair,
+    channels: NodeAPI.NodeChannels,
+    relays: { peerId: string; peerAddress: string }[],
+    startPingTime: number,
+) {
+    np.entryData.pingDuration = Date.now() - startPingTime;
+
+    // open channels
+    const openChannelsArr = channels.outgoing
+        .filter(({ status }) => status === 'Open')
+        .map(({ peerAddress }) => peerAddress);
+    const openChannels = new Set(openChannelsArr);
+    np.relays = relays
+        .filter(({ peerAddress }) => openChannels.has(peerAddress))
+        .map(({ peerId }) => peerId);
     np.log.info('found %d potential relays', np.relays.length);
 }

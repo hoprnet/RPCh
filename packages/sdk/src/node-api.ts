@@ -15,6 +15,7 @@ export type Heartbeats = {
 
 export type Peer = {
     peerId: string;
+    peerAddress: string;
     multiAddr: string;
     heartbeats: Heartbeats[];
     lastSeen: number;
@@ -42,6 +43,14 @@ export type Channel = {
     closureTime: string;
 };
 
+export type PartChannel = {
+    type: 'incoming' | 'outgoing';
+    id: string;
+    peerAddress: string;
+    status: string;
+    balance: string;
+};
+
 export type NodeError = {
     status: string;
     error: string;
@@ -51,6 +60,12 @@ export type AllChannels = {
     all: Channel[];
     incoming: [];
     outgoing: [];
+};
+
+export type NodeChannels = {
+    all: [];
+    incoming: PartChannel[];
+    outgoing: PartChannel[];
 };
 
 export function connectWS(conn: ConnInfo): WebSocket {
@@ -163,6 +178,16 @@ export function getPeers(conn: ConnInfo): Promise<Peers | NodeError> {
 export function getAllChannels(conn: ConnInfo): Promise<AllChannels> {
     const url = new URL('/api/v3/channels', conn.apiEndpoint);
     url.searchParams.set('fullTopology', 'true');
+    const headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'x-auth-token': conn.accessToken,
+    };
+    return fetch(url, { headers }).then((res) => res.json());
+}
+
+export function getNodeChannels(conn: ConnInfo): Promise<NodeChannels> {
+    const url = new URL('/api/v3/channels', conn.apiEndpoint);
     const headers = {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
