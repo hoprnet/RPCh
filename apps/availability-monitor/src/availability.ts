@@ -123,7 +123,7 @@ async function runOneHops(
 ): Promise<Map<string, Set<string>>> {
     // gather channel structure
     const entryNode = randomEl(entryNodes);
-    const respCh = await NodeAPI.getChannels({
+    const respCh = await NodeAPI.getAllChannels({
         apiEndpoint: new URL(entryNode.hoprd_api_endpoint),
         accessToken: entryNode.hoprd_api_token,
     }).catch((err) => {

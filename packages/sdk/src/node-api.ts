@@ -47,7 +47,7 @@ export type NodeError = {
     error: string;
 };
 
-export type Channels = {
+export type AllChannels = {
     all: Channel[];
     incoming: [];
     outgoing: [];
@@ -160,7 +160,7 @@ export function getPeers(conn: ConnInfo): Promise<Peers | NodeError> {
     return fetch(url, { headers }).then((res) => res.json());
 }
 
-export function getChannels(conn: ConnInfo): Promise<Channels> {
+export function getAllChannels(conn: ConnInfo): Promise<AllChannels> {
     const url = new URL('/api/v3/channels', conn.apiEndpoint);
     url.searchParams.set('fullTopology', 'true');
     const headers = {
