@@ -79,15 +79,21 @@ export function sendMessage(
         payload.path = [];
     } else {
         // default to one hop
-        payload.hops = 1;
         if (conn.relay) {
             payload.path = [conn.relay];
+        } else {
+            payload.hops = 1;
         }
     }
     const body = JSON.stringify(payload);
-    return fetch(url, { method: 'POST', headers, body }).then(
-        (res) => res.json() as unknown as string,
-    );
+    return new Promise((resolve, reject) => {
+        return fetch(url, { method: 'POST', headers, body }).then((res) => {
+            if (res.status !== 202) {
+                return reject(`Unexpected response status code: ${res.status}`);
+            }
+            resolve(res.json() as unknown as string);
+        });
+    });
 }
 
 export function version(conn: ConnInfo) {

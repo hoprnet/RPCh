@@ -28,7 +28,7 @@ export type NodePair = {
     applicationTag: number;
     hops?: number;
     messageListener: MessageListener;
-    fetchInterval?: ReturnType<typeof setInterval>;
+    fetchTimeout?: ReturnType<typeof setTimeout>;
     infoTimeout?: ReturnType<typeof setTimeout>;
     fetchMessagesOngoing: boolean;
     log: ReturnType<typeof logger>;
@@ -63,8 +63,8 @@ export function create(
 }
 
 export function destruct(np: NodePair) {
-    clearInterval(np.fetchInterval);
-    np.fetchInterval = undefined;
+    clearTimeout(np.fetchTimeout);
+    np.fetchTimeout = undefined;
 }
 
 export function id(np: NodePair) {
@@ -79,8 +79,8 @@ export function requestStarted(np: NodePair, req: Request.Request) {
     }
     EntryData.addOngoingReq(np.entryData);
     ExitData.addOngoing(data, req);
-    if (!np.fetchInterval) {
-        np.fetchInterval = setInterval(() => fetchMessages(np), MessagesFetchInterval);
+    if (!np.fetchTimeout) {
+        np.fetchTimeout = setTimeout(() => fetchMessages(np), MessagesFetchInterval);
     }
 }
 
@@ -111,8 +111,8 @@ export function requestFailed(np: NodePair, req: Request.Request) {
 function checkStopInterval(np: NodePair) {
     // stop interval if applicable
     if (np.entryData.requestsOngoing === 0 && np.entryData.infoOngoing === 0) {
-        clearInterval(np.fetchInterval);
-        np.fetchInterval = undefined;
+        clearTimeout(np.fetchTimeout);
+        np.fetchTimeout = undefined;
     }
 }
 
@@ -174,12 +174,13 @@ function requestInfo(np: NodePair, exitNode: ExitNode.ExitNode) {
         },
     );
     EntryData.addOngoingInfo(np.entryData);
-    if (!np.fetchInterval) {
-        np.fetchInterval = setInterval(() => fetchMessages(np), MessagesFetchInterval);
+    if (!np.fetchTimeout) {
+        np.fetchTimeout = setTimeout(() => fetchMessages(np), MessagesFetchInterval);
     }
     // stop checking for info resp at after this
     // will still be able to receive info resp if messages went over this route
     np.infoTimeout = setTimeout(() => {
+        np.log.warn('timeout (%dms) waiting for info response', InfoResponseTimeout);
         EntryData.removeOngoingInfo(np.entryData);
         checkStopInterval(np);
         const exitData = np.exitDatas.get(exitNode.id);
@@ -278,6 +279,12 @@ function fetchMessages(np: NodePair) {
         .catch((err) => {
             np.log.error('error fetching node messages: %s[%o]', JSON.stringify(err), err);
             np.entryData.fetchMessagesErrors++;
+        })
+        .finally(() => {
+            // if not canceled fetch again
+            if (np.fetchTimeout) {
+                np.fetchTimeout = setTimeout(() => fetchMessages(np), MessagesFetchInterval);
+            }
         });
 }
 
@@ -298,6 +305,7 @@ function incInfoResps(np: NodePair, infoResps: NodeAPI.Message[]) {
         if (!exitData) {
             return np.log.error('info response missing exit data %s', nodeLog);
         }
+        np.log.verbose('got exit node info: %s', nodeLog);
         exitData.version = version;
         exitData.counterOffset = Date.now() - counter;
         exitData.infoLatMs = exitData.infoLatStarted && Date.now() - exitData.infoLatStarted;
