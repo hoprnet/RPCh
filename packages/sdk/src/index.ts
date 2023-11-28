@@ -260,6 +260,10 @@ export default class SDK {
         entryNode: EntryNode,
         cacheEntry: RequestCache.Entry,
     ) => {
+        // request might have been removed by earlier segment fail
+        if (!this.requestCache.has(request.id)) {
+            return;
+        }
         const bef = Date.now();
         const conn = {
             apiEndpoint: entryNode.apiEndpoint,
@@ -370,6 +374,10 @@ export default class SDK {
         entryNode: EntryNode,
         cacheEntry: RequestCache.Entry,
     ) => {
+        // request might have been removed by earlier segment fail
+        if (!this.requestCache.has(request.id)) {
+            return;
+        }
         const bef = Date.now();
         NodeAPI.sendMessage(
             {
