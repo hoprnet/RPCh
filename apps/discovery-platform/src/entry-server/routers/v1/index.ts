@@ -743,7 +743,7 @@ function getNodesPairings(dbPool: Pool) {
                 const qExitNodes = qNode.listExitNodes(dbPool, exitIds);
                 const qRPCServerVersion = configs.readConfig(
                     dbPool,
-                    configs.Keys.RPCh_DOCKER_IMAGE_VERSION,
+                    configs.Keys.RPCh_RPC_SERVER_VERSION,
                 );
                 const qSDKVersion = configs.readConfig(dbPool, configs.Keys.RPCh_SDK_VERSION);
 
