@@ -1,5 +1,11 @@
 # @rpch/discovery-platform
 
+## 0.14.3
+
+### Patch Changes
+
+-   626ea0e: Use correctly named configs key to determine rpc server version
+
 ## 0.14.2
 
 ### Patch Changes
