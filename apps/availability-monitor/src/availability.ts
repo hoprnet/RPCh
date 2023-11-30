@@ -79,10 +79,10 @@ async function doRun(dbPool: Pool, entries: q.RegisteredNode[], exits: q.Registe
     log.info('updated zerohops with pairIds:', logZeroHopIds(zhOnline, zhPairIds.length, zhMax));
 
     // write one hops
-    const ohMax = entries.length * exits.length * (entries.length + exits.length - 2);
+    // const ohMax = entries.length * exits.length * (entries.length + exits.length - 2);
     const ohPairIds = toPairings(ohOnline);
     await q.writeOneHopPairings(dbPool, ohPairIds);
-    log.info('updated onehops with pairIds:', logZeroHopIds(ohOnline, ohPairIds.length, ohMax));
+    log.info('updated onehops with pairIds:', logZeroHopIds(ohOnline, ohPairIds.length, zhMax));
 
     // complain about offline peers
     const offIds = Array.from(offlineExits).map((xId) => Utils.shortPeerId(xId));
