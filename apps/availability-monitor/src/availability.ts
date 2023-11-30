@@ -86,7 +86,14 @@ async function doRun(dbPool: Pool, entries: q.RegisteredNode[], exits: q.Registe
 
     // complain about offline peers
     const offIds = Array.from(offlineExits).map((xId) => Utils.shortPeerId(xId));
-    log.warn(`missing ${offIds.length}/${allExitIds.size} online exit ids: ${offIds.join(' ')}`);
+    if (offIds.length > 0) {
+        log.warn(
+            'missing %d/%d online exit ids: %s',
+            offIds.length,
+            allExitIds.size,
+            offIds.join(' '),
+        );
+    }
 }
 
 async function runZeroHops(
