@@ -1,4 +1,5 @@
 import http from 'http';
+import fh from 'node:fs/promises';
 
 import Version from './version';
 import RPChSDK, {
@@ -12,7 +13,7 @@ import RPChSDK, {
     type Ops as SDKops,
 } from '@rpch/sdk';
 
-type ServerOPS = { restrictCors: boolean; skipRPCh: boolean };
+type ServerOPS = { failedRequestsFile?: string; restrictCors: boolean; skipRPCh: boolean };
 
 const log = Utils.logger(['rpc-server']);
 
@@ -113,6 +114,7 @@ function sendRequest(
     req: JRPC.Request,
     params: RequestOps,
     res: http.ServerResponse,
+    ops: ServerOPS,
 ) {
     sdk.send(req, params)
         .then(async (resp: Response.Response) => {
@@ -133,6 +135,16 @@ function sendRequest(
             res.write(JSON.stringify(resp));
         })
         .catch((err: any) => {
+            if (ops.failedRequestsFile) {
+                fh.appendFile(ops.failedRequestsFile, JSON.stringify(req) + '\n').catch((err) => {
+                    log.error(
+                        'error appending to FAILED_REQUESTS_FILE[%s]: %s[%o]',
+                        ops.failedRequestsFile,
+                        JSON.stringify(err),
+                        err,
+                    );
+                });
+            }
             log.error('error sending request[%o]: %s[%o]', req, JSON.stringify(err), err);
             res.statusCode = 500;
             res.write(err);
@@ -182,7 +194,7 @@ function createServer(sdk: RPChSDK, ops: ServerOPS) {
                     sendSkipRPCh(params.provider, result.req, res);
                 } else {
                     log.info('sending request[%o] with params[%o]', result.req, params);
-                    sendRequest(sdk, result.req, params, res);
+                    sendRequest(sdk, result.req, params, res, ops);
                 }
             } else {
                 log.error('error parsing body: %s - during request: %s', result.error, body);
@@ -320,6 +332,7 @@ if (require.main === module) {
     const serverOps = {
         restrictCors: !!process.env.RESTRICT_CORS,
         skipRPCh: !!process.env.SKIP_RPCH,
+        failedRequestsFile: process.env.FAILED_REQUESTS_FILE,
     };
     const port = determinePort(process.env.PORT);
 
@@ -327,9 +340,10 @@ if (require.main === module) {
     const server = createServer(sdk, serverOps);
     server.listen(port, '0.0.0.0', () => {
         log.info(
-            "RPCServer[v%s] started on '0.0.0.0:%d' with %s",
+            "RPCServer[v%s] started on '0.0.0.0:%d' with %s and SDKops[%s]",
             Version,
             port,
+            JSON.stringify(serverOps),
             JSON.stringify(ops),
         );
     });
