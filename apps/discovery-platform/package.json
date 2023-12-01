@@ -1,6 +1,6 @@
 {
     "name": "@rpch/discovery-platform",
-    "version": "0.14.3",
+    "version": "0.14.4",
     "license": "LGPL-3.0",
     "private": true,
     "scripts": {

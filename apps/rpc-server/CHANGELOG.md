@@ -1,5 +1,11 @@
 # @rpch/rpc-server
 
+## 0.14.0
+
+### Minor Changes
+
+-   7504a6f: allow logging of failed requests to file
+
 ## 0.13.1
 
 ### Patch Changes

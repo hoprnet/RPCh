@@ -1,5 +1,11 @@
 # @rpch/discovery-platform
 
+## 0.14.4
+
+### Patch Changes
+
+-   7504a6f: fix crash on invalid clientId report from exit node
+
 ## 0.14.3
 
 ### Patch Changes
