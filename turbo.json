@@ -77,7 +77,8 @@
         "MEV_KICKBACK_ADDRESS",
         "FORCE_ZERO_HOP",
         "FORCE_MANUAL_RELAYING",
-        "SEGMENT_LIMIT"
+        "SEGMENT_LIMIT",
+        "FAILED_REQUESTS_FILE"
       ]
     },
     "@rpch/availability-monitor#build": {
