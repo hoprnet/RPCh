@@ -29,7 +29,8 @@ export default class NodesCollector {
         private readonly applicationTag: number,
         private readonly messageListener: MessageListener,
         private readonly versionListener: VersionListener,
-        private readonly hops?: number,
+        private readonly hops: number,
+        private readonly forceManualRelaying: boolean,
     ) {
         this.fetchNodePairs();
     }
@@ -213,6 +214,7 @@ export default class NodesCollector {
                     this.applicationTag,
                     this.messageListener,
                     this.hops,
+                    this.forceManualRelaying,
                 );
                 this.nodePairs.set(NodePair.id(np), np);
             });

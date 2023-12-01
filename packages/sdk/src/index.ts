@@ -133,6 +133,7 @@ export default class SDK {
             this.onMessages,
             this.onVersions,
             this.hops,
+            this.ops.forceManualRelaying,
         );
         this.fetchChainId(this.ops.provider as string);
         log.info('RPCh SDK[v%s] started', Version);

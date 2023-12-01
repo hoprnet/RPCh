@@ -24,6 +24,7 @@ export type NodePair = {
     entryData: EntryData.EntryData;
     exitNodes: Map<string, ExitNode.ExitNode>;
     exitDatas: Map<string, ExitData.ExitData>;
+    peers: string[]; // peerIds of potential relays
     relays: string[]; // peerIds of potential relays
     applicationTag: number;
     hops?: number;
@@ -32,6 +33,7 @@ export type NodePair = {
     infoTimeout?: ReturnType<typeof setTimeout>;
     fetchMessagesOngoing: boolean;
     log: ReturnType<typeof logger>;
+    forceManualRelaying: boolean;
 };
 
 export function create(
@@ -39,7 +41,8 @@ export function create(
     exitNodesIt: Iterable<ExitNode.ExitNode>,
     applicationTag: number,
     messageListener: MessageListener,
-    hops?: number,
+    hops: number,
+    forceManualRelaying: boolean,
 ): NodePair {
     const entryData = EntryData.create();
     const shortId = shortPeerId(entryNode.id);
@@ -53,12 +56,14 @@ export function create(
         entryData,
         exitNodes,
         exitDatas,
+        peers: [],
         relays: [],
         applicationTag,
         messageListener,
         fetchMessagesOngoing: false,
         log,
         hops,
+        forceManualRelaying,
     };
 }
 
@@ -135,7 +140,7 @@ export function segmentFailed(np: NodePair, seg: Segment.Segment) {
  */
 export function discover(np: NodePair) {
     const startPingTime = Date.now();
-    if (np.hops === 0) {
+    if (np.hops === 0 || !np.forceManualRelaying) {
         NodeAPI.version(np.entryNode)
             .then(() => {
                 np.entryData.pingDuration = Date.now() - startPingTime;
@@ -295,7 +300,7 @@ function incInfoResps(np: NodePair, infoResps: NodeAPI.Message[]) {
         if (Res.isErr(resDec)) {
             return np.log.error('error decoding info payload:', resDec.error);
         }
-        const { peerId, version, counter } = resDec.res;
+        const { peerId, version, counter, relays } = resDec.res;
         const nodeLog = ExitNode.prettyPrint(peerId, version, counter);
         const exitNode = np.exitNodes.get(peerId);
         if (!exitNode) {
@@ -310,6 +315,7 @@ function incInfoResps(np: NodePair, infoResps: NodeAPI.Message[]) {
         exitData.counterOffset = Date.now() - counter;
         exitData.infoLatMs = exitData.infoLatStarted && Date.now() - exitData.infoLatStarted;
         exitData.infoFail = false;
+        exitData.relays = relays;
         EntryData.removeOngoingInfo(np.entryData);
         clearTimeout(np.infoTimeout);
         np.infoTimeout = undefined;
@@ -324,13 +330,13 @@ function incPeers(np: NodePair, res: NodeAPI.Peers | NodeAPI.NodeError, startPin
     }
 
     // available peers
-    const relays = res.connected
+    const peers = res.connected
         .filter(({ reportedVersion }) =>
             RelayNodesCompatVersions.some((v) => reportedVersion.startsWith(v)),
         )
         .map(({ peerId, peerAddress }) => ({ peerId, peerAddress }));
     NodeAPI.getNodeChannels(np.entryNode)
-        .then((ch) => incChannels(np, ch, relays, startPingTime))
+        .then((ch) => incChannels(np, ch, peers, startPingTime))
         .catch((err) => {
             np.log.error('error fetching channels: %s[%o]', JSON.stringify(err), err);
         });
@@ -339,7 +345,7 @@ function incPeers(np: NodePair, res: NodeAPI.Peers | NodeAPI.NodeError, startPin
 function incChannels(
     np: NodePair,
     channels: NodeAPI.NodeChannels,
-    relays: { peerId: string; peerAddress: string }[],
+    peers: { peerId: string; peerAddress: string }[],
     startPingTime: number,
 ) {
     np.entryData.pingDuration = Date.now() - startPingTime;
@@ -349,7 +355,8 @@ function incChannels(
         .filter(({ status }) => status === 'Open')
         .map(({ peerAddress }) => peerAddress);
     const openChannels = new Set(openChannelsArr);
-    np.relays = relays
+    np.peers = peers.map(({ peerId }) => peerId);
+    np.relays = peers
         .filter(({ peerAddress }) => openChannels.has(peerAddress))
         .map(({ peerId }) => peerId);
     np.log.info('found %d potential relays', np.relays.length);

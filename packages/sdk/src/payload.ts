@@ -44,6 +44,7 @@ export type InfoPayload = {
     peerId: string;
     version: string;
     counter: number;
+    relays: string[]; // shortIds
 };
 
 export function encodeReq(payload: ReqPayload): Res.Result<string> {

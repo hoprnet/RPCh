@@ -14,7 +14,7 @@ export type NodeSelection = {
 };
 
 type EntryPerf = EntryData.Perf & { entryNode: EntryNode };
-type ExitPerf = ExitData.Perf & NodeMatch.NodeMatch;
+type ExitPerf = ExitData.Perf & NodeMatch.NodeMatch & { relays: string[] };
 
 /**
  * Try to distribute evenly with best route pairs preferred.
