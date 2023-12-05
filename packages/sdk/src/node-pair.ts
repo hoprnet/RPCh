@@ -300,7 +300,7 @@ function incInfoResps(np: NodePair, infoResps: NodeAPI.Message[]) {
         if (Res.isErr(resDec)) {
             return np.log.error('error decoding info payload:', resDec.error);
         }
-        const { peerId, version, counter, relays } = resDec.res;
+        const { peerId, version, counter, shRelays } = resDec.res;
         const nodeLog = ExitNode.prettyPrint(peerId, version, counter);
         const exitNode = np.exitNodes.get(peerId);
         if (!exitNode) {
@@ -315,7 +315,7 @@ function incInfoResps(np: NodePair, infoResps: NodeAPI.Message[]) {
         exitData.counterOffset = Date.now() - counter;
         exitData.infoLatMs = exitData.infoLatStarted && Date.now() - exitData.infoLatStarted;
         exitData.infoFail = false;
-        exitData.relays = relays;
+        exitData.shRelays = shRelays;
         EntryData.removeOngoingInfo(np.entryData);
         clearTimeout(np.infoTimeout);
         np.infoTimeout = undefined;

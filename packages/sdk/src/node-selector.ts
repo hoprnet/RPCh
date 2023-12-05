@@ -149,7 +149,10 @@ function createRoutePerfs(nodePairs: Map<string, NodePair.NodePair>) {
         const perfs = Array.from(np.exitDatas).map(([xId, xd]) => {
             const relays = np.relays.filter((rId) => rId !== xId && rId !== np.entryNode.id);
             const reqRelayPeerId = randomEl(relays);
-            const respRelayPeerId = randomEl(xd.relays);
+            const respRelays = relays.filter((rId) =>
+                xd.shRelays.find((shId) => rId.endsWith(shId)),
+            );
+            const respRelayPeerId = randomEl(respRelays);
             return {
                 ...ExitData.perf(xd),
                 entryNode: np.entryNode,
