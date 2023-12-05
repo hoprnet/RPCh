@@ -19,24 +19,11 @@ x-exit-service: &exit
     - sandbox
   depends_on:
     - pluto
-  command: "node apps/exit-node/build/index.js"
+  command: "node build/index.js"
 
 services:
-  manager:
-    build:
-      dockerfile: devkit/manager/Dockerfile
-      context: ../../../
-    restart: unless-stopped
-    ports:
-      - "3030:3030"
-    networks:
-      - sandbox
-    environment:
-      - DEBUG=${DEBUG}
-      - DP_SECRET=${DP_SECRET}
-      - PORT=3030
   pluto:
-    image: gcr.io/hoprassociation/hopr-pluto:${HOPR_PLUTO_VERSION}
+    image: europe-west3-docker.pkg.dev/hoprassociation/docker-images/hopr-pluto:${HOPR_PLUTO_VERSION}
     restart: unless-stopped
     volumes:
       - pluto-data:/tmp
@@ -49,8 +36,11 @@ services:
       - "8545:8545"
     networks:
       - sandbox
+    expose:
+      - 13301-13305
     environment:
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+      - HOPRD_HOST=0.0.0.0
   exit-1:
     <<: *exit
     environment:
@@ -59,6 +49,9 @@ services:
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_1}
+      - DISCOVERY_PLATFORM_API_ENDPOINT=${DISCOVERY_PLATFORM_API_ENDPOINT}
+      - DISCOVERY_PLATFORM_ACCESS_TOKEN=${DISCOVERY_PLATFORM_ACCESS_TOKEN}
+      - RPCH_DB_FILE=/exit-node-1.sqlite
   exit-2:
     <<: *exit
     environment:
@@ -67,6 +60,9 @@ services:
       - OPT_IN_METRICS=${OPT_IN_METRICS}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_2}
+      - DISCOVERY_PLATFORM_API_ENDPOINT=${DISCOVERY_PLATFORM_API_ENDPOINT}
+      - DISCOVERY_PLATFORM_ACCESS_TOKEN=${DISCOVERY_PLATFORM_ACCESS_TOKEN}
+      - RPCH_DB_FILE=/exit-node-2.sqlite
   exit-3:
     <<: *exit
     environment:
@@ -75,6 +71,9 @@ services:
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - OPT_IN_METRICS=${OPT_IN_METRICS}
       - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_3}
+      - DISCOVERY_PLATFORM_API_ENDPOINT=${DISCOVERY_PLATFORM_API_ENDPOINT}
+      - DISCOVERY_PLATFORM_ACCESS_TOKEN=${DISCOVERY_PLATFORM_ACCESS_TOKEN}
+      - RPCH_DB_FILE=/exit-node-3.sqlite
   exit-4:
     <<: *exit
     environment:
@@ -83,6 +82,9 @@ services:
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - OPT_IN_METRICS=${OPT_IN_METRICS}
       - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_4}
+      - DISCOVERY_PLATFORM_API_ENDPOINT=${DISCOVERY_PLATFORM_API_ENDPOINT}
+      - DISCOVERY_PLATFORM_ACCESS_TOKEN=${DISCOVERY_PLATFORM_ACCESS_TOKEN}
+      - RPCH_DB_FILE=/exit-node-4.sqlite
   exit-5:
     <<: *exit
     environment:
@@ -91,6 +93,9 @@ services:
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - OPT_IN_METRICS=${OPT_IN_METRICS}
       - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_5}
+      - DISCOVERY_PLATFORM_API_ENDPOINT=${DISCOVERY_PLATFORM_API_ENDPOINT}
+      - DISCOVERY_PLATFORM_ACCESS_TOKEN=${DISCOVERY_PLATFORM_ACCESS_TOKEN}
+      - RPCH_DB_FILE=/exit-node-5.sqlite
 
 # since this file is run first,
 # we create the sandbox network

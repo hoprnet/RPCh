@@ -44,41 +44,41 @@ start() {
 
     echo "Waiting for exit nodes setup"
 
-    until [[ $logs1 =~ "onOpen" ]]; do
+    until [[ $logs1 =~ "verbose opened websocket listener" ]]; do
         docker logs sandbox-nodes-exit-1-1 &> $DIR/logs
         logs1=$(cat $DIR/logs)
         sleep 1
     done
     echo "Node 1 running"
 
-    until [[ $logs2 =~ "onOpen" ]]; do
+    until [[ $logs2 =~ "verbose opened websocket listener" ]]; do
         docker logs sandbox-nodes-exit-2-1 &> $DIR/logs
         logs2=$(cat $DIR/logs)
         sleep 1
     done
     echo "Node 2 running"
 
-    until [[ $logs3 =~ "onOpen" ]]; do
+    until [[ $logs3 =~ "verbose opened websocket listener" ]]; do
         docker logs sandbox-nodes-exit-3-1 &> $DIR/logs
         logs3=$(cat $DIR/logs)
         sleep 1
     done
     echo "Node 3 running"
 
-    until [[ $logs4 =~ "onOpen" ]]; do
+    until [[ $logs4 =~ "verbose opened websocket listener" ]]; do
         docker logs sandbox-nodes-exit-4-1 &> $DIR/logs
         logs4=$(cat $DIR/logs)
         sleep 1
     done
     echo "Node 4 running"
 
-    until [[ $logs5 =~ "onOpen" ]]; do
+    until [[ $logs5 =~ "verbose opened websocket listener" ]]; do
         docker logs sandbox-nodes-exit-5-1 &> $DIR/logs
         logs5=$(cat $DIR/logs)
         sleep 1
     done
     echo "Node 5 running"
-    echo "All nodes ready!"
+    echo "All exit nodes ready!"
 
     echo "Waiting for node to find each other and channels to open"
     until [[ $pluto == true ]]; do
@@ -131,7 +131,7 @@ start() {
             -H "Content-Type: application/json" \
             -H "x-rpch-client: sandbox" \
             -d '{
-                "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
+                "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_API_ENDPOINT'",
                 "client": "sandbox",
                 "quota": "500"
             }'
@@ -146,7 +146,7 @@ start() {
         -H "Content-Type: application/json" \
         -H "x-rpch-client: trial" \
         -d '{
-            "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
+            "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_API_ENDPOINT'",
             "client": "trial",
             "quota": "500"
         }'
@@ -157,7 +157,7 @@ start() {
     scurl "http://127.0.0.1:3030/register-nodes" \
         -H "Content-Type: application/json" \
         -d '{
-            "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_ENDPOINT'",
+            "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_API_ENDPOINT'",
             "chainId": "31337",
             "X-Rpch-Client": "trial",
             "hoprdApiEndpoints": [
