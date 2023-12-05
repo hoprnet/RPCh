@@ -61,7 +61,7 @@ export type Ops = {
     readonly segmentLimit?: number;
     readonly versionListener?: (versions: DPapi.Versions) => void;
     readonly debugScope?: string;
-    readonly debugLevel?: 'verbose' | 'info' | 'warn' | 'error';
+    readonly debugLevel?: string; // 'verbose' | 'info' | 'warn' | 'error'
     readonly forceManualRelaying?: boolean;
 };
 

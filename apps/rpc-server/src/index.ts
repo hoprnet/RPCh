@@ -326,6 +326,7 @@ if (require.main === module) {
         segmentLimit: process.env.SEGMENT_LIMIT
             ? parseInt(process.env.SEGMENT_LIMIT, 10)
             : undefined,
+        debugLevel: process.env.DEBUG_LEVEL,
         versionListener,
     };
 
