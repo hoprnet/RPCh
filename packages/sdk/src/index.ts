@@ -48,6 +48,7 @@ export * as Utils from './utils';
  * @param segmentLimit - limit the number of segment a request can use, fails requests that require a larger number
  * @param versionListener - if you need to know what the current versions of RPCh related components are
  * @param debugScope - programatically set debug scope for SDK
+ * @param debugLevel - only print debug statements that match at least the desired level: verbose < info < warn < error
  */
 export type Ops = {
     readonly discoveryPlatformEndpoint?: string;
@@ -60,6 +61,7 @@ export type Ops = {
     readonly segmentLimit?: number;
     readonly versionListener?: (versions: DPapi.Versions) => void;
     readonly debugScope?: string;
+    readonly debugLevel?: string; // 'verbose' | 'info' | 'warn' | 'error'
     readonly forceManualRelaying?: boolean;
 };
 
@@ -87,6 +89,7 @@ const defaultOps: Ops = {
     forceZeroHop: false,
     segmentLimit: 0, // disable segment limit
     forceManualRelaying: false,
+    debugLevel: 'info',
 };
 
 const log = Utils.logger(['sdk']);
@@ -118,7 +121,8 @@ export default class SDK {
         ops: Ops = {},
     ) {
         this.ops = this.sdkOps(ops);
-        this.ops.debugScope && Utils.setDebugScope(this.ops.debugScope);
+        (this.ops.debugScope || this.ops.debugLevel) &&
+            Utils.setDebugScopeLevel(this.ops.debugScope, this.ops.debugLevel);
         this.requestCache = RequestCache.init();
         this.segmentCache = SegmentCache.init();
         this.hops = this.determineHops(!!this.ops.forceZeroHop);
@@ -530,6 +534,7 @@ export default class SDK {
             segmentLimit: ops.segmentLimit ?? defaultOps.segmentLimit,
             versionListener: ops.versionListener,
             debugScope: ops.debugScope,
+            debugLevel: ops.debugLevel || (process.env.DEBUG ? undefined : defaultOps.debugLevel),
             forceManualRelaying: ops.forceManualRelaying ?? defaultOps.forceManualRelaying,
         };
     };

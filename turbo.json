@@ -78,7 +78,8 @@
         "FORCE_ZERO_HOP",
         "FORCE_MANUAL_RELAYING",
         "SEGMENT_LIMIT",
-        "FAILED_REQUESTS_FILE"
+        "FAILED_REQUESTS_FILE",
+        "DEBUG_LEVEL"
       ]
     },
     "@rpch/availability-monitor#build": {
