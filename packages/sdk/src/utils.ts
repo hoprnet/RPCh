@@ -8,6 +8,8 @@ export enum VrsnCmp {
     MajorMismatch,
 }
 
+const DefaultLogLevel = 'info';
+
 export function shortPeerId(peerId: string): string {
     return `.${peerId.substring(peerId.length - 4)}`;
 }
@@ -82,4 +84,26 @@ export function versionCompare(ref: string, version: string): Res.Result<VrsnCmp
 
 export function setDebugScope(scope: string) {
     debug.enable(scope);
+}
+
+export function setDebugScopeLevel(scope?: string, level?: string) {
+    const scp = scope ? scope : '*';
+    const lvl = debugLevel(level);
+    debug.enable([scp, lvl].join(','));
+}
+
+function debugLevel(level?: string) {
+    const lvl = level ? level : DefaultLogLevel;
+    switch (lvl.toLowerCase()) {
+        case 'error':
+            return '-*:warn,-*:info,-*:verbose';
+        case 'warn':
+            return '-*:info,-*:verbose';
+        case 'info':
+            return '-*:verbose';
+        case 'verbose':
+            return '';
+        default:
+            return debugLevel(DefaultLogLevel);
+    }
 }
