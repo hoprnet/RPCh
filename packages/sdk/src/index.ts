@@ -89,6 +89,7 @@ const defaultOps: Ops = {
     forceZeroHop: false,
     segmentLimit: 0, // disable segment limit
     forceManualRelaying: false,
+    debugLevel: 'info',
 };
 
 const log = Utils.logger(['sdk']);
@@ -533,7 +534,7 @@ export default class SDK {
             segmentLimit: ops.segmentLimit ?? defaultOps.segmentLimit,
             versionListener: ops.versionListener,
             debugScope: ops.debugScope,
-            debugLevel: ops.debugLevel,
+            debugLevel: ops.debugLevel || (process.env.DEBUG ? undefined : defaultOps.debugLevel),
             forceManualRelaying: ops.forceManualRelaying ?? defaultOps.forceManualRelaying,
         };
     };
