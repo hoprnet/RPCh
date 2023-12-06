@@ -57,7 +57,10 @@ type Msg = {
 
 async function start(ops: Ops) {
     const state = await setup(ops).catch(() => {
-        log.error('error initializing %s', ExitNode.prettyPrint('(unknown)', Version, Date.now()));
+        log.error(
+            'error initializing %s',
+            ExitNode.prettyPrint('(unknown)', Version, Date.now(), []),
+        );
     });
     if (!state) {
         process.exit(1);
@@ -106,7 +109,7 @@ async function setup(ops: Ops): Promise<State> {
         apiEndpoint: ops.apiEndpoint,
         discoveryPlatformEndpoint: ops.discoveryPlatformEndpoint,
     };
-    log.info('%s started with %o', ExitNode.prettyPrint(peerId, Version, Date.now()), logOpts);
+    log.info('%s started with %o', ExitNode.prettyPrint(peerId, Version, Date.now(), []), logOpts);
 
     return {
         cache,
@@ -196,7 +199,7 @@ async function setupRelays(state: State, ops: Ops) {
             .map(({ peerId }) => peerId);
         log.info('found %d potential relays', relays.length);
     } catch (err) {
-        log.error('error during relay setup: %s[%o]', err);
+        log.error('error during relay setup: %s[%o]', JSON.stringify(err), err);
     } finally {
         setTimeout(() => scheduleSetupRelays(state, ops));
     }

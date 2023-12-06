@@ -109,17 +109,14 @@ async function runZeroHops(
     const peersExits = revertMap(exitPeers);
 
     // match routes
-    return Array.from(entryPeers.entries()).reduce<Map<string, Set<string>>>(
-        (acc, [entryId, peers]) => {
-            const exits = peersExits.get(entryId);
-            if (exits) {
-                const filteredPeers = [...peers].filter((p) => exits.has(p));
-                acc.set(entryId, new Set(filteredPeers));
-            }
-            return acc;
-        },
-        new Map(),
-    );
+    return Array.from(entryPeers).reduce<Map<string, Set<string>>>((acc, [entryId, peers]) => {
+        const exits = peersExits.get(entryId);
+        if (exits) {
+            const filteredPeers = [...peers].filter((p) => exits.has(p));
+            acc.set(entryId, new Set(filteredPeers));
+        }
+        return acc;
+    }, new Map());
 }
 
 async function runOneHops(
@@ -141,24 +138,43 @@ async function runOneHops(
 
     // match channels with peers
     const allEntryPeers = await peersMap(peersCache, entryNodes);
-    const entryPeers = filterChannels(allEntryPeers, channels);
+    const channelEntryPeers = filterChannels(allEntryPeers, channels);
 
     // gather exit peers and determine exit nodes reachable by their peers
-    const exitPeers = await peersMap(peersCache, exitNodes);
-    const peersExits = revertMap(exitPeers);
+    const allExitPeers = await peersMap(peersCache, exitNodes);
+    const channelExitPeers = filterChannels(allExitPeers, channels);
 
-    // match exits reachable by channel peers
-    return Array.from(entryPeers.entries()).reduce<Map<string, Set<string>>>(
-        (acc, [entryId, chPs]) => {
-            const exits = peersExits.get(entryId);
+    const peersExits = revertMap(allExitPeers);
+
+    return Array.from(channelEntryPeers).reduce<Map<string, Set<string>>>((acc, [eId, ePeers]) => {
+        // exits reachable via channeled peers
+        const resExitsArr = Array.from(ePeers).map<string[]>((pId) => {
+            const exits = peersExits.get(pId);
             if (exits) {
-                const filteredPeers = [...chPs].filter((p) => exits.has(p));
-                acc.set(entryId, new Set(filteredPeers));
+                return [...exits];
             }
-            return acc;
-        },
-        new Map(),
-    );
+            return [];
+        });
+
+        const exits = new Set(resExitsArr.flat());
+
+        // at this point we know which exits are reachable from this entry
+        // going to filter those exits further by determining if they have a valid return path
+        const exitsArr = Array.from(exits).filter((xId) => {
+            const chPs = channelExitPeers.get(xId);
+            if (!chPs) {
+                return false;
+            }
+            const peers = allEntryPeers.get(eId);
+            if (!peers) {
+                return false;
+            }
+            return !!Array.from(chPs).find((pId) => peers.has(pId));
+        });
+
+        acc.set(eId, new Set(exitsArr));
+        return acc;
+    }, new Map());
 }
 
 async function peersMap(
@@ -166,14 +182,12 @@ async function peersMap(
     nodes: q.RegisteredNode[],
 ): Promise<Map<string, Set<string>>> {
     const pRaw = nodes.map(async (node) => {
-        const peers = await PeersCache.fetchPeers(peersCache, node).catch((err) =>
-            log.error('fetch peers from %s: %s[%o]', node.id, JSON.stringify(err), err),
-        );
-        if (peers) {
-            const ids = Array.from(peers.values()).map(({ peerId }) => peerId);
-            return [node.id, new Set(ids)];
-        }
-        return null;
+        const peers = await PeersCache.fetchPeers(peersCache, node).catch((err) => {
+            log.error('fetch peers from %s: %s[%o]', node.id, JSON.stringify(err), err);
+            throw err;
+        });
+        const ids = Array.from(peers.values()).map(({ peerId }) => peerId);
+        return [node.id, new Set(ids)];
     });
 
     const raw = await Promise.allSettled(pRaw);
@@ -204,7 +218,7 @@ async function filterOnline(
             return acc;
         }, new Map());
 
-    const pPongs = Array.from(messagePreps.entries()).map(async ([eId, { eNode, exitIds }]) => {
+    const pPongs = Array.from(messagePreps).map(async ([eId, { eNode, exitIds }]) => {
         const conn = {
             apiEndpoint: new URL(eNode.hoprd_api_endpoint),
             accessToken: eNode.hoprd_api_token,
@@ -295,7 +309,7 @@ function channelsMap(channels: NodeAPI.Channel[]): Map<string, Set<string>> {
 }
 
 function revertMap<K, V>(map: Map<K, Set<V>>): Map<V, Set<K>> {
-    return Array.from(map.entries()).reduce((acc, [id, vals]) => {
+    return Array.from(map).reduce((acc, [id, vals]) => {
         vals.forEach((v) => {
             if (acc.has(v)) {
                 acc.get(v).add(id);
@@ -345,7 +359,7 @@ function filterChannels(
     peers: Map<string, Set<string>>,
     channels: Map<string, Set<string>>,
 ): Map<string, Set<string>> {
-    return Array.from(peers.entries()).reduce((acc, [id, prs]) => {
+    return Array.from(peers).reduce((acc, [id, prs]) => {
         const chans = channels.get(id);
         if (chans) {
             const vals = [...prs].filter((x) => chans.has(x));

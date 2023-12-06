@@ -144,6 +144,7 @@ export function discover(np: NodePair) {
         NodeAPI.version(np.entryNode)
             .then(() => {
                 np.entryData.pingDuration = Date.now() - startPingTime;
+                np.log.verbose('version ping took %dms', np.entryData.pingDuration);
             })
             .catch((err) => {
                 np.log.error('error fetching version: %s[%o]', JSON.stringify(err), err);
@@ -301,7 +302,7 @@ function incInfoResps(np: NodePair, infoResps: NodeAPI.Message[]) {
             return np.log.error('error decoding info payload:', resDec.error);
         }
         const { peerId, version, counter, shRelays } = resDec.res;
-        const nodeLog = ExitNode.prettyPrint(peerId, version, counter);
+        const nodeLog = ExitNode.prettyPrint(peerId, version, counter, shRelays);
         const exitNode = np.exitNodes.get(peerId);
         if (!exitNode) {
             return np.log.info('info response for missing exit node %s', nodeLog);
@@ -336,7 +337,9 @@ function incPeers(np: NodePair, res: NodeAPI.Peers | NodeAPI.NodeError, startPin
         )
         .map(({ peerId, peerAddress }) => ({ peerId, peerAddress }));
     NodeAPI.getNodeChannels(np.entryNode)
-        .then((ch) => incChannels(np, ch, peers, startPingTime))
+        .then((ch) => {
+            incChannels(np, ch, peers, startPingTime);
+        })
         .catch((err) => {
             np.log.error('error fetching channels: %s[%o]', JSON.stringify(err), err);
         });
@@ -349,6 +352,7 @@ function incChannels(
     startPingTime: number,
 ) {
     np.entryData.pingDuration = Date.now() - startPingTime;
+    np.log.verbose('channel ping took %dms', np.entryData.pingDuration);
 
     // open channels
     const openChannelsArr = channels.outgoing

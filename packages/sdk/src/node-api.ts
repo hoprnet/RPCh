@@ -78,7 +78,7 @@ export function connectWS(conn: ConnInfo): WebSocket {
 export function sendMessage(
     conn: ConnInfo & { hops?: number; relay?: string },
     { recipient, tag, message }: { recipient: string; tag: number; message: string },
-): Promise<string> {
+): Promise<string | NodeError> {
     const url = new URL('/api/v3/messages', conn.apiEndpoint);
     const headers = {
         'Accept': 'application/json',
@@ -101,14 +101,7 @@ export function sendMessage(
         }
     }
     const body = JSON.stringify(payload);
-    return new Promise((resolve, reject) => {
-        return fetch(url, { method: 'POST', headers, body }).then((res) => {
-            if (res.status !== 202) {
-                return reject(`Unexpected response status code: ${res.status}`);
-            }
-            resolve(res.json() as unknown as string);
-        });
-    });
+    return fetch(url, { method: 'POST', headers, body }).then((res) => res.json());
 }
 
 export function version(conn: ConnInfo) {
