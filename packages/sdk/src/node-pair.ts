@@ -315,7 +315,8 @@ function fetchMessages(np: NodePair) {
 
 function incInfoResps(np: NodePair, infoResps: NodeAPI.Message[]) {
     infoResps.forEach(({ body }) => {
-        const [, payload] = body.split('-');
+        const idx = body.indexOf('-');
+        const payload = body.slice(idx + 1);
         const resDec = Payload.decodeInfo(payload);
         if (Res.isErr(resDec)) {
             return np.log.error('error decoding info payload:', resDec.error);
