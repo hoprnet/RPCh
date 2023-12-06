@@ -88,7 +88,7 @@ export function encodeInfo(payload: InfoPayload): Res.Result<string> {
         const res = LZString.compressToUTF16(JSON.stringify(payload));
         return Res.ok(res);
     } catch (ex) {
-        return Res.err(`Error encoding info payload: ${ex} - ${payload}`);
+        return Res.err(`Error encoding info payload: ${ex}`);
     }
 }
 

@@ -301,6 +301,7 @@ function onInfoReq(state: State, ops: Ops, msg: Msg) {
         version: Version,
         shRelays: state.relays.map((rId) => Utils.shortPeerId(rId).substring(1)),
     };
+    log.verbose('encoding info payload %o', info);
     const res = Payload.encodeInfo(info);
     if (Res.isErr(res)) {
         log.error('error encoding info:', res.error);
