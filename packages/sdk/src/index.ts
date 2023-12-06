@@ -49,6 +49,7 @@ export * as Utils from './utils';
  * @param versionListener - if you need to know what the current versions of RPCh related components are
  * @param debugScope - programatically set debug scope for SDK
  * @param debugLevel - only print debug statements that match at least the desired level: verbose < info < warn < error
+ * @param forceManualRelaying - determine relay nodes for requests/responses and enforce them for one hop messages, can not be used with zero hop
  */
 export type Ops = {
     readonly discoveryPlatformEndpoint?: string;
@@ -522,20 +523,25 @@ export default class SDK {
     };
 
     private sdkOps = (ops: Ops) => {
+        const discoveryPlatformEndpoint =
+            ops.discoveryPlatformEndpoint || defaultOps.discoveryPlatformEndpoint;
+        const forceZeroHop = ops.forceZeroHop ?? defaultOps.forceZeroHop;
+        const forceManualRelaying = forceZeroHop
+            ? false
+            : ops.forceManualRelaying ?? defaultOps.forceManualRelaying;
         return {
-            discoveryPlatformEndpoint:
-                ops.discoveryPlatformEndpoint || defaultOps.discoveryPlatformEndpoint,
+            discoveryPlatformEndpoint,
             timeout: ops.timeout || defaultOps.timeout,
             provider: ops.provider || defaultOps.provider,
             disableMevProtection: ops.disableMevProtection ?? defaultOps.disableMevProtection,
             mevProtectionProvider: ops.mevProtectionProvider || defaultOps.mevProtectionProvider,
             mevKickbackAddress: ops.mevKickbackAddress,
-            forceZeroHop: ops.forceZeroHop ?? defaultOps.forceZeroHop,
+            forceZeroHop,
             segmentLimit: ops.segmentLimit ?? defaultOps.segmentLimit,
             versionListener: ops.versionListener,
             debugScope: ops.debugScope,
             debugLevel: ops.debugLevel || (process.env.DEBUG ? undefined : defaultOps.debugLevel),
-            forceManualRelaying: ops.forceManualRelaying ?? defaultOps.forceManualRelaying,
+            forceManualRelaying,
         };
     };
 
