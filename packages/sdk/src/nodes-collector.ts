@@ -51,7 +51,7 @@ export default class NodesCollector {
             const check = () => {
                 const now = Date.now();
                 const elapsed = now - start;
-                const res = NodeSel.routePair(this.nodePairs);
+                const res = NodeSel.routePair(this.nodePairs, this.forceManualRelaying);
                 if (Res.isOk(res)) {
                     log.verbose('ready with route pair: %s', NodeSel.prettyPrint(res.res));
                     return resolve(true);
@@ -75,7 +75,7 @@ export default class NodesCollector {
             const check = () => {
                 const now = Date.now();
                 const elapsed = now - start;
-                const res = NodeSel.routePair(this.nodePairs);
+                const res = NodeSel.routePair(this.nodePairs, this.forceManualRelaying);
                 if (Res.isOk(res)) {
                     log.verbose('found route pair: %s', NodeSel.prettyPrint(res.res));
                     return resolve(res.res.match);
@@ -94,7 +94,7 @@ export default class NodesCollector {
      * Request secondary node pair.
      */
     public fallbackNodePair = (exclude: EntryNode): NodeMatch | undefined => {
-        const res = NodeSel.fallbackRoutePair(this.nodePairs, exclude);
+        const res = NodeSel.fallbackRoutePair(this.nodePairs, exclude, this.forceManualRelaying);
         if (Res.isOk(res)) {
             log.verbose('found fallback route pair: %s', NodeSel.prettyPrint(res.res));
             return res.res.match;

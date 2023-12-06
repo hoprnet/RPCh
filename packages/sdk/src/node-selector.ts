@@ -20,8 +20,11 @@ type ExitPerf = ExitData.Perf & NodeMatch.NodeMatch;
  * Try to distribute evenly with best route pairs preferred.
  *
  */
-export function routePair(nodePairs: Map<string, NodePair.NodePair>): Res.Result<NodeSelection> {
-    const routePerfs = createRoutePerfs(nodePairs);
+export function routePair(
+    nodePairs: Map<string, NodePair.NodePair>,
+    forceManualRelaying: boolean,
+): Res.Result<NodeSelection> {
+    const routePerfs = createRoutePerfs(nodePairs, forceManualRelaying);
     return match(nodePairs, routePerfs);
 }
 
@@ -33,8 +36,9 @@ export function routePair(nodePairs: Map<string, NodePair.NodePair>): Res.Result
 export function fallbackRoutePair(
     nodePairs: Map<string, NodePair.NodePair>,
     exclude: EntryNode,
+    forceManualRelaying: boolean,
 ): Res.Result<NodeSelection> {
-    const routePerfs = createRoutePerfs(nodePairs);
+    const routePerfs = createRoutePerfs(nodePairs, forceManualRelaying);
     const filtered = routePerfs.filter(({ entryNode }) => entryNode.id !== exclude.id);
     return match(nodePairs, filtered);
 }
@@ -144,13 +148,13 @@ function success(
     });
 }
 
-function createRoutePerfs(nodePairs: Map<string, NodePair.NodePair>) {
+function createRoutePerfs(nodePairs: Map<string, NodePair.NodePair>, forceManualRelaying: boolean) {
     return Array.from(nodePairs.values()).reduce<ExitPerf[]>((acc, np) => {
         const perfs = Array.from(np.exitDatas).map(([xId, xd]) => {
             const relays = np.relays.filter((rId) => rId !== xId && rId !== np.entryNode.id);
             const reqRelayPeerId = randomEl(relays);
-            const respRelays = relays.filter((rId) =>
-                xd.shRelays.find((shId) => rId.endsWith(shId)),
+            const respRelays = np.peers.filter(
+                (pId) => pId !== xId && xd.shRelays.find((shId) => pId.endsWith(shId)),
             );
             const respRelayPeerId = randomEl(respRelays);
             return {
@@ -161,6 +165,12 @@ function createRoutePerfs(nodePairs: Map<string, NodePair.NodePair>) {
                 respRelayPeerId,
             };
         });
+        if (forceManualRelaying) {
+            const withRelays = perfs.filter(
+                ({ reqRelayPeerId, respRelayPeerId }) => reqRelayPeerId && respRelayPeerId,
+            );
+            return acc.concat(withRelays);
+        }
         return acc.concat(perfs);
     }, []);
 }

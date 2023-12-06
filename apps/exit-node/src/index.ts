@@ -299,7 +299,7 @@ function onInfoReq(state: State, ops: Ops, msg: Msg) {
         peerId: state.peerId,
         counter: Date.now(),
         version: Version,
-        shRelays: state.relays.map(Utils.shortPeerId),
+        shRelays: state.relays.map((rId) => Utils.shortPeerId(rId).substring(1)),
     };
     const res = Payload.encodeInfo(info);
     if (Res.isErr(res)) {
