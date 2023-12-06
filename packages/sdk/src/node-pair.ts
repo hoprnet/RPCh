@@ -38,7 +38,7 @@ export type NodePair = {
 
 export function create(
     entryNode: EntryNode,
-    exitNodesIt: Iterable<ExitNode.ExitNode>,
+    exitNodes: ExitNode.ExitNode[],
     applicationTag: number,
     messageListener: MessageListener,
     hops: number,
@@ -47,15 +47,13 @@ export function create(
     const entryData = EntryData.create();
     const shortId = shortPeerId(entryNode.id);
     const log = logger(['sdk', `nodepair${shortId}(${entryNode.apiEndpoint})`]);
-    // ensure entry node not included in exits
-    const exits = Array.from(exitNodesIt).filter((n) => entryNode.id !== n.id);
-    const exitNodes = new Map(exits.map((n) => [n.id, n]));
-    const exitDatas = new Map(exits.map((n) => [n.id, ExitData.create()]));
+    const exitNodesMap = new Map(exitNodes.map((n) => [n.id, n]));
+    const exitDatasMap = new Map(exitNodes.map((n) => [n.id, ExitData.create()]));
     return {
         entryNode,
         entryData,
-        exitNodes,
-        exitDatas,
+        exitNodes: exitNodesMap,
+        exitDatas: exitDatasMap,
         peers: [],
         relays: [],
         applicationTag,
@@ -65,6 +63,15 @@ export function create(
         hops,
         forceManualRelaying,
     };
+}
+
+export function addExitNodes(np: NodePair, exitNodes: ExitNode.ExitNode[]) {
+    exitNodes.forEach((x) => {
+        if (!np.exitNodes.has(x.id)) {
+            np.exitNodes.set(x.id, x);
+            np.exitDatas.set(x.id, ExitData.create());
+        }
+    });
 }
 
 export function destruct(np: NodePair) {

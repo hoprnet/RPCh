@@ -1,4 +1,5 @@
 import * as DPapi from './dp-api';
+import * as ExitNode from './exit-node';
 import * as NodePair from './node-pair';
 import * as NodeSel from './node-selector';
 import * as Request from './request';
@@ -14,14 +15,12 @@ export type VersionListener = (versions: DPapi.Versions) => void;
 
 const log = logger(['sdk', 'nodes-collector']);
 
-const NodePairFetchTimeout = 10e3; // 10 seconds downtime to avoid repeatedly querying DP
-const NodePairAmount = 10; // how many routes do we fetch
+const RoutesFetchInterval = 1e3 * 60 * 10; // 10 min
+const RoutesAmount = 10; // fetch 10 routes
 
 export default class NodesCollector {
     private readonly nodePairs: Map<string, NodePair.NodePair> = new Map();
-    private lastFetchNodePairs = 0;
     private lastMatchedAt = new Date(0);
-    private ongoingFetchPairs = false;
 
     constructor(
         private readonly discoveryPlatformEndpoint: string,
@@ -32,7 +31,7 @@ export default class NodesCollector {
         private readonly hops: number,
         private readonly forceManualRelaying: boolean,
     ) {
-        this.fetchNodePairs();
+        this.fetchRoutes();
     }
 
     public destruct = () => {
@@ -165,49 +164,49 @@ export default class NodesCollector {
         log.warn('failed %s on %s', Segment.prettyPrint(seg), NodePair.prettyPrint(np));
     };
 
-    private fetchNodePairs = () => {
-        if (this.ongoingFetchPairs) {
-            log.verbose('discovering node pairs ongoing');
-            return;
-        }
-        const diff = Date.now() - this.lastFetchNodePairs;
-        if (diff < NodePairFetchTimeout) {
-            log.verbose(
-                'discovering node pairs too early - need to wait %dms',
-                NodePairFetchTimeout - diff,
-            );
-        }
-        this.ongoingFetchPairs = true;
-
+    private fetchRoutes = () => {
         DPapi.fetchNodes(
             {
                 discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
                 clientId: this.clientId,
                 forceZeroHop: this.hops === 0,
             },
-            NodePairAmount,
+            RoutesAmount,
             this.lastMatchedAt,
         )
             .then(this.initNodes)
             .catch((err) => {
-                if (err.message === DPapi.NoMoreNodes) {
-                    log.warn('no node pairs available');
+                if (err.message === DPapi.Unauthorized) {
+                    this.logUnauthorized();
+                } else if (err.message === DPapi.NoMoreNodes && this.nodePairs.size === 0) {
+                    this.logNoNodes();
+                } else if (err.message === DPapi.NoMoreNodes) {
+                    log.info('no new nodes found');
                 } else {
                     log.error('error fetching node pairs: %s[%o]', JSON.stringify(err), err);
                 }
             })
             .finally(() => {
-                this.lastFetchNodePairs = Date.now();
-                this.ongoingFetchPairs = false;
+                this.scheduleFetchRoutes();
             });
     };
 
     private initNodes = (nodes: DPapi.Nodes) => {
         const lookupExitNodes = new Map(nodes.exitNodes.map((x) => [x.id, x]));
-        nodes.entryNodes
-            .filter((en) => !this.nodePairs.has(en.id))
-            .forEach((en) => {
-                const exitNodes = en.recommendedExits.map((id) => lookupExitNodes.get(id)!);
+        nodes.entryNodes.forEach((en) => {
+            const exitNodes = en.recommendedExits
+                .map((id) => lookupExitNodes.get(id) as ExitNode.ExitNode)
+                // ensure entry node not included in exits
+                .filter((x) => x.id !== en.id);
+
+            if (exitNodes.length === 0) {
+                return;
+            }
+
+            if (this.nodePairs.has(en.id)) {
+                const np = this.nodePairs.get(en.id) as NodePair.NodePair;
+                NodePair.addExitNodes(np, exitNodes);
+            } else {
                 const np = NodePair.create(
                     en,
                     exitNodes,
@@ -217,15 +216,61 @@ export default class NodesCollector {
                     this.forceManualRelaying,
                 );
                 this.nodePairs.set(NodePair.id(np), np);
-            });
+            }
+        });
 
-        // reping all nodes
+        // ping all nodes
         this.nodePairs.forEach((np) => NodePair.discover(np));
+        this.lastMatchedAt = new Date(nodes.matchedAt);
         log.info(
-            'discovered %d node-pairs with %d exits',
+            'discovered %d node-pairs with %d exits, matched at %s',
             this.nodePairs.size,
             lookupExitNodes.size,
+            this.lastMatchedAt,
         );
         this.versionListener(nodes.versions);
+    };
+
+    private scheduleFetchRoutes = () => {
+        // schdule next run somehwere between 10min and 12min
+        const next = RoutesFetchInterval + Math.floor(Math.random() * 2 * 60e3);
+        const logM = Math.floor(next / 1000 / 60);
+        const logS = Math.round(next / 1000) - logM * 60;
+
+        log.info('scheduling next node pair fetching in %dm%ds', logM, logS);
+        setTimeout(() => this.fetchRoutes(), next);
+    };
+
+    private logUnauthorized = () => {
+        const errMessage = [
+            '***',
+            'Authentication failed',
+            '-',
+            'Client ID is not valid.',
+            'Visit https://degen.rpch.net to get a valid Client ID!',
+            '***',
+        ].join(' ');
+        const errDeco = Array.from({ length: errMessage.length }, () => '*').join('');
+        log.error('');
+        log.error(`!!! ${errDeco} !!!`);
+        log.error(`!!! ${errMessage} !!!`);
+        log.error(`!!! ${errDeco} !!!`);
+        log.error('');
+        this.destruct();
+    };
+
+    private logNoNodes = () => {
+        const errMessage = [
+            '***',
+            'No node pairs available.',
+            'Contact support at https://degen.rpch.net to report this problem!',
+            '***',
+        ].join(' ');
+        const errDeco = Array.from({ length: errMessage.length }, () => '*').join('');
+        log.error('');
+        log.error(`!!! ${errDeco} !!!`);
+        log.error(`!!! ${errMessage} !!!`);
+        log.error(`!!! ${errDeco} !!!`);
+        log.error('');
     };
 }
