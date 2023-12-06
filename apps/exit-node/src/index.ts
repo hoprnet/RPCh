@@ -409,16 +409,13 @@ async function completeSegmentsEntry(
  * The exit node will only select a relay if one was given via request payload.
  * It will check if that is a valid relay, otherwise it will choose one of the relays determine by itself.
  */
-function determineRelay(
-    state: State,
-    { hops, respRelayPeerId }: { hops?: number; respRelayPeerId?: string },
-) {
+function determineRelay(state: State, { hops, relayPeerId }: Payload.ReqPayload) {
     if (hops === 0) {
         return;
     }
-    if (respRelayPeerId) {
-        if (state.relays.includes(respRelayPeerId)) {
-            return respRelayPeerId;
+    if (relayPeerId) {
+        if (state.relays.includes(relayPeerId)) {
+            return relayPeerId;
         } else {
             return Utils.randomEl(state.relays);
         }
@@ -459,10 +456,10 @@ function sendResponse(
 
     const segments = Segment.toSegments(requestId, resResp.res);
 
-    const relayString = relay ? `(${Utils.shortPeerId(relay)})` : '';
+    const relayString = relay ? `(r${Utils.shortPeerId(relay)})` : '';
 
     log.verbose(
-        'returning message to %s%s, tag: %s, requestId: %s',
+        'returning message to e%s%s, tag: %s, requestId: %s',
         Utils.shortPeerId(entryPeerId),
         relayString,
         tag,
