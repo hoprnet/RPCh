@@ -377,5 +377,5 @@ function incChannels(
     np.relays = peers
         .filter(({ peerAddress }) => openChannels.has(peerAddress))
         .map(({ peerId }) => peerId);
-    np.log.info('found %d potential relays', np.relays.length);
+    np.log.verbose('found %d potential relays', np.relays.length);
 }
