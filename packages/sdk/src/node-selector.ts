@@ -13,6 +13,8 @@ export type NodeSelection = {
     via: string;
 };
 
+export type NodesSorting = Map<string, Set<string>>;
+
 type EntryPerf = EntryData.Perf & { entryNode: EntryNode };
 type ExitPerf = ExitData.Perf & NodeMatch.NodeMatch;
 
@@ -176,21 +178,7 @@ function createRoutePerfs(nodePairs: Map<string, NodePair.NodePair>, forceManual
 }
 
 function noInfoFails(routePerfs: ExitPerf[]): ExitPerf[] {
-    // boolean sort: false first
-    routePerfs.sort((l, r) => {
-        if (l.infoFail === r.infoFail) {
-            return 0;
-        }
-        if (l.infoFail) {
-            return 1;
-        }
-        return -1;
-    });
-    const idx = routePerfs.findIndex(({ infoFail }) => infoFail);
-    if (idx > 0) {
-        return routePerfs.slice(0, idx);
-    }
-    return routePerfs;
+    return routePerfs.filter(({ infoFail }) => !infoFail);
 }
 
 function versionMatches(routePerfs: ExitPerf[]): ExitPerf[] {

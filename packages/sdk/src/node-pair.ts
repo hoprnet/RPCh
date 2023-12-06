@@ -74,6 +74,11 @@ export function addExitNodes(np: NodePair, exitNodes: ExitNode.ExitNode[]) {
     });
 }
 
+export function removeExitNode(np: NodePair, xId: string) {
+    np.exitNodes.delete(xId);
+    np.exitDatas.delete(xId);
+}
+
 export function destruct(np: NodePair) {
     clearTimeout(np.fetchTimeout);
     np.fetchTimeout = undefined;

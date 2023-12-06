@@ -5,7 +5,7 @@ import * as NodeSel from './node-selector';
 import * as Request from './request';
 import * as Res from './result';
 import * as Segment from './segment';
-import { logger } from './utils';
+import * as Utils from './utils';
 
 import type { MessageListener } from './node-pair';
 import type { EntryNode } from './entry-node';
@@ -13,7 +13,7 @@ import type { NodeMatch } from './node-match';
 
 export type VersionListener = (versions: DPapi.Versions) => void;
 
-const log = logger(['sdk', 'nodes-collector']);
+const log = Utils.logger(['sdk', 'nodes-collector']);
 
 const RoutesFetchInterval = 1e3 * 60 * 10; // 10 min
 const RoutesAmount = 10; // fetch 10 routes
@@ -219,6 +219,8 @@ export default class NodesCollector {
             }
         });
 
+        this.removeRedundant();
+
         // ping all nodes
         this.nodePairs.forEach((np) => NodePair.discover(np));
         this.lastMatchedAt = new Date(nodes.matchedAt);
@@ -272,5 +274,46 @@ export default class NodesCollector {
         log.error(`!!! ${errMessage} !!!`);
         log.error(`!!! ${errDeco} !!!`);
         log.error('');
+    };
+
+    private removeRedundant = () => {
+        const count = Array.from(this.nodePairs).reduce<number>(
+            (acc, [_, np]) => np.exitNodes.size + acc,
+            0,
+        );
+        let toRemove = count - RoutesAmount;
+        if (toRemove <= 0) {
+            return;
+        }
+        const removablePairs = Array.from(this.nodePairs).reduce<[string, string][]>(
+            (acc, [eId, np]) => {
+                const removableExitIds = Array.from(np.exitNodes.keys()).filter((xId) => {
+                    const exitData = np.exitDatas.get(xId);
+                    if (!exitData) {
+                        return true;
+                    }
+                    return exitData.requestsOngoing.length === 0;
+                });
+                return acc.concat(removableExitIds.map((xId) => [eId, xId]));
+            },
+            [],
+        );
+        while (removablePairs.length > 0 && toRemove > 0) {
+            const idx = Utils.randomIdx(removablePairs);
+            const [eId, xId] = removablePairs[idx] as [string, string];
+            const np = this.nodePairs.get(eId);
+            if (np) {
+                NodePair.removeExitNode(np, xId);
+                if (np.exitNodes.size === 0) {
+                    NodePair.destruct(np);
+                    this.nodePairs.delete(eId);
+                }
+                toRemove--;
+                removablePairs.splice(idx, 1);
+                if (toRemove === 0) {
+                    return;
+                }
+            }
+        }
     };
 }

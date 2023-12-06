@@ -15,7 +15,11 @@ export function shortPeerId(peerId: string): string {
 }
 
 export function randomEl<T>(arr: T[]): T {
-    return arr[Math.floor(Math.random() * arr.length)];
+    return arr[randomIdx(arr)];
+}
+
+export function randomIdx<T>(arr: T[]): number {
+    return Math.floor(Math.random() * arr.length);
 }
 
 export function average(arr: number[]): number {

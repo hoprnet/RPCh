@@ -491,6 +491,6 @@ function genExitData(additionals: any = {}): ExitData.ExitData {
     };
 }
 
-function createNp(eNode: EntryNode, exitNodesIt: Iterable<ExitNode>) {
+function createNp(eNode: EntryNode, exitNodesIt: ExitNode[]) {
     return NodePair.create(eNode, exitNodesIt, 0, () => {}, 0, false);
 }
