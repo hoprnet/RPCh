@@ -30,7 +30,7 @@ export type NodePair = {
     hops?: number;
     messageListener: MessageListener;
     fetchTimeout?: ReturnType<typeof setTimeout>;
-    infoTimeout?: ReturnType<typeof setTimeout>;
+    infoTimeouts: Map<string, ReturnType<typeof setTimeout>>;
     fetchMessagesOngoing: boolean;
     log: ReturnType<typeof logger>;
     forceManualRelaying: boolean;
@@ -57,6 +57,7 @@ export function create(
         peers: [],
         relays: [],
         applicationTag,
+        infoTimeouts: new Map(),
         messageListener,
         fetchMessagesOngoing: false,
         log,
@@ -197,7 +198,7 @@ function requestInfo(np: NodePair, exitNode: ExitNode.ExitNode) {
     }
     // stop checking for info resp at after this
     // will still be able to receive info resp if messages went over this route
-    np.infoTimeout = setTimeout(() => {
+    const timeout = setTimeout(() => {
         np.log.warn(
             'timeout (%dms) waiting for info response from x%s',
             InfoResponseTimeout,
@@ -214,6 +215,7 @@ function requestInfo(np: NodePair, exitNode: ExitNode.ExitNode) {
         }
         exitData.infoFail = true;
     }, InfoResponseTimeout);
+    np.infoTimeouts.set(exitNode.id, timeout);
 }
 
 export function prettyPrint(np: NodePair): string {
@@ -315,8 +317,7 @@ function fetchMessages(np: NodePair) {
 
 function incInfoResps(np: NodePair, infoResps: NodeAPI.Message[]) {
     infoResps.forEach(({ body }) => {
-        const idx = body.indexOf('-');
-        const payload = body.slice(idx + 1);
+        const payload = body.slice(body.indexOf('-') + 1);
         const resDec = Payload.decodeInfo(payload);
         if (Res.isErr(resDec)) {
             return np.log.error('error decoding info payload:', resDec.error);
@@ -340,8 +341,9 @@ function incInfoResps(np: NodePair, infoResps: NodeAPI.Message[]) {
         exitData.infoFail = false;
         exitData.shRelays = shortRelays;
         EntryData.removeOngoingInfo(np.entryData);
-        clearTimeout(np.infoTimeout);
-        np.infoTimeout = undefined;
+        const t = np.infoTimeouts.get(peerId);
+        clearTimeout(t);
+        np.infoTimeouts.delete(peerId);
     });
     checkStopInterval(np);
 }
