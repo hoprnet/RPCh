@@ -198,12 +198,19 @@ function requestInfo(np: NodePair, exitNode: ExitNode.ExitNode) {
     // stop checking for info resp at after this
     // will still be able to receive info resp if messages went over this route
     np.infoTimeout = setTimeout(() => {
-        np.log.warn('timeout (%dms) waiting for info response', InfoResponseTimeout);
+        np.log.warn(
+            'timeout (%dms) waiting for info response from x%s',
+            InfoResponseTimeout,
+            shortPeerId(exitNode.id),
+        );
         EntryData.removeOngoingInfo(np.entryData);
         checkStopInterval(np);
         const exitData = np.exitDatas.get(exitNode.id);
         if (!exitData) {
-            return np.log.error('missing exit data for %s during info resp timeout', exitNode.id);
+            return np.log.error(
+                'missing exit data for x%s during info resp timeout',
+                shortPeerId(exitNode.id),
+            );
         }
         exitData.infoFail = true;
     }, InfoResponseTimeout);

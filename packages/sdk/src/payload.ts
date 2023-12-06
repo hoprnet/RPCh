@@ -52,7 +52,7 @@ export function encodeReq(payload: ReqPayload): Res.Result<string> {
         const res = LZString.compressToUTF16(JSON.stringify(payload));
         return Res.ok(res);
     } catch (ex) {
-        return Res.err(`Error encoding request payload: ${ex}`);
+        return Res.err(`Error encoding request payload: ${ex} | ${payload}`);
     }
 }
 
