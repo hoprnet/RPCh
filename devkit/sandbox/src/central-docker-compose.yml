@@ -17,8 +17,8 @@ services:
     image: postgres:14.1-alpine
     restart: always
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     networks:
@@ -60,14 +60,18 @@ services:
       - sandbox-proxy
     environment:
       - DEBUG=${DEBUG}
+      - URL=http://127.0.0.1:3020
       - PORT=3020
-      - DB_CONNECTION_URL=postgresql://postgres:postgres@postgres-db:5432
+      - DATABASE_URL=postgresql://postgres:postgres@postgres-db:5432
       - FUNDING_SERVICE_URL=http://funding-service:3010
       - AVAILABILITY_MONITOR_URL=http://availability-monitor:3050
       - SKIP_CHECK_COMMITMENT=${SKIP_CHECK_COMMITMENT}
-      - SECRET=${DP_SECRET}
+      - ADMIN_SECRET=${ADMIN_SECRET}
+      - SESSION_SECRET=${SESSION_SECRET}
       - RUNNING_IN_SANDBOX=${RUNNING_IN_SANDBOX}
       - DISCOVERY_PLATFORM_ACCESS_TOKEN=${DISCOVERY_PLATFORM_ACCESS_TOKEN}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
 
   availability-monitor:
     build:
@@ -77,13 +81,13 @@ services:
       - postgres-db
     restart: unless-stopped
     ports:
-      - "3050:3050"
+      - "9080:9080"
     networks:
       - sandbox-proxy
     environment:
       - DEBUG=${DEBUG}
-      - PORT=3050
-      - DB_CONNECTION_URL=postgresql://postgres:postgres@postgres-db:5432
+      - PORT=9080
+      - DATABASE_URL=postgresql://postgres:postgres@postgres-db:5432
 
 # we create a proxy to the sandbox
 # network created in 'nodes-docker-compose'

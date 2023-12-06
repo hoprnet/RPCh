@@ -1,5 +1,11 @@
 # @rpch/sandbox
 
+## 0.2.0
+
+### Changes
+
+- Full rework of the Sandbox to work with new 1.7.0 RPCh
+
 ## 0.1.1
 
 ### Patch Changes
