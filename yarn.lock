@@ -1375,13 +1375,6 @@
   resolved "https://registry.yarnpkg.com/@tsconfig/node16/-/node16-1.0.4.tgz#0b92dcc0cc1c81f6f306a381f28e31b1a56536e9"
   integrity sha512-vxhUy4J8lyeyinH7Azl1pdd43GJhZH/tP2weN8TntQblOY+A0XbT8DJk1/oCPuOOyg/Ja757rG0CgHcWC8OfMA==
 
-"@types/async-retry@^1.4.5":
-  version "1.4.7"
-  resolved "https://registry.yarnpkg.com/@types/async-retry/-/async-retry-1.4.7.tgz#2b2bbb44f6755f28eba367a6593d198f5e2cb45b"
-  integrity sha512-4NH5wuf9x7LZWD23/knI6RBywD1qCmLm7wNaqq0riy7hdDrCGGfkPOUvx0Cb78lVrFrEnCvocoL8+UcvSQlBDw==
-  dependencies:
-    "@types/retry" "*"
-
 "@types/babel__core@^7.1.14":
   version "7.20.3"
   resolved "https://registry.yarnpkg.com/@types/babel__core/-/babel__core-7.20.3.tgz#d5625a50b6f18244425a1359a858c73d70340778"
@@ -1611,11 +1604,6 @@
   version "1.2.6"
   resolved "https://registry.yarnpkg.com/@types/range-parser/-/range-parser-1.2.6.tgz#7cb33992049fd7340d5b10c0098e104184dfcd2a"
   integrity sha512-+0autS93xyXizIYiyL02FCY8N+KkKPhILhcUSA276HxzreZ16kl+cmwvV2qAM/PuCCwPXzOXOWhiPcw20uSFcA==
-
-"@types/retry@*":
-  version "0.12.4"
-  resolved "https://registry.yarnpkg.com/@types/retry/-/retry-0.12.4.tgz#67d65e2df7a82b0b0ec0ba7fb2711c50c2adf1f4"
-  integrity sha512-l1YzFLj8Y6OhLdt7HKXlz56DoEmksB7qR8KVk+MpFsS4duwnoszLgDlLxJB0vgSqtg/rAS5gmYg5Bjw2sMJ8Ew==
 
 "@types/secp256k1@^4.0.5":
   version "4.0.5"
