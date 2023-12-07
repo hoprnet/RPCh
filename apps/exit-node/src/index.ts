@@ -24,7 +24,7 @@ const log = Utils.logger(['exit-node']);
 const SocketReconnectTimeout = 1e3; // 1sek
 const RequestPurgeTimeout = 60e3; // 60sek
 const ValidCounterPeriod = 1e3 * 60 * 60; // 1hour
-const RelayNodesCompatVersions = ['2.0.4'];
+const RelayNodesCompatVersions = ['2.0.6'];
 const SetupRelayPeriod = 1e3 * 60 * 15; // 15 min
 
 type State = {
@@ -301,7 +301,6 @@ function onInfoReq(state: State, ops: Ops, msg: Msg) {
         version: Version,
         shRelays: state.relays.map((rId) => Utils.shortPeerId(rId).substring(1)),
     };
-    log.verbose('encoding info payload %o', info);
     const res = Payload.encodeInfo(info);
     if (Res.isErr(res)) {
         log.error('error encoding info:', res.error);
