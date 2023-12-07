@@ -48,7 +48,7 @@ export * as Utils from './utils';
  * @param segmentLimit - limit the number of segment a request can use, fails requests that require a larger number
  * @param versionListener - if you need to know what the current versions of RPCh related components are
  * @param debugScope - programatically set debug scope for SDK
- * @param debugLevel - only print debug statements that match at least the desired level: verbose < info < warn < error
+ * @param logLevel - only print log statements that match at least the desired level: verbose < info < warn < error
  * @param forceManualRelaying - determine relay nodes for requests/responses and enforce them for one hop messages, can not be used with zero hop
  */
 export type Ops = {
@@ -62,7 +62,7 @@ export type Ops = {
     readonly segmentLimit?: number;
     readonly versionListener?: (versions: DPapi.Versions) => void;
     readonly debugScope?: string;
-    readonly debugLevel?: string; // 'verbose' | 'info' | 'warn' | 'error'
+    readonly logLevel?: string; // 'verbose' | 'info' | 'warn' | 'error'
     readonly forceManualRelaying?: boolean;
 };
 
@@ -90,7 +90,7 @@ const defaultOps = {
     forceZeroHop: false,
     segmentLimit: 0, // disable segment limit
     forceManualRelaying: false,
-    debugLevel: 'info',
+    logLevel: 'info',
 };
 
 const log = Utils.logger(['sdk']);
@@ -122,8 +122,8 @@ export default class SDK {
         ops: Ops = {},
     ) {
         this.ops = this.sdkOps(ops);
-        (this.ops.debugScope || this.ops.debugLevel) &&
-            Utils.setDebugScopeLevel(this.ops.debugScope, this.ops.debugLevel);
+        (this.ops.debugScope || this.ops.logLevel) &&
+            Utils.setDebugScopeLevel(this.ops.debugScope, this.ops.logLevel);
         this.requestCache = RequestCache.init();
         this.segmentCache = SegmentCache.init();
         this.hops = this.determineHops(!!this.ops.forceZeroHop);
@@ -536,7 +536,7 @@ export default class SDK {
             segmentLimit: ops.segmentLimit ?? defaultOps.segmentLimit,
             versionListener: ops.versionListener,
             debugScope: ops.debugScope,
-            debugLevel: ops.debugLevel || (process.env.DEBUG ? undefined : defaultOps.debugLevel),
+            logLevel: ops.logLevel || (process.env.DEBUG ? undefined : defaultOps.logLevel),
             forceManualRelaying,
         };
     };

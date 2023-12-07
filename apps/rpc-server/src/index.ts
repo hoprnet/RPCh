@@ -314,7 +314,7 @@ function parseBooleanEnv(env?: string) {
  * FORCE_ZERO_HOP - Ops.forceZeroHop
  * FORCE_MANUAL_RELAYING - Ops.forceManualRelaying
  * SEGMENT_LIMIT - Ops.segmentLimit
- * DEBUG_LEVEL - Ops.debugLevel
+ * LOG_LEVEL - Ops.logLevel
  *
  * See **RPChSDK.RequestOps** for overridable per request parameters.
  */
@@ -337,7 +337,7 @@ if (require.main === module) {
         segmentLimit: process.env.SEGMENT_LIMIT
             ? parseInt(process.env.SEGMENT_LIMIT, 10)
             : undefined,
-        debugLevel: process.env.DEBUG_LEVEL,
+        logLevel: process.env.LOG_LEVEL,
         versionListener,
     };
 
