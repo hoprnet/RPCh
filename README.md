@@ -8,7 +8,6 @@ The RPCh monorepo contains the main components required to bring RPCh to life.
 
 We have four main project folders:
 
-1. [configs](./configs/): contains internal configurations, not published
 2. [packages](./packages/): contains libraries that are used internally, and could be used externally, published
 3. [apps](./apps/): contains services which are run centrally by the RPCh org
 4. [devkit](./devkit/): contains developer tools and sandbox material
@@ -57,10 +56,24 @@ X.X.X  # Semver versioning for that app or package
 
 ## Deployment
 
+Github Workflows builds and pushes container images to our configured artifacts registry.
+
+### Availability Monitor
+
+Version tag on main branch: `@rpch/availability-monitor-vX.X.X`
+
+The Availability Monitor is managed via [applications](https://github.com/Rpc-h/applications) repo.
+Update tagged version for staging or production in respective `application.yaml` and push to main branch.
+
+### Discovery Platform
+
+Version tag on main branch: `@rpch/discovery-platform-vX.X.X`
+
+The Discovery Platform is managed via [applications](https://github.com/Rpc-h/applications) repo.
+Update tagged version for staging or production in respective `application.yaml` and push to main branch.
+
+
 Deployment works automated.
 For staging, pull requests are built and merges/pushes to the `main` branch will also trigger builds.
 For production, this works a little bit different.
 Whenever a new tags is updated (usually alongside corresponding changeset changes) on `main` the automation will check
-
-- if it can build new application container images
-- if it can publish new npm packages
