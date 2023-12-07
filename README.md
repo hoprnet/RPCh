@@ -63,17 +63,48 @@ Github Workflows builds and pushes container images to our configured artifacts 
 Version tag on main branch: `@rpch/availability-monitor-vX.X.X`
 
 The Availability Monitor is managed via [applications](https://github.com/Rpc-h/applications) repo.
-Update tagged version for staging or production in respective `application.yaml` and push to main branch.
+Update version in `<ENV>/availability-monitor/application.yaml` and push to main branch.
 
 ### Discovery Platform
 
 Version tag on main branch: `@rpch/discovery-platform-vX.X.X`
 
 The Discovery Platform is managed via [applications](https://github.com/Rpc-h/applications) repo.
-Update tagged version for staging or production in respective `application.yaml` and push to main branch.
+Update version in `<ENV>/discovery-platform/application.yaml` and push to main branch.
 
+### Exit Node
 
-Deployment works automated.
-For staging, pull requests are built and merges/pushes to the `main` branch will also trigger builds.
-For production, this works a little bit different.
-Whenever a new tags is updated (usually alongside corresponding changeset changes) on `main` the automation will check
+Version tag on main branch: `@rpch/exit-node-vX.X.X`
+
+Exit Nodes are managed via [infrastructure](https://github.com/Rpc-h/infrastructure) repo.
+Update version in `day-1/inventories/<ENV>/group_vars/all/vars.yaml` and run exit node deployment:
+
+```
+env=<ENV> ANSIBLE_HOST_KEY_CHECKING=False private_key=<SSH PRIVATE KEY> make install-exit-node
+```
+
+Create a pull request afterwards.
+
+### RPC Server
+
+Version tag on main branch: `@rpch/rpc-server-vX.X.X`
+
+RPC Server that are version tagged on main branch will contain an additional container tag: `latest`.
+In order to inform users that there is a new version update the database of the Discovery Platform with that version inside the `configs` table;
+[RPCh degen webiste](https://degen.rpch.net/) will also show the updated info there.
+The [Latency Monitor](https://github.com/Rpc-h/latency-monitor) also uses rpc servers. To update those follow instructions there.
+
+### RPCh Compat Crypto
+
+Version tag on main branch: `@rpch/compat-crypto-vX.X.X`
+
+Published version can be found on [npm](https://www.npmjs.com/package/@rpch/compat-crypto).
+A new version can be published by running `$ yarn publish`.
+
+### RPCh SDK
+
+Version tag on main branch: `@rpch/sdk-vX.X.X`
+
+Published version can be found on [npm](https://www.npmjs.com/package/@rpch/sdk).
+A new version can be published by running `$ yarn publish`.
+If it depends on a new version of Compat Crypto, make sure to publish the new version there as well.

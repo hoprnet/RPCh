@@ -6,7 +6,7 @@ RPCh Exit Node is an application which will be able to fulfil RPC requests and r
 
 ## Run with Docker
 
-To be able to run the funding platform with Docker, you first need to build the image, for that, we will use the following command
+To be able to run the Exit Node with Docker, you first need to build the image, for that, we will use the following command
 
 ```sh
 docker build -t exit-node -f Dockerfile ../../
@@ -17,15 +17,16 @@ After building the image, you will be able to run it with: \
 
 ```sh
 docker run \
--e HOPRD_API_ENDPOINT="<YOUR HOPRD API ENDPOINT>" \
--e HOPRD_API_TOKEN="<YOUR HOPRD API TOKEN>" \
--e DEBUG="rpch*,-*verbose" \
--e RPCH_PASSWORD="PleaseChangeMe" \
--e RPCH_IDENTITY_FILE= \
--e RPCH_PRIVATE_KEY= \
--e RPCH_DATA_DIR= \
+-e RPCH_PRIVATE_KEY=<EXIT NODE PRIVATE KEY> \
+-e HOPRD_API_ENDPOINT=<HOPRD NODE TO LISTEN TO> \
+-e HOPRD_API_TOKEN=<HOPRD NODE ACCESS TOKEN> \
+-e DEBUG="*" \
+-e DISCOVERY_PLATFORM_API_ENDPOINT=<URL TO DP> \
+-e DISCOVERY_PLATFORM_ACCESS_TOKEN=<DP ACCESS TOKEN> \
+-e RPCH_DB_FILE=<DATABASE FILE FOR INTERNAL STORAGE> \
 exit-node
 ```
+
 
 ## Run with Docker Compose (run hoprd node too)
 
