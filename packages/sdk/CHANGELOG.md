@@ -1,5 +1,12 @@
 # @rpch/sdk
 
+## 1.9.0
+
+### Minor Changes
+
+-   978f729: Increase performance of sending large requests
+    Fix impact of relay handling when not using manual relaying
+
 ## 1.8.0
 
 ### Minor Changes

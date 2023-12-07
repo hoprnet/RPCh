@@ -1,5 +1,13 @@
 # @rpch/availability-monitor
 
+## 1.0.1
+
+### Patch Changes
+
+-   978f729: put slightly less load on nodes used for pinging
+-   Updated dependencies [978f729]
+    -   @rpch/sdk@1.9.0
+
 ## 1.0.0
 
 ### Major Changes

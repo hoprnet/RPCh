@@ -1,5 +1,12 @@
 # @rpch/discovery-platform
 
+## 1.0.1
+
+### Patch Changes
+
+-   Updated dependencies [978f729]
+    -   @rpch/sdk@1.9.0
+
 ## 1.0.0
 
 ### Major Changes
