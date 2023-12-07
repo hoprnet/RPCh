@@ -57,6 +57,27 @@ X.X.X  # Semver versioning for that app or package
 ## Deployment
 
 Github Workflows builds and pushes container images to our configured artifacts registry.
+During development changesets are used to manage user facing changelogs.
+
+### Staging deployment
+
+To update singular applications on staging, the usual flow is like this:
+
+* Create PR with desired changes
+* Wait for automation job to build and upload container
+* Take container hash - easiest from [artifacts registry](https://console.cloud.google.com/artifacts/docker/rpch-375921/europe-west6/rpch?project=rpch-375921)
+* Use hash according to deployment instructions for the desired applications further down
+
+### Production deployment
+
+* Checkout latest `main` branch and run `$ yarn changeset version`
+* Execute `$ yarn build` from the root folder
+* If you updated the Exit Node make sure to update [SDK compatibility Version](https://github.com/Rpc-h/RPCh/blob/main/packages/sdk/src/node-selector.ts#L9)
+* Add changes and make a version commit
+* Tag all applications/packages that you updated and want to deploy
+* Ideally you have now one commit ahead of `origin/main` with all the tags.
+* Push it `$ git push origin main --tags`
+* After the correct tags for your application where built, follow deployment instructions further down
 
 ### Availability Monitor
 
