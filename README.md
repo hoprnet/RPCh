@@ -3,6 +3,12 @@
 ## Description
 
 The RPCh monorepo contains the main components required to bring RPCh to life.
+Discovery Platform holds entry and exit nodes information and delivers best routes through the API to the SDK.
+Availability Monitor determines those routes.
+The Exit Node is an application connected to the hoprd exit node that does the actual RPC provider interaction.
+RPC server leverages the RPCh SDK to provide RPCh functionality as a configurable endpoint.
+CompatCrypto package implements RPCh [crypto protocol](https://docs.google.com/document/d/1YnyigOW-_i7-u-FjZhOsPnRei3WpIwLdYz5kTPi3AXk/edit#heading=h.av7965dt9dvc).
+RPCh SDK is the integration point for routing JSON RPC requests through [hopr mixnet](https://docs.hoprnet.org/core/what-is-hopr).
 
 ### Project structure
 
