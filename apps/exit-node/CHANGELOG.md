@@ -1,5 +1,18 @@
 # @rpch/exit-node
 
+## 1.0.0
+
+### Major Changes
+
+-   85d02e3: Include relays in info response
+    Better exit node logging
+
+### Patch Changes
+
+-   Updated dependencies [85d02e3]
+-   Updated dependencies [655f519]
+    -   @rpch/sdk@1.8.0
+
 ## 0.14.1
 
 ### Patch Changes

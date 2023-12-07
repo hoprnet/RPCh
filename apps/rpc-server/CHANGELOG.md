@@ -1,5 +1,22 @@
 # @rpch/rpc-server
 
+## 1.0.0
+
+### Major Changes
+
+-   85d02e3: Use `FAILED_REQUESTS_FILE` env var to log failed requests to file.
+    Elevate to stable version.
+
+### Patch Changes
+
+-   655f519: Expose `DEBUG_LEVEL` in RPC server and allow debugLevel ops parameter in SDK.
+    This will set a minimal debug level and can be used in addition with scope to better control logging output.
+    SDK and RPC-Server now default to `info` log level.
+    Will only use default log level if `DEBUG` is not set.
+-   Updated dependencies [85d02e3]
+-   Updated dependencies [655f519]
+    -   @rpch/sdk@1.8.0
+
 ## 0.14.0
 
 ### Minor Changes

@@ -79,7 +79,7 @@ To update singular applications on staging, the usual flow is like this:
 * Checkout latest `main` branch and run `$ yarn changeset version`
 * Execute `$ yarn build` from the root folder
 * If you updated the Exit Node make sure to update [SDK compatibility Version](https://github.com/Rpc-h/RPCh/blob/main/packages/sdk/src/node-selector.ts#L9)
-* If you updated hoprd and want to rely on SDK's relay pathing update [Nodes compatibility Version](https://github.com/Rpc-h/RPCh/blob/main/packages/sdk/src/nodes-collector.ts#L20)
+* If you updated hoprd and want to rely on SDK's relay pathing update [Nodes compatibility Version](https://github.com/Rpc-h/RPCh/blob/main/packages/sdk/src/node-pair.ts#L20)
 * Add changes and make a version commit
 * Tag all applications/packages that you updated and want to deploy
 * Ideally you have now one commit ahead of `origin/main` with all the tags.

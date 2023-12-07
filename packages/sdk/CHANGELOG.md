@@ -1,5 +1,22 @@
 # @rpch/sdk
 
+## 1.8.0
+
+### Minor Changes
+
+-   85d02e3: Better highlight node fetching errors and mitigations. Specifically invalid client ids and no nodes available.
+    Allow SDK relay path specification (via `FORCE_MANUAL_RELAYING`) for request and response paths. This means the SDK determines quality peers with the help of the exit node to specify relays.
+    Fix an issue when the SDK would falsly report info response timeouts.
+    Repeatedly ask Discovery Platform for new nodes and update routes accordingly.
+    Fix an issue when decoding compressed info response from exit node.
+
+### Patch Changes
+
+-   655f519: Expose `DEBUG_LEVEL` in RPC server and allow debugLevel ops parameter in SDK.
+    This will set a minimal debug level and can be used in addition with scope to better control logging output.
+    SDK and RPC-Server now default to `info` log level.
+    Will only use default log level if `DEBUG` is not set.
+
 ## 1.7.1
 
 ### Patch Changes

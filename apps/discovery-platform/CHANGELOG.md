@@ -1,5 +1,17 @@
 # @rpch/discovery-platform
 
+## 1.0.0
+
+### Major Changes
+
+-   85d02e3: Elevate version to indicate stable production version
+
+### Patch Changes
+
+-   Updated dependencies [85d02e3]
+-   Updated dependencies [655f519]
+    -   @rpch/sdk@1.8.0
+
 ## 0.14.4
 
 ### Patch Changes

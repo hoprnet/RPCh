@@ -1,5 +1,18 @@
 # @rpch/availability-monitor
 
+## 1.0.0
+
+### Major Changes
+
+-   85d02e3: Correctly filter peers - channels from entry nodes to exit nodes and on the response path
+
+### Patch Changes
+
+-   85d02e3: fix logging output for one hop
+-   Updated dependencies [85d02e3]
+-   Updated dependencies [655f519]
+    -   @rpch/sdk@1.8.0
+
 ## 0.8.1
 
 ### Patch Changes
