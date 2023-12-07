@@ -1,5 +1,11 @@
 # @rpch/sdk
 
+## 1.10.0
+
+### Minor Changes
+
+-   2c13794: Rename DEBUG_LEVEL to LOG_LEVEL to avoid conflicts with bash logger inside RPC server container
+
 ## 1.9.0
 
 ### Minor Changes
