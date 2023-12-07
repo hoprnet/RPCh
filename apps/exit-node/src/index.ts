@@ -57,7 +57,10 @@ type Msg = {
 
 async function start(ops: Ops) {
     const state = await setup(ops).catch(() => {
-        log.error('error initializing %s', ExitNode.prettyPrint('(unknown)', Version, Date.now()));
+        log.error(
+            'error initializing %s',
+            ExitNode.prettyPrint('(unknown)', Version, Date.now(), []),
+        );
     });
     if (!state) {
         process.exit(1);
@@ -106,7 +109,7 @@ async function setup(ops: Ops): Promise<State> {
         apiEndpoint: ops.apiEndpoint,
         discoveryPlatformEndpoint: ops.discoveryPlatformEndpoint,
     };
-    log.info('%s started with %o', ExitNode.prettyPrint(peerId, Version, Date.now()), logOpts);
+    log.info('%s started with %o', ExitNode.prettyPrint(peerId, Version, Date.now(), []), logOpts);
 
     return {
         cache,
@@ -196,7 +199,7 @@ async function setupRelays(state: State, ops: Ops) {
             .map(({ peerId }) => peerId);
         log.info('found %d potential relays', relays.length);
     } catch (err) {
-        log.error('error during relay setup: %s[%o]', err);
+        log.error('error during relay setup: %s[%o]', JSON.stringify(err), err);
     } finally {
         setTimeout(() => scheduleSetupRelays(state, ops));
     }
@@ -296,7 +299,9 @@ function onInfoReq(state: State, ops: Ops, msg: Msg) {
         peerId: state.peerId,
         counter: Date.now(),
         version: Version,
+        shRelays: state.relays.map((rId) => Utils.shortPeerId(rId).substring(1)),
     };
+    log.verbose('encoding info payload %o', info);
     const res = Payload.encodeInfo(info);
     if (Res.isErr(res)) {
         log.error('error encoding info:', res.error);
@@ -405,16 +410,13 @@ async function completeSegmentsEntry(
  * The exit node will only select a relay if one was given via request payload.
  * It will check if that is a valid relay, otherwise it will choose one of the relays determine by itself.
  */
-function determineRelay(
-    state: State,
-    { hops, respRelayPeerId }: { hops?: number; respRelayPeerId?: string },
-) {
+function determineRelay(state: State, { hops, relayPeerId }: Payload.ReqPayload) {
     if (hops === 0) {
         return;
     }
-    if (respRelayPeerId) {
-        if (state.relays.includes(respRelayPeerId)) {
-            return respRelayPeerId;
+    if (relayPeerId) {
+        if (state.relays.includes(relayPeerId)) {
+            return relayPeerId;
         } else {
             return Utils.randomEl(state.relays);
         }
@@ -455,10 +457,10 @@ function sendResponse(
 
     const segments = Segment.toSegments(requestId, resResp.res);
 
-    const relayString = relay ? `(${Utils.shortPeerId(relay)})` : '';
+    const relayString = relay ? `(r${Utils.shortPeerId(relay)})` : '';
 
     log.verbose(
-        'returning message to %s%s, tag: %s, requestId: %s',
+        'returning message to e%s%s, tag: %s, requestId: %s',
         Utils.shortPeerId(entryPeerId),
         relayString,
         tag,

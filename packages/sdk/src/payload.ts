@@ -44,6 +44,7 @@ export type InfoPayload = {
     peerId: string;
     version: string;
     counter: number;
+    shRelays: string[]; // shortIds
 };
 
 export function encodeReq(payload: ReqPayload): Res.Result<string> {
@@ -87,7 +88,7 @@ export function encodeInfo(payload: InfoPayload): Res.Result<string> {
         const res = LZString.compressToUTF16(JSON.stringify(payload));
         return Res.ok(res);
     } catch (ex) {
-        return Res.err('Error encoding info payload');
+        return Res.err(`Error encoding info payload: ${ex}`);
     }
 }
 
@@ -96,6 +97,6 @@ export function decodeInfo(payload: string): Res.Result<InfoPayload> {
         const res = JSON.parse(LZString.decompressFromUTF16(payload));
         return Res.ok(res);
     } catch (ex) {
-        return Res.err('Error encoding info payload');
+        return Res.err(`Error decoding info payload: ${ex}`);
     }
 }

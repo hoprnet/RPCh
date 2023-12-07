@@ -6,12 +6,14 @@ import * as Res from './result';
 import type { EntryNode } from './entry-node';
 import { shortPeerId, randomEl } from './utils';
 
-const ExitNodesCompatVersions = ['0.13', '0.14'];
+const ExitNodesCompatVersions = ['1.'];
 
 export type NodeSelection = {
     match: NodeMatch.NodeMatch;
     via: string;
 };
+
+export type NodesSorting = Map<string, Set<string>>;
 
 type EntryPerf = EntryData.Perf & { entryNode: EntryNode };
 type ExitPerf = ExitData.Perf & NodeMatch.NodeMatch;
@@ -20,8 +22,11 @@ type ExitPerf = ExitData.Perf & NodeMatch.NodeMatch;
  * Try to distribute evenly with best route pairs preferred.
  *
  */
-export function routePair(nodePairs: Map<string, NodePair.NodePair>): Res.Result<NodeSelection> {
-    const routePerfs = createRoutePerfs(nodePairs);
+export function routePair(
+    nodePairs: Map<string, NodePair.NodePair>,
+    forceManualRelaying: boolean,
+): Res.Result<NodeSelection> {
+    const routePerfs = createRoutePerfs(nodePairs, forceManualRelaying);
     return match(nodePairs, routePerfs);
 }
 
@@ -33,8 +38,9 @@ export function routePair(nodePairs: Map<string, NodePair.NodePair>): Res.Result
 export function fallbackRoutePair(
     nodePairs: Map<string, NodePair.NodePair>,
     exclude: EntryNode,
+    forceManualRelaying: boolean,
 ): Res.Result<NodeSelection> {
-    const routePerfs = createRoutePerfs(nodePairs);
+    const routePerfs = createRoutePerfs(nodePairs, forceManualRelaying);
     const filtered = routePerfs.filter(({ entryNode }) => entryNode.id !== exclude.id);
     return match(nodePairs, filtered);
 }
@@ -144,13 +150,15 @@ function success(
     });
 }
 
-function createRoutePerfs(nodePairs: Map<string, NodePair.NodePair>) {
-    // TODO better relay selection
+function createRoutePerfs(nodePairs: Map<string, NodePair.NodePair>, forceManualRelaying: boolean) {
     return Array.from(nodePairs.values()).reduce<ExitPerf[]>((acc, np) => {
         const perfs = Array.from(np.exitDatas).map(([xId, xd]) => {
             const relays = np.relays.filter((rId) => rId !== xId && rId !== np.entryNode.id);
             const reqRelayPeerId = randomEl(relays);
-            const respRelayPeerId = randomEl(relays);
+            const respRelays = np.peers.filter(
+                (pId) => pId !== xId && xd.shRelays.find((shId) => pId.endsWith(shId)),
+            );
+            const respRelayPeerId = randomEl(respRelays);
             return {
                 ...ExitData.perf(xd),
                 entryNode: np.entryNode,
@@ -159,26 +167,18 @@ function createRoutePerfs(nodePairs: Map<string, NodePair.NodePair>) {
                 respRelayPeerId,
             };
         });
+        if (forceManualRelaying) {
+            const withRelays = perfs.filter(
+                ({ reqRelayPeerId, respRelayPeerId }) => reqRelayPeerId && respRelayPeerId,
+            );
+            return acc.concat(withRelays);
+        }
         return acc.concat(perfs);
     }, []);
 }
 
 function noInfoFails(routePerfs: ExitPerf[]): ExitPerf[] {
-    // boolean sort: false first
-    routePerfs.sort((l, r) => {
-        if (l.infoFail === r.infoFail) {
-            return 0;
-        }
-        if (l.infoFail) {
-            return 1;
-        }
-        return -1;
-    });
-    const idx = routePerfs.findIndex(({ infoFail }) => infoFail);
-    if (idx > 0) {
-        return routePerfs.slice(0, idx);
-    }
-    return routePerfs;
+    return routePerfs.filter(({ infoFail }) => !infoFail);
 }
 
 function versionMatches(routePerfs: ExitPerf[]): ExitPerf[] {

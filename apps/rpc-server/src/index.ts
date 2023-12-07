@@ -293,17 +293,28 @@ function parseBooleanEnv(env?: string) {
 /**
  * RPC server - uses RPChSDK to perform JSON-RPC requests.
  *
- * Reads ENV vars:
+ * ENV vars for this RPC server:
  *
- * PORT - default port to run on, optional
  * RESTRICT_CORS - do not allow requests from everywhere
+ * SKIP_RPCH - just relay requests directly, do not use RPCh
+ * FAILED_REQUESTS_FILE - log failed requests to this file
+ * PORT - default port to run on, optional
  *
- * CLIENT - client id, identifier of your wallet/application, required
- * RESPONSE_TIMEOUT - default request-response timeout, optional, can be overridden per request
- * PROVIDER - default rpc provider endpoint, optional, can be overridden per request
- * DISABLE_MEV_PROTECTION - disable special handling of transaction request on mainnet
- * MEV_PROTECTION_PROVIDER - transaction rpc provider endpoint
- * MEV_KICKBACK_ADDRESS - revenue share address when using mev protection provider
+ * ENV vars for RPCh SDK:
+ *
+ * See **RPChSDK.Ops** for documentation on those.
+ *
+ * CLIENT - cliendId your unique string used to identify how many requests your client/wallet pushes through the network
+ * DISCOVERY_PLATFORM_API_ENDPOINT - Ops.discoveryPlatformEndpoint
+ * RESPONSE_TIMEOUT - Ops.timeout
+ * PROVIDER - Ops.provider
+ * DISABLE_MEV_PROTECTION - Ops.disableMevProtection
+ * MEV_PROTECTION_PROVIDER - Ops.mevProtectionProvider
+ * MEV_KICKBACK_ADDRESS - Ops.mevKickbackAddress
+ * FORCE_ZERO_HOP - Ops.forceZeroHop
+ * FORCE_MANUAL_RELAYING - Ops.forceManualRelaying
+ * SEGMENT_LIMIT - Ops.segmentLimit
+ * DEBUG_LEVEL - Ops.debugLevel
  *
  * See **RPChSDK.RequestOps** for overridable per request parameters.
  */

@@ -18,6 +18,7 @@ export type Perf = {
 export type ExitData = {
     requestsOngoing: string[]; // sorted ongoing request ids
     requestsHistory: string[]; // sorted resolved request ids
+    shRelays: string[]; // shortPeerIds
     requests: Map<string, PerfData.PerfData>; // request data
     infoFail?: boolean; // info req hard fail
     counterOffset?: number; // counter offset after info msg
@@ -28,6 +29,7 @@ export type ExitData = {
 
 export function create(): ExitData {
     return {
+        shRelays: [], // short peerIds
         requestsOngoing: [],
         requestsHistory: [],
         requests: new Map(),

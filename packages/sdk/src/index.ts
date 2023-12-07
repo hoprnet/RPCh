@@ -49,6 +49,7 @@ export * as Utils from './utils';
  * @param versionListener - if you need to know what the current versions of RPCh related components are
  * @param debugScope - programatically set debug scope for SDK
  * @param debugLevel - only print debug statements that match at least the desired level: verbose < info < warn < error
+ * @param forceManualRelaying - determine relay nodes for requests/responses and enforce them for one hop messages, can not be used with zero hop
  */
 export type Ops = {
     readonly discoveryPlatformEndpoint?: string;
@@ -80,7 +81,7 @@ const RPC_PROPELLORHEADS = 'https://rpc.propellerheads.xyz/eth';
  * Global defaults.
  * See **Ops** for details.
  **/
-const defaultOps: Ops = {
+const defaultOps = {
     discoveryPlatformEndpoint: 'https://discovery.rpch.tech',
     timeout: 10e3,
     provider: 'https://gnosis-provider.rpch.tech',
@@ -106,7 +107,7 @@ export default class SDK {
     private readonly segmentCache: SegmentCache.Cache;
     private readonly redoRequests: Set<string> = new Set();
     private readonly nodesColl: NodesCollector;
-    private readonly ops: Ops;
+    private readonly ops;
     private readonly chainIds: Map<string, number> = new Map();
     private readonly hops?: number;
 
@@ -127,12 +128,13 @@ export default class SDK {
         this.segmentCache = SegmentCache.init();
         this.hops = this.determineHops(!!this.ops.forceZeroHop);
         this.nodesColl = new NodesCollector(
-            this.ops.discoveryPlatformEndpoint as string,
+            this.ops.discoveryPlatformEndpoint,
             this.clientId,
             ApplicationTag,
             this.onMessages,
             this.onVersions,
             this.hops,
+            this.ops.forceManualRelaying,
         );
         this.fetchChainId(this.ops.provider as string);
         log.info('RPCh SDK[v%s] started', Version);
@@ -154,7 +156,7 @@ export default class SDK {
      * If no timeout specified, global timeout is used.
      */
     public isReady = async (timeout?: number): Promise<boolean> => {
-        const t = timeout || (this.ops.timeout as number);
+        const t = timeout || this.ops.timeout;
         return this.nodesColl.ready(t).then((_) => true);
     };
 
@@ -169,7 +171,7 @@ export default class SDK {
         // eslint-disable-next-line no-async-promise-executor
         return new Promise(async (resolve, reject) => {
             // sanity check provider url
-            if (!Utils.isValidURL(reqOps.provider as string)) {
+            if (!Utils.isValidURL(reqOps.provider)) {
                 return reject('Cannot parse provider URL');
             }
             // sanity check mev protection provider url, if it is set
@@ -180,17 +182,15 @@ export default class SDK {
             }
 
             // gather entry - exit node pair
-            const resNodes = await this.nodesColl
-                .requestNodePair(reqOps.timeout as number)
-                .catch((err) => {
-                    log.error('Error finding node pair', err);
-                    return reject(`Could not find node pair in ${reqOps.timeout} ms`);
-                });
+            const resNodes = await this.nodesColl.requestNodePair(reqOps.timeout).catch((err) => {
+                log.error('Error finding node pair', err);
+                return reject(`Could not find node pair in ${reqOps.timeout} ms`);
+            });
             if (!resNodes) {
                 return reject('Unexpected code flow - should never be here');
             }
 
-            const provider = this.determineProvider(reqOps as { provider: string }, req);
+            const provider = this.determineProvider(reqOps, req);
 
             const headers = this.determineHeaders(provider, this.ops.mevKickbackAddress);
 
@@ -522,24 +522,30 @@ export default class SDK {
         }
     };
 
-    private sdkOps = (ops: Ops): Ops => {
+    private sdkOps = (ops: Ops) => {
+        const discoveryPlatformEndpoint =
+            ops.discoveryPlatformEndpoint || defaultOps.discoveryPlatformEndpoint;
+        const forceZeroHop = ops.forceZeroHop ?? defaultOps.forceZeroHop;
+        const forceManualRelaying = forceZeroHop
+            ? false
+            : ops.forceManualRelaying ?? defaultOps.forceManualRelaying;
         return {
-            discoveryPlatformEndpoint:
-                ops.discoveryPlatformEndpoint || defaultOps.discoveryPlatformEndpoint,
+            discoveryPlatformEndpoint,
             timeout: ops.timeout || defaultOps.timeout,
             provider: ops.provider || defaultOps.provider,
             disableMevProtection: ops.disableMevProtection ?? defaultOps.disableMevProtection,
             mevProtectionProvider: ops.mevProtectionProvider || defaultOps.mevProtectionProvider,
-            forceZeroHop: ops.forceZeroHop ?? defaultOps.forceZeroHop,
+            mevKickbackAddress: ops.mevKickbackAddress,
+            forceZeroHop,
             segmentLimit: ops.segmentLimit ?? defaultOps.segmentLimit,
             versionListener: ops.versionListener,
             debugScope: ops.debugScope,
             debugLevel: ops.debugLevel || (process.env.DEBUG ? undefined : defaultOps.debugLevel),
-            forceManualRelaying: ops.forceManualRelaying ?? defaultOps.forceManualRelaying,
+            forceManualRelaying,
         };
     };
 
-    private requestOps = (ops?: RequestOps): RequestOps => {
+    private requestOps = (ops?: RequestOps) => {
         if (ops) {
             return {
                 timeout: ops.timeout || this.ops.timeout,
@@ -579,7 +585,7 @@ export default class SDK {
         if (cId !== 1) {
             return provider;
         }
-        return this.ops.mevProtectionProvider as string;
+        return this.ops.mevProtectionProvider;
     };
 
     private determineHeaders = (provider: string, mevKickbackAddress?: string) => {
@@ -589,10 +595,10 @@ export default class SDK {
     };
 
     private determineHops = (forceZeroHop: boolean) => {
-        // defaults to multihop (novalue)
         if (forceZeroHop) {
             return 0;
         }
+        return 1;
     };
 
     private populateChainIds = (provider?: string) => {
@@ -606,7 +612,7 @@ export default class SDK {
     };
 
     private checkSegmentLimit = (segLength: number) => {
-        const limit = this.ops.segmentLimit as number;
+        const limit = this.ops.segmentLimit;
         if (limit > 0 && segLength > limit) {
             log.error(
                 'request exceeds maximum amount of segments[%i] with %i segments',
