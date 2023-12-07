@@ -235,7 +235,8 @@ async function filterOnline(
 
         // send pings
         const pPings = Array.from(exitIds.values()).map((xId, idx) => {
-            const delay = idx * 1;
+            // give it some delay to not affect the nodes performance too much
+            const delay = idx * 11;
             return new Promise((resolve, reject) => {
                 setTimeout(() => {
                     NodeAPI.sendMessage(

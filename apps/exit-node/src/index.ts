@@ -24,7 +24,7 @@ const log = Utils.logger(['exit-node']);
 const SocketReconnectTimeout = 1e3; // 1sek
 const RequestPurgeTimeout = 60e3; // 60sek
 const ValidCounterPeriod = 1e3 * 60 * 60; // 1hour
-const RelayNodesCompatVersions = ['2.0.4'];
+const RelayNodesCompatVersions = ['2.0.6'];
 const SetupRelayPeriod = 1e3 * 60 * 15; // 15 min
 
 type State = {
@@ -292,16 +292,17 @@ function onPingReq(state: State, ops: Ops, msg: Msg) {
 function onInfoReq(state: State, ops: Ops, msg: Msg) {
     log.info('received info req:', msg.body);
     // info-originPeerId-hops
-    const [, recipient, hopsStr] = msg.body.split('-');
+    const [, recipient, hopsStr, reqRel] = msg.body.split('-');
     const hops = parseInt(hopsStr, 10);
     const conn = { ...ops, hops };
+    const shRelays =
+        reqRel === 'r' ? state.relays.map((rId) => Utils.shortPeerId(rId).substring(1)) : undefined;
     const info = {
         peerId: state.peerId,
         counter: Date.now(),
         version: Version,
-        shRelays: state.relays.map((rId) => Utils.shortPeerId(rId).substring(1)),
+        shRelays,
     };
-    log.verbose('encoding info payload %o', info);
     const res = Payload.encodeInfo(info);
     if (Res.isErr(res)) {
         log.error('error encoding info:', res.error);
@@ -475,21 +476,19 @@ function sendResponse(
 
     // queue segment sending for all of them
     segments.forEach((seg: Segment.Segment) => {
-        setTimeout(() => {
-            NodeAPI.sendMessage(conn, {
-                recipient: entryPeerId,
-                tag,
-                message: Segment.toMessage(seg),
-            }).catch((err: Error) => {
-                log.error(
-                    'error sending %s: %s[%o]',
-                    Segment.prettyPrint(seg),
-                    JSON.stringify(err),
-                    err,
-                );
-                // remove relay if it fails
-                state.relays = state.relays.filter((r) => r !== relay);
-            });
+        NodeAPI.sendMessage(conn, {
+            recipient: entryPeerId,
+            tag,
+            message: Segment.toMessage(seg),
+        }).catch((err: Error) => {
+            log.error(
+                'error sending %s: %s[%o]',
+                Segment.prettyPrint(seg),
+                JSON.stringify(err),
+                err,
+            );
+            // remove relay if it fails
+            state.relays = state.relays.filter((r) => r !== relay);
         });
     });
 
