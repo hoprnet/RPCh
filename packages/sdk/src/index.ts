@@ -253,12 +253,10 @@ export default class SDK {
             log.info('sending request %s', Request.prettyPrint(request));
 
             // queue segment sending for all of them
-            segments.forEach((s) =>
-                setTimeout(() => {
-                    this.nodesColl.segmentStarted(request, s);
-                    this.sendSegment(request, s, entryNode, entry);
-                }),
-            );
+            segments.forEach((s) => {
+                this.nodesColl.segmentStarted(request, s);
+                this.sendSegment(request, s, entryNode, entry);
+            });
         });
     };
 
@@ -367,9 +365,7 @@ export default class SDK {
         log.info('resending request %s', Request.prettyPrint(request));
 
         // send segments sequentially
-        segments.forEach((s) =>
-            setTimeout(() => this.resendSegment(s, request, entryNode, newCacheEntry)),
-        );
+        segments.forEach((s) => this.resendSegment(s, request, entryNode, newCacheEntry));
     };
 
     private resendSegment = (

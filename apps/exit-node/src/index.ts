@@ -475,21 +475,19 @@ function sendResponse(
 
     // queue segment sending for all of them
     segments.forEach((seg: Segment.Segment) => {
-        setTimeout(() => {
-            NodeAPI.sendMessage(conn, {
-                recipient: entryPeerId,
-                tag,
-                message: Segment.toMessage(seg),
-            }).catch((err: Error) => {
-                log.error(
-                    'error sending %s: %s[%o]',
-                    Segment.prettyPrint(seg),
-                    JSON.stringify(err),
-                    err,
-                );
-                // remove relay if it fails
-                state.relays = state.relays.filter((r) => r !== relay);
-            });
+        NodeAPI.sendMessage(conn, {
+            recipient: entryPeerId,
+            tag,
+            message: Segment.toMessage(seg),
+        }).catch((err: Error) => {
+            log.error(
+                'error sending %s: %s[%o]',
+                Segment.prettyPrint(seg),
+                JSON.stringify(err),
+                err,
+            );
+            // remove relay if it fails
+            state.relays = state.relays.filter((r) => r !== relay);
         });
     });
 
