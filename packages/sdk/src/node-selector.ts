@@ -153,12 +153,12 @@ function success(
 function createRoutePerfs(nodePairs: Map<string, NodePair.NodePair>, forceManualRelaying: boolean) {
     return Array.from(nodePairs.values()).reduce<ExitPerf[]>((acc, np) => {
         const perfs = Array.from(np.exitDatas).map(([xId, xd]) => {
-            const relays = np.relays.filter((rId) => rId !== xId && rId !== np.entryNode.id);
-            const reqRelayPeerId = randomEl(relays);
-            const respRelays = np.peers.filter(
-                (pId) => pId !== xId && xd.shRelays.find((shId) => pId.endsWith(shId)),
+            const [reqRelayPeerId, respRelayPeerId] = determineRelays(
+                np,
+                xId,
+                xd,
+                forceManualRelaying,
             );
-            const respRelayPeerId = randomEl(respRelays);
             return {
                 ...ExitData.perf(xd),
                 entryNode: np.entryNode,
@@ -175,6 +175,28 @@ function createRoutePerfs(nodePairs: Map<string, NodePair.NodePair>, forceManual
         }
         return acc.concat(perfs);
     }, []);
+}
+
+function determineRelays(
+    np: NodePair.NodePair,
+    xId: string,
+    xd: ExitData.ExitData,
+    forceManualRelaying: boolean,
+) {
+    if (!forceManualRelaying) {
+        return [];
+    }
+    if (!xd.shRelays) {
+        return [];
+    }
+    const shRelays = xd.shRelays;
+    const relays = np.relays.filter((rId) => rId !== xId && rId !== np.entryNode.id);
+    const reqRelayPeerId = randomEl(relays);
+    const respRelays = np.peers.filter(
+        (pId) => pId !== xId && shRelays.find((shId) => pId.endsWith(shId)),
+    );
+    const respRelayPeerId = randomEl(respRelays);
+    return [reqRelayPeerId, respRelayPeerId];
 }
 
 function noInfoFails(routePerfs: ExitPerf[]): ExitPerf[] {

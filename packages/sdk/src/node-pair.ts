@@ -175,7 +175,9 @@ export function discover(np: NodePair) {
 }
 
 function requestInfo(np: NodePair, exitNode: ExitNode.ExitNode) {
-    const message = `info-${np.entryNode.id}-${np.hops ?? '_'}`;
+    const message = `info-${np.entryNode.id}-${np.hops ?? '_'}-${
+        np.forceManualRelaying ? 'r' : '_'
+    }`;
     const exitData = np.exitDatas.get(exitNode.id);
     if (!exitData) {
         return np.log.error('missing exit data for %s before info req', exitNode.id);
@@ -323,9 +325,7 @@ function incInfoResps(np: NodePair, infoResps: NodeAPI.Message[]) {
             return np.log.error('error decoding info payload:', resDec.error);
         }
         const { peerId, version, counter, shRelays } = resDec.res;
-        // keeping it backwards compatible
-        const shortRelays = shRelays ?? [];
-        const nodeLog = ExitNode.prettyPrint(peerId, version, counter, shortRelays);
+        const nodeLog = ExitNode.prettyPrint(peerId, version, counter, shRelays);
         const exitNode = np.exitNodes.get(peerId);
         if (!exitNode) {
             return np.log.info('info response for missing exit node %s', nodeLog);
@@ -339,7 +339,7 @@ function incInfoResps(np: NodePair, infoResps: NodeAPI.Message[]) {
         exitData.counterOffset = Date.now() - counter;
         exitData.infoLatMs = exitData.infoLatStarted && Date.now() - exitData.infoLatStarted;
         exitData.infoFail = false;
-        exitData.shRelays = shortRelays;
+        exitData.shRelays = shRelays;
         EntryData.removeOngoingInfo(np.entryData);
         const t = np.infoTimeouts.get(peerId);
         clearTimeout(t);

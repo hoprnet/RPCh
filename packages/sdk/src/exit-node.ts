@@ -5,8 +5,11 @@ export type ExitNode = {
     pubKey: string;
 };
 
-export function prettyPrint(peerId: string, version: string, counter: number, relays: string[]) {
+export function prettyPrint(peerId: string, version: string, counter: number, relays?: string[]) {
     const shortPid = utils.shortPeerId(peerId);
-    const relLength = relays.length;
-    return `ExitNode[x${shortPid},v${version},c:${counter},r:${relLength}]`;
+    const attrs = [`x${shortPid}`, `v${version}`, `c:${counter}`];
+    if (relays) {
+        attrs.push(`r:${relays.length}`);
+    }
+    return `ExitNode[${attrs.join(',')}]`;
 }
