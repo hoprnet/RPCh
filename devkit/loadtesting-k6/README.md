@@ -21,7 +21,7 @@ yarn build
 ```bash
 export TEST_TYPE=SMOKE WALLET_TYPE=METAMASK ; \
    RPC_SERVER_URL=http://localhost:45750 \
-   k6 run ./dist/rpc-server/index.js \
+   k6 run ./build/rpc-server/index.js \
    --out json="results/test-$TEST_TYPE-$WALLET_TYPE-$(date +%s).json"
 ```
 Where a list of values for `TEST_TYPE` and `WALLET_TYPE` can be found with:
@@ -47,7 +47,7 @@ Load testing for 'rpc-server' simulates how crypto wallets send traffic over RPC
 The test traffic has been captured during manual testing sessions involving various wallets and dApps.
 
 #### Adding profile for a new wallet
-Each wallet has its own pattern of sending json-rpc calls. 
+Each wallet has its own pattern of sending json-rpc calls.
 To create a profile for a new wallet, follow these steps:
 
 1. create a new class that extends "MockWallet" class in the `./src/rpc-server/wallet` folder. Modify the two functions:
@@ -57,7 +57,7 @@ To create a profile for a new wallet, follow these steps:
 2. Extend `Wallet` enum in `./src/rpc-server/types.ts` and the `buildWallet` function in `./src/rpc-server/wallet/index.ts` to include the new wallet.
 
 #### Extending dApp interaction scenarios
-When testing a wallet's behavior, the load testing process randomly selects a dApp for each iteration to simulate its interaction. 
+When testing a wallet's behavior, the load testing process randomly selects a dApp for each iteration to simulate its interaction.
 To add typical payloads for a dApp, extend the `getRandomPayloadFromDapp` function located in `./src/rpc-server/utils/rpc-payload.ts`
 
 Existing dApp scenarios include:
