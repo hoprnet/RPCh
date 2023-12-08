@@ -553,13 +553,13 @@ export default class SDK {
 
     private fetchChainId = async (provider: string) => {
         const res = await ProviderAPI.fetchChainId(provider).catch((err) =>
-            log.error('error fetching chainId for %s: %s[%o]', provider, JSON.stringify(err), err),
+            log.warn('error fetching chainId for %s: %s[%o]', provider, JSON.stringify(err), err),
         );
         if (!res) {
             return;
         }
         if (JRPC.isError(res)) {
-            log.info('unable to resolve chainId for %s: %s', provider, JSON.stringify(res.error));
+            log.warn('unable to resolve chainId for %s: %s', provider, JSON.stringify(res.error));
             return;
         }
         const id = parseInt(res.result, 16);
