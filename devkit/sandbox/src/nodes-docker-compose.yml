@@ -1,7 +1,7 @@
 # docker-compose file that allows you locally host
 # 5 HOPRd nodes and 5 exit nodes attached to each other
 # DO NOT USE IN PRODUCTION
-version: "3"
+version: "4"
 
 volumes:
   # hoprd node identity files
@@ -16,7 +16,7 @@ x-exit-service: &exit
   volumes:
     - exit-node-data:/tmp
   networks:
-    - sandbox
+    - rpch-sandbox
   depends_on:
     - pluto
   command: "node build/index.js"
@@ -35,7 +35,7 @@ services:
       # local RPC port
       - "8545:8545"
     networks:
-      - sandbox
+      - rpch-sandbox
     expose:
       - 13301-13305
     environment:
@@ -100,6 +100,7 @@ services:
 # since this file is run first,
 # we create the sandbox network
 networks:
-  sandbox:
-    name: sandbox
+  rpch-sandbox:
+    name: rpch-sandbox
     driver: bridge
+    external: true

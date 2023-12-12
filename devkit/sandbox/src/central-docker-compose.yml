@@ -2,11 +2,9 @@
 # the centralized apps that make RPCh work
 # DO NOT USE IN PRODUCTION
 # launches:
-#   - 1 funding service
 #   - 1 discovery platform
 #   - 1 postgres DB
-#   - 1 availability monitor
-version: "3"
+version: "4"
 
 volumes:
   # postgres database
@@ -22,30 +20,9 @@ services:
     ports:
       - "5432:5432"
     networks:
-      - sandbox-proxy
+      - rpch-sandbox
     volumes:
       - postgres-data:/var/lib/postgresql/data
-
-  # funding-service:
-  #   build:
-  #     dockerfile: apps/funding-service/Dockerfile
-  #     context: ../../../
-  #   depends_on:
-  #     - postgres-db
-  #   restart: unless-stopped
-  #   ports:
-  #     - "3010:3010"
-  #   networks:
-  #     - sandbox-proxy
-  #   environment:
-  #     - DEBUG=${DEBUG}
-  #     - PORT=3010
-  #     - SECRET_KEY=${FS_SECRET}
-  #     - WALLET_PRIV_KEY=${FUNDING_SERVICE_PRIVATE_KEY}
-  #     - DB_CONNECTION_URL=postgresql://postgres:postgres@postgres-db:5432
-  #     - FORCE_CHAIN_ID=31337
-  #     - FORCE_RPC_URL=${RPC_PROVIDER}
-  #     - FORCE_SMART_CONTRACT_ADDRESS=${FORCE_SMART_CONTRACT_ADDRESS}
 
   discovery-platform:
     build:
@@ -57,14 +34,14 @@ services:
     ports:
       - "3020:3020"
     networks:
-      - sandbox-proxy
+      - rpch-sandbox
     environment:
       - DEBUG=${DEBUG}
       - URL=http://127.0.0.1:3020
       - PORT=3020
       - DATABASE_URL=postgresql://postgres:postgres@postgres-db:5432
       - FUNDING_SERVICE_URL=http://funding-service:3010
-      - AVAILABILITY_MONITOR_URL=http://availability-monitor:3050
+      - AVAILABILITY_MONITOR_URL=http:/availability-monitor:9080
       - SKIP_CHECK_COMMITMENT=${SKIP_CHECK_COMMITMENT}
       - ADMIN_SECRET=${ADMIN_SECRET}
       - SESSION_SECRET=${SESSION_SECRET}
@@ -73,25 +50,10 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
 
-  availability-monitor:
-    build:
-      dockerfile: apps/availability-monitor/Dockerfile
-      context: ../../../
-    depends_on:
-      - postgres-db
-    restart: unless-stopped
-    ports:
-      - "9080:9080"
-    networks:
-      - sandbox-proxy
-    environment:
-      - DEBUG=${DEBUG}
-      - PORT=9080
-      - DATABASE_URL=postgresql://postgres:postgres@postgres-db:5432
-
 # we create a proxy to the sandbox
 # network created in 'nodes-docker-compose'
 networks:
-  sandbox-proxy:
-    name: sandbox
+  rpch-sandbox:
+    name: rpch-sandbox
+    driver: bridge
     external: true

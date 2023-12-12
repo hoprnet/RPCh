@@ -14,6 +14,10 @@ stop() {
     docker compose -f $DIR/central-docker-compose.yml -p sandbox-central down -v;
     echo "Stopping 'nodes-docker-compose'"
     docker compose -f $DIR/nodes-docker-compose.yml -p sandbox-nodes down -v;
+    echo "Stopping 'rpch-sandbox'"
+    docker compose -f $DIR/nodes-docker-compose.yml -p rpch-sandbox down -v;
+    docker compose -f $DIR/central-docker-compose.yml -p rpch-sandbox down -v;
+    docker compose -f $DIR/availability-monitor-compose.yml -p rpch-sandbox down -v;
     rm -f $DIR/logs;
     echo "Sandbox has stopped!"
 }
@@ -26,7 +30,7 @@ start() {
     echo "Starting 'nodes-docker-compose'. Waiting for funding & open channels"
 
     #  Run docker compose as daemon
-    docker compose -f $DIR/nodes-docker-compose.yml -p sandbox-nodes \
+    docker compose -f $DIR/nodes-docker-compose.yml -p rpch-sandbox \
         up -d --remove-orphans --build --force-recreate --renew-anon-volumes
 
     # Extract HOPRD_API_TOKEN from env file
@@ -45,35 +49,35 @@ start() {
     echo "Waiting for exit nodes setup"
 
     until [[ $logs1 =~ "verbose opened websocket listener" ]]; do
-        docker logs sandbox-nodes-exit-1-1 &> $DIR/logs
+        docker logs rpch-sandbox-exit-1-1 &> $DIR/logs
         logs1=$(cat $DIR/logs)
         sleep 1
     done
     echo "Node 1 running"
 
     until [[ $logs2 =~ "verbose opened websocket listener" ]]; do
-        docker logs sandbox-nodes-exit-2-1 &> $DIR/logs
+        docker logs rpch-sandbox-exit-2-1 &> $DIR/logs
         logs2=$(cat $DIR/logs)
         sleep 1
     done
     echo "Node 2 running"
 
     until [[ $logs3 =~ "verbose opened websocket listener" ]]; do
-        docker logs sandbox-nodes-exit-3-1 &> $DIR/logs
+        docker logs rpch-sandbox-exit-3-1 &> $DIR/logs
         logs3=$(cat $DIR/logs)
         sleep 1
     done
     echo "Node 3 running"
 
     until [[ $logs4 =~ "verbose opened websocket listener" ]]; do
-        docker logs sandbox-nodes-exit-4-1 &> $DIR/logs
+        docker logs rpch-sandbox-exit-4-1 &> $DIR/logs
         logs4=$(cat $DIR/logs)
         sleep 1
     done
     echo "Node 4 running"
 
     until [[ $logs5 =~ "verbose opened websocket listener" ]]; do
-        docker logs sandbox-nodes-exit-5-1 &> $DIR/logs
+        docker logs rpch-sandbox-exit-5-1 &> $DIR/logs
         logs5=$(cat $DIR/logs)
         sleep 1
     done
@@ -82,7 +86,7 @@ start() {
 
     echo "Waiting for node to find each other and channels to open"
     until [[ $pluto == true ]]; do
-        docker logs sandbox-nodes-pluto-1 &> $DIR/logs
+        docker logs rpch-sandbox-pluto-1 &> $DIR/logs
         logs_pluto=$(cat $DIR/logs | grep "Terminating this script will clean up the running local cluster" | head -1)
         logs_error=$(cat $DIR/logs | grep "Cleaning up processes" | head -1)
         segmentation_error=$(cat $DIR/logs | grep "Segmentation fault" | head -1)
@@ -129,9 +133,21 @@ start() {
 
     echo "Starting 'central-docker-compose'"
     FORCE_SMART_CONTRACT_ADDRESS="$hoprTokenAddress" \
-        docker compose -f $DIR/central-docker-compose.yml -p sandbox-central \
-        up -d --remove-orphans --build --force-recreate
+        docker compose -f $DIR/central-docker-compose.yml -p rpch-sandbox \
+        up -d --build --force-recreate
     echo "Done 'central-docker-compose'"
+
+    exit_code=1
+    echo "Prepopulating the DB"
+    node ../sandbox/build/index.js
+
+    # echo "Restarting Discovery Platform"
+    # docker restart rpch-sandbox-discovery-platform-1
+
+    echo "Starting 'availability-monitor-compose'"
+    docker compose -f $DIR/availability-monitor-compose.yml -p rpch-sandbox \
+        up -d --build --force-recreate
+    echo "Done 'availability-monitor-compose'"
 
     exit_code=1
 
@@ -253,5 +269,7 @@ start() {
     # done
     # echo "Found potential entry node at discovery platform."
 
-    # echo "Sandbox has started!"
+    
+
+    echo "Sandbox has started!"
 }

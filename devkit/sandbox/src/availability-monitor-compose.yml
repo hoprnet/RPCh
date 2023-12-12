@@ -1,0 +1,33 @@
+# docker-compose file that allows you locally host
+# the centralized apps that make RPCh work
+# DO NOT USE IN PRODUCTION
+# launches:
+#   - 1 availability monitor
+version: "4"
+
+volumes:
+  # postgres database
+  postgres-data:
+
+services:
+  availability-monitor:
+    build:
+      dockerfile: apps/availability-monitor/Dockerfile
+      context: ../../../
+    restart: unless-stopped
+    ports:
+      - "9080:9080"
+    networks:
+      - rpch-sandbox
+    environment:
+      - DEBUG=${DEBUG}
+      - PORT=9080
+      - DATABASE_URL=postgresql://postgres:postgres@postgres-db:5432
+
+# we create a proxy to the sandbox
+# network created in 'nodes-docker-compose'
+networks:
+ rpch-sandbox:
+    name: rpch-sandbox
+    driver: bridge
+    external: true
