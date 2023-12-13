@@ -111,13 +111,13 @@ start() {
     done
     echo "Received hoprTokenAddress: $hoprTokenAddress"
 
-    echo "Starting Postres and Discovery Platform"
+    echo "Starting PostgreSQL and Discovery Platform"
     FORCE_SMART_CONTRACT_ADDRESS="$hoprTokenAddress" \
         docker compose -f $DIR/docker-compose-2-nodes-dp-pg.yml -p rpch-sandbox \
         up -d --build --force-recreate
-    echo "Done starting Postres and Discovery Platform"
+    echo "Done starting PostgreSQL and Discovery Platform"
 
-    exit_code=1
+
     echo "Prepopulating the DB"
     node ../sandbox/build/index.js
 
@@ -125,6 +125,10 @@ start() {
     docker compose -f $DIR/docker-compose-3-am-rpc-server.yml -p rpch-sandbox \
         up -d --build --force-recreate
     echo "Done starting availability monitor and RPC server"
+
+    echo "Waiting for 0-hop and 1-hop routes"
+    node ../sandbox/build/waitForRoutes.js
+
 
     exit_code=1    
 
