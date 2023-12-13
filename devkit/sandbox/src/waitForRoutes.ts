@@ -19,9 +19,9 @@ async function waitForRoutes(){
     for(let i = 0; i < 5 * 60; i++) { // try for 10 min
         await new Promise(resolve => setTimeout(resolve, 2000));
         try {
-            const query1 = `SELECT * from one_hop_pairings`
+            const query1 = `SELECT * from one_hop_pairings`;
             const one_hop_pairings = await dbPool.query(query1);
-            const query2 = `SELECT * from zero_hop_pairings`
+            const query2 = `SELECT * from zero_hop_pairings`;
             const zero_hop_pairings = await dbPool.query(query2);
             if(one_hop_pairings.rows.length > 0 && zero_hop_pairings.rows.length > 0) {
                 console.log('Success: Routes present in the DB.');

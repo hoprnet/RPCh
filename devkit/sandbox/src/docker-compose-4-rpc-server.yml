@@ -5,28 +5,17 @@
 #   - 1 availability monitor
 version: "4"
 
-volumes:
-  # postgres database
-  postgres-data:
-
 services:
-  availability-monitor:
-    build:
-      dockerfile: apps/availability-monitor/Dockerfile
-      context: ../../../
-    restart: unless-stopped
-    ports:
-      - "9080:9080"
-    networks:
-      - rpch-sandbox
-    environment:
-      - DEBUG=${DEBUG}
-      - PORT=9080
-      - DATABASE_URL=postgresql://postgres:postgres@postgres-db:5432
   rpc-server:
-    # build:
-    #   dockerfile: apps/rpc-server/Dockerfile
-    #   context: ../../../
+  #  build:
+  #    dockerfile: apps/rpc-server/Dockerfile
+  #    context: ../../../
+
+  # TODO fix:
+  #     env: ‘bash\r’: No such file or directory
+  #     env: use -[v]S to pass options in shebang lines
+  # from apps/rpc-server/Dockerfile 
+  
     image: europe-west6-docker.pkg.dev/rpch-375921/rpch/rpc-server@sha256:09b2b17d6c079edef1e6910dc4778d7f21fb2374a4a945d5aaa233887d1d9af0
     platform: linux/amd64
     restart: unless-stopped
