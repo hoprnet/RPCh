@@ -13,7 +13,8 @@ stop() {
     echo "Stopping 'rpch-sandbox'"
     docker compose -f $DIR/docker-compose-1-nodes.yml -p rpch-sandbox down -v;
     docker compose -f $DIR/docker-compose-2-nodes-dp-pg.yml -p rpch-sandbox down -v;
-    docker compose -f $DIR/docker-compose-3-am-rpc-server.yml -p rpch-sandbox down -v;
+    docker compose -f $DIR/docker-compose-3-am.yml -p rpch-sandbox down -v;
+    docker compose -f $DIR/docker-compose-4-rpc-server.yml -p rpch-sandbox down -v;
     rm -f $DIR/logs;
     echo "Sandbox has stopped!"
 }
@@ -121,16 +122,20 @@ start() {
     echo "Prepopulating the DB"
     node ../sandbox/build/index.js
 
-    echo "Starting availability monitor and RPC server"
-    docker compose -f $DIR/docker-compose-3-am-rpc-server.yml -p rpch-sandbox \
+    echo "Starting availability monitor"
+    docker compose -f $DIR/docker-compose-3-am.yml -p rpch-sandbox \
         up -d --build --force-recreate
     echo "Done starting availability monitor and RPC server"
 
     echo "Waiting for 0-hop and 1-hop routes"
     node ../sandbox/build/waitForRoutes.js
 
+    echo "Starting RPC server"
+    docker compose -f $DIR/docker-compose-4-rpc-server.yml -p rpch-sandbox \
+        up -d --build --force-recreate
+    echo "Done starting RPC server"
 
-    exit_code=1    
+    exit_code=1
 
     echo "Sandbox has started!"
 }
