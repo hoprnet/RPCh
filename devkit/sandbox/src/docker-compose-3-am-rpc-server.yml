@@ -23,6 +23,22 @@ services:
       - DEBUG=${DEBUG}
       - PORT=9080
       - DATABASE_URL=postgresql://postgres:postgres@postgres-db:5432
+  # rpc-server:
+  #   build:
+  #     dockerfile: apps/rpc-server/Dockerfile
+  #     context: ../../../
+  #   restart: unless-stopped
+  #   ports:
+  #     - "45750:45750"
+  #   networks:
+  #     - rpch-sandbox
+  #   environment:
+  #     - DEBUG=${DEBUG}
+  #     - LOG_LEVEL=verbose
+  #     - CLIENT=foobarfoobar
+  #     - PORT=45750
+  #     - DISCOVERY_PLATFORM_API_ENDPOINT=http://host.docker.internal:3020
+  #     - FORCE_ZERO_HOP=true
 
 # we create a proxy to the sandbox
 # network created in 'nodes-docker-compose'

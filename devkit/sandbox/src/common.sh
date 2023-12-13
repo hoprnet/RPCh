@@ -10,14 +10,10 @@ scurl() {
 
 # stop sandbox
 stop() {
-    echo "Stopping 'central-docker-compose'"
-    docker compose -f $DIR/central-docker-compose.yml -p sandbox-central down -v;
-    echo "Stopping 'nodes-docker-compose'"
-    docker compose -f $DIR/nodes-docker-compose.yml -p sandbox-nodes down -v;
     echo "Stopping 'rpch-sandbox'"
-    docker compose -f $DIR/nodes-docker-compose.yml -p rpch-sandbox down -v;
-    docker compose -f $DIR/central-docker-compose.yml -p rpch-sandbox down -v;
-    docker compose -f $DIR/availability-monitor-compose.yml -p rpch-sandbox down -v;
+    docker compose -f $DIR/docker-compose-1-nodes.yml -p rpch-sandbox down -v;
+    docker compose -f $DIR/docker-compose-2-nodes-dp-pg.yml -p rpch-sandbox down -v;
+    docker compose -f $DIR/docker-compose-3-am-rpc-server.yml -p rpch-sandbox down -v;
     rm -f $DIR/logs;
     echo "Sandbox has stopped!"
 }
@@ -27,10 +23,10 @@ start() {
     # stop if already running
     stop
 
-    echo "Starting 'nodes-docker-compose'. Waiting for funding & open channels"
+    echo "Starting nodes. Waiting for funding & open channels"
 
     #  Run docker compose as daemon
-    docker compose -f $DIR/nodes-docker-compose.yml -p rpch-sandbox \
+    docker compose -f $DIR/docker-compose-1-nodes.yml -p rpch-sandbox \
         up -d --remove-orphans --build --force-recreate --renew-anon-volumes
 
     # Extract HOPRD_API_TOKEN from env file
@@ -103,22 +99,6 @@ start() {
 
     echo "Done 'nodes-docker-compose'"
 
-
-    # Prepare Sandbox DB
-    
-
-    # # fund funding-service wallet
-    # echo "Funding funding-service wallet"
-    # scurl "http://127.0.0.1:3030/fund-via-hoprd" \
-    #     -H "Content-Type: application/json" \
-    #     -d '{
-    #         "hoprdEndpoint": "'$HOPRD_API_ENDPOINT_1'",
-    #         "hoprdToken": "'$HOPRD_API_TOKEN'",
-    #         "nativeAmount": "'$NATIVE_AMOUNT'",
-    #         "hoprAmount": "'$HOPR_AMOUNT'",
-    #         "recipient": "'$FUNDING_SERVICE_ADDRESS'"
-    #     }'
-
     # get HOPR Token address
     until [[ $hoprTokenAddress =~ "0x" ]]; do
         info=$(
@@ -131,145 +111,22 @@ start() {
     done
     echo "Received hoprTokenAddress: $hoprTokenAddress"
 
-    echo "Starting 'central-docker-compose'"
+    echo "Starting Postres and Discovery Platform"
     FORCE_SMART_CONTRACT_ADDRESS="$hoprTokenAddress" \
-        docker compose -f $DIR/central-docker-compose.yml -p rpch-sandbox \
+        docker compose -f $DIR/docker-compose-2-nodes-dp-pg.yml -p rpch-sandbox \
         up -d --build --force-recreate
-    echo "Done 'central-docker-compose'"
+    echo "Done starting Postres and Discovery Platform"
 
     exit_code=1
     echo "Prepopulating the DB"
     node ../sandbox/build/index.js
 
-    # echo "Restarting Discovery Platform"
-    # docker restart rpch-sandbox-discovery-platform-1
-
-    echo "Starting 'availability-monitor-compose'"
-    docker compose -f $DIR/availability-monitor-compose.yml -p rpch-sandbox \
+    echo "Starting availability monitor and RPC server"
+    docker compose -f $DIR/docker-compose-3-am-rpc-server.yml -p rpch-sandbox \
         up -d --build --force-recreate
-    echo "Done 'availability-monitor-compose'"
+    echo "Done starting availability monitor and RPC server"
 
-    exit_code=1
-
-    # add quota to client 'sandbox', try as long as it takes for the DP to become available
-    # until [[ $exit_code == 0 ]]; do
-    #     echo "Try adding quota to 'sandbox' in 'discovery-platform'"
-    #     curl --silent --show-error --fail "http://127.0.0.1:3030/add-quota" \
-    #         -H "Content-Type: application/json" \
-    #         -H "x-rpch-client: sandbox" \
-    #         -d '{
-    #             "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_API_ENDPOINT'",
-    #             "client": "sandbox",
-    #             "quota": "500"
-    #         }'
-    #     exit_code=$?
-    #     sleep 1
-    # done
-    # echo "Added quota to client 'sandbox' in 'discovery-platform'"
-
-    # add quota to client 'trial'
-    #  echo "Adding quota to 'trial' in 'discovery-platform'"
-    # curl "http://127.0.0.1:3030/add-quota" \
-    #     -H "Content-Type: application/json" \
-    #     -H "x-rpch-client: trial" \
-    #     -d '{
-    #         "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_API_ENDPOINT'",
-    #         "client": "trial",
-    #         "quota": "500"
-    #     }'
-    # echo "Added quota to client 'trial' in 'discovery-platform'"
-
-    # register nodes
-    #  echo "Registering nodes to discovery-platform"
-    # scurl "http://127.0.0.1:3030/register-nodes" \
-    #     -H "Content-Type: application/json" \
-    #     -d '{
-    #         "discoveryPlatformEndpoint": "'$DISCOVERY_PLATFORM_API_ENDPOINT'",
-    #         "chainId": "31337",
-    #         "X-Rpch-Client": "trial",
-    #         "hoprdApiEndpoints": [
-    #             "'$HOPRD_API_ENDPOINT_1'",
-    #             "'$HOPRD_API_ENDPOINT_2'",
-    #             "'$HOPRD_API_ENDPOINT_3'",
-    #             "'$HOPRD_API_ENDPOINT_4'",
-    #             "'$HOPRD_API_ENDPOINT_5'"
-    #         ],
-    #         "hoprdApiTokens": [
-    #             "'$HOPRD_API_TOKEN'",
-    #             "'$HOPRD_API_TOKEN'",
-    #             "'$HOPRD_API_TOKEN'",
-    #             "'$HOPRD_API_TOKEN'",
-    #             "'$HOPRD_API_TOKEN'"
-    #         ],
-    #         "exitNodePubKeys": [
-    #             "'$EXIT_NODE_PUB_KEY_1'",
-    #             "'$EXIT_NODE_PUB_KEY_2'",
-    #             "'$EXIT_NODE_PUB_KEY_3'",
-    #             "'$EXIT_NODE_PUB_KEY_4'",
-    #             "'$EXIT_NODE_PUB_KEY_5'"
-    #         ],
-    #         "hasExitNodes": [
-    #             true,
-    #             true,
-    #             true,
-    #             true,
-    #             true
-    #         ]
-    #     }'
-    # echo "Registered nodes to discovery-platform"
-
-    # check nodes
-    # hoprAddresses=$(
-    #     scurl "http://127.0.0.1:3030/get-hoprds-addresses" \
-    #         -H "Content-Type: application/json" \
-    #         -d '{
-    #             "hoprdApiEndpoints": [
-    #                 "'$HOPRD_API_ENDPOINT_1'",
-    #                 "'$HOPRD_API_ENDPOINT_2'",
-    #                 "'$HOPRD_API_ENDPOINT_3'",
-    #                 "'$HOPRD_API_ENDPOINT_4'",
-    #                 "'$HOPRD_API_ENDPOINT_5'"
-    #             ],
-    #             "hoprdApiTokens": [
-    #                 "'$HOPRD_API_TOKEN'",
-    #                 "'$HOPRD_API_TOKEN'",
-    #                 "'$HOPRD_API_TOKEN'",
-    #                 "'$HOPRD_API_TOKEN'",
-    #                 "'$HOPRD_API_TOKEN'"
-    #             ]
-    #         }'
-    # )
-    # echo "Got node peer IDs"
-
-    # peerId1=$(jq -r '.hopr | .[0]' <<< "$hoprAddresses")
-    # peerId2=$(jq -r '.hopr | .[1]' <<< "$hoprAddresses")
-    # peerId3=$(jq -r '.hopr | .[2]' <<< "$hoprAddresses")
-    # peerId4=$(jq -r '.hopr | .[3]' <<< "$hoprAddresses")
-    # peerId5=$(jq -r '.hopr | .[4]' <<< "$hoprAddresses")
-
-    # # check nodes available at DP
-    # scurl "http://127.0.0.1:3020/api/v1/node/${peerId1}" -H "Accept: application/json" -H "x-rpch-client: trial"
-    # scurl "http://127.0.0.1:3020/api/v1/node/${peerId2}" -H "Accept: application/json" -H "x-rpch-client: trial"
-    # scurl "http://127.0.0.1:3020/api/v1/node/${peerId3}" -H "Accept: application/json" -H "x-rpch-client: trial"
-    # scurl "http://127.0.0.1:3020/api/v1/node/${peerId4}" -H "Accept: application/json" -H "x-rpch-client: trial"
-    # scurl "http://127.0.0.1:3020/api/v1/node/${peerId5}" -H "Accept: application/json" -H "x-rpch-client: trial"
-
-    # # wait until DP returns an entry node
-    # exit_code=1
-    # waittime=0
-    # until [[ $exit_code == 0 ]]; do
-    #     echo "Try fetching entry node from discovery platform, since ${waittime}s"
-    #     curl --silent --show-error --fail "http://127.0.0.1:3020/api/v1/request/entry-node" \
-    #         -H "Accept: application/json" \
-    #         -H "x-rpch-client: trial" \
-    #         -d '{"excludeList":[],"client":"trial"}'
-    #     exit_code=$?
-    #     waittime=$((waittime + 10))
-    #     sleep 10
-    # done
-    # echo "Found potential entry node at discovery platform."
-
-    
+    exit_code=1    
 
     echo "Sandbox has started!"
 }

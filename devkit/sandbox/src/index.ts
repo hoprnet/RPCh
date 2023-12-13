@@ -91,8 +91,8 @@ async function insertNodes(){
 async function insertUser(){
     try {
         const query = `INSERT INTO users (id) values (gen_random_uuid());`
-        const resp = await dbPool.query(query);
-        console.log('User inserted to the database.', resp)
+        await dbPool.query(query);
+        console.log('User inserted to the database.')
     } catch (e){
         console.error('ERROR: Unable to insert user to the database.', e);
     }
@@ -101,8 +101,8 @@ async function insertUser(){
 async function insertClient(){
     try {
         const query = `INSERT INTO clients (id, user_id, external_token) values (gen_random_uuid(), (select id from users), 'foobarfoobar');`
-        const resp = await dbPool.query(query);
-        console.log('Client inserted to the database.', resp)
+        await dbPool.query(query);
+        console.log('Client inserted to the database.')
     } catch (e){
         console.error('ERROR: Unable to insert client to the database.', e);
     }
