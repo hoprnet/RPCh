@@ -11,9 +11,9 @@ describe('test node selector', function () {
     it('selects only available route', function () {
         const xn = genExitNode('x');
         const en = genEntryNode('e', [xn.id]);
-        const np = NodePair.create(en, [xn], 0, () => {});
+        const np = createNp(en, [xn]);
         const nodePairs = new Map([[NodePair.id(np), np]]);
-        const res = NodeSel.routePair(nodePairs);
+        const res = NodeSel.routePair(nodePairs, false);
         if (Res.isOk(res)) {
             expect(res.res).toMatchObject({
                 match: {
@@ -32,15 +32,15 @@ describe('test node selector', function () {
         const xn2 = genExitNode('x2');
         const en1 = genEntryNode('e1', [xn1.id]);
         const en2 = genEntryNode('e2', [xn2.id]);
-        const np1 = NodePair.create(en1, [xn1], 0, () => {});
-        const np2 = NodePair.create(en2, [xn2], 0, () => {});
+        const np1 = createNp(en1, [xn1]);
+        const np2 = createNp(en2, [xn2]);
         np1.entryData.pingDuration = 20;
         np2.entryData.pingDuration = 10;
         const nodePairs = new Map([
             [NodePair.id(np1), np1],
             [NodePair.id(np2), np2],
         ]);
-        const res = NodeSel.routePair(nodePairs);
+        const res = NodeSel.routePair(nodePairs, false);
         if (Res.isOk(res)) {
             expect(res.res).toMatchObject({
                 match: {
@@ -60,8 +60,8 @@ describe('test node selector', function () {
         const xn3 = genExitNode('x3');
         const en1 = genEntryNode('e1', [xn1.id, xn2.id]);
         const en2 = genEntryNode('e2', [xn3.id]);
-        const np1 = NodePair.create(en1, [xn1, xn2], 0, () => {});
-        const np2 = NodePair.create(en2, [xn3], 0, () => {});
+        const np1 = createNp(en1, [xn1, xn2]);
+        const np2 = createNp(en2, [xn3]);
         np1.entryData.fetchMessagesSuccesses = 3;
         np1.entryData.fetchMessagesLatencies = [20, 20, 30];
         np2.entryData.fetchMessagesSuccesses = 3;
@@ -70,7 +70,7 @@ describe('test node selector', function () {
             [NodePair.id(np1), np1],
             [NodePair.id(np2), np2],
         ]);
-        const res = NodeSel.routePair(nodePairs);
+        const res = NodeSel.routePair(nodePairs, false);
         if (Res.isOk(res)) {
             expect(res.res).toMatchObject({
                 match: {
@@ -90,15 +90,15 @@ describe('test node selector', function () {
         const xn3 = genExitNode('x3');
         const en1 = genEntryNode('e1', [xn1.id, xn2.id]);
         const en2 = genEntryNode('e2', [xn3.id]);
-        const np1 = NodePair.create(en1, [xn1, xn2], 0, () => {});
-        const np2 = NodePair.create(en2, [xn3], 0, () => {});
+        const np1 = createNp(en1, [xn1, xn2]);
+        const np2 = createNp(en2, [xn3]);
         np1.entryData.fetchMessagesErrors = 3;
         np2.entryData.fetchMessagesErrors = 2;
         const nodePairs = new Map([
             [NodePair.id(np1), np1],
             [NodePair.id(np2), np2],
         ]);
-        const res = NodeSel.routePair(nodePairs);
+        const res = NodeSel.routePair(nodePairs, false);
         if (Res.isOk(res)) {
             expect(res.res).toMatchObject({
                 match: {
@@ -118,15 +118,15 @@ describe('test node selector', function () {
         const xn3 = genExitNode('x3');
         const en1 = genEntryNode('e1', [xn1.id, xn2.id]);
         const en2 = genEntryNode('e2', [xn3.id]);
-        const np1 = NodePair.create(en1, [xn1, xn2], 0, () => {});
-        const np2 = NodePair.create(en2, [xn3], 0, () => {});
+        const np1 = createNp(en1, [xn1, xn2]);
+        const np2 = createNp(en2, [xn3]);
         np1.entryData.segmentsOngoing = ['1', '2', '3'];
         np2.entryData.segmentsOngoing = ['1', '2'];
         const nodePairs = new Map([
             [NodePair.id(np1), np1],
             [NodePair.id(np2), np2],
         ]);
-        const res = NodeSel.routePair(nodePairs);
+        const res = NodeSel.routePair(nodePairs, false);
         if (Res.isOk(res)) {
             expect(res.res).toMatchObject({
                 match: {
@@ -146,8 +146,8 @@ describe('test node selector', function () {
         const xn3 = genExitNode('x3');
         const en1 = genEntryNode('e1', [xn1.id, xn2.id]);
         const en2 = genEntryNode('e2', [xn3.id]);
-        const np1 = NodePair.create(en1, [xn1, xn2], 0, () => {});
-        const np2 = NodePair.create(en2, [xn3], 0, () => {});
+        const np1 = createNp(en1, [xn1, xn2]);
+        const np2 = createNp(en2, [xn3]);
         np1.entryData.segmentsHistory = ['1', '2', '3'];
         np2.entryData.segmentsHistory = ['1', '2'];
         np1.entryData.segments = new Map([
@@ -163,7 +163,7 @@ describe('test node selector', function () {
             [NodePair.id(np1), np1],
             [NodePair.id(np2), np2],
         ]);
-        const res = NodeSel.routePair(nodePairs);
+        const res = NodeSel.routePair(nodePairs, false);
         if (Res.isOk(res)) {
             expect(res.res).toMatchObject({
                 match: {
@@ -183,8 +183,8 @@ describe('test node selector', function () {
         const xn3 = genExitNode('x3');
         const en1 = genEntryNode('e1', [xn1.id, xn2.id]);
         const en2 = genEntryNode('e2', [xn3.id]);
-        const np1 = NodePair.create(en1, [xn1, xn2], 0, () => {});
-        const np2 = NodePair.create(en2, [xn3], 0, () => {});
+        const np1 = createNp(en1, [xn1, xn2]);
+        const np2 = createNp(en2, [xn3]);
         np1.entryData.segmentsHistory = ['1', '2', '3'];
         np2.entryData.segmentsHistory = ['1', '2'];
         np1.entryData.segments = new Map([
@@ -200,7 +200,7 @@ describe('test node selector', function () {
             [NodePair.id(np1), np1],
             [NodePair.id(np2), np2],
         ]);
-        const res = NodeSel.routePair(nodePairs);
+        const res = NodeSel.routePair(nodePairs, false);
         if (Res.isOk(res)) {
             expect(res.res).toMatchObject({
                 match: {
@@ -220,8 +220,8 @@ describe('test node selector', function () {
         const xn3 = genExitNode('x3');
         const en1 = genEntryNode('e1', [xn1.id, xn2.id]);
         const en2 = genEntryNode('e2', [xn3.id]);
-        const np1 = NodePair.create(en1, [xn1, xn2], 0, () => {});
-        const np2 = NodePair.create(en2, [xn3], 0, () => {});
+        const np1 = createNp(en1, [xn1, xn2]);
+        const np2 = createNp(en2, [xn3]);
         np1.exitDatas = new Map([
             ['x1', genExitData({ requestsOngoing: [1, 2, 3] })],
             ['x2', genExitData({ requestsOngoing: [1, 2] })],
@@ -231,7 +231,7 @@ describe('test node selector', function () {
             [NodePair.id(np1), np1],
             [NodePair.id(np2), np2],
         ]);
-        const res = NodeSel.routePair(nodePairs);
+        const res = NodeSel.routePair(nodePairs, false);
         if (Res.isOk(res)) {
             expect(res.res).toMatchObject({
                 match: {
@@ -251,8 +251,8 @@ describe('test node selector', function () {
         const xn3 = genExitNode('x3');
         const en1 = genEntryNode('e1', [xn1.id, xn2.id]);
         const en2 = genEntryNode('e2', [xn3.id]);
-        const np1 = NodePair.create(en1, [xn1, xn2], 0, () => {});
-        const np2 = NodePair.create(en2, [xn3], 0, () => {});
+        const np1 = createNp(en1, [xn1, xn2]);
+        const np2 = createNp(en2, [xn3]);
         np1.exitDatas = new Map([
             ['x1', genExitData({ infoLatMs: 100 })],
             ['x2', genExitData({ infoLatMs: 200 })],
@@ -262,7 +262,7 @@ describe('test node selector', function () {
             [NodePair.id(np1), np1],
             [NodePair.id(np2), np2],
         ]);
-        const res = NodeSel.routePair(nodePairs);
+        const res = NodeSel.routePair(nodePairs, false);
         if (Res.isOk(res)) {
             expect(res.res).toMatchObject({
                 match: {
@@ -282,8 +282,8 @@ describe('test node selector', function () {
         const xn3 = genExitNode('x3');
         const en1 = genEntryNode('e1', [xn1.id, xn2.id]);
         const en2 = genEntryNode('e2', [xn3.id]);
-        const np1 = NodePair.create(en1, [xn1, xn2], 0, () => {});
-        const np2 = NodePair.create(en2, [xn3], 0, () => {});
+        const np1 = createNp(en1, [xn1, xn2]);
+        const np2 = createNp(en2, [xn3]);
         np1.exitDatas = new Map([
             [
                 'x1',
@@ -320,7 +320,7 @@ describe('test node selector', function () {
             [NodePair.id(np1), np1],
             [NodePair.id(np2), np2],
         ]);
-        const res = NodeSel.routePair(nodePairs);
+        const res = NodeSel.routePair(nodePairs, false);
         if (Res.isOk(res)) {
             expect(res.res).toMatchObject({
                 match: {
@@ -340,8 +340,8 @@ describe('test node selector', function () {
         const xn3 = genExitNode('x3');
         const en1 = genEntryNode('e1', [xn1.id, xn2.id]);
         const en2 = genEntryNode('e2', [xn3.id]);
-        const np1 = NodePair.create(en1, [xn1, xn2], 0, () => {});
-        const np2 = NodePair.create(en2, [xn3], 0, () => {});
+        const np1 = createNp(en1, [xn1, xn2]);
+        const np2 = createNp(en2, [xn3]);
         np1.exitDatas = new Map([
             [
                 'x1',
@@ -378,7 +378,7 @@ describe('test node selector', function () {
             [NodePair.id(np1), np1],
             [NodePair.id(np2), np2],
         ]);
-        const res = NodeSel.routePair(nodePairs);
+        const res = NodeSel.routePair(nodePairs, false);
         if (Res.isOk(res)) {
             expect(res.res).toMatchObject({
                 match: {
@@ -397,15 +397,15 @@ describe('test node selector', function () {
         const xn2 = genExitNode('x2');
         const en1 = genEntryNode('e1', [xn1.id]);
         const en2 = genEntryNode('e2', [xn2.id]);
-        const np1 = NodePair.create(en1, [xn1], 0, () => {});
-        const np2 = NodePair.create(en2, [xn2], 0, () => {});
+        const np1 = createNp(en1, [xn1]);
+        const np2 = createNp(en2, [xn2]);
         np1.exitDatas = new Map([['x1', genExitData({ infoFail: false })]]);
         np2.exitDatas = new Map([['x2', genExitData({ infoFail: true })]]);
         const nodePairs = new Map([
             [NodePair.id(np1), np1],
             [NodePair.id(np2), np2],
         ]);
-        const res = NodeSel.routePair(nodePairs);
+        const res = NodeSel.routePair(nodePairs, false);
         if (Res.isOk(res)) {
             expect(res.res).toMatchObject({
                 match: {
@@ -425,8 +425,8 @@ describe('test node selector', function () {
         const xn3 = genExitNode('x3');
         const en1 = genEntryNode('e1', [xn1.id, xn2.id]);
         const en2 = genEntryNode('e2', [xn3.id]);
-        const np1 = NodePair.create(en1, [xn1, xn2], 0, () => {});
-        const np2 = NodePair.create(en2, [xn3], 0, () => {});
+        const np1 = createNp(en1, [xn1, xn2]);
+        const np2 = createNp(en2, [xn3]);
         np1.exitDatas = new Map([
             ['x1', genExitData({ version: '0.10' })],
             ['x2', genExitData()],
@@ -436,7 +436,7 @@ describe('test node selector', function () {
             [NodePair.id(np1), np1],
             [NodePair.id(np2), np2],
         ]);
-        const res = NodeSel.routePair(nodePairs);
+        const res = NodeSel.routePair(nodePairs, false);
         if (Res.isOk(res)) {
             expect(res.res).toMatchObject({
                 match: {
@@ -489,4 +489,8 @@ function genExitData(additionals: any = {}): ExitData.ExitData {
         requests: new Map(),
         ...additionals,
     };
+}
+
+function createNp(eNode: EntryNode, exitNodesIt: ExitNode[]) {
+    return NodePair.create(eNode, exitNodesIt, 0, () => {}, 0, false);
 }

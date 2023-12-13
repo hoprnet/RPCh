@@ -17,49 +17,67 @@ export type MessageListener = (messages: NodeAPI.Message[]) => void;
 const MessagesFetchInterval = 333; // ms
 const InfoResponseTimeout = 10e3; // 10s
 
-const RelayNodesCompatVersions = ['2.0.4'];
+const RelayNodesCompatVersions = ['2.0.6'];
 
 export type NodePair = {
     entryNode: EntryNode;
     entryData: EntryData.EntryData;
     exitNodes: Map<string, ExitNode.ExitNode>;
     exitDatas: Map<string, ExitData.ExitData>;
+    peers: string[]; // peerIds of potential relays
     relays: string[]; // peerIds of potential relays
     applicationTag: number;
     hops?: number;
     messageListener: MessageListener;
     fetchTimeout?: ReturnType<typeof setTimeout>;
-    infoTimeout?: ReturnType<typeof setTimeout>;
+    infoTimeouts: Map<string, ReturnType<typeof setTimeout>>;
     fetchMessagesOngoing: boolean;
     log: ReturnType<typeof logger>;
+    forceManualRelaying: boolean;
 };
 
 export function create(
     entryNode: EntryNode,
-    exitNodesIt: Iterable<ExitNode.ExitNode>,
+    exitNodes: ExitNode.ExitNode[],
     applicationTag: number,
     messageListener: MessageListener,
-    hops?: number,
+    hops: number,
+    forceManualRelaying: boolean,
 ): NodePair {
     const entryData = EntryData.create();
     const shortId = shortPeerId(entryNode.id);
     const log = logger(['sdk', `nodepair${shortId}(${entryNode.apiEndpoint})`]);
-    // ensure entry node not included in exits
-    const exits = Array.from(exitNodesIt).filter((n) => entryNode.id !== n.id);
-    const exitNodes = new Map(exits.map((n) => [n.id, n]));
-    const exitDatas = new Map(exits.map((n) => [n.id, ExitData.create()]));
+    const exitNodesMap = new Map(exitNodes.map((n) => [n.id, n]));
+    const exitDatasMap = new Map(exitNodes.map((n) => [n.id, ExitData.create()]));
     return {
         entryNode,
         entryData,
-        exitNodes,
-        exitDatas,
+        exitNodes: exitNodesMap,
+        exitDatas: exitDatasMap,
+        peers: [],
         relays: [],
         applicationTag,
+        infoTimeouts: new Map(),
         messageListener,
         fetchMessagesOngoing: false,
         log,
         hops,
+        forceManualRelaying,
     };
+}
+
+export function addExitNodes(np: NodePair, exitNodes: ExitNode.ExitNode[]) {
+    exitNodes.forEach((x) => {
+        if (!np.exitNodes.has(x.id)) {
+            np.exitNodes.set(x.id, x);
+            np.exitDatas.set(x.id, ExitData.create());
+        }
+    });
+}
+
+export function removeExitNode(np: NodePair, xId: string) {
+    np.exitNodes.delete(xId);
+    np.exitDatas.delete(xId);
 }
 
 export function destruct(np: NodePair) {
@@ -135,10 +153,11 @@ export function segmentFailed(np: NodePair, seg: Segment.Segment) {
  */
 export function discover(np: NodePair) {
     const startPingTime = Date.now();
-    if (np.hops === 0) {
+    if (np.hops === 0 || !np.forceManualRelaying) {
         NodeAPI.version(np.entryNode)
             .then(() => {
                 np.entryData.pingDuration = Date.now() - startPingTime;
+                np.log.verbose('version ping took %dms', np.entryData.pingDuration);
             })
             .catch((err) => {
                 np.log.error('error fetching version: %s[%o]', JSON.stringify(err), err);
@@ -156,7 +175,9 @@ export function discover(np: NodePair) {
 }
 
 function requestInfo(np: NodePair, exitNode: ExitNode.ExitNode) {
-    const message = `info-${np.entryNode.id}-${np.hops ?? '_'}`;
+    const message = `info-${np.entryNode.id}-${np.hops ?? '_'}-${
+        np.forceManualRelaying ? 'r' : '_'
+    }`;
     const exitData = np.exitDatas.get(exitNode.id);
     if (!exitData) {
         return np.log.error('missing exit data for %s before info req', exitNode.id);
@@ -179,16 +200,24 @@ function requestInfo(np: NodePair, exitNode: ExitNode.ExitNode) {
     }
     // stop checking for info resp at after this
     // will still be able to receive info resp if messages went over this route
-    np.infoTimeout = setTimeout(() => {
-        np.log.warn('timeout (%dms) waiting for info response', InfoResponseTimeout);
+    const timeout = setTimeout(() => {
+        np.log.warn(
+            'timeout (%dms) waiting for info response from x%s',
+            InfoResponseTimeout,
+            shortPeerId(exitNode.id),
+        );
         EntryData.removeOngoingInfo(np.entryData);
         checkStopInterval(np);
         const exitData = np.exitDatas.get(exitNode.id);
         if (!exitData) {
-            return np.log.error('missing exit data for %s during info resp timeout', exitNode.id);
+            return np.log.error(
+                'missing exit data for x%s during info resp timeout',
+                shortPeerId(exitNode.id),
+            );
         }
         exitData.infoFail = true;
     }, InfoResponseTimeout);
+    np.infoTimeouts.set(exitNode.id, timeout);
 }
 
 export function prettyPrint(np: NodePair): string {
@@ -290,13 +319,13 @@ function fetchMessages(np: NodePair) {
 
 function incInfoResps(np: NodePair, infoResps: NodeAPI.Message[]) {
     infoResps.forEach(({ body }) => {
-        const [, payload] = body.split('-');
+        const payload = body.slice(body.indexOf('-') + 1);
         const resDec = Payload.decodeInfo(payload);
         if (Res.isErr(resDec)) {
             return np.log.error('error decoding info payload:', resDec.error);
         }
-        const { peerId, version, counter } = resDec.res;
-        const nodeLog = ExitNode.prettyPrint(peerId, version, counter);
+        const { peerId, version, counter, shRelays } = resDec.res;
+        const nodeLog = ExitNode.prettyPrint(peerId, version, counter, shRelays);
         const exitNode = np.exitNodes.get(peerId);
         if (!exitNode) {
             return np.log.info('info response for missing exit node %s', nodeLog);
@@ -310,9 +339,11 @@ function incInfoResps(np: NodePair, infoResps: NodeAPI.Message[]) {
         exitData.counterOffset = Date.now() - counter;
         exitData.infoLatMs = exitData.infoLatStarted && Date.now() - exitData.infoLatStarted;
         exitData.infoFail = false;
+        exitData.shRelays = shRelays;
         EntryData.removeOngoingInfo(np.entryData);
-        clearTimeout(np.infoTimeout);
-        np.infoTimeout = undefined;
+        const t = np.infoTimeouts.get(peerId);
+        clearTimeout(t);
+        np.infoTimeouts.delete(peerId);
     });
     checkStopInterval(np);
 }
@@ -324,13 +355,15 @@ function incPeers(np: NodePair, res: NodeAPI.Peers | NodeAPI.NodeError, startPin
     }
 
     // available peers
-    const relays = res.connected
+    const peers = res.connected
         .filter(({ reportedVersion }) =>
             RelayNodesCompatVersions.some((v) => reportedVersion.startsWith(v)),
         )
         .map(({ peerId, peerAddress }) => ({ peerId, peerAddress }));
     NodeAPI.getNodeChannels(np.entryNode)
-        .then((ch) => incChannels(np, ch, relays, startPingTime))
+        .then((ch) => {
+            incChannels(np, ch, peers, startPingTime);
+        })
         .catch((err) => {
             np.log.error('error fetching channels: %s[%o]', JSON.stringify(err), err);
         });
@@ -339,18 +372,20 @@ function incPeers(np: NodePair, res: NodeAPI.Peers | NodeAPI.NodeError, startPin
 function incChannels(
     np: NodePair,
     channels: NodeAPI.NodeChannels,
-    relays: { peerId: string; peerAddress: string }[],
+    peers: { peerId: string; peerAddress: string }[],
     startPingTime: number,
 ) {
     np.entryData.pingDuration = Date.now() - startPingTime;
+    np.log.verbose('channel ping took %dms', np.entryData.pingDuration);
 
     // open channels
     const openChannelsArr = channels.outgoing
         .filter(({ status }) => status === 'Open')
         .map(({ peerAddress }) => peerAddress);
     const openChannels = new Set(openChannelsArr);
-    np.relays = relays
+    np.peers = peers.map(({ peerId }) => peerId);
+    np.relays = peers
         .filter(({ peerAddress }) => openChannels.has(peerAddress))
         .map(({ peerId }) => peerId);
-    np.log.info('found %d potential relays', np.relays.length);
+    np.log.verbose('found %d potential relays', np.relays.length);
 }

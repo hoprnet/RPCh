@@ -1,11 +1,8 @@
-import retry = require('async-retry');
-
-import { logger } from './utils';
-
 import type { EntryNode } from './entry-node';
 import type { ExitNode } from './exit-node';
 
 export const NoMoreNodes = 'no more nodes';
+export const Unauthorized = 'unauthorized';
 
 /**
  * This module contains all communication with the discovery platform.
@@ -43,16 +40,6 @@ export type QuotaParams = {
     type: 'request' | 'response';
 };
 
-const DefaultBackoff = {
-    retries: 5,
-    factor: 3,
-    minTimeout: 1e3,
-    maxTimeout: 60e3,
-    randomize: true,
-};
-
-const log = logger(['sdk', 'dp-api']);
-
 export function fetchNodes(ops: ClientOps, amount: number, since: Date): Promise<Nodes> {
     const url = new URL('/api/v1/nodes/pairings', ops.discoveryPlatformEndpoint);
     url.searchParams.set('amount', `${amount}`);
@@ -64,23 +51,16 @@ export function fetchNodes(ops: ClientOps, amount: number, since: Date): Promise
         'x-rpch-client': ops.clientId,
     };
 
-    return retry(async (bail, num) => {
-        if (num > 1) {
-            log.verbose('Retrying', url.host.toString(), 'after', num - 1, 'failure(s)');
-        }
-        const res = await fetch(url, { headers });
-        if (res.status !== 200) {
-            log.info('Fetching nodes returned', res.status);
-        }
+    return fetch(url, { headers }).then((res) => {
         switch (res.status) {
             case 204: // none found
-                return bail(new Error(NoMoreNodes));
-            case 400: // validation errors
+                throw new Error(NoMoreNodes);
             case 403: // unauthorized
-                return bail(new Error((await res.json()) as unknown as string));
+                throw new Error(Unauthorized);
+            default:
+                return res.json();
         }
-        return res.json() as unknown as Nodes;
-    }, DefaultBackoff) as Promise<Nodes>;
+    });
 }
 
 export function fetchQuota(

@@ -1,6 +1,6 @@
 {
     "name": "@rpch/exit-node",
-    "version": "0.14.0",
+    "version": "1.1.1",
     "license": "LGPL-3.0",
     "private": true,
     "scripts": {
@@ -16,7 +16,7 @@
         "generate-exit-node-keypair": "node gen-keypair.js"
     },
     "dependencies": {
-        "@rpch/sdk": "1.7.0",
+        "@rpch/sdk": "1.10.0",
         "ethers": "^5.7.2",
         "isomorphic-ws": "^5.0.0",
         "sqlite3": "^5.1.6"

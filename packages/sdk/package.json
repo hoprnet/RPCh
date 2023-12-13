@@ -1,6 +1,6 @@
 {
     "name": "@rpch/sdk",
-    "version": "1.7.0",
+    "version": "1.10.0",
     "license": "LGPL-3.0",
     "main": "./build/index.js",
     "types": "./build/index.d.ts",
@@ -31,12 +31,10 @@
         "test": "jest --coverage"
     },
     "devDependencies": {
-        "@types/async-retry": "^1.4.5",
         "@types/debug": "^4.1.10"
     },
     "dependencies": {
         "@rpch/compat-crypto": "^0.8.0",
-        "async-retry": "^1.3.3",
         "debug": "^4.3.4",
         "ethers": "^5.7.2",
         "isomorphic-ws": "^5.0.0",

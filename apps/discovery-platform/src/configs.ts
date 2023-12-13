@@ -1,7 +1,7 @@
 import * as pg from 'pg';
 
 export enum Keys {
-    RPCh_DOCKER_IMAGE_VERSION = 'RPCh_DOCKER_IMAGE_VERSION',
+    RPCh_RPC_SERVER_VERSION = 'RPCh_RPC_SERVER_VERSION',
     RPCh_SDK_VERSION = 'RPCh_SDK_VERSION',
 }
 

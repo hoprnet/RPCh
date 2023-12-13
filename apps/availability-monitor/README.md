@@ -1,6 +1,8 @@
 # Availability Monitor
 
-Availability Monitor is a service that monitors existing registered nodes, and updates Prometheus with the nodes' stability checks.
+Availability Monitor is a service that determines best available routes through hoprd mixnet.
+The Availability Monitor uses the same database as the Disocvery Platform.
+The Disocvery Platform is the source of truth of the database containing all migrations.
 
 ## Run with Docker
 
@@ -15,10 +17,7 @@ After building the image, you will be able to run it with: \
 
 ```sh
 docker run \
--e PORT="<YOUR PREFERRED PORT>" \
--e DB_CONNECTION_URL="<YOUR DB CONNECTION URL>" \
--e REVIEWER_INTERVAL_MS="<OPTIONAL: how often to queue nodes for review>" \
--e REVIEWER_CONCURRENCY="<OPTIONAL: how many reviews in parallel>" \
--e DEBUG="rpch*,-*verbose" \
+-e DATABASE_URL="<YOUR DB CONNECTION URL>" \
+-e DEBUG="rpch:availability-monitor:*" \
 availability-monitor
 ```

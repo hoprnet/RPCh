@@ -1,5 +1,50 @@
 # @rpch/discovery-platform
 
+## 1.0.2
+
+### Patch Changes
+
+-   Updated dependencies [2c13794]
+    -   @rpch/sdk@1.10.0
+
+## 1.0.1
+
+### Patch Changes
+
+-   Updated dependencies [978f729]
+    -   @rpch/sdk@1.9.0
+
+## 1.0.0
+
+### Major Changes
+
+-   85d02e3: Elevate version to indicate stable production version
+
+### Patch Changes
+
+-   Updated dependencies [85d02e3]
+-   Updated dependencies [655f519]
+    -   @rpch/sdk@1.8.0
+
+## 0.14.4
+
+### Patch Changes
+
+-   7504a6f: fix crash on invalid clientId report from exit node
+
+## 0.14.3
+
+### Patch Changes
+
+-   626ea0e: Use correctly named configs key to determine rpc server version
+
+## 0.14.2
+
+### Patch Changes
+
+-   Updated dependencies
+    -   @rpch/sdk@1.7.1
+
 ## 0.14.1
 
 ### Patch Changes

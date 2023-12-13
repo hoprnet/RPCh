@@ -1,5 +1,44 @@
 # @rpch/exit-node
 
+## 1.1.1
+
+### Patch Changes
+
+-   Updated dependencies [2c13794]
+    -   @rpch/sdk@1.10.0
+
+## 1.1.0
+
+### Minor Changes
+
+-   978f729: Increase performance when sending large requests
+    Fix manual relay node selection
+
+### Patch Changes
+
+-   Updated dependencies [978f729]
+    -   @rpch/sdk@1.9.0
+
+## 1.0.0
+
+### Major Changes
+
+-   85d02e3: Include relays in info response
+    Better exit node logging
+
+### Patch Changes
+
+-   Updated dependencies [85d02e3]
+-   Updated dependencies [655f519]
+    -   @rpch/sdk@1.8.0
+
+## 0.14.1
+
+### Patch Changes
+
+-   Updated dependencies
+    -   @rpch/sdk@1.7.1
+
 ## 0.14.0
 
 ### Minor Changes
