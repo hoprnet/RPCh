@@ -51,7 +51,7 @@ jobs:
 
   load-tests:
     name: Load Tests
-    runs-on: ubuntu-2-core
+    runs-on: self-hosted
     steps:
 
       - name: Checkout hoprnet repository
