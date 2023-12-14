@@ -15,8 +15,6 @@ x-exit-service: &exit
   restart: unless-stopped
   volumes:
     - exit-node-data:/tmp
-  networks:
-    - rpch-sandbox
   depends_on:
     - pluto
   command: "node build/index.js"
@@ -34,8 +32,6 @@ services:
       - "19501-19505:19501-19505"
       # local RPC port
       - "8545:8545"
-    networks:
-      - rpch-sandbox
     expose:
       - 13301-13305
     environment:
@@ -44,7 +40,7 @@ services:
   exit-1:
     <<: *exit
     environment:
-      - HOPRD_API_ENDPOINT=http://pluto:13301
+      - HOPRD_API_ENDPOINT=http://host.docker.internal:13301
       - OPT_IN_METRICS=${OPT_IN_METRICS}
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
@@ -55,7 +51,7 @@ services:
   exit-2:
     <<: *exit
     environment:
-      - HOPRD_API_ENDPOINT=http://pluto:13302
+      - HOPRD_API_ENDPOINT=http://host.docker.internal:13302
       - DEBUG=${DEBUG:-"rpch*"}
       - OPT_IN_METRICS=${OPT_IN_METRICS}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
@@ -66,7 +62,7 @@ services:
   exit-3:
     <<: *exit
     environment:
-      - HOPRD_API_ENDPOINT=http://pluto:13303
+      - HOPRD_API_ENDPOINT=http://host.docker.internal:13303
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - OPT_IN_METRICS=${OPT_IN_METRICS}
@@ -77,7 +73,7 @@ services:
   exit-4:
     <<: *exit
     environment:
-      - HOPRD_API_ENDPOINT=http://pluto:13304
+      - HOPRD_API_ENDPOINT=http://host.docker.internal:13304
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - OPT_IN_METRICS=${OPT_IN_METRICS}
@@ -88,7 +84,7 @@ services:
   exit-5:
     <<: *exit
     environment:
-      - HOPRD_API_ENDPOINT=http://pluto:13305
+      - HOPRD_API_ENDPOINT=http://host.docker.internal:13305
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - OPT_IN_METRICS=${OPT_IN_METRICS}
@@ -96,11 +92,3 @@ services:
       - DISCOVERY_PLATFORM_API_ENDPOINT=${DISCOVERY_PLATFORM_API_ENDPOINT}
       - DISCOVERY_PLATFORM_ACCESS_TOKEN=${DISCOVERY_PLATFORM_ACCESS_TOKEN}
       - RPCH_DB_FILE=/exit-node-5.sqlite
-
-# since this file is run first,
-# we create the sandbox network
-networks:
-  rpch-sandbox:
-    name: rpch-sandbox
-    driver: bridge
-    external: true

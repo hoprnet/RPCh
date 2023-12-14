@@ -1,20 +1,14 @@
 import dotenv from 'dotenv';
 import path from 'path';
-import { api as hoprAPI } from '@hoprnet/hopr-sdk';
 import { Pool } from 'pg';
+import { api as hoprAPI } from '@hoprnet/hopr-sdk';
+import nodes from './nodes'
 
 dotenv.config({ path: path.resolve(__dirname, '../src/.env') });
 
 const connectionString = process.env.DATABASE_URL;
 const dbPool = new Pool({ connectionString });
 
-const nodes = [
-    'http://host.docker.internal:13301', // http://localhost doesnt work instarnally and http://pluto doesnt work externally
-    'http://host.docker.internal:13302',
-    'http://host.docker.internal:13303',
-    'http://host.docker.internal:13304',
-    'http://host.docker.internal:13305',
-];
 
 main();
 async function main() {

@@ -122,6 +122,9 @@ start() {
     echo "Prepopulating the DB"
     node ../sandbox/build/index.js
 
+    echo "Wait for all Nodes to have quality peers"
+    node ../sandbox/build/waitForQualityPeers.js
+
     echo "Starting availability monitor"
     docker compose -f $DIR/docker-compose-3-am.yml -p rpch-sandbox \
         up -d --build --force-recreate

@@ -21,8 +21,6 @@ services:
     restart: unless-stopped
     ports:
       - "45750:45750"
-    networks:
-      - rpch-sandbox
     environment:
       - DEBUG_COLORS=false
       - LOG_LEVEL=verbose
@@ -30,10 +28,3 @@ services:
       - DISCOVERY_PLATFORM_API_ENDPOINT=http://host.docker.internal:3020
       - FORCE_ZERO_HOP=true
 
-# we create a proxy to the sandbox
-# network created in 'nodes-docker-compose'
-networks:
- rpch-sandbox:
-    name: rpch-sandbox
-    driver: bridge
-    external: true

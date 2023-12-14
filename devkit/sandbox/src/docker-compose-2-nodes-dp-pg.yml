@@ -19,8 +19,6 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
-    networks:
-      - rpch-sandbox
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
@@ -33,14 +31,12 @@ services:
     restart: unless-stopped
     ports:
       - "3020:3020"
-    networks:
-      - rpch-sandbox
     environment:
       - DEBUG=${DEBUG}
-      - URL=http://127.0.0.1:3020
+      - URL=http://host.docker.internal:3020
       - PORT=3020
       - DATABASE_URL=postgresql://postgres:postgres@postgres-db:5432
-      - FUNDING_SERVICE_URL=http://funding-service:3010
+      - FUNDING_SERVICE_URL=http://host.docker.internal:3010
       - AVAILABILITY_MONITOR_URL=http:/availability-monitor:9080
       - SKIP_CHECK_COMMITMENT=${SKIP_CHECK_COMMITMENT}
       - ADMIN_SECRET=${ADMIN_SECRET}
@@ -49,11 +45,3 @@ services:
       - DISCOVERY_PLATFORM_ACCESS_TOKEN=${DISCOVERY_PLATFORM_ACCESS_TOKEN}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-
-# we create a proxy to the sandbox
-# network created in 'nodes-docker-compose'
-networks:
-  rpch-sandbox:
-    name: rpch-sandbox
-    driver: bridge
-    external: true
