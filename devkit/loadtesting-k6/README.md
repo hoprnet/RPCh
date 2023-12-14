@@ -9,6 +9,7 @@ Install k6 on test machine: https://k6.io/docs/get-started/installation/
 1. Navigate to `devkit/loadtesting-k6`
 2. Build the repo
 ```
+yarn install
 yarn build
 ```
 
@@ -22,7 +23,7 @@ yarn build
 export TEST_TYPE=SMOKE WALLET_TYPE=METAMASK ; \
    RPC_SERVER_URL=http://localhost:45750 \
    k6 run ./build/rpc-server/index.js \
-   --out json="results/test-$TEST_TYPE-$WALLET_TYPE-$(date +%s).json"
+   --out json="results/test-${TEST_TYPE}-${WALLET_TYPE}-$(date +%s).json"
 ```
 Where a list of values for `TEST_TYPE` and `WALLET_TYPE` can be found with:
 ```

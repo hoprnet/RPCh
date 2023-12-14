@@ -1,0 +1,67 @@
+---
+#################################################################################
+# Manual pipeline to start a load testing scenario
+#################################################################################
+name: Load Tests
+
+on:
+# Starts at 2:00 AM CET
+  # schedule:
+  #   - cron: '00 2 * * *'
+  workflow_dispatch:
+    inputs:
+      test_id:
+        type: string
+        required: true
+        description: 'Test name'
+      test_type:
+        type: choice
+        options:
+          - SOAK
+          - SMOKE
+          - SPIKE
+          - STRESS
+          - LOAD
+          - BURST
+          - CONSTANT
+          - LONG
+        required: true
+        description: 'Test type'
+      wallet_type:
+        type: choice
+        options:
+          - DUMMY
+          - METAMASK
+          - OKX
+          - RABBY
+          - FRAME
+        required: true
+        description: 'Wallet Type'
+      rate:
+        type: number
+        default: 1
+        required: true
+        description: 'Number of messages per seconds'
+
+concurrency:
+  group: load-tests
+  cancel-in-progress: true
+
+jobs:
+
+  load-tests:
+    name: Load Tests
+    runs-on: ubuntu-2-core
+    steps:
+
+      - name: Checkout hoprnet repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Run Load test
+        run: |
+          jinja2 --format=yaml k6.yaml.j2 -D testType=${{ github.event.inputs.test_type }} -D walletType=${{ github.event.inputs.wallet_type }} -D testId=${{ github.event.inputs.test_id }} > k6.yaml
+          kubectl delete -f k6.yaml 2> /dev/null || true
+          kubectl apply -f k6.yaml
+        working-directory: "./devkit/loadtesting-k6"
