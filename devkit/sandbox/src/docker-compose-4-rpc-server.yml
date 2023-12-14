@@ -7,16 +7,9 @@ version: "4"
 
 services:
   rpc-server:
-  #  build:
-  #    dockerfile: apps/rpc-server/Dockerfile
-  #    context: ../../../
-
-  # TODO fix:
-  #     env: ‘bash\r’: No such file or directory
-  #     env: use -[v]S to pass options in shebang lines
-  # from apps/rpc-server/Dockerfile 
-  
-    image: europe-west6-docker.pkg.dev/rpch-375921/rpch/rpc-server@sha256:09b2b17d6c079edef1e6910dc4778d7f21fb2374a4a945d5aaa233887d1d9af0
+    build:
+      dockerfile: apps/rpc-server/Dockerfile
+      context: ../../../
     platform: linux/amd64
     restart: unless-stopped
     ports:
