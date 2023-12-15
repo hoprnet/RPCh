@@ -1,0 +1,39 @@
+---
+apiVersion: k6.io/v1alpha1
+kind: K6
+metadata:
+  name: k6-rpch-{{ testType | lower }}-{{ walletType | lower }}
+  namespace: k6-operator-system
+spec:
+  parallelism: 2
+  script:
+    localFile: /app/rpch/rpc-server/index.js
+  separate: true
+  arguments: "--tag testid={{ testId }}"
+  runner:
+    image: europe-west6-docker.pkg.dev/rpch-375921/rpch/rpch-k6:latest
+    resources:
+      limits:
+        cpu: 400m
+        memory: 1500Mi
+      requests:
+        cpu: 100m
+        memory: 500Mi
+    env:
+      - name: TEST_TYPE
+        value: {{ testType }}
+      - name: WALLET_TYPE
+        value: {{ walletType }}
+      - name: RPC_SERVER_URL
+        value: http://rpc-server-one-hop.rpch.svc:45750
+      - name: K6_PROMETHEUS_RW_SERVER_URL
+        value: https://prometheus.prod.hoprtech.net/api/v1/write
+      - name: K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM
+        value: 'true'
+      - name: K6_OUT
+        value: xk6-prometheus-rw
+    # envFrom:
+    #   - secretRef:
+    #       name: rpc-server
+
+
