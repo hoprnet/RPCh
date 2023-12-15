@@ -10,6 +10,7 @@ const testType = __ENV.TEST_TYPE as OptionTypes;
 const walletType = __ENV.WALLET_TYPE as WalletTypes;
 
 // get the test option
+console.log(`Starting TestType '${testType}' for wallet type '${walletType}' against '${url}'`)
 export const options = getOption(testType);
 
 // create metrics counter
