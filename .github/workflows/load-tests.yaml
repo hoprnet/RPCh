@@ -61,6 +61,9 @@ jobs:
 
       - name: Run Load test
         run: |
+          ls -al
+          ls -al requirements.txt
+          cat requirements.txt
           pip install -r requirements.txt
           jinja2 --format=yaml k6.yaml.j2 -D testType=${{ github.event.inputs.test_type }} -D walletType=${{ github.event.inputs.wallet_type }} -D testId=${{ github.event.inputs.test_id }} > k6.yaml
           kubectl delete -f k6.yaml 2> /dev/null || true
