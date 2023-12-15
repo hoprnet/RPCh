@@ -40,7 +40,7 @@ services:
   exit-1:
     <<: *exit
     environment:
-      - HOPRD_API_ENDPOINT=http://pluto:13301
+      - HOPRD_API_ENDPOINT=${HOPRD_API_ENDPOINT_1}
       - OPT_IN_METRICS=${OPT_IN_METRICS}
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
@@ -51,7 +51,7 @@ services:
   exit-2:
     <<: *exit
     environment:
-      - HOPRD_API_ENDPOINT=http://pluto:13302
+      - HOPRD_API_ENDPOINT=${HOPRD_API_ENDPOINT_2}
       - DEBUG=${DEBUG:-"rpch*"}
       - OPT_IN_METRICS=${OPT_IN_METRICS}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
@@ -62,7 +62,7 @@ services:
   exit-3:
     <<: *exit
     environment:
-      - HOPRD_API_ENDPOINT=http://pluto:13303
+      - HOPRD_API_ENDPOINT=${HOPRD_API_ENDPOINT_3}
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - OPT_IN_METRICS=${OPT_IN_METRICS}
@@ -73,7 +73,7 @@ services:
   exit-4:
     <<: *exit
     environment:
-      - HOPRD_API_ENDPOINT=http://pluto:13304
+      - HOPRD_API_ENDPOINT=${HOPRD_API_ENDPOINT_4}
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - OPT_IN_METRICS=${OPT_IN_METRICS}
@@ -84,7 +84,7 @@ services:
   exit-5:
     <<: *exit
     environment:
-      - HOPRD_API_ENDPOINT=http://pluto:13305
+      - HOPRD_API_ENDPOINT=${HOPRD_API_ENDPOINT_5}
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - OPT_IN_METRICS=${OPT_IN_METRICS}

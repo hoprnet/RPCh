@@ -35,7 +35,7 @@ services:
       - DEBUG=${DEBUG}
       - URL=http://127.0.0.1:3020
       - PORT=3020
-      - DATABASE_URL=postgresql://postgres:postgres@postgres-db-rpch:5432
+      - DATABASE_URL=${DATABASE_URL_INTERNAL}
       - SKIP_CHECK_COMMITMENT=${SKIP_CHECK_COMMITMENT}
       - ADMIN_SECRET=${ADMIN_SECRET}
       - SESSION_SECRET=${SESSION_SECRET}
@@ -43,8 +43,3 @@ services:
       - DISCOVERY_PLATFORM_ACCESS_TOKEN=${DISCOVERY_PLATFORM_ACCESS_TOKEN}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-
-networks:	
-  rpch-sandbox:	
-    name: rpch-sandbox	
-    external: true

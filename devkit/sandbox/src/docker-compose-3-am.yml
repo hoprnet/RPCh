@@ -21,4 +21,4 @@ services:
     environment:
       - DEBUG=${DEBUG}
       - PORT=9080
-      - DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432
+      - DATABASE_URL=${DATABASE_URL_EXTERNAL}
