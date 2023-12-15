@@ -14,6 +14,10 @@ services:
     restart: unless-stopped
     ports:
       - "45750:45750"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+#    networks:
+#      - rpch-sandbox
     environment:
       - DEBUG_COLORS=false
       - LOG_LEVEL=verbose

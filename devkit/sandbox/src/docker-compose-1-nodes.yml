@@ -12,6 +12,8 @@ x-exit-service: &exit
   build:
     dockerfile: apps/exit-node/Dockerfile
     context: ../../../
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
   restart: unless-stopped
   volumes:
     - exit-node-data:/tmp
@@ -32,6 +34,10 @@ services:
       - "19501-19505:19501-19505"
       # local RPC port
       - "8545:8545"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+#    networks:
+#      - rpch-sandbox
     expose:
       - 13301-13305
     environment:

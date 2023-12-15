@@ -19,6 +19,8 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
@@ -31,6 +33,10 @@ services:
     restart: unless-stopped
     ports:
       - "3020:3020"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+#    networks:
+#      - rpch-sandbox
     environment:
       - DEBUG=${DEBUG}
       - URL=http://host.docker.internal:3020
