@@ -64,7 +64,6 @@ export type Ops = {
     readonly debugScope?: string;
     readonly logLevel?: string; // 'verbose' | 'info' | 'warn' | 'error'
     readonly forceManualRelaying?: boolean;
-    readonly sandboxNodeIpOverwrite?: string;
 };
 
 /**
