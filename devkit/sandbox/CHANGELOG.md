@@ -4,7 +4,7 @@
 
 ### Changes
 
-- Full rework of the Sandbox to work with 1.10.0 RPCh
+- Full rework of the Sandbox
 
 ## 0.1.1
 

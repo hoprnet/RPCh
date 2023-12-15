@@ -14,7 +14,8 @@ services:
     restart: unless-stopped
     ports:
       - "45750:45750"
-    network_mode: host
+    networks:	
+      - rpch-sandbox
     environment:
       - DEBUG_COLORS=false
       - LOG_LEVEL=verbose
@@ -22,3 +23,7 @@ services:
       - DISCOVERY_PLATFORM_API_ENDPOINT=http://127.0.0.1:3020
       - FORCE_ZERO_HOP=true
 
+networks:	
+  rpch-sandbox:	
+    name: rpch-sandbox	
+    external: true

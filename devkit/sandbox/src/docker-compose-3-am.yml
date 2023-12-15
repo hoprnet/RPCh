@@ -17,8 +17,14 @@ services:
     restart: unless-stopped
     ports:
       - "9080:9080"
-    network_mode: host
+    networks:	
+      - rpch-sandbox
     environment:
       - DEBUG=${DEBUG}
       - PORT=9080
       - DATABASE_URL=${DATABASE_URL}
+
+networks:	
+  rpch-sandbox:	
+    name: rpch-sandbox	
+    external: true

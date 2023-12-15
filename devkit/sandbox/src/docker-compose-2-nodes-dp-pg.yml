@@ -31,7 +31,9 @@ services:
     restart: unless-stopped
     ports:
       - "3020:3020"
-    network_mode: host
+#    network_mode: bridge
+    networks:	
+      - rpch-sandbox
     environment:
       - DEBUG=${DEBUG}
       - URL=http://127.0.0.1:3020
@@ -44,3 +46,8 @@ services:
       - DISCOVERY_PLATFORM_ACCESS_TOKEN=${DISCOVERY_PLATFORM_ACCESS_TOKEN}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+
+networks:	
+  rpch-sandbox:	
+    name: rpch-sandbox	
+    external: true
