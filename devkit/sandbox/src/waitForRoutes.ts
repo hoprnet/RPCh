@@ -5,7 +5,7 @@ import { Pool } from 'pg';
 dotenv.config({ path: path.resolve(__dirname, '../src/.env') });
 
 const connectionString = process.env.DATABASE_URL;
-const dbPool = new Pool({ connectionString });
+const dbPool = new Pool({ connectionString: "postgresql://postgres:postgres@localhost:5432" });
 
 main();
 async function main() {

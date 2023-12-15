@@ -339,6 +339,7 @@ if (require.main === module) {
             : undefined,
         logLevel: process.env.LOG_LEVEL,
         versionListener,
+        sandboxNodeIpOverwrite: process.env.SANDBOX_NODES_IP_OVERWRITE,
     };
 
     const serverOps = {

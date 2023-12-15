@@ -1,4 +1,4 @@
-#!/usr/bin/env /bash
+#!/usr/bin/env /bash -e
 
 # path to this file
 DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)
@@ -7,6 +7,7 @@ DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)
 scurl() {
     curl --silent --show-error --fail "$@" || exit 1
 }
+
 
 # stop sandbox
 stop() {
@@ -121,7 +122,7 @@ start() {
 
 
     echo "Prepopulating the DB"
-    node ../sandbox/build/index.js
+    node ../sandbox/build/prepopulateDB.js
 
     echo "Wait for all Nodes to have quality peers"
     node ../sandbox/build/waitForQualityPeers.js
@@ -134,8 +135,12 @@ start() {
     echo "Waiting for 0-hop and 1-hop routes"
     node ../sandbox/build/waitForRoutes.js
 
+    plutoIp=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' rpch-sandbox-pluto-1)
+
+    echo "Found IP of Pluto image: $plutoIp"
+
     echo "Starting RPC server"
-    docker compose -f $DIR/docker-compose-4-rpc-server.yml -p rpch-sandbox \
+    PLUTO_IP=$plutoIp docker compose -f $DIR/docker-compose-4-rpc-server.yml -p rpch-sandbox \
         up -d --build --force-recreate
     echo "Done starting RPC server"
 

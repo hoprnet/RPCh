@@ -12,9 +12,6 @@ x-exit-service: &exit
   build:
     dockerfile: apps/exit-node/Dockerfile
     context: ../../../
-#  network_mode: host
-  networks:	
-    - rpch-sandbox
   restart: unless-stopped
   volumes:
     - exit-node-data:/tmp
@@ -35,8 +32,6 @@ services:
       - "19501-19505:19501-19505"
       # local RPC port
       - "8545:8545"
-    networks:	
-      - rpch-sandbox
     expose:
       - 13301-13305
     environment:
@@ -97,8 +92,3 @@ services:
       - DISCOVERY_PLATFORM_API_ENDPOINT=${DISCOVERY_PLATFORM_API_ENDPOINT}
       - DISCOVERY_PLATFORM_ACCESS_TOKEN=${DISCOVERY_PLATFORM_ACCESS_TOKEN}
       - RPCH_DB_FILE=/exit-node-5.sqlite
-
-networks:	
-  rpch-sandbox:	
-    name: rpch-sandbox	
-    driver: bridge

@@ -17,14 +17,8 @@ services:
     restart: unless-stopped
     ports:
       - "9080:9080"
-    networks:	
-      - rpch-sandbox
+    network_mode: "host"
     environment:
       - DEBUG=${DEBUG}
       - PORT=9080
-      - DATABASE_URL=${DATABASE_URL}
-
-networks:	
-  rpch-sandbox:	
-    name: rpch-sandbox	
-    external: true
+      - DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432

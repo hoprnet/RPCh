@@ -31,14 +31,11 @@ services:
     restart: unless-stopped
     ports:
       - "3020:3020"
-#    network_mode: bridge
-    networks:	
-      - rpch-sandbox
     environment:
       - DEBUG=${DEBUG}
       - URL=http://127.0.0.1:3020
       - PORT=3020
-      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_URL=postgresql://postgres:postgres@postgres-db-rpch:5432
       - SKIP_CHECK_COMMITMENT=${SKIP_CHECK_COMMITMENT}
       - ADMIN_SECRET=${ADMIN_SECRET}
       - SESSION_SECRET=${SESSION_SECRET}

@@ -5,10 +5,7 @@ import { api as hoprAPI } from '@hoprnet/hopr-sdk';
 import nodes from './nodes'
 
 dotenv.config({ path: path.resolve(__dirname, '../src/.env') });
-
-const connectionString = process.env.DATABASE_URL;
-const dbPool = new Pool({ connectionString });
-
+const dbPool = new Pool({ connectionString: "postgresql://postgres:postgres@localhost:5432" });
 
 main();
 async function main() {
@@ -33,6 +30,7 @@ async function waitForMigrationToFinish(){
             break;
         } catch (e){
             error = e;
+            console.error(error);
         }
     }
     if(!success) {

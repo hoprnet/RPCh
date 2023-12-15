@@ -14,13 +14,13 @@ services:
     restart: unless-stopped
     ports:
       - "45750:45750"
-    networks:	
-      - rpch-sandbox
+    extra_hosts:
+     - "localhost:${PLUTO_IP}"
     environment:
       - DEBUG_COLORS=false
       - LOG_LEVEL=verbose
       - CLIENT=foobarfoobar
-      - DISCOVERY_PLATFORM_API_ENDPOINT=http://127.0.0.1:3020
+      - DISCOVERY_PLATFORM_API_ENDPOINT=http://discovery-platform:3020
       - FORCE_ZERO_HOP=true
 
 networks:	
