@@ -17,8 +17,8 @@ on:
       test_type:
         type: choice
         options:
-          - SOAK
           - SMOKE
+          - SOAK
           - SPIKE
           - STRESS
           - LOAD
