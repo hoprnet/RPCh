@@ -12,8 +12,9 @@ x-exit-service: &exit
   build:
     dockerfile: apps/exit-node/Dockerfile
     context: ../../../
-  extra_hosts:
-    - "host.docker.internal:host-gateway"
+  network_mode: "host"
+#  extra_hosts:
+#    - "host.docker.internal:host-gateway"
   restart: unless-stopped
   volumes:
     - exit-node-data:/tmp
@@ -34,8 +35,11 @@ services:
       - "19501-19505:19501-19505"
       # local RPC port
       - "8545:8545"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+#    network_mode: "host"
+#    network:
+#      - host
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
 #    networks:
 #      - rpch-sandbox
     expose:
@@ -46,7 +50,7 @@ services:
   exit-1:
     <<: *exit
     environment:
-      - HOPRD_API_ENDPOINT=http://host.docker.internal:13301
+      - HOPRD_API_ENDPOINT=http://127.0.0.1:13301
       - OPT_IN_METRICS=${OPT_IN_METRICS}
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
@@ -57,7 +61,7 @@ services:
   exit-2:
     <<: *exit
     environment:
-      - HOPRD_API_ENDPOINT=http://host.docker.internal:13302
+      - HOPRD_API_ENDPOINT=http://127.0.0.1:13302
       - DEBUG=${DEBUG:-"rpch*"}
       - OPT_IN_METRICS=${OPT_IN_METRICS}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
@@ -68,7 +72,7 @@ services:
   exit-3:
     <<: *exit
     environment:
-      - HOPRD_API_ENDPOINT=http://host.docker.internal:13303
+      - HOPRD_API_ENDPOINT=http://127.0.0.1:13303
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - OPT_IN_METRICS=${OPT_IN_METRICS}
@@ -79,7 +83,7 @@ services:
   exit-4:
     <<: *exit
     environment:
-      - HOPRD_API_ENDPOINT=http://host.docker.internal:13304
+      - HOPRD_API_ENDPOINT=http://127.0.0.1:13304
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - OPT_IN_METRICS=${OPT_IN_METRICS}
@@ -90,7 +94,7 @@ services:
   exit-5:
     <<: *exit
     environment:
-      - HOPRD_API_ENDPOINT=http://host.docker.internal:13305
+      - HOPRD_API_ENDPOINT=http://127.0.0.1:13305
       - DEBUG=${DEBUG:-"rpch*"}
       - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
       - OPT_IN_METRICS=${OPT_IN_METRICS}

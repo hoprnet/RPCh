@@ -107,8 +107,8 @@ start() {
                 -H "Content-Type: application/json" \
                 -H "x-auth-token: HOPRD_API_TOKEN" 
         );
-        # hoprTokenAddress=$(jq -r -n --argjson data "$info" "$info.hoprToken")  // jq is not preinstalled on MacOS and Win with GitBash
-        hoprTokenAddress="$(echo $info | grep -P 'hoprToken":"[0-zZ]*"' -o  | cut -d "\"" -f 3)"
+        hoprTokenAddress=$(jq -r -n --argjson data "$info" "$info.hoprToken")                       ## jq is not preinstalled on MacOS and Win with GitBash
+        # hoprTokenAddress="$(echo $info | grep -P 'hoprToken":"[0-zZ]*"' -o  | cut -d "\"" -f 3)"  ## for computers with grep
         sleep 1
     done
     echo "Received hoprTokenAddress: $hoprTokenAddress"

@@ -11,7 +11,7 @@ volumes:
   postgres-data:
 
 services:
-  postgres-db:
+  postgres-db-rpch:
     image: postgres:14.1-alpine
     restart: always
     environment:
@@ -19,8 +19,11 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+#    network_mode: bridge
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
+#    networks:
+#      - rpch-sandbox
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
@@ -29,21 +32,24 @@ services:
       dockerfile: apps/discovery-platform/Dockerfile
       context: ../../../
     depends_on:
-      - postgres-db
+      - postgres-db-rpch
     restart: unless-stopped
     ports:
       - "3020:3020"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    network_mode: host
+#    network:
+#      - host
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
 #    networks:
 #      - rpch-sandbox
     environment:
       - DEBUG=${DEBUG}
-      - URL=http://host.docker.internal:3020
+      - URL=http://127.0.0.1:3020
       - PORT=3020
-      - DATABASE_URL=postgresql://postgres:postgres@postgres-db:5432
-      - FUNDING_SERVICE_URL=http://host.docker.internal:3010
-      - AVAILABILITY_MONITOR_URL=http:/availability-monitor:9080
+      - DATABASE_URL=${DATABASE_URL}
+#      - FUNDING_SERVICE_URL=http://host.docker.internal:3010
+#      - AVAILABILITY_MONITOR_URL=http:/availability-monitor:9080
       - SKIP_CHECK_COMMITMENT=${SKIP_CHECK_COMMITMENT}
       - ADMIN_SECRET=${ADMIN_SECRET}
       - SESSION_SECRET=${SESSION_SECRET}

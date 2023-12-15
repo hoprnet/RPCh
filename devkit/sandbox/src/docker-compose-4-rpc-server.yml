@@ -14,14 +14,17 @@ services:
     restart: unless-stopped
     ports:
       - "45750:45750"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    network_mode: host
+#    network:
+#      - host
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
 #    networks:
 #      - rpch-sandbox
     environment:
       - DEBUG_COLORS=false
       - LOG_LEVEL=verbose
       - CLIENT=foobarfoobar
-      - DISCOVERY_PLATFORM_API_ENDPOINT=http://host.docker.internal:3020
+      - DISCOVERY_PLATFORM_API_ENDPOINT=http://127.0.0.1:3020
       - FORCE_ZERO_HOP=true
 

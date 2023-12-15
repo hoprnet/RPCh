@@ -17,11 +17,14 @@ services:
     restart: unless-stopped
     ports:
       - "9080:9080"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    network_mode: host
+#    network:
+#      - host
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
 #    networks:
 #      - rpch-sandbox
     environment:
       - DEBUG=${DEBUG}
       - PORT=9080
-      - DATABASE_URL=postgresql://postgres:postgres@postgres-db:5432
+      - DATABASE_URL=${DATABASE_URL}
