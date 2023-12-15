@@ -30,18 +30,13 @@ on:
       wallet_type:
         type: choice
         options:
-          - DUMMY
           - METAMASK
+          - DUMMY
           - OKX
           - RABBY
           - FRAME
         required: true
         description: 'Wallet Type'
-      rate:
-        type: number
-        default: 1
-        required: true
-        description: 'Number of messages per seconds'
 
 concurrency:
   group: load-tests
