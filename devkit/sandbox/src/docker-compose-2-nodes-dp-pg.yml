@@ -19,11 +19,6 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
-#    network_mode: bridge
-#    extra_hosts:
-#      - "host.docker.internal:host-gateway"
-#    networks:
-#      - rpch-sandbox
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
@@ -37,19 +32,11 @@ services:
     ports:
       - "3020:3020"
     network_mode: host
-#    network:
-#      - host
-#    extra_hosts:
-#      - "host.docker.internal:host-gateway"
-#    networks:
-#      - rpch-sandbox
     environment:
       - DEBUG=${DEBUG}
       - URL=http://127.0.0.1:3020
       - PORT=3020
       - DATABASE_URL=${DATABASE_URL}
-#      - FUNDING_SERVICE_URL=http://host.docker.internal:3010
-#      - AVAILABILITY_MONITOR_URL=http:/availability-monitor:9080
       - SKIP_CHECK_COMMITMENT=${SKIP_CHECK_COMMITMENT}
       - ADMIN_SECRET=${ADMIN_SECRET}
       - SESSION_SECRET=${SESSION_SECRET}

@@ -18,12 +18,6 @@ services:
     ports:
       - "9080:9080"
     network_mode: host
-#    network:
-#      - host
-#    extra_hosts:
-#      - "host.docker.internal:host-gateway"
-#    networks:
-#      - rpch-sandbox
     environment:
       - DEBUG=${DEBUG}
       - PORT=9080

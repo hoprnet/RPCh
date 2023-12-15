@@ -33,7 +33,6 @@ async function waitForMigrationToFinish(){
             break;
         } catch (e){
             error = e;
-            console.error(e);
         }
     }
     if(!success) {

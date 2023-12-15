@@ -15,12 +15,6 @@ services:
     ports:
       - "45750:45750"
     network_mode: host
-#    network:
-#      - host
-#    extra_hosts:
-#      - "host.docker.internal:host-gateway"
-#    networks:
-#      - rpch-sandbox
     environment:
       - DEBUG_COLORS=false
       - LOG_LEVEL=verbose
