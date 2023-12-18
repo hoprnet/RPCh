@@ -6,7 +6,6 @@
   "scripts": {
     "prebuild": "node -p \"'export default \\'' + require('./package.json').version + '\\';'\" > src/version.ts",
     "build": "yarn prebuild && tsc",
-    "db:insert": "node build/index.js",
     "dev": "exit 0",
     "format": "exit 0",
     "lint": "exit 0",

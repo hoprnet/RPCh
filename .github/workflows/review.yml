@@ -141,31 +141,31 @@ jobs:
             -exec jq --arg license 'LGPL-3.0' -r '.license == $license' {} +\
             | grep "false" && exit 1 || echo success
 
-  # review-e2e-test-results:
-  #   needs:
-  #     - review-source-code
-  #     - container-image
-  #     - review-configuration
-  #   name: Review E2E test results
-  #   timeout-minutes: 60
-  #   runs-on: ubuntu-latest
-  #   env:
-  #     # enable remote caching using turbo
-  #     TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-  #     TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+  review-e2e-test-results:
+    needs:
+      - review-source-code
+      - container-image
+      - review-configuration
+    name: Review E2E test results
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    env:
+      # enable remote caching using turbo
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
-  #   steps:
-  #     - name: Check out code
-  #       uses: actions/checkout@v3
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
 
-  #     - name: Build
-  #       uses: ./.github/actions/build-rpch
-  #       env:
-  #         TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-  #         TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+      - name: Build
+        uses: ./.github/actions/build-rpch
+        env:
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
-  #     - name: Run E2E tests
-  #       run: yarn test:e2e
+      - name: Run E2E tests
+        run: yarn test:e2e
 
   # uncomment changeset publish is fixed https://github.com/changesets/changesets/issues/942
   # publish jobs require to be under branches release/**

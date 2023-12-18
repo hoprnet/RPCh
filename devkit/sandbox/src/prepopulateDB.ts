@@ -41,12 +41,12 @@ async function waitForMigrationToFinish(){
 }
 
 async function insertNode(input: {
-    id: string, 
-    is_exit_node: boolean, 
-    chain_id: number, 
-    hoprd_api_endpoint: string, 
+    id: string,
+    is_exit_node: boolean,
+    chain_id: number,
+    hoprd_api_endpoint: string,
     hoprd_api_token: string,
-    exit_node_pub_key: string, 
+    exit_node_pub_key: string,
     native_address: string
 }){
     const query = [
@@ -64,12 +64,12 @@ async function insertNodes(){
         for(let i = 0; i < nodes.length; i++) {
             const addresses = await hoprAPI.getAddresses({apiEndpoint: nodes[i], apiToken: process.env.HOPRD_API_TOKEN as string});
             await insertNode({
-                id: addresses.hopr, 
+                id: addresses.hopr,
                 is_exit_node: i%2 === 0, // 2 entry nodes, 3 exit nodes
-                chain_id: 100, 
-                hoprd_api_endpoint: nodes[i],//.replace('localhost', 'pluto'), 
+                chain_id: 100,
+                hoprd_api_endpoint: nodes[i],//.replace('localhost', 'pluto'),
                 hoprd_api_token: process.env.HOPRD_API_TOKEN as string,
-                exit_node_pub_key: process.env[`EXIT_NODE_PUB_KEY_${i+1}`] as string, 
+                exit_node_pub_key: process.env[`EXIT_NODE_PUB_KEY_${i+1}`] as string,
                 native_address: addresses.native
             })
             console.log(`Nodes ${addresses.hopr} added to the database.`);
@@ -92,7 +92,7 @@ async function insertUser(){
 
 async function insertClient(){
     try {
-        const query = `INSERT INTO clients (id, user_id, external_token) values (gen_random_uuid(), (select id from users), 'foobarfoobar');`
+        const query = `INSERT INTO clients (id, user_id, external_token) values (gen_random_uuid(), (select id from users), '${process.env.SECRET_TOKEN_TESTING}');`
         await dbPool.query(query);
         console.log('Client inserted to the database.')
     } catch (e){
