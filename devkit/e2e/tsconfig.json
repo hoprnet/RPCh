@@ -1,5 +1,8 @@
 {
-  "extends": "@rpch/configs-typescript/nodejs-library.json",
-  "include": ["src"],
-  "exclude": ["node_modules"]
+  "compilerOptions": {
+      "rootDir": "./src",
+      "outDir": "./build"
+  },
+  "include": ["src/"],
+  "extends": "../../tsconfig.json"
 }

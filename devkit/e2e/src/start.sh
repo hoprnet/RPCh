@@ -23,7 +23,7 @@ trap 'stop; exit 1' SIGINT SIGKILL SIGTERM ERR
 start
 
 # Run tests with env variables
-DEBUG="rpch*" npx jest --ci --runInBand --detectOpenHandles || exit 1
+DEBUG="rpch*" npx jest --ci --runInBand --forceExit || exit 1
 
 # After tests exit tear down setup
 stop

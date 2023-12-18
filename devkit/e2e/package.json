@@ -1,14 +1,21 @@
 {
   "name": "@rpch/e2e",
-  "version": "0.0.4",
+  "version": "0.1.0",
   "private": true,
   "license": "LGPL-3.0",
   "scripts": {
-    "build": "exit 0",
+    "prebuild": "node -p \"'export default \\'' + require('./package.json').version + '\\';'\" > src/version.ts",
+    "build": "yarn prebuild && tsc",
     "dev": "exit 0",
-    "format": "exit 0",
-    "lint": "exit 0",
+    "format": "prettier --check \"src/**/*.{ts,md}\"",
+    "lint": "eslint \"src/**/*.ts*\"",
     "test": "exit 0",
-    "start": "bash ./src/start.sh"
+    "start": "bash ./src/start.sh",
+    "start:e2e": "npx jest --ci --runInBand --forceExit"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.2.1",
+    "jest": "^29.2.2",
+    "ts-jest": "^29.0.3"
   }
 }
