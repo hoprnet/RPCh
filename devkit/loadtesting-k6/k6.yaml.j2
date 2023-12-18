@@ -5,7 +5,7 @@ metadata:
   name: k6-rpch-{{ testType | lower }}-{{ walletType | lower }}
   namespace: k6-operator-system
 spec:
-  parallelism: 2
+  parallelism: 1
   script:
     localFile: /app/rpch/rpc-server/index.js
   separate: true
