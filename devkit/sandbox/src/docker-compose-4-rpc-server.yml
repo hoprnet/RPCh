@@ -3,7 +3,7 @@
 # DO NOT USE IN PRODUCTION
 # launches:
 #   - 1 availability monitor
-version: "4"
+version: "3"
 
 services:
   rpc-server-zero-hop:

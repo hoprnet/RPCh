@@ -8,7 +8,7 @@
     "packages/*",
     "apps/*",
     "devkit/*",
-    "examples/ethers/*"
+    "examples/ethers"
   ],
   "scripts": {
     "build": "turbo run build",

@@ -1,7 +1,7 @@
 # docker-compose file that allows you locally host
 # 5 HOPRd nodes and 5 exit nodes attached to each other
 # DO NOT USE IN PRODUCTION
-version: "4"
+version: "3"
 
 volumes:
   # hoprd node identity files

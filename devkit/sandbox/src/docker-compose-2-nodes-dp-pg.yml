@@ -4,7 +4,7 @@
 # launches:
 #   - 1 discovery platform
 #   - 1 postgres DB
-version: "4"
+version: "3"
 
 volumes:
   # postgres database
@@ -36,10 +36,8 @@ services:
       - URL=http://127.0.0.1:3020
       - PORT=3020
       - DATABASE_URL=${DATABASE_URL_INTERNAL}
-      - SKIP_CHECK_COMMITMENT=${SKIP_CHECK_COMMITMENT}
       - ADMIN_SECRET=${ADMIN_SECRET}
       - SESSION_SECRET=${SESSION_SECRET}
-      - RUNNING_IN_SANDBOX=${RUNNING_IN_SANDBOX}
       - DISCOVERY_PLATFORM_ACCESS_TOKEN=${DISCOVERY_PLATFORM_ACCESS_TOKEN}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
