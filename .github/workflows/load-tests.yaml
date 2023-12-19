@@ -17,8 +17,8 @@ on:
       test_type:
         type: choice
         options:
-          - SOAK
           - SMOKE
+          - SOAK
           - SPIKE
           - STRESS
           - LOAD
@@ -30,18 +30,13 @@ on:
       wallet_type:
         type: choice
         options:
-          - DUMMY
           - METAMASK
+          - DUMMY
           - OKX
           - RABBY
           - FRAME
         required: true
         description: 'Wallet Type'
-      rate:
-        type: number
-        default: 1
-        required: true
-        description: 'Number of messages per seconds'
 
 concurrency:
   group: load-tests
@@ -56,11 +51,15 @@ jobs:
 
       - name: Checkout hoprnet repository
         uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          ref: main
+          python-version: '3.10'
 
       - name: Run Load test
         run: |
+          pip install -r requirements.txt
           jinja2 --format=yaml k6.yaml.j2 -D testType=${{ github.event.inputs.test_type }} -D walletType=${{ github.event.inputs.wallet_type }} -D testId=${{ github.event.inputs.test_id }} > k6.yaml
           kubectl delete -f k6.yaml 2> /dev/null || true
           kubectl apply -f k6.yaml

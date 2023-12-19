@@ -21,7 +21,4 @@ COPY --from=node /app/rpch/devkit/loadtesting-k6/build /app/rpch
 
 WORKDIR /app/rpch
 
-ENV TEST_TYPE=SMOKE
-ENV WALLET_TYPE=METAMASK
-
 ENTRYPOINT [ "/app/rpch/k6"]
