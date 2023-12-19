@@ -93,6 +93,14 @@
         "DATABASE_URL"
       ]
     },
+    "@rpch-examples/ethers#build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "build/**"
+      ]
+    },
     "dev": {
       "dependsOn": [
         "^build"

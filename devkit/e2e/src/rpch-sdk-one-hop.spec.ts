@@ -1,12 +1,11 @@
 import assert from "assert";
-import * as fixtures from "@rpch/common/build/fixtures";
 import RPChSDK, { type Ops } from "@rpch/sdk";
 
-const PROVIDER_URL = fixtures.PROVIDER;
+const SECRET = 'foobarfoobar';
+const PROVIDER_URL = 'https://gnosis-provider.rpch.tech';
 const DISCOVERY_PLATFORM_API_ENDPOINT = "http://localhost:3020";
 
 jest.setTimeout(1e3 * 60 * 1); // one minute
-
 
 describe("rpch-sdk-one-hop tests", function () {
   let sdk:any;
@@ -38,7 +37,7 @@ describe("rpch-sdk-one-hop tests", function () {
     assert.equal(typeof blockNumber, "bigint");
   });
 
-  it(`should get chain id  from default online PRCh provider`, async function () {
+  it(`should get chain id from default online PRCh provider`, async function () {
     const response = await sdk.send(
       {
         method: 'eth_chainId',
@@ -59,5 +58,5 @@ function setupSDK() {
   const ops: Ops = {
     discoveryPlatformEndpoint: DISCOVERY_PLATFORM_API_ENDPOINT,
   }
-  return new RPChSDK("foobarfoobar", ops);
+  return new RPChSDK(SECRET, ops);
 }

@@ -1,6 +1,6 @@
 import assert from "assert";
 
-const PROVIDER_URL = 'http://localhost:45760/?provider=https://ethereum-provider.rpch.tech';
+const PROVIDER_URL = 'http://localhost:45770/?provider=https://ethereum-provider.rpch.tech';
 
 jest.setTimeout(1e3 * 60 * 1); // one minute
 
@@ -28,7 +28,7 @@ const GET_CHAIN_ID = {
   method: "POST"
 }
 
-describe("rpch-server-zero-hop tests", function () {
+describe("rpch-server-one-hop tests", function () {
 
   afterAll(() => {
     // wait for close events to happen

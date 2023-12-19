@@ -1,11 +1,13 @@
 {
-  "name": "@rpch/ethers",
+  "name": "@rpch-examples/ethers",
   "version": "0.0.1",
   "license": "LGPL-3.0",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
   "scripts": {
     "dev": "ts-node ./src/index.ts",
+    "prebuild": "node -p \"'export default \\'' + require('./package.json').version + '\\';'\" > src/version.ts",
+    "build": "yarn prebuild && tsc",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "eslint \"src/**/*.ts*\""
   },
