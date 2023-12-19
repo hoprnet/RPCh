@@ -38,7 +38,6 @@ describe("ethers-integration tests", function () {
 
   it(`should get chain id from default online PRCh provider`, async function () {
     const chainId = await provider.send('eth_chainId', []);
-    console.log('eth_chainId', chainId)
     assert.equal(chainId, "0x64");
   });
 });
