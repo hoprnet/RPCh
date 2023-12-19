@@ -1,4 +1,4 @@
 module.exports = {
-  root: true,
-  ...require("@rpch/configs-eslint"),
+    root: true,
+    ...require('@rpch/configs-eslint'),
 };

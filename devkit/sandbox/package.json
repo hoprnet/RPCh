@@ -1,26 +1,27 @@
 {
-  "name": "@rpch/sandbox",
-  "version": "0.2.0",
-  "private": true,
-  "license": "LGPL-3.0",
-  "scripts": {
-    "prebuild": "node -p \"'export default \\'' + require('./package.json').version + '\\';'\" > src/version.ts",
-    "build": "yarn prebuild && tsc",
-    "dev": "exit 0",
-    "format": "exit 0",
-    "lint": "exit 0",
-    "test": "exit 0",
-    "start": "./src/start.sh",
-    "stop": "./src/stop.sh"
-  },
-  "dependencies": {
-    "@hoprnet/hopr-sdk": "^2.0.1",
-    "dotenv": "^16.3.1",
-    "pg": "^8.11.3"
-  },
-  "devDependencies": {
-    "@types/dotenv": "^8.2.0",
-    "turbo": "^1.6.3",
-    "typescript": "^5.2.2"
-  }
+    "name": "@rpch/sandbox",
+    "version": "0.2.0",
+    "private": true,
+    "license": "LGPL-3.0",
+    "scripts": {
+        "prebuild": "node -p \"'export default \\'' + require('./package.json').version + '\\';'\" > src/version.ts",
+        "build": "yarn prebuild && tsc",
+        "dev": "exit 0",
+        "format": "prettier --write src/ .eslintrc.js package.json tsconfig.json",
+        "format:ci": "prettier --check src/ .eslintrc.js package.json tsconfig.json",
+        "lint": "exit 0",
+        "test": "exit 0",
+        "start": "./src/start.sh",
+        "stop": "./src/stop.sh"
+    },
+    "dependencies": {
+        "@hoprnet/hopr-sdk": "^2.0.1",
+        "dotenv": "^16.3.1",
+        "pg": "^8.11.3"
+    },
+    "devDependencies": {
+        "@types/dotenv": "^8.2.0",
+        "turbo": "^1.6.3",
+        "typescript": "^5.2.2"
+    }
 }

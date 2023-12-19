@@ -3,42 +3,42 @@
 # DO NOT USE IN PRODUCTION
 # launches:
 #   - 1 availability monitor
-version: "3"
+version: '3'
 
 services:
-  rpc-server-zero-hop:
-    build:
-      dockerfile: apps/rpc-server/Dockerfile
-      context: ../../../
-    platform: linux/amd64
-    restart: unless-stopped
-    ports:
-      - "45760:45750"
-    extra_hosts:
-     - "localhost:${PLUTO_IP}"
-    environment:
-      - DEBUG_COLORS=false
-      - LOG_LEVEL=verbose
-      - CLIENT=foobarfoobar
-      - DISCOVERY_PLATFORM_API_ENDPOINT=http://discovery-platform:3020
-      - FORCE_ZERO_HOP=true
-  rpc-server-one-hop:
-    build:
-      dockerfile: apps/rpc-server/Dockerfile
-      context: ../../../
-    platform: linux/amd64
-    restart: unless-stopped
-    ports:
-      - "45770:45750"
-    extra_hosts:
-     - "localhost:${PLUTO_IP}"
-    environment:
-      - DEBUG_COLORS=false
-      - LOG_LEVEL=verbose
-      - CLIENT=foobarfoobar
-      - DISCOVERY_PLATFORM_API_ENDPOINT=http://discovery-platform:3020
+    rpc-server-zero-hop:
+        build:
+            dockerfile: apps/rpc-server/Dockerfile
+            context: ../../../
+        platform: linux/amd64
+        restart: unless-stopped
+        ports:
+            - '45760:45750'
+        extra_hosts:
+            - 'localhost:${PLUTO_IP}'
+        environment:
+            - DEBUG_COLORS=false
+            - LOG_LEVEL=verbose
+            - CLIENT=foobarfoobar
+            - DISCOVERY_PLATFORM_API_ENDPOINT=http://discovery-platform:3020
+            - FORCE_ZERO_HOP=true
+    rpc-server-one-hop:
+        build:
+            dockerfile: apps/rpc-server/Dockerfile
+            context: ../../../
+        platform: linux/amd64
+        restart: unless-stopped
+        ports:
+            - '45770:45750'
+        extra_hosts:
+            - 'localhost:${PLUTO_IP}'
+        environment:
+            - DEBUG_COLORS=false
+            - LOG_LEVEL=verbose
+            - CLIENT=foobarfoobar
+            - DISCOVERY_PLATFORM_API_ENDPOINT=http://discovery-platform:3020
 
 networks:
-  rpch-sandbox:
-    name: rpch-sandbox
-    external: true
+    rpch-sandbox:
+        name: rpch-sandbox
+        external: true
