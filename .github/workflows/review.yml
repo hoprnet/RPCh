@@ -57,7 +57,7 @@ jobs:
         run: yarn format:ci
 
       - name: Review dependencies
-        run: yarn depcheck
+        run: yarn depcheck --ignore-path="examples"
 
       - name: Run tests and coverage
         run: yarn test

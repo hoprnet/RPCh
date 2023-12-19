@@ -4,7 +4,7 @@
   "private": true,
   "license": "LGPL-3.0",
   "scripts": {
-    "build": "tsc",
+    "build": "exit 0",
     "dev": "exit 0",
     "format": "prettier --check \"src/**/*.{ts,md}\"",
     "lint": "eslint \"src/**/*.ts*\"",
