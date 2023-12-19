@@ -15,7 +15,7 @@ stop() {
     docker compose -f $DIR/docker-compose-1-nodes.yml -p rpch-sandbox down -v;
     docker compose -f $DIR/docker-compose-2-nodes-dp-pg.yml -p rpch-sandbox down -v;
     docker compose -f $DIR/docker-compose-3-am.yml -p rpch-sandbox down -v;
-    docker compose -f $DIR/docker-compose-4-rpc-server.yml -p rpch-sandbox down -v -e PLUTO_IP="not_needed";
+    PLUTO_IP="not_needed" docker compose -f $DIR/docker-compose-4-rpc-server.yml -p rpch-sandbox down -v;
     rm -f $DIR/logs;
     echo "Sandbox has stopped!"
 }
