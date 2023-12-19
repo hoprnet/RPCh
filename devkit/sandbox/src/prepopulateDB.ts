@@ -3,10 +3,14 @@ import path from 'path';
 import { Pool } from 'pg';
 import { api as hoprAPI } from '@hoprnet/hopr-sdk';
 import nodes from './nodes'
+const RPChSDKPackageJson = require('../../../packages/sdk/package.json');
+const RPCServerPackageJson = require('../../../apps/rpc-server/package.json');
 
 dotenv.config({ path: path.resolve(__dirname, '../src/.env') });
 const connectionString = process.env.DATABASE_URL_EXTERNAL;
 const dbPool = new Pool({ connectionString });
+const RPCh_SDK_VERSION = RPChSDKPackageJson.version;
+const RPCh_RPC_SERVER_VERSION = RPCServerPackageJson.version;
 
 main();
 async function main() {
@@ -14,6 +18,7 @@ async function main() {
     await insertNodes();
     await insertUser();
     await insertClient();
+    await insertConfig();
     return;
 }
 
@@ -100,4 +105,12 @@ async function insertClient(){
     }
 }
 
-
+async function insertConfig(){
+    try {
+        const query = `INSERT INTO configs (key, data, external_token) values ('RPCh_RPC_SERVER_VERSION','${RPCh_RPC_SERVER_VERSION}'), ('RPCh_SDK_VERSION','${RPCh_SDK_VERSION}');`
+        await dbPool.query(query);
+        console.log('Config inserted to the database.')
+    } catch (e){
+        console.error('ERROR: Unable to insert Config to the database.', e);
+    }
+}
