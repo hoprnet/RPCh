@@ -107,7 +107,7 @@ async function insertClient(){
 
 async function insertConfig(){
     try {
-        const query = `INSERT INTO configs (key, data, external_token) values ('RPCh_RPC_SERVER_VERSION','${RPCh_RPC_SERVER_VERSION}'), ('RPCh_SDK_VERSION','${RPCh_SDK_VERSION}');`
+        const query = `INSERT INTO configs (key, data) values ('RPCh_RPC_SERVER_VERSION','${RPCh_RPC_SERVER_VERSION}'), ('RPCh_SDK_VERSION','${RPCh_SDK_VERSION}');`
         await dbPool.query(query);
         console.log('Config inserted to the database.')
     } catch (e){
