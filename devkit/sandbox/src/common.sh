@@ -15,7 +15,7 @@ stop() {
     docker compose -f $DIR/docker-compose-1-nodes.yml -p rpch-sandbox down -v;
     docker compose -f $DIR/docker-compose-2-nodes-dp-pg.yml -p rpch-sandbox down -v;
     docker compose -f $DIR/docker-compose-3-am.yml -p rpch-sandbox down -v;
-    docker compose -f $DIR/docker-compose-4-rpc-server.yml -p rpch-sandbox down -v;
+    docker compose -f $DIR/docker-compose-4-rpc-server.yml -p rpch-sandbox down -v -e PLUTO_IP="not_needed";
     rm -f $DIR/logs;
     echo "Sandbox has stopped!"
 }
@@ -106,7 +106,7 @@ start() {
         info=$(
             scurl "http://localhost:13301/api/v3/node/info" \
                 -H "Content-Type: application/json" \
-                -H "x-auth-token: HOPRD_API_TOKEN" 
+                -H "x-auth-token: HOPRD_API_TOKEN"
         );
         hoprTokenAddress=$(jq -r -n --argjson data "$info" "$info.hoprToken")                       ## jq is not preinstalled on MacOS and Win with GitBash
         # hoprTokenAddress="$(echo $info | grep -P 'hoprToken":"[0-zZ]*"' -o  | cut -d "\"" -f 3)"  ## for computers with grep
