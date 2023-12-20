@@ -1,5 +1,11 @@
 # @rpch/rpc-server
 
+## 1.1.2
+
+### Patch Changes
+
+-   fix typo to enforce permissions on failed_req folder
+
 ## 1.1.1
 
 ### Patch Changes
