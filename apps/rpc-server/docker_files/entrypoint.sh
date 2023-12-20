@@ -48,11 +48,14 @@ while read -r key; do
     fi
 done <<< "$env_vars"
 
+### use static port inside container
+echo "PORT=45752" >> /docker.env
+
 set -u
 
 ### Store container env vars for rpc-server
 cat <<EOF > /haproxy.env
-PORT=${PORT:-45752}
+PORT=45752
 FRONTEND_HTTP_PORT=${FRONTEND_HTTP_PORT:-45750}
 FRONTEND_HTTPS_PORT=${FRONTEND_HTTPS_PORT:-45751}
 EOF
