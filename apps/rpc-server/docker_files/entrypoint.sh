@@ -37,9 +37,9 @@ else
     set -- runit "$@"
 fi
 
-set +u
 
 ### Store container env vars for rpc-server
+set +u
 touch /docker.env
 env_vars=$(cat /env_vars.def)
 while read -r key; do
@@ -47,11 +47,10 @@ while read -r key; do
         echo "${key}=${!key}" >> /docker.env
     fi
 done <<< "$env_vars"
+set -u
 
 ### use static port inside container
 echo "PORT=45752" >> /docker.env
-
-set -u
 
 ### Store container env vars for rpc-server
 cat <<EOF > /haproxy.env
