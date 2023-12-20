@@ -65,21 +65,32 @@
         "build/**"
       ],
       "env": [
-        "PORT",
-        "RESPONSE_TIMEOUT",
-        "DISCOVERY_PLATFORM_API_ENDPOINT",
         "CLIENT",
-        "PROVIDER",
-        "RESTRICT_CORS",
-        "SKIP_RPCH",
         "DISABLE_MEV_PROTECTION",
-        "MEV_PROTECTION_PROVIDER",
-        "MEV_KICKBACK_ADDRESS",
-        "FORCE_ZERO_HOP",
-        "FORCE_MANUAL_RELAYING",
-        "SEGMENT_LIMIT",
+        "DISCOVERY_PLATFORM_API_ENDPOINT",
         "FAILED_REQUESTS_FILE",
-        "LOG_LEVEL"
+        "FORCE_MANUAL_RELAYING",
+        "FORCE_ZERO_HOP",
+        "MEV_KICKBACK_ADDRESS",
+        "MEV_PROTECTION_PROVIDER",
+        "PORT",
+        "PROVIDER",
+        "RESPONSE_TIMEOUT",
+        "RESTRICT_CORS",
+        "RPCH_LOG_LEVEL",
+        "SEGMENT_LIMIT",
+        "SKIP_RPCH"
+      ]
+    },
+    "@rpch/sdk": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "build/**"
+      ],
+      "env": [
+        "DEBUG"
       ]
     },
     "@rpch/availability-monitor#build": {

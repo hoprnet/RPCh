@@ -37,29 +37,30 @@ else
     set -- runit "$@"
 fi
 
+
 ### Store container env vars for rpc-server
-cat <<EOF > /docker.env
-CLIENT=$CLIENT
-DEBUG=${DEBUG:-}
-DISCOVERY_PLATFORM_API_ENDPOINT=${DISCOVERY_PLATFORM_API_ENDPOINT:-}
-RESPONSE_TIMEOUT=${RESPONSE_TIMEOUT:-}
-PROVIDER=${PROVIDER:-}
-DISABLE_MEV_PROTECTION=${DISABLE_MEV_PROTECTION:-}
-MEV_PROTECTION_PROVIDER=${MEV_PROTECTION_PROVIDER:-}
-MEV_KICKBACK_ADDRESS=${MEV_KICKBACK_ADDRESS:-}
-FORCE_ZERO_HOP=${FORCE_ZERO_HOP:-}
-SEGMENT_LIMIT=${SEGMENT_LIMIT:-}
-RESTRICT_CORS=${RESTRICT_CORS:-}
-SKIP_RPCH=${SKIP_RPCH:-}
-PORT=${PORT:-45752}
-EOF
+set +u
+touch /docker.env
+env_vars=$(cat /env_vars.def)
+while read -r key; do
+    if [[ -n "${!key}" ]]; then
+        echo "${key}=${!key}" >> /docker.env
+    fi
+done <<< "$env_vars"
+set -u
+
+### use static port inside container
+echo "PORT=45752" >> /docker.env
 
 ### Store container env vars for rpc-server
 cat <<EOF > /haproxy.env
-PORT=${PORT:-45752}
+PORT=45752
 FRONTEND_HTTP_PORT=${FRONTEND_HTTP_PORT:-45750}
 FRONTEND_HTTPS_PORT=${FRONTEND_HTTPS_PORT:-45751}
 EOF
+
+# enable failed reqs dir and keep it writable
+mkdir /failed_reqs && chown node:node /failed_reqs
 
 ### Execute script with arguments
 exec "${@}"
