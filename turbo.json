@@ -82,6 +82,17 @@
         "SKIP_RPCH"
       ]
     },
+    "@rpch/sdk": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "build/**"
+      ],
+      "env": [
+        "DEBUG"
+      ]
+    },
     "@rpch/availability-monitor#build": {
       "dependsOn": [
         "^build"
