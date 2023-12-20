@@ -57,6 +57,7 @@ jobs:
         run: yarn format:ci
 
       - name: Review dependencies
+        # TODO: update ethers to v6 in RPCh SDK to remove the ignore-path
         run: yarn depcheck --ignore-path="examples"
 
       - name: Run tests and coverage

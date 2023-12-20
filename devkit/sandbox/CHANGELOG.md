@@ -1,11 +1,5 @@
 # @rpch/sandbox
 
-## 0.2.0
-
-### Changes
-
-- Full rework of the RPCh Sandbox
-
 ## 0.1.1
 
 ### Patch Changes
