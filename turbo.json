@@ -71,13 +71,13 @@
         "FAILED_REQUESTS_FILE",
         "FORCE_MANUAL_RELAYING",
         "FORCE_ZERO_HOP",
-        "LOG_LEVEL",
         "MEV_KICKBACK_ADDRESS",
         "MEV_PROTECTION_PROVIDER",
         "PORT",
         "PROVIDER",
         "RESPONSE_TIMEOUT",
         "RESTRICT_CORS",
+        "RPCH_LOG_LEVEL",
         "SEGMENT_LIMIT",
         "SKIP_RPCH"
       ]
