@@ -1,5 +1,11 @@
 # @rpch/rpc-server
 
+## 1.1.1
+
+### Patch Changes
+
+-   a5ddb16: Allow dynamic env vars forwarding into container and make failed request recording working
+
 ## 1.1.0
 
 ### Minor Changes
