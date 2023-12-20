@@ -1,5 +1,11 @@
 # @rpch/rpc-server
 
+## 1.1.3
+
+### Patch Changes
+
+-   9e5ab02: reenable custom port inside rpc server container
+
 ## 1.1.2
 
 ### Patch Changes

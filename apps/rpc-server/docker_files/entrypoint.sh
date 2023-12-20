@@ -42,6 +42,8 @@ fi
 set +u
 touch /docker.env
 env_vars=$(cat /env_vars.def)
+# special env var port needs default value
+PORT=${PORT:-45752}
 while read -r key; do
     if [[ -n "${!key}" ]]; then
         echo "${key}=${!key}" >> /docker.env
@@ -49,12 +51,9 @@ while read -r key; do
 done <<< "$env_vars"
 set -u
 
-### use static port inside container
-echo "PORT=45752" >> /docker.env
-
 ### Store container env vars for rpc-server
 cat <<EOF > /haproxy.env
-PORT=45752
+PORT=${PORT:-45752}
 FRONTEND_HTTP_PORT=${FRONTEND_HTTP_PORT:-45750}
 FRONTEND_HTTPS_PORT=${FRONTEND_HTTPS_PORT:-45751}
 EOF
