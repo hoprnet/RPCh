@@ -2,7 +2,7 @@ module.exports = {
     env: {
         es2020: true,
     },
-    extends: ['eslint:recommended', 'prettier'],
+    extends: ['eslint:recommended', 'prettier', 'turbo'],
     plugins: ['@stylistic'],
     root: true,
     rules: {

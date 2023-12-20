@@ -29,6 +29,7 @@
     "check-dependency-version-consistency": "^3.0.3",
     "eslint": "^8.53.0",
     "eslint-config-prettier": "^9.0.0",
+    "eslint-config-turbo": "^1.11.2",
     "prettier": "^3.0.3",
     "turbo": "^1.6.3",
     "typescript": "^5.2.2"
