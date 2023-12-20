@@ -1,6 +1,7 @@
 FROM --platform=linux/amd64 node:18-alpine as builder
 
-RUN apk upgrade --no-cache
+RUN apk upgrade --no-cache && \
+    apk add jq
 
 WORKDIR /app
 
@@ -9,6 +10,9 @@ RUN yarn global add turbo
 
 # Copy app source
 COPY . .
+
+# copy env vars to file
+RUN jq -r '.pipeline["@rpch/rpc-server#build"].env[]' turbo.json > /env_vars.def
 
 # Generate a partial monorepo with a pruned lockfile for the target workspace.
 RUN turbo prune --scope="@rpch/rpc-server" --docker
@@ -65,6 +69,9 @@ COPY --from=installer /app/package.json .
 COPY --from=installer /app/apps/rpc-server/build ./build
 COPY --from=installer /app/packages/sdk ./packages/sdk
 COPY --from=installer /app/packages/compat-crypto ./packages/compat-crypto
+
+# copy over env vars definition pool
+COPY --from=builder /env_vars.def /
 
 # copy over runit configurations
 COPY apps/rpc-server/docker_files/haproxy.conf /etc/haproxy/haproxy.conf

@@ -37,25 +37,18 @@ else
     set -- runit "$@"
 fi
 
+set +u
+
 ### Store container env vars for rpc-server
-cat <<EOF > /docker.env
-CLIENT=$CLIENT
-DEBUG=${DEBUG:-}
-DISABLE_MEV_PROTECTION=${DISABLE_MEV_PROTECTION:-}
-DISCOVERY_PLATFORM_API_ENDPOINT=${DISCOVERY_PLATFORM_API_ENDPOINT:-}
-FAILED_REQUESTS_FILE=${FAILED_REQUESTS_FILE:-}
-FORCE_MANUAL_RELAYING=${FORCE_MANUAL_RELAYING:-}
-FORCE_ZERO_HOP=${FORCE_ZERO_HOP:-}
-LOG_LEVEL=${LOG_LEVEL:-}
-MEV_KICKBACK_ADDRESS=${MEV_KICKBACK_ADDRESS:-}
-MEV_PROTECTION_PROVIDER=${MEV_PROTECTION_PROVIDER:-}
-PORT=${PORT:-45752}
-PROVIDER=${PROVIDER:-}
-RESPONSE_TIMEOUT=${RESPONSE_TIMEOUT:-}
-RESTRICT_CORS=${RESTRICT_CORS:-}
-SEGMENT_LIMIT=${SEGMENT_LIMIT:-}
-SKIP_RPCH=${SKIP_RPCH:-}
-EOF
+touch /docker.env
+env_vars=$(cat /env_vars.def)
+while read -r key; do
+    if [[ -n "${!key}" ]]; then
+        echo "${key}=${!key}" >> /docker.env
+    fi
+done <<< "$env_vars"
+
+set -u
 
 ### Store container env vars for rpc-server
 cat <<EOF > /haproxy.env
