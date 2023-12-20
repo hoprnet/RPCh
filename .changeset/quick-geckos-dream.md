@@ -2,4 +2,4 @@
 '@rpch/rpc-server': patch
 ---
 
-Fix env vars inside container and make failed request recording working
+Allow dynamic env vars forwarding into container and make failed request recording working
