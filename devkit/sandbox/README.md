@@ -38,3 +38,10 @@ You can try out the RPCh sandbox by setting up our forked version of Block Walle
 3. Checkout to branch `master`
 4. Follow the setup instructions in the [README](https://github.com/Rpc-h/extension-block-wallet#readme)
 5. Add extension into your browser
+
+
+
+### Networking issues:
+At the moment of writing this, there is definitely an issue with mac, the issues is that docker in mac uses a linux virtual machine where containers live, so when you use network_mode: "host" it will only be valid for the VM's network, not for your mac :( more info here.
+
+As an alternative, do not use network_mode: "host", instead keep it in bridge (the default) then configure your service to instead of reaching localhost:xxxx, use host.docker.internal:xxxx

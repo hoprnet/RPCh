@@ -1,0 +1,43 @@
+# docker-compose file that allows you locally host
+# the centralized apps that make RPCh work
+# DO NOT USE IN PRODUCTION
+# launches:
+#   - 1 discovery platform
+#   - 1 postgres DB
+version: '3'
+
+volumes:
+    # postgres database
+    postgres-data:
+
+services:
+    postgres-db-rpch:
+        image: postgres:14.1-alpine
+        restart: always
+        environment:
+            - POSTGRES_USER=${POSTGRES_USER}
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+        ports:
+            - '5432:5432'
+        volumes:
+            - postgres-data:/var/lib/postgresql/data
+
+    discovery-platform:
+        build:
+            dockerfile: apps/discovery-platform/Dockerfile
+            context: ../../../
+        depends_on:
+            - postgres-db-rpch
+        restart: unless-stopped
+        ports:
+            - '3020:3020'
+        environment:
+            - DEBUG=${DEBUG}
+            - URL=http://127.0.0.1:3020
+            - PORT=3020
+            - DATABASE_URL=${DATABASE_URL_INTERNAL}
+            - ADMIN_SECRET=${ADMIN_SECRET}
+            - SESSION_SECRET=${SESSION_SECRET}
+            - DISCOVERY_PLATFORM_ACCESS_TOKEN=${DISCOVERY_PLATFORM_ACCESS_TOKEN}
+            - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+            - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}

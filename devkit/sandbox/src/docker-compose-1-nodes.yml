@@ -1,0 +1,94 @@
+# docker-compose file that allows you locally host
+# 5 HOPRd nodes and 5 exit nodes attached to each other
+# DO NOT USE IN PRODUCTION
+version: '3'
+
+volumes:
+    # hoprd node identity files
+    pluto-data: # exit node identity files
+    exit-node-data:
+
+x-exit-service: &exit
+    build:
+        dockerfile: apps/exit-node/Dockerfile
+        context: ../../../
+    restart: unless-stopped
+    volumes:
+        - exit-node-data:/tmp
+    depends_on:
+        - pluto
+    command: 'node build/index.js'
+
+services:
+    pluto:
+        image: europe-west3-docker.pkg.dev/hoprassociation/docker-images/hopr-pluto:${HOPR_PLUTO_VERSION}
+        restart: unless-stopped
+        volumes:
+            - pluto-data:/tmp
+        ports:
+            # mapping admin and api ports to localhost for app developers to access
+            # the admin UI more easily
+            - '13301-13305:13301-13305'
+            - '19501-19505:19501-19505'
+            # local RPC port
+            - '8545:8545'
+        expose:
+            - 13301-13305
+        environment:
+            - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+            - HOPRD_HOST=0.0.0.0
+    exit-1:
+        <<: *exit
+        environment:
+            - HOPRD_API_ENDPOINT=${HOPRD_API_ENDPOINT_1}
+            - OPT_IN_METRICS=${OPT_IN_METRICS}
+            - DEBUG=${DEBUG:-"rpch*"}
+            - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+            - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_1}
+            - DISCOVERY_PLATFORM_API_ENDPOINT=${DISCOVERY_PLATFORM_API_ENDPOINT}
+            - DISCOVERY_PLATFORM_ACCESS_TOKEN=${DISCOVERY_PLATFORM_ACCESS_TOKEN}
+            - RPCH_DB_FILE=/exit-node-1.sqlite
+    exit-2:
+        <<: *exit
+        environment:
+            - HOPRD_API_ENDPOINT=${HOPRD_API_ENDPOINT_2}
+            - DEBUG=${DEBUG:-"rpch*"}
+            - OPT_IN_METRICS=${OPT_IN_METRICS}
+            - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+            - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_2}
+            - DISCOVERY_PLATFORM_API_ENDPOINT=${DISCOVERY_PLATFORM_API_ENDPOINT}
+            - DISCOVERY_PLATFORM_ACCESS_TOKEN=${DISCOVERY_PLATFORM_ACCESS_TOKEN}
+            - RPCH_DB_FILE=/exit-node-2.sqlite
+    exit-3:
+        <<: *exit
+        environment:
+            - HOPRD_API_ENDPOINT=${HOPRD_API_ENDPOINT_3}
+            - DEBUG=${DEBUG:-"rpch*"}
+            - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+            - OPT_IN_METRICS=${OPT_IN_METRICS}
+            - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_3}
+            - DISCOVERY_PLATFORM_API_ENDPOINT=${DISCOVERY_PLATFORM_API_ENDPOINT}
+            - DISCOVERY_PLATFORM_ACCESS_TOKEN=${DISCOVERY_PLATFORM_ACCESS_TOKEN}
+            - RPCH_DB_FILE=/exit-node-3.sqlite
+    exit-4:
+        <<: *exit
+        environment:
+            - HOPRD_API_ENDPOINT=${HOPRD_API_ENDPOINT_4}
+            - DEBUG=${DEBUG:-"rpch*"}
+            - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+            - OPT_IN_METRICS=${OPT_IN_METRICS}
+            - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_4}
+            - DISCOVERY_PLATFORM_API_ENDPOINT=${DISCOVERY_PLATFORM_API_ENDPOINT}
+            - DISCOVERY_PLATFORM_ACCESS_TOKEN=${DISCOVERY_PLATFORM_ACCESS_TOKEN}
+            - RPCH_DB_FILE=/exit-node-4.sqlite
+    exit-5:
+        <<: *exit
+        environment:
+            - HOPRD_API_ENDPOINT=${HOPRD_API_ENDPOINT_5}
+            - DEBUG=${DEBUG:-"rpch*"}
+            - HOPRD_API_TOKEN=${HOPRD_API_TOKEN}
+            - OPT_IN_METRICS=${OPT_IN_METRICS}
+            - RPCH_PRIVATE_KEY=${EXIT_NODE_PRIV_KEY_5}
+            - DISCOVERY_PLATFORM_API_ENDPOINT=${DISCOVERY_PLATFORM_API_ENDPOINT}
+            - DISCOVERY_PLATFORM_ACCESS_TOKEN=${DISCOVERY_PLATFORM_ACCESS_TOKEN}
+            - RPCH_DB_FILE=/exit-node-5.sqlite
