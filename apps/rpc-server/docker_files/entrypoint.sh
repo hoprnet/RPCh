@@ -60,7 +60,7 @@ FRONTEND_HTTPS_PORT=${FRONTEND_HTTPS_PORT:-45751}
 EOF
 
 # enable failed reqs dir and keep it writable
-mkdir /failed_reqs && chown node:node /failed_reqs
+mkdir -p /failed_reqs && chown node:node /failed_reqs
 
 ### Execute script with arguments
 exec "${@}"
