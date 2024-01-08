@@ -1,5 +1,11 @@
 # @rpch/rpc-server
 
+## 1.1.4
+
+### Patch Changes
+
+-   9c92b60: Fix error message forwarding
+
 ## 1.1.3
 
 ### Patch Changes
