@@ -104,7 +104,7 @@ async function sendSkipRPCh(
         .catch((err) => {
             log.error('[NO_RPCH] %s request[%o]', err, req);
             res.statusCode = 500;
-            res.write(err.message);
+            res.write(err.toString());
         })
         .finally(() => res.end());
 }
@@ -147,7 +147,7 @@ function sendRequest(
             }
             log.error('error sending request[%o]: %s[%o]', req, JSON.stringify(err), err);
             res.statusCode = 500;
-            res.write(err.message);
+            res.write(err.toString());
         })
         .finally(() => {
             res.end();

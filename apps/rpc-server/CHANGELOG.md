@@ -1,5 +1,11 @@
 # @rpch/rpc-server
 
+## 1.1.5
+
+### Patch Changes
+
+-   Fix error string conversion for http stream writing
+
 ## 1.1.4
 
 ### Patch Changes
