@@ -165,8 +165,12 @@ export default class SDK {
      * See **RequestOps** for overridable options.
      */
     public send = async (req: JRPC.Request, ops?: RequestOps): Promise<Response.Response> => {
-        const reqOps = this.requestOps(ops);
         this.populateChainIds(ops?.provider);
+        return this.doSend(req, ops);
+    };
+
+    private doSend = async (req: JRPC.Request, ops?: RequestOps): Promise<Response.Response> => {
+        const reqOps = this.requestOps(ops);
         // TODO fixme
         // eslint-disable-next-line no-async-promise-executor
         return new Promise(async (resolve, reject) => {
@@ -555,7 +559,7 @@ export default class SDK {
         const req = JRPC.chainId(provider);
 
         // fetch request through RPCh
-        const res = await this.send(req, { provider }).catch((err) =>
+        const res = await this.doSend(req, { provider }).catch((err) =>
             log.warn('error fetching chainId for %s: %s[%o]', provider, JSON.stringify(err), err),
         );
         if (!res) {
