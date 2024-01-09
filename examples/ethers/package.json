@@ -7,8 +7,10 @@
   "scripts": {
     "dev": "ts-node ./src/index.ts",
     "build": "tsc",
-    "format": "prettier --check \"src/**/*.{ts,md}\"",
-    "lint": "eslint \"src/**/*.ts*\""
+        "format": "prettier --write src/ .eslintrc.js jest.config.ts package.json tsconfig.json",
+        "format:ci": "prettier --check src/ .eslintrc.js jest.config.ts package.json tsconfig.json",
+        "lint": "eslint --fix src/",
+        "lint:ci": "eslint --max-warnings 0 src/"
   },
   "dependencies": {
     "@rpch/sdk": "1.10.0",
