@@ -1,4 +1,6 @@
 module.exports = {
-  root: true,
-  ...require("@rpch/configs-eslint"),
+    env: {
+        node: true,
+    },
+    extends: '../../.eslintrc.js',
 };

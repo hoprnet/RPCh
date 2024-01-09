@@ -1,10 +1,10 @@
-import assert from "assert";
+import assert from 'assert';
 import RPChSDK, { type Ops } from '@rpch/sdk';
 import { RPChProvider } from '../../../examples/ethers/build/index'
 
 const SECRET = 'foobarfoobar';
 const PROVIDER_URL = 'https://gnosis-provider.rpch.tech';
-const DISCOVERY_PLATFORM_API_ENDPOINT = "http://localhost:3020";
+const DISCOVERY_PLATFORM_API_ENDPOINT = 'http://localhost:3020';
 
 jest.setTimeout(1e3 * 60 * 1); // one minute
 
@@ -14,7 +14,7 @@ const ops: Ops = {
   forceZeroHop: true
 }
 
-describe("ethers-integration tests", function () {
+describe('ethers-integration tests', function () {
   let sdk:any, provider:any;
 
   beforeAll(() => {
@@ -30,14 +30,14 @@ describe("ethers-integration tests", function () {
   });
 
 
-  it(`should get block number from default online PRCh provider`, async function () {
+  it('should get block number from default online PRCh provider', async function () {
     const blockNumberString = await provider.send('eth_blockNumber', []);
     const blockNumber = BigInt(blockNumberString);
-    assert.equal(typeof blockNumber, "bigint");
+    assert.equal(typeof blockNumber, 'bigint');
   });
 
-  it(`should get chain id from default online PRCh provider`, async function () {
+  it('should get chain id from default online PRCh provider', async function () {
     const chainId = await provider.send('eth_chainId', []);
-    assert.equal(chainId, "0x64");
+    assert.equal(chainId, '0x64');
   });
 });

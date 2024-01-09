@@ -6,9 +6,11 @@
   "scripts": {
     "build": "exit 0",
     "dev": "exit 0",
-    "format": "exit 0",
-    "lint": "eslint \"src/**/*.ts*\"",
     "test": "exit 0",
+        "format": "prettier --write src/ .eslintrc.js jest.config.ts package.json tsconfig.json",
+        "format:ci": "prettier --check src/ .eslintrc.js jest.config.ts package.json tsconfig.json",
+        "lint": "eslint --fix src/",
+        "lint:ci": "eslint --max-warnings 0 src/",
     "start": "bash ./src/start.sh",
     "start:e2e": "npx jest --ci --runInBand --forceExit"
   },
