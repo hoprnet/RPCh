@@ -592,6 +592,7 @@ export default class SDK {
                 );
             } else {
                 const id = parseInt(jrpc.result, 16);
+                log.info('determined chain id %d for %s', id, provider);
                 this.chainIds.set(provider, id);
             }
         } catch (err) {
