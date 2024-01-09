@@ -3,18 +3,6 @@ import * as Res from './result';
 
 export type RPCFailure = { status: number; message: string };
 
-export function fetchChainId(provider: string): Promise<JRPC.Response> {
-    const url = new URL(provider);
-    const headers = { 'Content-Type': 'application/json' };
-    const body = JSON.stringify(JRPC.chainId(provider));
-    return fetch(url, { headers, method: 'POST', body }).then(async (res) => {
-        if (res.status !== 200) {
-            throw new Error(`Unexpected response: ${res.status}, ${await res.text()}`);
-        }
-        return res.json() as unknown as JRPC.Response;
-    });
-}
-
 export function fetchRPC(
     provider: string,
     req: JRPC.Request,
