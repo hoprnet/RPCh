@@ -4,7 +4,6 @@ import * as DPapi from './dp-api';
 import * as JRPC from './jrpc';
 import * as NodeAPI from './node-api';
 import * as Payload from './payload';
-import * as ProviderAPI from './provider-api';
 import * as Request from './request';
 import * as RequestCache from './request-cache';
 import * as Res from './result';
