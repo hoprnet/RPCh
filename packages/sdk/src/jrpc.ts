@@ -23,7 +23,7 @@ export type Error = {
     };
 };
 
-export function chainId(id: string) {
+export function chainId(id: string): Request {
     return {
         jsonrpc: '2.0',
         method: 'eth_chainId',

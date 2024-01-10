@@ -4,7 +4,6 @@ import * as DPapi from './dp-api';
 import * as JRPC from './jrpc';
 import * as NodeAPI from './node-api';
 import * as Payload from './payload';
-import * as ProviderAPI from './provider-api';
 import * as Request from './request';
 import * as RequestCache from './request-cache';
 import * as Res from './result';
@@ -165,8 +164,12 @@ export default class SDK {
      * See **RequestOps** for overridable options.
      */
     public send = async (req: JRPC.Request, ops?: RequestOps): Promise<Response.Response> => {
-        const reqOps = this.requestOps(ops);
         this.populateChainIds(ops?.provider);
+        return this.doSend(req, ops);
+    };
+
+    private doSend = async (req: JRPC.Request, ops?: RequestOps): Promise<Response.Response> => {
+        const reqOps = this.requestOps(ops);
         // TODO fixme
         // eslint-disable-next-line no-async-promise-executor
         return new Promise(async (resolve, reject) => {
@@ -552,18 +555,53 @@ export default class SDK {
     };
 
     private fetchChainId = async (provider: string) => {
-        const res = await ProviderAPI.fetchChainId(provider).catch((err) =>
+        const req = JRPC.chainId(provider);
+
+        // fetch request through RPCh
+        const res = await this.doSend(req, { provider }).catch((err) =>
             log.warn('error fetching chainId for %s: %s[%o]', provider, JSON.stringify(err), err),
         );
         if (!res) {
             return;
         }
-        if (JRPC.isError(res)) {
-            log.warn('unable to resolve chainId for %s: %s', provider, JSON.stringify(res.error));
+
+        // check HTTP response status and determine error
+        if (res.status !== 200) {
+            try {
+                log.warn('unable to resolve chainId for %s: %s', provider, await res.text());
+            } catch (err) {
+                log.error(
+                    'unable to determine error message for failed chainId call to %s: %s[%o]',
+                    provider,
+                    JSON.stringify(err),
+                    err,
+                );
+            }
             return;
         }
-        const id = parseInt(res.result, 16);
-        this.chainIds.set(provider, id);
+
+        // check JRPC payload and determine error
+        try {
+            const jrpc = await res.json();
+            if (JRPC.isError(jrpc)) {
+                log.warn(
+                    'jrpc error response for chainId request to %s: %s',
+                    provider,
+                    JSON.stringify(jrpc.error),
+                );
+            } else {
+                const id = parseInt(jrpc.result, 16);
+                log.info('determined chain id %d for %s', id, provider);
+                this.chainIds.set(provider, id);
+            }
+        } catch (err) {
+            log.error(
+                'unable to resolve json response for chainId call to %s, %s[%o]',
+                provider,
+                JSON.stringify(err),
+                err,
+            );
+        }
     };
 
     private determineProvider = (
