@@ -54,7 +54,7 @@ async function example() {
     const provider = new RPChProvider('https://ethereum-provider.rpch.tech', sdk);
     const blockNumber = await provider.send('eth_blockNumber', []);
     const balance = await provider.getBalance('0x00000000219ab540356cbb839cbe05303d7705fa');
-    return {blockNumber, balance};
+    return { blockNumber, balance };
 }
 
 example()

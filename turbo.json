@@ -110,6 +110,9 @@
       ],
       "outputs": [
         "build/**"
+      ],
+      "env": [
+        "CLIENT_SECRET"
       ]
     },
     "dev": {
