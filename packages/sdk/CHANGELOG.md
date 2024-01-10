@@ -1,5 +1,11 @@
 # @rpch/sdk
 
+## 1.10.1
+
+### Patch Changes
+
+-   8225d5c: route chain id request through RPCh instead of directly calling it
+
 ## 1.10.0
 
 ### Minor Changes
