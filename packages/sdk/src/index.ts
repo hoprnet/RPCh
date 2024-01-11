@@ -261,6 +261,7 @@ export default class SDK {
 
             // queue segment sending for all of them
             segments.forEach((s) => {
+                this.nodesColl.segmentStarted(request, s);
                 this.sendSegment(request, s, entryNode, entry);
             });
         });
@@ -272,7 +273,7 @@ export default class SDK {
         entryNode: EntryNode,
         cacheEntry: RequestCache.Entry,
     ) => {
-        this.nodesColl.segmentStarted(request, segment);
+        const bef = performance.now();
         const conn = {
             apiEndpoint: entryNode.apiEndpoint,
             accessToken: entryNode.accessToken,
@@ -285,7 +286,8 @@ export default class SDK {
             message: Segment.toMessage(segment),
         })
             .then((_json) => {
-                this.nodesColl.segmentSucceeded(request, segment);
+                const dur = Math.round(performance.now() - bef);
+                this.nodesColl.segmentSucceeded(request, segment, dur);
             })
             .catch((error) => {
                 log.error(
@@ -379,6 +381,7 @@ export default class SDK {
         entryNode: EntryNode,
         cacheEntry: RequestCache.Entry,
     ) => {
+        const bef = performance.now();
         NodeAPI.sendMessage(
             {
                 apiEndpoint: entryNode.apiEndpoint,
@@ -393,7 +396,8 @@ export default class SDK {
             },
         )
             .then((_json) => {
-                this.nodesColl.segmentSucceeded(request, segment);
+                const dur = Math.round(performance.now() - bef);
+                this.nodesColl.segmentSucceeded(request, segment, dur);
             })
             .catch((error) => {
                 log.error(

@@ -138,8 +138,8 @@ export function segmentStarted(np: NodePair, seg: Segment.Segment) {
     EntryData.addOngoingSeg(np.entryData, seg);
 }
 
-export function segmentSucceeded(np: NodePair, seg: Segment.Segment) {
-    EntryData.recSuccessSeq(np.entryData, seg);
+export function segmentSucceeded(np: NodePair, seg: Segment.Segment, responseTime: number) {
+    EntryData.recSuccessSeq(np.entryData, seg, responseTime);
 }
 
 export function segmentFailed(np: NodePair, seg: Segment.Segment) {
