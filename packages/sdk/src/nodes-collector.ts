@@ -140,17 +140,13 @@ export default class NodesCollector {
         log.verbose('started %s on %s', Segment.prettyPrint(seg), NodePair.prettyPrint(np));
     };
 
-    public segmentSucceeded = (
-        req: Request.Request,
-        seg: Segment.Segment,
-        responseTime: number,
-    ) => {
+    public segmentSucceeded = (req: Request.Request, seg: Segment.Segment) => {
         const np = this.nodePairs.get(req.entryPeerId);
         if (!np) {
             log.error('successful %s on non existing node pair', Segment.prettyPrint(seg), '');
             return;
         }
-        NodePair.segmentSucceeded(np, seg, responseTime);
+        NodePair.segmentSucceeded(np, seg);
         log.info('successful %s on %s', Segment.prettyPrint(seg), NodePair.prettyPrint(np));
     };
 

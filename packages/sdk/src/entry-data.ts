@@ -67,7 +67,7 @@ export function addOngoingSeg(ed: EntryData, seg: Segment.Segment) {
     ed.segments.set(id, PerfData.ongoing());
 }
 
-export function recSuccessSeq(ed: EntryData, seg: Segment.Segment, dur: number) {
+export function recSuccessSeq(ed: EntryData, seg: Segment.Segment) {
     const id = Segment.id(seg);
     ed.segmentsOngoing = ed.segmentsOngoing.filter((sId) => sId !== id);
     ed.segmentsHistory.push(id);
@@ -77,7 +77,7 @@ export function recSuccessSeq(ed: EntryData, seg: Segment.Segment, dur: number) 
     }
     const perf = ed.segments.get(id);
     if (perf) {
-        PerfData.success(perf, dur);
+        PerfData.success(perf);
     }
 }
 

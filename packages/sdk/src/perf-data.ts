@@ -12,14 +12,14 @@ export type PerfData = {
 
 export function ongoing() {
     return {
-        startedAt: Date.now(),
+        startedAt: performance.now(),
         state: State.Ongoing,
     };
 }
 
-export function success(p: PerfData, responseTime: number) {
+export function success(p: PerfData) {
     p.state = State.Success;
-    p.latency = responseTime;
+    p.latency = Math.round(performance.now() - p.startedAt);
 }
 
 export function failure(p: PerfData) {
