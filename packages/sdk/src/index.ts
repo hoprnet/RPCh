@@ -484,7 +484,7 @@ export default class SDK {
 
     private responseSuccess = ({ resp }: Response.UnboxResponse, reqEntry: RequestCache.Entry) => {
         const { request, reject, resolve } = reqEntry;
-        const responseTime = Date.now() - request.createdAt;
+        const responseTime = Math.round(performance.now() - request.createdAt);
         log.verbose('response time for request %s: %s ms', request.id, responseTime);
         this.nodesColl.requestSucceeded(request, responseTime);
 

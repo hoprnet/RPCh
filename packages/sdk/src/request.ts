@@ -15,6 +15,7 @@ export type Request = {
     createdAt: number;
     entryPeerId: string;
     exitPeerId: string;
+    measureRPClatency: boolean;
     headers?: Record<string, string>;
     hops?: number;
     reqRelayPeerId?: string;
@@ -94,12 +95,13 @@ export function create({
             originalId,
             provider,
             req,
-            createdAt: Date.now(),
+            createdAt: performance.now(),
             entryPeerId,
             exitPeerId,
             exitPublicKey,
             headers,
             hops,
+            measureRPClatency,
             reqRelayPeerId,
             respRelayPeerId,
         },

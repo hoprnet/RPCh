@@ -5,14 +5,12 @@ export enum State {
 }
 
 export type PerfData = {
-    startedAt: number;
     latency?: number;
     state: State;
 };
 
 export function ongoing() {
     return {
-        startedAt: Date.now(),
         state: State.Ongoing,
     };
 }
