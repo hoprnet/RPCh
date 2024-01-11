@@ -229,7 +229,7 @@ function onMessage(state: State, ops: Ops) {
             return onPingReq(state, ops, msg);
         }
 
-        // deterine if info req
+        // determine if info req
         if (msg.body.startsWith('info-')) {
             return onInfoReq(state, ops, msg);
         }
@@ -379,32 +379,38 @@ async function completeSegmentsEntry(
 
     // do RPC request
     const { provider, req, headers } = reqPayload;
+    const fetchStarted = performance.now();
     const resFetch = await ProviderAPI.fetchRPC(provider, req, headers).catch((err: Error) => {
+        const fetchDur = Math.round(performance.now() - fetchStarted);
         log.error(
-            'error doing JRPC on %s with %o: %s[%o]',
+            'error doing JRPC on %s(%dms) with %o: %s[%o]',
             provider,
+            fetchDur,
             req,
             JSON.stringify(err),
             err,
         );
         // rpc critical fail response
-        return sendResponse(sendParams, {
+        const resp: Payload.RespPayload = {
             type: Payload.RespType.Error,
             reason: JSON.stringify(err),
-        });
+        };
+        return sendResponse(sendParams, addDuration(reqPayload, resp, fetchDur));
     });
     if (!resFetch) {
         return;
     }
 
+    const fetchDur = Math.round(performance.now() - fetchStarted);
     // http fail response
     if (Res.isErr(resFetch)) {
         const { status, message: text } = resFetch.error;
-        return sendResponse(sendParams, { type: Payload.RespType.HttpError, status, text });
+        const resp: Payload.RespPayload = { type: Payload.RespType.HttpError, status, text };
+        return sendResponse(sendParams, addDuration(reqPayload, resp, fetchDur));
     }
 
-    const resp = resFetch.res;
-    return sendResponse(sendParams, { type: Payload.RespType.Resp, resp });
+    const resp: Payload.RespPayload = { type: Payload.RespType.Resp, resp: resFetch.res };
+    return sendResponse(sendParams, addDuration(reqPayload, resp, fetchDur));
 }
 
 /**
@@ -421,6 +427,28 @@ function determineRelay(state: State, { hops, relayPeerId }: Payload.ReqPayload)
         } else {
             return Utils.randomEl(state.relays);
         }
+    }
+}
+
+/**
+ * The exit node will send tracked latency back if requested.
+ */
+function addDuration(
+    { wDur }: Payload.ReqPayload,
+    resp: Payload.RespPayload,
+    duration: number,
+): Payload.RespPayload {
+    if (!wDur) {
+        return resp;
+    }
+    switch (resp.type) {
+        case Payload.RespType.Resp:
+        case Payload.RespType.HttpError:
+        case Payload.RespType.Error:
+            resp.dur = duration;
+            return resp;
+        default:
+            return resp;
     }
 }
 

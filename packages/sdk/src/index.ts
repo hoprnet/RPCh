@@ -49,6 +49,7 @@ export * as Utils from './utils';
  * @param debugScope - programatically set debug scope for SDK
  * @param logLevel - only print log statements that match at least the desired level: verbose < info < warn < error
  * @param forceManualRelaying - determine relay nodes for requests/responses and enforce them for one hop messages, can not be used with zero hop
+ * @param measureRPClatency - determine duration of actual RPC request from exit node
  */
 export type Ops = {
     readonly discoveryPlatformEndpoint?: string;
@@ -63,6 +64,7 @@ export type Ops = {
     readonly debugScope?: string;
     readonly logLevel?: string; // 'verbose' | 'info' | 'warn' | 'error'
     readonly forceManualRelaying?: boolean;
+    readonly measureRPClatency?: boolean;
 };
 
 /**
@@ -72,6 +74,7 @@ export type Ops = {
 export type RequestOps = {
     readonly timeout?: number;
     readonly provider?: string;
+    readonly measureRPClatency?: boolean;
 };
 
 const RPC_PROPELLORHEADS = 'https://rpc.propellerheads.xyz/eth';
@@ -90,6 +93,7 @@ const defaultOps = {
     segmentLimit: 0, // disable segment limit
     forceManualRelaying: false,
     logLevel: 'info',
+    measureRPClatency: false,
 };
 
 const log = Utils.logger(['sdk']);
@@ -528,6 +532,7 @@ export default class SDK {
         const forceManualRelaying = forceZeroHop
             ? false
             : ops.forceManualRelaying ?? defaultOps.forceManualRelaying;
+        const measureRPClatency = ops.measureRPClatency ?? defaultOps.measureRPClatency;
         return {
             discoveryPlatformEndpoint,
             timeout: ops.timeout || defaultOps.timeout,
@@ -541,6 +546,7 @@ export default class SDK {
             debugScope: ops.debugScope,
             logLevel: ops.logLevel || (process.env.DEBUG ? undefined : defaultOps.logLevel),
             forceManualRelaying,
+            measureRPClatency,
         };
     };
 
@@ -549,6 +555,7 @@ export default class SDK {
             return {
                 timeout: ops.timeout || this.ops.timeout,
                 provider: ops.provider || this.ops.provider,
+                measureRPClatency: ops.measureRPClatency ?? this.ops.measureRPClatency,
             };
         }
         return this.ops;
