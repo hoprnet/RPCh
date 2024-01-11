@@ -273,7 +273,7 @@ export default class SDK {
         entryNode: EntryNode,
         cacheEntry: RequestCache.Entry,
     ) => {
-        const bef = Date.now();
+        const bef = performance.now();
         const conn = {
             apiEndpoint: entryNode.apiEndpoint,
             accessToken: entryNode.accessToken,
@@ -286,7 +286,7 @@ export default class SDK {
             message: Segment.toMessage(segment),
         })
             .then((_json) => {
-                const dur = Date.now() - bef;
+                const dur = Math.round(performance.now() - bef);
                 this.nodesColl.segmentSucceeded(request, segment, dur);
             })
             .catch((error) => {
@@ -381,7 +381,7 @@ export default class SDK {
         entryNode: EntryNode,
         cacheEntry: RequestCache.Entry,
     ) => {
-        const bef = Date.now();
+        const bef = performance.now();
         NodeAPI.sendMessage(
             {
                 apiEndpoint: entryNode.apiEndpoint,
@@ -396,7 +396,7 @@ export default class SDK {
             },
         )
             .then((_json) => {
-                const dur = Date.now() - bef;
+                const dur = Math.round(performance.now() - bef);
                 this.nodesColl.segmentSucceeded(request, segment, dur);
             })
             .catch((error) => {

@@ -46,9 +46,9 @@ export default class NodesCollector {
      */
     public ready = async (timeout: number): Promise<boolean> => {
         return new Promise((resolve, reject) => {
-            const start = Date.now();
+            const start = performance.now();
             const check = () => {
-                const now = Date.now();
+                const now = performance.now();
                 const elapsed = now - start;
                 const res = NodeSel.routePair(this.nodePairs, this.forceManualRelaying);
                 if (Res.isOk(res)) {
@@ -70,9 +70,9 @@ export default class NodesCollector {
      */
     public requestNodePair = async (timeout: number): Promise<NodeMatch> => {
         return new Promise((resolve, reject) => {
-            const start = Date.now();
+            const start = performance.now();
             const check = () => {
-                const now = Date.now();
+                const now = performance.now();
                 const elapsed = now - start;
                 const res = NodeSel.routePair(this.nodePairs, this.forceManualRelaying);
                 if (Res.isOk(res)) {
