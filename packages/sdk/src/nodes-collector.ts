@@ -298,7 +298,7 @@ export default class NodesCollector {
             },
             [],
         );
-        log.verbose('removing %d routes: %s', removablePairs.length, removablePairs);
+        log.verbose('removing %d redundant routes', removablePairs.length);
         while (removablePairs.length > 0 && toRemove > 0) {
             const idx = Utils.randomIdx(removablePairs);
             const [eId, xId] = removablePairs[idx] as [string, string];
