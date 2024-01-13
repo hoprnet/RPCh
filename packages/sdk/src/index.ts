@@ -49,7 +49,7 @@ export * as Utils from './utils';
  * @param debugScope - programatically set debug scope for SDK
  * @param logLevel - only print log statements that match at least the desired level: verbose < info < warn < error
  * @param forceManualRelaying - determine relay nodes for requests/responses and enforce them for one hop messages, can not be used with zero hop
- * @param measureRPClatency - determine duration of actual RPC request from exit node
+ * @param measureRPClatency - determine duration of actual RPC request from exit node, populates response stats
  */
 export type Ops = {
     readonly discoveryPlatformEndpoint?: string;
@@ -174,7 +174,6 @@ export default class SDK {
 
     private doSend = async (req: JRPC.Request, ops?: RequestOps): Promise<Response.Response> => {
         const reqOps = this.requestOps(ops);
-        // TODO fixme
         // eslint-disable-next-line no-async-promise-executor
         return new Promise(async (resolve, reject) => {
             // sanity check provider url
@@ -216,6 +215,7 @@ export default class SDK {
                 exitPeerId: exitNode.id,
                 exitPublicKey: etherUtils.arrayify(exitNode.pubKey),
                 counterOffset,
+                measureRPClatency: reqOps.measureRPClatency,
                 headers,
                 hops: this.hops,
                 reqRelayPeerId,
@@ -286,7 +286,9 @@ export default class SDK {
             message: Segment.toMessage(segment),
         })
             .then((_json) => {
-                const dur = Math.round(performance.now() - bef);
+                const aft = performance.now();
+                request.lastSegmentEndedAt = aft;
+                const dur = Math.round(aft - bef);
                 this.nodesColl.segmentSucceeded(request, segment, dur);
             })
             .catch((error) => {
@@ -340,6 +342,7 @@ export default class SDK {
             exitPeerId: fallback.exitNode.id,
             exitPublicKey: etherUtils.arrayify(fallback.exitNode.pubKey),
             counterOffset: fallback.counterOffset,
+            measureRPClatency: origReq.measureRPClatency,
             headers: origReq.headers,
             hops: origReq.hops,
             reqRelayPeerId: fallback.reqRelayPeerId,
@@ -396,7 +399,9 @@ export default class SDK {
             },
         )
             .then((_json) => {
-                const dur = Math.round(performance.now() - bef);
+                const aft = performance.now();
+                request.lastSegmentEndedAt = aft;
+                const dur = Math.round(aft - bef);
                 this.nodesColl.segmentSucceeded(request, segment, dur);
             })
             .catch((error) => {
@@ -484,17 +489,23 @@ export default class SDK {
 
     private responseSuccess = ({ resp }: Response.UnboxResponse, reqEntry: RequestCache.Entry) => {
         const { request, reject, resolve } = reqEntry;
-        const responseTime = Math.round(performance.now() - request.createdAt);
-        log.verbose('response time for request %s: %s ms', request.id, responseTime);
+        const responseTime = Math.round(performance.now() - request.startedAt);
+        const stats = this.stats(responseTime, request, resp);
+        log.verbose('response time for request %s: %d ms %o', request.id, stats);
         this.nodesColl.requestSucceeded(request, responseTime);
 
         switch (resp.type) {
-            case Payload.RespType.Resp:
-                return resolve({
+            case Payload.RespType.Resp: {
+                const r: Response.Response = {
                     status: 200,
                     text: () => new Promise((r) => r(JSON.stringify(resp.resp))),
                     json: () => Promise.resolve(resp.resp),
-                });
+                };
+                if (request.measureRPClatency) {
+                    r.stats = stats;
+                }
+                return resolve(r);
+            }
             case Payload.RespType.CounterFail: {
                 const counter = reqEntry.session.updatedTS;
                 return reject(
@@ -505,12 +516,17 @@ export default class SDK {
                 return reject(
                     'Message duplicate error. Exit node rejected already processed message',
                 );
-            case Payload.RespType.HttpError:
-                return resolve({
+            case Payload.RespType.HttpError: {
+                const r: Response.Response = {
                     status: resp.status,
                     text: () => Promise.resolve(resp.text),
                     json: () => new Promise((r) => r(JSON.parse(resp.text))),
-                });
+                };
+                if (request.measureRPClatency) {
+                    r.stats = stats;
+                }
+                return resolve(r);
+            }
             case Payload.RespType.Error:
                 return reject(`Error attempting JSON RPC call: ${resp.reason}`);
         }
@@ -691,5 +707,27 @@ export default class SDK {
         setTimeout(() => {
             this.ops.versionListener && this.ops.versionListener(versions);
         });
+    };
+
+    private stats = (responseTime: number, request: Request.Request, resp: Payload.RespPayload) => {
+        const segDur = Math.round((request.lastSegmentEndedAt as number) - request.startedAt);
+        if (
+            request.measureRPClatency &&
+            'rDur' in resp &&
+            'eDur' in resp &&
+            resp.rDur &&
+            resp.eDur
+        ) {
+            const rpcDur = resp.rDur;
+            const exitNodeDur = resp.eDur;
+            const hoprDur = responseTime - rpcDur - exitNodeDur - segDur;
+            return {
+                segDur,
+                rpcDur,
+                exitNodeDur,
+                hoprDur,
+            };
+        }
+        return { segDur };
     };
 }

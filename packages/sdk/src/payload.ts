@@ -23,7 +23,8 @@ export type RespPayload =
     | {
           type: RespType.Resp;
           resp: JRPC.Response;
-          dur?: number;
+          rDur?: number;
+          eDur?: number;
       }
     | {
           type: RespType.CounterFail;
@@ -36,12 +37,12 @@ export type RespPayload =
           type: RespType.HttpError;
           status: number;
           text: string;
-          dur?: number;
+          rDur?: number;
+          eDur?: number;
       }
     | {
           type: RespType.Error;
           reason: string;
-          dur?: number;
       };
 
 export type InfoPayload = {

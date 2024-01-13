@@ -12,10 +12,11 @@ export type Request = {
     originalId?: string;
     provider: string;
     req: JRPC.Request;
-    createdAt: number;
     entryPeerId: string;
     exitPeerId: string;
+    startedAt: number;
     measureRPClatency: boolean;
+    lastSegmentEndedAt?: number;
     headers?: Record<string, string>;
     hops?: number;
     reqRelayPeerId?: string;
@@ -95,7 +96,6 @@ export function create({
             originalId,
             provider,
             req,
-            createdAt: performance.now(),
             entryPeerId,
             exitPeerId,
             exitPublicKey,
@@ -104,6 +104,7 @@ export function create({
             measureRPClatency,
             reqRelayPeerId,
             respRelayPeerId,
+            startedAt: performance.now(),
         },
         session: resBox.session,
     });

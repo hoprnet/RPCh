@@ -6,8 +6,25 @@ import * as Payload from './payload';
 import * as Res from './result';
 import type { Request } from './request';
 
+/**
+ * Stats alonside Response.
+ * segDur - duration of first segment http call started until last segment http call finished.
+ * rpcDur - duration of RPC request from exit node
+ * exitNodeDur - approximate execution duration up to encrypting and compressing response itself
+ * hoprDur - estimated duration of segments during request - response cycle inside hopr network
+ */
+export type Stats =
+    | {
+          segDur: number;
+          rpcDur: number;
+          exitNodeDur: number;
+          hoprDur: number;
+      }
+    | { segDur: number };
+
 export type Response = {
     status: number;
+    stats?: Stats;
     text: () => Promise<string>;
     json: () => Promise<JRPC.Response>;
 };
