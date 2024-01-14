@@ -7,7 +7,7 @@ import * as Res from './result';
 import type { Request } from './request';
 
 /**
- * Stats alonside Response.
+ * Stats alongside Response.
  * segDur - duration of first segment http call started until last segment http call finished.
  * rpcDur - duration of RPC request from exit node
  * exitNodeDur - approximate execution duration up to encrypting and compressing response itself
