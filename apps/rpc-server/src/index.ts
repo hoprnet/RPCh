@@ -49,9 +49,13 @@ function extractParams(urlStr: undefined | string, host: undefined | string): Re
     }
     const provider = url.searchParams.get('provider');
     const timeout = url.searchParams.get('timeout');
+    const measureRPClatency = url.searchParams.get('measureRPClatency');
     return {
         provider: provider ? provider : undefined,
         timeout: timeout ? parseInt(timeout, 10) : undefined,
+        measureRPClatency: measureRPClatency
+            ? measureRPClatency.toLowerCase() === 'true'
+            : undefined,
     };
 }
 
