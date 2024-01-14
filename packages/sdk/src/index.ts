@@ -491,7 +491,7 @@ export default class SDK {
         const { request, reject, resolve } = reqEntry;
         const responseTime = Math.round(performance.now() - request.startedAt);
         const stats = this.stats(responseTime, request, resp);
-        log.verbose('response time for request %s: %d ms %o', request.id, stats);
+        log.verbose('response time for request %s: %d ms %o', request.id, responseTime, stats);
         this.nodesColl.requestSucceeded(request, responseTime);
 
         switch (resp.type) {

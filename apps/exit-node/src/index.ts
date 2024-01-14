@@ -450,9 +450,9 @@ function addLatencies(
     switch (resp.type) {
         case Payload.RespType.Resp:
         case Payload.RespType.HttpError: {
-            const eDur = Math.round(performance.now() - recvAt);
+            const dur = Math.round(performance.now() - recvAt);
             resp.rDur = fetchDur;
-            resp.eDur = eDur;
+            resp.eDur = dur - fetchDur;
             return resp;
         }
         default:
