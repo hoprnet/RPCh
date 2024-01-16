@@ -17,7 +17,7 @@ type ServerOPS = {
     failedRequestsFile?: string;
     restrictCors: boolean;
     skipRPCh: boolean;
-    addLats: boolean;
+    exposeLats: boolean;
 };
 
 const log = Utils.logger(['rpc-server']);
@@ -129,7 +129,7 @@ async function sendRequest(
         const resp: Response.Response = await sdk.send(req, params);
         if (resp.status === 200) {
             const json: JRPC.Response = await resp.json();
-            if (ops.addLats && resp.stats) {
+            if (ops.exposeLats && resp.stats) {
                 log.info('response: %o request[%o,%o]', json, req, resp.stats);
                 res.statusCode = 200;
                 res.write(JSON.stringify({ resp: json, stats: resp.stats }));
@@ -310,7 +310,8 @@ function parseBooleanEnv(env?: string) {
  * RESTRICT_CORS - do not allow requests from everywhere
  * SKIP_RPCH - just relay requests directly, do not use RPCh
  * FAILED_REQUESTS_FILE - log failed requests to this file
- * RPCH_LATENCY_STATS - request detailed latencies - this will modify the return parameter
+ * RPCH_LATENCY_STATS - request detailed latencies, needs verbose logging to be visible
+ * RPCH_EXPOSE_LATENCY_STATS - request detailed latencies and modify the return parameter to include those
  * PORT - default port to run on, optional
  *
  * ENV vars for RPCh SDK:
@@ -337,6 +338,7 @@ if (require.main === module) {
     }
     const clientId = process.env.CLIENT;
     const addLats = parseBooleanEnv(process.env.RPCH_LATENCY_STATS);
+    const exposeLats = parseBooleanEnv(process.env.RPCH_EXPOSE_LATENCY_STATS);
     const ops: SDKops = {
         discoveryPlatformEndpoint: process.env.DISCOVERY_PLATFORM_API_ENDPOINT,
         timeout: process.env.RESPONSE_TIMEOUT
@@ -352,7 +354,7 @@ if (require.main === module) {
             ? parseInt(process.env.SEGMENT_LIMIT, 10)
             : undefined,
         logLevel: process.env.RPCH_LOG_LEVEL,
-        measureRPClatency: addLats,
+        measureRPClatency: exposeLats || addLats,
         versionListener,
     };
 
@@ -360,7 +362,7 @@ if (require.main === module) {
         restrictCors: !!process.env.RESTRICT_CORS,
         skipRPCh: !!process.env.SKIP_RPCH,
         failedRequestsFile: process.env.FAILED_REQUESTS_FILE,
-        addLats,
+        exposeLats,
     };
     const port = determinePort(process.env.PORT);
 
