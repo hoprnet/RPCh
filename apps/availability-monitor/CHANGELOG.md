@@ -1,5 +1,12 @@
 # @rpch/availability-monitor
 
+## 1.0.4
+
+### Patch Changes
+
+-   Updated dependencies [bee0cff]
+    -   @rpch/sdk@1.11.0
+
 ## 1.0.3
 
 ### Patch Changes

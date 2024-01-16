@@ -1,5 +1,16 @@
 # @rpch/exit-node
 
+## 1.2.0
+
+### Minor Changes
+
+-   bee0cff: Track latency durations when requested and add them to response
+
+### Patch Changes
+
+-   Updated dependencies [bee0cff]
+    -   @rpch/sdk@1.11.0
+
 ## 1.1.2
 
 ### Patch Changes

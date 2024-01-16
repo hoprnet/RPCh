@@ -1,5 +1,17 @@
 # @rpch/rpc-server
 
+## 1.2.0
+
+### Minor Changes
+
+-   bee0cff: Expose requesting latency measurements from exit node
+    Additionally return those stats from requests
+
+### Patch Changes
+
+-   Updated dependencies [bee0cff]
+    -   @rpch/sdk@1.11.0
+
 ## 1.1.6
 
 ### Patch Changes

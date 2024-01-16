@@ -1,5 +1,12 @@
 # @rpch/sdk
 
+## 1.11.0
+
+### Minor Changes
+
+-   bee0cff: Allow requesting latency tracking from exit node
+    Fix time measurements throughout the sdk making them clock independent
+
 ## 1.10.1
 
 ### Patch Changes
