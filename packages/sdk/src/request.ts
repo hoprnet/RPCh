@@ -12,9 +12,11 @@ export type Request = {
     originalId?: string;
     provider: string;
     req: JRPC.Request;
-    createdAt: number;
     entryPeerId: string;
     exitPeerId: string;
+    startedAt: number;
+    measureRPClatency: boolean;
+    lastSegmentEndedAt?: number;
     headers?: Record<string, string>;
     hops?: number;
     reqRelayPeerId?: string;
@@ -39,6 +41,7 @@ export function create({
     exitPeerId,
     exitPublicKey,
     counterOffset,
+    measureRPClatency,
     headers,
     hops,
     reqRelayPeerId,
@@ -53,19 +56,24 @@ export function create({
     exitPeerId: string;
     exitPublicKey: Uint8Array;
     counterOffset: number;
+    measureRPClatency: boolean;
     headers?: Record<string, string>;
     hops?: number;
     reqRelayPeerId?: string;
     respRelayPeerId?: string;
 }): Res.Result<{ request: Request; session: compatCrypto.Session }> {
-    const resEncode = Payload.encodeReq({
+    const payload: Payload.ReqPayload = {
         provider,
         clientId,
         req,
         headers,
         hops,
         relayPeerId: respRelayPeerId,
-    });
+    };
+    if (measureRPClatency) {
+        payload.wDur = true;
+    }
+    const resEncode = Payload.encodeReq(payload);
     if (Res.isErr(resEncode)) {
         return resEncode;
     }
@@ -88,14 +96,15 @@ export function create({
             originalId,
             provider,
             req,
-            createdAt: Date.now(),
             entryPeerId,
             exitPeerId,
             exitPublicKey,
             headers,
             hops,
+            measureRPClatency,
             reqRelayPeerId,
             respRelayPeerId,
+            startedAt: performance.now(),
         },
         session: resBox.session,
     });

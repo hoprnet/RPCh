@@ -217,6 +217,7 @@ function scheduleSetupRelays(state: State, ops: Ops) {
 
 function onMessage(state: State, ops: Ops) {
     return function (evt: WS.MessageEvent) {
+        const recvAt = performance.now();
         const raw = evt.data.toString();
         const msg = JSON.parse(raw) as Msg;
 
@@ -229,7 +230,7 @@ function onMessage(state: State, ops: Ops) {
             return onPingReq(state, ops, msg);
         }
 
-        // deterine if info req
+        // determine if info req
         if (msg.body.startsWith('info-')) {
             return onInfoReq(state, ops, msg);
         }
@@ -247,7 +248,13 @@ function onMessage(state: State, ops: Ops) {
             case 'complete':
                 log.verbose('completing segment:', Segment.prettyPrint(segment));
                 clearTimeout(state.deleteTimer.get(segment.requestId));
-                completeSegmentsEntry(state, ops, cacheRes.entry as SegmentCache.Entry, msg.tag);
+                completeSegmentsEntry(
+                    state,
+                    ops,
+                    cacheRes.entry as SegmentCache.Entry,
+                    msg.tag,
+                    recvAt,
+                );
                 break;
             case 'error':
                 log.error('error caching segment:', cacheRes.reason);
@@ -323,6 +330,7 @@ async function completeSegmentsEntry(
     ops: Ops,
     cacheEntry: SegmentCache.Entry,
     tag: number,
+    recvAt: number,
 ) {
     const firstSeg = cacheEntry.segments.get(0) as Segment.Segment;
     if (!firstSeg.body.startsWith('0x')) {
@@ -379,6 +387,7 @@ async function completeSegmentsEntry(
 
     // do RPC request
     const { provider, req, headers } = reqPayload;
+    const fetchStartedAt = performance.now();
     const resFetch = await ProviderAPI.fetchRPC(provider, req, headers).catch((err: Error) => {
         log.error(
             'error doing JRPC on %s with %o: %s[%o]',
@@ -388,23 +397,26 @@ async function completeSegmentsEntry(
             err,
         );
         // rpc critical fail response
-        return sendResponse(sendParams, {
+        const resp: Payload.RespPayload = {
             type: Payload.RespType.Error,
             reason: JSON.stringify(err),
-        });
+        };
+        return sendResponse(sendParams, resp);
     });
     if (!resFetch) {
         return;
     }
 
+    const fetchDur = Math.round(performance.now() - fetchStartedAt);
     // http fail response
     if (Res.isErr(resFetch)) {
         const { status, message: text } = resFetch.error;
-        return sendResponse(sendParams, { type: Payload.RespType.HttpError, status, text });
+        const resp: Payload.RespPayload = { type: Payload.RespType.HttpError, status, text };
+        return sendResponse(sendParams, addLatencies(reqPayload, resp, { fetchDur, recvAt }));
     }
 
-    const resp = resFetch.res;
-    return sendResponse(sendParams, { type: Payload.RespType.Resp, resp });
+    const resp: Payload.RespPayload = { type: Payload.RespType.Resp, resp: resFetch.res };
+    return sendResponse(sendParams, addLatencies(reqPayload, resp, { fetchDur, recvAt }));
 }
 
 /**
@@ -421,6 +433,30 @@ function determineRelay(state: State, { hops, relayPeerId }: Payload.ReqPayload)
         } else {
             return Utils.randomEl(state.relays);
         }
+    }
+}
+
+/**
+ * The exit node will send tracked latency back if requested.
+ */
+function addLatencies(
+    { wDur }: Payload.ReqPayload,
+    resp: Payload.RespPayload,
+    { fetchDur, recvAt }: { fetchDur: number; recvAt: number },
+): Payload.RespPayload {
+    if (!wDur) {
+        return resp;
+    }
+    switch (resp.type) {
+        case Payload.RespType.Resp:
+        case Payload.RespType.HttpError: {
+            const dur = Math.round(performance.now() - recvAt);
+            resp.rDur = fetchDur;
+            resp.eDur = dur - fetchDur;
+            return resp;
+        }
+        default:
+            return resp;
     }
 }
 
@@ -518,7 +554,7 @@ function sendResponse(
         DPapi.fetchQuota(ops, quotaResponse).catch((err) => {
             log.error('error recording response quota: %s[%o]', JSON.stringify(err), err);
         });
-    }, segments.length);
+    });
 }
 
 // if this file is the entrypoint of the nodejs process

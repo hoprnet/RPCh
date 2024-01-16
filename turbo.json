@@ -78,6 +78,8 @@
         "RESPONSE_TIMEOUT",
         "RESTRICT_CORS",
         "RPCH_LOG_LEVEL",
+        "RPCH_LATENCY_STATS",
+        "RPCH_EXPOSE_LATENCY_STATS",
         "SEGMENT_LIMIT",
         "SKIP_RPCH"
       ]

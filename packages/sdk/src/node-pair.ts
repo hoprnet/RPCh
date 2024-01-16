@@ -152,11 +152,11 @@ export function segmentFailed(np: NodePair, seg: Segment.Segment) {
  * Request info msg from exit nodes.
  */
 export function discover(np: NodePair) {
-    const startPingTime = Date.now();
+    const startPingTime = performance.now();
     if (np.hops === 0 || !np.forceManualRelaying) {
         NodeAPI.version(np.entryNode)
             .then(() => {
-                np.entryData.pingDuration = Date.now() - startPingTime;
+                np.entryData.pingDuration = Math.round(performance.now() - startPingTime);
                 np.log.verbose('version ping took %dms', np.entryData.pingDuration);
             })
             .catch((err) => {
@@ -182,7 +182,7 @@ function requestInfo(np: NodePair, exitNode: ExitNode.ExitNode) {
     if (!exitData) {
         return np.log.error('missing exit data for %s before info req', exitNode.id);
     }
-    exitData.infoLatStarted = Date.now();
+    exitData.infoLatStarted = performance.now();
     NodeAPI.sendMessage(
         {
             ...np.entryNode,
@@ -279,10 +279,10 @@ function prettyOngoingNumbers(
 }
 
 function fetchMessages(np: NodePair) {
-    const bef = Date.now();
+    const bef = performance.now();
     NodeAPI.retrieveMessages(np.entryNode, np.applicationTag)
         .then(({ messages }) => {
-            const lat = Date.now() - bef;
+            const lat = Math.round(performance.now() - bef);
             np.entryData.fetchMessagesSuccesses++;
             np.entryData.fetchMessagesLatencies.push(lat);
             if (np.entryData.fetchMessagesLatencies.length > NodeMatch.MaxMessagesHistory) {
@@ -337,7 +337,8 @@ function incInfoResps(np: NodePair, infoResps: NodeAPI.Message[]) {
         np.log.verbose('got exit node info: %s', nodeLog);
         exitData.version = version;
         exitData.counterOffset = Date.now() - counter;
-        exitData.infoLatMs = exitData.infoLatStarted && Date.now() - exitData.infoLatStarted;
+        exitData.infoLatMs =
+            exitData.infoLatStarted && Math.round(performance.now() - exitData.infoLatStarted);
         exitData.infoFail = false;
         exitData.shRelays = shRelays;
         EntryData.removeOngoingInfo(np.entryData);
@@ -375,7 +376,7 @@ function incChannels(
     peers: { peerId: string; peerAddress: string }[],
     startPingTime: number,
 ) {
-    np.entryData.pingDuration = Date.now() - startPingTime;
+    np.entryData.pingDuration = Math.round(performance.now() - startPingTime);
     np.log.verbose('channel ping took %dms', np.entryData.pingDuration);
 
     // open channels

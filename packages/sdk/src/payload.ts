@@ -9,6 +9,7 @@ export type ReqPayload = {
     headers?: Record<string, string>;
     hops?: number;
     relayPeerId?: string;
+    wDur?: boolean;
 };
 
 export enum RespType {
@@ -22,6 +23,8 @@ export type RespPayload =
     | {
           type: RespType.Resp;
           resp: JRPC.Response;
+          rDur?: number;
+          eDur?: number;
       }
     | {
           type: RespType.CounterFail;
@@ -34,6 +37,8 @@ export type RespPayload =
           type: RespType.HttpError;
           status: number;
           text: string;
+          rDur?: number;
+          eDur?: number;
       }
     | {
           type: RespType.Error;

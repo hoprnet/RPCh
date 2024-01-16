@@ -13,7 +13,12 @@ import RPChSDK, {
     type Ops as SDKops,
 } from '@rpch/sdk';
 
-type ServerOPS = { failedRequestsFile?: string; restrictCors: boolean; skipRPCh: boolean };
+type ServerOPS = {
+    failedRequestsFile?: string;
+    restrictCors: boolean;
+    skipRPCh: boolean;
+    exposeLats: boolean;
+};
 
 const log = Utils.logger(['rpc-server']);
 
@@ -44,9 +49,13 @@ function extractParams(urlStr: undefined | string, host: undefined | string): Re
     }
     const provider = url.searchParams.get('provider');
     const timeout = url.searchParams.get('timeout');
+    const measureRPClatency = url.searchParams.get('measureRPClatency');
     return {
         provider: provider ? provider : undefined,
         timeout: timeout ? parseInt(timeout, 10) : undefined,
+        measureRPClatency: measureRPClatency
+            ? measureRPClatency.toLowerCase() === 'true'
+            : undefined,
     };
 }
 
@@ -109,18 +118,27 @@ async function sendSkipRPCh(
         .finally(() => res.end());
 }
 
-function sendRequest(
+async function sendRequest(
     sdk: RPChSDK,
     req: JRPC.Request,
     params: RequestOps,
     res: http.ServerResponse,
     ops: ServerOPS,
 ) {
-    sdk.send(req, params)
-        .then(async (resp: Response.Response) => {
-            if (resp.status === 200) {
-                return resp.json();
+    try {
+        const resp: Response.Response = await sdk.send(req, params);
+        if (resp.status === 200) {
+            const json: JRPC.Response = await resp.json();
+            if (ops.exposeLats && resp.stats) {
+                log.info('response: %o request[%o,%o]', json, req, resp.stats);
+                res.statusCode = 200;
+                res.write(JSON.stringify({ resp: json, stats: resp.stats }));
+            } else {
+                log.info('response: %o request[%o]', json, req);
+                res.statusCode = 200;
+                res.write(JSON.stringify(json));
             }
+        } else {
             const text = await resp.text();
             log.info('response[HTTP %d]: %s request[%o]', resp.status, text, req);
             res.statusCode = resp.status;
@@ -128,30 +146,24 @@ function sendRequest(
             if (resp.status !== 204 && resp.status !== 304) {
                 res.write(text);
             }
-        })
-        .then((resp?: JRPC.Response) => {
-            log.info('response: %o request[%o]', resp, req);
-            res.statusCode = 200;
-            res.write(JSON.stringify(resp));
-        })
-        .catch((err: any) => {
-            if (ops.failedRequestsFile) {
-                fh.appendFile(ops.failedRequestsFile, JSON.stringify(req) + '\n').catch((err) => {
-                    log.error(
-                        'error appending to FAILED_REQUESTS_FILE[%s]: %s[%o]',
-                        ops.failedRequestsFile,
-                        JSON.stringify(err),
-                        err,
-                    );
-                });
-            }
-            log.error('error sending request[%o]: %s[%o]', req, JSON.stringify(err), err);
-            res.statusCode = 500;
-            res.write(err.toString());
-        })
-        .finally(() => {
-            res.end();
-        });
+        }
+    } catch (err: any) {
+        if (ops.failedRequestsFile) {
+            fh.appendFile(ops.failedRequestsFile, JSON.stringify(req) + '\n').catch((err) => {
+                log.error(
+                    'error appending to FAILED_REQUESTS_FILE[%s]: %s[%o]',
+                    ops.failedRequestsFile,
+                    JSON.stringify(err),
+                    err,
+                );
+            });
+        }
+        log.error('error sending request[%o]: %s[%o]', req, JSON.stringify(err), err);
+        res.statusCode = 500;
+        res.write(err.toString());
+    } finally {
+        res.end();
+    }
 }
 
 function createServer(sdk: RPChSDK, ops: ServerOPS) {
@@ -298,6 +310,8 @@ function parseBooleanEnv(env?: string) {
  * RESTRICT_CORS - do not allow requests from everywhere
  * SKIP_RPCH - just relay requests directly, do not use RPCh
  * FAILED_REQUESTS_FILE - log failed requests to this file
+ * RPCH_LATENCY_STATS - request detailed latencies, needs verbose logging to be visible
+ * RPCH_EXPOSE_LATENCY_STATS - request detailed latencies and modify the return parameter to include those
  * PORT - default port to run on, optional
  *
  * ENV vars for RPCh SDK:
@@ -323,6 +337,8 @@ if (require.main === module) {
         throw new Error("Missing 'CLIENT' env var.");
     }
     const clientId = process.env.CLIENT;
+    const addLats = parseBooleanEnv(process.env.RPCH_LATENCY_STATS);
+    const exposeLats = parseBooleanEnv(process.env.RPCH_EXPOSE_LATENCY_STATS);
     const ops: SDKops = {
         discoveryPlatformEndpoint: process.env.DISCOVERY_PLATFORM_API_ENDPOINT,
         timeout: process.env.RESPONSE_TIMEOUT
@@ -338,6 +354,7 @@ if (require.main === module) {
             ? parseInt(process.env.SEGMENT_LIMIT, 10)
             : undefined,
         logLevel: process.env.RPCH_LOG_LEVEL,
+        measureRPClatency: exposeLats || addLats,
         versionListener,
     };
 
@@ -345,6 +362,7 @@ if (require.main === module) {
         restrictCors: !!process.env.RESTRICT_CORS,
         skipRPCh: !!process.env.SKIP_RPCH,
         failedRequestsFile: process.env.FAILED_REQUESTS_FILE,
+        exposeLats,
     };
     const port = determinePort(process.env.PORT);
 

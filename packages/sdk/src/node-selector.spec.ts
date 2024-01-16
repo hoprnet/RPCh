@@ -469,7 +469,6 @@ function genExitNode(id: string): ExitNode {
 
 function genLat(latency: number): PerfData.PerfData {
     return {
-        startedAt: 0,
         latency,
         state: PerfData.State.Success,
     };
@@ -477,7 +476,6 @@ function genLat(latency: number): PerfData.PerfData {
 
 function genErr(): PerfData.PerfData {
     return {
-        startedAt: 0,
         state: PerfData.State.Failure,
     };
 }
