@@ -59,8 +59,6 @@ RUN apk upgrade --no-cache && \
     mkdir -p /etc/certs && \
     addgroup -g 103 -S www && \
     adduser -u 103 -D -S -G www www && \
-    addgroup -g 104 -S node && \
-    adduser -u 104 -D -S -G node node && \
     chown -R www:www /etc/certs
 
 # copy over minimal fileset to run rpc-server
@@ -78,8 +76,7 @@ COPY apps/rpc-server/docker_files/haproxy.conf /etc/haproxy/haproxy.conf
 COPY apps/rpc-server/docker_files/service.d /etc/service.d
 COPY apps/rpc-server/docker_files/entrypoint.sh /
 
-# copied from postgres container
-RUN mkdir -p /app/failed_reqs && chown node:node /app/failed_reqs && chmod 1777 /app/failed_reqs
+RUN mkdir -p /app/failed_reqs
 VOLUME /app/failed_reqs
 
 ENTRYPOINT ["/entrypoint.sh"]

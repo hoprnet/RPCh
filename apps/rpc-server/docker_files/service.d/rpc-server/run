@@ -8,4 +8,4 @@ NOTICE "[RPC-SERVER] -- Starting Service rpc-server ..."
 # load docker env vars
 export $(grep -v '^#' /docker.env | xargs -0)
 
-exec chpst -u node /usr/bin/node /app/build/index.js 2>&1
+exec chpst -u root /usr/bin/node /app/build/index.js 2>&1
