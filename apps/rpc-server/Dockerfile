@@ -79,8 +79,7 @@ COPY apps/rpc-server/docker_files/service.d /etc/service.d
 COPY apps/rpc-server/docker_files/entrypoint.sh /
 
 # copied from postgres container
-# this 1777 will be replaced by 0700 at runtime (allows semi-arbitrary "--user" values)
-RUN mkdir -p /app/failed_reqs && chmod 1777 /app/failed_reqs
+RUN mkdir -p /app/failed_reqs && chown node:node /app/failed_reqs && chmod 1777 /app/failed_reqs
 VOLUME /app/failed_reqs
 
 ENTRYPOINT ["/entrypoint.sh"]
