@@ -1,5 +1,11 @@
 # @rpch/rpc-server
 
+## 1.2.1
+
+### Patch Changes
+
+-   d900818: make failed reqs volume mountable without using chown
+
 ## 1.2.0
 
 ### Minor Changes
