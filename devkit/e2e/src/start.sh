@@ -11,13 +11,13 @@ test "$?" -eq "0" && {
 DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)
 
 # path to sandbox files
-DIR_SANDBOX=$(realpath $DIR/../../sandbox/src)
+DIR_SANDBOX=$(realpath "$DIR/../../sandbox/src")
 
 # load sandbox's start & stop functions
-source $DIR_SANDBOX/common.sh
+source "${DIR_SANDBOX}/common.sh"
 
 # If there's a fatal error or users Ctrl+C it will tear down setup
-trap 'stop; exit 1' SIGINT SIGKILL SIGTERM ERR
+trap 'stop; exit 1' SIGINT SIGTERM ERR
 
 # start sandbox
 start
