@@ -613,7 +613,7 @@ export default class SDK {
                     JSON.stringify(jrpc.error),
                 );
             } else {
-                const id = parseInt(jrpc.result, 16);
+                const id = parseInt(jrpc.result);
                 log.info('determined chain id %d for %s', id, provider);
                 this.chainIds.set(provider, id);
             }
