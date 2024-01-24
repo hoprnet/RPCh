@@ -43,6 +43,24 @@ export function isValidURL(url: string) {
     }
 }
 
+export function hexStringToUint8Array(hexString: string) {
+    // Remove the '0x' prefix if it exists
+    hexString = hexString.startsWith('0x') ? hexString.slice(2) : hexString;
+
+    // Check if the hex string has an odd length, and pad with a leading zero if needed
+    if (hexString.length % 2 !== 0) {
+        hexString = '0' + hexString;
+    }
+
+    // Create a Uint8Array by iterating through the hex string
+    const uint8Array = new Uint8Array(hexString.length / 2);
+    for (let i = 0; i < hexString.length; i += 2) {
+        uint8Array[i / 2] = parseInt(hexString.substr(i, 2), 16);
+    }
+
+    return uint8Array;
+}
+
 export function logger(namespaces: string[]) {
     namespaces.unshift('rpch');
     const ns = namespaces.join(':');
