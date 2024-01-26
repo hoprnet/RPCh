@@ -1,6 +1,8 @@
 import debug from 'debug';
 import * as Res from './result';
 
+const textDecoder = new TextDecoder('utf-8');
+
 export enum VrsnCmp {
     Identical,
     PatchMismatch,
@@ -59,6 +61,10 @@ export function hexStringToUint8Array(hexString: string) {
     }
 
     return uint8Array;
+}
+
+export function uint8ArrayToUTF8String(arr: Uint8Array) {
+    return textDecoder.decode(arr);
 }
 
 export function logger(namespaces: string[]) {
