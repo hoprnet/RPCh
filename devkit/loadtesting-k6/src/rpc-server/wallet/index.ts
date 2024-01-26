@@ -17,9 +17,9 @@ export function buildWallet(walletType: WalletTypes, url?: string): MockWallet {
         case Wallet.FRAME:
             return new MockFrameWallet(url);
         case Wallet.DUMMY:
+            return new MockDummyWallet(url);
         default:
             console.error(`Cannot find the wallet name ${walletType}. Use dummy wallet`);
-            break;
+            return new MockDummyWallet(url);
     }
-    return new MockDummyWallet(url);
 }
