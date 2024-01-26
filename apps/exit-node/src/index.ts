@@ -1,6 +1,5 @@
 import * as path from 'path';
 import WS from 'isomorphic-ws';
-import { utils } from 'ethers';
 
 import * as Identity from './identity';
 import * as RequestStore from './request-store';
@@ -114,7 +113,7 @@ async function setup(ops: Ops): Promise<State> {
     return {
         cache,
         deleteTimer,
-        privateKey: utils.arrayify(resId.privateKey),
+        privateKey: Utils.hexStringToUint8Array(resId.privateKey),
         peerId,
         publicKey: resId.publicKey,
         requestStore,
@@ -346,9 +345,9 @@ async function completeSegmentsEntry(
     }
 
     const [hexEntryId, hexData] = msgParts;
-    const entryIdData = utils.arrayify(hexEntryId);
-    const entryPeerId = utils.toUtf8String(entryIdData);
-    const reqData = utils.arrayify(hexData);
+    const entryIdData = Utils.hexStringToUint8Array(hexEntryId);
+    const entryPeerId = Utils.uint8ArrayToUTF8String(entryIdData);
+    const reqData = Utils.hexStringToUint8Array(hexData);
 
     const resReq = Request.messageToReq({
         requestId,
@@ -580,7 +579,7 @@ if (require.main === module) {
     }
     const identityFile = process.env.RPCH_IDENTITY_FILE || path.join(process.cwd(), '.identity');
     const privateKey = process.env.RPCH_PRIVATE_KEY
-        ? utils.arrayify(process.env.RPCH_PRIVATE_KEY)
+        ? Utils.hexStringToUint8Array(process.env.RPCH_PRIVATE_KEY)
         : undefined;
 
     start({
