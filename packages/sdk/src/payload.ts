@@ -1,55 +1,51 @@
 import LZString from 'lz-string';
-import * as JRPC from './jrpc';
 import * as Res from './result';
 
 export type ReqPayload = {
-    clientId: string;
-    provider: string;
-    req: JRPC.Request;
-    headers?: Record<string, string>;
-    hops?: number;
-    relayPeerId?: string;
-    wDur?: boolean;
+    cId: string; // client identifier
+    ep: string; // http endpoint url, target of the request
+    b?: string; // request body
+    h?: Record<string, string>; // request headers, if left empty:  { 'Content-Type': 'application/json' }
+    m?: string; // request method, if left empty: get
+    // dev/debug params
+    hops?: number; // defaults to 1
+    relayPeerId?: string; // default to autorouting
+    wDur?: boolean; // request duration
 };
 
 export enum RespType {
     Resp,
     CounterFail,
     DuplicateFail,
-    HttpError,
     Error,
 }
+
 export type RespPayload =
     | {
-          type: RespType.Resp;
-          resp: JRPC.Response;
+          t: RespType.Resp;
+          s: number; // HTTP status
+          x?: string; // response text
           rDur?: number;
           eDur?: number;
       }
     | {
-          type: RespType.CounterFail;
-          now: number;
+          t: RespType.CounterFail;
+          c: number; // current timestamp on exit node
       }
     | {
-          type: RespType.DuplicateFail;
+          t: RespType.DuplicateFail;
       }
     | {
-          type: RespType.HttpError;
-          status: number;
-          text: string;
-          rDur?: number;
-          eDur?: number;
-      }
-    | {
-          type: RespType.Error;
-          reason: string;
+          t: RespType.Error;
+          r: string; // reason, describing the problem
       };
 
 export type InfoPayload = {
-    peerId: string;
-    version: string;
-    counter: number;
-    shRelays?: string[]; // shortIds
+    i: string; // peerId
+    v: string; // version
+    c: number; // current timestamp on node
+    // dev/debug params
+    shRelays?: string[]; // shortIds of relays
 };
 
 export function encodeReq(payload: ReqPayload): Res.Result<string> {

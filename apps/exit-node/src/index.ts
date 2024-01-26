@@ -7,7 +7,7 @@ import {
     ExitNode,
     NodeAPI,
     Payload,
-    ProviderAPI,
+    EndpointAPI,
     Request,
     Response,
     Result as Res,
@@ -369,23 +369,26 @@ async function completeSegmentsEntry(
     }
 
     // do RPC request
-    const { provider, req, headers } = reqPayload;
+    const { ep: endpoint, b: body, m: method, h: headers } = reqPayload;
     const fetchStartedAt = performance.now();
-    const resFetch = await ProviderAPI.fetchRPC(provider, req, headers).catch((err: Error) => {
-        log.error(
-            'error doing JRPC on %s with %o: %s[%o]',
-            provider,
-            req,
-            JSON.stringify(err),
-            err,
-        );
-        // rpc critical fail response
-        const resp: Payload.RespPayload = {
-            type: Payload.RespType.Error,
-            reason: JSON.stringify(err),
-        };
-        return sendResponse(sendParams, resp);
-    });
+    const params = { body, method, headers };
+    const resFetch = await EndpointAPI.fetchURL(endpoint, { body, method, headers }).catch(
+        (err: Error) => {
+            log.error(
+                'error doing HTTP req on %s with %o: %s[%o]',
+                endpoint,
+                params,
+                JSON.stringify(err),
+                err,
+            );
+            // rpc critical fail response
+            const resp: Payload.RespPayload = {
+                type: Payload.RespType.Error,
+                reason: JSON.stringify(err),
+            };
+            return sendResponse(sendParams, resp);
+        },
+    );
     if (!resFetch) {
         return;
     }
