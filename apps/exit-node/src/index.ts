@@ -1,7 +1,5 @@
-import * as path from 'path';
 import WS from 'isomorphic-ws';
 
-import * as Identity from './identity';
 import * as RequestStore from './request-store';
 import Version from './version';
 import {
@@ -28,8 +26,8 @@ const SetupRelayPeriod = 1e3 * 60 * 15; // 15 min
 
 type State = {
     socket?: WS.WebSocket;
-    publicKey: string;
     privateKey: Uint8Array;
+    publicKey: Uint8Array;
     peerId: string;
     cache: SegmentCache.Cache;
     deleteTimer: Map<string, ReturnType<typeof setTimeout>>; // deletion timer of requests in segment cache
@@ -38,9 +36,8 @@ type State = {
 };
 
 type Ops = {
-    privateKey?: Uint8Array;
-    identityFile: string;
-    password?: string;
+    privateKey: string;
+    publicKey: string;
     apiEndpoint: URL;
     accessToken: string;
     discoveryPlatformEndpoint: string;
@@ -79,19 +76,6 @@ async function setup(ops: Ops): Promise<State> {
 
     log.verbose('set up DB at', ops.dbFile);
 
-    const resId = await Identity.getIdentity({
-        identityFile: ops.identityFile,
-        password: ops.password,
-        privateKey: ops.privateKey,
-    }).catch((err: Error) => {
-        log.error('error accessing identity: %s[%o]', JSON.stringify(err), err);
-    });
-    if (!resId) {
-        return Promise.reject();
-    }
-
-    log.verbose('got identity', resId.publicKey);
-
     const resPeerId = await NodeAPI.accountAddresses(ops).catch((err: Error) => {
         log.error('error fetching account addresses: %s[%o]', JSON.stringify(err), err);
     });
@@ -104,7 +88,7 @@ async function setup(ops: Ops): Promise<State> {
     const deleteTimer = new Map();
 
     const logOpts = {
-        identityFile: ops.identityFile,
+        publicKey: ops.publicKey,
         apiEndpoint: ops.apiEndpoint,
         discoveryPlatformEndpoint: ops.discoveryPlatformEndpoint,
     };
@@ -113,9 +97,9 @@ async function setup(ops: Ops): Promise<State> {
     return {
         cache,
         deleteTimer,
-        privateKey: Utils.hexStringToUint8Array(resId.privateKey),
+        privateKey: Utils.hexStringToUint8Array(ops.privateKey),
+        publicKey: Utils.hexStringToUint8Array(ops.publicKey),
         peerId,
-        publicKey: resId.publicKey,
         requestStore,
         relays: [],
     };
@@ -558,10 +542,12 @@ function sendResponse(
 
 // if this file is the entrypoint of the nodejs process
 if (require.main === module) {
-    if (!process.env.RPCH_PRIVATE_KEY && !process.env.RPCH_PASSWORD) {
-        throw new Error("Missing 'RPCH_PRIVATE_KEY' or 'RPCH_PASSWORD' env var.");
+    if (!process.env.RPCH_PRIVATE_KEY) {
+        throw new Error("Missing 'RPCH_PRIVATE_KEY' env var.");
     }
-
+    if (!process.env.RPCH_PUBLIC_KEY) {
+        throw new Error("Missing 'RPCH_PUBLIC_KEY' env var.");
+    }
     if (!process.env.HOPRD_API_ENDPOINT) {
         throw new Error("Missing 'HOPRD_API_ENDPOINT' env var.");
     }
@@ -577,15 +563,10 @@ if (require.main === module) {
     if (!process.env.RPCH_DB_FILE) {
         throw new Error('Missing RPCH_DB_FILE env var.');
     }
-    const identityFile = process.env.RPCH_IDENTITY_FILE || path.join(process.cwd(), '.identity');
-    const privateKey = process.env.RPCH_PRIVATE_KEY
-        ? Utils.hexStringToUint8Array(process.env.RPCH_PRIVATE_KEY)
-        : undefined;
 
     start({
-        privateKey,
-        identityFile,
-        password: process.env.RPCH_PASSWORD,
+        privateKey: process.env.RPCH_PRIVATE_KEY,
+        publicKey: process.env.RPCH_PUBLIC_KEY,
         apiEndpoint: new URL(process.env.HOPRD_API_ENDPOINT),
         accessToken: process.env.HOPRD_API_TOKEN,
         discoveryPlatformEndpoint: process.env.DISCOVERY_PLATFORM_API_ENDPOINT,
