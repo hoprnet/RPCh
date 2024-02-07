@@ -2,8 +2,8 @@ import LZString from 'lz-string';
 import * as Res from './result';
 
 export type ReqPayload = {
-    cId: string; // client identifier
-    ep: string; // http endpoint url, target of the request
+    c: string; // client identifier
+    e: string; // http endpoint url, target of the request
     b?: string; // request body
     h?: Record<string, string>; // request headers, if left empty:  { 'Content-Type': 'application/json' }
     m?: string; // request method, if left empty: get
