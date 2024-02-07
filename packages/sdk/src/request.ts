@@ -63,16 +63,14 @@ export function create({
     respRelayPeerId?: string;
 }): Res.Result<{ request: Request; session: compatCrypto.Session }> {
     const payload: Payload.ReqPayload = {
-        provider,
+        endpoint: provider,
         clientId,
-        req,
+        body: JSON.stringify(req),
         headers,
         hops,
         relayPeerId: respRelayPeerId,
+        withDuration: measureRPClatency,
     };
-    if (measureRPClatency) {
-        payload.wDur = true;
-    }
     const resEncode = Payload.encodeReq(payload);
     if (Res.isErr(resEncode)) {
         return resEncode;

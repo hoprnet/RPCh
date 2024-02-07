@@ -186,14 +186,14 @@ function determineRelays(
     if (!forceManualRelaying) {
         return [];
     }
-    if (!xd.shRelays) {
+    if (!xd.relayShortIds) {
         return [];
     }
-    const shRelays = xd.shRelays;
+    const relayShortIds = xd.relayShortIds;
     const relays = np.relays.filter((rId) => rId !== xId && rId !== np.entryNode.id);
     const reqRelayPeerId = randomEl(relays);
     const respRelays = np.peers.filter(
-        (pId) => pId !== xId && shRelays.find((shId) => pId.endsWith(shId)),
+        (pId) => pId !== xId && relayShortIds.find((shId) => pId.endsWith(shId)),
     );
     const respRelayPeerId = randomEl(respRelays);
     return [reqRelayPeerId, respRelayPeerId];
