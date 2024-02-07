@@ -127,8 +127,9 @@ export function decodeResp(payload: string): Res.Result<RespPayload> {
 }
 
 export function encodeInfo(payload: InfoPayload): Res.Result<string> {
+    const t = infoToTrans(payload);
     try {
-        const res = LZString.compressToUTF16(JSON.stringify(payload));
+        const res = LZString.compressToUTF16(JSON.stringify(t));
         return Res.ok(res);
     } catch (ex) {
         return Res.err(`Error encoding info payload: ${ex}`);
@@ -138,7 +139,7 @@ export function encodeInfo(payload: InfoPayload): Res.Result<string> {
 export function decodeInfo(payload: string): Res.Result<InfoPayload> {
     try {
         const res = JSON.parse(LZString.decompressFromUTF16(payload));
-        return Res.ok(res);
+        return Res.ok(transToInfo(res));
     } catch (ex) {
         return Res.err(`Error decoding info payload: ${ex}`);
     }
@@ -178,6 +179,7 @@ function respToTrans(r: RespPayload): TransportRespPayload {
                 t: RespType.Resp,
                 s: r.status,
             };
+
             if (r.text) {
                 t.x = r.text;
             }
@@ -263,9 +265,9 @@ function transToResp(t: TransportRespPayload): RespPayload {
 
 function transToInfo(t: TransportInfoPayload): InfoPayload {
     return {
-        i: r.peerId,
-        v: r.version,
-        c: r.counter,
-        r: r.relayShortIds,
+        peerId: t.i,
+        version: t.v,
+        counter: t.c,
+        relayShortIds: t.r,
     };
 }
