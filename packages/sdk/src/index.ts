@@ -566,9 +566,9 @@ export default class SDK {
         switch (resp.type) {
             case Payload.RespType.Resp: {
                 const r: Response.Response = {
-                    status: 200,
-                    text: () => new Promise((r) => r(JSON.stringify(resp.resp))),
-                    json: () => Promise.resolve(resp.resp),
+                    status: resp.status,
+                    text: async () => resp.text ?? '',
+                    json: async () => JSON.parse(resp.text ?? ''), // will fail to parse if no text (as expected)
                 };
                 if (request.measureRPClatency) {
                     r.stats = stats;
@@ -579,7 +579,7 @@ export default class SDK {
                 const counter = reqEntry.session.updatedTS;
                 return reject(
                     new Response.SendError(
-                        `Message out of counter range. Exit node expected message counter near ${resp.now} - request got ${counter}.`,
+                        `Message out of counter range. Exit node expected message counter near ${resp.counter} - request got ${counter}.`,
                         request.provider,
                         this.errHeaders(request.headers),
                     ),
@@ -593,17 +593,6 @@ export default class SDK {
                         this.errHeaders(request.headers),
                     ),
                 );
-            case Payload.RespType.HttpError: {
-                const r: Response.Response = {
-                    status: resp.status,
-                    text: () => Promise.resolve(resp.text),
-                    json: () => new Promise((r) => r(JSON.parse(resp.text))),
-                };
-                if (request.measureRPClatency) {
-                    r.stats = stats;
-                }
-                return resolve(r);
-            }
             case Payload.RespType.Error:
                 return reject(
                     new Response.SendError(
@@ -815,13 +804,13 @@ export default class SDK {
         const segDur = Math.round((request.lastSegmentEndedAt as number) - request.startedAt);
         if (
             request.measureRPClatency &&
-            'rDur' in resp &&
-            'eDur' in resp &&
-            resp.rDur &&
-            resp.eDur
+            'callDuration' in resp &&
+            'exitNodeDuration' in resp &&
+            resp.callDuration &&
+            resp.exitNodeDuration
         ) {
-            const rpcDur = resp.rDur;
-            const exitNodeDur = resp.eDur;
+            const rpcDur = resp.callDuration;
+            const exitNodeDur = resp.exitNodeDuration;
             const hoprDur = responseTime - rpcDur - exitNodeDur - segDur;
             return {
                 segDur,
