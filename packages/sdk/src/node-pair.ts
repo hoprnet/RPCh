@@ -324,7 +324,7 @@ function incInfoResps(np: NodePair, infoResps: NodeAPI.Message[]) {
         if (Res.isErr(resDec)) {
             return np.log.error('error decoding info payload:', resDec.error);
         }
-        const { peerId, version, counter, shRelays } = resDec.res;
+        const { i: peerId, v: version, c: counter, shRelays } = resDec.res;
         const nodeLog = ExitNode.prettyPrint(peerId, version, counter, shRelays);
         const exitNode = np.exitNodes.get(peerId);
         if (!exitNode) {
