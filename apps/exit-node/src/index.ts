@@ -357,7 +357,7 @@ async function completeSegmentsEntry(
     if (counter < valid) {
         log.info('counter %d outside valid period %d (now: %d)', counter, valid, now);
         // counter fail resp
-        return sendResponse(sendParams, { t: Payload.RespType.CounterFail, c: now });
+        return sendResponse(sendParams, { type: Payload.RespType.CounterFail, counter: now });
     }
 
     // check uuid
@@ -365,11 +365,11 @@ async function completeSegmentsEntry(
     if (res === RequestStore.AddRes.Duplicate) {
         log.info('duplicate request id:', requestId);
         // duplicate fail resp
-        return sendResponse(sendParams, { t: Payload.RespType.DuplicateFail });
+        return sendResponse(sendParams, { type: Payload.RespType.DuplicateFail });
     }
 
     // do RPC request
-    const { e: endpoint, b: body, m: method, h: headers } = reqPayload;
+    const { endpoint, body, method, headers } = reqPayload;
     const fetchStartedAt = performance.now();
     const params = { body, method, headers };
     const resFetch = await EndpointAPI.fetchURL(endpoint, { body, method, headers }).catch(
@@ -383,8 +383,8 @@ async function completeSegmentsEntry(
             );
             // rpc critical fail response
             const resp: Payload.RespPayload = {
-                t: Payload.RespType.Error,
-                r: JSON.stringify(err),
+                type: Payload.RespType.Error,
+                reason: JSON.stringify(err),
             };
             return sendResponse(sendParams, resp);
         },
@@ -396,12 +396,12 @@ async function completeSegmentsEntry(
     const fetchDur = Math.round(performance.now() - fetchStartedAt);
     // http fail response
     if (Res.isErr(resFetch)) {
-        const resp: Payload.RespPayload = { t: Payload.RespType.Error, r: resFetch.error };
+        const resp: Payload.RespPayload = { type: Payload.RespType.Error, reason: resFetch.error };
         return sendResponse(sendParams, addLatencies(reqPayload, resp, { fetchDur, recvAt }));
     }
 
     const { status, text } = resFetch.res;
-    const resp: Payload.RespPayload = { t: Payload.RespType.Resp, s: status, x: text };
+    const resp: Payload.RespPayload = { type: Payload.RespType.Resp, status, text };
     return sendResponse(sendParams, addLatencies(reqPayload, resp, { fetchDur, recvAt }));
 }
 
@@ -426,18 +426,18 @@ function determineRelay(state: State, { hops, relayPeerId }: Payload.ReqPayload)
  * The exit node will send tracked latency back if requested.
  */
 function addLatencies(
-    { wDur }: Payload.ReqPayload,
+    { withDuration }: Payload.ReqPayload,
     resp: Payload.RespPayload,
     { fetchDur, recvAt }: { fetchDur: number; recvAt: number },
 ): Payload.RespPayload {
-    if (!wDur) {
+    if (!withDuration) {
         return resp;
     }
-    switch (resp.t) {
+    switch (resp.type) {
         case Payload.RespType.Resp: {
             const dur = Math.round(performance.now() - recvAt);
-            resp.rDur = fetchDur;
-            resp.eDur = dur - fetchDur;
+            resp.callDuration = fetchDur;
+            resp.exitNodeDuration = dur - fetchDur;
             return resp;
         }
         default:
@@ -517,8 +517,8 @@ function sendResponse(
     setTimeout(() => {
         const lastReqSeg = cacheEntry.segments.get(cacheEntry.count - 1) as Segment.Segment;
         const quotaRequest: DPapi.QuotaParams = {
-            clientId: reqPayload.c,
-            rpcMethod: reqPayload.m,
+            clientId: reqPayload.clientId,
+            rpcMethod: reqPayload.method,
             segmentCount: cacheEntry.count,
             lastSegmentLength: lastReqSeg.body.length,
             type: 'request',
@@ -526,8 +526,8 @@ function sendResponse(
 
         const lastRespSeg = segments[segments.length - 1];
         const quotaResponse: DPapi.QuotaParams = {
-            clientId: reqPayload.c,
-            rpcMethod: reqPayload.m,
+            clientId: reqPayload.clientId,
+            rpcMethod: reqPayload.method,
             segmentCount: segments.length,
             lastSegmentLength: lastRespSeg.body.length,
             type: 'response',
