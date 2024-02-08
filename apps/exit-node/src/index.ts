@@ -285,13 +285,13 @@ function onInfoReq(state: State, ops: Ops, msg: Msg) {
     const [, recipient, hopsStr, reqRel] = msg.body.split('-');
     const hops = parseInt(hopsStr, 10);
     const conn = { ...ops, hops };
-    const shRelays =
+    const relayShortIds =
         reqRel === 'r' ? state.relays.map((rId) => Utils.shortPeerId(rId).substring(1)) : undefined;
     const info = {
-        i: state.peerId,
-        c: Date.now(),
-        v: Version,
-        shRelays,
+        peerId: state.peerId,
+        counter: Date.now(),
+        version: Version,
+        relayShortIds,
     };
     const res = Payload.encodeInfo(info);
     if (Res.isErr(res)) {
