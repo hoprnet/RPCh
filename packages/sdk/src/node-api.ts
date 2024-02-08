@@ -19,6 +19,7 @@ export type Peer = {
     multiAddr: string;
     heartbeats: Heartbeats[];
     lastSeen: number;
+    lastSeenLatency: number;
     quality: number;
     backoff: number;
     isNew: boolean;
