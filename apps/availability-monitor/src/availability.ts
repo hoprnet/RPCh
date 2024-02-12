@@ -182,14 +182,10 @@ async function peersMap(
     nodes: q.RegisteredNode[]
 ): Promise<Map<string, Set<string>>> {
     const pRaw = nodes.map(async (node) => {
-        const tLog = setTimeout(() => {
-            log.verbose('checking peers for %s takes longer than 5 seconds', node.id);
-        }, 5000);
         const peers = await PeersCache.fetchPeers(peersCache, node).catch((err) => {
             log.error('fetch peers from %s: %s[%o]', node.id, JSON.stringify(err), err);
             throw err;
         });
-        clearTimeout(tLog);
         const ids = Array.from(peers.values()).map(({ peerId }) => peerId);
         return [node.id, new Set(ids)];
     });
