@@ -230,7 +230,19 @@ export default class NodesCollector {
             lookupExitNodes.size,
             this.lastMatchedAt,
         );
-        this.versionListener(nodes.versions);
+        setTimeout(() => {
+            try {
+                log.verbose('calling versionListener with %o', nodes.versions);
+                this.versionListener(nodes.versions);
+            } catch (err) {
+                log.error(
+                    'error calling versionListener with %o: %s[%o]',
+                    nodes.versions,
+                    JSON.stringify(err),
+                    err,
+                );
+            }
+        });
     };
 
     private scheduleFetchRoutes = () => {
