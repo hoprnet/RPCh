@@ -78,7 +78,7 @@ export function connectWS(conn: ConnInfo): WebSocket {
 
 export function sendMessage(
     conn: ConnInfo & { hops?: number; relay?: string },
-    { recipient, tag, message }: { recipient: string; tag: number; message: string },
+    { recipient, tag, message }: { recipient: string; tag: number; message: string }
 ): Promise<string | NodeError> {
     const url = new URL('/api/v3/messages', conn.apiEndpoint);
     const headers = {
@@ -102,7 +102,9 @@ export function sendMessage(
         }
     }
     const body = JSON.stringify(payload);
-    return fetch(url, { method: 'POST', headers, body }).then((res) => res.json());
+    return fetch(url, { method: 'POST', headers, body, signal: AbortSignal.timeout(30000) }).then(
+        (res) => res.json()
+    );
 }
 
 export function version(conn: ConnInfo) {
@@ -112,7 +114,7 @@ export function version(conn: ConnInfo) {
         'Content-Type': 'application/json',
         'x-auth-token': conn.accessToken,
     };
-    return fetch(url, { headers }).then((res) => res.json());
+    return fetch(url, { headers, signal: AbortSignal.timeout(30000) }).then((res) => res.json());
 }
 
 export function retrieveMessages(conn: ConnInfo, tag: number): Promise<{ messages: Message[] }> {
@@ -123,9 +125,11 @@ export function retrieveMessages(conn: ConnInfo, tag: number): Promise<{ message
         'x-auth-token': conn.accessToken,
     };
     const body = JSON.stringify({ tag });
-    return fetch(url, { method: 'POST', headers, body }).then((res) => {
-        return res.json() as unknown as { messages: Message[] };
-    });
+    return fetch(url, { method: 'POST', headers, body, signal: AbortSignal.timeout(30000) }).then(
+        (res) => {
+            return res.json() as unknown as { messages: Message[] };
+        }
+    );
 }
 
 export function deleteMessages(conn: ConnInfo, tag: number): Promise<void> {
@@ -137,12 +141,14 @@ export function deleteMessages(conn: ConnInfo, tag: number): Promise<void> {
         'x-auth-token': conn.accessToken,
     };
     return new Promise((resolve, reject) => {
-        return fetch(url, { method: 'DELETE', headers }).then((res) => {
-            if (res.status === 204) {
-                return resolve();
+        return fetch(url, { method: 'DELETE', headers, signal: AbortSignal.timeout(30000) }).then(
+            (res) => {
+                if (res.status === 204) {
+                    return resolve();
+                }
+                return reject(`Unexpected response status code: ${res.status}`);
             }
-            return reject(`Unexpected response status code: ${res.status}`);
-        });
+        );
     });
 }
 
@@ -153,7 +159,7 @@ export function accountAddresses(conn: ConnInfo) {
         'Content-Type': 'application/json',
         'x-auth-token': conn.accessToken,
     };
-    return fetch(url, { headers }).then((res) => {
+    return fetch(url, { headers, signal: AbortSignal.timeout(30000) }).then((res) => {
         return res.json() as unknown as { native: string; hopr: string };
     });
 }
@@ -166,7 +172,7 @@ export function getPeers(conn: ConnInfo): Promise<Peers | NodeError> {
         'Content-Type': 'application/json',
         'x-auth-token': conn.accessToken,
     };
-    return fetch(url, { headers }).then((res) => res.json());
+    return fetch(url, { headers, signal: AbortSignal.timeout(30000) }).then((res) => res.json());
 }
 
 export function getAllChannels(conn: ConnInfo): Promise<AllChannels> {
@@ -177,7 +183,7 @@ export function getAllChannels(conn: ConnInfo): Promise<AllChannels> {
         'Content-Type': 'application/json',
         'x-auth-token': conn.accessToken,
     };
-    return fetch(url, { headers }).then((res) => res.json());
+    return fetch(url, { headers, signal: AbortSignal.timeout(30000) }).then((res) => res.json());
 }
 
 export function getNodeChannels(conn: ConnInfo): Promise<NodeChannels> {
@@ -187,7 +193,7 @@ export function getNodeChannels(conn: ConnInfo): Promise<NodeChannels> {
         'Content-Type': 'application/json',
         'x-auth-token': conn.accessToken,
     };
-    return fetch(url, { headers }).then((res) => res.json());
+    return fetch(url, { headers, signal: AbortSignal.timeout(30000) }).then((res) => res.json());
 }
 
 export function isError(payload: NonNullable<unknown> | NodeError): payload is NodeError {
