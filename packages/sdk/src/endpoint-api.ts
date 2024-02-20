@@ -20,7 +20,7 @@ export async function fetchURL(
         const headers = determineHeaders(params?.headers);
         const body = params?.body;
         const method = determineMethod(params?.method);
-        return fetch(url, { headers, method, body })
+        return fetch(url, { headers, method, body, signal: AbortSignal.timeout(30000) })
             .then(async (res) => {
                 const status = res.status;
                 const text = await res.text();
