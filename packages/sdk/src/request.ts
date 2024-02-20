@@ -67,6 +67,7 @@ export function create({
         clientId,
         body: JSON.stringify(req),
         headers,
+        method: 'POST',
         hops,
         relayPeerId: respRelayPeerId,
         withDuration: measureRPClatency,

@@ -370,25 +370,23 @@ async function completeSegmentsEntry(
 
     // do RPC request
     const { endpoint, body, method, headers } = reqPayload;
-    const fetchStartedAt = performance.now();
     const params = { body, method, headers };
-    const resFetch = await EndpointAPI.fetchURL(endpoint, { body, method, headers }).catch(
-        (err: Error) => {
-            log.error(
-                'error doing HTTP req on %s with %o: %s[%o]',
-                endpoint,
-                params,
-                JSON.stringify(err),
-                err,
-            );
-            // rpc critical fail response
-            const resp: Payload.RespPayload = {
-                type: Payload.RespType.Error,
-                reason: JSON.stringify(err),
-            };
-            return sendResponse(sendParams, resp);
-        },
-    );
+    const fetchStartedAt = performance.now();
+    const resFetch = await EndpointAPI.fetchURL(endpoint, params).catch((err: Error) => {
+        log.error(
+            'error doing RPC req on %s with %o: %s[%o]',
+            endpoint,
+            params,
+            JSON.stringify(err),
+            err,
+        );
+        // HTTP critical fail response
+        const resp: Payload.RespPayload = {
+            type: Payload.RespType.Error,
+            reason: JSON.stringify(err),
+        };
+        return sendResponse(sendParams, resp);
+    });
     if (!resFetch) {
         return;
     }
