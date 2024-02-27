@@ -57,7 +57,7 @@ function extractParams(urlStr: undefined | string, host: undefined | string): Re
             if (acc) {
                 acc[k] = v;
             } else {
-                acc = { k: v };
+                acc = { [k]: v };
             }
         }
         return acc;
