@@ -53,6 +53,16 @@ function headersFromStringArray(headersRaw: string[]) {
     }, undefined);
 }
 
+function headersFromProcessEnv() {
+    const headersRaw = Object.entries(process.env).reduce<string[]>((acc, [k, v]) => {
+        if (k && k.startsWith('HEADER_') && v) {
+            acc.push(v);
+        }
+        return acc;
+    }, []);
+    return headersFromStringArray(headersRaw);
+}
+
 function extractParams(urlStr: undefined | string, host: undefined | string): RequestOps {
     if (!urlStr || !host) {
         return {};
@@ -166,7 +176,19 @@ async function sendRequest(
         }
     } catch (err: any) {
         if (ops.failedRequestsFile) {
-            fh.appendFile(ops.failedRequestsFile, JSON.stringify(req) + '\n').catch((err) => {
+            // gather provider and headers for easy re-curl-ing
+            const provider = params.provider || process.env.PROVIDER;
+            const headers = {
+                ...headersFromProcessEnv(),
+                ...params.headers,
+                'Content-Type': 'application/json',
+            };
+            const cmdHeaders = Object.entries(headers)
+                .map(([k, v]) => `-H "${k}: ${v}"`)
+                .join(' ');
+            const cmd = `curl ${provider} ${cmdHeaders} -d '${JSON.stringify(req)}'`;
+
+            fh.appendFile(ops.failedRequestsFile, cmd + '\n').catch((err) => {
                 log.error(
                     'error appending to FAILED_REQUESTS_FILE[%s]: %s[%o]',
                     ops.failedRequestsFile,
@@ -359,13 +381,7 @@ if (require.main === module) {
     const clientId = process.env.CLIENT;
     const addLats = parseBooleanEnv(process.env.RPCH_LATENCY_STATS);
     const exposeLats = parseBooleanEnv(process.env.RPCH_EXPOSE_LATENCY_STATS);
-    const headersRaw = Object.entries(process.env).reduce<string[]>((acc, [k, v]) => {
-        if (k && k.startsWith('HEADER_') && v) {
-            acc.push(v);
-        }
-        return acc;
-    }, []);
-    const headers = headersFromStringArray(headersRaw);
+    const headers = headersFromProcessEnv();
 
     const ops: SDKops = {
         discoveryPlatformEndpoint: process.env.DISCOVERY_PLATFORM_API_ENDPOINT,
