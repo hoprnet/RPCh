@@ -50,6 +50,7 @@ export * as Utils from './utils';
  * @param logLevel - only print log statements that match at least the desired level: verbose < info < warn < error
  * @param forceManualRelaying - determine relay nodes for requests/responses and enforce them for one hop messages, can not be used with zero hop
  * @param measureRPClatency - determine duration of actual RPC request from exit node, populates response stats
+ * @param headers - provide additional headers used for requests, e.g. authentication headers
  */
 export type Ops = {
     readonly discoveryPlatformEndpoint?: string;
@@ -65,12 +66,13 @@ export type Ops = {
     readonly logLevel?: string; // 'verbose' | 'info' | 'warn' | 'error'
     readonly forceManualRelaying?: boolean;
     readonly measureRPClatency?: boolean;
+    readonly headers?: Record<string, string>;
 };
 
 /**
  * Overridable parameters per request.
- * @param headers - provider additional headers used for the request
  * See **Ops** for other params details
+ * @param headers - will be merged with provided headers during construction
  */
 export type RequestOps = {
     readonly timeout?: number;
@@ -141,7 +143,7 @@ export default class SDK {
             this.hops,
             this.ops.forceManualRelaying,
         );
-        this.fetchChainId(this.ops.provider as string);
+        this.fetchChainId(this.ops.provider as string, this.ops.headers);
         log.info('RPCh SDK[v%s] started', Version);
     }
 
@@ -170,7 +172,7 @@ export default class SDK {
      * See **RequestOps** for overridable options.
      */
     public send = async (req: JRPC.Request, ops?: RequestOps): Promise<Response.Response> => {
-        this.populateChainIds(ops?.provider);
+        this.populateChainIds(ops?.provider, ops?.headers);
         return this.doSend(req, ops);
     };
 
@@ -568,6 +570,7 @@ export default class SDK {
             logLevel: ops.logLevel || (process.env.DEBUG ? undefined : defaultOps.logLevel),
             forceManualRelaying,
             measureRPClatency,
+            headers: ops.headers,
         };
     };
 
@@ -582,11 +585,11 @@ export default class SDK {
         return this.ops;
     };
 
-    private fetchChainId = async (provider: string) => {
+    private fetchChainId = async (provider: string, headers?: Record<string, string>) => {
         const req = JRPC.chainId(provider);
 
         // fetch request through RPCh
-        const res = await this.doSend(req, { provider }).catch((err) =>
+        const res = await this.doSend(req, { provider, headers }).catch((err) =>
             log.warn('error fetching chainId for %s: %s[%o]', provider, JSON.stringify(err), err),
         );
         if (!res) {
@@ -668,14 +671,14 @@ export default class SDK {
         return 1;
     };
 
-    private populateChainIds = (provider?: string) => {
+    private populateChainIds = (provider?: string, headers?: Record<string, string>) => {
         if (!provider) {
             return;
         }
         if (this.chainIds.has(provider)) {
             return;
         }
-        this.fetchChainId(provider);
+        this.fetchChainId(provider, headers);
     };
 
     private checkSegmentLimit = (segLength: number) => {
