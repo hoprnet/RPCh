@@ -50,12 +50,26 @@ function extractParams(urlStr: undefined | string, host: undefined | string): Re
     const provider = url.searchParams.get('provider');
     const timeout = url.searchParams.get('timeout');
     const measureRPClatency = url.searchParams.get('measureRPClatency');
+    const headersRaw = url.searchParams.getAll('h').concat(url.searchParams.getAll('header'));
+    const headers = headersRaw.reduce<Record<string, string> | undefined>((acc, h) => {
+        const [k, v] = h.split(':');
+        if (k && k.trim() && v && v.trim()) {
+            if (acc) {
+                acc[k] = v;
+            } else {
+                acc = { k: v };
+            }
+        }
+        return acc;
+    }, undefined);
+
     return {
         provider: provider ? provider : undefined,
         timeout: timeout ? parseInt(timeout, 10) : undefined,
         measureRPClatency: measureRPClatency
             ? measureRPClatency.toLowerCase() === 'true'
             : undefined,
+        headers,
     };
 }
 

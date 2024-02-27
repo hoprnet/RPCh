@@ -69,12 +69,14 @@ export type Ops = {
 
 /**
  * Overridable parameters per request.
- * See **Ops** for details.
+ * @param headers - provider additional headers used for the request
+ * See **Ops** for other params details
  */
 export type RequestOps = {
     readonly timeout?: number;
     readonly provider?: string;
     readonly measureRPClatency?: boolean;
+    readonly headers?: Record<string, string>;
 };
 
 const RPC_PROPELLORHEADS = 'https://rpc.propellerheads.xyz/eth';
@@ -197,8 +199,11 @@ export default class SDK {
             }
 
             const provider = this.determineProvider(reqOps, req);
-
-            const headers = this.determineHeaders(provider, this.ops.mevKickbackAddress);
+            const headers = this.determineHeaders(
+                provider,
+                this.ops.mevKickbackAddress,
+                ops?.headers,
+            );
 
             // create request
             const { entryNode, exitNode, counterOffset } = resNodes;
@@ -645,10 +650,15 @@ export default class SDK {
         return this.ops.mevProtectionProvider;
     };
 
-    private determineHeaders = (provider: string, mevKickbackAddress?: string) => {
+    private determineHeaders = (
+        provider: string,
+        mevKickbackAddress?: string,
+        headers?: Record<string, string>,
+    ) => {
         if (provider === RPC_PROPELLORHEADS && mevKickbackAddress) {
-            return { 'X-Tx-Origin': mevKickbackAddress };
+            return { 'X-Tx-Origin': mevKickbackAddress, ...headers };
         }
+        return headers;
     };
 
     private determineHops = (forceZeroHop: boolean) => {
