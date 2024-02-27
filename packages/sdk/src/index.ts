@@ -115,7 +115,7 @@ export default class SDK {
     private readonly redoRequests: Set<string> = new Set();
     private readonly nodesColl: NodesCollector;
     private readonly ops;
-    private readonly chainIds: Map<string, number> = new Map();
+    private readonly chainIds: Map<string, string> = new Map();
     private readonly hops?: number;
 
     /**
@@ -635,9 +635,8 @@ export default class SDK {
                     );
                 }
             } else {
-                const id = parseInt(jrpc.result, 16);
-                log.info('determined chain id %d for %s', id, provider);
-                this.chainIds.set(provider, id);
+                log.info('determined chain id %s for %s', jrpc.result, provider);
+                this.chainIds.set(provider, jrpc.result);
             }
         } catch (err) {
             log.error(
@@ -661,10 +660,10 @@ export default class SDK {
         }
         // sanity check for chain id if we got it
         const cId = this.chainIds.get(provider);
-        if (cId !== 1) {
-            return provider;
+        if (cId === '0x1' || (cId && parseInt(cId) === 1)) {
+            return this.ops.mevProtectionProvider;
         }
-        return this.ops.mevProtectionProvider;
+        return provider;
     };
 
     private determineHeaders = (
