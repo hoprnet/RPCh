@@ -585,8 +585,12 @@ export default class SDK {
         return this.ops;
     };
 
-    private fetchChainId = async (provider: string, headers?: Record<string, string>) => {
-        const req = JRPC.chainId(provider);
+    private fetchChainId = async (
+        provider: string,
+        headers?: Record<string, string>,
+        starknet?: boolean,
+    ) => {
+        const req = JRPC.chainId(provider, starknet);
 
         // fetch request through RPCh
         const res = await this.doSend(req, { provider, headers }).catch((err) =>
@@ -615,13 +619,23 @@ export default class SDK {
         try {
             const jrpc = await res.json();
             if (JRPC.isError(jrpc)) {
-                log.warn(
-                    'jrpc error response for chainId request to %s: %s',
-                    provider,
-                    JSON.stringify(jrpc.error),
-                );
+                if (
+                    jrpc.error.code === -32601 ||
+                    jrpc.error.message.toLowerCase().includes('method not found')
+                ) {
+                    // try chainId on starknet
+                    if (!starknet) {
+                        this.fetchChainId(provider, headers, true);
+                    }
+                } else {
+                    log.warn(
+                        'jrpc error response for chainId request to %s: %s',
+                        provider,
+                        JSON.stringify(jrpc.error),
+                    );
+                }
             } else {
-                const id = parseInt(jrpc.result);
+                const id = parseInt(jrpc.result, 16);
                 log.info('determined chain id %d for %s', id, provider);
                 this.chainIds.set(provider, id);
             }
