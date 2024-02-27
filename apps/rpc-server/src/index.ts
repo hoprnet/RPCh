@@ -39,6 +39,20 @@ function toURL(urlStr: string, host: string): null | URL {
     }
 }
 
+function headersFromStringArray(headersRaw: string[]) {
+    return headersRaw.reduce<Record<string, string> | undefined>((acc, h) => {
+        const [k, v] = h.split(':');
+        if (k && k.trim() && v && v.trim()) {
+            if (acc) {
+                acc[k] = v.trim();
+            } else {
+                acc = { [k]: v.trim() };
+            }
+        }
+        return acc;
+    }, undefined);
+}
+
 function extractParams(urlStr: undefined | string, host: undefined | string): RequestOps {
     if (!urlStr || !host) {
         return {};
@@ -51,18 +65,7 @@ function extractParams(urlStr: undefined | string, host: undefined | string): Re
     const timeout = url.searchParams.get('timeout');
     const measureRPClatency = url.searchParams.get('measureRPClatency');
     const headersRaw = url.searchParams.getAll('h').concat(url.searchParams.getAll('header'));
-    const headers = headersRaw.reduce<Record<string, string> | undefined>((acc, h) => {
-        const [k, v] = h.split(':');
-        if (k && k.trim() && v && v.trim()) {
-            if (acc) {
-                acc[k] = v;
-            } else {
-                acc = { [k]: v };
-            }
-        }
-        return acc;
-    }, undefined);
-
+    const headers = headersFromStringArray(headersRaw);
     return {
         provider: provider ? provider : undefined,
         timeout: timeout ? parseInt(timeout, 10) : undefined,
@@ -327,6 +330,9 @@ function parseBooleanEnv(env?: string) {
  * RPCH_LATENCY_STATS - request detailed latencies, needs verbose logging to be visible
  * RPCH_EXPOSE_LATENCY_STATS - request detailed latencies and modify the return parameter to include those
  * PORT - default port to run on, optional
+ * HEADER_<string> - provide default headers for every request
+ * Specify multiple headers by using different strings after `_`. Typically used for authentication headers.
+ * The formatting is expected in typical header formatting: `e.g.: HEADER_AUTH=x-apikey:foobarbarfoo`
  *
  * ENV vars for RPCh SDK:
  *
@@ -353,6 +359,14 @@ if (require.main === module) {
     const clientId = process.env.CLIENT;
     const addLats = parseBooleanEnv(process.env.RPCH_LATENCY_STATS);
     const exposeLats = parseBooleanEnv(process.env.RPCH_EXPOSE_LATENCY_STATS);
+    const headersRaw = Object.entries(process.env).reduce<string[]>((acc, [k, v]) => {
+        if (k && k.startsWith('HEADER_') && v) {
+            acc.push(v);
+        }
+        return acc;
+    }, []);
+    const headers = headersFromStringArray(headersRaw);
+
     const ops: SDKops = {
         discoveryPlatformEndpoint: process.env.DISCOVERY_PLATFORM_API_ENDPOINT,
         timeout: process.env.RESPONSE_TIMEOUT
@@ -369,6 +383,7 @@ if (require.main === module) {
             : undefined,
         logLevel: process.env.RPCH_LOG_LEVEL,
         measureRPClatency: exposeLats || addLats,
+        headers,
         versionListener,
     };
 
