@@ -50,6 +50,7 @@ export * as Utils from './utils';
  * @param logLevel - only print log statements that match at least the desired level: verbose < info < warn < error
  * @param forceManualRelaying - determine relay nodes for requests/responses and enforce them for one hop messages, can not be used with zero hop
  * @param measureRPClatency - determine duration of actual RPC request from exit node, populates response stats
+ * @param headers - provide additional headers used for requests, e.g. authentication headers
  */
 export type Ops = {
     readonly discoveryPlatformEndpoint?: string;
@@ -65,16 +66,19 @@ export type Ops = {
     readonly logLevel?: string; // 'verbose' | 'info' | 'warn' | 'error'
     readonly forceManualRelaying?: boolean;
     readonly measureRPClatency?: boolean;
+    readonly headers?: Record<string, string>;
 };
 
 /**
  * Overridable parameters per request.
- * See **Ops** for details.
+ * See **Ops** for other params details
+ * @param headers - will be merged with provided headers during construction
  */
 export type RequestOps = {
     readonly timeout?: number;
     readonly provider?: string;
     readonly measureRPClatency?: boolean;
+    readonly headers?: Record<string, string>;
 };
 
 const RPC_PROPELLORHEADS = 'https://rpc.propellerheads.xyz/eth';
@@ -111,7 +115,7 @@ export default class SDK {
     private readonly redoRequests: Set<string> = new Set();
     private readonly nodesColl: NodesCollector;
     private readonly ops;
-    private readonly chainIds: Map<string, number> = new Map();
+    private readonly chainIds: Map<string, string> = new Map();
     private readonly hops?: number;
 
     /**
@@ -139,7 +143,7 @@ export default class SDK {
             this.hops,
             this.ops.forceManualRelaying,
         );
-        this.fetchChainId(this.ops.provider as string);
+        this.fetchChainId(this.ops.provider as string, this.ops.headers);
         log.info('RPCh SDK[v%s] started', Version);
     }
 
@@ -168,7 +172,7 @@ export default class SDK {
      * See **RequestOps** for overridable options.
      */
     public send = async (req: JRPC.Request, ops?: RequestOps): Promise<Response.Response> => {
-        this.populateChainIds(ops?.provider);
+        this.populateChainIds(ops?.provider, ops?.headers);
         return this.doSend(req, ops);
     };
 
@@ -197,8 +201,11 @@ export default class SDK {
             }
 
             const provider = this.determineProvider(reqOps, req);
-
-            const headers = this.determineHeaders(provider, this.ops.mevKickbackAddress);
+            const headers = this.determineHeaders(
+                provider,
+                this.ops.mevKickbackAddress,
+                ops?.headers,
+            );
 
             // create request
             const { entryNode, exitNode, counterOffset } = resNodes;
@@ -563,6 +570,7 @@ export default class SDK {
             logLevel: ops.logLevel || (process.env.DEBUG ? undefined : defaultOps.logLevel),
             forceManualRelaying,
             measureRPClatency,
+            headers: ops.headers,
         };
     };
 
@@ -577,11 +585,15 @@ export default class SDK {
         return this.ops;
     };
 
-    private fetchChainId = async (provider: string) => {
-        const req = JRPC.chainId(provider);
+    private fetchChainId = async (
+        provider: string,
+        headers?: Record<string, string>,
+        starknet?: boolean,
+    ) => {
+        const req = JRPC.chainId(provider, starknet);
 
         // fetch request through RPCh
-        const res = await this.doSend(req, { provider }).catch((err) =>
+        const res = await this.doSend(req, { provider, headers }).catch((err) =>
             log.warn('error fetching chainId for %s: %s[%o]', provider, JSON.stringify(err), err),
         );
         if (!res) {
@@ -607,15 +619,24 @@ export default class SDK {
         try {
             const jrpc = await res.json();
             if (JRPC.isError(jrpc)) {
-                log.warn(
-                    'jrpc error response for chainId request to %s: %s',
-                    provider,
-                    JSON.stringify(jrpc.error),
-                );
+                if (
+                    jrpc.error.code === -32601 ||
+                    jrpc.error.message.toLowerCase().includes('method not found')
+                ) {
+                    // try chainId on starknet
+                    if (!starknet) {
+                        this.fetchChainId(provider, headers, true);
+                    }
+                } else {
+                    log.warn(
+                        'jrpc error response for chainId request to %s: %s',
+                        provider,
+                        JSON.stringify(jrpc.error),
+                    );
+                }
             } else {
-                const id = parseInt(jrpc.result);
-                log.info('determined chain id %d for %s', id, provider);
-                this.chainIds.set(provider, id);
+                log.info('determined chain id %s for %s', jrpc.result, provider);
+                this.chainIds.set(provider, jrpc.result);
             }
         } catch (err) {
             log.error(
@@ -639,16 +660,21 @@ export default class SDK {
         }
         // sanity check for chain id if we got it
         const cId = this.chainIds.get(provider);
-        if (cId !== 1) {
-            return provider;
+        if (cId === '0x1' || (cId && parseInt(cId) === 1)) {
+            return this.ops.mevProtectionProvider;
         }
-        return this.ops.mevProtectionProvider;
+        return provider;
     };
 
-    private determineHeaders = (provider: string, mevKickbackAddress?: string) => {
+    private determineHeaders = (
+        provider: string,
+        mevKickbackAddress?: string,
+        headers?: Record<string, string>,
+    ) => {
         if (provider === RPC_PROPELLORHEADS && mevKickbackAddress) {
-            return { 'X-Tx-Origin': mevKickbackAddress };
+            return { 'X-Tx-Origin': mevKickbackAddress, ...headers };
         }
+        return headers;
     };
 
     private determineHops = (forceZeroHop: boolean) => {
@@ -658,14 +684,14 @@ export default class SDK {
         return 1;
     };
 
-    private populateChainIds = (provider?: string) => {
+    private populateChainIds = (provider?: string, headers?: Record<string, string>) => {
         if (!provider) {
             return;
         }
         if (this.chainIds.has(provider)) {
             return;
         }
-        this.fetchChainId(provider);
+        this.fetchChainId(provider, headers);
     };
 
     private checkSegmentLimit = (segLength: number) => {

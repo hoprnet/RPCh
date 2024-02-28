@@ -23,10 +23,10 @@ export type Error = {
     };
 };
 
-export function chainId(id: string): Request {
+export function chainId(id: string, starknet?: boolean): Request {
     return {
         jsonrpc: '2.0',
-        method: 'eth_chainId',
+        method: starknet ? 'starknet_chainId' : 'eth_chainId',
         id,
         params: [],
     };
