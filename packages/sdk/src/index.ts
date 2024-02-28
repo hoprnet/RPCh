@@ -360,7 +360,13 @@ export default class SDK {
         const fallback = this.nodesColl.fallbackNodePair(entryNode);
         if (!fallback) {
             log.info('no fallback for resending request available');
-            return cacheEntry.reject('No fallback node pair to retry sending request');
+            return cacheEntry.reject(
+                new Response.SendError(
+                    'No fallback node pair to retry sending request',
+                    origReq.provider,
+                    this.errHeaders(origReq.headers),
+                ),
+            );
         }
 
         this.redoRequests.add(origReq.id);
@@ -391,7 +397,13 @@ export default class SDK {
         });
         if (Res.isErr(resReq)) {
             log.error('error creating fallback request', resReq.error);
-            return cacheEntry.reject('Unable to create fallback request object');
+            return cacheEntry.reject(
+                new Response.SendError(
+                    'Unable to create fallback request object',
+                    origReq.provider,
+                    this.errHeaders(origReq.headers),
+                ),
+            );
         }
         // split request to segments
         const { request, session } = resReq.res;
@@ -399,7 +411,9 @@ export default class SDK {
         const failMsg = this.checkSegmentLimit(segments.length);
         if (failMsg) {
             this.removeRequest(request);
-            return cacheEntry.reject(failMsg);
+            return cacheEntry.reject(
+                new Response.SendError(failMsg, request.provider, this.errHeaders(request.headers)),
+            );
         }
 
         // track request
@@ -454,7 +468,13 @@ export default class SDK {
                 );
                 this.nodesColl.segmentFailed(request, segment);
                 this.removeRequest(request);
-                return cacheEntry.reject('Sending message failed');
+                return cacheEntry.reject(
+                    new Response.SendError(
+                        'Sending message failed',
+                        request.provider,
+                        this.errHeaders(request.headers),
+                    ),
+                );
             });
     };
 
@@ -524,8 +544,15 @@ export default class SDK {
 
     private responseError = (error: string, reqEntry: RequestCache.Entry) => {
         log.error('error extracting message', error);
-        this.nodesColl.requestFailed(reqEntry.request);
-        return reqEntry.reject('Unable to process response');
+        const request = reqEntry.request;
+        this.nodesColl.requestFailed(request);
+        return reqEntry.reject(
+            new Response.SendError(
+                'Unable to process response',
+                request.provider,
+                this.errHeaders(request.headers),
+            ),
+        );
     };
 
     private responseSuccess = ({ resp }: Response.UnboxResponse, reqEntry: RequestCache.Entry) => {
@@ -550,12 +577,20 @@ export default class SDK {
             case Payload.RespType.CounterFail: {
                 const counter = reqEntry.session.updatedTS;
                 return reject(
-                    `Message out of counter range. Exit node expected message counter near ${resp.now} - request got ${counter}.`,
+                    new Response.SendError(
+                        `Message out of counter range. Exit node expected message counter near ${resp.now} - request got ${counter}.`,
+                        request.provider,
+                        this.errHeaders(request.headers),
+                    ),
                 );
             }
             case Payload.RespType.DuplicateFail:
                 return reject(
-                    'Message duplicate error. Exit node rejected already processed message',
+                    new Response.SendError(
+                        'Message duplicate error. Exit node rejected already processed message',
+                        request.provider,
+                        this.errHeaders(request.headers),
+                    ),
                 );
             case Payload.RespType.HttpError: {
                 const r: Response.Response = {
@@ -569,7 +604,13 @@ export default class SDK {
                 return resolve(r);
             }
             case Payload.RespType.Error:
-                return reject(`Error attempting JSON RPC call: ${resp.reason}`);
+                return reject(
+                    new Response.SendError(
+                        `Error attempting JSON RPC call: ${resp.reason}`,
+                        request.provider,
+                        this.errHeaders(request.headers),
+                    ),
+                );
         }
     };
 

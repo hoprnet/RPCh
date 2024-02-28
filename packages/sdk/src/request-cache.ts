@@ -1,14 +1,15 @@
 import * as compatCrypto from '@rpch/compat-crypto';
 import * as crypto from 'crypto';
-import type { Request } from './request';
-import type { Response } from './response';
+
+import * as Request from './request';
+import * as Response from './response';
 
 export type Cache = Map<string, Entry>; // id -> Request
 
 export type Entry = {
-    request: Request;
-    resolve: (res: Response) => void;
-    reject: (error: string) => void;
+    request: Request.Request;
+    resolve: (res: Response.Response) => void;
+    reject: (error: Response.SendError) => void;
     session: compatCrypto.Session;
     timer: ReturnType<typeof setTimeout>;
 };
@@ -29,9 +30,9 @@ export function add(
         session,
         timer,
     }: {
-        request: Request;
-        resolve: (res: Response) => void;
-        reject: (error: string) => void;
+        request: Request.Request;
+        resolve: (res: Response.Response) => void;
+        reject: (error: Response.SendError) => void;
         session: compatCrypto.Session;
         timer: ReturnType<typeof setTimeout>;
     },
