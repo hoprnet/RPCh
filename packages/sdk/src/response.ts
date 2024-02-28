@@ -29,6 +29,17 @@ export type Response = {
     json: () => Promise<JRPC.Response>;
 };
 
+export class SendError extends Error {
+    constructor(
+        message: string,
+        public readonly provider: string,
+        public readonly reqHeaders: Record<string, string>,
+    ) {
+        super(message);
+        this.name = 'SendError';
+    }
+}
+
 export type UnboxResponse = {
     resp: Payload.RespPayload;
     session: compatCrypto.Session;
