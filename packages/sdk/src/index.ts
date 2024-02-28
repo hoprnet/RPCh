@@ -170,6 +170,7 @@ export default class SDK {
     /**
      * Send an **RPCrequest** via RPCh.
      * See **RequestOps** for overridable options.
+     * Returns a **Response.SendError** on error.
      */
     public send = async (req: JRPC.Request, ops?: RequestOps): Promise<Response.Response> => {
         this.populateChainIds(ops?.provider, ops?.headers);
@@ -180,32 +181,57 @@ export default class SDK {
         const reqOps = this.requestOps(ops);
         // eslint-disable-next-line no-async-promise-executor
         return new Promise(async (resolve, reject) => {
-            // sanity check provider url
-            if (!Utils.isValidURL(reqOps.provider)) {
-                return reject('Cannot parse provider URL');
-            }
-            // sanity check mev protection provider url, if it is set
-            if (this.ops.mevProtectionProvider) {
-                if (!Utils.isValidURL(this.ops.mevProtectionProvider)) {
-                    return reject('Cannot parse mevProtectionProvider URL');
-                }
-            }
-
-            // gather entry - exit node pair
-            const resNodes = await this.nodesColl.requestNodePair(reqOps.timeout).catch((err) => {
-                log.error('Error finding node pair', err);
-                return reject(`Could not find node pair in ${reqOps.timeout} ms`);
-            });
-            if (!resNodes) {
-                return reject('Unexpected code flow - should never be here');
-            }
-
             const provider = this.determineProvider(reqOps, req);
             const headers = this.determineHeaders(
                 provider,
                 this.ops.mevKickbackAddress,
                 ops?.headers,
             );
+
+            // sanity check provider url
+            if (!Utils.isValidURL(reqOps.provider)) {
+                return reject(
+                    new Response.SendError(
+                        'Cannot parse provider URL',
+                        provider,
+                        this.errHeaders(headers),
+                    ),
+                );
+            }
+            // sanity check mev protection provider url, if it is set
+            if (this.ops.mevProtectionProvider) {
+                if (!Utils.isValidURL(this.ops.mevProtectionProvider)) {
+                    return reject(
+                        new Response.SendError(
+                            'Cannot parse mevProtectionProvider URL',
+                            provider,
+                            this.errHeaders(headers),
+                        ),
+                    );
+                }
+            }
+
+            // gather entry - exit node pair
+            const resNodes = await this.nodesColl.requestNodePair(reqOps.timeout).catch((err) => {
+                log.error('Error finding node pair', err);
+                return reject(
+                    new Response.SendError(
+                        `Could not find node pair in ${reqOps.timeout} ms`,
+                        provider,
+                        this.errHeaders(headers),
+                    ),
+                );
+            });
+
+            if (!resNodes) {
+                return reject(
+                    new Response.SendError(
+                        'Unexpected code flow - should never be here',
+                        provider,
+                        this.errHeaders(headers),
+                    ),
+                );
+            }
 
             // create request
             const { entryNode, exitNode, counterOffset } = resNodes;
@@ -231,7 +257,13 @@ export default class SDK {
 
             if (Res.isErr(resReq)) {
                 log.error('error creating request', resReq.error);
-                return reject('Unable to create request object');
+                return reject(
+                    new Response.SendError(
+                        'Unable to create request object',
+                        provider,
+                        this.errHeaders(headers),
+                    ),
+                );
             }
 
             // split request to segments
@@ -239,7 +271,7 @@ export default class SDK {
             const segments = Request.toSegments(request, session);
             const failMsg = this.checkSegmentLimit(segments.length);
             if (failMsg) {
-                return reject(failMsg);
+                return reject(new Response.SendError(failMsg, provider, this.errHeaders(headers)));
             }
 
             // set request expiration timer
@@ -250,7 +282,9 @@ export default class SDK {
                     reqOps.timeout,
                 );
                 this.removeRequest(request);
-                return reject('Request timed out');
+                return reject(
+                    new Response.SendError('Request timed out', provider, this.errHeaders(headers)),
+                );
             }, reqOps.timeout);
 
             // track request
@@ -755,5 +789,9 @@ export default class SDK {
             };
         }
         return { segDur };
+    };
+
+    private errHeaders = (headers?: Record<string, string>): Record<string, string> => {
+        return { ...headers, 'Content-Type': 'application/json' };
     };
 }
