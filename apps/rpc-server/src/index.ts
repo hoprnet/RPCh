@@ -53,16 +53,6 @@ function headersFromStringArray(headersRaw: string[]) {
     }, undefined);
 }
 
-function headersFromProcessEnv() {
-    const headersRaw = Object.entries(process.env).reduce<string[]>((acc, [k, v]) => {
-        if (k && k.startsWith('HEADER_') && v) {
-            acc.push(v);
-        }
-        return acc;
-    }, []);
-    return headersFromStringArray(headersRaw);
-}
-
 function extractParams(urlStr: undefined | string, host: undefined | string): RequestOps {
     if (!urlStr || !host) {
         return {};
@@ -175,31 +165,32 @@ async function sendRequest(
             }
         }
     } catch (err: any) {
-        if (ops.failedRequestsFile) {
-            // gather provider and headers for easy re-curl-ing
-            const provider = params.provider || process.env.PROVIDER;
-            const headers = {
-                ...headersFromProcessEnv(),
-                ...params.headers,
-                'Content-Type': 'application/json',
-            };
-            const cmdHeaders = Object.entries(headers)
-                .map(([k, v]) => `-H "${k}: ${v}"`)
-                .join(' ');
-            const cmd = `curl ${provider} ${cmdHeaders} -d '${JSON.stringify(req)}'`;
-
-            fh.appendFile(ops.failedRequestsFile, cmd + '\n').catch((err) => {
-                log.error(
-                    'error appending to FAILED_REQUESTS_FILE[%s]: %s[%o]',
-                    ops.failedRequestsFile,
-                    JSON.stringify(err),
-                    err,
-                );
-            });
+        if (err instanceof Response.SendError) {
+            const { message, provider, reqHeaders } = err;
+            if (ops.failedRequestsFile) {
+                const cmdHeaders = Object.entries(reqHeaders)
+                    .map(([k, v]) => `-H "${k}: ${v}"`)
+                    .join(' ');
+                const cmd = `${message} --- curl ${provider} ${cmdHeaders} -d '${JSON.stringify(
+                    req,
+                )}'`;
+                fh.appendFile(ops.failedRequestsFile, cmd + '\n').catch((err) => {
+                    log.error(
+                        'error appending to FAILED_REQUESTS_FILE[%s]: %s[%o]',
+                        ops.failedRequestsFile,
+                        JSON.stringify(err),
+                        err,
+                    );
+                });
+            }
+            log.error('error sending request[%o]: %s', req, message);
+            res.statusCode = 500;
+            res.write(message);
+        } else {
+            log.error('error sending request[%o]: %s[%o]', req, JSON.stringify(err), err);
+            res.statusCode = 500;
+            res.write(err.toString());
         }
-        log.error('error sending request[%o]: %s[%o]', req, JSON.stringify(err), err);
-        res.statusCode = 500;
-        res.write(err.toString());
     } finally {
         res.end();
     }
@@ -381,7 +372,13 @@ if (require.main === module) {
     const clientId = process.env.CLIENT;
     const addLats = parseBooleanEnv(process.env.RPCH_LATENCY_STATS);
     const exposeLats = parseBooleanEnv(process.env.RPCH_EXPOSE_LATENCY_STATS);
-    const headers = headersFromProcessEnv();
+    const headersRaw = Object.entries(process.env).reduce<string[]>((acc, [k, v]) => {
+        if (k && k.startsWith('HEADER_') && v) {
+            acc.push(v);
+        }
+        return acc;
+    }, []);
+    const headers = headersFromStringArray(headersRaw);
 
     const ops: SDKops = {
         discoveryPlatformEndpoint: process.env.DISCOVERY_PLATFORM_API_ENDPOINT,
