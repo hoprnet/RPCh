@@ -97,8 +97,8 @@ async function setup(ops: Ops): Promise<State> {
     return {
         cache,
         deleteTimer,
-        privateKey: Utils.hexStringToUint8Array(ops.privateKey),
-        publicKey: Utils.hexStringToUint8Array(ops.publicKey),
+        privateKey: Utils.stringToBytes(ops.privateKey),
+        publicKey: Utils.stringToBytes(ops.publicKey),
         peerId,
         requestStore,
         relays: [],
@@ -329,9 +329,9 @@ async function completeSegmentsEntry(
     }
 
     const [hexEntryId, hexData] = msgParts;
-    const entryIdData = Utils.hexStringToUint8Array(hexEntryId);
-    const entryPeerId = Utils.uint8ArrayToUTF8String(entryIdData);
-    const reqData = Utils.hexStringToUint8Array(hexData);
+    const entryIdData = Utils.stringToBytes(hexEntryId);
+    const entryPeerId = Utils.bytesToString(entryIdData);
+    const reqData = Utils.stringToBytes(hexData);
 
     const resReq = Request.messageToReq({
         requestId,
