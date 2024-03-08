@@ -5,7 +5,7 @@ import * as Res from './result';
 import * as JRPC from './jrpc';
 import * as Payload from './payload';
 import * as Segment from './segment';
-import { shortPeerId } from './utils';
+import * as Utils from './utils';
 
 export type Request = {
     id: string; // uuid
@@ -151,11 +151,10 @@ export function messageToReq({
  */
 export function toSegments(req: Request, session: compatCrypto.Session): Segment.Segment[] {
     // we need the entry id ouside of of the actual encrypted payload
-    const entryIdData = utils.toUtf8Bytes(req.entryPeerId);
-    const reqData = session.request!;
-    const hexEntryId = utils.hexlify(entryIdData);
-    const hexData = utils.hexlify(reqData);
-    const body = `${hexEntryId},${hexData}`;
+    const entryId = utils.toUtf8Bytes(req.entryPeerId);
+    const reqData = session.request as Uint8Array;
+    const body = `${entryId},${Utils.bytesToString(reqData)}`;
+    console.log('outgoing', body);
     return Segment.toSegments(req.id, body);
 }
 
@@ -163,17 +162,17 @@ export function toSegments(req: Request, session: compatCrypto.Session): Segment
  * Pretty print request in human readable form.
  */
 export function prettyPrint(req: Request) {
-    const eId = shortPeerId(req.entryPeerId);
-    const xId = shortPeerId(req.exitPeerId);
+    const eId = Utils.shortPeerId(req.entryPeerId);
+    const xId = Utils.shortPeerId(req.exitPeerId);
     const path = [`e${eId}`];
     if (req.reqRelayPeerId) {
-        path.push(`r${shortPeerId(req.reqRelayPeerId)}`);
+        path.push(`r${Utils.shortPeerId(req.reqRelayPeerId)}`);
     } else if (req.hops !== 0) {
         path.push('(r)');
     }
     path.push(`x${xId}`);
     if (req.respRelayPeerId) {
-        path.push(`r${shortPeerId(req.respRelayPeerId)}`);
+        path.push(`r${Utils.shortPeerId(req.respRelayPeerId)}`);
     }
     const id = req.id;
     const prov = req.provider;
