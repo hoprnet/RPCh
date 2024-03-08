@@ -475,7 +475,8 @@ function sendResponse(
         return;
     }
 
-    const segments = Segment.toSegments(requestId, resResp.res);
+    //const segments = Segment.toSegments(requestId, resResp.res);
+    const segments = Segment.toSegments(requestId, new Uint8Array());
 
     const relayString = relay ? `(r${Utils.shortPeerId(relay)})` : '';
 

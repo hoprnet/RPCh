@@ -77,9 +77,13 @@ export function create({
         return resEncode;
     }
 
-    const data = utils.toUtf8Bytes(resEncode.res);
+    const dataJSON = JSON.stringify(payload);
+    const textEnc = new TextEncoder();
+    const data8b = textEnc.encode(dataJSON);
+
     const resBox = compatCrypto.boxRequest({
-        message: data,
+        message: data8b,
+        // message: data,
         exitPeerId,
         uuid: id,
         exitPublicKey,
@@ -151,10 +155,13 @@ export function messageToReq({
  */
 export function toSegments(req: Request, session: compatCrypto.Session): Segment.Segment[] {
     // we need the entry id ouside of of the actual encrypted payload
-    const entryId = utils.toUtf8Bytes(req.entryPeerId);
+    // const entryId = utils.toUtf8Bytes(req.entryPeerId);
     const reqData = session.request as Uint8Array;
-    const body = `${entryId},${Utils.bytesToString(reqData)}`;
-    console.log('outgoing', body);
+    const enc = new TextEncoder();
+    const pIdBytes = enc.encode(req.entryPeerId);
+    const body = new Uint8Array(pIdBytes.length + reqData.length);
+    body.set(pIdBytes);
+    body.set(reqData, pIdBytes.length);
     return Segment.toSegments(req.id, body);
 }
 
