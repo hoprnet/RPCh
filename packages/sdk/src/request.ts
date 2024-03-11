@@ -1,5 +1,4 @@
 import * as compatCrypto from '@rpch/compat-crypto';
-import { utils } from 'ethers';
 
 import * as Res from './result';
 import * as JRPC from './jrpc';
@@ -138,16 +137,16 @@ export function messageToReq({
         return Res.err('Crypto session without request object');
     }
 
-    const msg = utils.toUtf8String(resUnbox.session.request);
-    const resDecode = Payload.decodeReq(msg);
-    if (Res.isErr(resDecode)) {
-        return resDecode;
+    const msg = Utils.bytesToString(resUnbox.session.request);
+    try {
+        const reqPayload = JSON.parse(msg);
+        return Res.ok({
+            reqPayload,
+            session: resUnbox.session,
+        });
+    } catch (ex: any) {
+        return Res.err(`Error during JSON parsing: ${ex.toString()}`);
     }
-
-    return Res.ok({
-        reqPayload: resDecode.res,
-        session: resUnbox.session,
-    });
 }
 
 /**
@@ -155,10 +154,8 @@ export function messageToReq({
  */
 export function toSegments(req: Request, session: compatCrypto.Session): Segment.Segment[] {
     // we need the entry id ouside of of the actual encrypted payload
-    // const entryId = utils.toUtf8Bytes(req.entryPeerId);
     const reqData = session.request as Uint8Array;
-    const enc = new TextEncoder();
-    const pIdBytes = enc.encode(req.entryPeerId);
+    const pIdBytes = Utils.stringToBytes(req.entryPeerId);
     const body = new Uint8Array(pIdBytes.length + reqData.length);
     body.set(pIdBytes);
     body.set(reqData, pIdBytes.length);

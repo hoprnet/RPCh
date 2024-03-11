@@ -1,9 +1,9 @@
 import * as compatCrypto from '@rpch/compat-crypto';
-import { utils } from 'ethers';
 
 import * as JRPC from './jrpc';
 import * as Payload from './payload';
 import * as Res from './result';
+import * as Utils from './utils';
 import type { Request } from './request';
 
 /**
@@ -55,13 +55,14 @@ export function respToMessage({
     entryPeerId: string;
     respPayload: Payload.RespPayload;
     unboxSession: compatCrypto.Session;
-}): Res.Result<string> {
-    const resEncode = Payload.encodeResp(respPayload);
-    if (Res.isErr(resEncode)) {
-        return resEncode;
-    }
+}): Res.Result<Uint8Array> {
+    // const resEncode = Payload.encodeResp(respPayload);
+    // if (Res.isErr(resEncode)) {
+    // return resEncode;
+    // }
 
-    const data = utils.toUtf8Bytes(resEncode.res);
+    const dataJSON = JSON.stringify(respPayload);
+    const data = Utils.stringToBytes(dataJSON);
     const resBox = compatCrypto.boxResponse(unboxSession, {
         uuid: requestId,
         entryPeerId,
@@ -75,8 +76,7 @@ export function respToMessage({
         return Res.err('Crypto session without response object');
     }
 
-    const hexData = utils.hexlify(resBox.session.response);
-    return Res.ok(hexData);
+    return Res.ok(resBox.session.response);
 }
 
 export function messageToResp({
@@ -101,14 +101,14 @@ export function messageToResp({
         return Res.err('Crypto session without response object');
     }
 
-    const msg = utils.toUtf8String(resUnbox.session.response);
-    const resDecode = Payload.decodeResp(msg);
-    if (Res.isErr(resDecode)) {
-        return resDecode;
+    const msg = Utils.bytesToString(resUnbox.session.response);
+    try {
+        const resp = JSON.parse(msg);
+        return Res.ok({
+            resp,
+            session: resUnbox.session,
+        });
+    } catch (ex: any) {
+        return Res.err(`Error during JSON parsing: ${ex.toString()}`);
     }
-
-    return Res.ok({
-        session: resUnbox.session,
-        resp: resDecode.res,
-    });
 }
