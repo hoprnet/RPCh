@@ -520,20 +520,15 @@ export default class SDK {
 
     private completeSegmentsEntry = (entry: SegmentCache.Entry) => {
         const firstSeg = entry.segments.get(0) as Segment.Segment;
-        if (!firstSeg.body.startsWith('0x')) {
-            log.info('message is not a response', firstSeg.requestId);
-            return;
-        }
-
         const reqEntry = this.requestCache.get(firstSeg.requestId) as RequestCache.Entry;
         const { request, session } = reqEntry;
         RequestCache.remove(this.requestCache, request.id);
 
-        const hexResp = SegmentCache.toMessage(entry);
-        const respData = etherUtils.arrayify(hexResp);
+        const msgData = SegmentCache.toMessage(entry);
+        const msgBytes = Utils.base64ToBytes(msgData);
 
         const resUnbox = Response.messageToResp({
-            respData,
+            respData: msgBytes,
             request,
             session,
         });
