@@ -734,7 +734,12 @@ export default class SDK {
         if (provider === RPC_PROPELLORHEADS && mevKickbackAddress) {
             return { 'X-Tx-Origin': mevKickbackAddress, ...headers };
         }
-        return headers;
+        if (headers || this.ops.headers) {
+            return {
+                ...this.ops.headers,
+                ...headers,
+            };
+        }
     };
 
     private determineHops = (forceZeroHop: boolean) => {
