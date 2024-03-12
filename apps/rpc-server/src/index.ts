@@ -81,20 +81,6 @@ function parseBody(
 ): { success: false; error: string; id?: string } | { success: true; req: JRPC.Request } {
     try {
         const json = JSON.parse(str);
-        if (!('jsonrpc' in json)) {
-            return {
-                success: false,
-                error: "'jsonrpc' property missing",
-                id: json.id,
-            };
-        }
-        if (!('method' in json)) {
-            return {
-                success: false,
-                error: "'method' property missing",
-                id: json.id,
-            };
-        }
         return { success: true, req: json };
     } catch (err: any) /* SyntaxError */ {
         return { success: false, error: 'invalid JSON' };
