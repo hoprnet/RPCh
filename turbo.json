@@ -10,23 +10,6 @@
         ".next/**"
       ]
     },
-    "@rpch/exit-node#build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "build/**"
-      ],
-      "env": [
-        "RPCH_PRIVATE_KEY",
-        "RPCH_PUBLIC_KEY",
-        "RPCH_DB_FILE",
-        "HOPRD_API_TOKEN",
-        "HOPRD_API_ENDPOINT",
-        "DISCOVERY_PLATFORM_API_ENDPOINT",
-        "DISCOVERY_PLATFORM_ACCESS_TOKEN"
-      ]
-    },
     "@rpch/e2e#build": {
       "dependsOn": [
         "^build"
