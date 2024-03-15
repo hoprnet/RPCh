@@ -1,6 +1,6 @@
 {
     "name": "@rpch/discovery-platform",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "license": "LGPL-3.0",
     "private": true,
     "scripts": {
@@ -16,7 +16,7 @@
         "start": "node build/index.js"
     },
     "dependencies": {
-        "@rpch/sdk": "1.11.0",
+        "@rpch/sdk": "1.12.0",
         "@types/express-session": "^1.17.7",
         "@types/memory-cache": "^0.2.2",
         "@types/passport": "^1.0.12",

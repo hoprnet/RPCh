@@ -100,19 +100,6 @@ Version tag on main branch: `@rpch/discovery-platform-vX.X.X`
 The Discovery Platform is managed via [applications](https://github.com/Rpc-h/applications) repo.
 Update version in `<ENV>/discovery-platform/application.yaml` and push to main branch.
 
-### Exit Node
-
-Version tag on main branch: `@rpch/exit-node-vX.X.X`
-
-Exit Nodes are managed via [infrastructure](https://github.com/Rpc-h/infrastructure) repo.
-Update version in `day-1/inventories/<ENV>/group_vars/all/vars.yaml` and run exit node deployment:
-
-```
-env=<ENV> ANSIBLE_HOST_KEY_CHECKING=False private_key=<SSH PRIVATE KEY> make install-exit-node
-```
-
-Create a pull request afterwards.
-
 ### RPC Server
 
 Version tag on main branch: `@rpch/rpc-server-vX.X.X`

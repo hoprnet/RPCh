@@ -1,5 +1,19 @@
 # @rpch/sdk
 
+## 1.12.0
+
+### Minor Changes
+
+-   f085c2c: Update transmission protocol to work with private HTTP
+-   907e34b: Allow arbitrary headers on construction and during requests.
+    Try chainId fetching from starknet if eth fetching fails.
+
+### Patch Changes
+
+-   f085c2c: Add sane timeout values to all node related communication
+-   c507632: Enhance chainId parsing to allow hex and dec numbers
+-   3f3d6a9: Fix provider and request header tracking to reflect actual usage
+
 ## 1.11.0
 
 ### Minor Changes

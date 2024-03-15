@@ -1,5 +1,23 @@
 # @rpch/rpc-server
 
+## 1.3.0
+
+### Minor Changes
+
+-   907e34b: Allow arbitrary headers via ENV vars and via URL parameters.
+    Failed request file now prints handy curl oneliners.
+
+### Patch Changes
+
+-   f085c2c: No longer enforce JSON RPC at incoming requests
+-   3f3d6a9: Fix provider and request header tracking to reflect actual usage
+-   Updated dependencies [f085c2c]
+-   Updated dependencies [f085c2c]
+-   Updated dependencies [907e34b]
+-   Updated dependencies [c507632]
+-   Updated dependencies [3f3d6a9]
+    -   @rpch/sdk@1.12.0
+
 ## 1.2.1
 
 ### Patch Changes

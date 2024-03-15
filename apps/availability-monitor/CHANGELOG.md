@@ -1,5 +1,17 @@
 # @rpch/availability-monitor
 
+## 1.0.5
+
+### Patch Changes
+
+-   f085c2c: Slightly enhanced log output on routing errors
+-   Updated dependencies [f085c2c]
+-   Updated dependencies [f085c2c]
+-   Updated dependencies [907e34b]
+-   Updated dependencies [c507632]
+-   Updated dependencies [3f3d6a9]
+    -   @rpch/sdk@1.12.0
+
 ## 1.0.4
 
 ### Patch Changes
