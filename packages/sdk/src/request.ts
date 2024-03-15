@@ -1,11 +1,10 @@
 import * as compatCrypto from '@rpch/compat-crypto';
-import { utils } from 'ethers';
 
 import * as Res from './result';
 import * as JRPC from './jrpc';
 import * as Payload from './payload';
 import * as Segment from './segment';
-import { shortPeerId } from './utils';
+import * as Utils from './utils';
 
 export type Request = {
     id: string; // uuid
@@ -63,24 +62,27 @@ export function create({
     respRelayPeerId?: string;
 }): Res.Result<{ request: Request; session: compatCrypto.Session }> {
     const payload: Payload.ReqPayload = {
-        provider,
+        endpoint: provider,
         clientId,
-        req,
+        body: JSON.stringify(req),
         headers,
+        method: 'POST',
         hops,
         relayPeerId: respRelayPeerId,
+        withDuration: measureRPClatency,
     };
-    if (measureRPClatency) {
-        payload.wDur = true;
-    }
     const resEncode = Payload.encodeReq(payload);
     if (Res.isErr(resEncode)) {
         return resEncode;
     }
 
-    const data = utils.toUtf8Bytes(resEncode.res);
+    const dataJSON = JSON.stringify(payload);
+    const textEnc = new TextEncoder();
+    const data8b = textEnc.encode(dataJSON);
+
     const resBox = compatCrypto.boxRequest({
-        message: data,
+        message: data8b,
+        // message: data,
         exitPeerId,
         uuid: id,
         exitPublicKey,
@@ -135,16 +137,16 @@ export function messageToReq({
         return Res.err('Crypto session without request object');
     }
 
-    const msg = utils.toUtf8String(resUnbox.session.request);
-    const resDecode = Payload.decodeReq(msg);
-    if (Res.isErr(resDecode)) {
-        return resDecode;
+    const msg = Utils.bytesToString(resUnbox.session.request);
+    try {
+        const reqPayload = JSON.parse(msg);
+        return Res.ok({
+            reqPayload,
+            session: resUnbox.session,
+        });
+    } catch (ex: any) {
+        return Res.err(`Error during JSON parsing: ${ex.toString()}`);
     }
-
-    return Res.ok({
-        reqPayload: resDecode.res,
-        session: resUnbox.session,
-    });
 }
 
 /**
@@ -152,11 +154,11 @@ export function messageToReq({
  */
 export function toSegments(req: Request, session: compatCrypto.Session): Segment.Segment[] {
     // we need the entry id ouside of of the actual encrypted payload
-    const entryIdData = utils.toUtf8Bytes(req.entryPeerId);
-    const reqData = session.request!;
-    const hexEntryId = utils.hexlify(entryIdData);
-    const hexData = utils.hexlify(reqData);
-    const body = `${hexEntryId},${hexData}`;
+    const reqData = session.request as Uint8Array;
+    const pIdBytes = Utils.stringToBytes(req.entryPeerId);
+    const body = new Uint8Array(pIdBytes.length + reqData.length);
+    body.set(pIdBytes);
+    body.set(reqData, pIdBytes.length);
     return Segment.toSegments(req.id, body);
 }
 
@@ -164,17 +166,17 @@ export function toSegments(req: Request, session: compatCrypto.Session): Segment
  * Pretty print request in human readable form.
  */
 export function prettyPrint(req: Request) {
-    const eId = shortPeerId(req.entryPeerId);
-    const xId = shortPeerId(req.exitPeerId);
+    const eId = Utils.shortPeerId(req.entryPeerId);
+    const xId = Utils.shortPeerId(req.exitPeerId);
     const path = [`e${eId}`];
     if (req.reqRelayPeerId) {
-        path.push(`r${shortPeerId(req.reqRelayPeerId)}`);
+        path.push(`r${Utils.shortPeerId(req.reqRelayPeerId)}`);
     } else if (req.hops !== 0) {
         path.push('(r)');
     }
     path.push(`x${xId}`);
     if (req.respRelayPeerId) {
-        path.push(`r${shortPeerId(req.respRelayPeerId)}`);
+        path.push(`r${Utils.shortPeerId(req.respRelayPeerId)}`);
     }
     const id = req.id;
     const prov = req.provider;

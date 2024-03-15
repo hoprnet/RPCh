@@ -131,7 +131,7 @@ async function runOneHops(
         apiEndpoint: new URL(entryNode.hoprd_api_endpoint),
         accessToken: entryNode.hoprd_api_token,
     }).catch((err) => {
-        log.error('get channels: %s[%o]', JSON.stringify(err), err);
+        log.error('error getting channels from %s: %s[%o]', entryNode.id, JSON.stringify(err), err);
         throw err;
     });
     const channels = channelsMap(respCh.all);

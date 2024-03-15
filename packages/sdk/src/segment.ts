@@ -12,21 +12,29 @@ export type Segment = {
     body: string;
 };
 
+function bytesToBase64(bytes: Uint8Array) {
+    const binString = Array.from(bytes, (byte) => String.fromCodePoint(byte)).join('');
+    return btoa(binString);
+}
+
 /**
  * Slice data into segments.
  */
-export function toSegments(requestId: string, hexData: string): Segment[] {
-    const chunks: string[] = [];
-    for (let i = 0; i < hexData.length; i += MaxSegmentBody) {
-        chunks.push(hexData.slice(i, i + MaxSegmentBody));
-    }
+export function toSegments(requestId: string, data: Uint8Array): Segment[] {
+    const dataString = bytesToBase64(data);
+    const totalCount = Math.ceil(dataString.length / MaxBytes);
 
-    return chunks.map((c, nr) => ({
-        requestId,
-        nr,
-        totalCount: chunks.length,
-        body: c,
-    }));
+    const segments = [];
+    for (let i = 0; i < totalCount; i++) {
+        const body = dataString.slice(i * MaxBytes, (i + 1) * MaxBytes);
+        segments.push({
+            requestId,
+            nr: i,
+            totalCount,
+            body,
+        });
+    }
+    return segments;
 }
 
 /**

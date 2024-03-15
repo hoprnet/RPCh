@@ -519,20 +519,15 @@ export default class SDK {
 
     private completeSegmentsEntry = (entry: SegmentCache.Entry) => {
         const firstSeg = entry.segments.get(0) as Segment.Segment;
-        if (!firstSeg.body.startsWith('0x')) {
-            log.info('message is not a response', firstSeg.requestId);
-            return;
-        }
-
         const reqEntry = this.requestCache.get(firstSeg.requestId) as RequestCache.Entry;
         const { request, session } = reqEntry;
         RequestCache.remove(this.requestCache, request.id);
 
-        const hexResp = SegmentCache.toMessage(entry);
-        const respData = etherUtils.arrayify(hexResp);
+        const msgData = SegmentCache.toMessage(entry);
+        const msgBytes = Utils.base64ToBytes(msgData);
 
         const resUnbox = Response.messageToResp({
-            respData,
+            respData: msgBytes,
             request,
             session,
         });
@@ -565,9 +560,9 @@ export default class SDK {
         switch (resp.type) {
             case Payload.RespType.Resp: {
                 const r: Response.Response = {
-                    status: 200,
-                    text: () => new Promise((r) => r(JSON.stringify(resp.resp))),
-                    json: () => Promise.resolve(resp.resp),
+                    status: resp.status,
+                    text: async () => resp.text ?? '',
+                    json: async () => JSON.parse(resp.text ?? ''), // will fail to parse if no text (as expected)
                 };
                 if (request.measureRPClatency) {
                     r.stats = stats;
@@ -578,7 +573,7 @@ export default class SDK {
                 const counter = reqEntry.session.updatedTS;
                 return reject(
                     new Response.SendError(
-                        `Message out of counter range. Exit node expected message counter near ${resp.now} - request got ${counter}.`,
+                        `Message out of counter range. Exit node expected message counter near ${resp.counter} - request got ${counter}.`,
                         request.provider,
                         this.errHeaders(request.headers),
                     ),
@@ -592,17 +587,6 @@ export default class SDK {
                         this.errHeaders(request.headers),
                     ),
                 );
-            case Payload.RespType.HttpError: {
-                const r: Response.Response = {
-                    status: resp.status,
-                    text: () => Promise.resolve(resp.text),
-                    json: () => new Promise((r) => r(JSON.parse(resp.text))),
-                };
-                if (request.measureRPClatency) {
-                    r.stats = stats;
-                }
-                return resolve(r);
-            }
             case Payload.RespType.Error:
                 return reject(
                     new Response.SendError(
@@ -746,10 +730,23 @@ export default class SDK {
         mevKickbackAddress?: string,
         headers?: Record<string, string>,
     ) => {
+        // if we provide headers we need to provide all of them
+        // pHTTP exit app will only set content type application/json if there are no headers
         if (provider === RPC_PROPELLORHEADS && mevKickbackAddress) {
-            return { 'X-Tx-Origin': mevKickbackAddress, ...headers };
+            return {
+                'X-Tx-Origin': mevKickbackAddress,
+                'Content-Type': 'application/json',
+                ...this.ops.headers,
+                ...headers,
+            };
         }
-        return headers;
+        if (headers || this.ops.headers) {
+            return {
+                'Content-Type': 'application/json',
+                ...this.ops.headers,
+                ...headers,
+            };
+        }
     };
 
     private determineHops = (forceZeroHop: boolean) => {
@@ -814,13 +811,13 @@ export default class SDK {
         const segDur = Math.round((request.lastSegmentEndedAt as number) - request.startedAt);
         if (
             request.measureRPClatency &&
-            'rDur' in resp &&
-            'eDur' in resp &&
-            resp.rDur &&
-            resp.eDur
+            'callDuration' in resp &&
+            'exitNodeDuration' in resp &&
+            resp.callDuration &&
+            resp.exitNodeDuration
         ) {
-            const rpcDur = resp.rDur;
-            const exitNodeDur = resp.eDur;
+            const rpcDur = resp.callDuration;
+            const exitNodeDur = resp.exitNodeDuration;
             const hoprDur = responseTime - rpcDur - exitNodeDur - segDur;
             return {
                 segDur,

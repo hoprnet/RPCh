@@ -1,6 +1,9 @@
 import debug from 'debug';
 import * as Res from './result';
 
+const textDecoder = new TextDecoder('utf-8');
+const textEncoder = new TextEncoder();
+
 export enum VrsnCmp {
     Identical,
     PatchMismatch,
@@ -41,6 +44,24 @@ export function isValidURL(url: string) {
     } catch (_ex) {
         return false;
     }
+}
+
+export function bytesToString(arr: Uint8Array) {
+    return textDecoder.decode(arr);
+}
+
+export function stringToBytes(str: string): Uint8Array {
+    return textEncoder.encode(str);
+}
+
+export function bytesToBase64(bytes: Uint8Array) {
+    const binString = Array.from(bytes, (byte) => String.fromCodePoint(byte)).join('');
+    return btoa(binString);
+}
+
+export function base64ToBytes(base64: string): Uint8Array {
+    const binString = atob(base64);
+    return Uint8Array.from(binString, (m) => m.codePointAt(0) as number);
 }
 
 export function logger(namespaces: string[]) {
