@@ -16,7 +16,6 @@ import Version from './version';
 import type { EntryNode } from './entry-node';
 
 export * as DPapi from './dp-api';
-export * as EndpointAPI from './endpoint-api';
 export * as EntryNode from './entry-node';
 export * as ExitNode from './exit-node';
 export * as JRPC from './jrpc';
