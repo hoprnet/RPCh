@@ -731,11 +731,19 @@ export default class SDK {
         mevKickbackAddress?: string,
         headers?: Record<string, string>,
     ) => {
+        // if we provide headers we need to provide all of them
+        // pHTTP exit app will only set content type application/json if there are no headers
         if (provider === RPC_PROPELLORHEADS && mevKickbackAddress) {
-            return { 'X-Tx-Origin': mevKickbackAddress, ...headers };
+            return {
+                'X-Tx-Origin': mevKickbackAddress,
+                'Content-Type': 'application/json',
+                ...this.ops.headers,
+                ...headers,
+            };
         }
         if (headers || this.ops.headers) {
             return {
+                'Content-Type': 'application/json',
                 ...this.ops.headers,
                 ...headers,
             };
