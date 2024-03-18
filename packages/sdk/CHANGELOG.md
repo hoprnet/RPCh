@@ -1,5 +1,11 @@
 # @rpch/sdk
 
+## 1.12.1
+
+### Patch Changes
+
+-   b924905: Fixed latency stats naming
+
 ## 1.12.0
 
 ### Minor Changes
