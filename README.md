@@ -145,6 +145,7 @@ x.EcRZ
 If you are interested in more detailed network specs, you can enhance the log output.
 
 `RPCH_LOG_LEVEL=verbose` - increase verbosity
+
 `RPCH_EXPOSE_LATENCY_STATS=1` - show latency during RPCh travel path (this will slightly increase the payload size, so essentially draining your quota faster)
 
 Explanation of sample outputs:
