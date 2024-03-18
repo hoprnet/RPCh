@@ -26,7 +26,7 @@ export type RespPayload =
           status: number; // HTTP status
           text?: string; // response text
           callDuration?: number;
-          exitNodeDuration?: number;
+          exitAppDuration?: number;
       }
     | {
           type: RespType.CounterFail;
@@ -186,8 +186,8 @@ function respToTrans(r: RespPayload): TransportRespPayload {
             if (r.callDuration) {
                 t.f = r.callDuration;
             }
-            if (r.exitNodeDuration) {
-                t.e = r.exitNodeDuration;
+            if (r.exitAppDuration) {
+                t.e = r.exitAppDuration;
             }
             return t;
         }
@@ -243,7 +243,7 @@ function transToResp(t: TransportRespPayload): RespPayload {
                 status: t.s,
                 text: t.x,
                 callDuration: t.f,
-                exitNodeDuration: t.e,
+                exitAppDuration: t.e,
             };
         case RespType.CounterFail:
             return {
