@@ -209,7 +209,7 @@ These will only work if you start the rpc server with `RPCH_EXPOSE_LATENCY_STATS
 Keep in mind that this will slightly increase quota usage.
 
 ```
-response time for request c60b08c9-f860-4c2f-9788-3d0c50e2fca7: 1087 ms { segDur: 85, rpcDur: 166, exitNodeDur: 13, hoprDur: 823 }
+response time for request c60b08c9-f860-4c2f-9788-3d0c50e2fca7: 1087 ms { segDur: 85, rpcDur: 166, exitAppDur: 13, hoprDur: 823 }
                           ^                                     ^       ^
                      request id                                 |  latency stats
                                                          request duration
@@ -217,7 +217,7 @@ response time for request c60b08c9-f860-4c2f-9788-3d0c50e2fca7: 1087 ms { segDur
 # latency stats
 segDur - segments duration: time difference between starting first segment send and finishing last segment send
 rpcDur - rpc duration: actual RPC request latency from the exit application
-exitNodeDur - exit application duration: approximate time the exit application took to process the request
+exitAppDur - exit application duration: approximate time the exit application took to process the request
 hoprDur - hoprnet duration: approximate time the request segments spent to travel through the network, back and forth
 ```
 
