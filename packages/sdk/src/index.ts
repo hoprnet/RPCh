@@ -812,17 +812,17 @@ export default class SDK {
         if (
             request.measureRPClatency &&
             'callDuration' in resp &&
-            'exitNodeDuration' in resp &&
+            'exitAppDuration' in resp &&
             resp.callDuration &&
-            resp.exitNodeDuration
+            resp.exitAppDuration
         ) {
             const rpcDur = resp.callDuration;
-            const exitNodeDur = resp.exitNodeDuration;
-            const hoprDur = responseTime - rpcDur - exitNodeDur - segDur;
+            const exitAppDur = resp.exitAppDuration;
+            const hoprDur = responseTime - rpcDur - exitAppDur - segDur;
             return {
                 segDur,
                 rpcDur,
-                exitNodeDur,
+                exitAppDur,
                 hoprDur,
             };
         }
