@@ -123,3 +123,102 @@ Version tag on main branch: `@rpch/sdk-vX.X.X`
 Published version can be found on [npm](https://www.npmjs.com/package/@rpch/sdk).
 A new version can be published by running `$ yarn publish`.
 If it depends on a new version of Compat Crypto, make sure to publish the new version there as well.
+
+### RPCh log output
+
+Generally nodes are referred to by an abbreviation of their peer ID.
+Entry nodes are prefixed with `e.` and exit nodes with `x.`. Intermediary nodes are just `.`.
+
+e.g.:
+
+```
+# entry node
+e.kJXR
+# exit node
+x.EcRZ
+# intermediary node
+.QfzR
+```
+
+#### Detailed specs
+
+If you are interested in more detailed network specs, you can enhance the log output.
+
+`RPCH_LOG_LEVEL=verbose` - increase verbosity
+`RPCH_EXPOSE_LATENCY_STATS=1` - show latency during RPCh travel path (this will slightly increase the payload size, so essentially draining your quota faster)
+
+Explanation of sample outputs:
+
+- route pair
+
+```
+found route pair: e.kJXR>x.EcRZ (via only route available)
+                  ^      ^       ^
+                  |  exit node   |
+              entry node     path selection reason
+```
+
+This means RPCh has determined a valid path from `e.kJXR` directly to `x.EcRZ`.
+The path selection reason is mentioned in the brackets thereafter.
+
+- request
+
+```
+started request[c60b08c9-f860-4c2f-9788-3d0c50e2fca7, e.kJXR>x.EcRZ, https://gnosis-provider.rpch.tech] on .kJXR[ping: 149ms, seg: 28(58ms)/28, msgs: 30(29ms)/30, 1x: .EcRZ[v2.0.0,o:445ms,i:720ms,14(822ms)/14+1]]
+                ^                                     ^              ^                                     ^                                                       ^   ^
+           request id                           request path         |                              entry node stats                                               | exit node stats
+                                                             request endpoint                                                                        number of available exit nodes
+
+# entry node stats
+ping: 149ms - discovery ping latency
+ping: .. - discovery ping not yet returned
+seg: 28(58ms)/28 - outgoing segments stats: segments successfully sent (mean segment send latency) / all segments sent to this node
+seg: 28(58ms)/28+x - outgoing segments stats: segments successfully sent (mean segment send latency) / all segments sent to this node + ongoing outgoing segments
+msgs: 30(29ms)/30 - incoming messages stats, counting empty polls as well: successful messages poll (mean retrieval latency) / all messages polls
+msgs: 30(29ms)/30+x - incoming messages stats, counting empty polls as well: successful messages poll (mean retrieval latency) / all messages polls + ongoing incoming messages
+1x: - number of available exit nodes from that entry node
+
+# exit node stats
+v2.0.0 - exit application version
+o:445ms - exit node clock offset, needed to adjust crypto counter
+i:720ms - discovery info request latency
+i:fail - discovery info request failed
+14(822ms)/14 - successful requests (mean request latency) / all requests sent to this node
+14(822ms)/14+1 - successful requests (mean request latency) / all requests sent to this node + ongoing requests
+```
+
+Request output shows the choses path through the network.
+It also prints current node stats as experienced by this instance.
+
+- segment
+
+```
+segment[rId: c60b08c9-f860-4c2f-9788-3d0c50e2fca7, nr: 0, total: 2] on .kJXR[ping: 149ms, seg: 28(58ms)/28+1, msgs: 30(29ms)/30, 1x: .EcRZ[v2.0.0,o:445ms,i:720ms,14(822ms)/14+1]]
+        ^                                          ^      ^            ^                                                             ^
+   request id                                      | total segments    |                                                      exit node stats
+                                            segment number      entry node stats
+```
+
+Requests are split into smaller segments.
+This shows the total number of segments and the current segment number.
+See request section for detailed entry and exit node stats.
+
+- latency stats
+
+These will only work if you start the rpc server with `RPCH_EXPOSE_LATENCY_STATS=1`.
+Keep in mind that this will slightly increase quota usage.
+
+```
+response time for request c60b08c9-f860-4c2f-9788-3d0c50e2fca7: 1087 ms { segDur: 85, rpcDur: 166, exitNodeDur: 13, hoprDur: 823 }
+                          ^                                     ^       ^
+                     request id                                 |  latency stats
+                                                         request duration
+
+# latency stats
+segDur - segments duration: time difference between starting first segment send and finishing last segment send
+rpcDur - rpc duration: actual RPC request latency from the exit application
+exitNodeDur - exit application duration: approximate time the exit application took to process the request
+hoprDur - hoprnet duration: approximate time the request segments spent to travel through the network, back and forth
+```
+
+The latency stats give some insight to the networks / components performance.
