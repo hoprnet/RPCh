@@ -60,5 +60,6 @@ export function remove(cache: Cache, id: string) {
  * Generate a sufficiently unique request id.
  */
 export function generateId(_cache: Cache): string {
+    if(window.crypto) return window.crypto.randomUUID();
     return crypto.randomUUID();
 }
