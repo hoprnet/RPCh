@@ -1,5 +1,11 @@
 # @rpch/sdk
 
+## 1.11.1
+
+### Patch Changes
+
+-   04cc52e: fallback to non crypto uuid generation
+
 ## 1.11.0
 
 ### Minor Changes
