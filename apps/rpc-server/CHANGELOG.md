@@ -1,5 +1,13 @@
 # @rpch/rpc-server
 
+## 1.3.2
+
+### Patch Changes
+
+-   Updated dependencies [f0572d1]
+-   Updated dependencies [dbd5eaa]
+    -   @rpch/sdk@1.12.2
+
 ## 1.3.1
 
 ### Patch Changes

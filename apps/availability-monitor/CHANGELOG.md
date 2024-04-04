@@ -1,5 +1,14 @@
 # @rpch/availability-monitor
 
+## 1.0.7
+
+### Patch Changes
+
+-   f0572d1: Handle down nodes better in regards to zero / one hop routing.
+-   Updated dependencies [f0572d1]
+-   Updated dependencies [dbd5eaa]
+    -   @rpch/sdk@1.12.2
+
 ## 1.0.6
 
 ### Patch Changes

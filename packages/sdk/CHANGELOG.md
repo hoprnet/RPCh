@@ -1,5 +1,12 @@
 # @rpch/sdk
 
+## 1.12.2
+
+### Patch Changes
+
+-   f0572d1: Decrease some too verbose info log messages.
+-   dbd5eaa: fallback to non crypto uuid generation
+
 ## 1.12.1
 
 ### Patch Changes
