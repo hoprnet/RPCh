@@ -151,7 +151,7 @@ export default class NodesCollector {
             return;
         }
         NodePair.segmentSucceeded(np, seg, responseTime);
-        log.info('successful %s on %s', Segment.prettyPrint(seg), NodePair.prettyPrint(np));
+        log.verbose('successful %s on %s', Segment.prettyPrint(seg), NodePair.prettyPrint(np));
     };
 
     public segmentFailed = (req: Request.Request, seg: Segment.Segment) => {
@@ -181,7 +181,7 @@ export default class NodesCollector {
                 } else if (err.message === DPapi.NoMoreNodes && this.nodePairs.size === 0) {
                     this.logNoNodes();
                 } else if (err.message === DPapi.NoMoreNodes) {
-                    log.info('no new nodes found');
+                    log.verbose('no new nodes found');
                 } else {
                     log.error('error fetching node pairs: %s[%o]', JSON.stringify(err), err);
                 }
@@ -239,7 +239,7 @@ export default class NodesCollector {
         const logM = Math.floor(next / 1000 / 60);
         const logS = Math.round(next / 1000) - logM * 60;
 
-        log.info('scheduling next node pair fetching in %dm%ds', logM, logS);
+        log.verbose('scheduling next node pair fetching in %dm%ds', logM, logS);
         setTimeout(() => this.fetchRoutes(), next);
     };
 
