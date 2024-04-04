@@ -126,15 +126,10 @@ async function runOneHops(
     exitNodes: q.RegisteredNode[],
 ): Promise<Map<string, Set<string>>> {
     // gather channel structure
-    const entryNode = randomEl(entryNodes);
-    const respCh = await NodeAPI.getAllChannels({
-        apiEndpoint: new URL(entryNode.hoprd_api_endpoint),
-        accessToken: entryNode.hoprd_api_token,
-    }).catch((err) => {
-        log.error('error getting channels from %s: %s[%o]', entryNode.id, JSON.stringify(err), err);
+    const channels = await gatherChannels(entryNodes).catch((err) => {
+        log.error('error gathering channels: %s[%o]', JSON.stringify(err), err);
         throw err;
     });
-    const channels = channelsMap(respCh.all);
 
     // match channels with peers
     const allEntryPeers = await peersMap(peersCache, entryNodes);
@@ -406,6 +401,25 @@ function toPairings(pairsMap: Map<string, Set<string>>): q.Pair[] {
         });
         return acc;
     }, []);
+}
+
+async function gatherChannels(entryNodes: q.RegisteredNode[]): Promise<Map<string, Set<string>>> {
+    if (entryNodes.length === 0) {
+        throw new Error('no entry nodes left');
+    }
+    const entryNode = randomEl(entryNodes);
+    const respCh = await NodeAPI.getAllChannels({
+        apiEndpoint: new URL(entryNode.hoprd_api_endpoint),
+        accessToken: entryNode.hoprd_api_token,
+    }).catch((err) => {
+        log.error('error getting channels from %s: %s[%o]', entryNode.id, JSON.stringify(err), err);
+    });
+    if (respCh) {
+        return channelsMap(respCh.all);
+    } else {
+        const remaining = entryNodes.filter((e) => e !== entryNode);
+        return gatherChannels(remaining);
+    }
 }
 
 function randomEl<T>(arr: T[]): T {
