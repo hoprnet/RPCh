@@ -1239,17 +1239,6 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@rpch/sdk@1.12.1":
-  version "1.12.1"
-  resolved "https://registry.yarnpkg.com/@rpch/sdk/-/sdk-1.12.1.tgz#1cd6a1386dc795d9ab2c14340240bcd668974f79"
-  integrity sha512-zFiu/bWYImweukTiIpXkjRE09Njd43LtgEnvPgKkKvhRkGQ1hvAAARSoW/tp4WJJz4lHBQq7qg4G8W276NJQaQ==
-  dependencies:
-    "@rpch/compat-crypto" "^0.8.0"
-    debug "^4.3.4"
-    ethers "^5.7.2"
-    isomorphic-ws "^5.0.0"
-    lz-string "^1.5.0"
-
 "@sinclair/typebox@^0.27.8":
   version "0.27.8"
   resolved "https://registry.yarnpkg.com/@sinclair/typebox/-/typebox-0.27.8.tgz#6667fac16c436b5434a387a34dedb013198f6e6e"

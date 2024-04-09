@@ -1,5 +1,11 @@
 # @rpch/sdk
 
+## 1.13.0
+
+### Minor Changes
+
+-   26ff588: Report chainId for provider with request payload
+
 ## 1.12.2
 
 ### Patch Changes

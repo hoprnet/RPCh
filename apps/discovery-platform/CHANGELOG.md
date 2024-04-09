@@ -1,5 +1,16 @@
 # @rpch/discovery-platform
 
+## 1.1.0
+
+### Minor Changes
+
+-   26ff588: Allow chainId reporting
+
+### Patch Changes
+
+-   Updated dependencies [26ff588]
+    -   @rpch/sdk@1.13.0
+
 ## 1.0.6
 
 ### Patch Changes
