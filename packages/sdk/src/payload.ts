@@ -11,6 +11,7 @@ export type ReqPayload = {
     hops?: number; // defaults to 1
     relayPeerId?: string; // default to autorouting
     withDuration?: boolean; // request duration
+    chainId?: string; // provider chain id
 };
 
 export enum RespType {
@@ -57,7 +58,8 @@ type TransportReqPayload = {
     // dev/debug
     n?: number; // hops
     r?: string; // relayPeerId
-    w?: boolean; // wDur
+    w?: boolean; // withDuration
+    i?: string; // chainId
 };
 
 type TransportRespPayload =
@@ -169,6 +171,9 @@ function reqToTrans(r: ReqPayload): TransportReqPayload {
     if (r.withDuration) {
         t.w = r.withDuration;
     }
+    if (r.chainId) {
+        t.i = r.chainId;
+    }
     return t;
 }
 
@@ -232,6 +237,7 @@ function transToReq(t: TransportReqPayload): ReqPayload {
         hops: t.n,
         relayPeerId: t.r,
         withDuration: t.w,
+        chainId: t.i,
     };
 }
 

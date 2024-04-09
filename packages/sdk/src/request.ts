@@ -20,6 +20,7 @@ export type Request = {
     hops?: number;
     reqRelayPeerId?: string;
     respRelayPeerId?: string;
+    chainId?: string;
 };
 
 export type UnboxRequest = {
@@ -45,6 +46,7 @@ export function create({
     hops,
     reqRelayPeerId,
     respRelayPeerId,
+    chainId,
 }: {
     id: string;
     originalId?: string;
@@ -60,6 +62,7 @@ export function create({
     hops?: number;
     reqRelayPeerId?: string;
     respRelayPeerId?: string;
+    chainId?: string;
 }): Res.Result<{ request: Request; session: compatCrypto.Session }> {
     const payload: Payload.ReqPayload = {
         endpoint: provider,
@@ -70,6 +73,7 @@ export function create({
         hops,
         relayPeerId: respRelayPeerId,
         withDuration: measureRPClatency,
+        chainId,
     };
     const resEncode = Payload.encodeReq(payload);
     if (Res.isErr(resEncode)) {

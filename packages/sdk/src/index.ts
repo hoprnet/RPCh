@@ -239,6 +239,7 @@ export default class SDK {
                 ? resNodes
                 : { reqRelayPeerId: undefined, respRelayPeerId: undefined };
             const id = RequestCache.generateId(this.requestCache);
+            const cId = this.chainIds.get(provider);
             const resReq = Request.create({
                 id,
                 provider,
@@ -253,6 +254,7 @@ export default class SDK {
                 hops: this.hops,
                 reqRelayPeerId,
                 respRelayPeerId,
+                chainId: cId,
             });
 
             if (Res.isErr(resReq)) {
