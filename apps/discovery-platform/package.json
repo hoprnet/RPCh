@@ -16,7 +16,7 @@
         "start": "node build/index.js"
     },
     "dependencies": {
-        "@rpch/sdk": "1.12.1",
+        "@rpch/sdk": "1.12.2",
         "@types/express-session": "^1.17.7",
         "@types/memory-cache": "^0.2.2",
         "@types/passport": "^1.0.12",
