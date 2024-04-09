@@ -11,7 +11,7 @@ export type ReqPayload = {
     hops?: number; // defaults to 1
     relayPeerId?: string; // default to autorouting
     withDuration?: boolean; // request duration
-    chainId?: string;
+    chainId?: string; // provider chain id
 };
 
 export enum RespType {
