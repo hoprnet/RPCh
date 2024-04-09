@@ -20,6 +20,7 @@ export type Request = {
     hops?: number;
     reqRelayPeerId?: string;
     respRelayPeerId?: string;
+    chainId?: string;
 };
 
 export type UnboxRequest = {
