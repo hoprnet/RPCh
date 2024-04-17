@@ -1,5 +1,13 @@
 # @rpch/availability-monitor
 
+## 1.0.9
+
+### Patch Changes
+
+-   972915e: Fix online exit application reporting
+-   Updated dependencies [3066770]
+    -   @rpch/sdk@1.14.0
+
 ## 1.0.8
 
 ### Patch Changes
