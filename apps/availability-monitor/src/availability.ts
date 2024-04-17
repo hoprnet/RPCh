@@ -55,19 +55,11 @@ async function doRun(dbPool: Pool, entries: q.RegisteredNode[], exits: q.Registe
         log.error('error determining one hop routes: %s[%o]', JSON.stringify(err), err);
         throw err;
     });
-    // gather all exits and check if they are online
-    const zhExitIds = Array.from(zhPairs.values())
-        .map((xIds) => Array.from(xIds))
-        .flat() as string[];
-    const ohExitIds = Array.from(ohRelPairs.values())
-        .map((m) => Array.from(m.keys()))
-        .flat() as string[];
-    const allExitIds = new Set(zhExitIds.concat(ohExitIds));
+    const allExitIds = new Set(exits.map((x) => x.id));
     const eIds: [string, q.RegisteredNode][] = entries.map((n) => [n.id, n]);
     const xIds: [string, q.RegisteredNode][] = exits.map((n) => [n.id, n]);
     const nodes = new Map(eIds.concat(xIds));
     const onlineExitIds = await filterOnline(allExitIds, peersCache, nodes);
-    const offlineExits = Array.from(allExitIds).filter((id) => !onlineExitIds.has(id));
 
     const zhOnline = filterZhOnline(zhPairs, onlineExitIds);
     const ohOnline = filterZhOnline(ohRelPairs, onlineExitIds);
@@ -85,7 +77,8 @@ async function doRun(dbPool: Pool, entries: q.RegisteredNode[], exits: q.Registe
     log.info('updated onehops with pairIds:', logZeroHopIds(ohOnline, ohPairIds.length, zhMax));
 
     // complain about offline peers
-    const offIds = Array.from(offlineExits).map((xId) => Utils.shortPeerId(xId));
+    const offlineExitIds = Array.from(allExitIds).filter((id) => !onlineExitIds.has(id));
+    const offIds = Array.from(offlineExitIds).map((xId) => Utils.shortPeerId(xId));
     if (offIds.length > 0) {
         log.warn(
             'missing %d/%d online exit ids: %s',
