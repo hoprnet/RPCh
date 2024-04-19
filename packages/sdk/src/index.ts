@@ -758,13 +758,17 @@ export default class SDK {
         return 1;
     };
 
-    private populateChainIds = (provider?: string, headers?: Record<string, string>) => {
+    private populateChainIds = (provider?: string, opsHeaders?: Record<string, string>) => {
         if (!provider) {
             return;
         }
         if (this.chainIds.has(provider)) {
             return;
         }
+        const headers = {
+            ...this.ops.headers,
+            ...opsHeaders,
+        };
         this.fetchChainId(provider, headers);
     };
 
