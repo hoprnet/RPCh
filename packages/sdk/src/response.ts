@@ -24,6 +24,7 @@ export type Stats =
 
 export type Response = {
     status: number;
+    headers: Record<string, string>;
     stats?: Stats;
     text: () => Promise<string>;
     json: () => Promise<JRPC.Response>;

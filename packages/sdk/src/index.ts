@@ -563,6 +563,7 @@ export default class SDK {
             case Payload.RespType.Resp: {
                 const r: Response.Response = {
                     status: resp.status,
+                    headers: resp.headers,
                     text: async () => resp.text ?? '',
                     json: async () => JSON.parse(resp.text ?? ''), // will fail to parse if no text (as expected)
                 };
