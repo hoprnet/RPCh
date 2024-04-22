@@ -171,11 +171,13 @@ async function peersMap(
 ): Promise<Map<string, Set<string>>> {
     const pRaw = nodes.map(async (node) => {
         const peers = await PeersCache.fetchPeers(peersCache, node).catch((err) => {
-            log.error('fetch peers from %s: %s[%o]', node.id, JSON.stringify(err), err);
-            throw err;
+            log.warn('fetch peers from %s: %s[%o]', node.id, JSON.stringify(err), err);
         });
-        const ids = Array.from(peers.values()).map(({ peerId }) => peerId);
-        return [node.id, new Set(ids)];
+        if (peers) {
+            const ids = Array.from(peers.values()).map(({ peerId }) => peerId);
+            return [node.id, new Set(ids)];
+        }
+        return [node.id, new Set()];
     });
 
     const raw = await Promise.allSettled(pRaw);
