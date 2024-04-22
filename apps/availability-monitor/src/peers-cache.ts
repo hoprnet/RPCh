@@ -1,16 +1,17 @@
 import { NodeAPI } from '@rpch/sdk';
 import type { RegisteredNode } from './query';
 
-enum NodeStatus {
+export enum NodeStatus {
     Offline,
     Online,
 }
 
-type NodePeers =
-    | { status: NodeStatus.Offline }
-    | { status: NodeStatus.Online; peers: Map<string, NodeAPI.Peer> };
+export type NodeOffline = { status: NodeStatus.Offline };
+export type NodeOnlinePeers = { status: NodeStatus.Online; peers: Map<string, NodeAPI.Peer> };
 
-type PeersCache = Map<string, NodePeers>;
+export type NodePeers = NodeOnlinePeers | NodeOffline;
+
+export type PeersCache = Map<string, NodePeers>;
 
 export function init(): PeersCache {
     return new Map();
@@ -45,4 +46,8 @@ export async function fetchPeers(cache: PeersCache, node: RegisteredNode): Promi
     const entry = { status: NodeStatus.Online, peers };
     cache.set(node.id, entry);
     return entry;
+}
+
+export function isOnline(np: void | NodePeers): np is NodeOnlinePeers {
+    return !!np && np.status === NodeStatus.Online;
 }

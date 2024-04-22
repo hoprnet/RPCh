@@ -46,7 +46,7 @@ function reschedule(dbPool: Pool) {
 }
 
 async function doRun(dbPool: Pool, entries: q.RegisteredNode[], exits: q.RegisteredNode[]) {
-    const peersCache: PeersCache.PeersCache = new Map();
+    const peersCache: PeersCache.PeersCache = PeersCache.init();
     const zhPairs = await runZeroHops(dbPool, peersCache, entries, exits).catch((err) => {
         log.error('error determining zero hop routes: %s[%o]', JSON.stringify(err), err);
         throw err;
@@ -170,14 +170,14 @@ async function peersMap(
     nodes: q.RegisteredNode[],
 ): Promise<Map<string, Set<string>>> {
     const pRaw = nodes.map(async (node) => {
-        const peers = await PeersCache.fetchPeers(peersCache, node).catch((err) => {
-            log.warn('fetch peers from %s: %s[%o]', node.id, JSON.stringify(err), err);
+        const nodePeers = await PeersCache.fetchPeers(peersCache, node).catch((err) => {
+            log.warn('fetch peers from %s: %s', node.id, JSON.stringify(err));
         });
-        if (peers) {
-            const ids = Array.from(peers.values()).map(({ peerId }) => peerId);
+        if (PeersCache.isOnline(nodePeers)) {
+            const ids = Array.from(nodePeers.peers.values()).map(({ peerId }) => peerId);
             return [node.id, new Set(ids)];
         }
-        return [node.id, new Set()];
+        return null;
     });
 
     const raw = await Promise.allSettled(pRaw);
