@@ -21,9 +21,9 @@ async function run(dbPool: Pool) {
         const exitNodes = await q.exitNodes(dbPool);
 
         if (!entryNodes || entryNodes.length === 0) {
-            log.warn('no entry nodes');
+            log.error('no entry nodes');
         } else if (!exitNodes || exitNodes.length === 0) {
-            log.warn('no exit nodes');
+            log.error('no exit nodes');
         } else {
             doRun(dbPool, entryNodes, exitNodes);
         }
@@ -48,22 +48,9 @@ async function doRun(dbPool: Pool, entryNodes: q.RegisteredNode[], exitNodes: q.
     const peersCache: PeersCache.PeersCache = PeersCache.init();
     const entryPeers = await peersMap(peersCache, entryNodes);
     const missingOnlineEntryIds = missingOnlineIds(entryNodes, entryPeers);
-    log.info(
-        "missing %d/%d online entry nodes: %s'",
-        missingOnlineEntryIds.length,
-        entryNodes.length,
-        missingOnlineEntryIds.join(' '),
-    );
-
     // gather peers for exit nodes
     const exitPeers = await peersMap(peersCache, exitNodes);
     const missingOnlineExitIds = missingOnlineIds(exitNodes, exitPeers);
-    log.info(
-        "missing %d/%d online exit nodes: %s'",
-        missingOnlineExitIds.length,
-        exitNodes.length,
-        missingOnlineExitIds.join(' '),
-    );
 
     // zero hop
     const zhPairs = zeroHop(entryPeers, exitPeers);
@@ -87,6 +74,9 @@ async function doRun(dbPool: Pool, entryNodes: q.RegisteredNode[], exitNodes: q.
 
     const zhOnline = filterOnline(zhPairs, onlineExitAppIds);
     const ohOnline = filterOnline(ohRelPairs, onlineExitAppIds);
+    const offExitAppIds = exitNodes
+        .filter(({ id }) => !onlineExitAppIds.has(id))
+        .map(({ id }) => Utils.shortPeerId(id));
 
     // write zero hops
     const zhMax = entryNodes.length * exitNodes.length;
@@ -101,11 +91,24 @@ async function doRun(dbPool: Pool, entryNodes: q.RegisteredNode[], exitNodes: q.
     log.info('updated onehops with pairIds:', logHopIds(ohOnline, ohPairIds.length, zhMax));
 
     // complain about offline peers
-    const offExitAppIds = exitNodes
-        .filter(({ id }) => !onlineExitAppIds.has(id))
-        .map(({ id }) => Utils.shortPeerId(id));
+    if (missingOnlineEntryIds.length > 0) {
+        log.info(
+            "missing %d/%d online entry nodes: %s'",
+            missingOnlineEntryIds.length,
+            entryNodes.length,
+            missingOnlineEntryIds.join(' '),
+        );
+    }
+    if (missingOnlineExitIds.length > 0) {
+        log.info(
+            "missing %d/%d online exit nodes: %s'",
+            missingOnlineExitIds.length,
+            exitNodes.length,
+            missingOnlineExitIds.join(' '),
+        );
+    }
     if (offExitAppIds.length > 0) {
-        log.warn(
+        log.info(
             'missing %d/%d online exit applications: %s',
             offExitAppIds.length,
             exitNodes.length,
@@ -187,7 +190,7 @@ async function peersMap(
 ): Promise<Map<string, Set<string>>> {
     const pRaw = nodes.map(async (node) => {
         const nodePeers = await PeersCache.fetchPeers(peersCache, node).catch((err) => {
-            log.warn('fetch peers from %s: %s', node.id, JSON.stringify(err));
+            log.warn('fetch peers from %s: %s[%o]', node.id, JSON.stringify(err), err);
         });
         if (PeersCache.isOnline(nodePeers)) {
             const ids = Array.from(nodePeers.peers.values()).map(({ peerId }) => peerId);
