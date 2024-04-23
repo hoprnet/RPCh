@@ -25,7 +25,7 @@ async function run(dbPool: Pool) {
         } else if (!exitNodes || exitNodes.length === 0) {
             log.error('no exit nodes');
         } else {
-            doRun(dbPool, entryNodes, exitNodes);
+            await doRun(dbPool, entryNodes, exitNodes);
         }
     } catch (err) {
         log.error('run main loop: %s[%o]', JSON.stringify(err), err);
@@ -150,7 +150,6 @@ function oneHop(
 
     // determine exit nodes reachable by their peers
     const channelExitPeers = filterChannels(exitPeers, channels);
-
     const peersExits = revertMap(exitPeers);
 
     return Array.from(channelEntryPeers).reduce<Map<string, Set<string>>>((acc, [eId, ePeers]) => {
