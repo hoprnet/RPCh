@@ -7,8 +7,6 @@ import type { Pool } from 'pg';
 const log = Utils.logger(['availability-monitor:availability']);
 const ApplicationTag = 0xffff;
 
-type PeersCache = Map<string, Map<string, NodeAPI.Peer>>; // node id -> peer id -> Peer
-
 export async function start(dbPool: Pool) {
     dbPool.on('error', (err, client) =>
         log.error('pg pool [client %s]: %s[%o]', client, JSON.stringify(err), err),
@@ -18,16 +16,16 @@ export async function start(dbPool: Pool) {
 }
 
 async function run(dbPool: Pool) {
-    const pEntryNodes = q.entryNodes(dbPool);
-    const pExitNodes = q.exitNodes(dbPool);
     try {
-        const [entries, exits] = await Promise.all([pEntryNodes, pExitNodes]);
-        if (entries.length === 0) {
+        const entryNodes = await q.entryNodes(dbPool);
+        const exitNodes = await q.exitNodes(dbPool);
+
+        if (!entryNodes || entryNodes.length === 0) {
             log.warn('no entry nodes');
-        } else if (exits.length === 0) {
+        } else if (!exitNodes || exitNodes.length === 0) {
             log.warn('no exit nodes');
         } else {
-            await doRun(dbPool, entries, exits);
+            doRun(dbPool, entryNodes, exitNodes);
         }
     } catch (err) {
         log.error('run main loop: %s[%o]', JSON.stringify(err), err);
@@ -45,60 +43,87 @@ function reschedule(dbPool: Pool) {
     setTimeout(() => run(dbPool), next);
 }
 
-async function doRun(dbPool: Pool, entries: q.RegisteredNode[], exits: q.RegisteredNode[]) {
+async function doRun(dbPool: Pool, entryNodes: q.RegisteredNode[], exitNodes: q.RegisteredNode[]) {
+    // gather peers for entry nodes
     const peersCache: PeersCache.PeersCache = PeersCache.init();
-    const zhPairs = await runZeroHops(dbPool, peersCache, entries, exits).catch((err) => {
-        log.error('error determining zero hop routes: %s[%o]', JSON.stringify(err), err);
-        throw err;
-    });
-    const ohRelPairs = await runOneHops(dbPool, peersCache, entries, exits).catch((err) => {
-        log.error('error determining one hop routes: %s[%o]', JSON.stringify(err), err);
-        throw err;
-    });
-    const allExitIds = new Set(exits.map((x) => x.id));
-    const eIds: [string, q.RegisteredNode][] = entries.map((n) => [n.id, n]);
-    const xIds: [string, q.RegisteredNode][] = exits.map((n) => [n.id, n]);
-    const nodes = new Map(eIds.concat(xIds));
-    const onlineExitIds = await filterOnline(allExitIds, peersCache, nodes);
+    const entryPeers = await peersMap(peersCache, entryNodes);
+    const missingOnlineEntryIds = missingOnlineIds(entryNodes, entryPeers);
+    log.info(
+        "missing %d/%d online entry nodes: %s'",
+        missingOnlineEntryIds.length,
+        entryNodes.length,
+        missingOnlineEntryIds.join(' '),
+    );
 
-    const zhOnline = filterZhOnline(zhPairs, onlineExitIds);
-    const ohOnline = filterZhOnline(ohRelPairs, onlineExitIds);
+    // gather peers for exit nodes
+    const exitPeers = await peersMap(peersCache, exitNodes);
+    const missingOnlineExitIds = missingOnlineIds(exitNodes, exitPeers);
+    log.info(
+        "missing %d/%d online exit nodes: %s'",
+        missingOnlineExitIds.length,
+        exitNodes.length,
+        missingOnlineExitIds.join(' '),
+    );
+
+    // zero hop
+    const zhPairs = zeroHop(entryPeers, exitPeers);
+
+    // gather channels for one hop
+    const onlineEntryNodes = entryNodes.filter(({ id }) => entryPeers.has(id));
+    const channels = await gatherChannels(onlineEntryNodes);
+
+    // one hop
+    const ohRelPairs = oneHop(channels, entryPeers, exitPeers);
+
+    // determine online exit applications
+    const eIds: [string, q.RegisteredNode][] = entryNodes
+        .filter(({ id }) => entryPeers.has(id))
+        .map((n) => [n.id, n]);
+    const xIds: [string, q.RegisteredNode][] = exitNodes
+        .filter(({ id }) => exitPeers.has(id))
+        .map((n) => [n.id, n]);
+    const nodes = new Map(eIds.concat(xIds));
+    const onlineExitAppIds = await runOnlineChecks(exitPeers, nodes);
+
+    const zhOnline = filterOnline(zhPairs, onlineExitAppIds);
+    const ohOnline = filterOnline(ohRelPairs, onlineExitAppIds);
 
     // write zero hops
-    const zhMax = entries.length * exits.length;
+    const zhMax = entryNodes.length * exitNodes.length;
     const zhPairIds = toPairings(zhOnline);
     await q.writeZeroHopPairings(dbPool, zhPairIds);
-    log.info('updated zerohops with pairIds:', logZeroHopIds(zhOnline, zhPairIds.length, zhMax));
+    log.info('updated zerohops with pairIds:', logHopIds(zhOnline, zhPairIds.length, zhMax));
 
     // write one hops
     // const ohMax = entries.length * exits.length * (entries.length + exits.length - 2);
     const ohPairIds = toPairings(ohOnline);
     await q.writeOneHopPairings(dbPool, ohPairIds);
-    log.info('updated onehops with pairIds:', logZeroHopIds(ohOnline, ohPairIds.length, zhMax));
+    log.info('updated onehops with pairIds:', logHopIds(ohOnline, ohPairIds.length, zhMax));
 
     // complain about offline peers
-    const offlineExitIds = Array.from(allExitIds).filter((id) => !onlineExitIds.has(id));
-    const offIds = Array.from(offlineExitIds).map((xId) => Utils.shortPeerId(xId));
-    if (offIds.length > 0) {
+    const offExitAppIds = exitNodes
+        .filter(({ id }) => !onlineExitAppIds.has(id))
+        .map(({ id }) => Utils.shortPeerId(id));
+    if (offExitAppIds.length > 0) {
         log.warn(
-            'missing %d/%d online exit ids: %s',
-            offIds.length,
-            allExitIds.size,
-            offIds.join(' '),
+            'missing %d/%d online exit applications: %s',
+            offExitAppIds.length,
+            exitNodes.length,
+            offExitAppIds.join(' '),
         );
     }
 }
 
-async function runZeroHops(
-    dbPool: Pool,
-    peersCache: PeersCache.PeersCache,
-    entryNodes: q.RegisteredNode[],
-    exitNodes: q.RegisteredNode[],
-): Promise<Map<string, Set<string>>> {
-    const entryPeers = await peersMap(peersCache, entryNodes);
+function missingOnlineIds(nodes: q.RegisteredNode[], peers: Map<string, Set<string>>) {
+    const ids = nodes.map(({ id }) => id);
+    return ids.filter((id) => peers.has(id)).map(Utils.shortPeerId.bind(Utils));
+}
 
-    // gather exit peers and determine exit nodes reachable by their peers
-    const exitPeers = await peersMap(peersCache, exitNodes);
+function zeroHop(
+    entryPeers: Map<string, Set<string>>,
+    exitPeers: Map<string, Set<string>>,
+): Map<string, Set<string>> {
+    // determine exit nodes reachable by their peers
     const peersExits = revertMap(exitPeers);
 
     // match routes
@@ -112,27 +137,18 @@ async function runZeroHops(
     }, new Map());
 }
 
-async function runOneHops(
-    dbPool: Pool,
-    peersCache: PeersCache.PeersCache,
-    entryNodes: q.RegisteredNode[],
-    exitNodes: q.RegisteredNode[],
-): Promise<Map<string, Set<string>>> {
-    // gather channel structure
-    const channels = await gatherChannels(entryNodes).catch((err) => {
-        log.error('error gathering channels: %s[%o]', JSON.stringify(err), err);
-        throw err;
-    });
-
+function oneHop(
+    channels: Map<string, Set<string>>,
+    entryPeers: Map<string, Set<string>>,
+    exitPeers: Map<string, Set<string>>,
+): Map<string, Set<string>> {
     // match channels with peers
-    const allEntryPeers = await peersMap(peersCache, entryNodes);
-    const channelEntryPeers = filterChannels(allEntryPeers, channels);
+    const channelEntryPeers = filterChannels(entryPeers, channels);
 
-    // gather exit peers and determine exit nodes reachable by their peers
-    const allExitPeers = await peersMap(peersCache, exitNodes);
-    const channelExitPeers = filterChannels(allExitPeers, channels);
+    // determine exit nodes reachable by their peers
+    const channelExitPeers = filterChannels(exitPeers, channels);
 
-    const peersExits = revertMap(allExitPeers);
+    const peersExits = revertMap(exitPeers);
 
     return Array.from(channelEntryPeers).reduce<Map<string, Set<string>>>((acc, [eId, ePeers]) => {
         // exits reachable via channeled peers
@@ -153,7 +169,7 @@ async function runOneHops(
             if (!chPs) {
                 return false;
             }
-            const peers = allEntryPeers.get(eId);
+            const peers = entryPeers.get(eId);
             if (!peers) {
                 return false;
             }
@@ -177,7 +193,7 @@ async function peersMap(
             const ids = Array.from(nodePeers.peers.values()).map(({ peerId }) => peerId);
             return [node.id, new Set(ids)];
         }
-        return null;
+        return Promise.reject();
     });
 
     const raw = await Promise.allSettled(pRaw);
@@ -187,26 +203,27 @@ async function peersMap(
     return new Map(successes.map(({ value }) => value));
 }
 
-async function filterOnline(
-    exitIds: Set<string>,
-    peersCache: PeersCache.PeersCache,
+async function runOnlineChecks(
+    exitPeers: Map<string, Set<string>>,
     nodes: Map<string, q.RegisteredNode>,
 ): Promise<Set<string>> {
-    const messagePreps: Map<string, { eNode: q.RegisteredNode; exitIds: Set<string> }> =
-        await Array.from(exitIds).reduce((acc, xId) => {
-            const allPeers = peersCache.get(xId) as Map<string, NodeAPI.Peer>;
-            const peers = Array.from(allPeers.values()).filter((p) => nodes.has(p.peerId));
-            if (peers.length > 0) {
-                const p = randomEl(peers);
-                const eNode = nodes.get(p.peerId) as q.RegisteredNode;
-                if (acc.has(p.peerId)) {
-                    acc.get(p.peerId).exitIds.add(xId);
-                } else {
-                    acc.set(p.peerId, { eNode, exitIds: new Set([xId]) });
-                }
+    const messagePreps: Map<string, { eNode: q.RegisteredNode; exitIds: Set<string> }> = Array.from(
+        exitPeers.keys(),
+    ).reduce((acc, xId) => {
+        const peerIds = Array.from(exitPeers.get(xId) as Set<string>).filter((pId) =>
+            nodes.has(pId),
+        );
+        if (peerIds.length > 0) {
+            const peerId = randomEl(peerIds);
+            const eNode = nodes.get(peerId) as q.RegisteredNode;
+            if (acc.has(peerId)) {
+                acc.get(peerId).exitIds.add(xId);
+            } else {
+                acc.set(peerId, { eNode, exitIds: new Set([xId]) });
             }
-            return acc;
-        }, new Map());
+        }
+        return acc;
+    }, new Map());
 
     const pPongs = Array.from(messagePreps).map(async ([eId, { eNode, exitIds }]) => {
         const conn = {
@@ -312,7 +329,7 @@ function revertMap<K, V>(map: Map<K, Set<V>>): Map<V, Set<K>> {
     }, new Map());
 }
 
-function logZeroHopIds(pairs: Map<string, Set<string>>, total: number, max: number): string {
+function logHopIds(pairs: Map<string, Set<string>>, total: number, max: number): string {
     const eCount = pairs.size;
     if (eCount === 0) {
         return '[(none)]';
@@ -324,27 +341,6 @@ function logZeroHopIds(pairs: Map<string, Set<string>>, total: number, max: numb
     });
     return `${total}/${max} routes over ${eCount} entries ${entries.join(',')}`;
 }
-
-/**
-function logOneHopIds(
-    pairsRelayMap: Map<string, Map<string, Set<string>>>,
-    total: number,
-    max: number,
-): string {
-    const eCount = pairsRelayMap.size;
-    if (eCount === 0) {
-        return '[(none)]';
-    }
-    const entries = Array.from(pairsRelayMap).map(([eId, exitRelays]) => {
-        const exits = Array.from(exitRelays).map(
-            ([xId, relayIds]) => `x${Utils.shortPeerId(xId)}[${relayIds.size}r]`,
-        );
-        const xCount = exitRelays.size;
-        return `e${Utils.shortPeerId(eId)}[${xCount}x]>${exits.join('_')}`;
-    });
-    return `${total}/${max} routes over ${eCount} entries ${entries.join(',')}`;
-}
-*/
 
 function filterChannels(
     peers: Map<string, Set<string>>,
@@ -360,7 +356,7 @@ function filterChannels(
     }, new Map());
 }
 
-function filterZhOnline(
+function filterOnline(
     pairs: Map<string, Set<string>>,
     online: Set<string>,
 ): Map<string, Set<string>> {
@@ -372,21 +368,6 @@ function filterZhOnline(
         return acc;
     }, new Map());
 }
-
-/*
-function filterOhOnline(
-    pairs: Map<string, Map<string, Set<string>>>,
-    online: Set<string>,
-): Map<string, Map<string, Set<string>>> {
-    return Array.from(pairs).reduce((acc, [eId, relayIds]) => {
-        const vals = Array.from(relayIds).filter(([x, _rIds]) => online.has(x));
-        if (vals.length > 0) {
-            acc.set(eId, new Map(vals));
-        }
-        return acc;
-    }, new Map());
-}
-*/
 
 // expand to entryId -> exitId routes struct
 function toPairings(pairsMap: Map<string, Set<string>>): q.Pair[] {
@@ -400,7 +381,7 @@ function toPairings(pairsMap: Map<string, Set<string>>): q.Pair[] {
 
 async function gatherChannels(entryNodes: q.RegisteredNode[]): Promise<Map<string, Set<string>>> {
     if (entryNodes.length === 0) {
-        throw new Error('no entry nodes left');
+        return new Map();
     }
     const entryNode = randomEl(entryNodes);
     const respCh = await NodeAPI.getAllChannels({
