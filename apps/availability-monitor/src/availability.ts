@@ -93,7 +93,7 @@ async function doRun(dbPool: Pool, entryNodes: q.RegisteredNode[], exitNodes: q.
     // complain about offline peers
     if (missingOnlineEntryIds.length > 0) {
         log.info(
-            "missing %d/%d online entry nodes: %s'",
+            'missing %d/%d online entry nodes: %s',
             missingOnlineEntryIds.length,
             entryNodes.length,
             missingOnlineEntryIds.join(' '),
@@ -101,7 +101,7 @@ async function doRun(dbPool: Pool, entryNodes: q.RegisteredNode[], exitNodes: q.
     }
     if (missingOnlineExitIds.length > 0) {
         log.info(
-            "missing %d/%d online exit nodes: %s'",
+            'missing %d/%d online exit nodes: %s',
             missingOnlineExitIds.length,
             exitNodes.length,
             missingOnlineExitIds.join(' '),

@@ -1,5 +1,11 @@
 # @rpch/availability-monitor
 
+## 1.1.0
+
+### Minor Changes
+
+-   5ab2871: handle offline nodes gracefully
+
 ## 1.0.9
 
 ### Patch Changes
