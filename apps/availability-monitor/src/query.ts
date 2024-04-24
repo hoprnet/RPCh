@@ -1,4 +1,5 @@
 import type { Pool } from 'pg';
+import { Utils } from '@rpch/sdk';
 
 export type RegisteredNode = {
     id: string;
@@ -59,4 +60,9 @@ async function writePairings(dbPool: Pool, table: string, pairings: Pair[]) {
     } finally {
         client.release();
     }
+}
+
+export function prettyPrint(node: RegisteredNode) {
+    const prefix = node.is_exit_node ? 'x' : 'e';
+    return `${prefix}${Utils.shortPeerId(node.id)}[${node.hoprd_api_endpoint},${node.id}]`;
 }
