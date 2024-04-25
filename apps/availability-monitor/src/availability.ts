@@ -43,13 +43,30 @@ function reschedule(dbPool: Pool) {
     setTimeout(() => run(dbPool), next);
 }
 
-async function doRun(dbPool: Pool, entryNodes: q.RegisteredNode[], exitNodes: q.RegisteredNode[]) {
+async function doRun(
+    dbPool: Pool,
+    allEntryNodes: q.RegisteredNode[],
+    allExitNodes: q.RegisteredNode[],
+) {
     // gather peers for entry nodes
     const peersCache: PeersCache.PeersCache = PeersCache.init();
-    const entryPeers = await peersMap(peersCache, entryNodes);
+    const { peers: entryPeers, expectedOffline: offlineEntries } = await peersMap(
+        peersCache,
+        allEntryNodes,
+    );
+    const entryNodes = allEntryNodes.filter(
+        ({ id }) => !offlineEntries.some(({ id: off }) => id === off),
+    );
     const missingOnlineEntries = entryNodes.filter(({ id }) => !entryPeers.has(id));
+
     // gather peers for exit nodes
-    const exitPeers = await peersMap(peersCache, exitNodes);
+    const { peers: exitPeers, expectedOffline: offlineExits } = await peersMap(
+        peersCache,
+        allExitNodes,
+    );
+    const exitNodes = allExitNodes.filter(
+        ({ id }) => !offlineExits.some(({ id: off }) => id === off),
+    );
     const missingOnlineExits = exitNodes.filter(({ id }) => !exitPeers.has(id));
 
     // zero hop
@@ -80,33 +97,48 @@ async function doRun(dbPool: Pool, entryNodes: q.RegisteredNode[], exitNodes: q.
     // write zero hops
     const zhPairIds = toPairings(zhOnline);
     await q.writeZeroHopPairings(dbPool, zhPairIds);
-    logHopRoutes('zero hop', zhOnline, onlineEntryNodes, onlineExitNodes);
 
     // write one hops
     // const ohMax = entries.length * exits.length * (entries.length + exits.length - 2);
     const ohPairIds = toPairings(ohOnline);
     await q.writeOneHopPairings(dbPool, ohPairIds);
-    logHopRoutes('one hop', ohOnline, onlineEntryNodes, onlineExitNodes);
+
+    // inform about expected offline nodes
+    if (offlineEntries.length > 0 || offlineExits.length > 0) {
+        log.info(
+            '%d entry nodes and %d exit nodes appear offline intentionally:',
+            offlineEntries.length,
+            offlineExits.length,
+        );
+        offlineEntries.map((n, idx) =>
+            log.info('offline entry node %d: %s', idx + 1, q.prettyPrint(n)),
+        );
+        offlineExits.map((n, idx) =>
+            log.info('offline exit node %d: %s', idx + 1, q.prettyPrint(n)),
+        );
+    }
 
     // complain about offline peers
     if (missingOnlineEntries.length > 0) {
-        log.info('missing %d/%d online entry nodes:', missingOnlineEntries.length, entryPeers.size);
+        log.warn('missing %d/%d online entry nodes:', missingOnlineEntries.length, entryPeers.size);
         missingOnlineEntries.map((n, idx) =>
-            log.info('missing online entry node %d: %s', idx + 1, q.prettyPrint(n)),
+            log.warn('missing online entry node %d: %s', idx + 1, q.prettyPrint(n)),
         );
     }
     if (missingOnlineExits.length > 0) {
-        log.info('missing %d/%d online exit nodes:', missingOnlineExits.length, exitPeers.size);
+        log.warn('missing %d/%d online exit nodes:', missingOnlineExits.length, exitPeers.size);
         missingOnlineExits.map((n, idx) =>
-            log.info('missing online exit node %d: %s', idx + 1, q.prettyPrint(n)),
+            log.warn('missing online exit node %d: %s', idx + 1, q.prettyPrint(n)),
         );
     }
     if (offExitApps.length > 0) {
-        log.info('missing %d/%d online exit applications:', offExitApps.length, exitPeers.size);
+        log.warn('missing %d/%d online exit applications:', offExitApps.length, exitPeers.size);
         offExitApps.map((n, idx) =>
-            log.info('missing online exit application %d: %s', idx + 1, q.prettyPrint(n)),
+            log.warn('missing online exit application %d: %s', idx + 1, q.prettyPrint(n)),
         );
     }
+    logHopRoutes('zero hop', zhOnline, onlineEntryNodes, onlineExitNodes);
+    logHopRoutes('one hop', ohOnline, onlineEntryNodes, onlineExitNodes);
 }
 
 function zeroHop(
@@ -173,26 +205,46 @@ function oneHop(
 async function peersMap(
     peersCache: PeersCache.PeersCache,
     nodes: q.RegisteredNode[],
-): Promise<Map<string, Set<string>>> {
+): Promise<{ peers: Map<string, Set<string>>; expectedOffline: q.RegisteredNode[] }> {
     const pRaw = nodes.map(async (node) => {
-        const nodePeers = await PeersCache.fetchPeers(peersCache, node).catch((err) => {
+        let nodePeers;
+        try {
+            nodePeers = await PeersCache.fetchPeers(peersCache, node);
+        } catch (err: any) {
             // node is expectedly offline and does not warrent a warning log
-            if (!err.cause || err.cause.errno !== -3008 || err.cause.code !== 'ENOTFOUND') {
-                log.warn('fetch peers from %s: %s[%o]', node.id, JSON.stringify(err), err);
+            if (err.cause && err.cause.errno === -3008 && err.cause.code === 'ENOTFOUND') {
+                return { expectedOffline: node };
             }
-        });
+            log.warn('fetch peers from %s: %s[%o]', node.id, JSON.stringify(err), err);
+        }
         if (PeersCache.isOnline(nodePeers)) {
             const ids = Array.from(nodePeers.peers.values()).map(({ peerId }) => peerId);
-            return [node.id, new Set(ids)];
+            return { nodeId: node.id, peerIds: new Set(ids) };
         }
         return Promise.reject();
     });
 
     const raw = await Promise.allSettled(pRaw);
     const successes = raw.filter((val) => val.status === 'fulfilled' && !!val.value) as [
-        { status: 'fulfilled'; value: [string, Set<string>] },
+        {
+            status: 'fulfilled';
+            value: { expectedOffline: q.RegisteredNode } | { nodeId: string; peerIds: Set<string> };
+        },
     ];
-    return new Map(successes.map(({ value }) => value));
+    return successes.reduce<{
+        peers: Map<string, Set<string>>;
+        expectedOffline: q.RegisteredNode[];
+    }>(
+        (acc, { value }) => {
+            if ('expectedOffline' in value) {
+                acc.expectedOffline.push(value.expectedOffline);
+            } else {
+                acc.peers.set(value.nodeId, value.peerIds);
+            }
+            return acc;
+        },
+        { peers: new Map(), expectedOffline: [] },
+    );
 }
 
 async function runOnlineChecks(
@@ -330,7 +382,14 @@ function logHopRoutes(
     const countPairs = Array.from(pairs).reduce((acc, [_eId, xIds]) => acc + xIds.size, 0);
     const max = entryNodes.length * exitNodes.length;
 
-    log.info('found %d/%d %s routes over %d entries', countPairs, max, prefix, entryNodes.length);
+    log.info(
+        'found %d/%d %s routes connecting %d entries with %d exits',
+        countPairs,
+        max,
+        prefix,
+        entryNodes.length,
+        exitNodes.length,
+    );
 
     const allPairs = entryNodes.reduce<[q.RegisteredNode, q.RegisteredNode][]>((acc, eNode) => {
         return acc.concat(exitNodes.map((xNode) => [eNode, xNode]));

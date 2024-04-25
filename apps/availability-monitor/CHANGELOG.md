@@ -1,5 +1,11 @@
 # @rpch/availability-monitor
 
+## 1.1.3
+
+### Patch Changes
+
+-   332f227: enhance logging output even more tailored to expected offline nodes
+
 ## 1.1.2
 
 ### Patch Changes
