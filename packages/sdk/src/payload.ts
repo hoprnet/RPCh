@@ -7,6 +7,7 @@ export type ReqPayload = {
     body?: string; // request body
     headers?: Record<string, string>; // request headers, if left empty:  { 'Content-Type': 'application/json' }
     method?: string; // request method, if left empty: get
+    timeout?: number; // request timeout from the endpoint
     // dev/debug params
     hops?: number; // defaults to 1
     relayPeerId?: string; // default to autorouting
@@ -26,6 +27,7 @@ export type RespPayload =
           type: RespType.Resp;
           status: number; // HTTP status
           headers: Record<string, string>; // HTTP response headers
+          statusText?: string; // HTTP status text
           text?: string; // response text
           callDuration?: number;
           exitAppDuration?: number;
@@ -56,6 +58,7 @@ type TransportReqPayload = {
     b?: string; // body
     h?: Record<string, string>; // headers
     m?: string; // method
+    t?: number; // timeout
     // dev/debug
     n?: number; // hops
     r?: string; // relayPeerId
@@ -68,6 +71,7 @@ type TransportRespPayload =
           t: RespType.Resp;
           s: number; // HTTP status
           h: Record<string, string>; // HTTP response header
+          a?: string; // HTTP status text
           x?: string; // response text
           f?: number;
           e?: number;
@@ -164,6 +168,9 @@ function reqToTrans(r: ReqPayload): TransportReqPayload {
     if (r.method) {
         t.m = r.method;
     }
+    if (r.timeout) {
+        t.t = r.timeout;
+    }
     if (r.hops) {
         t.n = r.hops;
     }
@@ -188,6 +195,9 @@ function respToTrans(r: RespPayload): TransportRespPayload {
                 h: r.headers,
             };
 
+            if (r.statusText) {
+                t.a = r.statusText;
+            }
             if (r.text) {
                 t.x = r.text;
             }
@@ -237,6 +247,7 @@ function transToReq(t: TransportReqPayload): ReqPayload {
         body: t.b,
         headers: t.h,
         method: t.m,
+        timeout: t.t,
         hops: t.n,
         relayPeerId: t.r,
         withDuration: t.w,
@@ -250,6 +261,7 @@ function transToResp(t: TransportRespPayload): RespPayload {
             return {
                 type: RespType.Resp,
                 status: t.s,
+                statusText: t.a,
                 headers: t.h,
                 text: t.x,
                 callDuration: t.f,

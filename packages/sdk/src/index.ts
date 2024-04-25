@@ -255,6 +255,8 @@ export default class SDK {
                 reqRelayPeerId,
                 respRelayPeerId,
                 chainId: cId,
+                // give the network 3s to deliver this request on endpoint timeout
+                timeout: reqOps.timeout - 3e3,
             });
 
             if (Res.isErr(resReq)) {
