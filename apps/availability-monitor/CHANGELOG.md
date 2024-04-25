@@ -1,5 +1,11 @@
 # @rpch/availability-monitor
 
+## 1.1.1
+
+### Patch Changes
+
+-   a5ca6c1: Enhance logging output to show problematic nodes and routes
+
 ## 1.1.0
 
 ### Minor Changes
