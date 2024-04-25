@@ -47,10 +47,10 @@ async function doRun(dbPool: Pool, entryNodes: q.RegisteredNode[], exitNodes: q.
     // gather peers for entry nodes
     const peersCache: PeersCache.PeersCache = PeersCache.init();
     const entryPeers = await peersMap(peersCache, entryNodes);
-    const missingOnlineEntryIds = missingOnlineIds(entryNodes, entryPeers);
+    const missingOnlineEntries = entryNodes.filter(({ id }) => !entryPeers.has(id));
     // gather peers for exit nodes
     const exitPeers = await peersMap(peersCache, exitNodes);
-    const missingOnlineExitIds = missingOnlineIds(exitNodes, exitPeers);
+    const missingOnlineExits = exitNodes.filter(({ id }) => !exitPeers.has(id));
 
     // zero hop
     const zhPairs = zeroHop(entryPeers, exitPeers);
@@ -74,52 +74,39 @@ async function doRun(dbPool: Pool, entryNodes: q.RegisteredNode[], exitNodes: q.
 
     const zhOnline = filterOnline(zhPairs, onlineExitAppIds);
     const ohOnline = filterOnline(ohRelPairs, onlineExitAppIds);
-    const offExitAppIds = exitNodes
-        .filter(({ id }) => !onlineExitAppIds.has(id))
-        .map(({ id }) => Utils.shortPeerId(id));
+    const offExitApps = exitNodes.filter(({ id }) => !onlineExitAppIds.has(id));
+    const onlineExitNodes = exitNodes.filter(({ id }) => exitPeers.has(id));
 
     // write zero hops
-    const zhMax = entryNodes.length * exitNodes.length;
     const zhPairIds = toPairings(zhOnline);
     await q.writeZeroHopPairings(dbPool, zhPairIds);
-    log.info('updated zerohops with pairIds:', logHopIds(zhOnline, zhPairIds.length, zhMax));
+    logHopRoutes('zero hop', zhOnline, onlineEntryNodes, onlineExitNodes);
 
     // write one hops
     // const ohMax = entries.length * exits.length * (entries.length + exits.length - 2);
     const ohPairIds = toPairings(ohOnline);
     await q.writeOneHopPairings(dbPool, ohPairIds);
-    log.info('updated onehops with pairIds:', logHopIds(ohOnline, ohPairIds.length, zhMax));
+    logHopRoutes('one hop', ohOnline, onlineEntryNodes, onlineExitNodes);
 
     // complain about offline peers
-    if (missingOnlineEntryIds.length > 0) {
-        log.info(
-            'missing %d/%d online entry nodes: %s',
-            missingOnlineEntryIds.length,
-            entryNodes.length,
-            missingOnlineEntryIds.join(' '),
+    if (missingOnlineEntries.length > 0) {
+        log.info('missing %d/%d online entry nodes:', missingOnlineEntries.length, entryPeers.size);
+        missingOnlineEntries.map((n, idx) =>
+            log.info('missing online entry node %d: %s', idx + 1, q.prettyPrint(n)),
         );
     }
-    if (missingOnlineExitIds.length > 0) {
-        log.info(
-            'missing %d/%d online exit nodes: %s',
-            missingOnlineExitIds.length,
-            exitNodes.length,
-            missingOnlineExitIds.join(' '),
+    if (missingOnlineExits.length > 0) {
+        log.info('missing %d/%d online exit nodes:', missingOnlineExits.length, exitPeers.size);
+        missingOnlineExits.map((n, idx) =>
+            log.info('missing online exit node %d: %s', idx + 1, q.prettyPrint(n)),
         );
     }
-    if (offExitAppIds.length > 0) {
-        log.info(
-            'missing %d/%d online exit applications: %s',
-            offExitAppIds.length,
-            exitNodes.length,
-            offExitAppIds.join(' '),
+    if (offExitApps.length > 0) {
+        log.info('missing %d/%d online exit applications:', offExitApps.length, exitPeers.size);
+        offExitApps.map((n, idx) =>
+            log.info('missing online exit application %d: %s', idx + 1, q.prettyPrint(n)),
         );
     }
-}
-
-function missingOnlineIds(nodes: q.RegisteredNode[], peers: Map<string, Set<string>>) {
-    const ids = nodes.map(({ id }) => id);
-    return ids.filter((id) => peers.has(id)).map(Utils.shortPeerId.bind(Utils));
 }
 
 function zeroHop(
@@ -189,7 +176,10 @@ async function peersMap(
 ): Promise<Map<string, Set<string>>> {
     const pRaw = nodes.map(async (node) => {
         const nodePeers = await PeersCache.fetchPeers(peersCache, node).catch((err) => {
-            log.warn('fetch peers from %s: %s[%o]', node.id, JSON.stringify(err), err);
+            // node is expectedly offline and does not warrent a warning log
+            if (!err.cause || err.cause.errno !== -3008 || err.cause.code !== 'ENOTFOUND') {
+                log.warn('fetch peers from %s: %s[%o]', node.id, JSON.stringify(err), err);
+            }
         });
         if (PeersCache.isOnline(nodePeers)) {
             const ids = Array.from(nodePeers.peers.values()).map(({ peerId }) => peerId);
@@ -331,17 +321,35 @@ function revertMap<K, V>(map: Map<K, Set<V>>): Map<V, Set<K>> {
     }, new Map());
 }
 
-function logHopIds(pairs: Map<string, Set<string>>, total: number, max: number): string {
-    const eCount = pairs.size;
-    if (eCount === 0) {
-        return '[(none)]';
-    }
-    const entries = Array.from(pairs).map(([eId, exitIds]) => {
-        const exits = Array.from(exitIds).map((x) => `x${Utils.shortPeerId(x)}`);
-        const xCount = exitIds.size;
-        return `e${Utils.shortPeerId(eId)}>${xCount}x:${exits.join('_')}`;
-    });
-    return `${total}/${max} routes over ${eCount} entries ${entries.join(',')}`;
+function logHopRoutes(
+    prefix: string,
+    pairs: Map<string, Set<string>>,
+    entryNodes: q.RegisteredNode[],
+    exitNodes: q.RegisteredNode[],
+) {
+    const countPairs = Array.from(pairs).reduce((acc, [_eId, xIds]) => acc + xIds.size, 0);
+    const max = entryNodes.length * exitNodes.length;
+
+    log.info('found %d/%d %s routes over %d entries:', countPairs, max, prefix, entryNodes.length);
+
+    const allPairs = entryNodes.reduce<[q.RegisteredNode, q.RegisteredNode][]>((acc, eNode) => {
+        return acc.concat(exitNodes.map((xNode) => [eNode, xNode]));
+    }, []);
+
+    allPairs.reduce<number>((acc, [eNode, xNode]) => {
+        const exitIds = pairs.get(eNode.id);
+        if (!exitIds || !exitIds.has(xNode.id)) {
+            log.info(
+                'missing %s route %d: %s -> %s',
+                prefix,
+                acc + 1,
+                q.prettyPrint(eNode),
+                q.prettyPrint(xNode),
+            );
+            return acc + 1;
+        }
+        return acc;
+    }, 0);
 }
 
 function filterChannels(
