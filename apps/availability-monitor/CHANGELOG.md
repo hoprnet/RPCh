@@ -1,5 +1,11 @@
 # @rpch/availability-monitor
 
+## 1.1.2
+
+### Patch Changes
+
+-   7d93775: fix log output typo
+
 ## 1.1.1
 
 ### Patch Changes

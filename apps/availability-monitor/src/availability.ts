@@ -330,7 +330,7 @@ function logHopRoutes(
     const countPairs = Array.from(pairs).reduce((acc, [_eId, xIds]) => acc + xIds.size, 0);
     const max = entryNodes.length * exitNodes.length;
 
-    log.info('found %d/%d %s routes over %d entries:', countPairs, max, prefix, entryNodes.length);
+    log.info('found %d/%d %s routes over %d entries', countPairs, max, prefix, entryNodes.length);
 
     const allPairs = entryNodes.reduce<[q.RegisteredNode, q.RegisteredNode][]>((acc, eNode) => {
         return acc.concat(exitNodes.map((xNode) => [eNode, xNode]));
