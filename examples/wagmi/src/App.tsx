@@ -22,7 +22,7 @@ function publicRPChClient(): PublicClient<Transport, Chain> {
         async request({ method, params }) {
           try {
             const response = await sdk.send({ method, params, jsonrpc: "2.0" });
-            const responseJson = await response.json();
+            const responseJson = JSON.parse(response.text);
 
             return "error" in responseJson
               ? responseJson.error

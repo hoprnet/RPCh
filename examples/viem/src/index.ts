@@ -13,8 +13,7 @@ function publicRPChClient(): PublicClient {
         transport: custom({
             async request({ method, params }) {
                 const response = await sdk.send({ method, params, jsonrpc: '2.0' });
-                const responseJson = await response.json();
-                return responseJson;
+                return JSON.parse(response.text);
             },
         }),
     }).extend(publicActions);
