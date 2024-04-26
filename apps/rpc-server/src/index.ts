@@ -129,24 +129,27 @@ async function sendRequest(
 ) {
     try {
         const resp: Response.Response = await sdk.send(req, params);
+        res.statusCode = resp.status;
+        res.statusMessage = resp.statusText;
         if (resp.status === 200) {
-            const json: JRPC.Response = await resp.json();
+            const json: JRPC.Response = JSON.parse(resp.text);
+            res.write(JSON.stringify(json));
             if (resp.stats) {
                 log.info('response: %o request[%o,%o]', json, req, resp.stats);
-                res.statusCode = 200;
-                res.write(JSON.stringify({ resp: json, stats: resp.stats }));
             } else {
                 log.info('response: %o request[%o]', json, req);
-                res.statusCode = 200;
-                res.write(JSON.stringify(json));
             }
         } else {
-            const text = await resp.text();
-            log.info('response[HTTP %d]: %s request[%o]', resp.status, text, req);
-            res.statusCode = resp.status;
+            log.info(
+                'response[HTTP %d(%s)]: %s request[%o]',
+                resp.status,
+                resp.statusText,
+                resp.text,
+                req,
+            );
             // only write if we are allowed to
             if (resp.status !== 204 && resp.status !== 304) {
-                res.write(text);
+                res.write(resp.text);
             }
         }
     } catch (err: any) {

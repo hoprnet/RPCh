@@ -565,9 +565,9 @@ export default class SDK {
             case Payload.RespType.Resp: {
                 const r: Response.Response = {
                     status: resp.status,
+                    statusText: resp.statusText,
                     headers: resp.headers,
-                    text: async () => resp.text ?? '',
-                    json: async () => JSON.parse(resp.text ?? ''), // will fail to parse if no text (as expected)
+                    text: resp.text,
                 };
                 if (request.measureRPClatency) {
                     r.stats = stats;
@@ -667,7 +667,13 @@ export default class SDK {
         // check HTTP response status and determine error
         if (res.status !== 200) {
             try {
-                log.warn('unable to resolve chainId for %s: %s', provider, await res.text());
+                log.warn(
+                    'unable to resolve chainId for %s: %d[%s] %s',
+                    provider,
+                    res.status,
+                    res.statusText,
+                    res.text,
+                );
             } catch (err) {
                 log.error(
                     'unable to determine error message for failed chainId call to %s: %s[%o]',
@@ -681,7 +687,7 @@ export default class SDK {
 
         // check JRPC payload and determine error
         try {
-            const jrpc = await res.json();
+            const jrpc = JSON.parse(res.text);
             if (JRPC.isError(jrpc)) {
                 if (
                     jrpc.error.code === -32601 ||

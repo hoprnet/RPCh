@@ -25,10 +25,10 @@ export enum RespType {
 export type RespPayload =
     | {
           type: RespType.Resp;
-          status: number; // HTTP status
           headers: Record<string, string>; // HTTP response headers
-          statusText?: string; // HTTP status text
-          text?: string; // response text
+          status: number; // HTTP status
+          statusText: string; // HTTP status text
+          text: string; // response text
           callDuration?: number;
           exitAppDuration?: number;
       }
@@ -69,10 +69,10 @@ type TransportReqPayload = {
 type TransportRespPayload =
     | {
           t: RespType.Resp;
-          s: number; // HTTP status
           h: Record<string, string>; // HTTP response header
-          a?: string; // HTTP status text
-          x?: string; // response text
+          s: number; // HTTP status
+          a: string; // HTTP status text
+          x: string; // response text
           f?: number;
           e?: number;
       }
@@ -191,16 +191,12 @@ function respToTrans(r: RespPayload): TransportRespPayload {
         case RespType.Resp: {
             const t: TransportRespPayload = {
                 t: RespType.Resp,
-                s: r.status,
                 h: r.headers,
+                s: r.status,
+                a: r.statusText,
+                x: r.text,
             };
 
-            if (r.statusText) {
-                t.a = r.statusText;
-            }
-            if (r.text) {
-                t.x = r.text;
-            }
             if (r.callDuration) {
                 t.f = r.callDuration;
             }
@@ -260,9 +256,9 @@ function transToResp(t: TransportRespPayload): RespPayload {
         case RespType.Resp:
             return {
                 type: RespType.Resp,
+                headers: t.h,
                 status: t.s,
                 statusText: t.a,
-                headers: t.h,
                 text: t.x,
                 callDuration: t.f,
                 exitAppDuration: t.e,
