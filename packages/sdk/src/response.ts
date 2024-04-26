@@ -1,6 +1,5 @@
 import * as compatCrypto from '@rpch/compat-crypto';
 
-import * as JRPC from './jrpc';
 import * as Payload from './payload';
 import * as Res from './result';
 import * as Utils from './utils';
@@ -24,9 +23,10 @@ export type Stats =
 
 export type Response = {
     status: number;
+    statusText: string;
+    text: string;
+    headers: Record<string, string>;
     stats?: Stats;
-    text: () => Promise<string>;
-    json: () => Promise<JRPC.Response>;
 };
 
 export class SendError extends Error {

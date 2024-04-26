@@ -17,7 +17,7 @@ type ServerOPS = {
     failedRequestsFile?: string;
     restrictCors: boolean;
     skipRPCh: boolean;
-    exposeLats: boolean;
+    addLats: boolean;
 };
 
 const log = Utils.logger(['rpc-server']);
@@ -39,33 +39,33 @@ function toURL(urlStr: string, host: string): null | URL {
     }
 }
 
-function headersFromStringArray(headersRaw: string[]) {
-    return headersRaw.reduce<Record<string, string> | undefined>((acc, h) => {
-        const [k, v] = h.split(':');
-        if (k && k.trim() && v && v.trim()) {
-            if (acc) {
-                acc[k] = v.trim();
-            } else {
-                acc = { [k]: v.trim() };
-            }
-        }
-        return acc;
-    }, undefined);
-}
-
-function extractParams(urlStr: undefined | string, host: undefined | string): RequestOps {
-    if (!urlStr || !host) {
+function extractParams(
+    urlStr: undefined | string,
+    incHeaders: http.IncomingHttpHeaders,
+): RequestOps {
+    if (!urlStr || !incHeaders.host) {
         return {};
     }
-    const url = toURL(urlStr, `http://${host}`); // see https://nodejs.org/api/http.html#messageurl
+
+    const url = toURL(urlStr, `http://${incHeaders.host}`); // see https://nodejs.org/api/http.html#messageurl
     if (!url) {
         return {};
     }
+
     const provider = url.searchParams.get('provider');
     const timeout = url.searchParams.get('timeout');
     const measureRPClatency = url.searchParams.get('measureRPClatency');
-    const headersRaw = url.searchParams.getAll('h').concat(url.searchParams.getAll('header'));
-    const headers = headersFromStringArray(headersRaw);
+
+    const reqHeaders = headersFromIncoming(incHeaders);
+    const paramHeadersRaw = url.searchParams.getAll('header');
+    const paramHeaders = headersFromStringArray(paramHeadersRaw);
+
+    // specific defined param headers overwrite http request headers
+    const headers = {
+        ...reqHeaders,
+        ...paramHeaders,
+    };
+
     return {
         provider: provider ? provider : undefined,
         timeout: timeout ? parseInt(timeout, 10) : undefined,
@@ -74,6 +74,29 @@ function extractParams(urlStr: undefined | string, host: undefined | string): Re
             : undefined,
         headers,
     };
+}
+
+function headersFromStringArray(headers: string[]) {
+    return headers.reduce<Record<string, string>>((acc, h) => {
+        const [k, v] = h.split(':');
+        if (k && k.trim() && v && v.trim()) {
+            acc[k.trim()] = v.trim();
+        }
+        return acc;
+    }, {});
+}
+
+function headersFromIncoming(headers: http.IncomingHttpHeaders) {
+    return Object.entries(headers).reduce<Record<string, string>>((acc, [k, v]) => {
+        if (v) {
+            if (Array.isArray(v)) {
+                acc[k] = v.join(', ');
+            } else {
+                acc[k] = v;
+            }
+        }
+        return acc;
+    }, {});
 }
 
 function parseBody(
@@ -130,24 +153,27 @@ async function sendRequest(
 ) {
     try {
         const resp: Response.Response = await sdk.send(req, params);
+        res.statusCode = resp.status;
+        res.statusMessage = resp.statusText;
         if (resp.status === 200) {
-            const json: JRPC.Response = await resp.json();
-            if (ops.exposeLats && resp.stats) {
+            const json: JRPC.Response = JSON.parse(resp.text);
+            res.write(JSON.stringify(json));
+            if (resp.stats) {
                 log.info('response: %o request[%o,%o]', json, req, resp.stats);
-                res.statusCode = 200;
-                res.write(JSON.stringify({ resp: json, stats: resp.stats }));
             } else {
                 log.info('response: %o request[%o]', json, req);
-                res.statusCode = 200;
-                res.write(JSON.stringify(json));
             }
         } else {
-            const text = await resp.text();
-            log.info('response[HTTP %d]: %s request[%o]', resp.status, text, req);
-            res.statusCode = resp.status;
+            log.info(
+                'response[HTTP %d(%s)]: %s request[%o]',
+                resp.status,
+                resp.statusText,
+                resp.text,
+                req,
+            );
             // only write if we are allowed to
             if (resp.status !== 204 && resp.status !== 304) {
-                res.write(text);
+                res.write(resp.text);
             }
         }
     } catch (err: any) {
@@ -214,7 +240,7 @@ function createServer(sdk: RPChSDK, ops: ServerOPS) {
         });
 
         req.on('end', () => {
-            const params = extractParams(req.url, req.headers.host);
+            const params = extractParams(req.url, req.headers);
             const result = parseBody(body);
             if (result.success) {
                 if (ops.skipRPCh) {
@@ -327,11 +353,7 @@ function parseBooleanEnv(env?: string) {
  * SKIP_RPCH - just relay requests directly, do not use RPCh
  * FAILED_REQUESTS_FILE - log failed requests to this file
  * RPCH_LATENCY_STATS - request detailed latencies, needs verbose logging to be visible
- * RPCH_EXPOSE_LATENCY_STATS - request detailed latencies and modify the return parameter to include those
  * PORT - default port to run on, optional
- * HEADER_<string> - provide default headers for every request
- * Specify multiple headers by using different strings after `_`. Typically used for authentication headers.
- * The formatting is expected in typical header formatting: `e.g.: HEADER_AUTH=x-apikey:foobarbarfoo`
  *
  * ENV vars for RPCh SDK:
  *
@@ -350,6 +372,11 @@ function parseBooleanEnv(env?: string) {
  * RPCH_LOG_LEVEL - Ops.logLevel
  *
  * See **RPChSDK.RequestOps** for overridable per request parameters.
+ * RPC server provides one extra request parameter for easy authentication headers inside wallets network configuration.
+ * Parameters starting with `header` will be treated as priority headers.
+ * These have precedence over the actual request headers.
+ * The value itself consists of a `key:value` pair separated by a single colon `:`.
+ * e.g.: `?header=x-apikey:foobar` will result in the following request header: `{"x-apikey": "foobar"}`
  */
 if (require.main === module) {
     if (!process.env.CLIENT) {
@@ -357,15 +384,6 @@ if (require.main === module) {
     }
     const clientId = process.env.CLIENT;
     const addLats = parseBooleanEnv(process.env.RPCH_LATENCY_STATS);
-    const exposeLats = parseBooleanEnv(process.env.RPCH_EXPOSE_LATENCY_STATS);
-    const headersRaw = Object.entries(process.env).reduce<string[]>((acc, [k, v]) => {
-        if (k && k.startsWith('HEADER_') && v) {
-            acc.push(v);
-        }
-        return acc;
-    }, []);
-    const headers = headersFromStringArray(headersRaw);
-
     const ops: SDKops = {
         discoveryPlatformEndpoint: process.env.DISCOVERY_PLATFORM_API_ENDPOINT,
         timeout: process.env.RESPONSE_TIMEOUT
@@ -381,8 +399,7 @@ if (require.main === module) {
             ? parseInt(process.env.SEGMENT_LIMIT, 10)
             : undefined,
         logLevel: process.env.RPCH_LOG_LEVEL,
-        measureRPClatency: exposeLats || addLats,
-        headers,
+        measureRPClatency: addLats,
         versionListener,
     };
 
@@ -390,7 +407,7 @@ if (require.main === module) {
         restrictCors: !!process.env.RESTRICT_CORS,
         skipRPCh: !!process.env.SKIP_RPCH,
         failedRequestsFile: process.env.FAILED_REQUESTS_FILE,
-        exposeLats,
+        addLats,
     };
     const port = determinePort(process.env.PORT);
 

@@ -22,7 +22,10 @@ export class RPChProvider extends JsonRpcProvider {
         try {
             const payloads = Array.isArray(payload) ? payload : [payload];
             const responses = await Promise.all(
-                payloads.map(async (payload) => (await this.sdk.send(payload)).json()),
+                payloads.map(async (payload) => {
+                    const resp = await this.sdk.send(payload);
+                    return JSON.parse(resp.text);
+                }),
             );
             // responses need to have a response property
             // and the id needs to be a number to meet the type

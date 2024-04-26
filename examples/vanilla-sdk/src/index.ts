@@ -20,9 +20,7 @@ async function example() {
         },
     );
 
-    const responseJSON = await response.json();
-
-    return responseJSON;
+    return JSON.parse(response.text);
 }
 
 async function main() {

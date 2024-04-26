@@ -7,6 +7,7 @@ export type ReqPayload = {
     body?: string; // request body
     headers?: Record<string, string>; // request headers, if left empty:  { 'Content-Type': 'application/json' }
     method?: string; // request method, if left empty: get
+    timeout?: number; // request timeout from the endpoint
     // dev/debug params
     hops?: number; // defaults to 1
     relayPeerId?: string; // default to autorouting
@@ -24,8 +25,10 @@ export enum RespType {
 export type RespPayload =
     | {
           type: RespType.Resp;
+          headers: Record<string, string>; // HTTP response headers
           status: number; // HTTP status
-          text?: string; // response text
+          statusText: string; // HTTP status text
+          text: string; // response text
           callDuration?: number;
           exitAppDuration?: number;
       }
@@ -55,6 +58,7 @@ type TransportReqPayload = {
     b?: string; // body
     h?: Record<string, string>; // headers
     m?: string; // method
+    t?: number; // timeout
     // dev/debug
     n?: number; // hops
     r?: string; // relayPeerId
@@ -65,8 +69,10 @@ type TransportReqPayload = {
 type TransportRespPayload =
     | {
           t: RespType.Resp;
+          h: Record<string, string>; // HTTP response header
           s: number; // HTTP status
-          x?: string; // response text
+          a: string; // HTTP status text
+          x: string; // response text
           f?: number;
           e?: number;
       }
@@ -162,6 +168,9 @@ function reqToTrans(r: ReqPayload): TransportReqPayload {
     if (r.method) {
         t.m = r.method;
     }
+    if (r.timeout) {
+        t.t = r.timeout;
+    }
     if (r.hops) {
         t.n = r.hops;
     }
@@ -182,12 +191,12 @@ function respToTrans(r: RespPayload): TransportRespPayload {
         case RespType.Resp: {
             const t: TransportRespPayload = {
                 t: RespType.Resp,
+                h: r.headers,
                 s: r.status,
+                a: r.statusText,
+                x: r.text,
             };
 
-            if (r.text) {
-                t.x = r.text;
-            }
             if (r.callDuration) {
                 t.f = r.callDuration;
             }
@@ -234,6 +243,7 @@ function transToReq(t: TransportReqPayload): ReqPayload {
         body: t.b,
         headers: t.h,
         method: t.m,
+        timeout: t.t,
         hops: t.n,
         relayPeerId: t.r,
         withDuration: t.w,
@@ -246,7 +256,9 @@ function transToResp(t: TransportRespPayload): RespPayload {
         case RespType.Resp:
             return {
                 type: RespType.Resp,
+                headers: t.h,
                 status: t.s,
+                statusText: t.a,
                 text: t.x,
                 callDuration: t.f,
                 exitAppDuration: t.e,

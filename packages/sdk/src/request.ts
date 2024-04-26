@@ -47,6 +47,7 @@ export function create({
     reqRelayPeerId,
     respRelayPeerId,
     chainId,
+    timeout,
 }: {
     id: string;
     originalId?: string;
@@ -63,6 +64,7 @@ export function create({
     reqRelayPeerId?: string;
     respRelayPeerId?: string;
     chainId?: string;
+    timeout?: number;
 }): Res.Result<{ request: Request; session: compatCrypto.Session }> {
     const payload: Payload.ReqPayload = {
         endpoint: provider,
@@ -74,6 +76,7 @@ export function create({
         relayPeerId: respRelayPeerId,
         withDuration: measureRPClatency,
         chainId,
+        timeout,
     };
     const resEncode = Payload.encodeReq(payload);
     if (Res.isErr(resEncode)) {
