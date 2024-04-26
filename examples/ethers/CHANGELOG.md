@@ -1,5 +1,17 @@
 # @rpch-examples/ethers
 
+## 0.1.0
+
+### Minor Changes
+
+-   af3a2e8: Showcase new send API in examples
+
+### Patch Changes
+
+-   Updated dependencies [af3a2e8]
+-   Updated dependencies [af3a2e8]
+    -   @rpch/sdk@2.0.0
+
 ## 0.0.7
 
 ### Patch Changes

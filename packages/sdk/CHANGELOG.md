@@ -1,5 +1,19 @@
 # @rpch/sdk
 
+## 2.0.0
+
+### Major Changes
+
+-   af3a2e8: Changes SDK send function return response.
+    No longer offers async resolvers for json and text.
+    Response contains attributes for server status, statusCode and headers.
+    Text property can now be used to parse as JSON.
+
+### Minor Changes
+
+-   af3a2e8: Consolidated latency metrics env vars.
+    RPC server now only exposes `RPCH_LATENCY_STATS` to retrieve additional metrics from the logs.
+
 ## 1.14.0
 
 ### Minor Changes

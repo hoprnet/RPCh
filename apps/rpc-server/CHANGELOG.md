@@ -1,5 +1,19 @@
 # @rpch/rpc-server
 
+## 1.4.0
+
+### Minor Changes
+
+-   af3a2e8: Propagate request and response headers.
+    Allow priority header definition via url search parameters.
+    These can be useful to provide authorization header value to various RPC endpoint.
+
+### Patch Changes
+
+-   Updated dependencies [af3a2e8]
+-   Updated dependencies [af3a2e8]
+    -   @rpch/sdk@2.0.0
+
 ## 1.3.4
 
 ### Patch Changes
