@@ -46,24 +46,25 @@ function extractParams(
     if (!urlStr || !incHeaders.host) {
         return {};
     }
+
     const url = toURL(urlStr, `http://${incHeaders.host}`); // see https://nodejs.org/api/http.html#messageurl
     if (!url) {
         return {};
     }
+
     const provider = url.searchParams.get('provider');
     const timeout = url.searchParams.get('timeout');
     const measureRPClatency = url.searchParams.get('measureRPClatency');
 
-    const headers = Object.entries(incHeaders).reduce<Record<string, string>>((acc, [k, v]) => {
-        if (v) {
-            if (Array.isArray(v)) {
-                acc[k] = v.join(', ');
-            } else {
-                acc[k] = v;
-            }
-        }
-        return acc;
-    }, {});
+    const reqHeaders = headersFromIncoming(incHeaders);
+    const paramHeadersRaw = url.searchParams.getAll('header');
+    const paramHeaders = headersFromStringArray(paramHeadersRaw);
+
+    // specific defined param headers overwrite http request headers
+    const headers = {
+        ...reqHeaders,
+        ...paramHeaders,
+    };
 
     return {
         provider: provider ? provider : undefined,
@@ -73,6 +74,29 @@ function extractParams(
             : undefined,
         headers,
     };
+}
+
+function headersFromStringArray(headers: string[]) {
+    return headers.reduce<Record<string, string>>((acc, h) => {
+        const [k, v] = h.split(':');
+        if (k && k.trim() && v && v.trim()) {
+            acc[k.trim()] = v.trim();
+        }
+        return acc;
+    }, {});
+}
+
+function headersFromIncoming(headers: http.IncomingHttpHeaders) {
+    return Object.entries(headers).reduce<Record<string, string>>((acc, [k, v]) => {
+        if (v) {
+            if (Array.isArray(v)) {
+                acc[k] = v.join(', ');
+            } else {
+                acc[k] = v;
+            }
+        }
+        return acc;
+    }, {});
 }
 
 function parseBody(
@@ -348,6 +372,11 @@ function parseBooleanEnv(env?: string) {
  * RPCH_LOG_LEVEL - Ops.logLevel
  *
  * See **RPChSDK.RequestOps** for overridable per request parameters.
+ * RPC server provides one extra request parameter for easy authentication headers inside wallets network configuration.
+ * Parameters starting with `header` will be treated as priority headers.
+ * These have precedence over the actual request headers.
+ * The value itself consists of a `key:value` pair separated by a single colon `:`.
+ * e.g.: `?header=x-apikey:foobar` will result in the following request header: `{"x-apikey": "foobar"}`
  */
 if (require.main === module) {
     if (!process.env.CLIENT) {
