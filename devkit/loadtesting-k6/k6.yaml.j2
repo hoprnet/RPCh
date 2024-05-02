@@ -25,15 +25,10 @@ spec:
       - name: WALLET_TYPE
         value: {{ walletType }}
       - name: RPC_SERVER_URL
-        value: http://rpc-server-one-hop.rpch.svc:45750
+        value: http://phttp-server.phttp.svc:45750
       - name: K6_PROMETHEUS_RW_SERVER_URL
-        value: https://prometheus.prod.hoprtech.net/api/v1/write
+        value: http://kube-prometheus-stack-prometheus.monitoring.svc:9090/api/v1/write
       - name: K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM
         value: 'true'
       - name: K6_OUT
         value: xk6-prometheus-rw
-    # envFrom:
-    #   - secretRef:
-    #       name: rpc-server
-
-
