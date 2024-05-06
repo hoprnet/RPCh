@@ -1,5 +1,12 @@
 # @rpch-examples/ethers
 
+## 0.1.1
+
+### Patch Changes
+
+-   Updated dependencies
+    -   @rpch/sdk@2.0.1
+
 ## 0.1.0
 
 ### Minor Changes

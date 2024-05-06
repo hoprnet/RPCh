@@ -1,5 +1,12 @@
 # @rpch/rpc-server
 
+## 1.4.1
+
+### Patch Changes
+
+-   Updated dependencies
+    -   @rpch/sdk@2.0.1
+
 ## 1.4.0
 
 ### Minor Changes

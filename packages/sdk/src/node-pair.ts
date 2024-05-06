@@ -17,7 +17,7 @@ export type MessageListener = (messages: NodeAPI.Message[]) => void;
 const MessagesFetchInterval = 333; // ms
 const InfoResponseTimeout = 10e3; // 10s
 
-const RelayNodesCompatVersions = ['2.0.6', '2.0.7', '2.1'];
+const RelayNodesCompatVersions = ['2.1.0-rc.4-pr.6235'];
 
 export type NodePair = {
     entryNode: EntryNode;

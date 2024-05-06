@@ -1,5 +1,11 @@
 # @rpch/sdk
 
+## 2.0.1
+
+### Patch Changes
+
+-   Update relay versions to currently working 1hop version
+
 ## 2.0.0
 
 ### Major Changes
