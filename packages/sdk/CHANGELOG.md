@@ -1,5 +1,11 @@
 # @rpch/sdk
 
+## 2.0.2
+
+### Patch Changes
+
+-   update compatible node version for manual relaying
+
 ## 2.0.1
 
 ### Patch Changes
