@@ -129,7 +129,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
-          context: "./${{ matrix.directory }}/${{ matrix.project }}/"
+          file: "./${{ matrix.directory }}/${{ matrix.project }}/Dockerfile"
           tags: |
             europe-west3-docker.pkg.dev/hoprassociation/docker-images/${{ matrix.project }}:${{ steps.docker-tag.outputs.DOCKER_TAG_COMMIT }}
             europe-west3-docker.pkg.dev/hoprassociation/docker-images/${{ matrix.project }}:${{ steps.docker-tag.outputs.DOCKER_TAG }}
