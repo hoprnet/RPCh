@@ -1,5 +1,11 @@
 # @rpch/discovery-platform
 
+## 1.1.5
+
+### Patch Changes
+
+-   Added a new column in the vouchers table to have a possibility of limiting nubmer of voucher uses
+
 ## 1.1.4
 
 ### Patch Changes
