@@ -742,7 +742,6 @@ export default class SDK {
         headers?: Record<string, string>,
     ) => {
         // if we provide headers we need to provide all of them
-        // pHTTP exit app will only set content type application/json if there are no headers
         if (provider === RPC_PROPELLORHEADS && mevKickbackAddress) {
             return {
                 'X-Tx-Origin': mevKickbackAddress,
@@ -751,6 +750,7 @@ export default class SDK {
                 ...headers,
             };
         }
+        // merge headers with provided headers
         if (headers || this.ops.headers) {
             return {
                 'Content-Type': 'application/json',
@@ -758,6 +758,8 @@ export default class SDK {
                 ...headers,
             };
         }
+        // default to application/json content type if no headers are provide
+        return { 'Content-Type': 'application/json' };
     };
 
     private determineHops = (forceZeroHop: boolean) => {
