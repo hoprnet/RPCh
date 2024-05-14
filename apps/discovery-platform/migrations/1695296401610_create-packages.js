@@ -52,6 +52,7 @@ exports.up = (pgm) => {
         name: { type: 'varchar(255)' },
         code: { type: 'varchar(255)', notNull: true },
         valid_until: { type: 'timestamp' },
+        uses_left: { type: 'integer' },
         created_at: 'createdAt',
         updated_at: 'timestamp',
     });
