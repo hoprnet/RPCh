@@ -92,15 +92,13 @@ jobs:
         id: docker-tag
         run: |
           main_version=$(jq -r '.version' apps/${{ matrix.project }}/package.json)
-          commit_short_sha=$(git rev-parse --short "${COMMIT_SHA:-HEAD}")
-          docker_commit_tag="${main_version}-commit.${commit_short_sha}"
-          echo "DOCKER_TAG_COMMIT=${docker_commit_tag}" >> $GITHUB_OUTPUT
           pr_number=${{ github.event.pull_request.number }}
           if [ ! -z "$pr_number" ]; then
-            docker_tag="${main_version}-pr.${pr_number}"
+            commit_short_sha=$(git rev-parse --short "${COMMIT_SHA:-HEAD}")
+            docker_tag="${main_version}-pr.${pr_number}-commit.${commit_short_sha}"
             echo "DOCKER_TAG=${docker_tag}" >> $GITHUB_OUTPUT
-          else 
-            echo "DOCKER_TAG=latest" >> $GITHUB_OUTPUT
+          else
+            echo "DOCKER_TAG=${main_version}" >> $GITHUB_OUTPUT
           fi
         env:
           COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
@@ -131,7 +129,6 @@ jobs:
           push: true
           file: "./${{ matrix.directory }}/${{ matrix.project }}/Dockerfile"
           tags: |
-            europe-west3-docker.pkg.dev/hoprassociation/docker-images/${{ matrix.project }}:${{ steps.docker-tag.outputs.DOCKER_TAG_COMMIT }}
             europe-west3-docker.pkg.dev/hoprassociation/docker-images/${{ matrix.project }}:${{ steps.docker-tag.outputs.DOCKER_TAG }}
 
   review-configuration:
