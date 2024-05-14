@@ -1,5 +1,11 @@
 # @rpch/sdk
 
+## 2.0.3
+
+### Patch Changes
+
+-   00e3508: Fix default header content-type
+
 ## 2.0.2
 
 ### Patch Changes

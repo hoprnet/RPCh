@@ -1,5 +1,16 @@
 # @rpch/discovery-platform
 
+## 1.2.0
+
+### Minor Changes
+
+-   036c898: Added a new column in the vouchers table to have a possibility of limiting nubmer of voucher uses
+
+### Patch Changes
+
+-   Updated dependencies [00e3508]
+    -   @rpch/sdk@2.0.3
+
 ## 1.1.4
 
 ### Patch Changes
