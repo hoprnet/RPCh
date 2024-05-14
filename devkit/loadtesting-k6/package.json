@@ -13,8 +13,8 @@
         "test": "exit 0",
         "help": "node build/rpc-server/help.js",
         "start:discovery-platform": "k6 run src/discovery-platform/artificial.js --out json=results/results-discovery-platform.json",
-        "docker:build": "cd ../../ ; docker build --platform linux/amd64 --tag europe-west6-docker.pkg.dev/rpch-375921/rpch/rpch-k6:latest -f devkit/loadtesting-k6/Dockerfile .",
-        "docker:push": "docker push europe-west6-docker.pkg.dev/rpch-375921/rpch/rpch-k6:latest"
+        "docker:build": "cd ../../ ; docker build --platform linux/amd64 --tag europe-west3-docker.pkg.dev/hoprassociation/docker-images/phttp-k6:latest -f devkit/loadtesting-k6/Dockerfile .",
+        "docker:push": "docker push europe-west3-docker.pkg.dev/hoprassociation/docker-images/phttp-k6:latest"
     },
     "devDependencies": {
         "@types/k6": "^0.47.1",
