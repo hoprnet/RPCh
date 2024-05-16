@@ -8,9 +8,7 @@ const log = Utils.logger(['availability-monitor:availability']);
 const ApplicationTag = 0xffff;
 
 export async function start(dbPool: Pool) {
-    dbPool.on('error', (err, client) =>
-        log.error('pg pool [client %s]: %s[%o]', client, JSON.stringify(err), err),
-    );
+    dbPool.on('error', (err, client) => log.error('pg pool [client %s]: %o', client, err));
     dbPool.connect();
     run(dbPool);
 }
@@ -28,7 +26,7 @@ async function run(dbPool: Pool) {
             await doRun(dbPool, entryNodes, exitNodes);
         }
     } catch (err) {
-        log.error('run main loop: %s[%o]', JSON.stringify(err), err);
+        log.error('run main loop: %o', err);
     } finally {
         reschedule(dbPool);
     }
@@ -215,7 +213,7 @@ async function peersMap(
             if (err.cause && err.cause.errno === -3008 && err.cause.code === 'ENOTFOUND') {
                 return { expectedOffline: node };
             }
-            log.warn('fetch peers from %s: %s[%o]', node.id, JSON.stringify(err), err);
+            log.warn('fetch peers from %s: %o', node.id, err);
         }
         if (PeersCache.isOnline(nodePeers)) {
             const ids = Array.from(nodePeers.peers.values()).map(({ peerId }) => peerId);
@@ -276,12 +274,7 @@ async function runOnlineChecks(
         };
         // delete any previous pongs
         await NodeAPI.deleteMessages(conn, ApplicationTag).catch((err) =>
-            log.error(
-                'delete messages from %s: %s[%o]',
-                Utils.shortPeerId(eId),
-                JSON.stringify(err),
-                err,
-            ),
+            log.error('delete messages from %s: %o', Utils.shortPeerId(eId), err),
         );
 
         // send pings
@@ -297,10 +290,9 @@ async function runOnlineChecks(
                         .then(resolve)
                         .catch((err) => {
                             log.error(
-                                'send ping from %s to %s: %s[%o]',
+                                'send ping from %s to %s: %o',
                                 Utils.shortPeerId(eId),
                                 Utils.shortPeerId(xId),
-                                JSON.stringify(err),
                                 err,
                             );
                             reject('Error sending ping');
@@ -320,9 +312,8 @@ async function runOnlineChecks(
                     .then(resolve)
                     .catch((err) => {
                         log.error(
-                            'retrieve messages from %s: %s[%o]',
+                            'retrieve messages from %s: %o',
                             JSON.stringify(Utils.shortPeerId(eId)),
-                            JSON.stringify(err),
                             err,
                         );
                         reject('Error retrieving messages');
@@ -457,7 +448,7 @@ async function gatherChannels(entryNodes: q.RegisteredNode[]): Promise<Map<strin
         apiEndpoint: new URL(entryNode.hoprd_api_endpoint),
         accessToken: entryNode.hoprd_api_token,
     }).catch((err) => {
-        log.error('error getting channels from %s: %s[%o]', entryNode.id, JSON.stringify(err), err);
+        log.error('error getting channels from %s: %o', entryNode.id, err);
     });
     if (respCh) {
         return channelsMap(respCh.all);
