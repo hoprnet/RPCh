@@ -1,4 +1,5 @@
 import type { Pool, QueryResult } from 'pg';
+import type { Keys } from './configs';
 
 export type UserAttrs = {
     name?: string;
@@ -32,7 +33,7 @@ export type FederatedCredential = {
     subject: string;
 };
 
-export async function readConfig(dbPool: Pool, key: string): Promise<string> {
+export async function readConfig(dbPool: Pool, key: keyof Keys): Promise<string> {
     const q = 'select data from configs where key = $1';
     const { rows } = await dbPool.query(q, [key]);
     if (rows.length !== 1) {
