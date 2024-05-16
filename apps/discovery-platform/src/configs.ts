@@ -8,7 +8,7 @@ export enum Keys {
     RPCh_PROVIDER_GNOSIS = 'RPCh_PROVIDER_GNOSIS',
     RPCh_RPC_SERVER_VERSION = 'RPCh_RPC_SERVER_VERSION',
     RPCh_SDK_VERSION = 'RPCh_SDK_VERSION',
-    RPCh_URL_PROVIDER_BASE = 'RPCh_URL_PROVIDER_BASE',
+    RPCh_URL_BASE = 'RPCh_URL_BASE',
 }
 
 export async function readConfig(dbPool: pg.Pool, key: Keys): Promise<string | undefined> {
