@@ -1,5 +1,12 @@
 # @rpch/discovery-platform
 
+## 1.2.1
+
+### Patch Changes
+
+-   2b919df: fix uses_left column migration
+-   1995a92: update config keys for easier access
+
 ## 1.2.0
 
 ### Minor Changes

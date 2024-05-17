@@ -1,5 +1,11 @@
 # @rpch/availability-monitor
 
+## 1.1.8
+
+### Patch Changes
+
+-   d3332bb: better error log formatting
+
 ## 1.1.7
 
 ### Patch Changes
