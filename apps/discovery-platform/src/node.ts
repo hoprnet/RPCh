@@ -150,46 +150,33 @@ export function listExitNodes(dbPool: Pool, nodeIds: Iterable<string>): Promise<
     return dbPool.query(q).then((r) => r.rows.map(exitNodeFromDB));
 }
 
-export function listZeroHopPairings(
-    dbPool: Pool,
-    amount: number,
-    since?: string,
-): Promise<Pairing[]> {
-    const qSelect = 'select * from zero_hop_pairings';
-    const qOrder = `order by random() limit ${amount}`;
-    if (since) {
-        const q = [qSelect, 'where created_at > $1', qOrder].join(' ');
-        // postgres time resolution is higher than js
-        // need to add 1 to timestamp to avoid rounding errors confusion when comparing timestamps
-        // this can cause other confusion but will be fine for our use case
-        const dSince = new Date(since);
-        const date = new Date(dSince.getTime() + 1);
-        return dbPool.query(q, [date]).then((r) => r.rows.map(pairingFromDB));
-    }
-    const q = [qSelect, qOrder].join(' ');
-    return dbPool.query(q).then((r) => r.rows.map(pairingFromDB));
-}
-
+/**
+ * Queries database for routes matching requested number of hops.
+ * Will try to fetch routes matching as many different exit nodes as possible.
+ * Choosing entry nodes and additional entry exit node pairs at random.
+ */
 export function listPairings(
     dbPool: Pool,
     amount: number,
-    since?: string,
     forceZeroHop?: boolean,
 ): Promise<Pairing[]> {
-    const t = forceZeroHop ? 'zero_hop_pairings' : 'one_hop_pairings';
-    const qSelect = `select * from ${t}`;
-    const qOrder = `order by random() limit ${amount}`;
-    if (since) {
-        const q = [qSelect, 'where created_at > $1', qOrder].join(' ');
-        // postgres time resolution is higher than js
-        // need to add 1 to timestamp to avoid rounding errors confusion when comparing timestamps
-        // this can cause other confusion but will be fine for our use case
-        const dSince = new Date(since);
-        const date = new Date(dSince.getTime() + 1);
-        return dbPool.query(q, [date]).then((r) => r.rows.map(pairingFromDB));
-    }
-    const q = [qSelect, qOrder].join(' ');
-    return dbPool.query(q).then((r) => r.rows.map(pairingFromDB));
+    const table = forceZeroHop ? 'zero_hop_pairings' : 'one_hop_pairings';
+    const sub1 = 'max_rand_exits';
+    const sub2 = 'remaining_routes';
+    const qMaxRandExits = [
+        `select distinct on (exit_id) * from ${table}`,
+        `order by exit_id, random() limit ${amount}`,
+    ].join(' ');
+    const qRemainingRoutes = [
+        `select * from ${table}`,
+        `where (entry_id,exit_id) not in (select entry_id, exit_id from ${sub1})`,
+        `order by random() limit (${amount} - (select count(*) from ${sub1}))`,
+    ].join(' ');
+    const qUnion = [
+        `with ${sub1} as (${qMaxRandExits}), ${sub2} as (${qRemainingRoutes})`,
+        `select * from ${sub1} union all select * from ${sub2}`,
+    ].join(' ');
+    return dbPool.query(qUnion).then((r) => r.rows.map(pairingFromDB));
 }
 
 export function listIdsByAccessToken(

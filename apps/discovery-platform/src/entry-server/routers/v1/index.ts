@@ -57,7 +57,6 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
         '/nodes/pairings',
         middleware.clientAuthorized(ops.dbPool),
         query('amount').default(10).isInt({ min: 1, max: 100 }),
-        query('since').optional().isISO8601(),
         query('force_zero_hop').optional().toBoolean(),
         getNodesPairings(ops.dbPool),
     );
@@ -711,7 +710,7 @@ function getNodesPairings(dbPool: Pool) {
         const data = matchedData(req);
         const forceZeroHop = !!data.force_zero_hop;
         qNode
-            .listPairings(dbPool, data.amount, data.since, forceZeroHop)
+            .listPairings(dbPool, data.amount, forceZeroHop)
             .then((qPairings) => {
                 if (qPairings.length === 0) {
                     // table is empty
