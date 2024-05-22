@@ -40,10 +40,9 @@ export type QuotaParams = {
     type: 'request' | 'response';
 };
 
-export function fetchNodes(ops: ClientOps, amount: number, since: Date): Promise<Nodes> {
+export function fetchNodes(ops: ClientOps, amount: number): Promise<Nodes> {
     const url = new URL('/api/v1/nodes/pairings', ops.discoveryPlatformEndpoint);
     url.searchParams.set('amount', `${amount}`);
-    url.searchParams.set('since', since.toISOString());
     url.searchParams.set('force_zero_hop', `${ops.forceZeroHop}`);
     const headers = {
         'Accept': 'application/json',

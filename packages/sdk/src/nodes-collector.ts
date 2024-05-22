@@ -20,7 +20,6 @@ const RoutesAmount = 10; // fetch 10 routes
 
 export default class NodesCollector {
     private readonly nodePairs: Map<string, NodePair.NodePair> = new Map();
-    private lastMatchedAt = new Date(0);
 
     constructor(
         private readonly discoveryPlatformEndpoint: string,
@@ -172,7 +171,6 @@ export default class NodesCollector {
                 forceZeroHop: this.hops === 0,
             },
             RoutesAmount,
-            this.lastMatchedAt,
         )
             .then(this.initNodes)
             .catch((err) => {
@@ -225,12 +223,11 @@ export default class NodesCollector {
 
         // ping all nodes
         this.nodePairs.forEach((np) => NodePair.discover(np));
-        this.lastMatchedAt = new Date(nodes.matchedAt);
         log.info(
             'discovered %d node-pairs with %d exits, matched at %s',
             this.nodePairs.size,
             lookupExitNodes.size,
-            this.lastMatchedAt,
+            nodes.matchedAt
         );
         this.versionListener(nodes.versions);
     };
