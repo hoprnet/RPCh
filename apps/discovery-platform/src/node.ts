@@ -163,15 +163,18 @@ export function listPairings(
     const table = forceZeroHop ? 'zero_hop_pairings' : 'one_hop_pairings';
     const sub1 = 'max_rand_exits';
     const sub2 = 'remaining_routes';
+    // select each exit exactly once with a random entry_id
     const qMaxRandExits = [
         `select distinct on (exit_id) * from ${table}`,
         `order by exit_id, random() limit ${amount}`,
     ].join(' ');
+    // select new random entry_id - exit_id combinations until we reach **amount**
     const qRemainingRoutes = [
         `select * from ${table}`,
         `where (entry_id,exit_id) not in (select entry_id, exit_id from ${sub1})`,
         `order by random() limit (${amount} - (select count(*) from ${sub1}))`,
     ].join(' ');
+    // union subqueries for final result
     const qUnion = [
         `with ${sub1} as (${qMaxRandExits}), ${sub2} as (${qRemainingRoutes})`,
         `select * from ${sub1} union all select * from ${sub2}`,
