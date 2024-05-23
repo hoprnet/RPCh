@@ -12,7 +12,7 @@ import * as middleware from './middleware';
 import * as node from './node';
 import * as quota from './quota';
 
-import * as configs from './../../../configs';
+import * as qConfigs from './../../../configs';
 import * as qNode from './../../../node';
 
 import type { Secrets } from './../../../secrets';
@@ -31,7 +31,7 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
             resave: false,
             saveUninitialized: false,
             // cookie: { secure: false, maxAge: 60000 },
-        }),
+        })
     );
     router.use(passport.initialize());
     router.use(passport.session());
@@ -39,7 +39,7 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
         cors({
             origin: true,
             credentials: true,
-        }),
+        })
     );
     router.use(express.json());
 
@@ -58,7 +58,14 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
         middleware.clientAuthorized(ops.dbPool),
         query('amount').default(10).isInt({ min: 1, max: 100 }),
         query('force_zero_hop').optional().toBoolean(),
-        getNodesPairings(ops.dbPool),
+        getNodesPairings(ops.dbPool)
+    );
+
+    router.get(
+        'configs',
+        middleware.clientAuthorized(ops.dbPool),
+        query('key').isIn(Object.keys(qConfigs.Keys)).exists(),
+        getConfigKeys(ops.dbPool)
     );
 
     router.post(
@@ -66,7 +73,7 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
         middleware.adminAuthorized(ops.secrets.adminSecret),
         checkSchema(node.createSchema),
         middleware.validateStop,
-        node.create(ops.dbPool),
+        node.create(ops.dbPool)
     );
 
     ////
@@ -77,7 +84,7 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
         middleware.nodeAuthorized(ops.dbPool),
         checkSchema(quota.schema),
         middleware.validateStop,
-        quota.request(ops.dbPool),
+        quota.request(ops.dbPool)
     );
 
     router.post(
@@ -85,7 +92,7 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
         middleware.nodeAuthorized(ops.dbPool),
         checkSchema(quota.schema),
         middleware.validateStop,
-        quota.response(ops.dbPool),
+        quota.response(ops.dbPool)
     );
 
     ////
@@ -95,7 +102,7 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
     router.post(
         '/login/ethereum',
         passport.authenticate('ethereum', { failureMessage: true }),
-        login.signin(),
+        login.signin()
     );
 
     router.get('/login/google', passport.authenticate('google'));
@@ -107,7 +114,7 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
         }),
         function (req, res) {
             res.redirect('/login/google');
-        },
+        }
     );
 
     ////
@@ -119,7 +126,7 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
         middleware.userAuthorized(),
         checkSchema(client.createSchema),
         middleware.validateStop,
-        client.create(ops.dbPool),
+        client.create(ops.dbPool)
     );
     router.get('/clients/:id', middleware.userAuthorized(), client.read(ops.dbPool));
     router.patch(
@@ -127,14 +134,14 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
         middleware.userAuthorized(),
         checkSchema(client.updateSchema),
         middleware.validateStop,
-        client.update(ops.dbPool),
+        client.update(ops.dbPool)
     );
     router.put(
         '/clients/:id',
         middleware.userAuthorized(),
         checkSchema(client.updateSchema),
         middleware.validateStop,
-        client.update(ops.dbPool),
+        client.update(ops.dbPool)
     );
     router.delete('/clients/:id', middleware.userAuthorized(), client.del(ops.dbPool));
 
@@ -728,7 +735,7 @@ function getNodesPairings(dbPool: Pool) {
                         acc.set(entryId, new Set([exitId]));
                         return acc;
                     },
-                    new Map(),
+                    new Map()
                 );
 
                 // query entry and exit nodes
@@ -740,15 +747,10 @@ function getNodesPairings(dbPool: Pool) {
                     return acc;
                 }, new Set());
                 const qExitNodes = qNode.listExitNodes(dbPool, exitIds);
-                const qRPCServerVersion = configs.readConfig(
-                    dbPool,
-                    configs.Keys.RPCh_RPC_SERVER_VERSION,
-                );
-                const qSDKVersion = configs.readConfig(dbPool, configs.Keys.RPCh_SDK_VERSION);
 
                 // wait for entry and exit nodes query results
-                Promise.all([qEntryNodes, qExitNodes, qRPCServerVersion, qSDKVersion])
-                    .then(([qEntries, qExits, vRPCserver, vSDK]) => {
+                Promise.all([qEntryNodes, qExitNodes])
+                    .then(([qEntries, qExits]) => {
                         const matchedAt = qPairings[0].createdAt;
                         const entryNodes = qEntries.map((e) => ({
                             ...e,
@@ -758,10 +760,6 @@ function getNodesPairings(dbPool: Pool) {
                             entryNodes,
                             exitNodes: qExits,
                             matchedAt,
-                            versions: {
-                                sdk: vSDK,
-                                rpcServer: vRPCserver,
-                            },
                         });
                     })
                     .catch((ex) => {
@@ -773,10 +771,28 @@ function getNodesPairings(dbPool: Pool) {
             .catch((ex) => {
                 log.error(
                     `Error during read ${forceZeroHop ? 'zero' : 'one'}_hop_pairings query`,
-                    ex,
+                    ex
                 );
                 const reason = 'Error querying database';
                 return res.status(500).json({ reason });
             });
+    };
+}
+
+function getConfigKeys(dbPool: Pool) {
+    return async function (req: Request, res: Response) {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json(errors.mapped());
+        }
+
+        const data = matchedData(req);
+        const results = await qConfigs.listCongigs(dbPool, data.keys);
+        if (results.length === 0) {
+            // no matching rows
+            return res.status(204).end();
+        }
+
+        return res.status(200).json(results);
     };
 }
