@@ -20,7 +20,6 @@ const RoutesAmount = 10; // fetch 10 routes
 
 export default class NodesCollector {
     private readonly nodePairs: Map<string, NodePair.NodePair> = new Map();
-    private lastMatchedAt = new Date(0);
 
     constructor(
         private readonly discoveryPlatformEndpoint: string,
@@ -172,18 +171,19 @@ export default class NodesCollector {
                 forceZeroHop: this.hops === 0,
             },
             RoutesAmount,
-            this.lastMatchedAt,
         )
             .then(this.initNodes)
             .catch((err) => {
-                if (err.message === DPapi.Unauthorized) {
+                if ('cause' in err && 'code' in err.cause && err.cause.code === 'ECONNREFUSED') {
+                    this.logDPoffline();
+                } else if (err.message === DPapi.Unauthorized) {
                     this.logUnauthorized();
                 } else if (err.message === DPapi.NoMoreNodes && this.nodePairs.size === 0) {
                     this.logNoNodes();
                 } else if (err.message === DPapi.NoMoreNodes) {
                     log.verbose('no new nodes found');
                 } else {
-                    log.error('error fetching node pairs: %s[%o]', JSON.stringify(err), err);
+                    log.error('error fetching node pairs: %o', err);
                 }
             })
             .finally(() => {
@@ -223,12 +223,11 @@ export default class NodesCollector {
 
         // ping all nodes
         this.nodePairs.forEach((np) => NodePair.discover(np));
-        this.lastMatchedAt = new Date(nodes.matchedAt);
         log.info(
             'discovered %d node-pairs with %d exits, matched at %s',
             this.nodePairs.size,
             lookupExitNodes.size,
-            this.lastMatchedAt,
+            new Date(nodes.matchedAt),
         );
         this.versionListener(nodes.versions);
     };
@@ -250,6 +249,23 @@ export default class NodesCollector {
             '-',
             'Client ID is not valid.',
             'Visit https://degen.rpch.net to get a valid Client ID!',
+            '***',
+        ].join(' ');
+        const errDeco = Array.from({ length: errMessage.length }, () => '*').join('');
+        log.error('');
+        log.error(`!!! ${errDeco} !!!`);
+        log.error(`!!! ${errMessage} !!!`);
+        log.error(`!!! ${errDeco} !!!`);
+        log.error('');
+        this.destruct();
+    };
+
+    private logDPoffline = () => {
+        const errMessage = [
+            '***',
+            'Discovery Platform appears offline',
+            '-',
+            'Do you have internet access?',
             '***',
         ].join(' ');
         const errDeco = Array.from({ length: errMessage.length }, () => '*').join('');
