@@ -1,4 +1,6 @@
+import { Utils } from '@hoprnet/phttp-lib';
 import debug from 'debug';
+
 import * as Res from './result';
 
 const textDecoder = new TextDecoder('utf-8');
@@ -14,7 +16,7 @@ export enum VrsnCmp {
 const DefaultLogLevel = 'info';
 
 export function shortPeerId(peerId: string): string {
-    return `.${peerId.substring(peerId.length - 4)}`;
+    return Utils.shortPeerId(peerId);
 }
 
 export function randomEl<T>(arr: T[]): T {
@@ -29,6 +31,8 @@ export function average(arr: number[]): number {
     const sum = arr.reduce((acc, l) => acc + l, 0);
     return sum / arr.length || 0;
 }
+
+export const headersToRecord = Utils.headersToRecord.bind(Utils);
 
 export function isValidURL(url: string) {
     if ('canParse' in URL) {

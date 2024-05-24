@@ -74,8 +74,9 @@ export type Ops = {
  * @param headers - will be merged with provided headers during construction
  */
 export type RequestOps = {
-    readonly provider?: string;
     readonly headers?: Record<string, string>;
+    readonly provider?: string;
+    readonly timeout?: number;
 };
 
 const RPC_PROPELLORHEADS = 'https://rpc.propellerheads.xyz/eth';
@@ -99,10 +100,6 @@ const defaultOps = {
 
 const log = Utils.logger(['sdk']);
 
-// message tag - more like port since we tag all our messages the same
-// 0xffff reserved for Availability Monitor
-const ApplicationTag = Math.floor(Math.random() * 0xfffe);
-
 /**
  * Send traffic through the RPCh network
  */
@@ -121,7 +118,10 @@ export default class SDK {
      * @param crypto crypto instantiation for RPCh, use `@rpch/crypto-for-nodejs` or `@rpch/crypto-for-web`
      * @param ops, see **Ops**
      **/
-    constructor(private readonly clientId: string, ops: Ops = {}) {
+    constructor(
+        private readonly clientId: string,
+        ops: Ops = {},
+    ) {
         this.ops = this.sdkOps(ops);
         (this.ops.debugScope || this.ops.logLevel) &&
             Utils.setDebugScopeLevel(this.ops.debugScope, this.ops.logLevel);
@@ -166,16 +166,16 @@ export default class SDK {
     };
 
     private doSend = async (req: JRPC.Request, ops?: RequestOps): Promise<Response.Response> => {
-        const reqOps = this.requestOps(ops);
-        const provider = this.determineProvider(reqOps, req);
+        const provider = this.determineProvider(req, ops?.provider);
+        const timeout = ops?.timeout ?? this.ops.timeout;
         const headers = this.determineHeaders(provider, this.ops.mevKickbackAddress, ops?.headers);
 
         // sanity check provider url
-        if (!Utils.isValidURL(reqOps.provider)) {
+        if (!Utils.isValidURL(provider)) {
             throw new Response.SendError(
                 'Cannot parse provider URL',
                 provider,
-                this.errHeaders(headers)
+                this.errHeaders(headers),
             );
         }
         // sanity check mev protection provider url, if it is set
@@ -184,7 +184,7 @@ export default class SDK {
                 throw new Response.SendError(
                     'Cannot parse mevProtectionProvider URL',
                     provider,
-                    this.errHeaders(headers)
+                    this.errHeaders(headers),
                 );
             }
         }
@@ -193,13 +193,14 @@ export default class SDK {
             const res = await this.routing.fetch(provider, {
                 headers,
                 body: JSON.stringify(req),
+                timeout,
             });
             const text = await res.text();
             return {
                 status: res.status,
                 statusText: res.statusText,
                 text,
-                headers: res.headers,
+                headers: Utils.headersToRecord(res.headers),
             };
         } catch (err) {
             throw new Response.SendError(`Error making request: ${err}`, provider, headers);
@@ -235,13 +236,13 @@ export default class SDK {
     private fetchChainId = async (
         provider: string,
         headers?: Record<string, string>,
-        starknet?: boolean
+        starknet?: boolean,
     ) => {
         const req = JRPC.chainId(provider, starknet);
 
         // fetch request through RPCh
         const res = await this.doSend(req, { provider, headers }).catch((err) =>
-            log.warn('error fetching chainId for %s: %s[%o]', provider, JSON.stringify(err), err)
+            log.warn('error fetching chainId for %s: %s[%o]', provider, JSON.stringify(err), err),
         );
         if (!res) {
             return;
@@ -255,14 +256,14 @@ export default class SDK {
                     provider,
                     res.status,
                     res.statusText,
-                    res.text
+                    res.text,
                 );
             } catch (err) {
                 log.error(
                     'unable to determine error message for failed chainId call to %s: %s[%o]',
                     provider,
                     JSON.stringify(err),
-                    err
+                    err,
                 );
             }
             return;
@@ -284,7 +285,7 @@ export default class SDK {
                     log.warn(
                         'jrpc error response for chainId request to %s: %s',
                         provider,
-                        JSON.stringify(jrpc.error)
+                        JSON.stringify(jrpc.error),
                     );
                 }
             } else {
@@ -296,33 +297,39 @@ export default class SDK {
                 'unable to resolve json response for chainId call to %s, %s[%o]',
                 provider,
                 JSON.stringify(err),
-                err
+                err,
             );
         }
     };
 
-    private determineProvider = (
-        { provider }: { provider: string },
-        { method }: JRPC.Request
-    ): string => {
+    private requestOps = (ops?: RequestOps) => {
+        if (ops) {
+            return {
+                provider: ops.provider || this.ops.provider,
+            };
+        }
+    };
+
+    private determineProvider = ({ method }: JRPC.Request, provider?: string): string => {
+        const prov = provider ?? this.ops.provider ?? defaultOps.provider;
         if (this.ops.disableMevProtection) {
-            return provider;
+            return prov;
         }
         if (method !== 'eth_sendRawTransaction') {
-            return provider;
+            return prov;
         }
         // sanity check for chain id if we got it
-        const cId = this.chainIds.get(provider);
+        const cId = this.chainIds.get(prov);
         if (cId === '0x1' || (cId && parseInt(cId) === 1)) {
             return this.ops.mevProtectionProvider;
         }
-        return provider;
+        return prov;
     };
 
     private determineHeaders = (
         provider: string,
         mevKickbackAddress?: string,
-        headers?: Record<string, string>
+        headers?: Record<string, string>,
     ) => {
         // if we provide headers we need to provide all of them
         if (provider === RPC_PROPELLORHEADS && mevKickbackAddress) {
@@ -359,10 +366,7 @@ export default class SDK {
         if (this.chainIds.has(provider)) {
             return;
         }
-        const headers = {
-            ...this.ops.headers,
-            ...opsHeaders,
-        };
+        const headers = this.determineHeaders(provider, undefined, opsHeaders);
         this.fetchChainId(provider, headers);
     };
 
