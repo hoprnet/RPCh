@@ -54,7 +54,6 @@ function extractParams(
 
     const provider = url.searchParams.get('provider');
     const timeout = url.searchParams.get('timeout');
-    const measureRPClatency = url.searchParams.get('measureRPClatency');
 
     const reqHeaders = headersFromIncoming(incHeaders);
     const paramHeadersRaw = url.searchParams.getAll('header');
@@ -69,9 +68,6 @@ function extractParams(
     return {
         provider: provider ? provider : undefined,
         timeout: timeout ? parseInt(timeout, 10) : undefined,
-        measureRPClatency: measureRPClatency
-            ? measureRPClatency.toLowerCase() === 'true'
-            : undefined,
         headers,
     };
 }
