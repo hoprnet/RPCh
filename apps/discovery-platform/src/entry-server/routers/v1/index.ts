@@ -64,7 +64,7 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
     router.get(
         '/configs',
         middleware.clientAuthorized(ops.dbPool),
-        query('key').isIn(Object.keys(qConfigs.Keys)).exists(),
+        query('key').isIn(Object.keys(qConfigs.Key)).exists(),
         getConfigKeys(ops.dbPool),
     );
 
@@ -787,7 +787,7 @@ function getConfigKeys(dbPool: Pool) {
         }
 
         const data = matchedData(req);
-        const results = await qConfigs.listCongigs(dbPool, data.keys);
+        const results = await qConfigs.list(dbPool, data.key);
         if (results.length === 0) {
             // no matching rows
             return res.status(204).end();

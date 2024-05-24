@@ -1,6 +1,6 @@
 import * as pg from 'pg';
 
-export enum Keys {
+export enum Key {
     RPCh_DOCKER_COMMAND_PARAMS = 'RPCh_DOCKER_COMMAND_PARAMS',
     RPCh_DOCKER_IMAGE = 'RPCh_DOCKER_IMAGE',
     RPCh_DOCKER_IMAGE_VERSION = 'RPCh_DOCKER_IMAGE_VERSION',
@@ -12,17 +12,29 @@ export enum Keys {
     RPCh_URL_BASE = 'RPCh_URL_BASE',
 }
 
-export async function listCongigs(
+export async function list(
     dbPool: pg.Pool,
-    keys: Keys[]
+    key: Key | Key[],
 ): Promise<{ key: string; data: string }[]> {
-    const q = 'select key, data from configs where key in $1';
-    const { rows } = await dbPool.query(q, [keys]);
+    const keys = toKeys(key);
+    const strKeys = Array.from(keys).join("','");
+    const q = `select key, data from configs where key in ['${strKeys}']`;
+    const { rows } = await dbPool.query(q);
     return rows;
 }
 
-export async function readConfig(dbPool: pg.Pool, key: Keys): Promise<string | undefined> {
+export async function read(dbPool: pg.Pool, key: Key): Promise<string> {
     const q = 'select data from configs where key = $1';
     const { rows } = await dbPool.query(q, [key]);
-    return rows[0]?.data;
+    if (rows.length !== 1) {
+        throw new Error(`Expected exactly one result: ${rows.length}`);
+    }
+    return rows[0].data;
+}
+
+function toKeys(key: Key | Key[]) {
+    if (Array.isArray(key)) {
+        return new Set(key);
+    }
+    return new Set([key]);
 }
