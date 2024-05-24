@@ -31,7 +31,7 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
             resave: false,
             saveUninitialized: false,
             // cookie: { secure: false, maxAge: 60000 },
-        })
+        }),
     );
     router.use(passport.initialize());
     router.use(passport.session());
@@ -39,7 +39,7 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
         cors({
             origin: true,
             credentials: true,
-        })
+        }),
     );
     router.use(express.json());
 
@@ -58,14 +58,14 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
         middleware.clientAuthorized(ops.dbPool),
         query('amount').default(10).isInt({ min: 1, max: 100 }),
         query('force_zero_hop').optional().toBoolean(),
-        getNodesPairings(ops.dbPool)
+        getNodesPairings(ops.dbPool),
     );
 
     router.get(
-        'configs',
+        '/configs',
         middleware.clientAuthorized(ops.dbPool),
         query('key').isIn(Object.keys(qConfigs.Keys)).exists(),
-        getConfigKeys(ops.dbPool)
+        getConfigKeys(ops.dbPool),
     );
 
     router.post(
@@ -73,7 +73,7 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
         middleware.adminAuthorized(ops.secrets.adminSecret),
         checkSchema(node.createSchema),
         middleware.validateStop,
-        node.create(ops.dbPool)
+        node.create(ops.dbPool),
     );
 
     ////
@@ -84,7 +84,7 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
         middleware.nodeAuthorized(ops.dbPool),
         checkSchema(quota.schema),
         middleware.validateStop,
-        quota.request(ops.dbPool)
+        quota.request(ops.dbPool),
     );
 
     router.post(
@@ -92,7 +92,7 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
         middleware.nodeAuthorized(ops.dbPool),
         checkSchema(quota.schema),
         middleware.validateStop,
-        quota.response(ops.dbPool)
+        quota.response(ops.dbPool),
     );
 
     ////
@@ -102,7 +102,7 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
     router.post(
         '/login/ethereum',
         passport.authenticate('ethereum', { failureMessage: true }),
-        login.signin()
+        login.signin(),
     );
 
     router.get('/login/google', passport.authenticate('google'));
@@ -114,7 +114,7 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
         }),
         function (req, res) {
             res.redirect('/login/google');
-        }
+        },
     );
 
     ////
@@ -126,7 +126,7 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
         middleware.userAuthorized(),
         checkSchema(client.createSchema),
         middleware.validateStop,
-        client.create(ops.dbPool)
+        client.create(ops.dbPool),
     );
     router.get('/clients/:id', middleware.userAuthorized(), client.read(ops.dbPool));
     router.patch(
@@ -134,14 +134,14 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
         middleware.userAuthorized(),
         checkSchema(client.updateSchema),
         middleware.validateStop,
-        client.update(ops.dbPool)
+        client.update(ops.dbPool),
     );
     router.put(
         '/clients/:id',
         middleware.userAuthorized(),
         checkSchema(client.updateSchema),
         middleware.validateStop,
-        client.update(ops.dbPool)
+        client.update(ops.dbPool),
     );
     router.delete('/clients/:id', middleware.userAuthorized(), client.del(ops.dbPool));
 
@@ -735,7 +735,7 @@ function getNodesPairings(dbPool: Pool) {
                         acc.set(entryId, new Set([exitId]));
                         return acc;
                     },
-                    new Map()
+                    new Map(),
                 );
 
                 // query entry and exit nodes
@@ -771,7 +771,7 @@ function getNodesPairings(dbPool: Pool) {
             .catch((ex) => {
                 log.error(
                     `Error during read ${forceZeroHop ? 'zero' : 'one'}_hop_pairings query`,
-                    ex
+                    ex,
                 );
                 const reason = 'Error querying database';
                 return res.status(500).json({ reason });
