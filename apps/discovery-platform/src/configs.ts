@@ -18,7 +18,7 @@ export async function list(
 ): Promise<{ key: string; data: string }[]> {
     const keys = toKeys(key);
     const strKeys = Array.from(keys).join("','");
-    const q = `select key, data from configs where key in ['${strKeys}']`;
+    const q = `select key, data from configs where key in ('${strKeys}')`;
     const { rows } = await dbPool.query(q);
     return rows;
 }

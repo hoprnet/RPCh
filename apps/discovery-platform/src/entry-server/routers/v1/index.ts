@@ -793,6 +793,11 @@ function getConfigKeys(dbPool: Pool) {
             return res.status(204).end();
         }
 
-        return res.status(200).json(results);
+        const obj = results.reduce<Record<string, string>>((acc, { key, data }) => {
+            acc[key] = data;
+            return acc;
+        }, {});
+
+        return res.status(200).json(obj);
     };
 }
