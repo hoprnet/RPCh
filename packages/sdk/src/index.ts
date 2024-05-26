@@ -132,6 +132,7 @@ export default class SDK {
             ...this.ops,
             measureLatency: this.ops.measureRPClatency,
         });
+        this.fetchVersions();
         this.fetchChainId(this.ops.provider as string, this.ops.headers);
         log.info('RPCh SDK[v%s] started', Version);
     }
@@ -231,6 +232,18 @@ export default class SDK {
             measureRPClatency,
             headers: ops.headers,
         };
+    };
+
+    private fetchVersions = async () => {
+        try {
+            const versions = await DPapi.fetchVersions({
+                discoveryPlatformEndpoint: this.ops.discoveryPlatformEndpoint,
+                clientId: this.clientId,
+            });
+            setTimeout(() => this.onVersions(versions));
+        } catch (err) {
+            log.error('Error fetching versions from DiscoveryPlatform: %o', err);
+        }
     };
 
     private fetchChainId = async (
@@ -392,9 +405,12 @@ export default class SDK {
             log.error('error comparing versions: %s', cmp.error);
         }
 
-        // dont fetch exceptions on external code
         setTimeout(() => {
-            this.ops.versionListener && this.ops.versionListener(versions);
+            try {
+                this.ops.versionListener && this.ops.versionListener(versions);
+            } catch (err) {
+                log.warn("'versionListener' throws error: %o", err);
+            }
         });
     };
 
