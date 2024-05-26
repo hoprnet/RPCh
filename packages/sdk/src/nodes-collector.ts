@@ -163,74 +163,7 @@ export default class NodesCollector {
         log.warn('failed %s on %s', Segment.prettyPrint(seg), NodePair.prettyPrint(np));
     };
 
-    private fetchRoutes = () => {
-        DPapi.fetchNodes(
-            {
-                discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
-                clientId: this.clientId,
-                forceZeroHop: this.hops === 0,
-            },
-            RoutesAmount,
-        )
-            .then(this.initNodes)
-            .catch((err) => {
-                if ('cause' in err && 'code' in err.cause && err.cause.code === 'ECONNREFUSED') {
-                    this.logDPoffline();
-                } else if (err.message === DPapi.Unauthorized) {
-                    this.logUnauthorized();
-                } else if (err.message === DPapi.NoMoreNodes && this.nodePairs.size === 0) {
-                    this.logNoNodes();
-                } else if (err.message === DPapi.NoMoreNodes) {
-                    log.verbose('no new nodes found');
-                } else {
-                    log.error('error fetching node pairs: %o', err);
-                }
-            })
-            .finally(() => {
-                this.scheduleFetchRoutes();
-            });
-    };
-
-    private initNodes = (nodes: DPapi.Nodes) => {
-        const lookupExitNodes = new Map(nodes.exitNodes.map((x) => [x.id, x]));
-        nodes.entryNodes.forEach((en) => {
-            const exitNodes = en.recommendedExits
-                .map((id) => lookupExitNodes.get(id) as ExitNode.ExitNode)
-                // ensure entry node not included in exits
-                .filter((x) => x.id !== en.id);
-
-            if (exitNodes.length === 0) {
-                return;
-            }
-
-            if (this.nodePairs.has(en.id)) {
-                const np = this.nodePairs.get(en.id) as NodePair.NodePair;
-                NodePair.addExitNodes(np, exitNodes);
-            } else {
-                const np = NodePair.create(
-                    en,
-                    exitNodes,
-                    this.applicationTag,
-                    this.messageListener,
-                    this.hops,
-                    this.forceManualRelaying,
-                );
-                this.nodePairs.set(NodePair.id(np), np);
-            }
-        });
-
-        this.removeRedundant();
-
-        // ping all nodes
-        this.nodePairs.forEach((np) => NodePair.discover(np));
-        log.info(
-            'discovered %d node-pairs with %d exits, matched at %s',
-            this.nodePairs.size,
-            lookupExitNodes.size,
-            new Date(nodes.matchedAt),
-        );
-        this.versionListener(nodes.versions);
-    };
+    private fetchRoutes = () => {};
 
     private scheduleFetchRoutes = () => {
         // schdule next run somehwere between 10min and 12min

@@ -1,18 +1,10 @@
 import * as uHTTP from '@hoprnet/phttp-lib';
 import * as DPapi from './dp-api';
 import * as JRPC from './jrpc';
-import * as NodeAPI from './node-api';
-import * as Payload from './payload';
-import * as Request from './request';
-import * as RequestCache from './request-cache';
 import * as Res from './result';
 import * as Response from './response';
-import * as Segment from './segment';
-import * as SegmentCache from './segment-cache';
 import * as Utils from './utils';
-import NodesCollector from './nodes-collector';
 import Version from './version';
-import type { EntryNode } from './entry-node';
 
 export * as DPapi from './dp-api';
 export * as EntryNode from './entry-node';
@@ -92,7 +84,6 @@ const defaultOps = {
     disableMevProtection: false,
     mevProtectionProvider: RPC_PROPELLORHEADS,
     forceZeroHop: false,
-    segmentLimit: 0, // disable segment limit
     forceManualRelaying: false,
     logLevel: 'info',
     measureRPClatency: false,
@@ -104,13 +95,9 @@ const log = Utils.logger(['sdk']);
  * Send traffic through the RPCh network
  */
 export default class SDK {
-    private readonly requestCache: RequestCache.Cache;
-    private readonly segmentCache: SegmentCache.Cache;
-    private readonly redoRequests: Set<string> = new Set();
     private readonly routing: uHTTP.Routing.Routing;
     private readonly ops;
     private readonly chainIds: Map<string, string> = new Map();
-    private readonly hops?: number;
 
     /**
      * Construct an SDK instance enabling RPCh requests.
@@ -125,9 +112,6 @@ export default class SDK {
         this.ops = this.sdkOps(ops);
         (this.ops.debugScope || this.ops.logLevel) &&
             Utils.setDebugScopeLevel(this.ops.debugScope, this.ops.logLevel);
-        this.requestCache = RequestCache.init();
-        this.segmentCache = SegmentCache.init();
-        this.hops = this.determineHops(!!this.ops.forceZeroHop);
         this.routing = new uHTTP.Routing.Routing(this.clientId, {
             ...this.ops,
             measureLatency: this.ops.measureRPClatency,
@@ -142,10 +126,6 @@ export default class SDK {
      */
     public destruct = () => {
         this.routing.destruct();
-        for (const [rId] of this.requestCache) {
-            RequestCache.remove(this.requestCache, rId);
-            SegmentCache.remove(this.segmentCache, rId);
-        }
     };
 
     /**
@@ -173,11 +153,7 @@ export default class SDK {
 
         // sanity check provider url
         if (!Utils.isValidURL(provider)) {
-            throw new Response.SendError(
-                'Cannot parse provider URL',
-                provider,
-                this.errHeaders(headers),
-            );
+            throw new Response.SendError('Cannot parse provider URL', provider, headers);
         }
         // sanity check mev protection provider url, if it is set
         if (this.ops.mevProtectionProvider) {
@@ -185,7 +161,7 @@ export default class SDK {
                 throw new Response.SendError(
                     'Cannot parse mevProtectionProvider URL',
                     provider,
-                    this.errHeaders(headers),
+                    headers,
                 );
             }
         }
@@ -224,7 +200,6 @@ export default class SDK {
             mevProtectionProvider: ops.mevProtectionProvider || defaultOps.mevProtectionProvider,
             mevKickbackAddress: ops.mevKickbackAddress,
             forceZeroHop,
-            segmentLimit: ops.segmentLimit ?? defaultOps.segmentLimit,
             versionListener: ops.versionListener,
             debugScope: ops.debugScope,
             logLevel: ops.logLevel || (process.env.DEBUG ? undefined : defaultOps.logLevel),
@@ -315,14 +290,6 @@ export default class SDK {
         }
     };
 
-    private requestOps = (ops?: RequestOps) => {
-        if (ops) {
-            return {
-                provider: ops.provider || this.ops.provider,
-            };
-        }
-    };
-
     private determineProvider = ({ method }: JRPC.Request, provider?: string): string => {
         const prov = provider ?? this.ops.provider ?? defaultOps.provider;
         if (this.ops.disableMevProtection) {
@@ -365,13 +332,6 @@ export default class SDK {
         return { 'Content-Type': 'application/json' };
     };
 
-    private determineHops = (forceZeroHop: boolean) => {
-        if (forceZeroHop) {
-            return 0;
-        }
-        return 1;
-    };
-
     private populateChainIds = (provider?: string, opsHeaders?: Record<string, string>) => {
         if (!provider) {
             return;
@@ -412,31 +372,5 @@ export default class SDK {
                 log.warn("'versionListener' throws error: %o", err);
             }
         });
-    };
-
-    private stats = (responseTime: number, request: Request.Request, resp: Payload.RespPayload) => {
-        const segDur = Math.round((request.lastSegmentEndedAt as number) - request.startedAt);
-        if (
-            request.measureRPClatency &&
-            'callDuration' in resp &&
-            'exitAppDuration' in resp &&
-            resp.callDuration &&
-            resp.exitAppDuration
-        ) {
-            const rpcDur = resp.callDuration;
-            const exitAppDur = resp.exitAppDuration;
-            const hoprDur = responseTime - rpcDur - exitAppDur - segDur;
-            return {
-                segDur,
-                rpcDur,
-                exitAppDur,
-                hoprDur,
-            };
-        }
-        return { segDur };
-    };
-
-    private errHeaders = (headers?: Record<string, string>): Record<string, string> => {
-        return { ...headers, 'Content-Type': 'application/json' };
     };
 }
