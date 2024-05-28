@@ -171,6 +171,7 @@ export default class SDK {
                 headers,
                 body: JSON.stringify(req),
                 timeout,
+                method: 'POST',
             });
             const text = await res.text();
             return {
