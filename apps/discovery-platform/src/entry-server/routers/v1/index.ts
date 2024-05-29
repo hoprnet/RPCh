@@ -12,7 +12,7 @@ import * as middleware from './middleware';
 import * as node from './node';
 import * as quota from './quota';
 
-import * as configs from './../../../configs';
+import * as qConfigs from './../../../configs';
 import * as qNode from './../../../node';
 
 import type { Secrets } from './../../../secrets';
@@ -59,6 +59,13 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
         query('amount').default(10).isInt({ min: 1, max: 100 }),
         query('force_zero_hop').optional().toBoolean(),
         getNodesPairings(ops.dbPool),
+    );
+
+    router.get(
+        '/configs',
+        middleware.clientAuthorized(ops.dbPool),
+        query('key').isIn(Object.keys(qConfigs.Key)).exists(),
+        getConfigKeys(ops.dbPool),
     );
 
     router.post(
@@ -740,15 +747,10 @@ function getNodesPairings(dbPool: Pool) {
                     return acc;
                 }, new Set());
                 const qExitNodes = qNode.listExitNodes(dbPool, exitIds);
-                const qRPCServerVersion = configs.readConfig(
-                    dbPool,
-                    configs.Keys.RPCh_RPC_SERVER_VERSION,
-                );
-                const qSDKVersion = configs.readConfig(dbPool, configs.Keys.RPCh_SDK_VERSION);
 
                 // wait for entry and exit nodes query results
-                Promise.all([qEntryNodes, qExitNodes, qRPCServerVersion, qSDKVersion])
-                    .then(([qEntries, qExits, vRPCserver, vSDK]) => {
+                Promise.all([qEntryNodes, qExitNodes])
+                    .then(([qEntries, qExits]) => {
                         const matchedAt = qPairings[0].createdAt;
                         const entryNodes = qEntries.map((e) => ({
                             ...e,
@@ -758,10 +760,6 @@ function getNodesPairings(dbPool: Pool) {
                             entryNodes,
                             exitNodes: qExits,
                             matchedAt,
-                            versions: {
-                                sdk: vSDK,
-                                rpcServer: vRPCserver,
-                            },
                         });
                     })
                     .catch((ex) => {
@@ -778,5 +776,28 @@ function getNodesPairings(dbPool: Pool) {
                 const reason = 'Error querying database';
                 return res.status(500).json({ reason });
             });
+    };
+}
+
+function getConfigKeys(dbPool: Pool) {
+    return async function (req: Request, res: Response) {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json(errors.mapped());
+        }
+
+        const data = matchedData(req);
+        const results = await qConfigs.list(dbPool, data.key);
+        if (results.length === 0) {
+            // no matching rows
+            return res.status(204).end();
+        }
+
+        const obj = results.reduce<Record<string, string>>((acc, { key, data }) => {
+            acc[key] = data;
+            return acc;
+        }, {});
+
+        return res.status(200).json(obj);
     };
 }

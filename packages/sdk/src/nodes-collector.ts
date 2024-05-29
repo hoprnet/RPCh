@@ -1,5 +1,4 @@
 import * as DPapi from './dp-api';
-import * as ExitNode from './exit-node';
 import * as NodePair from './node-pair';
 import * as NodeSel from './node-selector';
 import * as Request from './request';
@@ -164,6 +163,8 @@ export default class NodesCollector {
     };
 
     private fetchRoutes = () => {
+        // will be removed in next update
+        /*
         DPapi.fetchNodes(
             {
                 discoveryPlatformEndpoint: this.discoveryPlatformEndpoint,
@@ -230,6 +231,7 @@ export default class NodesCollector {
             new Date(nodes.matchedAt),
         );
         this.versionListener(nodes.versions);
+        */
     };
 
     private scheduleFetchRoutes = () => {

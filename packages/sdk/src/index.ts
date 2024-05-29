@@ -1,19 +1,10 @@
-import { utils as etherUtils } from 'ethers';
-
+import * as uHTTP from '@hoprnet/phttp-lib';
 import * as DPapi from './dp-api';
 import * as JRPC from './jrpc';
-import * as NodeAPI from './node-api';
-import * as Payload from './payload';
-import * as Request from './request';
-import * as RequestCache from './request-cache';
 import * as Res from './result';
 import * as Response from './response';
-import * as Segment from './segment';
-import * as SegmentCache from './segment-cache';
 import * as Utils from './utils';
-import NodesCollector from './nodes-collector';
 import Version from './version';
-import type { EntryNode } from './entry-node';
 
 export * as DPapi from './dp-api';
 export * as EntryNode from './entry-node';
@@ -75,10 +66,9 @@ export type Ops = {
  * @param headers - will be merged with provided headers during construction
  */
 export type RequestOps = {
-    readonly timeout?: number;
-    readonly provider?: string;
-    readonly measureRPClatency?: boolean;
     readonly headers?: Record<string, string>;
+    readonly provider?: string;
+    readonly timeout?: number;
 };
 
 const RPC_PROPELLORHEADS = 'https://rpc.propellerheads.xyz/eth';
@@ -94,7 +84,6 @@ const defaultOps = {
     disableMevProtection: false,
     mevProtectionProvider: RPC_PROPELLORHEADS,
     forceZeroHop: false,
-    segmentLimit: 0, // disable segment limit
     forceManualRelaying: false,
     logLevel: 'info',
     measureRPClatency: false,
@@ -102,21 +91,13 @@ const defaultOps = {
 
 const log = Utils.logger(['sdk']);
 
-// message tag - more like port since we tag all our messages the same
-// 0xffff reserved for Availability Monitor
-const ApplicationTag = Math.floor(Math.random() * 0xfffe);
-
 /**
  * Send traffic through the RPCh network
  */
 export default class SDK {
-    private readonly requestCache: RequestCache.Cache;
-    private readonly segmentCache: SegmentCache.Cache;
-    private readonly redoRequests: Set<string> = new Set();
-    private readonly nodesColl: NodesCollector;
+    private readonly routing: uHTTP.Routing.Routing;
     private readonly ops;
     private readonly chainIds: Map<string, string> = new Map();
-    private readonly hops?: number;
 
     /**
      * Construct an SDK instance enabling RPCh requests.
@@ -131,18 +112,11 @@ export default class SDK {
         this.ops = this.sdkOps(ops);
         (this.ops.debugScope || this.ops.logLevel) &&
             Utils.setDebugScopeLevel(this.ops.debugScope, this.ops.logLevel);
-        this.requestCache = RequestCache.init();
-        this.segmentCache = SegmentCache.init();
-        this.hops = this.determineHops(!!this.ops.forceZeroHop);
-        this.nodesColl = new NodesCollector(
-            this.ops.discoveryPlatformEndpoint,
-            this.clientId,
-            ApplicationTag,
-            this.onMessages,
-            this.onVersions,
-            this.hops,
-            this.ops.forceManualRelaying,
-        );
+        this.routing = new uHTTP.Routing.Routing(this.clientId, {
+            ...this.ops,
+            measureLatency: this.ops.measureRPClatency,
+        });
+        this.fetchVersions();
         this.fetchChainId(this.ops.provider as string, this.ops.headers);
         log.info('RPCh SDK[v%s] started', Version);
     }
@@ -151,11 +125,7 @@ export default class SDK {
      * Stop listeners and free acquired resources.
      */
     public destruct = () => {
-        this.nodesColl.destruct();
-        for (const [rId] of this.requestCache) {
-            RequestCache.remove(this.requestCache, rId);
-            SegmentCache.remove(this.segmentCache, rId);
-        }
+        this.routing.destruct();
     };
 
     /**
@@ -163,8 +133,7 @@ export default class SDK {
      * If no timeout specified, global timeout is used.
      */
     public isReady = async (timeout?: number): Promise<boolean> => {
-        const t = timeout || this.ops.timeout;
-        return this.nodesColl.ready(t).then((_) => true);
+        return this.routing.isReady(timeout);
     };
 
     /**
@@ -178,437 +147,41 @@ export default class SDK {
     };
 
     private doSend = async (req: JRPC.Request, ops?: RequestOps): Promise<Response.Response> => {
-        const reqOps = this.requestOps(ops);
-        // eslint-disable-next-line no-async-promise-executor
-        return new Promise(async (resolve, reject) => {
-            const provider = this.determineProvider(reqOps, req);
-            const headers = this.determineHeaders(
-                provider,
-                this.ops.mevKickbackAddress,
-                ops?.headers,
-            );
+        const provider = this.determineProvider(req, ops?.provider);
+        const timeout = ops?.timeout ?? this.ops.timeout;
+        const headers = this.determineHeaders(provider, this.ops.mevKickbackAddress, ops?.headers);
 
-            // sanity check provider url
-            if (!Utils.isValidURL(reqOps.provider)) {
-                return reject(
-                    new Response.SendError(
-                        'Cannot parse provider URL',
-                        provider,
-                        this.errHeaders(headers),
-                    ),
+        // sanity check provider url
+        if (!Utils.isValidURL(provider)) {
+            throw new Response.SendError('Cannot parse provider URL', provider, headers);
+        }
+        // sanity check mev protection provider url, if it is set
+        if (this.ops.mevProtectionProvider) {
+            if (!Utils.isValidURL(this.ops.mevProtectionProvider)) {
+                throw new Response.SendError(
+                    'Cannot parse mevProtectionProvider URL',
+                    provider,
+                    headers,
                 );
             }
-            // sanity check mev protection provider url, if it is set
-            if (this.ops.mevProtectionProvider) {
-                if (!Utils.isValidURL(this.ops.mevProtectionProvider)) {
-                    return reject(
-                        new Response.SendError(
-                            'Cannot parse mevProtectionProvider URL',
-                            provider,
-                            this.errHeaders(headers),
-                        ),
-                    );
-                }
-            }
+        }
 
-            // gather entry - exit node pair
-            const resNodes = await this.nodesColl.requestNodePair(reqOps.timeout).catch((err) => {
-                log.error('Error finding node pair', err);
-                return reject(
-                    new Response.SendError(
-                        `Could not find node pair in ${reqOps.timeout} ms`,
-                        provider,
-                        this.errHeaders(headers),
-                    ),
-                );
-            });
-
-            if (!resNodes) {
-                return reject(
-                    new Response.SendError(
-                        'Unexpected code flow - should never be here',
-                        provider,
-                        this.errHeaders(headers),
-                    ),
-                );
-            }
-
-            // create request
-            const { entryNode, exitNode, counterOffset } = resNodes;
-            const { reqRelayPeerId, respRelayPeerId } = this.ops.forceManualRelaying
-                ? resNodes
-                : { reqRelayPeerId: undefined, respRelayPeerId: undefined };
-            const id = RequestCache.generateId(this.requestCache);
-            const cId = this.chainIds.get(provider);
-            const resReq = Request.create({
-                id,
-                provider,
-                req,
-                clientId: this.clientId,
-                entryPeerId: entryNode.id,
-                exitPeerId: exitNode.id,
-                exitPublicKey: etherUtils.arrayify(exitNode.pubKey),
-                counterOffset,
-                measureRPClatency: reqOps.measureRPClatency,
+        try {
+            const res = await this.routing.fetch(provider, {
                 headers,
-                hops: this.hops,
-                reqRelayPeerId,
-                respRelayPeerId,
-                chainId: cId,
-                // give the network 3s to deliver this request on endpoint timeout
-                timeout: reqOps.timeout - 3e3,
+                body: JSON.stringify(req),
+                timeout,
+                method: 'POST',
             });
-
-            if (Res.isErr(resReq)) {
-                log.error('error creating request', resReq.error);
-                return reject(
-                    new Response.SendError(
-                        'Unable to create request object',
-                        provider,
-                        this.errHeaders(headers),
-                    ),
-                );
-            }
-
-            // split request to segments
-            const { request, session } = resReq.res;
-            const segments = Request.toSegments(request, session);
-            const failMsg = this.checkSegmentLimit(segments.length);
-            if (failMsg) {
-                return reject(new Response.SendError(failMsg, provider, this.errHeaders(headers)));
-            }
-
-            // set request expiration timer
-            const timer = setTimeout(() => {
-                log.error(
-                    '%s expired after %dms timeout',
-                    Request.prettyPrint(request),
-                    reqOps.timeout,
-                );
-                this.removeRequest(request);
-                return reject(
-                    new Response.SendError('Request timed out', provider, this.errHeaders(headers)),
-                );
-            }, reqOps.timeout);
-
-            // track request
-            const entry = RequestCache.add(this.requestCache, {
-                request,
-                resolve,
-                reject,
-                timer,
-                session,
-            });
-            this.nodesColl.requestStarted(request);
-
-            // send request to hoprd
-            log.info('sending request %s', Request.prettyPrint(request));
-
-            // queue segment sending for all of them
-            segments.forEach((s) => {
-                this.nodesColl.segmentStarted(request, s);
-                this.sendSegment(request, s, entryNode, entry);
-            });
-        });
-    };
-
-    private sendSegment = (
-        request: Request.Request,
-        segment: Segment.Segment,
-        entryNode: EntryNode,
-        cacheEntry: RequestCache.Entry,
-    ) => {
-        const bef = performance.now();
-        const conn = {
-            apiEndpoint: entryNode.apiEndpoint,
-            accessToken: entryNode.accessToken,
-            hops: request.hops,
-            relay: request.reqRelayPeerId,
-        };
-        NodeAPI.sendMessage(conn, {
-            recipient: request.exitPeerId,
-            tag: ApplicationTag,
-            message: Segment.toMessage(segment),
-        })
-            .then((_json) => {
-                const aft = performance.now();
-                request.lastSegmentEndedAt = aft;
-                const dur = Math.round(aft - bef);
-                this.nodesColl.segmentSucceeded(request, segment, dur);
-            })
-            .catch((error) => {
-                log.error(
-                    'error sending %s: %s[%o]',
-                    Segment.prettyPrint(segment),
-                    JSON.stringify(error),
-                    error,
-                );
-                this.nodesColl.segmentFailed(request, segment);
-                this.resendRequest(request, entryNode, cacheEntry);
-            });
-    };
-
-    private resendRequest = (
-        origReq: Request.Request,
-        entryNode: EntryNode,
-        cacheEntry: RequestCache.Entry,
-    ) => {
-        if (this.redoRequests.has(origReq.id)) {
-            log.verbose('ignoring already triggered resend', origReq.id);
-            return;
-        }
-
-        // TODO track request after segments have been sent
-        this.removeRequest(origReq);
-
-        const fallback = this.nodesColl.fallbackNodePair(entryNode);
-        if (!fallback) {
-            log.info('no fallback for resending request available');
-            return cacheEntry.reject(
-                new Response.SendError(
-                    'No fallback node pair to retry sending request',
-                    origReq.provider,
-                    this.errHeaders(origReq.headers),
-                ),
-            );
-        }
-
-        this.redoRequests.add(origReq.id);
-        if (fallback.entryNode.id === origReq.entryPeerId) {
-            log.info('fallback entry node same as original entry node - still trying');
-        }
-        if (fallback.exitNode.id === origReq.exitPeerId) {
-            log.info('fallback exit node same as original exit node - still trying');
-        }
-
-        // generate new request
-        const id = RequestCache.generateId(this.requestCache);
-        const resReq = Request.create({
-            id,
-            originalId: origReq.id,
-            provider: origReq.provider,
-            req: origReq.req,
-            clientId: this.clientId,
-            entryPeerId: fallback.entryNode.id,
-            exitPeerId: fallback.exitNode.id,
-            exitPublicKey: etherUtils.arrayify(fallback.exitNode.pubKey),
-            counterOffset: fallback.counterOffset,
-            measureRPClatency: origReq.measureRPClatency,
-            headers: origReq.headers,
-            hops: origReq.hops,
-            reqRelayPeerId: fallback.reqRelayPeerId,
-            respRelayPeerId: fallback.respRelayPeerId,
-        });
-        if (Res.isErr(resReq)) {
-            log.error('error creating fallback request', resReq.error);
-            return cacheEntry.reject(
-                new Response.SendError(
-                    'Unable to create fallback request object',
-                    origReq.provider,
-                    this.errHeaders(origReq.headers),
-                ),
-            );
-        }
-        // split request to segments
-        const { request, session } = resReq.res;
-        const segments = Request.toSegments(request, session);
-        const failMsg = this.checkSegmentLimit(segments.length);
-        if (failMsg) {
-            this.removeRequest(request);
-            return cacheEntry.reject(
-                new Response.SendError(failMsg, request.provider, this.errHeaders(request.headers)),
-            );
-        }
-
-        // track request
-        const newCacheEntry = RequestCache.add(this.requestCache, {
-            request,
-            resolve: cacheEntry.resolve,
-            reject: cacheEntry.reject,
-            timer: cacheEntry.timer,
-            session,
-        });
-        this.nodesColl.requestStarted(request);
-
-        // send request to hoprd
-        log.info('resending request %s', Request.prettyPrint(request));
-
-        // send segments sequentially
-        segments.forEach((s) => this.resendSegment(s, request, entryNode, newCacheEntry));
-    };
-
-    private resendSegment = (
-        segment: Segment.Segment,
-        request: Request.Request,
-        entryNode: EntryNode,
-        cacheEntry: RequestCache.Entry,
-    ) => {
-        const bef = performance.now();
-        NodeAPI.sendMessage(
-            {
-                apiEndpoint: entryNode.apiEndpoint,
-                accessToken: entryNode.accessToken,
-                hops: request.hops,
-                relay: request.reqRelayPeerId,
-            },
-            {
-                recipient: request.exitPeerId,
-                tag: ApplicationTag,
-                message: Segment.toMessage(segment),
-            },
-        )
-            .then((_json) => {
-                const aft = performance.now();
-                request.lastSegmentEndedAt = aft;
-                const dur = Math.round(aft - bef);
-                this.nodesColl.segmentSucceeded(request, segment, dur);
-            })
-            .catch((error) => {
-                log.error(
-                    'error resending %s: %s[%o]',
-                    Segment.prettyPrint(segment),
-                    JSON.stringify(error),
-                    error,
-                );
-                this.nodesColl.segmentFailed(request, segment);
-                this.removeRequest(request);
-                return cacheEntry.reject(
-                    new Response.SendError(
-                        'Sending message failed',
-                        request.provider,
-                        this.errHeaders(request.headers),
-                    ),
-                );
-            });
-    };
-
-    // handle incoming messages
-    private onMessages = (messages: NodeAPI.Message[]) => {
-        messages.forEach(({ body }) => {
-            const segRes = Segment.fromMessage(body);
-            if (Res.isErr(segRes)) {
-                log.info('cannot create segment', segRes.error);
-                return;
-            }
-            const segment = segRes.res;
-            if (!this.requestCache.has(segment.requestId)) {
-                log.info('dropping unrelated request segment', Segment.prettyPrint(segment));
-                return;
-            }
-
-            const cacheRes = SegmentCache.incoming(this.segmentCache, segment);
-            switch (cacheRes.res) {
-                case 'complete':
-                    log.verbose('completion segment', Segment.prettyPrint(segment));
-                    this.completeSegmentsEntry(cacheRes.entry as SegmentCache.Entry);
-                    break;
-                case 'error':
-                    log.error('error caching segment', cacheRes.reason);
-                    break;
-                case 'already-cached':
-                    log.info('already cached', Segment.prettyPrint(segment));
-                    break;
-                case 'inserted-new':
-                    log.verbose('inserted new first segment', Segment.prettyPrint(segment));
-                    break;
-                case 'added-to-request':
-                    log.verbose(
-                        'inserted new segment to existing requestId',
-                        Segment.prettyPrint(segment),
-                    );
-                    break;
-            }
-        });
-    };
-
-    private completeSegmentsEntry = (entry: SegmentCache.Entry) => {
-        const firstSeg = entry.segments.get(0) as Segment.Segment;
-        const reqEntry = this.requestCache.get(firstSeg.requestId) as RequestCache.Entry;
-        const { request, session } = reqEntry;
-        RequestCache.remove(this.requestCache, request.id);
-
-        const msgData = SegmentCache.toMessage(entry);
-        const msgBytes = Utils.base64ToBytes(msgData);
-
-        const resUnbox = Response.messageToResp({
-            respData: msgBytes,
-            request,
-            session,
-        });
-        if (Res.isOk(resUnbox)) {
-            return this.responseSuccess(resUnbox.res, reqEntry);
-        }
-        return this.responseError(resUnbox.error, reqEntry);
-    };
-
-    private responseError = (error: string, reqEntry: RequestCache.Entry) => {
-        log.error('error extracting message', error);
-        const request = reqEntry.request;
-        this.nodesColl.requestFailed(request);
-        return reqEntry.reject(
-            new Response.SendError(
-                'Unable to process response',
-                request.provider,
-                this.errHeaders(request.headers),
-            ),
-        );
-    };
-
-    private responseSuccess = ({ resp }: Response.UnboxResponse, reqEntry: RequestCache.Entry) => {
-        const { request, reject, resolve } = reqEntry;
-        const responseTime = Math.round(performance.now() - request.startedAt);
-        const stats = this.stats(responseTime, request, resp);
-        log.verbose('response time for request %s: %d ms %o', request.id, responseTime, stats);
-        this.nodesColl.requestSucceeded(request, responseTime);
-
-        switch (resp.type) {
-            case Payload.RespType.Resp: {
-                const r: Response.Response = {
-                    status: resp.status,
-                    statusText: resp.statusText,
-                    headers: resp.headers,
-                    text: resp.text,
-                };
-                if (request.measureRPClatency) {
-                    r.stats = stats;
-                }
-                return resolve(r);
-            }
-            case Payload.RespType.CounterFail: {
-                const counter = reqEntry.session.updatedTS;
-                return reject(
-                    new Response.SendError(
-                        `Message out of counter range. Exit node expected message counter near ${resp.counter} - request got ${counter}.`,
-                        request.provider,
-                        this.errHeaders(request.headers),
-                    ),
-                );
-            }
-            case Payload.RespType.DuplicateFail:
-                return reject(
-                    new Response.SendError(
-                        'Message duplicate error. Exit node rejected already processed message',
-                        request.provider,
-                        this.errHeaders(request.headers),
-                    ),
-                );
-            case Payload.RespType.Error:
-                return reject(
-                    new Response.SendError(
-                        `Error attempting JSON RPC call: ${resp.reason}`,
-                        request.provider,
-                        this.errHeaders(request.headers),
-                    ),
-                );
-        }
-    };
-
-    private removeRequest = (request: Request.Request) => {
-        this.nodesColl.requestFailed(request);
-        RequestCache.remove(this.requestCache, request.id);
-        SegmentCache.remove(this.segmentCache, request.id);
-        if (request.originalId) {
-            this.redoRequests.delete(request.originalId);
+            const text = await res.text();
+            return {
+                status: res.status,
+                statusText: res.statusText,
+                text,
+                headers: Utils.headersToRecord(res.headers),
+            };
+        } catch (err) {
+            throw new Response.SendError(`Error making request: ${err}`, provider, headers);
         }
     };
 
@@ -628,7 +201,6 @@ export default class SDK {
             mevProtectionProvider: ops.mevProtectionProvider || defaultOps.mevProtectionProvider,
             mevKickbackAddress: ops.mevKickbackAddress,
             forceZeroHop,
-            segmentLimit: ops.segmentLimit ?? defaultOps.segmentLimit,
             versionListener: ops.versionListener,
             debugScope: ops.debugScope,
             logLevel: ops.logLevel || (process.env.DEBUG ? undefined : defaultOps.logLevel),
@@ -638,15 +210,16 @@ export default class SDK {
         };
     };
 
-    private requestOps = (ops?: RequestOps) => {
-        if (ops) {
-            return {
-                timeout: ops.timeout || this.ops.timeout,
-                provider: ops.provider || this.ops.provider,
-                measureRPClatency: ops.measureRPClatency ?? this.ops.measureRPClatency,
-            };
+    private fetchVersions = async () => {
+        try {
+            const versions = await DPapi.fetchVersions({
+                discoveryPlatformEndpoint: this.ops.discoveryPlatformEndpoint,
+                clientId: this.clientId,
+            });
+            setTimeout(() => this.onVersions(versions));
+        } catch (err) {
+            log.error('Error fetching versions from DiscoveryPlatform: %o', err);
         }
-        return this.ops;
     };
 
     private fetchChainId = async (
@@ -718,22 +291,20 @@ export default class SDK {
         }
     };
 
-    private determineProvider = (
-        { provider }: { provider: string },
-        { method }: JRPC.Request,
-    ): string => {
+    private determineProvider = ({ method }: JRPC.Request, provider?: string): string => {
+        const prov = provider ?? this.ops.provider ?? defaultOps.provider;
         if (this.ops.disableMevProtection) {
-            return provider;
+            return prov;
         }
         if (method !== 'eth_sendRawTransaction') {
-            return provider;
+            return prov;
         }
         // sanity check for chain id if we got it
-        const cId = this.chainIds.get(provider);
+        const cId = this.chainIds.get(prov);
         if (cId === '0x1' || (cId && parseInt(cId) === 1)) {
             return this.ops.mevProtectionProvider;
         }
-        return provider;
+        return prov;
     };
 
     private determineHeaders = (
@@ -762,13 +333,6 @@ export default class SDK {
         return { 'Content-Type': 'application/json' };
     };
 
-    private determineHops = (forceZeroHop: boolean) => {
-        if (forceZeroHop) {
-            return 0;
-        }
-        return 1;
-    };
-
     private populateChainIds = (provider?: string, opsHeaders?: Record<string, string>) => {
         if (!provider) {
             return;
@@ -776,24 +340,8 @@ export default class SDK {
         if (this.chainIds.has(provider)) {
             return;
         }
-        const headers = {
-            ...this.ops.headers,
-            ...opsHeaders,
-        };
+        const headers = this.determineHeaders(provider, undefined, opsHeaders);
         this.fetchChainId(provider, headers);
-    };
-
-    private checkSegmentLimit = (segLength: number) => {
-        const limit = this.ops.segmentLimit;
-        if (limit > 0 && segLength > limit) {
-            log.error(
-                'request exceeds maximum amount of segments[%i] with %i segments',
-                limit,
-                segLength,
-            );
-            const maxSize = Segment.MaxSegmentBody * limit;
-            return `Request exceeds maximum size of ${maxSize}b`;
-        }
     };
 
     private onVersions = (versions: DPapi.Versions) => {
@@ -818,35 +366,12 @@ export default class SDK {
             log.error('error comparing versions: %s', cmp.error);
         }
 
-        // dont fetch exceptions on external code
         setTimeout(() => {
-            this.ops.versionListener && this.ops.versionListener(versions);
+            try {
+                this.ops.versionListener && this.ops.versionListener(versions);
+            } catch (err) {
+                log.warn("'versionListener' throws error: %o", err);
+            }
         });
-    };
-
-    private stats = (responseTime: number, request: Request.Request, resp: Payload.RespPayload) => {
-        const segDur = Math.round((request.lastSegmentEndedAt as number) - request.startedAt);
-        if (
-            request.measureRPClatency &&
-            'callDuration' in resp &&
-            'exitAppDuration' in resp &&
-            resp.callDuration &&
-            resp.exitAppDuration
-        ) {
-            const rpcDur = resp.callDuration;
-            const exitAppDur = resp.exitAppDuration;
-            const hoprDur = responseTime - rpcDur - exitAppDur - segDur;
-            return {
-                segDur,
-                rpcDur,
-                exitAppDur,
-                hoprDur,
-            };
-        }
-        return { segDur };
-    };
-
-    private errHeaders = (headers?: Record<string, string>): Record<string, string> => {
-        return { ...headers, 'Content-Type': 'application/json' };
     };
 }

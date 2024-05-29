@@ -1,5 +1,4 @@
 import type { Pool, QueryResult } from 'pg';
-import type { Keys } from './configs';
 
 export type UserAttrs = {
     name?: string;
@@ -32,15 +31,6 @@ export type FederatedCredential = {
     provider: string;
     subject: string;
 };
-
-export async function readConfig(dbPool: Pool, key: keyof Keys): Promise<string> {
-    const q = 'select data from configs where key = $1';
-    const { rows } = await dbPool.query(q, [key]);
-    if (rows.length !== 1) {
-        throw new Error(`Expected exactly one result: ${rows.length}`);
-    }
-    return rows[0].data;
-}
 
 export function createUser(dbPool: Pool, attrs: UserAttrs): Promise<QueryResult<User>> {
     const cols = ['name', 'email', 'www_address', 'telegram'];

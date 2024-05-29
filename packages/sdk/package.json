@@ -34,10 +34,7 @@
         "@types/debug": "^4.1.10"
     },
     "dependencies": {
-        "@rpch/compat-crypto": "^0.8.0",
-        "debug": "^4.3.4",
-        "ethers": "^5.7.2",
-        "isomorphic-ws": "^5.0.0",
-        "lz-string": "^1.5.0"
+        "@hoprnet/phttp-lib": "^3.0.0",
+        "debug": "^4.3.4"
     }
 }
