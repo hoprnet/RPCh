@@ -1,5 +1,11 @@
 # @rpch/discovery-platform
 
+## 2.0.1
+
+### Patch Changes
+
+-   Removed obsolete packages
+
 ## 2.0.0
 
 ### Major Changes
