@@ -35,6 +35,7 @@
     },
     "dependencies": {
         "@hoprnet/phttp-lib": "^3.0.0",
+        "@rpch/compat-crypto": "^0.8.0",
         "debug": "^4.3.4"
     }
 }
