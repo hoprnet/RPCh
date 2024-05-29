@@ -262,23 +262,6 @@ export default class NodesCollector {
         this.destruct();
     };
 
-    private logDPoffline = () => {
-        const errMessage = [
-            '***',
-            'Discovery Platform appears offline',
-            '-',
-            'Do you have internet access?',
-            '***',
-        ].join(' ');
-        const errDeco = Array.from({ length: errMessage.length }, () => '*').join('');
-        log.error('');
-        log.error(`!!! ${errDeco} !!!`);
-        log.error(`!!! ${errMessage} !!!`);
-        log.error(`!!! ${errDeco} !!!`);
-        log.error('');
-        this.destruct();
-    };
-
     private logNoNodes = () => {
         const errMessage = [
             '***',
