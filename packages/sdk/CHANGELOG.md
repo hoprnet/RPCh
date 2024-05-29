@@ -1,5 +1,15 @@
 # @rpch/sdk
 
+## 3.0.0
+
+### Major Changes
+
+-   a325843: Remove exposed SDK utilities as they were moved to phttp. Use phttp as transport handler.
+
+### Minor Changes
+
+-   b610049: remove since param from nodes query and improve offline error message
+
 ## 2.0.3
 
 ### Patch Changes

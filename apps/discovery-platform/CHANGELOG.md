@@ -1,5 +1,23 @@
 # @rpch/discovery-platform
 
+## 2.0.0
+
+### Major Changes
+
+-   a325843: No longer return config versions when fetching nodes.
+
+### Minor Changes
+
+-   a9f0740: Update routing query to prioritize exit nodes variety while trying to stay random as much as possible.
+    Removed since parameter from routing query as it was never used correctly.
+-   a325843: Expose config keys via API
+
+### Patch Changes
+
+-   Updated dependencies [b610049]
+-   Updated dependencies [a325843]
+    -   @rpch/sdk@3.0.0
+
 ## 1.2.1
 
 ### Patch Changes

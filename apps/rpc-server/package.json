@@ -1,6 +1,6 @@
 {
     "name": "@rpch/rpc-server",
-    "version": "1.4.3",
+    "version": "2.0.0",
     "license": "LGPL-3.0",
     "private": true,
     "scripts": {
@@ -14,6 +14,6 @@
         "start": "node build/index.js"
     },
     "dependencies": {
-        "@rpch/sdk": "2.0.3"
+        "@rpch/sdk": "3.0.0"
     }
 }

@@ -1,5 +1,17 @@
 # @rpch/rpc-server
 
+## 2.0.0
+
+### Major Changes
+
+-   a325843: No longer expose request latency measurements via request url
+
+### Patch Changes
+
+-   Updated dependencies [b610049]
+-   Updated dependencies [a325843]
+    -   @rpch/sdk@3.0.0
+
 ## 1.4.3
 
 ### Patch Changes
