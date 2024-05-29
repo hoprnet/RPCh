@@ -34,7 +34,7 @@
         "@types/debug": "^4.1.10"
     },
     "dependencies": {
-        "@hoprnet/phttp-lib": "../pHTTP-lib",
+        "@hoprnet/phttp-lib": "^3.0.0",
         "debug": "^4.3.4"
     }
 }
