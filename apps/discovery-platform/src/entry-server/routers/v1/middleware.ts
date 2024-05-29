@@ -41,17 +41,6 @@ export function nodeAuthorized(dbPool: Pool) {
     };
 }
 
-export function userAuthorized() {
-    return function (req: Request, res: Response, next: NextFunction) {
-        if (req.user) {
-            next();
-        } else {
-            const reason = 'User not authorized';
-            res.status(403).json({ reason }).end();
-        }
-    };
-}
-
 export function adminAuthorized(adminSecret: string) {
     return function (req: Request, res: Response, next: NextFunction) {
         const headerSecret = req.headers['x-secret-key'] as string;
@@ -63,31 +52,6 @@ export function adminAuthorized(adminSecret: string) {
         }
     };
 }
-
-/*
-// middleware that will track duration of request
-export function metric(histogramMetric: Histogram<string>) {
-  return function (req: Request, res: Response, next: NextFunction) {
-    const start = process.hrtime();
-    res.on("finish", () => {
-      const end = process.hrtime(start);
-      const durationSeconds = end[0] + end[1] / 1e9;
-      const statusCode = res.statusCode.toString();
-      const method = req.method;
-      const path = req.path;
-      const client =
-        typeof req.headers["x-rpch-client"] === "string"
-          ? req.headers["x-rpch-client"]
-          : "";
-
-      histogramMetric
-        .labels(method, path, statusCode, client)
-        .observe(durationSeconds);
-    });
-    next();
-  };
-}
-*/
 
 export function validateStop(req: Request, res: Response, next: NextFunction) {
     const errors = validationResult(req);

@@ -18,60 +18,6 @@ export type ExitNode = {
     pubKey: string;
 };
 
-export type Token = {
-    id: string;
-    exitId: string;
-    accessToken: string;
-    invalidatedAt?: Date;
-    createdAt: Date;
-    updatedAt?: Date;
-};
-
-export type NodeAttrs = {
-    id: string;
-    isExitNode: boolean;
-    chainId: number;
-    hoprdApiEndpoint: string;
-    hoprdApiToken: string;
-    exitNodePubKey?: string;
-    nativeAddress: string;
-};
-
-export type Node = {
-    id: string;
-    isExitNode: boolean;
-    chainId: number;
-    hoprdApiEndpoint: string;
-    hoprdApiToken: string;
-    exitNodePubKey?: string;
-    nativeAddress: string;
-    createdAt: Date;
-    updatedAt?: Date;
-};
-
-/*
-type DBnode = {
-  id: string;
-  is_exit_node: boolean;
-  chain_id: number;
-  hoprd_api_endpoint: string;
-  hoprd_api_token: string;
-  exit_node_pub_key?: string;
-  native_address: string;
-  created_at: Date;
-  updated_at?: Date;
-};
-
-type DBtoken = {
-  id: string;
-  exit_id: string;
-  access_token: string;
-  invalidated_at?: Date;
-  created_at: Date;
-  updated_at?: Date;
-};
-*/
-
 type DBPairing = {
     entry_id: string;
     exit_id: string;
@@ -88,36 +34,6 @@ type DBExitNode = {
     id: string;
     exit_node_pub_key: string;
 };
-
-export function createNode(dbPool: Pool, node: Node) {
-    const cols = [
-        'id',
-        'is_exit_node',
-        'chain_id',
-        'hoprd_api_endpoint',
-        'hoprd_api_token',
-        'native_address',
-    ];
-    const vals = [
-        node.id,
-        node.isExitNode,
-        node.chainId,
-        node.hoprdApiEndpoint,
-        node.hoprdApiToken,
-        node.nativeAddress,
-    ];
-    if (node.isExitNode) {
-        cols.push('exit_node_pub_key');
-        vals.push(node.exitNodePubKey as string);
-    }
-    const valIdxs = vals.map((_e, idx) => `$${idx + 1}`);
-    const q = [
-        'insert into registered_nodes',
-        `(${cols.join(',')})`,
-        `values (${valIdxs.join(',')})`,
-    ].join(' ');
-    return dbPool.query(q, vals);
-}
 
 export function createToken(dbPool: Pool, nodeId: string): Promise<{ accessToken: string }[]> {
     const q = [
@@ -158,7 +74,7 @@ export function listExitNodes(dbPool: Pool, nodeIds: Iterable<string>): Promise<
 export function listPairings(
     dbPool: Pool,
     amount: number,
-    forceZeroHop?: boolean,
+    forceZeroHop?: boolean
 ): Promise<Pairing[]> {
     const table = forceZeroHop ? 'zero_hop_pairings' : 'one_hop_pairings';
     const sub1 = 'max_rand_exits';
@@ -184,7 +100,7 @@ export function listPairings(
 
 export function listIdsByAccessToken(
     dbPool: Pool,
-    accessToken: string,
+    accessToken: string
 ): Promise<{ exitId: string }[]> {
     const q = [
         'select exit_id from exit_node_tokens',
@@ -218,19 +134,3 @@ function pairingFromDB(db: DBPairing): Pairing {
         createdAt: db.created_at,
     };
 }
-
-/*
-function nodeFromDB(db: DBnode): Node {
-  return {
-    id: db.id,
-    isExitNode: db.is_exit_node,
-    chainId: db.chain_id,
-    hoprdApiEndpoint: db.hoprd_api_endpoint,
-    hoprdApiToken: db.hoprd_api_token,
-    exitNodePubKey: db.exit_node_pub_key,
-    nativeAddress: db.native_address,
-    createdAt: db.created_at,
-    updatedAt: db.updated_at,
-  };
-}
-*/
