@@ -1,5 +1,11 @@
 # @rpch/discovery-platform
 
+## 2.0.2
+
+### Patch Changes
+
+-   c8db74a: Allow requests from all origins.
+
 ## 2.0.1
 
 ### Patch Changes
