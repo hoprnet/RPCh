@@ -1,4 +1,6 @@
+import cors = require('cors');
 import express, { Request, Response } from 'express';
+
 import { Pool } from 'pg';
 import { Utils } from '@rpch/sdk';
 import { checkSchema, matchedData, query, validationResult } from 'express-validator';
@@ -16,6 +18,7 @@ const log = Utils.logger(['discovery-platform', 'router']);
 // Express Router
 export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) => {
     const router = express.Router();
+    router.use(cors({ origin: true, credentials: true }));
     router.use(express.json());
 
     // log entry calls
