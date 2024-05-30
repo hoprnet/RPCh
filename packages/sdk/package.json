@@ -1,6 +1,6 @@
 {
     "name": "@rpch/sdk",
-    "version": "3.0.0",
+    "version": "3.0.1",
     "license": "LGPL-3.0",
     "main": "./build/index.js",
     "types": "./build/index.d.ts",
@@ -34,7 +34,7 @@
         "@types/debug": "^4.1.10"
     },
     "dependencies": {
-        "@hoprnet/phttp-lib": "^3.0.0",
+        "@hoprnet/phttp-lib": "^3.0.1",
         "@rpch/compat-crypto": "^0.8.0",
         "debug": "^4.3.4"
     }
