@@ -68,7 +68,7 @@ export function response(dbPool: Pool) {
 async function validate(
     dbPool: Pool,
     req: Request & { nodeId?: string },
-    res: Response,
+    res: Response
 ): Promise<string> {
     if (!('nodeId' in req)) {
         log.error('Expecting authorized node');

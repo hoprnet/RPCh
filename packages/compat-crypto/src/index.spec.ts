@@ -51,7 +51,7 @@ describe('RPCh Crypto protocol tests', function () {
             !isError(req_box_result),
             `request boxing must not fail, error: ${
                 isError(req_box_result) && req_box_result.error
-            }`,
+            }`
         );
 
         const client_request_session = req_box_result.session;
@@ -78,7 +78,7 @@ describe('RPCh Crypto protocol tests', function () {
             !isError(req_unbox_result),
             `request unboxing must not fail, error: ${
                 isError(req_unbox_result) && req_unbox_result.error
-            }`,
+            }`
         );
 
         const exit_request_session = req_unbox_result.session;
@@ -109,7 +109,7 @@ describe('RPCh Crypto protocol tests', function () {
             !isError(resp_box_result),
             `response boxing must not fail, error: ${
                 isError(resp_box_result) && resp_box_result.error
-            }`,
+            }`
         );
         assert(mock_session_with_client.response != undefined);
 
@@ -137,7 +137,7 @@ describe('RPCh Crypto protocol tests', function () {
             !isError(resp_unbox_result),
             `response unboxing must not fail, error: ${
                 isError(resp_unbox_result) && resp_unbox_result.error
-            }`,
+            }`
         );
 
         assert(mock_session_with_exit_node.response != undefined);
@@ -163,7 +163,7 @@ describe('RPCh Crypto protocol tests', function () {
             !isError(req_box_result),
             `request boxing must not fail, error: ${
                 isError(req_box_result) && req_box_result.error
-            }`,
+            }`
         );
 
         const client_session = req_box_result.session;
@@ -190,7 +190,7 @@ describe('RPCh Crypto protocol tests', function () {
             !isError(req_unbox_result),
             `request unboxing must not fail, error: ${
                 isError(req_unbox_result) && req_unbox_result.error
-            }`,
+            }`
         );
 
         const exit_session = req_unbox_result.session;
@@ -214,7 +214,7 @@ describe('RPCh Crypto protocol tests', function () {
             !isError(resp_box_result),
             `response boxing must not fail, error: ${
                 isError(resp_box_result) && resp_box_result.error
-            }`,
+            }`
         );
         assert(exit_session.response != undefined);
 
@@ -237,7 +237,7 @@ describe('RPCh Crypto protocol tests', function () {
             !isError(resp_unbox_result),
             `response unboxing must not fail, error: ${
                 isError(resp_unbox_result) && resp_unbox_result.error
-            }`,
+            }`
         );
 
         assert(client_session.response != undefined);
@@ -261,13 +261,13 @@ describe('RPCh Crypto protocol tests', function () {
         };
 
         const req_box_result = boxRequest(request_data, (_) =>
-            fromHex(TEST_VECTOR_EPHEMERAL_PRIVATE_KEY),
+            fromHex(TEST_VECTOR_EPHEMERAL_PRIVATE_KEY)
         );
         assert(
             !isError(req_box_result),
             `request boxing must not fail, error: ${
                 isError(req_box_result) && req_box_result.error
-            }`,
+            }`
         );
 
         const client_request_session = req_box_result.session;
@@ -277,12 +277,12 @@ describe('RPCh Crypto protocol tests', function () {
         assert.equal(
             toHex(client_request_session.request),
             TEST_VECTOR_REQUEST_OUTPUT,
-            'session data must be equal to test vector',
+            'session data must be equal to test vector'
         );
         assert.equal(
             client_request_session.updatedTS,
             Number(TEST_COUNTER) + 1,
-            'TS must be increased',
+            'TS must be increased'
         );
 
         // Client side end
@@ -305,7 +305,7 @@ describe('RPCh Crypto protocol tests', function () {
             !isError(req_unbox_result),
             `request unboxing must not fail, error: ${
                 isError(req_unbox_result) && req_unbox_result.error
-            }`,
+            }`
         );
 
         const exit_request_session = req_unbox_result.session;
@@ -339,7 +339,7 @@ describe('RPCh Crypto protocol tests', function () {
             !isError(resp_box_result),
             `response boxing must not fail, error: ${
                 isError(resp_box_result) && resp_box_result.error
-            }`,
+            }`
         );
 
         assert(mock_session_with_client.response != undefined);
@@ -370,7 +370,7 @@ describe('RPCh Crypto protocol tests', function () {
             !isError(resp_unbox_result),
             `response unboxing must not fail, error: ${
                 isError(resp_unbox_result) && resp_unbox_result.error
-            }`,
+            }`
         );
 
         assert(mock_session_with_exit_node.response != undefined);

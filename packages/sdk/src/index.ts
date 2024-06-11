@@ -1,4 +1,4 @@
-import * as uHTTP from '@hoprnet/phttp-lib';
+import { Routing } from '@hoprnet/uhttp-lib';
 import * as DPapi from './dp-api';
 import * as JRPC from './jrpc';
 import * as Res from './result';
@@ -95,7 +95,7 @@ const log = Utils.logger(['sdk']);
  * Send traffic through the RPCh network
  */
 export default class SDK {
-    private readonly routing: uHTTP.Routing.Routing;
+    private readonly uClient: Routing.Client;
     private readonly ops;
     private readonly chainIds: Map<string, string> = new Map();
 
@@ -105,14 +105,11 @@ export default class SDK {
      * @param crypto crypto instantiation for RPCh, use `@rpch/crypto-for-nodejs` or `@rpch/crypto-for-web`
      * @param ops, see **Ops**
      **/
-    constructor(
-        private readonly clientId: string,
-        ops: Ops = {},
-    ) {
+    constructor(private readonly clientId: string, ops: Ops = {}) {
         this.ops = this.sdkOps(ops);
         (this.ops.debugScope || this.ops.logLevel) &&
             Utils.setDebugScopeLevel(this.ops.debugScope, this.ops.logLevel);
-        this.routing = new uHTTP.Routing.Routing(this.clientId, {
+        this.uClient = new Routing.Client(this.clientId, {
             ...this.ops,
             measureLatency: this.ops.measureRPClatency,
         });
@@ -125,7 +122,7 @@ export default class SDK {
      * Stop listeners and free acquired resources.
      */
     public destruct = () => {
-        this.routing.destruct();
+        this.uClient.destruct();
     };
 
     /**
@@ -133,7 +130,7 @@ export default class SDK {
      * If no timeout specified, global timeout is used.
      */
     public isReady = async (timeout?: number): Promise<boolean> => {
-        return this.routing.isReady(timeout);
+        return this.uClient.isReady(timeout);
     };
 
     /**
@@ -161,13 +158,19 @@ export default class SDK {
                 throw new Response.SendError(
                     'Cannot parse mevProtectionProvider URL',
                     provider,
-                    headers,
+                    headers
                 );
             }
         }
 
+        // provide chainId
+        this.uClient.onRequestCreationHandler = (r) => {
+            r.chainId = this.chainIds.get(provider);
+            return r;
+        };
+
         try {
-            const res = await this.routing.fetch(provider, {
+            const res = await this.uClient.fetch(provider, {
                 headers,
                 body: JSON.stringify(req),
                 timeout,
@@ -180,7 +183,12 @@ export default class SDK {
                 text,
                 headers: Utils.headersToRecord(res.headers),
             };
-        } catch (err) {
+        } catch (err: any) {
+            const msg = err.toString();
+            if (msg.includes('no nodes matching required version')) {
+                log.info('Error fetching version compatible routes - triggering version check.');
+                this.fetchVersions();
+            }
             throw new Response.SendError(`Error making request: ${err}`, provider, headers);
         }
     };
@@ -225,13 +233,13 @@ export default class SDK {
     private fetchChainId = async (
         provider: string,
         headers?: Record<string, string>,
-        starknet?: boolean,
+        starknet?: boolean
     ) => {
         const req = JRPC.chainId(provider, starknet);
 
         // fetch request through RPCh
         const res = await this.doSend(req, { provider, headers }).catch((err) =>
-            log.warn('error fetching chainId for %s: %s[%o]', provider, JSON.stringify(err), err),
+            log.warn('error fetching chainId for %s: %s[%o]', provider, JSON.stringify(err), err)
         );
         if (!res) {
             return;
@@ -245,14 +253,14 @@ export default class SDK {
                     provider,
                     res.status,
                     res.statusText,
-                    res.text,
+                    res.text
                 );
             } catch (err) {
                 log.error(
                     'unable to determine error message for failed chainId call to %s: %s[%o]',
                     provider,
                     JSON.stringify(err),
-                    err,
+                    err
                 );
             }
             return;
@@ -274,7 +282,7 @@ export default class SDK {
                     log.warn(
                         'jrpc error response for chainId request to %s: %s',
                         provider,
-                        JSON.stringify(jrpc.error),
+                        JSON.stringify(jrpc.error)
                     );
                 }
             } else {
@@ -286,7 +294,7 @@ export default class SDK {
                 'unable to resolve json response for chainId call to %s, %s[%o]',
                 provider,
                 JSON.stringify(err),
-                err,
+                err
             );
         }
     };
@@ -310,7 +318,7 @@ export default class SDK {
     private determineHeaders = (
         provider: string,
         mevKickbackAddress?: string,
-        headers?: Record<string, string>,
+        headers?: Record<string, string>
     ) => {
         // if we provide headers we need to provide all of them
         if (provider === RPC_PROPELLORHEADS && mevKickbackAddress) {
@@ -350,7 +358,7 @@ export default class SDK {
         if (Res.isOk(cmp)) {
             switch (cmp.res) {
                 case Utils.VrsnCmp.Identical:
-                    log.verbose('RPCh SDK[v%s] is up to date', Version);
+                    log.info('RPCh SDK[v%s] is up to date', Version);
                     break;
                 case Utils.VrsnCmp.PatchMismatch:
                     log.info('RPCh SDK[v%s] can be updated to v%s.', Version, vSdk);

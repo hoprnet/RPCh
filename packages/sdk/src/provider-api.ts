@@ -6,7 +6,7 @@ export type RPCFailure = { status: number; message: string };
 export function fetchRPC(
     provider: string,
     req: JRPC.Request,
-    reqHeaders?: Record<string, string>,
+    reqHeaders?: Record<string, string>
 ): Promise<Res.Result<JRPC.Response, RPCFailure>> {
     return new Promise((resolve, reject) => {
         const url = new URL(provider);

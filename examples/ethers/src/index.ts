@@ -8,10 +8,7 @@ dotenv.config();
  * so they can send their RPC requests through the RPCh network.
  */
 export class RPChProvider extends JsonRpcProvider {
-    constructor(
-        public readonly url: string,
-        public readonly sdk: SDK,
-    ) {
+    constructor(public readonly url: string, public readonly sdk: SDK) {
         super(url);
     }
 
@@ -25,7 +22,7 @@ export class RPChProvider extends JsonRpcProvider {
                 payloads.map(async (payload) => {
                     const resp = await this.sdk.send(payload);
                     return JSON.parse(resp.text);
-                }),
+                })
             );
             // responses need to have a response property
             // and the id needs to be a number to meet the type

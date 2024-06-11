@@ -565,21 +565,21 @@
     ws "^8.13.0"
     zod "^3.21.4"
 
-"@hoprnet/phttp-crypto@^1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@hoprnet/phttp-crypto/-/phttp-crypto-1.0.0.tgz#684815ab5c18b76f4458bf0ddf8bec4c15f653fe"
-  integrity sha512-IBeEULHWVDaQPDDU0aSZqHJ6EFPuuS2F6uj5/9wvU440JPujakDELIg8wIRVk5fjJvrjbVeVUv8c7p5dbuqhFg==
+"@hoprnet/uhttp-crypto@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@hoprnet/uhttp-crypto/-/uhttp-crypto-1.0.1.tgz#0b2f92228bb9bc14c7ada2531f5f3b7ce029e7ab"
+  integrity sha512-yvZBBuf+gUDPyABqv127v1z3+AhLtBPwmkmndKC+Rw/SJ4UGKDw3WTyk44chUQwVZlwIitWIKA+M3xZPNsxkRQ==
   dependencies:
     "@noble/ciphers" "^0.4.1"
     "@noble/curves" "^1.3.0"
     "@noble/hashes" "^1.3.3"
 
-"@hoprnet/phttp-lib@^3.0.1":
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/@hoprnet/phttp-lib/-/phttp-lib-3.0.1.tgz#2204a45c08829db85b009d5fd9d504a6c59f460f"
-  integrity sha512-+YIYJjetF/oxj06pAuHxjPlffQcMiXoJJRn2QStiriV8IarRL/bm4OnS3GOiqacLrHIt6vVrARCgTb0cagkC4Q==
+"@hoprnet/uhttp-lib@^3.1.1":
+  version "3.1.1"
+  resolved "https://registry.yarnpkg.com/@hoprnet/uhttp-lib/-/uhttp-lib-3.1.1.tgz#bb1cfaa68ea7d4482510c0a4650c8daedf2a7d9b"
+  integrity sha512-5Y61JXBCKlGUGkZHswi+1w0eRMQXapfFZtEit/QiVqKPbMjeiwrx2G2ubiurbr+AGYknyJqethTrNEfFRBFrNw==
   dependencies:
-    "@hoprnet/phttp-crypto" "^1.0.0"
+    "@hoprnet/uhttp-crypto" "^1.0.1"
     debug "^4.3.4"
     isomorphic-ws "^5.0.0"
     lz-string "^1.5.0"

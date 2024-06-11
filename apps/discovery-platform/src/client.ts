@@ -66,7 +66,7 @@ export function update(
     dbPool: Pool,
     userId: string,
     id: string,
-    attrs: UpdateAttrs,
+    attrs: UpdateAttrs
 ): Promise<QueryResult<DB>> {
     const q = [
         'update clients',
