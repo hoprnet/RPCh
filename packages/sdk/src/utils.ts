@@ -1,4 +1,4 @@
-import { Utils } from '@hoprnet/phttp-lib';
+import { Utils } from '@hoprnet/uhttp-lib';
 import debug from 'debug';
 
 import * as Res from './result';
