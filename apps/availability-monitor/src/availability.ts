@@ -44,26 +44,26 @@ function reschedule(dbPool: Pool) {
 async function doRun(
     dbPool: Pool,
     allEntryNodes: q.RegisteredNode[],
-    allExitNodes: q.RegisteredNode[],
+    allExitNodes: q.RegisteredNode[]
 ) {
     // gather peers for entry nodes
     const peersCache: PeersCache.PeersCache = PeersCache.init();
     const { peers: entryPeers, expectedOffline: offlineEntries } = await peersMap(
         peersCache,
-        allEntryNodes,
+        allEntryNodes
     );
     const entryNodes = allEntryNodes.filter(
-        ({ id }) => !offlineEntries.some(({ id: off }) => id === off),
+        ({ id }) => !offlineEntries.some(({ id: off }) => id === off)
     );
     const missingOnlineEntries = entryNodes.filter(({ id }) => !entryPeers.has(id));
 
     // gather peers for exit nodes
     const { peers: exitPeers, expectedOffline: offlineExits } = await peersMap(
         peersCache,
-        allExitNodes,
+        allExitNodes
     );
     const exitNodes = allExitNodes.filter(
-        ({ id }) => !offlineExits.some(({ id: off }) => id === off),
+        ({ id }) => !offlineExits.some(({ id: off }) => id === off)
     );
     const missingOnlineExits = exitNodes.filter(({ id }) => !exitPeers.has(id));
 
@@ -106,13 +106,13 @@ async function doRun(
         log.info(
             '%d entry nodes and %d exit nodes appear offline intentionally:',
             offlineEntries.length,
-            offlineExits.length,
+            offlineExits.length
         );
         offlineEntries.map((n, idx) =>
-            log.info('offline entry node %d: %s', idx + 1, q.prettyPrint(n)),
+            log.info('offline entry node %d: %s', idx + 1, q.prettyPrint(n))
         );
         offlineExits.map((n, idx) =>
-            log.info('offline exit node %d: %s', idx + 1, q.prettyPrint(n)),
+            log.info('offline exit node %d: %s', idx + 1, q.prettyPrint(n))
         );
     }
 
@@ -120,19 +120,19 @@ async function doRun(
     if (missingOnlineEntries.length > 0) {
         log.warn('missing %d/%d online entry nodes:', missingOnlineEntries.length, entryPeers.size);
         missingOnlineEntries.map((n, idx) =>
-            log.warn('missing online entry node %d: %s', idx + 1, q.prettyPrint(n)),
+            log.warn('missing online entry node %d: %s', idx + 1, q.prettyPrint(n))
         );
     }
     if (missingOnlineExits.length > 0) {
         log.warn('missing %d/%d online exit nodes:', missingOnlineExits.length, exitPeers.size);
         missingOnlineExits.map((n, idx) =>
-            log.warn('missing online exit node %d: %s', idx + 1, q.prettyPrint(n)),
+            log.warn('missing online exit node %d: %s', idx + 1, q.prettyPrint(n))
         );
     }
     if (offExitApps.length > 0) {
         log.warn('missing %d/%d online exit applications:', offExitApps.length, exitPeers.size);
         offExitApps.map((n, idx) =>
-            log.warn('missing online exit application %d: %s', idx + 1, q.prettyPrint(n)),
+            log.warn('missing online exit application %d: %s', idx + 1, q.prettyPrint(n))
         );
     }
     logHopRoutes('zero hop', zhOnline, onlineEntryNodes, onlineExitNodes);
@@ -141,7 +141,7 @@ async function doRun(
 
 function zeroHop(
     entryPeers: Map<string, Set<string>>,
-    exitPeers: Map<string, Set<string>>,
+    exitPeers: Map<string, Set<string>>
 ): Map<string, Set<string>> {
     // determine exit nodes reachable by their peers
     const peersExits = revertMap(exitPeers);
@@ -160,7 +160,7 @@ function zeroHop(
 function oneHop(
     channels: Map<string, Set<string>>,
     entryPeers: Map<string, Set<string>>,
-    exitPeers: Map<string, Set<string>>,
+    exitPeers: Map<string, Set<string>>
 ): Map<string, Set<string>> {
     // match channels with peers
     const channelEntryPeers = filterChannels(entryPeers, channels);
@@ -202,7 +202,7 @@ function oneHop(
 
 async function peersMap(
     peersCache: PeersCache.PeersCache,
-    nodes: q.RegisteredNode[],
+    nodes: q.RegisteredNode[]
 ): Promise<{ peers: Map<string, Set<string>>; expectedOffline: q.RegisteredNode[] }> {
     const pRaw = nodes.map(async (node) => {
         let nodePeers;
@@ -227,7 +227,7 @@ async function peersMap(
         {
             status: 'fulfilled';
             value: { expectedOffline: q.RegisteredNode } | { nodeId: string; peerIds: Set<string> };
-        },
+        }
     ];
     return successes.reduce<{
         peers: Map<string, Set<string>>;
@@ -241,19 +241,19 @@ async function peersMap(
             }
             return acc;
         },
-        { peers: new Map(), expectedOffline: [] },
+        { peers: new Map(), expectedOffline: [] }
     );
 }
 
 async function runOnlineChecks(
     exitPeers: Map<string, Set<string>>,
-    nodes: Map<string, q.RegisteredNode>,
+    nodes: Map<string, q.RegisteredNode>
 ): Promise<Set<string>> {
     const messagePreps: Map<string, { eNode: q.RegisteredNode; exitIds: Set<string> }> = Array.from(
-        exitPeers.keys(),
+        exitPeers.keys()
     ).reduce((acc, xId) => {
         const peerIds = Array.from(exitPeers.get(xId) as Set<string>).filter((pId) =>
-            nodes.has(pId),
+            nodes.has(pId)
         );
         if (peerIds.length > 0) {
             const peerId = randomEl(peerIds);
@@ -274,7 +274,7 @@ async function runOnlineChecks(
         };
         // delete any previous pongs
         await NodeAPI.deleteMessages(conn, ApplicationTag).catch((err) =>
-            log.error('delete messages from %s: %o', Utils.shortPeerId(eId), err),
+            log.error('delete messages from %s: %o', Utils.shortPeerId(eId), err)
         );
 
         // send pings
@@ -285,7 +285,7 @@ async function runOnlineChecks(
                 setTimeout(() => {
                     NodeAPI.sendMessage(
                         { ...conn, hops: 0 },
-                        { tag: ApplicationTag, recipient: xId, message: `ping-${eId}` },
+                        { tag: ApplicationTag, recipient: xId, message: `ping-${eId}` }
                     )
                         .then(resolve)
                         .catch((err) => {
@@ -293,7 +293,7 @@ async function runOnlineChecks(
                                 'send ping from %s to %s: %o',
                                 Utils.shortPeerId(eId),
                                 Utils.shortPeerId(xId),
-                                err,
+                                err
                             );
                             reject('Error sending ping');
                         });
@@ -314,7 +314,7 @@ async function runOnlineChecks(
                         log.error(
                             'retrieve messages from %s: %o',
                             JSON.stringify(Utils.shortPeerId(eId)),
-                            err,
+                            err
                         );
                         reject('Error retrieving messages');
                     });
@@ -326,7 +326,7 @@ async function runOnlineChecks(
         messages: NodeAPI.Message[];
     }>[];
     const filteredRes = results.filter((pRes) => pRes.status === 'fulfilled') as [
-        { status: 'fulfilled'; value: { messages: NodeAPI.Message[] } },
+        { status: 'fulfilled'; value: { messages: NodeAPI.Message[] } }
     ];
     const msgs = filteredRes.map(({ value }) => value.messages).flat();
     const onlineXids = msgs
@@ -368,7 +368,7 @@ function logHopRoutes(
     prefix: string,
     pairs: Map<string, Set<string>>,
     entryNodes: q.RegisteredNode[],
-    exitNodes: q.RegisteredNode[],
+    exitNodes: q.RegisteredNode[]
 ) {
     const countPairs = Array.from(pairs).reduce((acc, [_eId, xIds]) => acc + xIds.size, 0);
     const max = entryNodes.length * exitNodes.length;
@@ -379,7 +379,7 @@ function logHopRoutes(
         max,
         prefix,
         entryNodes.length,
-        exitNodes.length,
+        exitNodes.length
     );
 
     const allPairs = entryNodes.reduce<[q.RegisteredNode, q.RegisteredNode][]>((acc, eNode) => {
@@ -394,7 +394,7 @@ function logHopRoutes(
                 prefix,
                 acc + 1,
                 q.prettyPrint(eNode),
-                q.prettyPrint(xNode),
+                q.prettyPrint(xNode)
             );
             return acc + 1;
         }
@@ -404,7 +404,7 @@ function logHopRoutes(
 
 function filterChannels(
     peers: Map<string, Set<string>>,
-    channels: Map<string, Set<string>>,
+    channels: Map<string, Set<string>>
 ): Map<string, Set<string>> {
     return Array.from(peers).reduce((acc, [id, prs]) => {
         const chans = channels.get(id);
@@ -418,7 +418,7 @@ function filterChannels(
 
 function filterOnline(
     pairs: Map<string, Set<string>>,
-    online: Set<string>,
+    online: Set<string>
 ): Map<string, Set<string>> {
     return Array.from(pairs).reduce((acc, [eId, xIds]) => {
         const vals = new Set(Array.from(xIds).filter((x) => online.has(x)));

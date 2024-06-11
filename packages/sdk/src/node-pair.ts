@@ -42,7 +42,7 @@ export function create(
     applicationTag: number,
     messageListener: MessageListener,
     hops: number,
-    forceManualRelaying: boolean,
+    forceManualRelaying: boolean
 ): NodePair {
     const entryData = EntryData.create();
     const shortId = shortPeerId(entryNode.id);
@@ -192,7 +192,7 @@ function requestInfo(np: NodePair, exitNode: ExitNode.ExitNode) {
             recipient: exitNode.id,
             tag: np.applicationTag,
             message,
-        },
+        }
     );
     EntryData.addOngoingInfo(np.entryData);
     if (!np.fetchTimeout) {
@@ -204,7 +204,7 @@ function requestInfo(np: NodePair, exitNode: ExitNode.ExitNode) {
         np.log.warn(
             'timeout (%dms) waiting for info response from x%s',
             InfoResponseTimeout,
-            shortPeerId(exitNode.id),
+            shortPeerId(exitNode.id)
         );
         EntryData.removeOngoingInfo(np.entryData);
         checkStopInterval(np);
@@ -212,7 +212,7 @@ function requestInfo(np: NodePair, exitNode: ExitNode.ExitNode) {
         if (!exitData) {
             return np.log.error(
                 'missing exit data for x%s during info resp timeout',
-                shortPeerId(exitNode.id),
+                shortPeerId(exitNode.id)
             );
         }
         exitData.infoFail = true;
@@ -254,7 +254,7 @@ export function prettyPrint(np: NodePair): string {
     const mesStr = prettyOngoingNumbers(np, 0, mesSuc, mesTot, mesLat);
     const ping = np.entryData.pingDuration ? `${np.entryData.pingDuration}ms` : '..';
     return `${shortPeerId(
-        id(np),
+        id(np)
     )}[ping: ${ping}, seg: ${segStr}, msgs: ${mesStr}, ${exCount}x: ${exStrs.join(', ')}]`;
 }
 
@@ -263,7 +263,7 @@ function prettyOngoingNumbers(
     ongoing: number,
     successes: number,
     total: number,
-    average: number,
+    average: number
 ) {
     if (total === 0) {
         if (ongoing === 0) {
@@ -300,7 +300,7 @@ function fetchMessages(np: NodePair) {
                     }
                     return acc;
                 },
-                { infoResps: [], msgs: [] },
+                { infoResps: [], msgs: [] }
             );
             incInfoResps(np, infoResps);
             np.messageListener(msgs);
@@ -358,7 +358,7 @@ function incPeers(np: NodePair, res: NodeAPI.Peers | NodeAPI.NodeError, startPin
     // available peers
     const peers = res.connected
         .filter(({ reportedVersion }) =>
-            RelayNodesCompatVersions.some((v) => reportedVersion.startsWith(v)),
+            RelayNodesCompatVersions.some((v) => reportedVersion.startsWith(v))
         )
         .map(({ peerId, peerAddress }) => ({ peerId, peerAddress }));
     NodeAPI.getNodeChannels(np.entryNode)
@@ -374,7 +374,7 @@ function incChannels(
     np: NodePair,
     channels: NodeAPI.NodeChannels,
     peers: { peerId: string; peerAddress: string }[],
-    startPingTime: number,
+    startPingTime: number
 ) {
     np.entryData.pingDuration = Math.round(performance.now() - startPingTime);
     np.log.verbose('channel ping took %dms', np.entryData.pingDuration);

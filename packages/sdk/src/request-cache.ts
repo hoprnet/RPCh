@@ -35,7 +35,7 @@ export function add(
         reject: (error: Response.SendError) => void;
         session: compatCrypto.Session;
         timer: ReturnType<typeof setTimeout>;
-    },
+    }
 ): Entry {
     const entry = {
         request,

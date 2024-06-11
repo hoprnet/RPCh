@@ -33,7 +33,7 @@ export class SendError extends Error {
     constructor(
         message: string,
         public readonly provider: string,
-        public readonly reqHeaders: Record<string, string>,
+        public readonly reqHeaders: Record<string, string>
     ) {
         super(message);
         this.name = 'SendError';

@@ -78,7 +78,7 @@ export function connectWS(conn: ConnInfo): WebSocket {
 
 export function sendMessage(
     conn: ConnInfo & { hops?: number; relay?: string },
-    { recipient, tag, message }: { recipient: string; tag: number; message: string },
+    { recipient, tag, message }: { recipient: string; tag: number; message: string }
 ): Promise<string | NodeError> {
     const url = new URL('/api/v3/messages', conn.apiEndpoint);
     const headers = {
@@ -103,7 +103,7 @@ export function sendMessage(
     }
     const body = JSON.stringify(payload);
     return fetch(url, { method: 'POST', headers, body, signal: AbortSignal.timeout(30000) }).then(
-        (res) => res.json(),
+        (res) => res.json()
     );
 }
 
@@ -128,7 +128,7 @@ export function retrieveMessages(conn: ConnInfo, tag: number): Promise<{ message
     return fetch(url, { method: 'POST', headers, body, signal: AbortSignal.timeout(30000) }).then(
         (res) => {
             return res.json() as unknown as { messages: Message[] };
-        },
+        }
     );
 }
 
@@ -147,7 +147,7 @@ export function deleteMessages(conn: ConnInfo, tag: number): Promise<void> {
                     return resolve();
                 }
                 return reject(`Unexpected response status code: ${res.status}`);
-            },
+            }
         );
     });
 }

@@ -26,7 +26,7 @@ function updateMonthlyQuotaUsages(pgm) {
 
     // reset all columns to have matching data
     pgm.sql(
-        'UPDATE monthly_quota_usages SET (req_count, resp_count, req_segment_count, resp_segment_count) = (0, 0, 0, 0)',
+        'UPDATE monthly_quota_usages SET (req_count, resp_count, req_segment_count, resp_segment_count) = (0, 0, 0, 0)'
     );
 
     pgm.alterColumn('monthly_quota_usages', 'req_count', {
@@ -62,7 +62,7 @@ function recreateAggregateQuota(pgm) {
         END IF;
         RETURN NULL;
     END;
-    `,
+    `
     );
 
     pgm.createTrigger('request_quotas', 'monthly_req_usage', {
@@ -89,7 +89,7 @@ function recreateInitAggregatedQuota(pgm) {
         INSERT INTO monthly_quota_usages (user_id, started_at, req_count, resp_count, req_segment_count, resp_segment_count) VALUES (NEW.id, NEW.created_at, 0, 0, 0, 0);
         RETURN NULL;
     END;
-    `,
+    `
     );
 
     pgm.createTrigger('users', 'init_monthly_usage', {

@@ -14,7 +14,7 @@ export enum Key {
 
 export async function list(
     dbPool: pg.Pool,
-    key: Key | Key[],
+    key: Key | Key[]
 ): Promise<{ key: string; data: string }[]> {
     const keys = toKeys(key);
     const strKeys = Array.from(keys).join("','");

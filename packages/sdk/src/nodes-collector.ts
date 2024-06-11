@@ -27,7 +27,7 @@ export default class NodesCollector {
         private readonly messageListener: MessageListener,
         private readonly versionListener: VersionListener,
         private readonly hops: number,
-        private readonly forceManualRelaying: boolean,
+        private readonly forceManualRelaying: boolean
     ) {
         this.fetchRoutes();
     }
@@ -141,7 +141,7 @@ export default class NodesCollector {
     public segmentSucceeded = (
         req: Request.Request,
         seg: Segment.Segment,
-        responseTime: number,
+        responseTime: number
     ) => {
         const np = this.nodePairs.get(req.entryPeerId);
         if (!np) {
@@ -297,7 +297,7 @@ export default class NodesCollector {
     private removeRedundant = () => {
         const count = Array.from(this.nodePairs).reduce<number>(
             (acc, [_, np]) => np.exitNodes.size + acc,
-            0,
+            0
         );
         let toRemove = count - RoutesAmount;
         if (toRemove <= 0) {
@@ -314,7 +314,7 @@ export default class NodesCollector {
                 });
                 return acc.concat(removableExitIds.map((xId) => [eId, xId]));
             },
-            [],
+            []
         );
         log.verbose('removing %d redundant routes', removablePairs.length);
         while (removablePairs.length > 0 && toRemove > 0) {
