@@ -1,5 +1,16 @@
 # @rpch/sdk
 
+## 3.1.0
+
+### Minor Changes
+
+-   c17e3b2: Better inform about non matching exit node versions.
+    Allow long running instances to recheck version when needed.
+
+### Patch Changes
+
+-   c17e3b2: Fix chainId reporting
+
 ## 3.0.1
 
 ### Patch Changes
