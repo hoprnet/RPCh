@@ -12,7 +12,7 @@
         "format:ci": "prettier --check src/ migrations/ .eslintrc.js jest.config.ts package.json tsconfig.json",
         "lint": "eslint --fix src/ migrations/",
         "lint:ci": "eslint --max-warnings 0 src/ migrations/",
-        "test": "exit 0",
+        "test": "jest --coverage",
         "start": "node build/index.js"
     },
     "dependencies": {
@@ -26,6 +26,7 @@
     },
     "devDependencies": {
         "@types/compression": "^1.7.4",
-        "@types/cors": "^2.8.15"
+        "@types/cors": "^2.8.15",
+        "pg-mem": "^2.8.1"
     }
 }
