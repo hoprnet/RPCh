@@ -74,7 +74,7 @@ export function listExitNodes(dbPool: Pool, nodeIds: Iterable<string>): Promise<
 export function listPairings(
     dbPool: Pool,
     amount: number,
-    forceZeroHop?: boolean
+    { forceZeroHop, clientId }: { forceZeroHop?: boolean; clientId?: string }
 ): Promise<Pairing[]> {
     const table = forceZeroHop ? 'zero_hop_pairings' : 'one_hop_pairings';
     const sub1 = 'max_rand_exits';
