@@ -26,7 +26,6 @@
     },
     "devDependencies": {
         "@types/compression": "^1.7.4",
-        "@types/cors": "^2.8.15",
-        "pg-mem": "^2.8.1"
+        "@types/cors": "^2.8.15"
     }
 }
