@@ -139,6 +139,8 @@ function queryMaxExitsRandEntries({
     clientId?: string;
     amount: number;
 }) {
+    // depending on if a specific client is requested we either want only nodes associated with that client
+    // or only nodes associated with no client
     if (clientId) {
         const qUserId = `select user_id from clients where id = '${clientId}'`;
         return [
@@ -170,6 +172,8 @@ function queryRandomRemainingRoutes({
     amount: number;
     sub: string;
 }) {
+    // depending on if a specific client is requested we either want only nodes associated with that client
+    // or only nodes associated with no client
     if (clientId) {
         const qUserId = `select user_id from clients where id = '${clientId}'`;
         return [

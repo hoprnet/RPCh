@@ -15,7 +15,7 @@ exports.up = (pgm) => {
         END IF;
         RETURN NULL;
     END;
-    `
+    `,
     );
 
     pgm.createTrigger('request_quotas', 'monthly_req_usage', {
@@ -41,7 +41,7 @@ exports.up = (pgm) => {
         INSERT INTO monthly_quota_usages (user_id, started_at, req_count, resp_count) VALUES (NEW.id, NEW.created_at, 0, 0);
         RETURN NULL;
     END;
-    `
+    `,
     );
 
     pgm.createTrigger('users', 'init_monthly_usage', {
@@ -57,6 +57,6 @@ exports.up = (pgm) => {
     INSERT INTO monthly_quota_usages (user_id, started_at, req_count, resp_count)
         SELECT id, created_at, 0, 0 from USERS WHERE id NOT IN
             (SELECT user_id FROM monthly_quota_usages);
-    `
+    `,
     );
 };

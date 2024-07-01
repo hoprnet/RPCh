@@ -41,7 +41,7 @@ function toURL(urlStr: string, host: string): null | URL {
 
 function extractParams(
     urlStr: undefined | string,
-    incHeaders: http.IncomingHttpHeaders
+    incHeaders: http.IncomingHttpHeaders,
 ): RequestOps {
     if (!urlStr || !incHeaders.host) {
         return {};
@@ -96,7 +96,7 @@ function headersFromIncoming(headers: http.IncomingHttpHeaders) {
 }
 
 function parseBody(
-    str: string
+    str: string,
 ): { success: false; error: string; id?: string } | { success: true; req: JRPC.Request } {
     try {
         const json = JSON.parse(str);
@@ -109,7 +109,7 @@ function parseBody(
 async function sendSkipRPCh(
     provider: string | undefined,
     req: JRPC.Request,
-    res: http.ServerResponse
+    res: http.ServerResponse,
 ) {
     if (!provider) {
         log.error('[NO_RPCH] need provider query param');
@@ -145,7 +145,7 @@ async function sendRequest(
     req: JRPC.Request,
     params: RequestOps,
     res: http.ServerResponse,
-    ops: ServerOPS
+    ops: ServerOPS,
 ) {
     try {
         const resp: Response.Response = await sdk.send(req, params);
@@ -165,7 +165,7 @@ async function sendRequest(
                 resp.status,
                 resp.statusText,
                 resp.text,
-                req
+                req,
             );
             // only write if we are allowed to
             if (resp.status !== 204 && resp.status !== 304) {
@@ -180,14 +180,14 @@ async function sendRequest(
                     .map(([k, v]) => `-H "${k}: ${v}"`)
                     .join(' ');
                 const cmd = `${message} --- curl ${provider} ${cmdHeaders} -d '${JSON.stringify(
-                    req
+                    req,
                 )}'`;
                 fh.appendFile(ops.failedRequestsFile, cmd + '\n').catch((err) => {
                     log.error(
                         'error appending to FAILED_REQUESTS_FILE[%s]: %s[%o]',
                         ops.failedRequestsFile,
                         JSON.stringify(err),
-                        err
+                        err,
                     );
                 });
             }
@@ -254,7 +254,7 @@ function createServer(sdk: RPChSDK, ops: ServerOPS) {
                         jsonrpc: '2.0',
                         error: { code: -32700, message: `Parse error: ${result.error}` },
                         id: result.id,
-                    })
+                    }),
                 );
                 res.end();
             }
@@ -303,7 +303,7 @@ function versionListener({ rpcServer }: DPapi.Versions) {
                     'Please visit https://degen.rpch.net to get the latest version!',
                 ].join(' '),
                 Version,
-                rpcServer
+                rpcServer,
             );
             break;
         case Utils.VrsnCmp.MinorMismatch:
@@ -317,7 +317,7 @@ function versionListener({ rpcServer }: DPapi.Versions) {
                         'Please visit https://degen.rpch.net to get the latest version!',
                     ].join(' '),
                     Version,
-                    rpcServer
+                    rpcServer,
                 );
             }
             break;
@@ -415,7 +415,7 @@ if (require.main === module) {
             Version,
             port,
             JSON.stringify(serverOps),
-            JSON.stringify(ops)
+            JSON.stringify(ops),
         );
     });
 }
