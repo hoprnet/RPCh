@@ -66,11 +66,14 @@ describe('node', function () {
 
     it('listPairings', async function () {
         const resAll = await node.listPairings(dbPool, 10, { forceZeroHop: true });
-        expect(resAll.length).toBe(4);
+        expect(resAll.length).toBe(1);
 
         const resClients = await dbPool.query('select id from clients');
-        const clientId = resClients.rows[0];
+        const clientId = resClients.rows[0].id;
         const resAssocs = await node.listPairings(dbPool, 10, { forceZeroHop: true, clientId });
-        expect(resAssocs.length).toBe(2);
+        expect(resAssocs.length).toBe(1);
+
+        expect(resAll[0].entryId).not.toBe(resAssocs[0].entryId);
+        expect(resAll[0].exitId).not.toBe(resAssocs[0].exitId);
     });
 });
