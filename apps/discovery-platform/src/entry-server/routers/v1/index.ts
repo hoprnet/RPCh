@@ -39,6 +39,7 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
         middleware.clientAuthorized(ops.dbPool),
         query('amount').default(10).isInt({ min: 1, max: 100 }),
         query('force_zero_hop').optional().toBoolean(),
+        query('client_associated').optional().toBoolean(),
         getNodesPairings(ops.dbPool)
     );
 
@@ -82,8 +83,9 @@ function getNodesPairings(dbPool: Pool) {
 
         const data = matchedData(req);
         const forceZeroHop = !!data.force_zero_hop;
+        const clientAssociated = !!data.client_associated;
         qNode
-            .listPairings(dbPool, data.amount, forceZeroHop)
+            .listPairings(dbPool, data.amount, { forceZeroHop, clientAssociated })
             .then((qPairings) => {
                 if (qPairings.length === 0) {
                     // table is empty
