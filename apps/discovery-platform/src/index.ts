@@ -1,10 +1,10 @@
 import migrate from 'node-pg-migrate';
+import path from 'path';
 import { Pool } from 'pg';
 import { Utils } from '@rpch/sdk';
 
 import * as quota from './quota';
 import Version from './version';
-import path from 'path';
 import type { Secrets } from './secrets';
 import { entryServer } from './entry-server';
 
@@ -43,7 +43,7 @@ const start = async (ops: {
             Version,
             host,
             ops.port,
-            JSON.stringify({ connectionString: '<redacted>', url: ops.url })
+            JSON.stringify({ connectionString: '<redacted>', url: ops.url }),
         );
     });
 

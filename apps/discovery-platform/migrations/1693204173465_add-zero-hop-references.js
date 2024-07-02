@@ -12,11 +12,11 @@ exports.up = (pgm) => {
     pgm.addConstraint(
         'zero_hop_pairings',
         'zero_hop_pairings_entry_id_fkey',
-        'FOREIGN KEY (entry_id) REFERENCES registered_nodes(id)'
+        'FOREIGN KEY (entry_id) REFERENCES registered_nodes(id)',
     );
     pgm.addConstraint(
         'zero_hop_pairings',
         'zero_hop_pairings_exit_id_fkey',
-        'FOREIGN KEY (exit_id) REFERENCES registered_nodes(id)'
+        'FOREIGN KEY (exit_id) REFERENCES registered_nodes(id)',
     );
 };

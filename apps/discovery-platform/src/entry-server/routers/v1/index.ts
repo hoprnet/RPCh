@@ -39,7 +39,8 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
         middleware.clientAuthorized(ops.dbPool),
         query('amount').default(10).isInt({ min: 1, max: 100 }),
         query('force_zero_hop').optional().toBoolean(),
-        getNodesPairings(ops.dbPool)
+        query('client_associated').optional().toBoolean(),
+        getNodesPairings(ops.dbPool),
     );
 
     ////
@@ -48,7 +49,7 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
         '/configs',
         middleware.clientAuthorized(ops.dbPool),
         query('key').isIn(Object.keys(qConfigs.Key)).exists(),
-        getConfigKeys(ops.dbPool)
+        getConfigKeys(ops.dbPool),
     );
 
     ////
@@ -59,7 +60,7 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
         middleware.nodeAuthorized(ops.dbPool),
         checkSchema(quota.schema),
         middleware.validateStop,
-        quota.request(ops.dbPool)
+        quota.request(ops.dbPool),
     );
 
     router.post(
@@ -67,7 +68,7 @@ export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) =
         middleware.nodeAuthorized(ops.dbPool),
         checkSchema(quota.schema),
         middleware.validateStop,
-        quota.response(ops.dbPool)
+        quota.response(ops.dbPool),
     );
 
     return router;
@@ -82,8 +83,10 @@ function getNodesPairings(dbPool: Pool) {
 
         const data = matchedData(req);
         const forceZeroHop = !!data.force_zero_hop;
+        const clientAssociated = !!data.client_associated;
+        const clientId = clientAssociated ? (req.headers['x-rpch-client'] as string) : undefined;
         qNode
-            .listPairings(dbPool, data.amount, forceZeroHop)
+            .listPairings(dbPool, data.amount, { forceZeroHop, clientId })
             .then((qPairings) => {
                 if (qPairings.length === 0) {
                     // table is empty
@@ -101,7 +104,7 @@ function getNodesPairings(dbPool: Pool) {
                         acc.set(entryId, new Set([exitId]));
                         return acc;
                     },
-                    new Map()
+                    new Map(),
                 );
 
                 // query entry and exit nodes
@@ -137,7 +140,7 @@ function getNodesPairings(dbPool: Pool) {
             .catch((ex) => {
                 log.error(
                     `Error during read ${forceZeroHop ? 'zero' : 'one'}_hop_pairings query`,
-                    ex
+                    ex,
                 );
                 const reason = 'Error querying database';
                 return res.status(500).json({ reason });

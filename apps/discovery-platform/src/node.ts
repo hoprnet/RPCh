@@ -74,25 +74,20 @@ export function listExitNodes(dbPool: Pool, nodeIds: Iterable<string>): Promise<
 export function listPairings(
     dbPool: Pool,
     amount: number,
-    forceZeroHop?: boolean
+    { forceZeroHop, clientId }: { forceZeroHop?: boolean; clientId?: string },
 ): Promise<Pairing[]> {
     const table = forceZeroHop ? 'zero_hop_pairings' : 'one_hop_pairings';
     const sub1 = 'max_rand_exits';
     const sub2 = 'remaining_routes';
+
     // select each exit exactly once with a random entry_id
-    const qMaxRandExits = [
-        `select distinct on (exit_id) * from ${table}`,
-        `order by exit_id, random() limit ${amount}`,
-    ].join(' ');
+    const qMaxExits = queryMaxExitsRandEntries({ amount, clientId, table });
     // select new random entry_id - exit_id combinations until we reach **amount**
-    const qRemainingRoutes = [
-        `select * from ${table}`,
-        `where (entry_id,exit_id) not in (select entry_id, exit_id from ${sub1})`,
-        `order by random() limit (${amount} - (select count(*) from ${sub1}))`,
-    ].join(' ');
+    const qRemaining = queryRandomRemainingRoutes({ amount, clientId, sub: sub1, table });
+
     // union subqueries for final result
     const qUnion = [
-        `with ${sub1} as (${qMaxRandExits}), ${sub2} as (${qRemainingRoutes})`,
+        `with ${sub1} as (${qMaxExits}), ${sub2} as (${qRemaining})`,
         `select * from ${sub1} union all select * from ${sub2}`,
     ].join(' ');
     return dbPool.query(qUnion).then((r) => r.rows.map(pairingFromDB));
@@ -100,7 +95,7 @@ export function listPairings(
 
 export function listIdsByAccessToken(
     dbPool: Pool,
-    accessToken: string
+    accessToken: string,
 ): Promise<{ exitId: string }[]> {
     const q = [
         'select exit_id from exit_node_tokens',
@@ -133,4 +128,70 @@ function pairingFromDB(db: DBPairing): Pairing {
         exitId: db.exit_id,
         createdAt: db.created_at,
     };
+}
+
+function queryMaxExitsRandEntries({
+    table,
+    clientId,
+    amount,
+}: {
+    table: string;
+    clientId?: string;
+    amount: number;
+}) {
+    // depending on if a specific client is requested we either want only nodes associated with that client
+    // or only nodes associated with no client
+    if (clientId) {
+        const qUserId = `select user_id from clients where id = '${clientId}'`;
+        return [
+            `select distinct on (exit_id) hp.* from ${table} hp`,
+            'join associated_nodes assoc_entry on hp.entry_id = assoc_entry.node_id',
+            'join associated_nodes assoc_exit on hp.exit_id = assoc_exit.node_id',
+            `where assoc_entry.user_id = (${qUserId}) and assoc_exit.user_id = (${qUserId})`,
+            `order by exit_id, random() limit ${amount}`,
+        ].join(' ');
+    }
+
+    return [
+        `select distinct on (exit_id) hp.* from ${table} hp`,
+        'left join associated_nodes assoc_entry on hp.entry_id = assoc_entry.node_id',
+        'left join associated_nodes assoc_exit on hp.exit_id = assoc_exit.node_id',
+        'where assoc_entry.user_id is NULL and assoc_exit.user_id is NULL',
+        `order by exit_id, random() limit ${amount}`,
+    ].join(' ');
+}
+
+function queryRandomRemainingRoutes({
+    table,
+    clientId,
+    amount,
+    sub,
+}: {
+    table: string;
+    clientId?: string;
+    amount: number;
+    sub: string;
+}) {
+    // depending on if a specific client is requested we either want only nodes associated with that client
+    // or only nodes associated with no client
+    if (clientId) {
+        const qUserId = `select user_id from clients where id = '${clientId}'`;
+        return [
+            `select hp.* from ${table} hp`,
+            'join associated_nodes assoc_entry on hp.entry_id = assoc_entry.node_id',
+            'join associated_nodes assoc_exit on hp.exit_id = assoc_exit.node_id',
+            `where assoc_entry.user_id = (${qUserId}) and assoc_exit.user_id = (${qUserId})`,
+            `and (hp.entry_id,hp.exit_id) not in (select entry_id, exit_id from ${sub})`,
+            `order by random() limit (${amount} - (select count(*) from ${sub}))`,
+        ].join(' ');
+    }
+
+    return [
+        `select hp.* from ${table} hp`,
+        'left join associated_nodes assoc_entry on hp.entry_id = assoc_entry.node_id',
+        'left join associated_nodes assoc_exit on hp.exit_id = assoc_exit.node_id',
+        'where assoc_entry.user_id is NULL and assoc_exit.user_id is NULL',
+        `and (hp.entry_id,hp.exit_id) not in (select entry_id, exit_id from ${sub})`,
+        `order by random() limit (${amount} - (select count(*) from ${sub}))`,
+    ].join(' ');
 }

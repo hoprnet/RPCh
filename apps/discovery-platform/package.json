@@ -12,7 +12,7 @@
         "format:ci": "prettier --check src/ migrations/ .eslintrc.js jest.config.ts package.json tsconfig.json",
         "lint": "eslint --fix src/ migrations/",
         "lint:ci": "eslint --max-warnings 0 src/ migrations/",
-        "test": "exit 0",
+        "test": "jest --coverage",
         "start": "node build/index.js"
     },
     "dependencies": {

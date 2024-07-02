@@ -30,7 +30,7 @@ describe('rpch-sdk-zero-hop tests', function () {
             },
             {
                 provider: PROVIDER_URL,
-            }
+            },
         );
         const json = await response.json();
         const blockNumber = BigInt(json.result);
@@ -46,7 +46,7 @@ describe('rpch-sdk-zero-hop tests', function () {
             },
             {
                 provider: PROVIDER_URL,
-            }
+            },
         );
         const json = await response.json();
         const chainId = json.result;

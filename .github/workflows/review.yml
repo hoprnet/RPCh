@@ -63,7 +63,7 @@ jobs:
       - name: Run tests and coverage
         run: yarn test
         env:
-          TESTING_DB_CONNECTION_STRING: postgres://postgres:postgres@localhost:5432/postgres
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
 
   container-image:
     name: Build and push container image
