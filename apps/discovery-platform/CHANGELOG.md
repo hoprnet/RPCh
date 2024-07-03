@@ -1,5 +1,11 @@
 # @rpch/discovery-platform
 
+## 2.1.0
+
+### Minor Changes
+
+-   ef1897f: Clients can now query routes associated with their client id
+
 ## 2.0.4
 
 ### Patch Changes
