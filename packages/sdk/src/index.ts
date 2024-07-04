@@ -105,10 +105,7 @@ export default class SDK {
      * @param crypto crypto instantiation for RPCh, use `@rpch/crypto-for-nodejs` or `@rpch/crypto-for-web`
      * @param ops, see **Ops**
      **/
-    constructor(
-        private readonly clientId: string,
-        ops: Ops = {},
-    ) {
+    constructor(private readonly clientId: string, ops: Ops = {}) {
         this.ops = this.sdkOps(ops);
         (this.ops.debugScope || this.ops.logLevel) &&
             Utils.setDebugScopeLevel(this.ops.debugScope, this.ops.logLevel);

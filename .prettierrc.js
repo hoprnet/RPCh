@@ -3,4 +3,5 @@ module.exports = {
     tabWidth: 4,
     quoteProps: 'consistent',
     printWidth: 100,
+    trailingComma: 'all',
 };

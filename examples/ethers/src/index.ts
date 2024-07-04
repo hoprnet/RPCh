@@ -8,10 +8,7 @@ dotenv.config();
  * so they can send their RPC requests through the RPCh network.
  */
 export class RPChProvider extends JsonRpcProvider {
-    constructor(
-        public readonly url: string,
-        public readonly sdk: SDK,
-    ) {
+    constructor(public readonly url: string, public readonly sdk: SDK) {
         super(url);
     }
 
