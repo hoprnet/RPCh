@@ -84,7 +84,7 @@ function getNodesPairings(dbPool: Pool) {
         const data = matchedData(req);
         const forceZeroHop = !!data.force_zero_hop;
         const clientAssociated = !!data.client_associated;
-        const clientId = clientAssociated ? (req.headers['x-rpch-client'] as string) : undefined;
+        const clientId = clientAssociated ? req.clientId : undefined;
         qNode
             .listPairings(dbPool, data.amount, { forceZeroHop, clientId })
             .then((qPairings) => {

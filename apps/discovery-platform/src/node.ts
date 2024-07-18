@@ -139,24 +139,22 @@ function queryMaxExitsRandEntries({
     clientId?: string;
     amount: number;
 }) {
-    // depending on if a specific client is requested we either want only nodes associated with that client
-    // or only nodes associated with no client
+    // depending on if a specific client is requested we either want only exit nodes associated with that client
+    // or only exit nodes associated with no client
     if (clientId) {
         const qUserId = `select user_id from clients where id = '${clientId}'`;
         return [
             `select distinct on (exit_id) hp.* from ${table} hp`,
-            'join associated_nodes assoc_entry on hp.entry_id = assoc_entry.node_id',
             'join associated_nodes assoc_exit on hp.exit_id = assoc_exit.node_id',
-            `where assoc_entry.user_id = (${qUserId}) and assoc_exit.user_id = (${qUserId})`,
+            `where assoc_exit.user_id = (${qUserId})`,
             `order by exit_id, random() limit ${amount}`,
         ].join(' ');
     }
 
     return [
         `select distinct on (exit_id) hp.* from ${table} hp`,
-        'left join associated_nodes assoc_entry on hp.entry_id = assoc_entry.node_id',
         'left join associated_nodes assoc_exit on hp.exit_id = assoc_exit.node_id',
-        'where assoc_entry.user_id is NULL and assoc_exit.user_id is NULL',
+        'where assoc_exit.user_id is NULL',
         `order by exit_id, random() limit ${amount}`,
     ].join(' ');
 }
@@ -172,15 +170,14 @@ function queryRandomRemainingRoutes({
     amount: number;
     sub: string;
 }) {
-    // depending on if a specific client is requested we either want only nodes associated with that client
-    // or only nodes associated with no client
+    // depending on if a specific client is requested we either want only exit nodes associated with that client
+    // or only exit nodes associated with no client
     if (clientId) {
         const qUserId = `select user_id from clients where id = '${clientId}'`;
         return [
             `select hp.* from ${table} hp`,
-            'join associated_nodes assoc_entry on hp.entry_id = assoc_entry.node_id',
             'join associated_nodes assoc_exit on hp.exit_id = assoc_exit.node_id',
-            `where assoc_entry.user_id = (${qUserId}) and assoc_exit.user_id = (${qUserId})`,
+            `where assoc_exit.user_id = (${qUserId})`,
             `and (hp.entry_id,hp.exit_id) not in (select entry_id, exit_id from ${sub})`,
             `order by random() limit (${amount} - (select count(*) from ${sub}))`,
         ].join(' ');
@@ -188,9 +185,8 @@ function queryRandomRemainingRoutes({
 
     return [
         `select hp.* from ${table} hp`,
-        'left join associated_nodes assoc_entry on hp.entry_id = assoc_entry.node_id',
         'left join associated_nodes assoc_exit on hp.exit_id = assoc_exit.node_id',
-        'where assoc_entry.user_id is NULL and assoc_exit.user_id is NULL',
+        'where assoc_exit.user_id is NULL',
         `and (hp.entry_id,hp.exit_id) not in (select entry_id, exit_id from ${sub})`,
         `order by random() limit (${amount} - (select count(*) from ${sub}))`,
     ].join(' ');

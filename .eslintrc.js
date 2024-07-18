@@ -25,6 +25,7 @@ module.exports = {
                     { argsIgnorePattern: '^_', varsIgnorePattern: '^_ignored' },
                 ],
                 '@typescript-eslint/no-explicit-any': ['off'],
+                '@typescript-eslint/no-namespace': ['warn', { allowDeclarations: true }],
             },
         },
         {

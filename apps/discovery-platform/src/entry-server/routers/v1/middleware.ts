@@ -8,13 +8,23 @@ import * as node from '../../../node';
 
 const log = Utils.logger(['discovery-platform', 'router', 'middleware']);
 
+declare global {
+    namespace Express {
+        interface Request {
+            clientId?: string;
+        }
+    }
+}
+
 export function clientAuthorized(dbPool: Pool) {
     return async function (req: Request, res: Response, next: NextFunction) {
-        const clientId = req.headers['x-rpch-client'] as string;
+        const externalToken = req.headers['x-rpch-client'] as string;
         const result = await client
-            .listIdsByExternalToken(dbPool, clientId)
+            .listIdsByExternalToken(dbPool, externalToken)
             .catch((ex) => log.error('Error reading clientIds', ex));
         if (result && result.length > 0) {
+            const { id: clientId } = result[0];
+            req.clientId = clientId;
             next();
         } else {
             const reason = 'Client not authorized';
