@@ -1,5 +1,11 @@
 # @rpch/discovery-platform
 
+## 2.1.1
+
+### Patch Changes
+
+-   19eafe5: Fix associated nodes query to only care about associated exit nodes
+
 ## 2.1.0
 
 ### Minor Changes
