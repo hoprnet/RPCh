@@ -1,5 +1,11 @@
 # @rpch/sdk
 
+## 3.1.1
+
+### Patch Changes
+
+-   Update uhttp lib with port range fix
+
 ## 3.1.0
 
 ### Minor Changes
