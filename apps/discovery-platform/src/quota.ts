@@ -5,13 +5,14 @@ export type Attrs = {
     segmentCount: number;
     lastSegmentLength?: number;
     chainId?: string;
+    domain?: string;
 };
 
 export function createRequest(dbPool: Pool, nodeId: string, clientId: string, attrs: Attrs) {
     const q = [
         'insert into request_quotas',
-        '(id, client_id, rpc_method, segment_count, reported_by_id, last_segment_length, chain_id)',
-        'values (gen_random_uuid(), $1, $2, $3, $4, $5, $6)',
+        '(id, client_id, rpc_method, segment_count, reported_by_id, last_segment_length, chain_id, domain)',
+        'values (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7)',
     ].join(' ');
 
     const vals = [
@@ -21,6 +22,7 @@ export function createRequest(dbPool: Pool, nodeId: string, clientId: string, at
         nodeId,
         attrs.lastSegmentLength,
         attrs.chainId,
+        attrs.domain,
     ];
     return dbPool.query(q, vals);
 }
@@ -28,8 +30,8 @@ export function createRequest(dbPool: Pool, nodeId: string, clientId: string, at
 export function createResponse(dbPool: Pool, nodeId: string, clientId: string, attrs: Attrs) {
     const q = [
         'insert into response_quotas',
-        '(id, client_id, rpc_method, segment_count, reported_by_id, last_segment_length, chain_id)',
-        'values (gen_random_uuid(), $1, $2, $3, $4, $5, $6)',
+        '(id, client_id, rpc_method, segment_count, reported_by_id, last_segment_length, chain_id, domain)',
+        'values (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7)',
     ].join(' ');
 
     const vals = [
@@ -39,6 +41,7 @@ export function createResponse(dbPool: Pool, nodeId: string, clientId: string, a
         nodeId,
         attrs.lastSegmentLength,
         attrs.chainId,
+        attrs.domain,
     ];
     return dbPool.query(q, vals);
 }
