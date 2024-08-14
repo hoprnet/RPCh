@@ -46,6 +46,15 @@ describe('node', function () {
             "((select id from registered_nodes where native_address = 'address2'), (select id from registered_nodes where native_address = 'address4'))",
         ].join(' ');
 
+        // reset db
+        await dbPool.query('delete from zero_hop_pairings');
+        await dbPool.query('delete from associated_nodes');
+        await dbPool.query('delete from clients');
+        await dbPool.query('delete from monthly_quota_usages');
+        await dbPool.query('delete from users');
+        await dbPool.query('delete from registered_nodes');
+
+        // populate db
         await dbPool.query(nodes);
         await dbPool.query(users);
         await dbPool.query(clients);
@@ -54,6 +63,7 @@ describe('node', function () {
     });
 
     afterAll(async () => {
+        // reset db
         await dbPool.query('delete from zero_hop_pairings');
         await dbPool.query('delete from associated_nodes');
         await dbPool.query('delete from clients');
@@ -64,16 +74,39 @@ describe('node', function () {
         return dbPool.end();
     });
 
-    it('listPairings', async function () {
-        const resAll = await node.listPairings(dbPool, 10, { forceZeroHop: true });
-        expect(resAll.length).toBe(1);
+    describe('listPairings', function () {
+        it('delivers routes without client associated exit nodes', async function () {
+            const { rows } = await dbPool.query(
+                'select id from registered_nodes order by native_address',
+            );
+            const [{ id: id1 }, { id: id2 }, { id: id3 }] = rows;
 
-        const resClients = await dbPool.query('select id from clients');
-        const clientId = resClients.rows[0].id;
-        const resAssocs = await node.listPairings(dbPool, 10, { forceZeroHop: true, clientId });
-        expect(resAssocs.length).toBe(1);
+            const resAll = await node.listPairings(dbPool, 10, { forceZeroHop: true });
+            expect(resAll.length).toBe(2);
+            expect(resAll).toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({ entryId: id1, exitId: id3 }),
+                    expect.objectContaining({ entryId: id2, exitId: id3 }),
+                ]),
+            );
+        });
 
-        expect(resAll[0].entryId).not.toBe(resAssocs[0].entryId);
-        expect(resAll[0].exitId).not.toBe(resAssocs[0].exitId);
+        it('delivers client associated routes with client associated exit nodes', async function () {
+            const { rows: rowsNodes } = await dbPool.query(
+                'select id from registered_nodes order by native_address',
+            );
+            const [{ id: id1 }, { id: id2 }, , { id: id4 }] = rowsNodes;
+
+            const { rows: rowsClients } = await dbPool.query('select id from clients limit 1');
+            const [{ id: clientId }] = rowsClients;
+
+            const resAssocs = await node.listPairings(dbPool, 10, { forceZeroHop: true, clientId });
+            expect(resAssocs).toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({ entryId: id1, exitId: id4 }),
+                    expect.objectContaining({ entryId: id2, exitId: id4 }),
+                ]),
+            );
+        });
     });
 });
