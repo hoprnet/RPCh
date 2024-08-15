@@ -36,6 +36,11 @@ export const schema: Record<keyof quota.Attrs & 'clientId', ParamSchema> = {
         isString: true,
         optional: true,
     },
+    domain: {
+        in: 'body',
+        isString: true,
+        optional: true,
+    },
 };
 
 export function request(dbPool: Pool) {
