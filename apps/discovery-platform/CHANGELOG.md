@@ -1,5 +1,11 @@
 # @rpch/discovery-platform
 
+## 2.2.0
+
+### Minor Changes
+
+-   dc5e394: Add domain logging to request and response quota reporting
+
 ## 2.1.2
 
 ### Patch Changes
