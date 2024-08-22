@@ -30,10 +30,6 @@ export * as Utils from './utils';
  * @param discoveryPlatformEndpoint discovery platform API endpoint
  * @param timeout - timeout for receiving responses
  * @param provider - target rpc provider
- * @param disableMevProtection - disable provider replacement on transaction requests
- * @param mevProtectionProvider - target MEV Protection provider RPC,
- *                                will send transactions through this provider
- * @param mevKickbackAddress - provide this URL for receiving kickback share to a different address than the tx origin
  * @param forceZeroHop - disable routing protection
  * @param segmentLimit - limit the number of segment a request can use, fails requests that require a larger number
  * @param versionListener - if you need to know what the current versions of RPCh related components are
@@ -47,9 +43,6 @@ export type Ops = {
     readonly discoveryPlatformEndpoint?: string;
     readonly timeout?: number;
     readonly provider?: string;
-    readonly disableMevProtection?: boolean;
-    readonly mevProtectionProvider?: string;
-    readonly mevKickbackAddress?: string;
     readonly forceZeroHop?: boolean;
     readonly segmentLimit?: number;
     readonly versionListener?: (versions: DPapi.Versions) => void;
@@ -71,8 +64,6 @@ export type RequestOps = {
     readonly timeout?: number;
 };
 
-const RPC_PROPELLORHEADS = 'https://rpc.propellerheads.xyz/eth';
-
 /**
  * Global defaults.
  * See **Ops** for details.
@@ -81,8 +72,6 @@ const defaultOps = {
     discoveryPlatformEndpoint: 'https://discovery.rpch.tech',
     timeout: 10e3,
     provider: 'https://gnosis.rpc-provider.prod.hoprnet.link',
-    disableMevProtection: false,
-    mevProtectionProvider: RPC_PROPELLORHEADS,
     forceZeroHop: false,
     forceManualRelaying: false,
     logLevel: 'info',
@@ -144,25 +133,14 @@ export default class SDK {
     };
 
     private doSend = async (req: JRPC.Request, ops?: RequestOps): Promise<Response.Response> => {
-        const provider = this.determineProvider(req, ops?.provider);
+        const provider = ops?.provider ?? this.ops.provider ?? defaultOps.provider;
         const timeout = ops?.timeout ?? this.ops.timeout;
-        const headers = this.determineHeaders(provider, this.ops.mevKickbackAddress, ops?.headers);
+        const headers = this.determineHeaders(provider, ops?.headers);
 
         // sanity check provider url
         if (!Utils.isValidURL(provider)) {
             throw new Response.SendError('Cannot parse provider URL', provider, headers);
         }
-        // sanity check mev protection provider url, if it is set
-        if (this.ops.mevProtectionProvider) {
-            if (!Utils.isValidURL(this.ops.mevProtectionProvider)) {
-                throw new Response.SendError(
-                    'Cannot parse mevProtectionProvider URL',
-                    provider,
-                    headers,
-                );
-            }
-        }
-
         // provide chainId
         this.uClient.onRequestCreationHandler = (r) => {
             r.chainId = this.chainIds.get(provider);
@@ -205,9 +183,6 @@ export default class SDK {
             discoveryPlatformEndpoint,
             timeout: ops.timeout || defaultOps.timeout,
             provider: ops.provider || defaultOps.provider,
-            disableMevProtection: ops.disableMevProtection ?? defaultOps.disableMevProtection,
-            mevProtectionProvider: ops.mevProtectionProvider || defaultOps.mevProtectionProvider,
-            mevKickbackAddress: ops.mevKickbackAddress,
             forceZeroHop,
             versionListener: ops.versionListener,
             debugScope: ops.debugScope,
@@ -299,36 +274,13 @@ export default class SDK {
         }
     };
 
-    private determineProvider = ({ method }: JRPC.Request, provider?: string): string => {
+    private determineProvider = (provider?: string): string => {
         const prov = provider ?? this.ops.provider ?? defaultOps.provider;
-        if (this.ops.disableMevProtection) {
-            return prov;
-        }
-        if (method !== 'eth_sendRawTransaction') {
-            return prov;
-        }
-        // sanity check for chain id if we got it
-        const cId = this.chainIds.get(prov);
-        if (cId === '0x1' || (cId && parseInt(cId) === 1)) {
-            return this.ops.mevProtectionProvider;
-        }
+        return prov;
         return prov;
     };
 
-    private determineHeaders = (
-        provider: string,
-        mevKickbackAddress?: string,
-        headers?: Record<string, string>,
-    ) => {
-        // if we provide headers we need to provide all of them
-        if (provider === RPC_PROPELLORHEADS && mevKickbackAddress) {
-            return {
-                'X-Tx-Origin': mevKickbackAddress,
-                'Content-Type': 'application/json',
-                ...this.ops.headers,
-                ...headers,
-            };
-        }
+    private determineHeaders = (provider: string, headers?: Record<string, string>) => {
         // merge headers with provided headers
         if (headers || this.ops.headers) {
             return {
@@ -348,7 +300,7 @@ export default class SDK {
         if (this.chainIds.has(provider)) {
             return;
         }
-        const headers = this.determineHeaders(provider, undefined, opsHeaders);
+        const headers = this.determineHeaders(provider, opsHeaders);
         this.fetchChainId(provider, headers);
     };
 
