@@ -274,12 +274,6 @@ export default class SDK {
         }
     };
 
-    private determineProvider = (provider?: string): string => {
-        const prov = provider ?? this.ops.provider ?? defaultOps.provider;
-        return prov;
-        return prov;
-    };
-
     private determineHeaders = (provider: string, headers?: Record<string, string>) => {
         // merge headers with provided headers
         if (headers || this.ops.headers) {
