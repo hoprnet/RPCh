@@ -48,20 +48,16 @@
       ],
       "env": [
         "CLIENT",
-        "DISABLE_MEV_PROTECTION",
         "DISCOVERY_PLATFORM_API_ENDPOINT",
         "FAILED_REQUESTS_FILE",
         "FORCE_MANUAL_RELAYING",
         "FORCE_ZERO_HOP",
-        "MEV_KICKBACK_ADDRESS",
-        "MEV_PROTECTION_PROVIDER",
         "PORT",
         "PROVIDER",
         "RESPONSE_TIMEOUT",
         "RESTRICT_CORS",
         "RPCH_LOG_LEVEL",
         "RPCH_LATENCY_STATS",
-        "RPCH_EXPOSE_LATENCY_STATS",
         "SEGMENT_LIMIT",
         "SKIP_RPCH"
       ]
