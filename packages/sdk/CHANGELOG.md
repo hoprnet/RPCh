@@ -1,5 +1,11 @@
 # @rpch/sdk
 
+## 4.0.0
+
+### Major Changes
+
+-   17e8bf5: Remove MEV provider handling
+
 ## 3.1.1
 
 ### Patch Changes

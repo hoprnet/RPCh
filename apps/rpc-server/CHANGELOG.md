@@ -1,5 +1,16 @@
 # @rpch/rpc-server
 
+## 3.0.0
+
+### Major Changes
+
+-   17e8bf5: Removed MEV provider handling from rpc server
+
+### Patch Changes
+
+-   Updated dependencies [17e8bf5]
+    -   @rpch/sdk@4.0.0
+
 ## 2.0.3
 
 ### Patch Changes
