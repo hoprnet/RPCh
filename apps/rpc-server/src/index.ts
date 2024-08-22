@@ -359,9 +359,6 @@ function parseBooleanEnv(env?: string) {
  * DISCOVERY_PLATFORM_API_ENDPOINT - Ops.discoveryPlatformEndpoint
  * RESPONSE_TIMEOUT - Ops.timeout
  * PROVIDER - Ops.provider
- * DISABLE_MEV_PROTECTION - Ops.disableMevProtection
- * MEV_PROTECTION_PROVIDER - Ops.mevProtectionProvider
- * MEV_KICKBACK_ADDRESS - Ops.mevKickbackAddress
  * FORCE_ZERO_HOP - Ops.forceZeroHop
  * FORCE_MANUAL_RELAYING - Ops.forceManualRelaying
  * SEGMENT_LIMIT - Ops.segmentLimit
@@ -386,9 +383,6 @@ if (require.main === module) {
             ? parseInt(process.env.RESPONSE_TIMEOUT, 10)
             : undefined,
         provider: process.env.PROVIDER,
-        disableMevProtection: parseBooleanEnv(process.env.DISABLE_MEV_PROTECTION),
-        mevProtectionProvider: process.env.MEV_PROTECTION_PROVIDER,
-        mevKickbackAddress: process.env.MEV_KICKBACK_ADDRESS,
         forceZeroHop: parseBooleanEnv(process.env.FORCE_ZERO_HOP),
         forceManualRelaying: parseBooleanEnv(process.env.FORCE_MANUAL_RELAYING),
         segmentLimit: process.env.SEGMENT_LIMIT
