@@ -18,7 +18,8 @@ const log = Utils.logger(['discovery-platform', 'router']);
 // Express Router
 export const v1Router = (ops: { dbPool: Pool; secrets: Secrets; url: string }) => {
     const router = express.Router();
-    router.use(cors({ origin: true, credentials: true }));
+    // enable cors for all origins (needed for uHTTP integration into websites)
+    router.use(cors());
     router.use(express.json());
 
     // log entry calls
