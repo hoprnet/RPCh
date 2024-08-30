@@ -1,5 +1,11 @@
 # @rpch/discovery-platform
 
+## 2.3.0
+
+### Minor Changes
+
+-   848f613: Enable cors for all requests
+
 ## 2.2.1
 
 ### Patch Changes
