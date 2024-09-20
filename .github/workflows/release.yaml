@@ -69,11 +69,11 @@ jobs:
                   PACKAGE_VERSION=$(jq -r '.version' apps/${{ inputs.project }}/package.json)
                   echo "release_version=${PACKAGE_VERSION}" >> $GITHUB_OUTPUT
 
-            # - name: Create Release
-            #   uses: softprops/action-gh-release@v2
-            #   with:
-            #       name: '${{ inputs.project }} - v${{ steps.environment.outputs.release_version }}'
-            #       tag_name: v${{ steps.environment.outputs.release_version }}
+            - name: Create Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  name: '${{ inputs.project }} - v${{ steps.environment.outputs.release_version }}'
+                  tag_name: v${{ steps.environment.outputs.release_version }}
 
             - name: Build and push docker image
               uses: docker/build-push-action@v6
@@ -93,18 +93,18 @@ jobs:
               with:
                 add: 'apps/${{ inputs.project}}'
                 default_author: github_actor
-                new_branch: ausias/unify-workflows #main
+                new_branch: main
                 message: 'Bump ${{ inputs.project }} version to ${{ steps.bump.outputs.bump_version }}'
                 pathspec_error_handling: exitImmediately
 
-            # - name: Notify new release
-            #   uses: zulip/github-actions-zulip/send-message@v1
-            #   with:
-            #       api-key: ${{ secrets.ZULIP_API_KEY }}
-            #       email: ${{ secrets.ZULIP_EMAIL }}
-            #       organization-url: 'https://hopr.zulipchat.com'
-            #       type: 'stream'
-            #       to: 'Releases'
-            #       topic: 'main'
-            #       content: |
-            #           I'm thrilled to inform the new **${{ vars.DOCKER_IMAGE_NAME }}** version **${{ steps.environment.outputs.release_version }}** has been released.
+            - name: Notify new release
+              uses: zulip/github-actions-zulip/send-message@v1
+              with:
+                  api-key: ${{ secrets.ZULIP_API_KEY }}
+                  email: ${{ secrets.ZULIP_EMAIL }}
+                  organization-url: 'https://hopr.zulipchat.com'
+                  type: 'stream'
+                  to: 'Releases'
+                  topic: 'main'
+                  content: |
+                      I'm thrilled to inform the new **${{ vars.DOCKER_IMAGE_NAME }}** version **${{ steps.environment.outputs.release_version }}** has been released.
