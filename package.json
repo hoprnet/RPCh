@@ -18,7 +18,7 @@
     "lint": "turbo run lint --no-cache",
     "lint:ci": "turbo run lint:ci --no-cache",
     "depcheck": "check-dependency-version-consistency",
-    "test": "turbo run test --no-cache",
+    "test": "echo \"Not executed as they have a dependency with postgres. They need to be reimplemented to be fully mocked\"",
     "test:e2e": "turbo run start --filter @rpch/e2e"
   },
   "devDependencies": {

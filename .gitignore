@@ -51,3 +51,6 @@ exit-node.sqlite
 
 #k6 results
 devkit/loadtesting-k6/results/*
+
+# Created by github pipeline
+gha-creds-*.json

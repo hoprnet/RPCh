@@ -60,19 +60,13 @@ v  # single letter 'v'
 X.X.X  # Semver versioning for that app or package
 ```
 
-## Deployment
+## Deployment process
 
-Github Workflows builds and pushes container images to our configured artifacts registry.
-During development changesets are used to manage user facing changelogs.
+To contribute to this repository you will need to create a pull request. More information about the existing automated workflows can be found in [GitHub Actions](./.github/workflows/README.md)
 
 ### Staging deployment
 
-To update singular applications on staging, the usual flow is like this:
-
-- Create PR with desired changes
-- Wait for automation job to build and upload container
-- Take container hash - easiest from [artifacts registry](https://console.cloud.google.com/artifacts/docker/hoprassociation/europe-west3/docker-images?project=hoprassociation&supportedpurview=project)
-- Use hash according to deployment instructions for the desired applications further down
+To deploy availability-monitor and discovery-platform on staging, tag the PR with the label `deploy_staging`
 
 ### Production deployment
 
@@ -84,20 +78,6 @@ To update singular applications on staging, the usual flow is like this:
 - Ideally you have now one commit ahead of `origin/main` with all the tags.
 - Push it `$ git push origin main --tags`
 - After the correct tags for your application where built, follow deployment instructions further down
-
-### Availability Monitor
-
-Version tag on main branch: `@rpch/availability-monitor-vX.X.X`
-
-The Availability Monitor is managed via [applications](https://github.com/Rpc-h/applications) repo.
-Update version in `<ENV>/availability-monitor/application.yaml` and push to main branch.
-
-### Discovery Platform
-
-Version tag on main branch: `@rpch/discovery-platform-vX.X.X`
-
-The Discovery Platform is managed via [applications](https://github.com/Rpc-h/applications) repo.
-Update version in `<ENV>/discovery-platform/application.yaml` and push to main branch.
 
 ### RPC Server
 
