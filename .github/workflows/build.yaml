@@ -97,7 +97,7 @@ jobs:
       name: Deploy
       needs: publish
       if: contains(github.event.pull_request.labels.*.name, 'deploy_staging') || github.event.label.name == 'deploy_staging' && github.event.action == 'labeled'
-      uses: ./.github/workflows/deploy.yaml@ausias/unify-workflows
+      uses: ./.github/workflows/deploy.yaml
       with:
         branch: ${{ github.event.pull_request.head.ref }}
       secrets: inherit
