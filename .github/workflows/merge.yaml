@@ -51,7 +51,7 @@ jobs:
     deploy:
       name: Deploy staging
       needs: merge
-      uses: .github/workflows/deploy.yaml
+      uses: ./.github/workflows/deploy.yaml
       with:
         branch: ${{ github.event.pull_request.head.ref }}
       secrets: inherit
