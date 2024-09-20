@@ -78,7 +78,7 @@ jobs:
             - name: Get PR version
               id: variables
               run: |
-                  PR_VERSION=$(jq -r '.version' apps/${{ matrix.project }}/package.json)-pr."${{ github.event.pull_request.number }}"
+                  PR_VERSION=$(jq -r '.version' apps/"${{ matrix.project }}"/package.json)-pr."${{ github.event.pull_request.number }}"
                   echo "PR_VERSION=${PR_VERSION}" >> $GITHUB_OUTPUT
 
             - name: Build and push docker image
