@@ -27,7 +27,7 @@ jobs:
           id: gcp
           uses: hoprnet/hopr-workflows/actions/setup-gcp@master
           with:
-            google-credentials: ${{ secrets.GCP_SA_TERRAFORM_JSON }}
+            google-credentials: ${{ secrets.GCP_SA_TERRAFORM_JSON_STAGING }}
             project: hopr-staging
             login-gke: 'true'
 
