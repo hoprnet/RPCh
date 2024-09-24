@@ -22,7 +22,6 @@
     "test:e2e": "turbo run start --filter @rpch/e2e"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.26.2",
     "@stylistic/eslint-plugin": "^1.0.1",
     "@typescript-eslint/eslint-plugin": "^6.10.0",
     "@typescript-eslint/parser": "^6.10.0",
