@@ -1,0 +1,57 @@
+name: Merge PR
+
+on:
+    pull_request:
+        types:
+            - closed
+        branches:
+            - main
+
+concurrency:
+    group: merge
+    cancel-in-progress: false
+
+jobs:
+    merge:
+        name: Merge PR
+        runs-on: self-hosted-hoprnet-small
+        if: github.event.pull_request.merged == true
+        strategy:
+          matrix:
+            project:
+              - discovery-platform
+              - rpc-server
+              - availability-monitor
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Setup GCP
+              id: gcp
+              uses: hoprnet/hopr-workflows/actions/setup-gcp@master
+              with:
+                  google-credentials: ${{ secrets.GOOGLE_HOPRASSOCIATION_CREDENTIALS_REGISTRY }}
+                  login-artifact-registry: 'true'
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+              with:
+                  driver: kubernetes
+
+            - name: Build and push docker image
+              uses: docker/build-push-action@v6
+              with:
+                  push: true
+                  file: "./apps/${{ matrix.project }}/Dockerfile"
+                  tags: |
+                    ${{ vars.DOCKER_IMAGE_REGISTRY }}/${{ matrix.project }}:staging
+                    ${{ vars.DOCKER_IMAGE_REGISTRY }}/${{ matrix.project }}:latest
+
+    deploy:
+      name: Deploy staging
+      needs: merge
+      uses: ./.github/workflows/deploy.yaml
+      with:
+        branch: ${{ github.event.pull_request.head.ref }}
+      secrets: inherit

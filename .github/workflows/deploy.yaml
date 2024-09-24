@@ -1,0 +1,38 @@
+---
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        required: true
+        type: string
+
+concurrency:
+    group: deploy
+    cancel-in-progress: true
+
+jobs:
+
+    deploy:
+      name: Deploy staging
+      runs-on: self-hosted-hoprnet-small
+      steps:
+        - name: Checkout repository
+          uses: actions/checkout@v4
+          with:
+            ref: ${{ inputs.branch }}
+
+        - name: Setup GCP
+          id: gcp
+          uses: hoprnet/hopr-workflows/actions/setup-gcp@master
+          with:
+            google-credentials: ${{ secrets.GCP_SA_TERRAFORM_JSON_STAGING }}
+            project: hopr-staging
+            login-gke: 'true'
+
+        - name: "Restart deployment"
+          run: |
+              echo "[INFO] Restarting degen deployment"
+              kubectl rollout restart deployments -n uhttp availability-monitor discovery-platform
+              kubectl rollout status -w deployments -n uhttp availability-monitor discovery-platform
