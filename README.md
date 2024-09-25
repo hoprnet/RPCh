@@ -40,11 +40,6 @@ Checkout [Sandbox](https://github.com/Rpc-h/RPCh/tree/main/devkit/sandbox#sandbo
 
 Please refer to [DEVELOPER_SETUP](./DEVELOPER_SETUP.md) for more details
 
-## Changelogs
-
-This project aims to use [Changesets](https://turbo.build/repo/docs/handbook/publishing-packages/versioning-and-publishing) for versioning.
-We will gradually add changesets for new releases/tags, so that given some time we will have every app/package covered.
-
 ## Tagging scheme
 
 This monorepo will use the usual tagging scheme for monorepos:
@@ -70,14 +65,7 @@ To deploy availability-monitor and discovery-platform on staging, tag the PR wit
 
 ### Production deployment
 
-- Checkout latest `main` branch and run `$ yarn changeset version`
-- Execute `$ yarn build` from the root folder
 - If you updated hoprd and want to rely on SDK's relay pathing update [Nodes compatibility Version](https://github.com/hoprnet/RPCh/blob/main/packages/sdk/src/node-pair.ts#L20)
-- Add changes and make a version commit
-- Tag all applications/packages that you updated and want to deploy
-- Ideally you have now one commit ahead of `origin/main` with all the tags.
-- Push it `$ git push origin main --tags`
-- After the correct tags for your application where built, follow deployment instructions further down
 
 ### RPC Server
 
