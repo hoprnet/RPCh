@@ -33,6 +33,9 @@ jobs:
         steps:
             - name: Checkout repository
               uses: actions/checkout@v4
+              with:
+                ref: main # if you want to use a different branch keep in mind that the bump version step will be affected
+                token: "${{ secrets.GH_RUNNER_TOKEN }}"
 
             - name: Setup Node.js
               uses: hoprnet/hopr-workflows/actions/setup-node-js@master
@@ -85,14 +88,13 @@ jobs:
             - name: Bump Version
               id: bump
               run: |
-                  npm version ${{ inputs.release_type }} -w "apps/${{ inputs.project }}" --no-git-tag-version
+                  npm version "${{ inputs.release_type }}" -w "apps/${{ inputs.project }}" --no-git-tag-version
                   BUMP_VERSION=$(jq -r '.version' "apps/${{ inputs.project }}/package.json")
                   echo "bump_version=${BUMP_VERSION}" >> $GITHUB_OUTPUT
 
             - uses: EndBug/add-and-commit@v9
               with:
                 add: 'apps/${{ inputs.project}}'
-                default_author: github_actor
                 new_branch: main
                 message: 'Bump ${{ inputs.project }} version to ${{ steps.bump.outputs.bump_version }}'
                 pathspec_error_handling: exitImmediately
