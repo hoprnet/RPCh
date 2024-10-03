@@ -16,7 +16,7 @@ concurrency:
 jobs:
     build:
         name: Build
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-latest # Cannot use self hosted runners because of running postgres docker container
         strategy:
             matrix:
                 node-version: [18.x, 20.x, 22.x]
