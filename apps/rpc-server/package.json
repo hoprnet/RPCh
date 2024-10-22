@@ -14,6 +14,6 @@
         "start": "node build/index.js"
     },
     "dependencies": {
-        "@rpch/sdk": "4.0.0"
+        "@rpch/sdk": "4.1.0"
     }
 }

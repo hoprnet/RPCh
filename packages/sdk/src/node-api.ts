@@ -88,7 +88,7 @@ export function sendMessage(
     };
     const payload: Record<string, any> = {
         body: message,
-        peerId: recipient,
+        destination: recipient,
         tag,
     };
     if (conn.hops === 0) {
