@@ -22,11 +22,11 @@ describe('node', function () {
 
         const nodes = [
             'insert into registered_nodes',
-            '(id, is_exit_node, chain_id, hoprd_api_endpoint, hoprd_api_token, exit_node_pub_key, native_address)',
-            "values (gen_random_uuid(), false, 100, 'http://endpoint1', 'token1', 'pubkey1', 'address1'),",
-            "(gen_random_uuid(), false, 100, 'http://endpoint2', 'token2', 'pubkey2', 'address2'),",
-            "(gen_random_uuid(), true, 100, 'http://endpoint3', 'token3', 'pubkey3', 'address3'),",
-            "(gen_random_uuid(), true, 100, 'http://endpoint4', 'token4', 'pubkey4', 'address4')",
+            '(id, is_exit_node, chain_id, hoprd_api_endpoint, hoprd_api_token, exit_app_pub_key, exit_app_target, native_address)',
+            "values (gen_random_uuid(), false, 100, 'http://endpoint1', 'token1', 'pubkey1', 'pubtarget1:1234', 'address1'),",
+            "(gen_random_uuid(), false, 100, 'http://endpoint2', 'token2', 'pubkey2', 'pubtarget2:1234', 'address2'),",
+            "(gen_random_uuid(), true, 100, 'http://endpoint3', 'token3', 'pubkey3', 'pubtarget3:1234', 'address3'),",
+            "(gen_random_uuid(), true, 100, 'http://endpoint4', 'token4', 'pubkey4', 'pubtarget4:1234', 'address4')",
         ].join(' ');
         const users = "insert into users (id, name) values (gen_random_uuid(), 'user1')";
         const clients = [
