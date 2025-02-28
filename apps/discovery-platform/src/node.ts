@@ -16,6 +16,7 @@ export type EntryNode = {
 export type ExitNode = {
     id: string;
     pubKey: string;
+    target: string;
 };
 
 type DBPairing = {
@@ -32,7 +33,8 @@ type DBEntryNode = {
 
 type DBExitNode = {
     id: string;
-    exit_node_pub_key: string;
+    exit_app_pub_key: string;
+    exit_app_target: string;
 };
 
 export function createToken(dbPool: Pool, nodeId: string): Promise<{ accessToken: string }[]> {
@@ -62,7 +64,7 @@ export function listExitNodes(dbPool: Pool, nodeIds: Iterable<string>): Promise<
     const qIds = Array.from(nodeIds)
         .map((i) => `'${i}'`)
         .join(',');
-    const q = `select id, exit_node_pub_key from registered_nodes where id in (${qIds})`;
+    const q = `select id, exit_app_pub_key, exit_app_target from registered_nodes where id in (${qIds})`;
     return dbPool.query(q).then((r) => r.rows.map(exitNodeFromDB));
 }
 
@@ -118,7 +120,8 @@ function entryNodeFromDB(db: DBEntryNode): EntryNode {
 function exitNodeFromDB(db: DBExitNode): ExitNode {
     return {
         id: db.id,
-        pubKey: db.exit_node_pub_key,
+        pubKey: db.exit_app_pub_key,
+        target: db.exit_app_target,
     };
 }
 
