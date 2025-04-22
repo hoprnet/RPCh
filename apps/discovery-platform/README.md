@@ -11,22 +11,35 @@ Exit nodes report quota usages to the Discovery Platform.
 To be able to run the discovery platform with Docker, you first need to build the image, for that, we will use the following command
 
 ```sh
-docker build -t discovery-platform -f Dockerfile ../../
+docker build --platform linux/amd64 -t discovery-platform -f Dockerfile ../../
 ```
 
 After building the image, you will be able to run it with: \
 (replace the values that have `< >`)
 
 ```sh
+docker rm -f discovery-platform || true
 docker run \
--e PORT="<APPLICATION PORT>" \
--e URL="<PUBLIC APPLICATION URL>" \
--e DATABASE_URL="<YOUR DB CONNECTION URL>" \
+--platform linux/amd64 \
+--name discovery-platform \
+-e PORT="3020" \
+-e URL="http://localhost:3020" \
+-e PGHOST="host.docker.internal" \
+-e PGPORT="5432" \
+-e PGDATABASE="<YOUR DB NAME>" \
+-e PGUSER="<YOUR DB USER>" \
+-e PGPASSWORD="<YOUR DB PASSWORD>" \
+-e PGSSLMODE="verify-ca" \
+-e PGSSLCERT="/app/ssl/client-cert.pem" \
+-e PGSSLKEY="/app/ssl/client-key.pem" \
+-e PGSSLROOTCERT="/app/ssl/server-ca.pem" \
 -e ADMIN_SECRET="<SECRET FOR AUTHORIZING AS ADMIN>" \
 -e SESSION_SECRET="<COOKIE SECRET>" \
 -e GOOGLE_CLIENT_ID="<GOOGLE OAUTH CLIENT ID>" \
 -e GOOGLE_CLIENT_SECRET="<GOOGLE OAUTH SECRET>" \
--e DEBUG="rpch*,-*verbose" \
+-e DEBUG="rpch:discovery-platform*,-*verbose" \
+-v ./ssl:/app/ssl \
+-p 3020:3020 \
 discovery-platform
 ```
 

@@ -54,3 +54,6 @@ devkit/loadtesting-k6/results/*
 
 # Created by github pipeline
 gha-creds-*.json
+
+# Postgres Certificates
+./ssl/
