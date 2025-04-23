@@ -56,4 +56,4 @@ devkit/loadtesting-k6/results/*
 gha-creds-*.json
 
 # Postgres Certificates
-./ssl/
+/ssl/
