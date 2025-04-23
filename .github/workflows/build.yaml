@@ -63,7 +63,11 @@ jobs:
             - name: Testing
               run: yarn test
               env:
-                DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+                PGHOST: localhost
+                PGPORT: 5432
+                PGUSER: postgres
+                PGDATABASE: postgres
+                PGPASSWORD: postgres
 
             # - name: Run E2E tests
             #   run: yarn test:e2e

@@ -1,6 +1,6 @@
 import migrate from 'node-pg-migrate';
 import path from 'path';
-import * as fs from "fs";
+import * as fs from 'fs';
 import { Client, ClientConfig, Pool } from 'pg';
 import { Utils } from '@rpch/sdk';
 
@@ -39,8 +39,8 @@ const start = async (ops: {
         process.exit(1);
     }).then(async () => {
         log.info('Migrations finished');
-        await dbClient.end();
     });
+    await dbClient.end();
     log.info('Starting discovery platform server');
     const dbPool = new Pool(ops.dbClientConfig);
     const app = entryServer({
@@ -91,64 +91,26 @@ function scheduleQuotaWrap(dbPool: Pool) {
 }
 
 const main = () => {
-    // server port
-    if (!process.env.PORT) {
-        throw new Error("Missing 'PORT' env var.");
-    }
-    // public url
-    if (!process.env.URL) {
-        throw new Error("Missing 'URL' env var.");
-    }
-    // postgres host
-    if (!process.env.PGHOST) {
-        throw new Error("Missing 'PGHOST' env var.");
-    }
-    // postgres port
-    if (!process.env.PGPORT) {
-        throw new Error("Missing 'PGPORT' env var.");
-    }
-    // postgres database
-    if (!process.env.PGDATABASE) {
-        throw new Error("Missing 'PGDATABASE' env var.");
-    }
-    // postgres user
-    if (!process.env.PGUSER) {
-        throw new Error("Missing 'PGUSER' env var.");
-    }
-    // postgres password
-    if (!process.env.PGPASSWORD) {
-        throw new Error("Missing 'PGPASSWORD' env var.");
-    }
-    // postgres public client cert
-    if (process.env.PGSSLMODE !== undefined && !process.env.PGSSLCERT) {
-        throw new Error("Missing 'PGSSLCERT' env var.");
-    }
-    // postgres private client cert
-    if (process.env.PGSSLMODE !== undefined && !process.env.PGSSLKEY) {
-        throw new Error("Missing 'PGSSLKEY' env var.");
-    }
-    // postgres public server cert
-    if (process.env.PGSSLMODE !== undefined && !process.env.PGSSLROOTCERT) {
-        throw new Error("Missing 'PGSSLROOTCERT' env var.");
-    }
-    // admin secret
-    if (!process.env.ADMIN_SECRET) {
-        throw new Error("Missing 'ADMIN_SECRET' env var.");
-    }
-    // cookie secret
-    if (!process.env.SESSION_SECRET) {
-        throw new Error("Missing 'SESSION_SECRET' env var.");
-    }
-    // google oauth
-    if (!process.env.GOOGLE_CLIENT_ID) {
-        throw new Error("Missing 'GOOGLE_CLIENT_ID' env var.");
-    }
-    if (!process.env.GOOGLE_CLIENT_SECRET) {
-        throw new Error("Missing 'GOOGLE_CLIENT_SECRET' env var.");
+
+    const requiredEnvironmentVariables = ['PORT', 'URL', 'PGHOST', 'PGPORT', 'PGDATABASE', 'PGUSER', 'PGPASSWORD', 'ADMIN_SECRET', 'SESSION_SECRET', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'];
+    requiredEnvironmentVariables.forEach((env) => {
+        if (!process.env[env]) {
+          throw new Error(`Missing '${env}' env var.`);
+        }
+      });
+
+    const sslMode = process.env.PGSSLMODE ?? 'disable';
+    const modesRequiringCerts = new Set(['verify-ca', 'verify-full']);
+    if (modesRequiringCerts.has(sslMode)) {
+      ['PGSSLCERT', 'PGSSLKEY', 'PGSSLROOTCERT'].forEach((env) => {
+        if (!process.env[env]) {
+          throw new Error(`Missing '${env}' env var for sslmode='${sslMode}'.`);
+        }
+      });
     }
 
     // Build the connection configuration
-    let dbClientConfig: ClientConfig = { 
+    const dbClientConfig: ClientConfig = { 
         user: process.env.PGUSER,
         password: process.env.PGPASSWORD,
         host: process.env.PGHOST,
@@ -157,7 +119,7 @@ const main = () => {
     };
     if ((process.env.PGSSLMODE === 'verify-ca' || process.env.PGSSLMODE === 'verify-full' ) && process.env.PGSSLROOTCERT && process.env.PGSSLKEY && process.env.PGSSLCERT) {
         dbClientConfig.ssl = {
-            rejectUnauthorized: process.env.PGSSLMODE === 'verify-ca' ? false : true,
+            rejectUnauthorized: process.env.PGSSLMODE === 'verify-full',
             ca: fs.readFileSync(process.env.PGSSLROOTCERT).toString(),
             key: fs.readFileSync(process.env.PGSSLKEY).toString(),
             cert: fs.readFileSync(process.env.PGSSLCERT).toString(),
@@ -165,7 +127,7 @@ const main = () => {
     }
 
     const secrets = {
-        adminSecret: process.env.ADMIN_SECRET,
+        adminSecret: process.env.ADMIN_SECRET || '',
         sessionSecret: process.env.SESSION_SECRET,
         googleClientID: process.env.GOOGLE_CLIENT_ID,
         googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
@@ -173,9 +135,9 @@ const main = () => {
 
     start({
         dbClientConfig: dbClientConfig,
-        port: parseInt(process.env.PORT, 10),
+        port: parseInt(process.env.PORT || '3020', 10),
         secrets,
-        url: process.env.URL,
+        url: process.env.URL || 'http://localhost:3020',
     });
 };
 

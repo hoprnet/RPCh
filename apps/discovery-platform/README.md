@@ -47,7 +47,7 @@ discovery-platform
 ## How to create new migrations
 
 You can create new a new migration with `yarn migrate create <name-of-migration>`, after creating this migration you can test it
-inside `db` tests or running docker image. For more info on what you can run with e.g. `DATABASE_URL=postgres://postgres@localhost:5432/rpch_dp yarn run migrate up` check [docs](https://salsita.github.io/node-pg-migrate/#/cli)
+inside `db` tests or running docker image. For more info on what you can run with e.g. `PGHOST="host.docker.internal" PGPORT="5432" PGDATABASE="<YOUR DB NAME>" PGUSER="<YOUR DB USER>" PGPASSWORD="<YOUR DB PASSWORD>" rpch_dp yarn run migrate up` check [docs](https://salsita.github.io/node-pg-migrate/#/cli)
 
 ### How migrations are running right now
 
