@@ -1,7 +1,6 @@
 import migrate from 'node-pg-migrate';
 import path from 'path';
 import { Client, ClientConfig, Pool } from 'pg';
-import * as fs from 'fs';
 
 import * as node from './node';
 
@@ -11,7 +10,7 @@ describe('node', function () {
     let dbPool: Pool;
     beforeAll(async () => {
         // Build the connection configuration
-        const dbClientConfig: ClientConfig = { 
+        const dbClientConfig: ClientConfig = {
             user: process.env.PGUSER,
             password: process.env.PGPASSWORD,
             host: process.env.PGHOST,

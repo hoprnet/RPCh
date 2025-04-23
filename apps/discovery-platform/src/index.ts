@@ -33,13 +33,15 @@ const start = async (ops: {
         migrationsTable: 'migrations',
         dir: migrationsDirectory,
         log: log.verbose,
-    }).catch((err) => {
-        log.error('Error running migrations: %s', err);
-        log.error('Exiting with error');
-        process.exit(1);
-    }).then(async () => {
-        log.info('Migrations finished');
-    });
+    })
+        .catch((err) => {
+            log.error('Error running migrations: %s', err);
+            log.error('Exiting with error');
+            process.exit(1);
+        })
+        .then(async () => {
+            log.info('Migrations finished');
+        });
     await dbClient.end();
     log.info('Starting discovery platform server');
     const dbPool = new Pool(ops.dbClientConfig);
@@ -91,33 +93,49 @@ function scheduleQuotaWrap(dbPool: Pool) {
 }
 
 const main = () => {
-
-    const requiredEnvironmentVariables = ['PORT', 'URL', 'PGHOST', 'PGPORT', 'PGDATABASE', 'PGUSER', 'PGPASSWORD', 'ADMIN_SECRET', 'SESSION_SECRET', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'];
+    const requiredEnvironmentVariables = [
+        'PORT',
+        'URL',
+        'PGHOST',
+        'PGPORT',
+        'PGDATABASE',
+        'PGUSER',
+        'PGPASSWORD',
+        'ADMIN_SECRET',
+        'SESSION_SECRET',
+        'GOOGLE_CLIENT_ID',
+        'GOOGLE_CLIENT_SECRET',
+    ];
     requiredEnvironmentVariables.forEach((env) => {
         if (!process.env[env]) {
-          throw new Error(`Missing '${env}' env var.`);
+            throw new Error(`Missing '${env}' env var.`);
         }
-      });
+    });
 
     const sslMode = process.env.PGSSLMODE ?? 'disable';
     const modesRequiringCerts = new Set(['verify-ca', 'verify-full']);
     if (modesRequiringCerts.has(sslMode)) {
-      ['PGSSLCERT', 'PGSSLKEY', 'PGSSLROOTCERT'].forEach((env) => {
-        if (!process.env[env]) {
-          throw new Error(`Missing '${env}' env var for sslmode='${sslMode}'.`);
-        }
-      });
+        ['PGSSLCERT', 'PGSSLKEY', 'PGSSLROOTCERT'].forEach((env) => {
+            if (!process.env[env]) {
+                throw new Error(`Missing '${env}' env var for sslmode='${sslMode}'.`);
+            }
+        });
     }
 
     // Build the connection configuration
-    const dbClientConfig: ClientConfig = { 
+    const dbClientConfig: ClientConfig = {
         user: process.env.PGUSER,
         password: process.env.PGPASSWORD,
         host: process.env.PGHOST,
         port: Number(process.env.PGPORT),
         database: process.env.PGDATABASE,
     };
-    if ((process.env.PGSSLMODE === 'verify-ca' || process.env.PGSSLMODE === 'verify-full' ) && process.env.PGSSLROOTCERT && process.env.PGSSLKEY && process.env.PGSSLCERT) {
+    if (
+        (process.env.PGSSLMODE === 'verify-ca' || process.env.PGSSLMODE === 'verify-full') &&
+        process.env.PGSSLROOTCERT &&
+        process.env.PGSSLKEY &&
+        process.env.PGSSLCERT
+    ) {
         dbClientConfig.ssl = {
             rejectUnauthorized: process.env.PGSSLMODE === 'verify-full',
             ca: fs.readFileSync(process.env.PGSSLROOTCERT).toString(),

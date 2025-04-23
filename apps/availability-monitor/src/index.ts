@@ -10,29 +10,34 @@ function main() {
     const requiredEnvironmentVariables = ['PGHOST', 'PGPORT', 'PGDATABASE', 'PGUSER', 'PGPASSWORD'];
     requiredEnvironmentVariables.forEach((env) => {
         if (!process.env[env]) {
-          throw new Error(`Missing '${env}' env var.`);
+            throw new Error(`Missing '${env}' env var.`);
         }
-      });
+    });
 
     const sslMode = process.env.PGSSLMODE ?? 'disable';
     const modesRequiringCerts = new Set(['verify-ca', 'verify-full']);
     if (modesRequiringCerts.has(sslMode)) {
-      ['PGSSLCERT', 'PGSSLKEY', 'PGSSLROOTCERT'].forEach((env) => {
-        if (!process.env[env]) {
-          throw new Error(`Missing '${env}' env var for sslmode='${sslMode}'.`);
-        }
-      });
+        ['PGSSLCERT', 'PGSSLKEY', 'PGSSLROOTCERT'].forEach((env) => {
+            if (!process.env[env]) {
+                throw new Error(`Missing '${env}' env var for sslmode='${sslMode}'.`);
+            }
+        });
     }
 
     // Build the connection configuration
-    const dbClientConfig: ClientConfig = { 
+    const dbClientConfig: ClientConfig = {
         user: process.env.PGUSER,
         password: process.env.PGPASSWORD,
         host: process.env.PGHOST,
         port: Number(process.env.PGPORT),
         database: process.env.PGDATABASE,
     };
-    if ((process.env.PGSSLMODE === 'verify-ca' || process.env.PGSSLMODE === 'verify-full' ) && process.env.PGSSLROOTCERT && process.env.PGSSLKEY && process.env.PGSSLCERT) {
+    if (
+        (process.env.PGSSLMODE === 'verify-ca' || process.env.PGSSLMODE === 'verify-full') &&
+        process.env.PGSSLROOTCERT &&
+        process.env.PGSSLKEY &&
+        process.env.PGSSLCERT
+    ) {
         dbClientConfig.ssl = {
             rejectUnauthorized: process.env.PGSSLMODE === 'verify-full',
             ca: fs.readFileSync(process.env.PGSSLROOTCERT).toString(),
