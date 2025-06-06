@@ -22,17 +22,17 @@ nvm use 18
     docker run --name postgres -e POSTGRES_HOST_AUTH_METHOD=trust -p 5432:5432 -d postgres
     ```
     
-2. Verify Connect to the postgres server and create a database of name “rpch_dp”
+2. Verify Connect to the postgres server and create a database of name "gnosisvpnjs"
     
     ```bash
-    createdb -U postgres -h 127.0.0.1 rpch_dp
+    createdb -U postgres -h 127.0.0.1 gnosisvpnjs
     ```
     
 
 ### Start the discovery platform
 
 ```bash
-cd apps/discovery-platform/; DEBUG=rpch:* ADMIN_SECRET=topsecret SESSION_SECRET=toppersecret PORT=3020 URL="http://127.0.0.1:3020" GOOGLE_CLIENT_ID="foo" GOOGLE_CLIENT_SECRET="bar" DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/rpch_dp yarn start
+cd apps/discovery-platform/; DEBUG=rpch:discovery-platform:* ADMIN_SECRET=topsecret SESSION_SECRET=toppersecret PORT=3020 URL="http://127.0.0.1:3020" GOOGLE_CLIENT_ID="foo" GOOGLE_CLIENT_SECRET="bar" PGHOST=localhost PGPORT=5432 PGDATABASE=gnosisvpnjs PGUSER=postgres PGPASSWORD=postgres yarn start
 ```
 
 ### Populate table with remote entry and exit nodes
@@ -46,7 +46,7 @@ cd apps/discovery-platform/; DEBUG=rpch:* ADMIN_SECRET=topsecret SESSION_SECRET=
 2. Populate the database with the downloaded file.
     
     ```bash
-    psql -U postgres -h 127.0.0.1 -d rpch_dp < $NODES_SQL_FILEPATH
+    psql -U postgres -h 127.0.0.1 -d gnosisvpnjs < $NODES_SQL_FILEPATH
     ```
     
     This command should return `COPY 25`
@@ -54,7 +54,7 @@ cd apps/discovery-platform/; DEBUG=rpch:* ADMIN_SECRET=topsecret SESSION_SECRET=
 3. Check that the `registered_nodes` table has been populated as expected. . Connect to the database, then run commands in postgres
     
     ```bash
-    psql -U postgres -h 127.0.0.1 -d rpch_dp
+    psql -U postgres -h 127.0.0.1 -d gnosisvpnjs
     ```
     
     1. List all the tables. 20+ rows should be returned.
@@ -96,7 +96,7 @@ cd apps/discovery-platform/; DEBUG=rpch:* ADMIN_SECRET=topsecret SESSION_SECRET=
 In a new terminal tab, run
 
 ```bash
-cd apps/availability-monitor/; DEBUG=rpch:availability-monitor:* PORT=9080 DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/rpch_dp yarn start
+cd apps/availability-monitor/; DEBUG=rpch:availability-monitor:* PORT=9080 PGHOST=localhost PGPORT=5432 PGDATABASE=gnosisvpnjs PGUSER=postgres PGPASSWORD=postgres yarn start
 ```
 
 ### Run RPC server

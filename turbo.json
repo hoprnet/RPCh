@@ -31,12 +31,20 @@
       ],
       "env": [
         "ADMIN_SECRET",
-        "DATABASE_URL",
         "GOOGLE_CLIENT_ID",
         "GOOGLE_CLIENT_SECRET",
         "PORT",
         "SESSION_SECRET",
-        "URL"
+        "URL",
+        "PGHOST",
+        "PGPORT",
+        "PGUSER",
+        "PGDATABASE",
+        "PGPASSWORD",
+        "PGSSLMODE",
+        "PGSSLROOTCERT",
+        "PGSSLCERT",
+        "PGSSLKEY"
       ]
     },
     "@rpch/rpc-server#build": {
@@ -81,7 +89,15 @@
         "build/**"
       ],
       "env": [
-        "DATABASE_URL"
+        "PGHOST",
+        "PGPORT",
+        "PGUSER",
+        "PGDATABASE",
+        "PGPASSWORD",
+        "PGSSLMODE",
+        "PGSSLROOTCERT",
+        "PGSSLCERT",
+        "PGSSLKEY"
       ]
     },
     "@rpch-examples/ethers#build": {

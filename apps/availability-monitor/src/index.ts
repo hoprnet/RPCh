@@ -1,23 +1,53 @@
 import { Utils } from '@rpch/sdk';
-import { Pool } from 'pg';
-
+import { ClientConfig, Pool } from 'pg';
+import * as fs from 'fs';
 import * as availability from './availability';
 import Version from './version';
 
 const log = Utils.logger(['availability-monitor']);
 
 function main() {
-    // postgres url
-    if (!process.env.DATABASE_URL) {
-        throw new Error("Missing 'DATABASE_URL' env var.");
+    const requiredEnvironmentVariables = ['PGHOST', 'PGPORT', 'PGDATABASE', 'PGUSER', 'PGPASSWORD'];
+    requiredEnvironmentVariables.forEach((env) => {
+        if (!process.env[env]) {
+            throw new Error(`Missing '${env}' env var.`);
+        }
+    });
+
+    const sslMode = process.env.PGSSLMODE ?? 'disable';
+    const modesRequiringCerts = new Set(['verify-ca', 'verify-full']);
+    if (modesRequiringCerts.has(sslMode)) {
+        ['PGSSLCERT', 'PGSSLKEY', 'PGSSLROOTCERT'].forEach((env) => {
+            if (!process.env[env]) {
+                throw new Error(`Missing '${env}' env var for sslmode='${sslMode}'.`);
+            }
+        });
     }
 
-    // init db
-    const connectionString = process.env.DATABASE_URL;
-    const dbPool = new Pool({ connectionString });
+    // Build the connection configuration
+    const dbClientConfig: ClientConfig = {
+        user: process.env.PGUSER,
+        password: process.env.PGPASSWORD,
+        host: process.env.PGHOST,
+        port: Number(process.env.PGPORT),
+        database: process.env.PGDATABASE,
+    };
+    if (
+        (process.env.PGSSLMODE === 'verify-ca' || process.env.PGSSLMODE === 'verify-full') &&
+        process.env.PGSSLROOTCERT &&
+        process.env.PGSSLKEY &&
+        process.env.PGSSLCERT
+    ) {
+        dbClientConfig.ssl = {
+            rejectUnauthorized: process.env.PGSSLMODE === 'verify-full',
+            ca: fs.readFileSync(process.env.PGSSLROOTCERT).toString(),
+            key: fs.readFileSync(process.env.PGSSLKEY).toString(),
+            cert: fs.readFileSync(process.env.PGSSLCERT).toString(),
+        };
+    }
 
-    const logO = { connectionString: '<redacted>' };
-    log.info('AM[v%s] running with %o', Version, logO);
+    const dbPool = new Pool(dbClientConfig);
+    log.info('AM[v%s] running', Version);
     availability.start(dbPool);
 }
 

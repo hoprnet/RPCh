@@ -35,7 +35,11 @@ services:
             - DEBUG=${DEBUG}
             - URL=http://127.0.0.1:3020
             - PORT=3020
-            - DATABASE_URL=${DATABASE_URL_INTERNAL}
+            - PGUSER=${POSTGRES_USER}
+            - PGPASSWORD=${POSTGRES_PASSWORD}
+            - PGHOST=postgres-db-rpch
+            - PGPORT=5432
+            - PGDATABASE=postgres
             - ADMIN_SECRET=${ADMIN_SECRET}
             - SESSION_SECRET=${SESSION_SECRET}
             - DISCOVERY_PLATFORM_ACCESS_TOKEN=${DISCOVERY_PLATFORM_ACCESS_TOKEN}

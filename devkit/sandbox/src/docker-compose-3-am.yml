@@ -21,4 +21,9 @@ services:
         environment:
             - DEBUG=${DEBUG}
             - PORT=9080
-            - DATABASE_URL=${DATABASE_URL_EXTERNAL}
+            - PGUSER=${POSTGRES_USER}
+            - PGPASSWORD=${POSTGRES_PASSWORD}
+            - PGHOST=host.docker.internal
+            - PGPORT=5432
+            - PGDATABASE=postgres
+

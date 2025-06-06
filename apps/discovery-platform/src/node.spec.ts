@@ -1,6 +1,6 @@
 import migrate from 'node-pg-migrate';
 import path from 'path';
-import { Pool } from 'pg';
+import { Client, ClientConfig, Pool } from 'pg';
 
 import * as node from './node';
 
@@ -9,16 +9,27 @@ import * as node from './node';
 describe('node', function () {
     let dbPool: Pool;
     beforeAll(async () => {
-        const connectionString = process.env.DATABASE_URL as string;
+        // Build the connection configuration
+        const dbClientConfig: ClientConfig = {
+            user: process.env.PGUSER,
+            password: process.env.PGPASSWORD,
+            host: process.env.PGHOST,
+            port: Number(process.env.PGPORT),
+            database: process.env.PGDATABASE,
+        };
+        const dbClient = new Client(dbClientConfig);
+        await dbClient.connect();
+
         const migrationsDirectory = path.join(__dirname, '../migrations');
-        dbPool = new Pool({ connectionString });
+        dbPool = new Pool(dbClientConfig);
 
         await migrate({
             direction: 'up',
-            databaseUrl: connectionString,
+            dbClient,
             migrationsTable: 'migrations',
             dir: migrationsDirectory,
         });
+       await dbClient.end();
 
         const nodes = [
             'insert into registered_nodes',

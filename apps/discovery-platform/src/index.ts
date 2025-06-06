@@ -1,6 +1,7 @@
 import migrate from 'node-pg-migrate';
 import path from 'path';
-import { Pool } from 'pg';
+import * as fs from 'fs';
+import { Client, ClientConfig, Pool } from 'pg';
 import { Utils } from '@rpch/sdk';
 
 import * as quota from './quota';
@@ -13,24 +14,39 @@ const IntervalQuotaWrap = 1e3 * 60 * 60; // 1hour
 const log = Utils.logger(['discovery-platform']);
 
 const start = async (ops: {
-    connectionString: string;
-    dbPool: Pool;
+    dbClientConfig: ClientConfig;
     port: number;
     secrets: Secrets;
     url: string;
 }) => {
     const migrationsDirectory = path.join(__dirname, '../migrations');
-
+    const dbClient = new Client(ops.dbClientConfig);
+    await dbClient.connect().catch((err) => {
+        log.error('Error connecting to database: %s', err);
+        log.error('Exiting with error');
+        process.exit(1);
+    });
+    log.info('Starting migrations');
     await migrate({
         direction: 'up',
-        databaseUrl: ops.connectionString,
+        dbClient,
         migrationsTable: 'migrations',
         dir: migrationsDirectory,
         log: log.verbose,
-    });
-
+    })
+        .catch((err) => {
+            log.error('Error running migrations: %s', err);
+            log.error('Exiting with error');
+            process.exit(1);
+        })
+        .then(async () => {
+            log.info('Migrations finished');
+        });
+    await dbClient.end();
+    log.info('Starting discovery platform server');
+    const dbPool = new Pool(ops.dbClientConfig);
     const app = entryServer({
-        dbPool: ops.dbPool,
+        dbPool: dbPool,
         secrets: ops.secrets,
         url: ops.url,
     });
@@ -46,9 +62,10 @@ const start = async (ops: {
             JSON.stringify({ connectionString: '<redacted>', url: ops.url }),
         );
     });
+    log.info('Discovery platform server started');
 
     // schedule initial quota wrapping after startup
-    setTimeout(() => runQuotaWrap(ops.dbPool));
+    setTimeout(() => runQuotaWrap(dbPool));
 };
 
 function runQuotaWrap(dbPool: Pool) {
@@ -76,51 +93,69 @@ function scheduleQuotaWrap(dbPool: Pool) {
 }
 
 const main = () => {
-    // server port
-    if (!process.env.PORT) {
-        throw new Error("Missing 'PORT' env var.");
-    }
-    // public url
-    if (!process.env.URL) {
-        throw new Error("Missing 'URL' env var.");
-    }
-    // postgres url
-    if (!process.env.DATABASE_URL) {
-        throw new Error("Missing 'DATABASE_URL' env var.");
-    }
-    // admin secret
-    if (!process.env.ADMIN_SECRET) {
-        throw new Error("Missing 'ADMIN_SECRET' env var.");
-    }
-    // cookie secret
-    if (!process.env.SESSION_SECRET) {
-        throw new Error("Missing 'SESSION_SECRET' env var.");
-    }
-    // google oauth
-    if (!process.env.GOOGLE_CLIENT_ID) {
-        throw new Error("Missing 'GOOGLE_CLIENT_ID' env var.");
-    }
-    if (!process.env.GOOGLE_CLIENT_SECRET) {
-        throw new Error("Missing 'GOOGLE_CLIENT_SECRET' env var.");
+    const requiredEnvironmentVariables = [
+        'PORT',
+        'URL',
+        'PGHOST',
+        'PGPORT',
+        'PGDATABASE',
+        'PGUSER',
+        'PGPASSWORD',
+        'ADMIN_SECRET',
+        'SESSION_SECRET',
+        'GOOGLE_CLIENT_ID',
+        'GOOGLE_CLIENT_SECRET',
+    ];
+    requiredEnvironmentVariables.forEach((env) => {
+        if (!process.env[env]) {
+            throw new Error(`Missing '${env}' env var.`);
+        }
+    });
+
+    const sslMode = process.env.PGSSLMODE ?? 'disable';
+    const modesRequiringCerts = new Set(['verify-ca', 'verify-full']);
+    if (modesRequiringCerts.has(sslMode)) {
+        ['PGSSLCERT', 'PGSSLKEY', 'PGSSLROOTCERT'].forEach((env) => {
+            if (!process.env[env]) {
+                throw new Error(`Missing '${env}' env var for sslmode='${sslMode}'.`);
+            }
+        });
     }
 
-    // init db
-    const connectionString = process.env.DATABASE_URL;
-    const dbPool = new Pool({ connectionString });
+    // Build the connection configuration
+    const dbClientConfig: ClientConfig = {
+        user: process.env.PGUSER,
+        password: process.env.PGPASSWORD,
+        host: process.env.PGHOST,
+        port: Number(process.env.PGPORT),
+        database: process.env.PGDATABASE,
+    };
+    if (
+        (process.env.PGSSLMODE === 'verify-ca' || process.env.PGSSLMODE === 'verify-full') &&
+        process.env.PGSSLROOTCERT &&
+        process.env.PGSSLKEY &&
+        process.env.PGSSLCERT
+    ) {
+        dbClientConfig.ssl = {
+            rejectUnauthorized: process.env.PGSSLMODE === 'verify-full',
+            ca: fs.readFileSync(process.env.PGSSLROOTCERT).toString(),
+            key: fs.readFileSync(process.env.PGSSLKEY).toString(),
+            cert: fs.readFileSync(process.env.PGSSLCERT).toString(),
+        };
+    }
 
     const secrets = {
-        adminSecret: process.env.ADMIN_SECRET,
+        adminSecret: process.env.ADMIN_SECRET || '',
         sessionSecret: process.env.SESSION_SECRET,
         googleClientID: process.env.GOOGLE_CLIENT_ID,
         googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
     };
 
     start({
-        connectionString,
-        dbPool,
-        port: parseInt(process.env.PORT, 10),
+        dbClientConfig: dbClientConfig,
+        port: parseInt(process.env.PORT || '3020', 10),
         secrets,
-        url: process.env.URL,
+        url: process.env.URL || 'http://localhost:3020',
     });
 };
 
