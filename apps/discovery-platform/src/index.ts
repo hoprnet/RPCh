@@ -103,8 +103,6 @@ const main = () => {
         'PGPASSWORD',
         'ADMIN_SECRET',
         'SESSION_SECRET',
-        'GOOGLE_CLIENT_ID',
-        'GOOGLE_CLIENT_SECRET',
     ];
     requiredEnvironmentVariables.forEach((env) => {
         if (!process.env[env]) {
@@ -146,9 +144,7 @@ const main = () => {
 
     const secrets = {
         adminSecret: process.env.ADMIN_SECRET || '',
-        sessionSecret: process.env.SESSION_SECRET,
-        googleClientID: process.env.GOOGLE_CLIENT_ID,
-        googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        sessionSecret: process.env.SESSION_SECRET
     };
 
     start({

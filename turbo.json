@@ -31,8 +31,6 @@
       ],
       "env": [
         "ADMIN_SECRET",
-        "GOOGLE_CLIENT_ID",
-        "GOOGLE_CLIENT_SECRET",
         "PORT",
         "SESSION_SECRET",
         "URL",
