@@ -111,8 +111,6 @@ jobs:
                   push: true
                   file: "./apps/${{ matrix.project }}/Dockerfile"
                   tags: ${{ vars.DOCKER_IMAGE_REGISTRY }}/${{ matrix.project }}:${{ steps.variables.outputs.PR_VERSION }}
-              env:
-                DEBUG: true
 
             - name: Tag staging
               if: contains(github.event.pull_request.labels.*.name, 'deploy_staging') || github.event.label.name == 'deploy_staging' && github.event.action == 'labeled'
