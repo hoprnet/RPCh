@@ -32,7 +32,7 @@ nvm use 18
 ### Start the discovery platform
 
 ```bash
-cd apps/discovery-platform/; DEBUG=rpch:discovery-platform:* ADMIN_SECRET=topsecret SESSION_SECRET=toppersecret PORT=3020 URL="http://127.0.0.1:3020" PGHOST=localhost PGPORT=5432 PGDATABASE=gnosisvpnjs PGUSER=postgres PGPASSWORD=postgres yarn start
+cd apps/discovery-platform/; DEBUG=rpch:discovery-platform:* ADMIN_SECRET=topsecret PORT=3020 URL="http://127.0.0.1:3020" PGHOST=localhost PGPORT=5432 PGDATABASE=gnosisvpnjs PGUSER=postgres PGPASSWORD=postgres yarn start
 ```
 
 ### Populate table with remote entry and exit nodes

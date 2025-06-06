@@ -32,7 +32,6 @@
       "env": [
         "ADMIN_SECRET",
         "PORT",
-        "SESSION_SECRET",
         "URL",
         "PGHOST",
         "PGPORT",

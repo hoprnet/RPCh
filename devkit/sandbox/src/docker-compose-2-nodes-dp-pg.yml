@@ -41,5 +41,4 @@ services:
             - PGPORT=5432
             - PGDATABASE=postgres
             - ADMIN_SECRET=${ADMIN_SECRET}
-            - SESSION_SECRET=${SESSION_SECRET}
             - DISCOVERY_PLATFORM_ACCESS_TOKEN=${DISCOVERY_PLATFORM_ACCESS_TOKEN}
