@@ -29,7 +29,7 @@ describe('node', function () {
             migrationsTable: 'migrations',
             dir: migrationsDirectory,
         });
-       await dbClient.end();
+        await dbClient.end();
 
         const nodes = [
             'insert into registered_nodes',

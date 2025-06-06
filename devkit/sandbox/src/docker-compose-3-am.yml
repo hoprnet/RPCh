@@ -26,4 +26,3 @@ services:
             - PGHOST=host.docker.internal
             - PGPORT=5432
             - PGDATABASE=postgres
-

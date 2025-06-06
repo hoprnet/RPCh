@@ -101,7 +101,7 @@ const main = () => {
         'PGDATABASE',
         'PGUSER',
         'PGPASSWORD',
-        'ADMIN_SECRET'
+        'ADMIN_SECRET',
     ];
     requiredEnvironmentVariables.forEach((env) => {
         if (!process.env[env]) {
@@ -142,7 +142,7 @@ const main = () => {
     }
 
     const secrets = {
-        adminSecret: process.env.ADMIN_SECRET || ''
+        adminSecret: process.env.ADMIN_SECRET || '',
     };
 
     start({
