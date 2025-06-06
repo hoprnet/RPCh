@@ -14,7 +14,7 @@ concurrency:
 jobs:
     merge:
         name: Merge PR
-        runs-on: self-hosted-hoprnet-small
+        runs-on: ubuntu-latest
         if: github.event.pull_request.merged == true
         strategy:
           matrix:
