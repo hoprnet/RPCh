@@ -94,10 +94,10 @@ jobs:
                   login-artifact-registry: 'true'
                   install-sdk: 'true'
 
-            - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v3
-              with:
-                  driver: kubernetes
+            # - name: Set up Docker Buildx
+            #   uses: docker/setup-buildx-action@v3
+            #   with:
+            #       driver: kubernetes
 
             - name: Get PR version
               id: variables
