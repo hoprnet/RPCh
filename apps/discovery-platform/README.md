@@ -34,7 +34,6 @@ docker run \
 -e PGSSLKEY="/app/ssl/client-key.pem" \
 -e PGSSLROOTCERT="/app/ssl/server-ca.pem" \
 -e ADMIN_SECRET="<SECRET FOR AUTHORIZING AS ADMIN>" \
--e SESSION_SECRET="<COOKIE SECRET>" \
 -e DEBUG="rpch:discovery-platform*,-*verbose" \
 -v ./ssl:/app/ssl \
 -p 3020:3020 \
