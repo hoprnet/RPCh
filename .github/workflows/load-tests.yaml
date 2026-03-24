@@ -62,7 +62,7 @@ jobs:
         uses: google-github-actions/auth@v1
         with:
           token_format: "access_token"
-          credentials_json: ${{ secrets.GCP_SA_TERRAFORM_JSON }}
+          credentials_json: ${{ secrets.GCP_SA_GITHUB_RUNNER }}
 
       - name: Set up Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
