@@ -90,6 +90,8 @@ jobs:
                   push: true
                   file: "./apps/${{ inputs.project }}/Dockerfile"
                   tags: ${{ vars.DOCKER_IMAGE_REGISTRY }}/${{ inputs.project }}:${{ steps.environment.outputs.release_version }}
+                  cache-from: type=gha,scope=release-${{ inputs.project }}
+                  cache-to: type=gha,mode=max,scope=release-${{ inputs.project }},ignore-error=true
 
             - name: Bump Version
               id: bump
