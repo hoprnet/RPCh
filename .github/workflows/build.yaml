@@ -154,3 +154,17 @@ jobs:
         id-token: write # GCP workload identity federation
       with:
         branch: ${{ github.event.pull_request.head.ref }}
+
+    # Single required check for the branch ruleset (hoprnet/hopr-devops#372).
+    merge-gate:
+      name: Merge gate
+      if: always()
+      needs: [lint, build, publish, deploy]
+      runs-on: ubuntu-latest
+      permissions: {}
+      steps:
+        - uses: re-actors/alls-green@b5b5b37504aa4183270bd3d855c52a67f212be35 # v1.3.0
+          with:
+            # `deploy` may skip only while the `deploy_staging` label is absent.
+            allowed-skips: ${{ !(contains(github.event.pull_request.labels.*.name, 'deploy_staging') || github.event.label.name == 'deploy_staging' && github.event.action == 'labeled') && 'deploy' || '' }}
+            jobs: ${{ toJSON(needs) }}
