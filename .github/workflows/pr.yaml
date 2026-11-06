@@ -142,7 +142,7 @@ jobs:
                   tags: ${{ vars.DOCKER_IMAGE_REGISTRY }}/${{ matrix.project }}:${{ steps.variables.outputs.PR_VERSION }}
 
             - name: Tag staging
-              if: contains(github.event.pull_request.labels.*.name, 'deploy_staging') || github.event.label.name == 'deploy_staging' && github.event.action == 'labeled'
+              if: contains(github.event.pull_request.labels.*.name, 'deploy_staging') || (github.event.label.name == 'deploy_staging' && github.event.action == 'labeled')
               env:
                   REGISTRY: ${{ vars.DOCKER_IMAGE_REGISTRY }}
                   PROJECT: ${{ matrix.project }}
@@ -153,7 +153,7 @@ jobs:
     deploy:
       name: Deploy
       needs: publish
-      if: contains(github.event.pull_request.labels.*.name, 'deploy_staging') || github.event.label.name == 'deploy_staging' && github.event.action == 'labeled'
+      if: contains(github.event.pull_request.labels.*.name, 'deploy_staging') || (github.event.label.name == 'deploy_staging' && github.event.action == 'labeled')
       uses: ./.github/workflows/deploy.yaml
       permissions:
         contents: read
@@ -172,5 +172,5 @@ jobs:
         - uses: re-actors/alls-green@b5b5b37504aa4183270bd3d855c52a67f212be35 # v1.3.0
           with:
             # `deploy` may skip only while the `deploy_staging` label is absent.
-            allowed-skips: ${{ !(contains(github.event.pull_request.labels.*.name, 'deploy_staging') || github.event.label.name == 'deploy_staging' && github.event.action == 'labeled') && 'deploy' || '' }}
+            allowed-skips: ${{ !(contains(github.event.pull_request.labels.*.name, 'deploy_staging') || (github.event.label.name == 'deploy_staging' && github.event.action == 'labeled')) && 'deploy' || '' }}
             jobs: ${{ toJSON(needs) }}
