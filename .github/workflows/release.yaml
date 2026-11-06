@@ -67,8 +67,10 @@ jobs:
 
             - name: Setup environment variables
               id: environment
+              env:
+                  PROJECT: ${{ inputs.project }}
               run: |
-                  PACKAGE_VERSION=$(jq -r '.version' "apps/${{ inputs.project }}/package.json")
+                  PACKAGE_VERSION=$(jq -r '.version' "apps/${PROJECT}/package.json")
                   echo "release_version=${PACKAGE_VERSION}" >> $GITHUB_OUTPUT
 
             - name: Create Release
@@ -86,9 +88,12 @@ jobs:
 
             - name: Bump Version
               id: bump
+              env:
+                  RELEASE_TYPE: ${{ inputs.release_type }}
+                  PROJECT: ${{ inputs.project }}
               run: |
-                  npm version "${{ inputs.release_type }}" -w "apps/${{ inputs.project }}" --no-git-tag-version
-                  BUMP_VERSION=$(jq -r '.version' "apps/${{ inputs.project }}/package.json")
+                  npm version "${RELEASE_TYPE}" -w "apps/${PROJECT}" --no-git-tag-version
+                  BUMP_VERSION=$(jq -r '.version' "apps/${PROJECT}/package.json")
                   echo "bump_version=${BUMP_VERSION}" >> $GITHUB_OUTPUT
 
             - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4

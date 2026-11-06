@@ -83,9 +83,20 @@ jobs:
           node-version: 20
 
       - name: Run Load test
+        env:
+          TEST_TYPE: ${{ inputs.test_type }}
+          WALLET_TYPE: ${{ inputs.wallet_type }}
+          TEST_ID: ${{ inputs.test_id }}
+        shell: bash
         run: |
+          for v in "$TEST_TYPE" "$WALLET_TYPE" "$TEST_ID"; do
+            if ! [[ "$v" =~ ^[0-9A-Za-z._-]+$ ]]; then
+              echo "::error::Invalid input value" >&2
+              exit 1
+            fi
+          done
           pip install -r requirements.txt
-          jinja2 --format=yaml k6.yaml.j2 -D testType=${{ github.event.inputs.test_type }} -D walletType=${{ github.event.inputs.wallet_type }} -D testId=${{ github.event.inputs.test_id }} > k6.yaml
+          jinja2 --format=yaml k6.yaml.j2 -D testType="$TEST_TYPE" -D walletType="$WALLET_TYPE" -D testId="$TEST_ID" > k6.yaml
           kubectl delete -f k6.yaml 2> /dev/null || true
           kubectl apply -f k6.yaml
         working-directory: "./devkit/loadtesting-k6"

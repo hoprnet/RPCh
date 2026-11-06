@@ -100,8 +100,11 @@ jobs:
 
             - name: Get PR version
               id: variables
+              env:
+                  PROJECT: ${{ matrix.project }}
+                  PR_NUMBER: ${{ github.event.pull_request.number }}
               run: |
-                  PR_VERSION=$(jq -r '.version' apps/"${{ matrix.project }}"/package.json)-pr."${{ github.event.pull_request.number }}"
+                  PR_VERSION=$(jq -r '.version' apps/"${PROJECT}"/package.json)-pr."${PR_NUMBER}"
                   echo "PR_VERSION=${PR_VERSION}" >> $GITHUB_OUTPUT
 
             - name: Build and push docker image
@@ -113,8 +116,12 @@ jobs:
 
             - name: Tag staging
               if: contains(github.event.pull_request.labels.*.name, 'deploy_staging') || github.event.label.name == 'deploy_staging' && github.event.action == 'labeled'
+              env:
+                  REGISTRY: ${{ vars.DOCKER_IMAGE_REGISTRY }}
+                  PROJECT: ${{ matrix.project }}
+                  PR_VERSION: ${{ steps.variables.outputs.PR_VERSION }}
               run: |
-                gcloud artifacts docker tags add ${{ vars.DOCKER_IMAGE_REGISTRY }}/${{ matrix.project }}:${{ steps.variables.outputs.PR_VERSION }} ${{ vars.DOCKER_IMAGE_REGISTRY }}/${{ matrix.project }}:staging
+                gcloud artifacts docker tags add "${REGISTRY}/${PROJECT}:${PR_VERSION}" "${REGISTRY}/${PROJECT}:staging"
 
     deploy:
       name: Deploy
