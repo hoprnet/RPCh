@@ -155,7 +155,7 @@ jobs:
       with:
         branch: ${{ github.event.pull_request.head.ref }}
 
-    # Single required check for the branch ruleset (hoprnet/hopr-devops#372).
+    # Intended as the single required check for the branch ruleset; making it required is a follow-up (hoprnet/hopr-devops#372).
     merge-gate:
       name: Merge gate
       if: always()
