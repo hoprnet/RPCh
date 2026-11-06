@@ -10,7 +10,7 @@ on:
           - labeled
 
 concurrency:
-    group: build
+    group: ${{ github.event.pull_request.number || github.ref }}-build
     cancel-in-progress: true
 
 permissions: {}
