@@ -25,32 +25,36 @@ concurrency:
     group: release
     cancel-in-progress: false
 
+permissions: {}
+
 jobs:
     release:
         name: Close release
         runs-on: self-hosted-hoprnet-small
+        permissions:
+            contents: write # GitHub release; the version bump push uses GH_RUNNER_TOKEN
+            id-token: write # GCP workload identity federation
 
         steps:
             - name: Checkout repository
-              uses: actions/checkout@v4
+              uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
               with:
                 ref: main # if you want to use a different branch keep in mind that the bump version step will be affected
                 token: "${{ secrets.GH_RUNNER_TOKEN }}"
 
             - name: Setup Node.js
-              uses: hoprnet/hopr-workflows/actions/setup-node-js@master
+              uses: hoprnet/hopr-workflows/actions/setup-node-js@15db9fb5571957317b77567abef997b1554f2fbb # setup-node-js-v1.0.0
               with:
-                  node-version: ${{ vars.NODE_VERSION }}
+                  node_version: ${{ vars.NODE_VERSION }}
 
             - name: Setup GCP
               id: gcp
-              uses: hoprnet/hopr-workflows/actions/setup-gcp@master
+              uses: hoprnet/hopr-workflows/actions/setup-gcp@2ca6e5b55819505e4e304ed3b0ff62da01cc7c0e # setup-gcp-v4.0.3
               with:
-                  google-credentials: ${{ secrets.GOOGLE_HOPRASSOCIATION_CREDENTIALS_REGISTRY }}
-                  login-artifact-registry: 'true'
+                  login_artifact_registry: 'true'
 
             - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v3
+              uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
               with:
                   driver: kubernetes
 
@@ -68,31 +72,38 @@ jobs:
 
             - name: Setup environment variables
               id: environment
+              env:
+                  PROJECT: ${{ inputs.project }}
               run: |
-                  PACKAGE_VERSION=$(jq -r '.version' "apps/${{ inputs.project }}/package.json")
+                  PACKAGE_VERSION=$(jq -r '.version' "apps/${PROJECT}/package.json")
                   echo "release_version=${PACKAGE_VERSION}" >> $GITHUB_OUTPUT
 
             - name: Create Release
-              uses: softprops/action-gh-release@v2
+              uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
               with:
                   name: '${{ inputs.project }} - v${{ steps.environment.outputs.release_version }}'
                   tag_name: v${{ steps.environment.outputs.release_version }}
 
             - name: Build and push docker image
-              uses: docker/build-push-action@v6
+              uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
               with:
                   push: true
                   file: "./apps/${{ inputs.project }}/Dockerfile"
                   tags: ${{ vars.DOCKER_IMAGE_REGISTRY }}/${{ inputs.project }}:${{ steps.environment.outputs.release_version }}
+                  cache-from: type=gha,scope=release-${{ inputs.project }}
+                  cache-to: type=gha,mode=max,scope=release-${{ inputs.project }},ignore-error=true
 
             - name: Bump Version
               id: bump
+              env:
+                  RELEASE_TYPE: ${{ inputs.release_type }}
+                  PROJECT: ${{ inputs.project }}
               run: |
-                  npm version "${{ inputs.release_type }}" -w "apps/${{ inputs.project }}" --no-git-tag-version
-                  BUMP_VERSION=$(jq -r '.version' "apps/${{ inputs.project }}/package.json")
+                  npm version "${RELEASE_TYPE}" -w "apps/${PROJECT}" --no-git-tag-version
+                  BUMP_VERSION=$(jq -r '.version' "apps/${PROJECT}/package.json")
                   echo "bump_version=${BUMP_VERSION}" >> $GITHUB_OUTPUT
 
-            - uses: EndBug/add-and-commit@v9
+            - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
               with:
                 add: 'apps/${{ inputs.project}}'
                 new_branch: main
@@ -100,7 +111,7 @@ jobs:
                 pathspec_error_handling: exitImmediately
 
             - name: Notify new release
-              uses: zulip/github-actions-zulip/send-message@v1
+              uses: zulip/github-actions-zulip/send-message@e4c8f27c732ba9bd98ac6be0583096dea82feea5 # v1.0.2
               with:
                   api-key: ${{ secrets.ZULIP_API_KEY }}
                   email: ${{ secrets.ZULIP_EMAIL }}

@@ -42,50 +42,67 @@ concurrency:
   group: load-tests
   cancel-in-progress: true
 
+permissions: {}
+
 jobs:
 
   load-tests:
     name: Load Tests
     runs-on: self-hosted
+    permissions:
+      contents: read
     steps:
 
       - name: Checkout hoprnet repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: '3.10'
 
 
       - name: Set up Google Cloud Credentials
-        uses: google-github-actions/auth@v1
+        uses: google-github-actions/auth@3a3c4c57d294ef65efaaee4ff17b22fa88dd3c69 # v1.3.0
         with:
           token_format: "access_token"
           credentials_json: ${{ secrets.GCP_SA_GITHUB_RUNNER }}
 
       - name: Set up Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v1
+        uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
         with:
           project_id: hopr-staging
           install_components: beta
 
       - name: Get credentials
-        uses: google-github-actions/get-gke-credentials@v2
+        uses: google-github-actions/get-gke-credentials@64bc7249bbcf78056bb92f14d3cedc2da193946c # v2.3.5
         with:
           cluster_name: cluster-staging
           location: europe-west3
           project_id: hopr-staging
 
       - name: Setup NodeJs
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610 # v3.9.1
         with:
           node-version: 20
 
       - name: Run Load test
+        env:
+          TEST_TYPE: ${{ inputs.test_type }}
+          WALLET_TYPE: ${{ inputs.wallet_type }}
+          TEST_ID: ${{ inputs.test_id }}
+        shell: bash
         run: |
+          for v in "$TEST_TYPE" "$WALLET_TYPE" "$TEST_ID"; do
+            if ! [[ "$v" =~ ^[0-9A-Za-z._-]+$ ]]; then
+              echo "::error::Invalid input value" >&2
+              exit 1
+            fi
+          done
           pip install -r requirements.txt
-          jinja2 --format=yaml k6.yaml.j2 -D testType=${{ github.event.inputs.test_type }} -D walletType=${{ github.event.inputs.wallet_type }} -D testId=${{ github.event.inputs.test_id }} > k6.yaml
+          jinja2 --format=yaml k6.yaml.j2 -D testType="$TEST_TYPE" -D walletType="$WALLET_TYPE" -D testId="$TEST_ID" > k6.yaml
           kubectl delete -f k6.yaml 2> /dev/null || true
           kubectl apply -f k6.yaml
         working-directory: "./devkit/loadtesting-k6"
