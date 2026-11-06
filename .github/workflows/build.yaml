@@ -16,6 +16,30 @@ concurrency:
 permissions: {}
 
 jobs:
+    lint:
+        name: Lint
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+            - name: Setup Node.js
+              uses: hoprnet/hopr-workflows/actions/setup-node-js@15db9fb5571957317b77567abef997b1554f2fbb # setup-node-js-v1.0.0
+              with:
+                  node_version: 20.x
+
+            - name: Linting
+              run: yarn lint:ci
+
+            - name: Formatting
+              run: yarn format:ci
+
+            - name: Review dependencies
+              # TODO: update ethers to v6 in RPCh SDK to remove the ignore-path
+              run: yarn depcheck --ignore-path="examples"
+
     build:
         name: Build
         runs-on: ubuntu-latest # Cannot use self hosted runners because of running postgres docker container
@@ -23,7 +47,7 @@ jobs:
             contents: read
         strategy:
             matrix:
-                node-version: [18.x, 20.x, 22.x]
+                node-version: [20.x, 22.x]
 
         services:
           # required by unit tests
@@ -54,16 +78,6 @@ jobs:
             - name: Building
               run: yarn build
 
-            - name: Linting
-              run: yarn lint:ci
-
-            - name: Formatting
-              run: yarn format:ci
-
-            - name: Review dependencies
-              # TODO: update ethers to v6 in RPCh SDK to remove the ignore-path
-              run: yarn depcheck --ignore-path="examples"
-
             - name: Testing
               run: yarn test
               env:
@@ -79,7 +93,7 @@ jobs:
     publish:
         name: Publish
         runs-on: ubuntu-latest
-        needs: build
+        needs: [lint, build]
         permissions:
             contents: read
             id-token: write # GCP workload identity federation
