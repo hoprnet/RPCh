@@ -42,11 +42,15 @@ concurrency:
   group: load-tests
   cancel-in-progress: true
 
+permissions: {}
+
 jobs:
 
   load-tests:
     name: Load Tests
     runs-on: self-hosted
+    permissions:
+      contents: read
     steps:
 
       - name: Checkout hoprnet repository

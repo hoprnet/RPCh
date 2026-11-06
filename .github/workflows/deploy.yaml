@@ -12,11 +12,16 @@ concurrency:
     group: deploy
     cancel-in-progress: true
 
+permissions: {}
+
 jobs:
 
     deploy:
       name: Deploy staging
       runs-on: self-hosted-hoprnet-small
+      permissions:
+        contents: read
+        id-token: write # GCP workload identity federation
       steps:
         - name: Checkout repository
           uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0

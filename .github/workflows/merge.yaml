@@ -11,11 +11,16 @@ concurrency:
     group: merge
     cancel-in-progress: false
 
+permissions: {}
+
 jobs:
     merge:
         name: Merge PR
         runs-on: ubuntu-latest
         if: github.event.pull_request.merged == true
+        permissions:
+            contents: read
+            id-token: write # GCP workload identity federation
         strategy:
           matrix:
             project:
@@ -51,6 +56,8 @@ jobs:
       name: Deploy staging
       needs: merge
       uses: ./.github/workflows/deploy.yaml
+      permissions:
+        contents: read
+        id-token: write # GCP workload identity federation
       with:
         branch: ${{ github.event.pull_request.head.ref }}
-      secrets: inherit

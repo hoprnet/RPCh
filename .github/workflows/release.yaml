@@ -25,10 +25,15 @@ concurrency:
     group: release
     cancel-in-progress: false
 
+permissions: {}
+
 jobs:
     release:
         name: Close release
         runs-on: self-hosted-hoprnet-small
+        permissions:
+            contents: write # GitHub release; the version bump push uses GH_RUNNER_TOKEN
+            id-token: write # GCP workload identity federation
 
         steps:
             - name: Checkout repository
