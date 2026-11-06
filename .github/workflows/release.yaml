@@ -38,16 +38,15 @@ jobs:
                 token: "${{ secrets.GH_RUNNER_TOKEN }}"
 
             - name: Setup Node.js
-              uses: hoprnet/hopr-workflows/actions/setup-node-js@master
+              uses: hoprnet/hopr-workflows/actions/setup-node-js@15db9fb5571957317b77567abef997b1554f2fbb # setup-node-js-v1.0.0
               with:
-                  node-version: ${{ vars.NODE_VERSION }}
+                  node_version: ${{ vars.NODE_VERSION }}
 
             - name: Setup GCP
               id: gcp
-              uses: hoprnet/hopr-workflows/actions/setup-gcp@master
+              uses: hoprnet/hopr-workflows/actions/setup-gcp@2ca6e5b55819505e4e304ed3b0ff62da01cc7c0e # setup-gcp-v4.0.3
               with:
-                  google-credentials: ${{ secrets.GOOGLE_HOPRASSOCIATION_CREDENTIALS_REGISTRY }}
-                  login-artifact-registry: 'true'
+                  login_artifact_registry: 'true'
 
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v3

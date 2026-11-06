@@ -25,11 +25,9 @@ jobs:
 
         - name: Setup GCP
           id: gcp
-          uses: hoprnet/hopr-workflows/actions/setup-gcp@master
+          uses: hoprnet/hopr-workflows/actions/setup-gcp@2ca6e5b55819505e4e304ed3b0ff62da01cc7c0e # setup-gcp-v4.0.3
           with:
-            google-credentials: ${{ secrets.GCP_SA_GITHUB_RUNNER }}
-            project: hopr-staging
-            login-gke: 'true'
+            login_gke: 'true'
 
         - name: "Restart deployment"
           run: |

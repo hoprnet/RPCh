@@ -43,9 +43,9 @@ jobs:
               uses: actions/checkout@v4
 
             - name: Setup Node.js
-              uses: hoprnet/hopr-workflows/actions/setup-node-js@master
+              uses: hoprnet/hopr-workflows/actions/setup-node-js@15db9fb5571957317b77567abef997b1554f2fbb # setup-node-js-v1.0.0
               with:
-                  node-version: ${{ matrix.node-version }}
+                  node_version: ${{ matrix.node-version }}
 
             - name: Building
               run: yarn build
@@ -88,11 +88,10 @@ jobs:
 
             - name: Setup GCP
               id: gcp
-              uses: hoprnet/hopr-workflows/actions/setup-gcp@master
+              uses: hoprnet/hopr-workflows/actions/setup-gcp@2ca6e5b55819505e4e304ed3b0ff62da01cc7c0e # setup-gcp-v4.0.3
               with:
-                  google-credentials: ${{ secrets.GOOGLE_HOPRASSOCIATION_CREDENTIALS_REGISTRY }}
-                  login-artifact-registry: 'true'
-                  install-sdk: 'true'
+                  login_artifact_registry: 'true'
+                  install_sdk: 'true'
 
             # - name: Set up Docker Buildx
             #   uses: docker/setup-buildx-action@v3

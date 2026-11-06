@@ -29,10 +29,9 @@ jobs:
 
             - name: Setup GCP
               id: gcp
-              uses: hoprnet/hopr-workflows/actions/setup-gcp@master
+              uses: hoprnet/hopr-workflows/actions/setup-gcp@2ca6e5b55819505e4e304ed3b0ff62da01cc7c0e # setup-gcp-v4.0.3
               with:
-                  google-credentials: ${{ secrets.GOOGLE_HOPRASSOCIATION_CREDENTIALS_REGISTRY }}
-                  login-artifact-registry: 'true'
+                  login_artifact_registry: 'true'
 
             # - name: Set up Docker Buildx
             #   uses: docker/setup-buildx-action@v3
