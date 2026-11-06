@@ -132,7 +132,7 @@ jobs:
                   PR_NUMBER: ${{ github.event.pull_request.number }}
               run: |
                   PR_VERSION=$(jq -r '.version' apps/"${PROJECT}"/package.json)-pr."${PR_NUMBER}"
-                  echo "PR_VERSION=${PR_VERSION}" >> $GITHUB_OUTPUT
+                  echo "PR_VERSION=${PR_VERSION}" >> "$GITHUB_OUTPUT"
 
             - name: Build and push docker image
               uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
